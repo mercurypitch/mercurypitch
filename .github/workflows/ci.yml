@@ -31,6 +31,38 @@ jobs:
       - name: Syntax check (Node.js --check)
         run: pnpm run check:syntax
 
+  docs:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # docs-sync diffs against the merge base, so it needs real history.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Advisory while the anchored-doc set is still small: it reports drift on
+      # this PR's own changes without blocking. Drop continue-on-error once
+      # coverage is high enough that a red docs job is always a real problem.
+      - name: Docs drift
+        continue-on-error: true
+        run: pnpm docs:check --since origin/${{ github.base_ref }}
+
+      - name: Docs work orders
+        run: pnpm docs:plan --since origin/${{ github.base_ref }} >> "$GITHUB_STEP_SUMMARY"
+
   cleanup:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true && github.head_ref != 'dev'

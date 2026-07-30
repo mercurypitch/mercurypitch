@@ -1,0 +1,39 @@
+{
+  "docsGlobs": ["docs/**/*.md", "!docs/archive/**"],
+  "lockFile": "docs/agents/docs-sync.lock.json",
+  "contextFile": "docs/agents/context.json",
+
+  "coverage": {
+    "units": [
+      "src/features/*",
+      "src/stores/*.ts",
+      "src/pages/*.tsx",
+      "workers/*"
+    ],
+    "ignore": [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.module.css",
+      "src/features/routing/**"
+    ]
+  },
+
+  "conventions": [
+    { "path": "CLAUDE.md", "what": "Git workflow, code-quality gate, tour rules" },
+    { "path": "AGENTS.md", "what": "PR workflow, no emoji, SolidJS reactivity gotchas, canvas performance" },
+    { "path": "docs/claude/conventions.md", "what": "Project structure and component patterns" },
+    { "path": "docs/DOCS_SYSTEM.md", "what": "How anchored docs work and how to keep them honest" }
+  ],
+
+  "commands": [
+    { "run": "pnpm check", "purpose": "Typecheck, lint --fix, format. Required after any code change.", "verified": true },
+    { "run": "pnpm check:syntax", "purpose": "Non-mutating variant used by CI.", "verified": true },
+    { "run": "pnpm test:run", "purpose": "Vitest unit suite, single pass.", "verified": true },
+    { "run": "pnpm docs:status", "purpose": "Drift status for every anchored doc.", "verified": true },
+    { "run": "pnpm docs:check", "purpose": "Fail when docs drifted from the code they describe. Use --since main on a branch.", "verified": true },
+    { "run": "pnpm docs:plan", "purpose": "Work orders for every drifted doc.", "verified": true },
+    { "run": "pnpm docs:anchor <doc>", "purpose": "Re-stamp a doc after updating it.", "verified": true },
+    { "run": "pnpm test:tours", "purpose": "Full two-viewport tour walk. Release gate, not a per-PR gate.", "verified": true },
+    { "run": "pnpm audit:mobile", "purpose": "Screenshot exercises at a phone viewport and flag layout regressions.", "verified": true }
+  ]
+}

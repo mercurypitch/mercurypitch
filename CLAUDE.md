@@ -16,6 +16,19 @@
 
 - Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
 
+## Docs
+
+- Some docs are **anchored**: they declare the source files they describe and
+  carry a fingerprint of those files. See `docs/DOCS_SYSTEM.md` for the contract
+  and `.claude/skills/docs-sync/SKILL.md` (`/docs-sync`) for the workflow.
+- Read `docs/agents/context.json` before hunting through `docs/` by hand — it is
+  the generated index of tracked docs, areas, verified commands, and known drift.
+- After changing code, run `pnpm docs:check --since main`. If a doc you moved is
+  flagged `MAJOR` or `BROKEN`, update it **in the same PR** and re-stamp it with
+  `pnpm docs:anchor <doc>`. `MINOR` usually needs no edit.
+- Never anchor a doc you did not read against the code. The anchor records the
+  commit it was verified against, and that claim shows up in review.
+
 ## Guided Tours
 
 - The full `/tour-check` browser walk (`pnpm run test:tours` via
