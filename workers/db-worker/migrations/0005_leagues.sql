@@ -84,16 +84,22 @@ CREATE TABLE IF NOT EXISTS leaguePointsConfig (
 -- Seed the 7 rungs (Merc mascot family). l1 is a grace rung (relegateCount 0);
 -- l6 is the top playable rung (promoteCount 0 — l7 is locked); l7 is the
 -- mystery (0/0), shipped with teaser art but flagged isMystery so the client
--- renders it as locked. l1–l5 use placeholder SVGs pending the final
--- Higgsfield set; l6/l7 carry the approved "Sung Note" art direction renders.
+-- renders it as locked.
+--
+-- The l1–l6 trophies are one sculpture family reading as a note-duration
+-- ladder: quarter, half, whole, two beamed, four beamed, and the Sung Note at
+-- the top. Longer note = higher rung, so the art itself teaches the order.
+-- Each rung also carries its own gem colour (bronze, platinum, gold, emerald,
+-- amethyst, sapphire) so a rung stays identifiable at the ~40px it renders in
+-- a standings row, where counting note-heads is not realistic.
 INSERT OR IGNORE INTO leagues
   (id, createdAt, updatedAt, rank, name, trophyAsset, isMystery, promoteCount, relegateCount)
 VALUES
-  ('l1', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 1, 'Mercling',  '/leagues/l1.svg',  0, 15, 0),
-  ('l2', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 2, 'Sparkwing', '/leagues/l2.svg',  0, 10, 10),
-  ('l3', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 3, 'Skyvox',    '/leagues/l3.svg',  0, 10, 10),
-  ('l4', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 4, 'Highnova',  '/leagues/l4.svg',  0, 10, 10),
-  ('l5', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 5, 'Starcrest', '/leagues/l5.svg',  0, 10, 10),
+  ('l1', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 1, 'Mercling',  '/leagues/l1.webp', 0, 15, 0),
+  ('l2', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 2, 'Sparkwing', '/leagues/l2.webp', 0, 10, 10),
+  ('l3', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 3, 'Skyvox',    '/leagues/l3.webp', 0, 10, 10),
+  ('l4', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 4, 'Highnova',  '/leagues/l4.webp', 0, 10, 10),
+  ('l5', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 5, 'Starcrest', '/leagues/l5.webp', 0, 10, 10),
   ('l6', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 6, 'Mercapex',  '/leagues/l6.webp', 0, 0,  10),
   ('l7', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 7, '???',       '/leagues/l7.webp', 1, 0,  0);
 

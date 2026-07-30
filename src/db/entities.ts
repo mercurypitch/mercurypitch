@@ -203,7 +203,7 @@ export interface LeaderboardEntry extends DbEntity {
 export interface League extends DbEntity {
   rank: number // 1..7, ascending
   name: string // branded rung name; '???' while a mystery
-  /** Trophy art URL ('/leagues/lN.svg' or R2 key); null for the mystery rung. */
+  /** Trophy art URL ('/leagues/lN.webp' or R2 key); null if a rung has no art. */
   trophyAsset: string | null
   /** True for a locked "coming soon" rung (l7) until it is revealed. */
   isMystery: boolean
