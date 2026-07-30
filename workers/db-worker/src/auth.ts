@@ -1024,6 +1024,13 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'userSettings', column: 'userId' },
   { table: 'userSurveyResponses', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
+  // League rows are per-user too: leaving them would keep a ghost entry in
+  // this week's standings (rendered as Singer-<id>) and a point history for
+  // an account that asked to be erased. Safe to reference unconditionally:
+  // deploy-db.yml applies migrations before deploying the worker, so this
+  // code never runs against a database missing migration 0005's tables.
+  { table: 'leagueMembership', column: 'userId' },
+  { table: 'leaguePointEvents', column: 'userId' },
   // Credits and entitlements go with the account. Stripe remains the
   // authoritative financial record (and keeps its own retention), so this
   // erases our copy without destroying the accounting trail.

@@ -35,7 +35,8 @@ async function loadPointsConfig(env: Env): Promise<LeaguePointsConfig> {
   try {
     const row = await env.DB.prepare(
       `SELECT exerciseBase, challengeBase, weeklyBase, scoreDivisor,
-              dailyVarietyBonus, goalMetBonus, streakMilestoneBonus, milestoneEvery
+              dailyVarietyBonus, goalMetBonus, streakMilestoneBonus,
+              milestoneEvery, dailyScoredSessionCap
        FROM leaguePointsConfig WHERE id = 'default'`,
     ).first<LeaguePointsConfig>()
     return row ?? DEFAULT_LEAGUE_POINTS_CONFIG
@@ -108,8 +109,19 @@ async function credit(
 ): Promise<void> {
   if (points <= 0) return
   const weekStart = isoWeekStart()
-  const leagueId = await userLeagueId(env, userId)
-  await ensureMembership(env, userId, leagueId, weekStart)
+  // A week is played where it started: once this week's membership exists,
+  // keep crediting it even if the profile's currentLeagueId has since moved
+  // (the weekly cut fires minutes after the ISO week rolls over, so points
+  // earned in that window would otherwise smear across two cohorts).
+  const existing = await env.DB.prepare(
+    'SELECT id FROM leagueMembership WHERE userId = ? AND weekStart = ?',
+  )
+    .bind(userId, weekStart)
+    .first<{ id: string }>()
+  if (!existing) {
+    const leagueId = await userLeagueId(env, userId)
+    await ensureMembership(env, userId, leagueId, weekStart)
+  }
   const now = new Date().toISOString()
   await env.DB.batch([
     env.DB.prepare(
@@ -162,9 +174,24 @@ export async function awardForSessionRecord(
     if (source === 'practice') return
     if (!(await isRegistered(env, userId))) return
 
+    const config = await loadPointsConfig(env)
+
+    // Abuse ceiling: `source` is client-reported, so a scripted client can
+    // post arbitrarily many "completions". The record itself always saves;
+    // past the cap it just stops paying. Counted from the append-only event
+    // log, which the client cannot write.
+    const day = new Date().toISOString().slice(0, 10)
+    const scoredToday = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM leaguePointEvents
+       WHERE userId = ? AND createdAt LIKE ?
+         AND source IN ('exercise', 'challenge', 'weekly')`,
+    )
+      .bind(userId, `${day}%`)
+      .first<{ n: number }>()
+    if ((scoredToday?.n ?? 0) >= config.dailyScoredSessionCap) return
+
     let firstOfDayForExercise = false
     if (source === 'exercise' && record.melodyName) {
-      const day = new Date().toISOString().slice(0, 10)
       const prior = await env.DB.prepare(
         `SELECT 1 AS x FROM sessionRecords
          WHERE userId = ? AND source = 'exercise' AND melodyName = ?
@@ -175,7 +202,6 @@ export async function awardForSessionRecord(
       firstOfDayForExercise = prior == null
     }
 
-    const config = await loadPointsConfig(env)
     const points = pointsForAction(
       { source, score: record.score ?? 0, firstOfDayForExercise },
       config,
@@ -303,10 +329,18 @@ export async function runWeeklyLeagueCut(env: Env): Promise<void> {
       if (updates.length > 0) await env.DB.batch(updates)
     }
 
+    // Upsert, not UPDATE: if the 'default' row is ever missing (hand-built
+    // database, seed skipped), a plain UPDATE matches zero rows and the
+    // watermark never advances — every 6h tick would re-scan and re-apply
+    // all historical weeks forever.
     await env.DB.prepare(
-      "UPDATE leagueMeta SET lastCutWeekStart = ?, updatedAt = ? WHERE id = 'default'",
+      `INSERT INTO leagueMeta (id, updatedAt, lastCutWeekStart)
+       VALUES ('default', ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         lastCutWeekStart = excluded.lastCutWeekStart,
+         updatedAt = excluded.updatedAt`,
     )
-      .bind(cur, now)
+      .bind(now, cur)
       .run()
   } catch (err) {
     console.error('[league] weekly cut failed (non-fatal):', err)
@@ -370,7 +404,21 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
   }
 
   const weekStart = isoWeekStart()
-  const leagueId = await userLeagueId(env, userId)
+  // This week's membership, when it exists, is the source of truth for
+  // where the user is playing: the profile's currentLeagueId moves the
+  // moment the cut promotes or relegates them, but points already earned
+  // this week stay in the cohort where they were scored (see credit()).
+  // Deriving the league from the membership keeps the hero card and the
+  // standings pointing at the same row.
+  const mine = await env.DB.prepare(
+    `SELECT m.cohortId AS cohortId, c.leagueId AS leagueId
+     FROM leagueMembership m JOIN leagueCohorts c ON c.id = m.cohortId
+     WHERE m.userId = ? AND m.weekStart = ?`,
+  )
+    .bind(userId, weekStart)
+    .first<{ cohortId: string; leagueId: string }>()
+
+  const leagueId = mine?.leagueId ?? (await userLeagueId(env, userId))
   const league = await env.DB.prepare(
     `SELECT id, rank, name, trophyAsset, badgeAsset, isMystery, promoteCount, relegateCount
      FROM leagues WHERE id = ?`,
@@ -384,11 +432,13 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
       }
     >()
 
-  const cohort = await env.DB.prepare(
-    'SELECT id FROM leagueCohorts WHERE leagueId = ? AND weekStart = ?',
-  )
-    .bind(leagueId, weekStart)
-    .first<{ id: string }>()
+  const cohort = mine
+    ? { id: mine.cohortId }
+    : await env.DB.prepare(
+        'SELECT id FROM leagueCohorts WHERE leagueId = ? AND weekStart = ?',
+      )
+        .bind(leagueId, weekStart)
+        .first<{ id: string }>()
 
   let standings: LeagueMe['standings'] = []
   let myPoints = 0

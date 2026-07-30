@@ -21,7 +21,7 @@
 
 /**
  * Tunable point weights. Mirrors the single-row `leaguePointsConfig` table in
- * schema.sql (minus the id/createdAt/updatedAt bookkeeping columns), so admins
+ * migration 0005 (minus the id/createdAt/updatedAt bookkeeping columns), so admins
  * can retune the ladder without a deploy. The worker loads the row and falls
  * back to {@link DEFAULT_LEAGUE_POINTS_CONFIG} when it is missing.
  */
@@ -42,10 +42,17 @@ export interface LeaguePointsConfig {
   streakMilestoneBonus: number
   /** Streak-day period between milestone bonuses. */
   milestoneEvery: number
+  /**
+   * Abuse ceiling: base-earning session completions (exercise / challenge /
+   * weekly) that can score points per user per UTC day. Records past the cap
+   * still save — they just stop paying — which bounds a scripted client to
+   * roughly one honest heavy day's earnings.
+   */
+  dailyScoredSessionCap: number
 }
 
 /**
- * Default weights, matching the `leaguePointsConfig` seed row in schema.sql.
+ * Default weights, matching the `leaguePointsConfig` seed row in migration 0005.
  * Consistency-weighted: goalMetBonus (+25/day) is the dominant lever, so a
  * daily practiser out-earns a one-session grinder.
  */
@@ -58,6 +65,7 @@ export const DEFAULT_LEAGUE_POINTS_CONFIG: LeaguePointsConfig = {
   goalMetBonus: 25,
   streakMilestoneBonus: 50,
   milestoneEvery: 7,
+  dailyScoredSessionCap: 30,
 }
 
 /**

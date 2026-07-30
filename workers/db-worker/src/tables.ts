@@ -26,10 +26,24 @@ export interface TableDef {
   boolCols?: string[]
   /** Columns stored as JSON text that must round-trip as objects. */
   jsonCols?: string[]
+  /**
+   * Columns only the server may set. Silently stripped from client create
+   * and update payloads (stripped, not rejected, so a client echoing back a
+   * whole row it previously read never starts failing). The server writes
+   * them through its own prepared statements, which bypass the CRUD layer.
+   */
+  serverCols?: string[]
 }
 
 export const TABLES: Record<string, TableDef> = {
-  userProfiles: { access: 'owner', boolCols: ['leaderboardOptIn'] },
+  // currentLeagueId is placement — only the weekly cut moves players between
+  // rungs. friendCode is minted by /api/friend-code (registered accounts
+  // only); accepting it here would let anyone forge or vanity-pick codes.
+  userProfiles: {
+    access: 'owner',
+    boolCols: ['leaderboardOptIn'],
+    serverCols: ['currentLeagueId', 'friendCode'],
+  },
   sessionRecords: { access: 'user', jsonCols: ['results'] },
   challengeDefinitions: { access: 'admin', boolCols: ['isActive'] },
   challengeProgress: { access: 'user', boolCols: ['completed'] },

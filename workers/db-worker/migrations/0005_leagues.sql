@@ -83,7 +83,12 @@ CREATE TABLE IF NOT EXISTS leaguePointsConfig (
   dailyVarietyBonus INTEGER NOT NULL DEFAULT 5,
   goalMetBonus INTEGER NOT NULL DEFAULT 25,
   streakMilestoneBonus INTEGER NOT NULL DEFAULT 50,
-  milestoneEvery INTEGER NOT NULL DEFAULT 7
+  milestoneEvery INTEGER NOT NULL DEFAULT 7,
+  -- Abuse ceiling: how many base-earning session completions (exercise /
+  -- challenge / weekly) can score league points per user per UTC day. The
+  -- record itself always saves; past the cap it just stops paying, which
+  -- bounds what a scripted client can farm to one honest day's worth.
+  dailyScoredSessionCap INTEGER NOT NULL DEFAULT 30
 );
 
 -- Seed the 7 rungs (Merc mascot family). l1 is a grace rung (relegateCount 0);

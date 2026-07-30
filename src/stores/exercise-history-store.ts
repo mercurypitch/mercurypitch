@@ -3,7 +3,6 @@ import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
-import { trackEvent } from '@/lib/analytics'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -49,7 +48,8 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
 
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)
-  trackEvent('session_complete')
+  // session_complete fires in saveSessionRecord — every branch below funnels
+  // into it exactly once, so firing here too would double the funnel metric.
   recordActivity()
 
   // Persisting the run is async and order-dependent: a run launched from a

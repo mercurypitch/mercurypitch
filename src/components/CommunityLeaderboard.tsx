@@ -15,6 +15,7 @@ import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league
 import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { peekPendingFriendCode } from '@/lib/pending-friend-code'
 import { showNotification } from '@/stores/notifications-store'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
@@ -223,8 +224,17 @@ interface WeeklyChallengeCard {
 // ============================================================
 
 export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
-  // eslint-disable-next-line solid/reactivity -- one-time signal init
-  const initialView = (props.view ?? 'global') as LeaderboardView
+  // An invite link (#/leaderboard?add=CODE) stashes its code before the
+  // router erases the query; landing from one should open straight onto the
+  // Friends view where the panel prefills it. Peek, don't take — the panel
+  // is the consumer.
+
+  const initialView = (
+    peekPendingFriendCode() != null
+      ? 'friends'
+      : // eslint-disable-next-line solid/reactivity -- one-time signal init
+        (props.view ?? 'global')
+  ) as LeaderboardView
   // eslint-disable-next-line solid/reactivity -- one-time signal init
   const initialCategory = (props.category ?? 'overall') as LeaderboardCategory
   const [activeView, setActiveView] = createSignal<LeaderboardView>(initialView)
@@ -244,9 +254,14 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     ),
   )
 
-  // Leaving Friends while on a friends-only category would request one the
-  // server refuses on the global board; fall back instead of showing an error.
+  // Leaving Friends while on a friends-only category would send the boards
+  // a request the server refuses (streak is friends-only); fall back instead
+  // of erroring. League never queries a board, so merely passing through it
+  // must not clobber the selection — Friends+streak → League → Friends
+  // should come back still on streak.
   createEffect(() => {
+    const view = activeView()
+    if (view === 'league' || view === 'friends') return
     if (!visibleCategories().some((c) => c.id === activeCategory())) {
       setActiveCategory('overall')
     }
@@ -319,8 +334,11 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         fetchLeagueMe(),
         fetchLeagueLadder(),
       ])
-      setLeagueMe(me)
-      setLeagueLadder(ladder)
+      // Both fetchers resolve empty on network failure. Keep whatever was
+      // already loaded rather than blanking the rail — and, worse, showing a
+      // signed-in user the "create an account" copy — over a blip.
+      if (me != null) setLeagueMe(me)
+      if (ladder.length > 0) setLeagueLadder(ladder)
     })()
   })
 
@@ -341,30 +359,35 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
   /**
    * Standings cut into promotion / safe / relegation zones, with divider
-   * rows at the boundaries (the Duolingo pattern). Zones render only when
-   * they carve a real subset of the cohort — a 10-strong cohort with
-   * promoteCount 10 has no boundary worth drawing.
+   * rows at the boundaries (the Duolingo pattern). Mirrors the server cut
+   * (league-cut.ts): only members with points promote, up to promoteCount;
+   * the bottom relegateCount of the REST relegate; small cohorts can have no
+   * safe band at all. The relegation boundary is derived from the full
+   * cohortSize, not the visible slice, because the server caps standings at
+   * its top rows.
    */
   const leagueBoard = createMemo<LeagueBoardItem[]>(() => {
     const me = leagueMe()
     const rows = me?.standings ?? []
     const n = rows.length
+    const total = me?.cohortSize ?? n
     const promoteCount = me?.league?.promoteCount ?? 0
     const relegateCount = me?.league?.relegateCount ?? 0
-    const promoteEnd = promoteCount > 0 && promoteCount < n ? promoteCount : 0
+    // Only active members promote — trim trailing zero-point rows out.
+    let promoteEnd = Math.min(promoteCount, n)
+    while (promoteEnd > 0 && (rows[promoteEnd - 1]?.points ?? 0) <= 0)
+      promoteEnd--
     const demoteStart =
-      relegateCount > 0 && n - relegateCount > promoteEnd
-        ? n - relegateCount
-        : n
+      relegateCount > 0 ? Math.max(promoteEnd, total - relegateCount) : total
     const items: LeagueBoardItem[] = []
     rows.forEach((row, i) => {
-      if (promoteEnd > 0 && i === promoteEnd)
+      if (promoteEnd > 0 && promoteEnd < total && i === promoteEnd)
         items.push({
           kind: 'divider',
           zone: 'promote',
           to: leagueNeighbours().up?.name,
         })
-      if (demoteStart < n && i === demoteStart)
+      if (demoteStart < total && i === demoteStart)
         items.push({
           kind: 'divider',
           zone: 'demote',
@@ -615,21 +638,29 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               fallback={
                 <div class="league-locked" data-testid="league-locked">
                   <p class="weekly-challenges-desc">
+                    {/* Until /api/league/me answers, say nothing committal —
+                        a fetch blip must not tell a signed-in user to go
+                        create an account. */}
                     <Show
-                      when={leagueMe()?.reason !== 'unavailable'}
-                      fallback={
-                        <>
-                          Leagues aren’t enabled on this environment yet — its
-                          database predates the league tables. Apply the D1
-                          migrations that ship with this change and the ladder
-                          lights up.
-                        </>
-                      }
+                      when={leagueMe() != null}
+                      fallback={<>Loading your league…</>}
                     >
-                      Leagues are for registered singers — create an account in
-                      Settings → Account to climb the ladder. Practice earns
-                      weekly points; the top of each league advances every
-                      Monday.
+                      <Show
+                        when={leagueMe()?.reason !== 'unavailable'}
+                        fallback={
+                          <>
+                            Leagues aren’t enabled on this environment yet — its
+                            database predates the league tables. Apply the D1
+                            migrations that ship with this change and the ladder
+                            lights up.
+                          </>
+                        }
+                      >
+                        Leagues are for registered singers — create an account
+                        in Settings → Account to climb the ladder. Practice
+                        earns weekly points; the top of each league advances
+                        every Monday.
+                      </Show>
                     </Show>
                   </p>
                 </div>
@@ -649,19 +680,29 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     · #{leagueMe()?.rank} of {leagueMe()?.cohortSize}
                   </Show>
                 </p>
-                <p class="league-hero-zones">
-                  <Show
-                    when={leagueNeighbours().up}
-                    fallback={<>Top of the playable ladder — defend it.</>}
-                  >
-                    Top {leagueMe()?.league?.promoteCount} advance to{' '}
-                    {leagueNeighbours().up?.name}.
-                  </Show>{' '}
-                  <Show when={(leagueMe()?.league?.relegateCount ?? 0) > 0}>
-                    Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
-                    {leagueNeighbours().down?.name}.
-                  </Show>
-                </p>
+                {/* Zone sentence needs the ladder for neighbour names; if it
+                    hasn't loaded, saying nothing beats a wrong "top of the
+                    ladder" or a dangling "drop to ." */}
+                <Show when={leagueLadder().length > 0}>
+                  <p class="league-hero-zones">
+                    <Show
+                      when={leagueNeighbours().up}
+                      fallback={<>Top of the playable ladder — defend it.</>}
+                    >
+                      Top {leagueMe()?.league?.promoteCount} advance to{' '}
+                      {leagueNeighbours().up?.name}.
+                    </Show>{' '}
+                    <Show
+                      when={
+                        (leagueMe()?.league?.relegateCount ?? 0) > 0 &&
+                        leagueNeighbours().down != null
+                      }
+                    >
+                      Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
+                      {leagueNeighbours().down?.name}.
+                    </Show>
+                  </p>
+                </Show>
                 <span class="league-cut-countdown">
                   Weekly cut in {formatCutCountdown(msUntilNextCut(nowMs()))}
                 </span>

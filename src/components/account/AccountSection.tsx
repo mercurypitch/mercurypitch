@@ -109,7 +109,17 @@ export const AccountSection: Component = () => {
         'info',
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      // Re-read the profile so the checkbox snaps back to the stored value —
+      // checked={optIn()} does not re-render on a failed write by itself,
+      // and a checkbox lying about consent is the one state this section
+      // must never show.
+      await refreshMe().catch(() => undefined)
+      const raw = err instanceof Error ? err.message : String(err)
+      setError(
+        raw.includes('no cloud identity')
+          ? 'Sign in to change your leaderboard listing.'
+          : raw,
+      )
     } finally {
       setBusy(false)
     }
@@ -204,8 +214,9 @@ export const AccountSection: Component = () => {
         window.location.href = '/'
       }, 900)
     } catch (err) {
-      // Stay on the dialog: silently "succeeding" would tell someone their
-      // data is gone when it is still there.
+      // Close the dialog but surface the failure loudly in the section —
+      // silently "succeeding" would tell someone their data is gone when it
+      // is still there.
       setError(err instanceof Error ? err.message : 'Could not delete account')
       setConfirmDelete(false)
     } finally {

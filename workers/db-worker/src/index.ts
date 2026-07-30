@@ -347,6 +347,7 @@ async function handleCreate(
   delete body.id
   delete body.createdAt
   delete body.updatedAt
+  for (const col of def.serverCols ?? []) delete body[col]
   if (auth && def.access !== 'admin' && def.access !== 'owner') {
     body.userId = auth.userId
   }
@@ -421,6 +422,7 @@ async function handleUpdate(
   delete body.createdAt
   delete body.updatedAt
   delete body.userId // ownership is immutable
+  for (const col of def.serverCols ?? []) delete body[col]
 
   const sets: string[] = ['"updatedAt" = ?']
   const binds: SqlValue[] = [new Date().toISOString()]

@@ -72,24 +72,12 @@ jobs:
       - name: Typecheck worker
         run: pnpm typecheck:db
 
-      # A migration can be destructive and D1 has no undo. Dump the database
-      # first and keep it as an artifact, so a bad one is recoverable.
-      - name: Back up remote D1 before migrating
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/db-worker
-          command: d1 export ${{ env.DB_NAME }} --remote --env ${{ env.DEPLOY_ENV }} --output d1-backup.sql
-          packageManager: 'pnpm'
-
-      - name: Upload D1 backup artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: d1-backup-${{ env.DEPLOY_ENV }}-${{ github.sha }}
-          path: workers/db-worker/d1-backup.sql
-          retention-days: 30
-
+      # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is
+      # public, and workflow artifacts on a public repo are downloadable by
+      # any logged-in GitHub user — an exported database (emails, password
+      # hashes, billing ids) must never be uploaded as one. If a migration
+      # goes wrong, restore to the pre-deploy timestamp instead:
+      #   pnpm exec wrangler d1 time-travel restore <DB_NAME> --timestamp=<ISO>
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
         with:

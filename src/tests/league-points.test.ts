@@ -19,6 +19,7 @@ describe('DEFAULT_LEAGUE_POINTS_CONFIG', () => {
       goalMetBonus: 25,
       streakMilestoneBonus: 50,
       milestoneEvery: 7,
+      dailyScoredSessionCap: 30,
     })
   })
 })

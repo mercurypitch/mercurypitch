@@ -3,6 +3,32 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.7.23] - 2026-07-31
+
+### Added
+
+- **Weekly Leagues.** Compete on a seven-rung ladder of hand-crafted trophies
+  — Mercling, Sparkwing, Skyvox, Highnova, Starcrest, Mercapex, and a locked
+  seventh league still to be revealed. Finishing exercises and challenges
+  earns weekly points; every Monday the top singers in each league advance
+  and the bottom drop down. Your league lives in a new League tab on the
+  Leaderboard page, with your trophy spotlit and the standings split into
+  promotion and relegation zones.
+- **Friend codes.** Every account gets a short code you can share; enter a
+  friend's code to connect and compare on a friends-only leaderboard.
+- **Delete your account.** Settings → Account can now erase your cloud
+  account and its data completely — type the confirmation word and it's gone.
+
+### Changed
+
+- **Leaderboards are opt-in and for accounts only.** You choose a display
+  name and publish your results deliberately; nothing is listed until you do.
+  Rankings now count real completed exercises and challenges rather than
+  open-ended practice time.
+- **Visiting no longer creates an account.** The app only registers a cloud
+  identity the moment you actually save something, so just looking around
+  leaves nothing behind.
+
 ## [0.7.22] - 2026-07-21
 
 ### Fixed

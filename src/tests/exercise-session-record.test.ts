@@ -118,6 +118,8 @@ describe('recordExerciseResult → sessionRecords', () => {
     })
     await flush()
     expect(mocks.recordActivity).toHaveBeenCalledOnce()
-    expect(mocks.trackEvent).toHaveBeenCalledWith('session_complete')
+    // session_complete is saveSessionRecord's job (every run funnels through
+    // it exactly once) — firing it here too would double the funnel metric.
+    expect(mocks.trackEvent).not.toHaveBeenCalledWith('session_complete')
   })
 })

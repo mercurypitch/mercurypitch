@@ -251,7 +251,16 @@ for (const p of CAST) {
     `INSERT OR REPLACE INTO leagueMembership (id, updatedAt, userId, cohortId, weekStart, points)
      VALUES ('dev-mem-${p.id}', '${nowIso}', '${p.id}', 'dev-coh-${p.league}-0', '${thisWeek}', ${p.points})`,
   )
+  // Last week too — a finished week with real points is what the cron cuts.
+  sql(
+    `INSERT OR REPLACE INTO leagueMembership (id, updatedAt, userId, cohortId, weekStart, points)
+     VALUES ('dev-mem-last-${p.id}', '${nowIso}', '${p.id}', 'dev-coh-${p.league}-1', '${lastWeek}', ${Math.max(0, p.points - 40)})`,
+  )
 }
+// Rewind the cut watermark so the seeded finished week is actually pending;
+// without this a previously stamped leagueMeta makes the cron a no-op and
+// the curl below demonstrates nothing.
+sql("UPDATE leagueMeta SET lastCutWeekStart = NULL WHERE id = 'default'")
 
 // Ranked session history, so the Leaderboard tabs have real rows too.
 // Only fixed-task sources rank (see leaderboardConfig.eligibleSources).

@@ -205,6 +205,13 @@ export async function restoreAuth(): Promise<boolean> {
 // this only avoids redundant round-trips and token churn.
 let provisioning: Promise<boolean> | null = null
 
+// Between account erasure and the page reload that follows it, nothing may
+// re-provision an identity: a queued settings write hitting requireAuth in
+// that window would mint a junk anonymous user seconds after the erasure.
+// In-memory only — the reload clears it, and a later fresh visit should
+// provision normally.
+let tearingDown = false
+
 /**
  * Make sure a cloud identity exists, provisioning an anonymous one on
  * demand. Call this from paths that are about to persist something —
@@ -216,6 +223,7 @@ let provisioning: Promise<boolean> | null = null
  */
 export async function requireAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
+  if (tearingDown) return false
   if (await restoreAuth()) return true
   if (requiresLogin()) return false
   provisioning ??= (async () => {
@@ -460,7 +468,10 @@ export async function deleteAccount(): Promise<void> {
   // upgraded identity to remember — clear the signed-out flag too, letting
   // this device start fresh as a new visitor. Rotate the device id as well:
   // /api/auth/anonymous keys on it, so keeping it would resurrect the very
-  // user id the erasure just removed.
+  // user id the erasure just removed. Block re-provisioning until the
+  // caller's reload lands: a queued write in that window must not recreate
+  // an identity the user just erased.
+  tearingDown = true
   setRequiresLogin(false)
   setAuthToken(null)
   resetUserId()

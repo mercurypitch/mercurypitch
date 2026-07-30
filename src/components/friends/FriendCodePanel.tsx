@@ -16,6 +16,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onMount, Show } from 'solid-js'
 import { Copy, UserPlus } from '@/components/icons'
 import { formatFriendCode, friendInviteUrl, getMyFriendCode, redeemFriendCode, } from '@/db/services/follow-service'
+import { takePendingFriendCode } from '@/lib/pending-friend-code'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './FriendCodePanel.module.css'
 
@@ -44,7 +45,10 @@ export const FriendCodePanel: Component<FriendCodePanelProps> = (props) => {
   onMount(() => {
     void (async () => {
       setMyCode(await getMyFriendCode())
-      const invited = codeFromHash()
+      // Invite links arrive two ways: the raw hash query (when this panel
+      // mounts before the router canonicalises it away) and the stash that
+      // parseHash fills for exactly that erasure. Check both.
+      const invited = codeFromHash() || (takePendingFriendCode() ?? '')
       if (invited !== '') {
         // Prefill rather than auto-redeem: following someone is a real
         // action, and a link shouldn't perform it just by being opened.
