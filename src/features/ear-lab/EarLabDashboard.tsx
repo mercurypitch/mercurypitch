@@ -133,8 +133,9 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             Run Calibration
           </button>
           <p class={styles.calibrateNote}>
-            About 3 minutes. Three interleaved tracks, pooled — the only thing
-            that marks the column.
+            About 3 minutes. Three separate measurements run at once, shuffled
+            trial by trial and averaged — the only reading that marks the
+            column.
           </p>
         </div>
       </section>

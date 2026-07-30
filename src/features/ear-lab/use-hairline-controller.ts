@@ -39,9 +39,9 @@ export interface HairlineResult {
   markedIndex?: number
 }
 
-const TONE_MS = 600
-const GAP_MS = 260
-const REVEAL_MS = 550
+const TONE_MS = 500
+const GAP_MS = 220
+const REVEAL_MS = 420
 
 /** Rove the base log-uniformly across A3..A5. */
 function roveBaseFreq(random: () => number): number {

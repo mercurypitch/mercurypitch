@@ -40,9 +40,9 @@ export interface HomeResult {
 
 export const HOME_ROUNDS = 12
 
-const CHORD_MS = 380
-const CHORD_GAP_MS = 90
-const PROBE_MS = 850
+const CHORD_MS = 520
+const CHORD_GAP_MS = 130
+const PROBE_MS = 950
 const REVEAL_CORRECT_MS = 650
 const REVEAL_WRONG_MS = 1500
 

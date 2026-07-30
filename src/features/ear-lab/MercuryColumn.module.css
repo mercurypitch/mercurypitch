@@ -5,6 +5,13 @@
   display: block;
 }
 
+/* Phones: the column is a gauge, not the whole page. */
+@media (max-width: 640px) {
+  .column {
+    max-width: 138px;
+  }
+}
+
 .glass {
   fill: color-mix(in srgb, var(--bg-tertiary) 65%, transparent);
 }

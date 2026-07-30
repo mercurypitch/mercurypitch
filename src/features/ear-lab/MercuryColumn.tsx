@@ -29,7 +29,7 @@ interface MercuryColumnProps {
   missingCount: number
 }
 
-const TUBE_X = 46
+const TUBE_X = 60
 const TUBE_W = 30
 const TUBE_TOP = 30
 const TUBE_BOTTOM = 292
@@ -70,10 +70,6 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
           <stop offset="0.6" stop-color="#b9c6d6" />
           <stop offset="1" stop-color="#7d8fa3" />
         </linearGradient>
-        <linearGradient id="ear-mercury-sheen" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#ffffff" stop-opacity="0.55" />
-          <stop offset="0.18" stop-color="#ffffff" stop-opacity="0" />
-        </linearGradient>
       </defs>
 
       {/* Scale ticks every 250. */}
@@ -112,10 +108,10 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
       <Show when={props.missingCount > 0}>
         <line
           class={styles.dashedCap}
-          x1={TUBE_X - 4}
-          x2={TUBE_X + TUBE_W + 4}
-          y1={TUBE_TOP - 8}
-          y2={TUBE_TOP - 8}
+          x1={TUBE_X + 2}
+          x2={TUBE_X + TUBE_W - 2}
+          y1={TUBE_TOP - 20}
+          y2={TUBE_TOP - 20}
         >
           <title>{`${props.missingCount} faculties not yet measured`}</title>
         </line>
@@ -156,14 +152,18 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
         cy={BULB_CY}
         r={BULB_R}
       />
-      <rect
-        x={TUBE_X + 4}
-        y={TUBE_TOP - 4}
-        width={7}
-        height={TUBE_BOTTOM - TUBE_TOP}
-        rx={3.5}
-        fill="url(#ear-mercury-sheen)"
-      />
+      <Show when={props.calibrated !== null}>
+        <rect
+          class={styles.mercuryFill}
+          x={TUBE_X + 8}
+          y={fillY() + 8}
+          width={4.5}
+          height={Math.max(0, BULB_CY - fillY() - 20)}
+          rx={2.25}
+          fill="#ffffff"
+          opacity="0.28"
+        />
+      </Show>
 
       {/* Etched marks: every past calibration, dated. */}
       <For each={shownMarks()}>
