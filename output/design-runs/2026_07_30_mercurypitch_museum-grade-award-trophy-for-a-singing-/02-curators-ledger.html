@@ -1,0 +1,754 @@
+<!--
+FAMILY: Curator's Ledger — Editorial Museum Catalogue
+THESIS: Six league objects are catalogued as one coherent collection, not sold as game badges.
+OWN-WORLD: Cold archival stock, midnight specimen wells, sapphire registration marks, serif captions, and strict museum rules.
+STORY: The viewer reads the progression from restrained vibration to ceremonial amplitude across a single contact sheet.
+FIRST VIEWPORT: A monumental catalogue title meets a ruled six-plate field with every league visible at once.
+FORM: Comparative collection plate, ranked first for cross-league coherence; ordered as an open museum ledger.
+
+EMBEDDED EARS ACCEPTANCE CONTRACT
+REQ-TROPHY-001 — Ubiquitous: The artifact shall expose six named league previews.
+REQ-TROPHY-002 — WHERE the artifact is opened from a local file, it shall render without network access or imports.
+REQ-TROPHY-003 — WHEN a keyboard user reaches catalogue navigation, the artifact shall show a visible focus indicator.
+REQ-TROPHY-004 — IF reduced motion is preferred, THEN authored reveal motion shall stop.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Curator's Ledger — MercuryPitch League Trophy Study</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #edf2f0;
+        --paper-blue: #dce9ea;
+        --ink: #071d2d;
+        --ink-soft: #23495d;
+        --rule: #71909c;
+        --night: #031426;
+        --night-raised: #08243d;
+        --sapphire: #004eb8;
+        --focus: #0055c9;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        scroll-behavior: smooth;
+        background: var(--paper);
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(
+            90deg,
+            transparent 0 50%,
+            #d8e5e4 50% 50.08%,
+            transparent 50.08%
+          ),
+          var(--paper);
+        font-family: Charter, 'Bitstream Charter', Georgia, serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 20;
+        padding: 10px 14px;
+        color: #ffffff;
+        background: var(--focus);
+        transform: translateY(-180%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .page {
+        width: min(100%, 1660px);
+        margin: 0 auto;
+        padding: clamp(24px, 4vw, 70px);
+      }
+
+      .masthead {
+        display: grid;
+        grid-template-columns: minmax(250px, 0.72fr) minmax(0, 1.28fr);
+        gap: clamp(28px, 6vw, 110px);
+        align-items: end;
+        padding-bottom: clamp(34px, 5vw, 74px);
+      }
+
+      .identity {
+        align-self: stretch;
+        display: grid;
+        align-content: space-between;
+        gap: 28px;
+      }
+
+      .wordmark {
+        margin: 0;
+        font-family: 'Gill Sans', 'Trebuchet MS', sans-serif;
+        font-size: 0.77rem;
+        font-weight: 700;
+        letter-spacing: 0.19em;
+        text-transform: uppercase;
+      }
+
+      .family {
+        max-width: 31ch;
+        margin: 0;
+        color: var(--ink-soft);
+        font-family: 'Gill Sans', 'Trebuchet MS', sans-serif;
+        font-size: 0.79rem;
+        line-height: 1.5;
+      }
+
+      h1 {
+        max-width: 11ch;
+        margin: 0;
+        font-family: 'Baskerville', 'Baskerville Old Face', Georgia, serif;
+        font-size: clamp(3.2rem, 8.2vw, 6rem);
+        font-weight: 400;
+        line-height: 0.82;
+        letter-spacing: -0.035em;
+      }
+
+      h1 em {
+        color: var(--sapphire);
+        font-weight: 400;
+      }
+
+      .index {
+        position: relative;
+        padding-block: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 24px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+
+      .index::after {
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        width: 28%;
+        height: 3px;
+        content: '';
+        background: var(--sapphire);
+        transform-origin: right;
+        animation: rule-in 850ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .index a {
+        padding: 4px 0;
+        color: var(--ink-soft);
+        font-family: 'Gill Sans', 'Trebuchet MS', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .index a:hover {
+        color: var(--sapphire);
+      }
+
+      .index a:focus-visible,
+      .skip-link:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 4px;
+      }
+
+      .catalogue {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-top: 1px solid var(--rule);
+        border-left: 1px solid var(--rule);
+      }
+
+      .specimen {
+        min-width: 0;
+        margin: 0;
+        display: grid;
+        grid-template-rows: minmax(340px, 52vh) auto;
+        border-right: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .well {
+        position: relative;
+        min-height: 340px;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(
+            circle at 50% 44%,
+            #123b65 0,
+            var(--night-raised) 25%,
+            var(--night) 63%
+          ),
+          var(--night);
+        isolation: isolate;
+      }
+
+      .well::before,
+      .well::after {
+        position: absolute;
+        z-index: -1;
+        content: '';
+        border: 1px solid #235275;
+        border-radius: 50%;
+        opacity: 0.38;
+      }
+
+      .well::before {
+        width: 66%;
+        aspect-ratio: 1;
+      }
+
+      .well::after {
+        width: 43%;
+        aspect-ratio: 1;
+      }
+
+      .object {
+        width: auto;
+        height: 89%;
+        max-width: 78%;
+        overflow: visible;
+        filter: drop-shadow(0 19px 19px #000c);
+        transition:
+          transform 600ms cubic-bezier(0.16, 1, 0.3, 1),
+          filter 600ms ease;
+      }
+
+      .specimen:hover .object,
+      .specimen:target .object {
+        transform: translateY(-5px) scale(1.025);
+        filter: drop-shadow(0 21px 21px #000e) drop-shadow(0 0 16px #147bba4d);
+      }
+
+      figcaption {
+        min-height: 145px;
+        padding: 20px clamp(18px, 2vw, 30px) 24px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 18px;
+        align-content: start;
+        background: color-mix(in srgb, var(--paper-blue) 38%, var(--paper));
+      }
+
+      .mark {
+        grid-row: 1 / span 2;
+        width: 9px;
+        height: 9px;
+        margin-top: 7px;
+        border: 2px solid var(--sapphire);
+        border-radius: 50%;
+      }
+
+      h2 {
+        margin: 0;
+        font-family: 'Baskerville', 'Baskerville Old Face', Georgia, serif;
+        font-size: clamp(1.55rem, 2.3vw, 2.35rem);
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: -0.018em;
+      }
+
+      figcaption p {
+        max-width: 36ch;
+        margin: 9px 0 0;
+        color: var(--ink-soft);
+        font-family: 'Gill Sans', 'Trebuchet MS', sans-serif;
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+
+      .colophon {
+        padding-top: 22px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        color: var(--ink-soft);
+        font-family: 'Gill Sans', 'Trebuchet MS', sans-serif;
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+
+      @keyframes rule-in {
+        from {
+          transform: scaleX(0);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .masthead {
+          grid-template-columns: 1fr;
+          gap: 34px;
+        }
+
+        .identity {
+          grid-template-columns: 1fr 1fr;
+          align-items: end;
+        }
+
+        h1 {
+          max-width: 12ch;
+        }
+
+        .catalogue {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          background: var(--paper);
+        }
+
+        .page {
+          padding: 22px 16px 30px;
+        }
+
+        .identity {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .index {
+          gap-inline: 17px;
+        }
+
+        .catalogue {
+          grid-template-columns: 1fr;
+        }
+
+        .specimen {
+          grid-template-rows: minmax(390px, 62vh) auto;
+        }
+
+        .colophon {
+          flex-direction: column;
+          gap: 7px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#catalogue">Skip to collection</a>
+
+    <svg class="svg-defs" aria-hidden="true">
+      <defs>
+        <linearGradient id="ledgerChrome" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#173047" />
+          <stop offset="0.17" stop-color="#d9eef7" />
+          <stop offset="0.31" stop-color="#ffffff" />
+          <stop offset="0.49" stop-color="#5b7184" />
+          <stop offset="0.68" stop-color="#edf9fd" />
+          <stop offset="0.87" stop-color="#829aaa" />
+          <stop offset="1" stop-color="#13283d" />
+        </linearGradient>
+        <radialGradient id="ledgerOrb" cx="34%" cy="27%" r="73%">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.24" stop-color="#d5e9f2" />
+          <stop offset="0.52" stop-color="#617688" />
+          <stop offset="0.79" stop-color="#eaf7fb" />
+          <stop offset="1" stop-color="#172a3b" />
+        </radialGradient>
+        <linearGradient id="ledgerGlass" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#06286e" stop-opacity="0.4" />
+          <stop offset="0.27" stop-color="#0758d2" stop-opacity="0.82" />
+          <stop offset="0.5" stop-color="#8ad4ff" stop-opacity="0.35" />
+          <stop offset="0.73" stop-color="#0758d2" stop-opacity="0.82" />
+          <stop offset="1" stop-color="#06286e" stop-opacity="0.4" />
+        </linearGradient>
+        <linearGradient id="ledgerBase" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.22" stop-color="#788e9f" />
+          <stop offset="0.5" stop-color="#14283b" />
+          <stop offset="0.82" stop-color="#a9c1ce" />
+          <stop offset="1" stop-color="#07111c" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="page">
+      <header class="masthead">
+        <div class="identity">
+          <p class="wordmark">MercuryPitch / league collection</p>
+          <p class="family">
+            Curator's Ledger studies the six silhouettes as one edition before
+            final material renders are commissioned.
+          </p>
+        </div>
+        <h1>Six forms of <em>one note.</em></h1>
+      </header>
+
+      <nav class="index" aria-label="League catalogue">
+        <a href="#unison">Unison</a>
+        <a href="#cadence">Cadence</a>
+        <a href="#harmony">Harmony</a>
+        <a href="#resonance">Resonance</a>
+        <a href="#virtuoso">Virtuoso</a>
+        <a href="#laureate">Laureate</a>
+      </nav>
+
+      <main class="catalogue" id="catalogue">
+        <figure class="specimen" id="unison">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Unison league trophy silhouette"
+            >
+              <ellipse cx="140" cy="452" rx="70" ry="10" fill="#0009" />
+              <path
+                d="M87 418 Q140 400 193 418 L188 451 Q140 469 92 451 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="418"
+                rx="53"
+                ry="14"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 405 L140 82"
+                stroke="#d9eef7"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 337 C115 313 112 226 140 192 C168 226 165 313 140 337 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#65c1ff"
+                stroke-opacity="0.65"
+              />
+              <path
+                d="M140 337 C115 313 112 226 140 192 M140 337 C165 313 168 226 140 192"
+                fill="none"
+                stroke="#9cddff"
+                stroke-width="1.8"
+              />
+              <circle cx="140" cy="64" r="18" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Unison</h2>
+            <p>
+              The vibration remains slender, with the string carrying most of
+              the silhouette.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="specimen" id="cadence">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Cadence league trophy silhouette"
+            >
+              <ellipse cx="140" cy="452" rx="72" ry="11" fill="#0009" />
+              <path
+                d="M85 417 Q140 398 195 417 L189 452 Q140 471 91 452 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="417"
+                rx="55"
+                ry="15"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 404 L140 78"
+                stroke="#d9eef7"
+                stroke-width="4.1"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 342 C109 314 108 220 140 182 C172 220 171 314 140 342 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#65c1ff"
+                stroke-opacity="0.67"
+              />
+              <path
+                d="M140 342 C109 314 108 220 140 182 M140 342 C171 314 172 220 140 182"
+                fill="none"
+                stroke="#a0dfff"
+                stroke-width="1.9"
+              />
+              <circle cx="140" cy="59" r="19" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Cadence</h2>
+            <p>
+              A measured glass swell introduces motion without disturbing the
+              centered poise.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="specimen" id="harmony">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Harmony league trophy silhouette"
+            >
+              <ellipse cx="140" cy="453" rx="75" ry="11" fill="#0009" />
+              <path
+                d="M82 416 Q140 396 198 416 L191 454 Q140 474 89 454 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="416"
+                rx="58"
+                ry="16"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 403 L140 73"
+                stroke="#d9eef7"
+                stroke-width="4.2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 348 C103 315 104 212 140 172 C176 212 177 315 140 348 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#6ac4ff"
+                stroke-opacity="0.7"
+              />
+              <path
+                d="M140 348 C103 315 104 212 140 172 M140 348 C177 315 176 212 140 172"
+                fill="none"
+                stroke="#a7e2ff"
+                stroke-width="2"
+              />
+              <circle cx="140" cy="53" r="20" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Harmony</h2>
+            <p>
+              The mirrored curves reach a balanced middle amplitude and a
+              quieter upper sphere.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="specimen" id="resonance">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Resonance league trophy silhouette"
+            >
+              <ellipse cx="140" cy="454" rx="78" ry="12" fill="#0009" />
+              <path
+                d="M79 415 Q140 393 201 415 L193 456 Q140 478 87 456 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="415"
+                rx="61"
+                ry="17"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 402 L140 68"
+                stroke="#d9eef7"
+                stroke-width="4.3"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 354 C97 316 99 204 140 160 C181 204 183 316 140 354 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#6dc7ff"
+                stroke-opacity="0.73"
+              />
+              <path
+                d="M140 354 C97 316 99 204 140 160 M140 354 C183 316 181 204 140 160"
+                fill="none"
+                stroke="#afe6ff"
+                stroke-width="2.1"
+              />
+              <circle cx="140" cy="47" r="21" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Resonance</h2>
+            <p>
+              A broader sapphire volume announces the collection's ceremonial
+              register.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="specimen" id="virtuoso">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Virtuoso league trophy silhouette"
+            >
+              <ellipse cx="140" cy="455" rx="81" ry="12" fill="#0009" />
+              <path
+                d="M76 414 Q140 390 204 414 L195 458 Q140 482 85 458 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="414"
+                rx="64"
+                ry="18"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 401 L140 63"
+                stroke="#d9eef7"
+                stroke-width="4.5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 361 C90 317 95 194 140 147 C185 194 190 317 140 361 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#72caff"
+                stroke-opacity="0.76"
+              />
+              <path
+                d="M140 361 C90 317 95 194 140 147 M140 361 C190 317 185 194 140 147"
+                fill="none"
+                stroke="#b7e9ff"
+                stroke-width="2.2"
+              />
+              <circle cx="140" cy="41" r="22" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Virtuoso</h2>
+            <p>
+              The string grows taller while the glass envelope gains a
+              confident, exact width.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="specimen" id="laureate">
+          <div class="well">
+            <svg
+              class="object"
+              viewBox="0 0 280 500"
+              role="img"
+              aria-label="Laureate league trophy silhouette"
+            >
+              <ellipse cx="140" cy="457" rx="85" ry="13" fill="#0009" />
+              <path
+                d="M72 413 Q140 387 208 413 L198 461 Q140 487 82 461 Z"
+                fill="url(#ledgerBase)"
+              />
+              <ellipse
+                cx="140"
+                cy="413"
+                rx="68"
+                ry="19"
+                fill="url(#ledgerChrome)"
+              />
+              <path
+                d="M140 400 L140 57"
+                stroke="#d9eef7"
+                stroke-width="4.7"
+                stroke-linecap="round"
+              />
+              <path
+                d="M140 368 C82 318 90 182 140 133 C190 182 198 318 140 368 Z"
+                fill="url(#ledgerGlass)"
+                stroke="#78cdff"
+                stroke-opacity="0.8"
+              />
+              <path
+                d="M140 368 C82 318 90 182 140 133 M140 368 C198 318 190 182 140 133"
+                fill="none"
+                stroke="#c1edff"
+                stroke-width="2.4"
+              />
+              <circle cx="140" cy="33" r="24" fill="url(#ledgerOrb)" />
+            </svg>
+          </div>
+          <figcaption>
+            <span class="mark" aria-hidden="true"></span>
+            <h2>Laureate</h2>
+            <p>
+              The final object carries the broadest calm gesture and most
+              resolved silver sphere.
+            </p>
+          </figcaption>
+        </figure>
+      </main>
+
+      <footer class="colophon">
+        <span>Curator's Ledger / silhouette proofs</span>
+        <span>Pedestals remain intentionally blank</span>
+      </footer>
+    </div>
+  </body>
+</html>

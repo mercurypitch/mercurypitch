@@ -1,0 +1,899 @@
+<!--
+FAMILY: Cobalt Instrument — Jeweler's Technical Drawing
+THESIS: The league system is proven as a manufacturable instrument, not decorated as a fantasy reward.
+OWN-WORLD: Saturated cobalt drafting cloth, ice-white construction lines, cyan glass hatching, condensed labels, and exposed joins.
+STORY: Six amplitudes are inspected as controlled evolutions of one continuous mercury gesture.
+FIRST VIEWPORT: A broad drawing board places all six elevations on a common datum beneath a severe typographic header.
+FORM: Production elevation set, ranked first for shape discipline; six adjacent bays share one calibration field.
+
+EMBEDDED EARS ACCEPTANCE CONTRACT
+REQ-TROPHY-001 — Ubiquitous: The artifact shall expose six named league previews.
+REQ-TROPHY-002 — WHERE the artifact is opened from a local file, it shall render without network access or imports.
+REQ-TROPHY-003 — WHEN a keyboard user reaches drawing navigation, the artifact shall show a visible focus indicator.
+REQ-TROPHY-004 — IF reduced motion is preferred, THEN the inspection sweep and transitions shall stop.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cobalt Instrument — MercuryPitch League Trophy Study</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --cobalt: #073d78;
+        --cobalt-deep: #042e5e;
+        --cobalt-ink: #0b4a89;
+        --white: #f6fdff;
+        --cyan: #8ce7ff;
+        --cyan-soft: #c8f3ff;
+        --line: #4a91c4;
+        --focus: #ffffff;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        scroll-behavior: smooth;
+        background: var(--cobalt-deep);
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--white);
+        background-color: var(--cobalt);
+        background-image:
+          linear-gradient(#1f609744 1px, transparent 1px),
+          linear-gradient(90deg, #1f609744 1px, transparent 1px),
+          linear-gradient(#3e82b522 1px, transparent 1px),
+          linear-gradient(90deg, #3e82b522 1px, transparent 1px);
+        background-position: -1px -1px;
+        background-size:
+          56px 56px,
+          56px 56px,
+          14px 14px,
+          14px 14px;
+        font-family:
+          'DIN Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+      }
+
+      body::after {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+        content: '';
+        background: linear-gradient(
+          180deg,
+          transparent 0 46%,
+          #b8f0ff00 47%,
+          #b8f0ff55 49.8%,
+          #ffffffaa 50%,
+          #b8f0ff55 50.2%,
+          #b8f0ff00 53%,
+          transparent 54% 100%
+        );
+        opacity: 0.28;
+        transform: translateY(-110%);
+        animation: inspection 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 40;
+        padding: 10px 14px;
+        color: var(--cobalt-deep);
+        background: var(--white);
+        transform: translateY(-180%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .board {
+        width: min(100%, 1800px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 20px clamp(16px, 3.5vw, 62px) 30px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+      }
+
+      .utility {
+        padding-bottom: 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        border-bottom: 1px solid var(--cyan);
+        color: var(--cyan-soft);
+        font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+        font-size: 0.66rem;
+        line-height: 1.4;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .title-row {
+        padding-block: clamp(24px, 4vw, 52px) clamp(22px, 3vw, 42px);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(250px, 0.42fr);
+        gap: clamp(24px, 5vw, 90px);
+        align-items: end;
+      }
+
+      h1 {
+        max-width: 10ch;
+        margin: 0;
+        font-family:
+          Haettenschweiler, 'Arial Narrow Bold', 'DIN Condensed', sans-serif;
+        font-size: clamp(4rem, 10vw, 6rem);
+        font-weight: 800;
+        line-height: 0.74;
+        letter-spacing: -0.025em;
+        text-transform: uppercase;
+      }
+
+      .title-note {
+        margin: 0;
+        padding-left: 18px;
+        border-left: 4px double var(--cyan);
+        color: var(--cyan-soft);
+        font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+        font-size: 0.72rem;
+        line-height: 1.65;
+      }
+
+      .title-note strong {
+        color: var(--white);
+        font-weight: 700;
+      }
+
+      .league-nav {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        border-top: 1px solid var(--cyan);
+        border-left: 1px solid var(--cyan);
+      }
+
+      .league-nav a {
+        min-height: 40px;
+        padding: 10px 8px;
+        display: grid;
+        place-items: center;
+        border-right: 1px solid var(--cyan);
+        border-bottom: 1px solid var(--cyan);
+        color: var(--cyan-soft);
+        font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+        font-size: 0.64rem;
+        letter-spacing: 0.06em;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .league-nav a:hover {
+        color: var(--cobalt-deep);
+        background: var(--cyan);
+      }
+
+      .league-nav a:focus-visible,
+      .skip-link:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 4px;
+      }
+
+      .elevations {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(170px, 1fr));
+        border-top: 1px solid var(--cyan);
+        border-left: 1px solid var(--cyan);
+      }
+
+      .elevation {
+        min-width: 0;
+        margin: 0;
+        display: grid;
+        grid-template-rows: minmax(430px, 57vh) auto;
+        border-right: 1px solid var(--cyan);
+        border-bottom: 1px solid var(--cyan);
+        background: #073d7899;
+      }
+
+      .drawing {
+        position: relative;
+        min-height: 430px;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+
+      .drawing::before {
+        position: absolute;
+        top: 8%;
+        bottom: 8%;
+        left: 50%;
+        width: 1px;
+        content: '';
+        background: #9ceaff55;
+      }
+
+      .drawing::after {
+        position: absolute;
+        right: 9%;
+        bottom: 12%;
+        left: 9%;
+        height: 1px;
+        content: '';
+        background: #9ceaff77;
+      }
+
+      .object {
+        position: relative;
+        z-index: 1;
+        width: auto;
+        height: 88%;
+        max-width: 86%;
+        overflow: visible;
+        transition:
+          filter 220ms ease,
+          transform 220ms ease;
+      }
+
+      .elevation:target .object,
+      .elevation:hover .object {
+        filter: drop-shadow(0 0 9px #8ce7ff88);
+        transform: translateY(-3px);
+      }
+
+      figcaption {
+        min-height: 132px;
+        padding: 15px 14px 18px;
+        border-top: 1px solid var(--cyan);
+        font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+      }
+
+      h2 {
+        margin: 0 0 13px;
+        color: var(--white);
+        font-family: 'DIN Condensed', 'Arial Narrow', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .datum {
+        margin: 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 5px 10px;
+        color: var(--cyan-soft);
+        font-size: 0.59rem;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+
+      .datum dt,
+      .datum dd {
+        margin: 0;
+      }
+
+      .datum dt {
+        color: var(--white);
+      }
+
+      .footer {
+        padding-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        color: var(--cyan-soft);
+        font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+
+      @keyframes inspection {
+        0%,
+        14% {
+          transform: translateY(-110%);
+        }
+        78%,
+        100% {
+          transform: translateY(110%);
+        }
+      }
+
+      @media (max-width: 1180px) {
+        .elevations {
+          grid-template-columns: repeat(3, minmax(180px, 1fr));
+        }
+
+        .league-nav {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .utility,
+        .footer {
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .title-row {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .title-note {
+          max-width: 48ch;
+        }
+
+        .elevations {
+          grid-template-columns: repeat(2, minmax(145px, 1fr));
+        }
+
+        .elevation {
+          grid-template-rows: minmax(370px, 56vh) auto;
+        }
+
+        .drawing {
+          min-height: 370px;
+        }
+      }
+
+      @media (max-width: 440px) {
+        .board {
+          padding-inline: 10px;
+        }
+
+        .league-nav {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .elevations {
+          grid-template-columns: 1fr;
+        }
+
+        .elevation {
+          grid-template-rows: minmax(420px, 66vh) auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition-duration: 0.01ms !important;
+        }
+
+        body::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#elevations">Skip to trophy elevations</a>
+
+    <svg class="svg-defs" aria-hidden="true">
+      <defs>
+        <pattern
+          id="cobaltHatch"
+          width="8"
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(24)"
+        >
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="8"
+            stroke="#8ce7ff"
+            stroke-width="2"
+            stroke-opacity="0.55"
+          />
+        </pattern>
+        <linearGradient id="cobaltMetal" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#8ce7ff" stop-opacity="0.15" />
+          <stop offset="0.27" stop-color="#ffffff" stop-opacity="0.95" />
+          <stop offset="0.5" stop-color="#8ce7ff" stop-opacity="0.28" />
+          <stop offset="0.72" stop-color="#ffffff" stop-opacity="0.95" />
+          <stop offset="1" stop-color="#8ce7ff" stop-opacity="0.15" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="board">
+      <header>
+        <div class="utility">
+          <span>MercuryPitch / award object elevations</span>
+          <span>Continuous gesture / pedestal face blank</span>
+        </div>
+
+        <div class="title-row">
+          <h1>Vibration object</h1>
+          <p class="title-note">
+            <strong>Cobalt Instrument</strong><br />
+            A production-minded comparison of one taut mercury string, six
+            sapphire amplitudes, and one serene terminal sphere. Material
+            renders remain pending.
+          </p>
+        </div>
+
+        <nav class="league-nav" aria-label="Drawing index">
+          <a href="#unison">Unison</a>
+          <a href="#cadence">Cadence</a>
+          <a href="#harmony">Harmony</a>
+          <a href="#resonance">Resonance</a>
+          <a href="#virtuoso">Virtuoso</a>
+          <a href="#laureate">Laureate</a>
+        </nav>
+      </header>
+
+      <main class="elevations" id="elevations">
+        <figure class="elevation" id="unison">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Unison league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="429"
+                rx="54"
+                ry="10"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M58 428 Q110 407 162 428 L157 450 Q110 465 63 450 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 413 L110 92"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="3.4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 343 C88 316 86 232 110 199 C134 232 132 316 110 343 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 343 C88 316 86 232 110 199 M110 343 C132 316 134 232 110 199"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="72"
+                r="20"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M73 72 H147 M110 35 V109"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Unison</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Held close</dd>
+              <dt>Sphere</dt>
+              <dd>Quiet satin</dd>
+              <dt>Stance</dt>
+              <dd>Introductory</dd>
+            </dl>
+          </figcaption>
+        </figure>
+
+        <figure class="elevation" id="cadence">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Cadence league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="430"
+                rx="56"
+                ry="10"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M56 428 Q110 406 164 428 L158 452 Q110 468 62 452 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 412 L110 87"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="3.5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 349 C82 317 82 224 110 188 C138 224 138 317 110 349 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 349 C82 317 82 224 110 188 M110 349 C138 317 138 224 110 188"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="66"
+                r="21"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M72 66 H148 M110 28 V104"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Cadence</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Measured swell</dd>
+              <dt>Sphere</dt>
+              <dd>Soft resolve</dd>
+              <dt>Stance</dt>
+              <dd>Developing</dd>
+            </dl>
+          </figcaption>
+        </figure>
+
+        <figure class="elevation" id="harmony">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Harmony league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="431"
+                rx="58"
+                ry="10"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M54 427 Q110 404 166 427 L159 454 Q110 471 61 454 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 411 L110 82"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="3.6"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 355 C76 318 78 216 110 177 C142 216 144 318 110 355 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 355 C76 318 78 216 110 177 M110 355 C144 318 142 216 110 177"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="60"
+                r="22"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M70 60 H150 M110 20 V100"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Harmony</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Balanced rise</dd>
+              <dt>Sphere</dt>
+              <dd>Calm resolve</dd>
+              <dt>Stance</dt>
+              <dd>Assured</dd>
+            </dl>
+          </figcaption>
+        </figure>
+
+        <figure class="elevation" id="resonance">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Resonance league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="432"
+                rx="60"
+                ry="11"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M52 426 Q110 402 168 426 L160 456 Q110 474 60 456 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 410 L110 77"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="3.7"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 361 C70 319 74 207 110 166 C146 207 150 319 110 361 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 361 C70 319 74 207 110 166 M110 361 C150 319 146 207 110 166"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="54"
+                r="23"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M68 54 H152 M110 12 V96"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Resonance</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Open signal</dd>
+              <dt>Sphere</dt>
+              <dd>Clear resolve</dd>
+              <dt>Stance</dt>
+              <dd>Ceremonial</dd>
+            </dl>
+          </figcaption>
+        </figure>
+
+        <figure class="elevation" id="virtuoso">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Virtuoso league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="433"
+                rx="63"
+                ry="11"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M49 425 Q110 400 171 425 L162 459 Q110 478 58 459 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 409 L110 72"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="3.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 368 C63 320 70 197 110 153 C150 197 157 320 110 368 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 368 C63 320 70 197 110 153 M110 368 C157 320 150 197 110 153"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="48"
+                r="24"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M66 48 H154 M110 4 V92"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Virtuoso</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Full control</dd>
+              <dt>Sphere</dt>
+              <dd>Bright resolve</dd>
+              <dt>Stance</dt>
+              <dd>Distinguished</dd>
+            </dl>
+          </figcaption>
+        </figure>
+
+        <figure class="elevation" id="laureate">
+          <div class="drawing">
+            <svg
+              class="object"
+              viewBox="0 0 220 470"
+              role="img"
+              aria-label="Laureate league technical trophy elevation"
+            >
+              <ellipse
+                cx="110"
+                cy="434"
+                rx="66"
+                ry="12"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M46 424 Q110 397 174 424 L164 462 Q110 482 56 462 Z"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M110 408 L110 66"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M110 375 C55 321 65 185 110 139 C155 185 165 321 110 375 Z"
+                fill="url(#cobaltHatch)"
+                stroke="#8ce7ff"
+                stroke-width="1.8"
+              />
+              <path
+                d="M110 375 C55 321 65 185 110 139 M110 375 C165 321 155 185 110 139"
+                fill="none"
+                stroke="#f6fdff"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="110"
+                cy="40"
+                r="26"
+                fill="url(#cobaltMetal)"
+                stroke="#f6fdff"
+                stroke-width="1.6"
+              />
+              <path
+                d="M63 40 H157 M110 -7 V87"
+                stroke="#8ce7ff"
+                stroke-width="0.8"
+                stroke-dasharray="3 5"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Laureate</h2>
+            <dl class="datum">
+              <dt>Envelope</dt>
+              <dd>Maximum calm</dd>
+              <dt>Sphere</dt>
+              <dd>Serene resolve</dd>
+              <dt>Stance</dt>
+              <dd>Definitive</dd>
+            </dl>
+          </figcaption>
+        </figure>
+      </main>
+
+      <footer class="footer">
+        <span>Cobalt Instrument / production elevation set</span>
+        <span>Chrome and sapphire material studies follow</span>
+      </footer>
+    </div>
+  </body>
+</html>

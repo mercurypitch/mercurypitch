@@ -1,0 +1,856 @@
+<!--
+FAMILY: Silver Halftone — Print-Tech Specimen Poster
+THESIS: League prestige is built through scale, ink density, and registration, not ornamental crests or badge shapes.
+OWN-WORLD: Brushed-silver paper, dense black type, hard sapphire plates, red registration ticks, and coarse halftone glass.
+STORY: Six league objects gather visual weight as a limited-edition press sheet while preserving one silhouette.
+FIRST VIEWPORT: A blunt poster masthead collides with an irregular field of oversized trophy proofs and league names.
+FORM: Print-shop specimen sheet, ranked first for energetic comparison; asymmetric plates make progression physically legible.
+
+EMBEDDED EARS ACCEPTANCE CONTRACT
+REQ-TROPHY-001 — Ubiquitous: The artifact shall expose six named league previews.
+REQ-TROPHY-002 — WHERE the artifact is opened from a local file, it shall render without network access or imports.
+REQ-TROPHY-003 — WHEN a keyboard user reaches the plate index, the artifact shall show a visible focus indicator.
+REQ-TROPHY-004 — IF reduced motion is preferred, THEN registration motion and transitions shall stop.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Silver Halftone — MercuryPitch League Trophy Study</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --silver: #dce1dc;
+        --silver-light: #f4f7f2;
+        --ink: #111714;
+        --blue: #004593;
+        --blue-dark: #002f6c;
+        --white: #ffffff;
+        --red: #c92f25;
+        --focus: #e33b2f;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        scroll-behavior: smooth;
+        background: var(--ink);
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at 18% 20%,
+            #ffffff80 0 1px,
+            transparent 1.4px
+          ),
+          radial-gradient(
+            circle at 76% 62%,
+            #11171444 0 0.8px,
+            transparent 1.2px
+          ),
+          var(--silver);
+        background-size:
+          7px 7px,
+          9px 9px,
+          auto;
+        font-family: 'Courier New', Courier, monospace;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 20;
+        padding: 10px 14px;
+        color: var(--white);
+        background: var(--ink);
+        transform: translateY(-180%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .sheet {
+        width: min(100%, 1660px);
+        margin: 0 auto;
+        padding: clamp(14px, 2.6vw, 42px);
+      }
+
+      .topline {
+        padding: 10px 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        color: var(--white);
+        background: var(--ink);
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .masthead {
+        min-height: min(42vw, 470px);
+        padding-block: clamp(32px, 6vw, 82px);
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.55fr);
+        gap: clamp(28px, 5vw, 80px);
+        align-items: end;
+        border-bottom: 8px solid var(--ink);
+      }
+
+      h1 {
+        max-width: 10ch;
+        margin: 0;
+        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: clamp(3.8rem, 9vw, 6rem);
+        font-weight: 900;
+        line-height: 0.78;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+      }
+
+      h1 span {
+        color: var(--blue);
+        -webkit-text-stroke: 1px var(--blue);
+      }
+
+      .manifesto {
+        position: relative;
+        margin: 0;
+        padding: 21px 0 0 22px;
+        border-top: 3px solid var(--blue);
+        color: #16362e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.55;
+      }
+
+      .manifesto::before,
+      .manifesto::after {
+        position: absolute;
+        top: -10px;
+        left: 10px;
+        width: 2px;
+        height: 17px;
+        content: '';
+        background: var(--red);
+      }
+
+      .manifesto::after {
+        top: -3px;
+        left: 3px;
+        width: 17px;
+        height: 2px;
+      }
+
+      .plate-index {
+        padding-block: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 19px;
+        border-bottom: 2px solid var(--ink);
+      }
+
+      .plate-index a {
+        padding: 5px 2px;
+        color: var(--blue-dark);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+        text-transform: uppercase;
+      }
+
+      .plate-index a:hover {
+        color: var(--red);
+      }
+
+      .plate-index a:focus-visible,
+      .skip-link:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 4px;
+      }
+
+      .press-sheet {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-flow: dense;
+        border-top: 3px solid var(--ink);
+        border-left: 1px solid var(--ink);
+      }
+
+      .plate {
+        position: relative;
+        min-width: 0;
+        min-height: 470px;
+        margin: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        border-right: 1px solid var(--ink);
+        border-bottom: 3px solid var(--ink);
+        isolation: isolate;
+      }
+
+      .plate:nth-child(1),
+      .plate:nth-child(2),
+      .plate:nth-child(3) {
+        grid-column: span 4;
+      }
+
+      .plate:nth-child(4) {
+        grid-column: span 6;
+        min-height: 550px;
+      }
+
+      .plate:nth-child(5),
+      .plate:nth-child(6) {
+        grid-column: span 3;
+        min-height: 550px;
+      }
+
+      .plate--silver {
+        color: var(--ink);
+        background: var(--silver-light);
+      }
+
+      .plate--blue {
+        color: var(--white);
+        background: var(--blue);
+      }
+
+      .plate--black {
+        color: var(--white);
+        background: var(--ink);
+      }
+
+      .proof {
+        position: relative;
+        min-height: 360px;
+        padding: 28px 20px 10px;
+        display: grid;
+        place-items: center;
+      }
+
+      .proof::before {
+        position: absolute;
+        inset: 22px;
+        z-index: -1;
+        content: '';
+        border: 1px solid currentColor;
+        opacity: 0.45;
+      }
+
+      .proof::after {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 17px;
+        height: 17px;
+        content: '';
+        border-top: 2px solid var(--red);
+        border-right: 2px solid var(--red);
+      }
+
+      .object {
+        width: auto;
+        height: min(43vh, 410px);
+        max-width: 88%;
+        overflow: visible;
+        transform-origin: center;
+        animation: register 850ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        transition: transform 240ms steps(3, end);
+      }
+
+      .plate:nth-child(2) .object {
+        animation-delay: 70ms;
+      }
+
+      .plate:nth-child(3) .object {
+        animation-delay: 140ms;
+      }
+
+      .plate:nth-child(4) .object {
+        animation-delay: 210ms;
+      }
+
+      .plate:nth-child(5) .object {
+        animation-delay: 280ms;
+      }
+
+      .plate:nth-child(6) .object {
+        animation-delay: 350ms;
+      }
+
+      .plate:hover .object,
+      .plate:target .object {
+        transform: translate(-3px, 2px);
+      }
+
+      figcaption {
+        position: relative;
+        z-index: 2;
+        min-height: 116px;
+        padding: 16px 18px 19px;
+        border-top: 3px solid currentColor;
+      }
+
+      h2 {
+        margin: 0;
+        font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+        font-size: clamp(2rem, 3.5vw, 3.7rem);
+        font-weight: 900;
+        line-height: 0.92;
+        letter-spacing: -0.015em;
+        text-transform: uppercase;
+      }
+
+      figcaption p {
+        max-width: 45ch;
+        margin: 9px 0 0;
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .plate--silver figcaption p {
+        color: #173d34;
+      }
+
+      .plate--blue figcaption p,
+      .plate--black figcaption p {
+        color: var(--white);
+      }
+
+      .footer {
+        padding: 17px 2px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        color: #173d34;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+
+      @keyframes register {
+        from {
+          opacity: 0.5;
+          filter: blur(3px);
+          transform: translate(8px, -5px);
+        }
+        to {
+          opacity: 1;
+          filter: blur(0);
+          transform: translate(0, 0);
+        }
+      }
+
+      @media (max-width: 980px) {
+        .masthead {
+          grid-template-columns: 1fr;
+          gap: 34px;
+        }
+
+        .manifesto {
+          max-width: 58ch;
+        }
+
+        .plate:nth-child(n) {
+          grid-column: span 6;
+          min-height: 490px;
+        }
+      }
+
+      @media (max-width: 590px) {
+        .topline,
+        .footer {
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .plate:nth-child(n) {
+          grid-column: 1 / -1;
+          min-height: 510px;
+        }
+
+        .object {
+          height: min(48vh, 410px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#press-sheet">Skip to league plates</a>
+
+    <svg class="svg-defs" aria-hidden="true">
+      <defs>
+        <pattern
+          id="halftoneBlue"
+          width="7"
+          height="7"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle cx="2" cy="2" r="1.7" fill="#0066c2" />
+        </pattern>
+        <pattern
+          id="halftoneWhite"
+          width="7"
+          height="7"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle cx="2" cy="2" r="1.7" fill="#ffffff" />
+        </pattern>
+        <linearGradient id="pressChromeLight" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#111714" />
+          <stop offset="0.2" stop-color="#aab4ae" />
+          <stop offset="0.34" stop-color="#ffffff" />
+          <stop offset="0.53" stop-color="#4a544f" />
+          <stop offset="0.75" stop-color="#e8eee9" />
+          <stop offset="1" stop-color="#111714" />
+        </linearGradient>
+        <linearGradient id="pressChromeDark" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.18" stop-color="#486272" />
+          <stop offset="0.36" stop-color="#ffffff" />
+          <stop offset="0.56" stop-color="#9cb4c1" />
+          <stop offset="0.76" stop-color="#ffffff" />
+          <stop offset="1" stop-color="#547080" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="sheet">
+      <header>
+        <div class="topline">
+          <span>MercuryPitch / league award object</span>
+          <span>Silver Halftone / preliminary press proofs</span>
+        </div>
+
+        <div class="masthead">
+          <h1>One string. <span>Six voices.</span></h1>
+          <p class="manifesto">
+            A limited-edition comparison sheet for the same continuous mercury
+            gesture at six levels of resonance. Sapphire density and amplitude
+            change; the pedestal stays blank and the silhouette stays calm.
+          </p>
+        </div>
+
+        <nav class="plate-index" aria-label="League plate index">
+          <a href="#unison">Unison</a>
+          <a href="#cadence">Cadence</a>
+          <a href="#harmony">Harmony</a>
+          <a href="#resonance">Resonance</a>
+          <a href="#virtuoso">Virtuoso</a>
+          <a href="#laureate">Laureate</a>
+        </nav>
+      </header>
+
+      <main class="press-sheet" id="press-sheet">
+        <figure class="plate plate--silver" id="unison">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Unison league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="429"
+                rx="59"
+                ry="10"
+                fill="none"
+                stroke="#111714"
+                stroke-width="2"
+              />
+              <path
+                d="M68 420 Q125 400 182 420 L176 450 Q125 468 74 450 Z"
+                fill="url(#pressChromeLight)"
+                stroke="#111714"
+                stroke-width="2"
+              />
+              <path
+                d="M125 406 L125 86"
+                stroke="#111714"
+                stroke-width="5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 341 C100 315 99 232 125 199 C151 232 150 315 125 341 Z"
+                fill="url(#halftoneBlue)"
+                stroke="#004593"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 341 C100 315 99 232 125 199 M125 341 C150 315 151 232 125 199"
+                fill="none"
+                stroke="#111714"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="66"
+                r="20"
+                fill="url(#pressChromeLight)"
+                stroke="#111714"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Unison</h2>
+            <p>
+              Lightest sapphire screen. Narrow vibration. The mercury line
+              remains dominant.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="plate plate--blue" id="cadence">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Cadence league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="430"
+                rx="61"
+                ry="10"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M66 419 Q125 398 184 419 L177 452 Q125 471 73 452 Z"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M125 405 L125 81"
+                stroke="#ffffff"
+                stroke-width="5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 347 C94 316 95 223 125 187 C155 223 156 316 125 347 Z"
+                fill="url(#halftoneWhite)"
+                stroke="#ffffff"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 347 C94 316 95 223 125 187 M125 347 C156 316 155 223 125 187"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="60"
+                r="21"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Cadence</h2>
+            <p>
+              Measured opening. A brighter screen introduces the first clear
+              glass volume.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="plate plate--black" id="harmony">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Harmony league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="431"
+                rx="63"
+                ry="11"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M64 418 Q125 396 186 418 L179 454 Q125 474 71 454 Z"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M125 404 L125 76"
+                stroke="#ffffff"
+                stroke-width="5.2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 353 C88 317 91 214 125 175 C159 214 162 317 125 353 Z"
+                fill="url(#halftoneWhite)"
+                stroke="#ffffff"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 353 C88 317 91 214 125 175 M125 353 C162 317 159 214 125 175"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="54"
+                r="22"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Harmony</h2>
+            <p>
+              Balanced density. The paired curves read as one composed and
+              stable gesture.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="plate plate--blue" id="resonance">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Resonance league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="432"
+                rx="66"
+                ry="11"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M61 417 Q125 393 189 417 L181 456 Q125 478 69 456 Z"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M125 403 L125 71"
+                stroke="#ffffff"
+                stroke-width="5.4"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 360 C81 318 86 205 125 163 C164 205 169 318 125 360 Z"
+                fill="url(#halftoneWhite)"
+                stroke="#ffffff"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 360 C81 318 86 205 125 163 M125 360 C169 318 164 205 125 163"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="48"
+                r="23"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Resonance</h2>
+            <p>
+              Broad cobalt field. The object enters a distinctly ceremonial
+              register.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="plate plate--silver" id="virtuoso">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Virtuoso league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="433"
+                rx="69"
+                ry="12"
+                fill="none"
+                stroke="#111714"
+                stroke-width="2"
+              />
+              <path
+                d="M58 416 Q125 390 192 416 L183 459 Q125 482 67 459 Z"
+                fill="url(#pressChromeLight)"
+                stroke="#111714"
+                stroke-width="2"
+              />
+              <path
+                d="M125 402 L125 65"
+                stroke="#111714"
+                stroke-width="5.6"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 367 C74 319 81 195 125 150 C169 195 176 319 125 367 Z"
+                fill="url(#halftoneBlue)"
+                stroke="#004593"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 367 C74 319 81 195 125 150 M125 367 C176 319 169 195 125 150"
+                fill="none"
+                stroke="#111714"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="41"
+                r="24"
+                fill="url(#pressChromeLight)"
+                stroke="#111714"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Virtuoso</h2>
+            <p>
+              High-density glass. The string gains height without losing the
+              quiet centerline.
+            </p>
+          </figcaption>
+        </figure>
+
+        <figure class="plate plate--black" id="laureate">
+          <div class="proof">
+            <svg
+              class="object"
+              viewBox="0 0 250 470"
+              role="img"
+              aria-label="Laureate league halftone trophy proof"
+            >
+              <ellipse
+                cx="125"
+                cy="434"
+                rx="72"
+                ry="12"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M55 415 Q125 387 195 415 L185 462 Q125 487 65 462 Z"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+              <path
+                d="M125 401 L125 59"
+                stroke="#ffffff"
+                stroke-width="5.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M125 374 C67 320 76 183 125 136 C174 183 183 320 125 374 Z"
+                fill="url(#halftoneWhite)"
+                stroke="#ffffff"
+                stroke-width="2.5"
+              />
+              <path
+                d="M125 374 C67 320 76 183 125 136 M125 374 C183 320 174 183 125 136"
+                fill="none"
+                stroke="#ffffff"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="125"
+                cy="33"
+                r="26"
+                fill="url(#pressChromeDark)"
+                stroke="#ffffff"
+                stroke-width="2"
+              />
+            </svg>
+          </div>
+          <figcaption>
+            <h2>Laureate</h2>
+            <p>
+              Maximum calm amplitude. The terminal sphere lands as the
+              collection's final full stop.
+            </p>
+          </figcaption>
+        </figure>
+      </main>
+
+      <footer class="footer">
+        <span>Silver Halftone / six league proofs</span>
+        <span>Final physically based renders intentionally pending</span>
+      </footer>
+    </div>
+  </body>
+</html>

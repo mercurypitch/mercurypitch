@@ -1,0 +1,966 @@
+<!--
+FAMILY: Midnight Aperture — Vast Quiet Cinematic
+THESIS: The award is encountered alone in a dark screening room, never reduced to a thumbnail grid.
+OWN-WORLD: Midnight lacquer, sapphire glass, quicksilver highlights, hairline rules, and a single quiet control rail.
+STORY: Compare six league silhouettes while the future hero render remains deliberately absent.
+FIRST VIEWPORT: One monumental sculpture placeholder occupies the glow; league controls form a low horizon beneath it.
+FORM: Immersive object study, ranked first for silhouette judgment; centered stage with a restrained selector.
+
+EMBEDDED EARS ACCEPTANCE CONTRACT
+REQ-TROPHY-001 — Ubiquitous: The artifact shall expose six named league previews.
+REQ-TROPHY-002 — WHERE the artifact is opened from a local file, it shall render without network access or imports.
+REQ-TROPHY-003 — WHEN a keyboard user reaches a league control, the artifact shall show a visible focus indicator.
+REQ-TROPHY-004 — IF reduced motion is preferred, THEN ambient and transition motion shall stop.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Midnight Aperture — MercuryPitch League Trophy Study</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --night: #020916;
+        --night-deep: #01040c;
+        --night-raised: #07172d;
+        --ink: #f5fbff;
+        --ink-soft: #c8e5f3;
+        --line: #244a68;
+        --sapphire: #0f56c7;
+        --sapphire-light: #3fa8ff;
+        --focus: #8fd8ff;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        background: var(--night-deep);
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at 50% 42%,
+            #123d69 0,
+            #071a34 19%,
+            var(--night) 48%,
+            var(--night-deep) 79%
+          ),
+          var(--night-deep);
+        font-family: 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        content: '';
+        opacity: 0.58;
+        background-image:
+          radial-gradient(circle at 12% 17%, #d9f4ff 0 1px, transparent 1.5px),
+          radial-gradient(circle at 78% 12%, #a8dfff 0 1px, transparent 1.5px),
+          radial-gradient(circle at 88% 61%, #e6f8ff 0 1px, transparent 1.5px),
+          radial-gradient(circle at 21% 72%, #79c8ff 0 1px, transparent 1.5px),
+          radial-gradient(circle at 62% 84%, #cdeeff 0 1px, transparent 1.5px);
+        background-size:
+          390px 390px,
+          520px 520px,
+          440px 440px,
+          610px 610px,
+          720px 720px;
+        animation: drift 24s ease-in-out infinite alternate;
+      }
+
+      button,
+      a {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 20;
+        padding: 10px 14px;
+        color: var(--night-deep);
+        background: var(--focus);
+        transform: translateY(-180%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .shell {
+        width: min(100%, 1680px);
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 26px clamp(20px, 4vw, 72px) 28px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .masthead {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        margin: 0;
+        font-family: 'Bodoni 72 Smallcaps', 'Bodoni MT', Didot, Georgia, serif;
+        font-size: clamp(1rem, 1.4vw, 1.3rem);
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .family {
+        margin: 0;
+        color: var(--ink-soft);
+        font-family: 'Avenir Next Condensed', 'Gill Sans', sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .experience {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 0.28fr);
+        gap: clamp(24px, 4vw, 76px);
+        align-items: center;
+      }
+
+      .stage-wrap {
+        position: relative;
+        min-height: min(72vh, 840px);
+        display: grid;
+        place-items: center;
+        isolation: isolate;
+      }
+
+      .stage-wrap::before {
+        position: absolute;
+        top: 49%;
+        left: 50%;
+        z-index: -1;
+        width: min(67vw, 800px);
+        aspect-ratio: 1;
+        content: '';
+        border: 1px solid #1e496a;
+        border-radius: 50%;
+        opacity: 0.38;
+        transform: translate(-50%, -50%);
+      }
+
+      .preview {
+        width: min(100%, 590px);
+        height: min(69vh, 790px);
+        min-height: 520px;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        animation: emerge 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .preview[hidden] {
+        display: none;
+      }
+
+      .trophy {
+        width: auto;
+        height: min(700px, 68vh);
+        max-width: 90%;
+        overflow: visible;
+        filter: drop-shadow(0 28px 34px #000a);
+      }
+
+      .trophy .glass {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: breathe 6.4s ease-in-out infinite;
+      }
+
+      .rail {
+        align-self: center;
+        padding: 28px 0 28px clamp(0px, 2vw, 32px);
+        border-left: 1px solid var(--line);
+      }
+
+      .rail-kicker {
+        margin: 0 0 18px;
+        color: var(--sapphire-light);
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      .league-name {
+        min-height: 2.15em;
+        margin: 0;
+        font-family: 'Bodoni 72', 'Bodoni MT', Didot, Georgia, serif;
+        font-size: clamp(2.3rem, 4.8vw, 5rem);
+        font-weight: 400;
+        line-height: 0.9;
+        letter-spacing: -0.025em;
+      }
+
+      .league-note {
+        max-width: 33ch;
+        min-height: 4.5em;
+        margin: 22px 0 30px;
+        color: var(--ink-soft);
+        font-family: 'Baskerville', Georgia, serif;
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+
+      .league-controls {
+        display: grid;
+        gap: 2px;
+      }
+
+      .league-control {
+        min-height: 46px;
+        padding: 9px 8px;
+        display: grid;
+        grid-template-columns: 13px 1fr;
+        gap: 12px;
+        align-items: center;
+        border: 0;
+        border-bottom: 1px solid #173954;
+        border-radius: 0;
+        background: transparent;
+        color: var(--ink-soft);
+        text-align: left;
+        cursor: pointer;
+        transition:
+          color 220ms ease,
+          padding-left 220ms ease,
+          border-color 220ms ease;
+      }
+
+      .league-control::before {
+        width: 5px;
+        height: 5px;
+        content: '';
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        transition:
+          background 220ms ease,
+          box-shadow 220ms ease;
+      }
+
+      .league-control:hover {
+        color: var(--ink);
+        border-color: #4e89ad;
+      }
+
+      .league-control[aria-pressed='true'] {
+        padding-left: 15px;
+        color: var(--ink);
+        border-color: var(--sapphire-light);
+      }
+
+      .league-control[aria-pressed='true']::before {
+        background: var(--focus);
+        box-shadow: 0 0 14px #5ec4ff;
+      }
+
+      .league-control:focus-visible,
+      .skip-link:focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 4px;
+      }
+
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        color: var(--ink-soft);
+        font-family: 'Avenir Next Condensed', 'Gill Sans', sans-serif;
+        font-size: 0.66rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+
+      @keyframes drift {
+        from {
+          transform: translate3d(-8px, -5px, 0);
+        }
+        to {
+          transform: translate3d(10px, 7px, 0);
+        }
+      }
+
+      @keyframes emerge {
+        from {
+          opacity: 0.4;
+          filter: blur(10px);
+          transform: translateY(14px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          filter: blur(0);
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes breathe {
+        0%,
+        100% {
+          opacity: 0.86;
+          transform: scaleX(0.985);
+        }
+        50% {
+          opacity: 1;
+          transform: scaleX(1.015);
+        }
+      }
+
+      @media (max-width: 860px) {
+        .shell {
+          padding-inline: 18px;
+        }
+
+        .experience {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+
+        .stage-wrap {
+          min-height: 61vh;
+        }
+
+        .stage-wrap::before {
+          width: min(92vw, 620px);
+        }
+
+        .preview {
+          height: 58vh;
+          min-height: 430px;
+        }
+
+        .trophy {
+          height: min(560px, 52vh);
+        }
+
+        .rail {
+          padding: 24px 0 22px;
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+
+        .league-name {
+          min-height: auto;
+        }
+
+        .league-note {
+          min-height: auto;
+          margin-block: 12px 22px;
+        }
+
+        .league-controls {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+        }
+
+        .league-control {
+          min-height: 42px;
+          padding: 8px;
+          border: 1px solid #244a68;
+          text-align: center;
+        }
+
+        .league-control[aria-pressed='true'] {
+          padding-left: 8px;
+          background: #0b2b4a;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .masthead,
+        .footer {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .stage-wrap {
+          min-height: 54vh;
+        }
+
+        .preview {
+          height: 51vh;
+          min-height: 370px;
+        }
+
+        .trophy {
+          height: min(480px, 46vh);
+        }
+
+        .league-controls {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation: none !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#league-controls">Skip to league controls</a>
+
+    <svg class="svg-defs" aria-hidden="true">
+      <defs>
+        <linearGradient id="cinemaChrome" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#172b3e" />
+          <stop offset="0.16" stop-color="#bed6e5" />
+          <stop offset="0.31" stop-color="#ffffff" />
+          <stop offset="0.47" stop-color="#627788" />
+          <stop offset="0.69" stop-color="#eefaff" />
+          <stop offset="0.86" stop-color="#7d93a4" />
+          <stop offset="1" stop-color="#142435" />
+        </linearGradient>
+        <radialGradient id="cinemaOrb" cx="36%" cy="28%" r="74%">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.22" stop-color="#d5e7f1" />
+          <stop offset="0.5" stop-color="#687d8e" />
+          <stop offset="0.78" stop-color="#e2f3fb" />
+          <stop offset="1" stop-color="#182838" />
+        </radialGradient>
+        <linearGradient id="cinemaGlass" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#061d56" stop-opacity="0.34" />
+          <stop offset="0.22" stop-color="#0b4fd1" stop-opacity="0.78" />
+          <stop offset="0.5" stop-color="#78c8ff" stop-opacity="0.36" />
+          <stop offset="0.78" stop-color="#0b4fd1" stop-opacity="0.78" />
+          <stop offset="1" stop-color="#061d56" stop-opacity="0.34" />
+        </linearGradient>
+        <linearGradient id="cinemaBase" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff" />
+          <stop offset="0.2" stop-color="#7890a2" />
+          <stop offset="0.52" stop-color="#162838" />
+          <stop offset="0.83" stop-color="#a9c0cf" />
+          <stop offset="1" stop-color="#07111e" />
+        </linearGradient>
+        <filter id="cinemaBloom" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
+        <symbol id="cinema-unison" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="579"
+            rx="98"
+            ry="15"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M112 540 Q180 516 248 540 L241 578 Q180 600 119 578 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="540"
+            rx="68"
+            ry="18"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 523 L180 112"
+            stroke="#d9eef7"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 431 C146 400 143 288 180 242 C217 288 214 400 180 431 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#58b9ff"
+            stroke-opacity="0.55"
+          />
+          <path
+            d="M180 431 C146 400 143 288 180 242 M180 431 C214 400 217 288 180 242"
+            fill="none"
+            stroke="#88d2ff"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="88"
+            r="27"
+            fill="#63c5ff"
+            opacity="0.18"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="88" r="22" fill="url(#cinemaOrb)" />
+        </symbol>
+        <symbol id="cinema-cadence" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="579"
+            rx="102"
+            ry="16"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M109 540 Q180 515 251 540 L243 580 Q180 604 117 580 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="540"
+            rx="71"
+            ry="19"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 522 L180 107"
+            stroke="#d9eef7"
+            stroke-width="5"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 438 C138 398 138 281 180 231 C222 281 222 398 180 438 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#58b9ff"
+            stroke-opacity="0.6"
+          />
+          <path
+            d="M180 438 C138 398 138 281 180 231 M180 438 C222 398 222 281 180 231"
+            fill="none"
+            stroke="#8dd8ff"
+            stroke-width="2.3"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="82"
+            r="29"
+            fill="#63c5ff"
+            opacity="0.2"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="82" r="23" fill="url(#cinemaOrb)" />
+        </symbol>
+        <symbol id="cinema-harmony" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="580"
+            rx="106"
+            ry="16"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M106 539 Q180 513 254 539 L245 582 Q180 608 115 582 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="539"
+            rx="74"
+            ry="20"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 521 L180 102"
+            stroke="#d9eef7"
+            stroke-width="5.2"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 445 C131 400 132 270 180 218 C228 270 229 400 180 445 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#58b9ff"
+            stroke-opacity="0.64"
+          />
+          <path
+            d="M180 445 C131 400 132 270 180 218 M180 445 C229 400 228 270 180 218"
+            fill="none"
+            stroke="#9adfff"
+            stroke-width="2.4"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="76"
+            r="31"
+            fill="#63c5ff"
+            opacity="0.21"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="76" r="24" fill="url(#cinemaOrb)" />
+        </symbol>
+        <symbol id="cinema-resonance" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="581"
+            rx="109"
+            ry="17"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M103 538 Q180 510 257 538 L247 584 Q180 611 113 584 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="538"
+            rx="77"
+            ry="21"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 520 L180 96"
+            stroke="#d9eef7"
+            stroke-width="5.4"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 452 C123 402 126 260 180 206 C234 260 237 402 180 452 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#58b9ff"
+            stroke-opacity="0.68"
+          />
+          <path
+            d="M180 452 C123 402 126 260 180 206 M180 452 C237 402 234 260 180 206"
+            fill="none"
+            stroke="#a6e3ff"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="69"
+            r="33"
+            fill="#63c5ff"
+            opacity="0.22"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="69" r="25" fill="url(#cinemaOrb)" />
+        </symbol>
+        <symbol id="cinema-virtuoso" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="583"
+            rx="113"
+            ry="18"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M99 537 Q180 507 261 537 L250 587 Q180 616 110 587 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="537"
+            rx="81"
+            ry="22"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 519 L180 89"
+            stroke="#d9eef7"
+            stroke-width="5.6"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 460 C114 404 120 247 180 191 C240 247 246 404 180 460 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#58b9ff"
+            stroke-opacity="0.72"
+          />
+          <path
+            d="M180 460 C114 404 120 247 180 191 M180 460 C246 404 240 247 180 191"
+            fill="none"
+            stroke="#b2e8ff"
+            stroke-width="2.7"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="61"
+            r="35"
+            fill="#63c5ff"
+            opacity="0.24"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="61" r="27" fill="url(#cinemaOrb)" />
+        </symbol>
+        <symbol id="cinema-laureate" viewBox="0 0 360 650">
+          <ellipse
+            cx="180"
+            cy="586"
+            rx="118"
+            ry="19"
+            fill="#000a"
+            filter="url(#cinemaBloom)"
+          />
+          <path
+            d="M95 536 Q180 503 265 536 L253 590 Q180 622 107 590 Z"
+            fill="url(#cinemaBase)"
+          />
+          <ellipse
+            cx="180"
+            cy="536"
+            rx="85"
+            ry="23"
+            fill="url(#cinemaChrome)"
+          />
+          <path
+            d="M180 518 L180 81"
+            stroke="#d9eef7"
+            stroke-width="5.8"
+            stroke-linecap="round"
+          />
+          <path
+            class="glass"
+            d="M180 468 C105 405 114 233 180 176 C246 233 255 405 180 468 Z"
+            fill="url(#cinemaGlass)"
+            stroke="#68c4ff"
+            stroke-opacity="0.78"
+          />
+          <path
+            d="M180 468 C105 405 114 233 180 176 M180 468 C255 405 246 233 180 176"
+            fill="none"
+            stroke="#c0edff"
+            stroke-width="2.9"
+            stroke-linecap="round"
+          />
+          <circle
+            cx="180"
+            cy="52"
+            r="38"
+            fill="#63c5ff"
+            opacity="0.26"
+            filter="url(#cinemaBloom)"
+          />
+          <circle cx="180" cy="52" r="29" fill="url(#cinemaOrb)" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="shell">
+      <header class="masthead">
+        <p class="brand">MercuryPitch</p>
+        <p class="family">Midnight Aperture / object study</p>
+      </header>
+
+      <main class="experience">
+        <section
+          class="stage-wrap"
+          aria-label="Selected league sculpture placeholder"
+        >
+          <figure class="preview" data-preview="unison">
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Unison league trophy silhouette"
+            >
+              <use href="#cinema-unison" width="360" height="650"></use>
+            </svg>
+          </figure>
+          <figure class="preview" data-preview="cadence" hidden>
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Cadence league trophy silhouette"
+            >
+              <use href="#cinema-cadence" width="360" height="650"></use>
+            </svg>
+          </figure>
+          <figure class="preview" data-preview="harmony" hidden>
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Harmony league trophy silhouette"
+            >
+              <use href="#cinema-harmony" width="360" height="650"></use>
+            </svg>
+          </figure>
+          <figure class="preview" data-preview="resonance" hidden>
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Resonance league trophy silhouette"
+            >
+              <use href="#cinema-resonance" width="360" height="650"></use>
+            </svg>
+          </figure>
+          <figure class="preview" data-preview="virtuoso" hidden>
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Virtuoso league trophy silhouette"
+            >
+              <use href="#cinema-virtuoso" width="360" height="650"></use>
+            </svg>
+          </figure>
+          <figure class="preview" data-preview="laureate" hidden>
+            <svg
+              class="trophy"
+              viewBox="0 0 360 650"
+              role="img"
+              aria-label="Laureate league trophy silhouette"
+            >
+              <use href="#cinema-laureate" width="360" height="650"></use>
+            </svg>
+          </figure>
+        </section>
+
+        <aside class="rail" aria-live="polite">
+          <p class="rail-kicker">League sculpture study</p>
+          <h1 class="league-name" id="league-name">Unison</h1>
+          <p class="league-note" id="league-note">
+            The opening league holds the vibration close to the mercury string.
+          </p>
+          <div
+            class="league-controls"
+            id="league-controls"
+            aria-label="Choose a league preview"
+          >
+            <button
+              class="league-control"
+              type="button"
+              data-target="unison"
+              data-name="Unison"
+              data-note="The opening league holds the vibration close to the mercury string."
+              aria-pressed="true"
+            >
+              Unison
+            </button>
+            <button
+              class="league-control"
+              type="button"
+              data-target="cadence"
+              data-name="Cadence"
+              data-note="A measured sapphire envelope begins to lift from the polished base."
+              aria-pressed="false"
+            >
+              Cadence
+            </button>
+            <button
+              class="league-control"
+              type="button"
+              data-target="harmony"
+              data-name="Harmony"
+              data-note="The glass vibration opens into a poised and balanced middle register."
+              aria-pressed="false"
+            >
+              Harmony
+            </button>
+            <button
+              class="league-control"
+              type="button"
+              data-target="resonance"
+              data-name="Resonance"
+              data-note="A fuller amplitude gives the continuous silhouette greater authority."
+              aria-pressed="false"
+            >
+              Resonance
+            </button>
+            <button
+              class="league-control"
+              type="button"
+              data-target="virtuoso"
+              data-name="Virtuoso"
+              data-note="The string stretches taller as the sapphire volume gains precision."
+              aria-pressed="false"
+            >
+              Virtuoso
+            </button>
+            <button
+              class="league-control"
+              type="button"
+              data-target="laureate"
+              data-name="Laureate"
+              data-note="The final league reaches its widest calm envelope and most serene sphere."
+              aria-pressed="false"
+            >
+              Laureate
+            </button>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="footer">
+        <span>Six league silhouettes</span>
+        <span>Final material renders intentionally pending</span>
+      </footer>
+    </div>
+
+    <script>
+      const controls = Array.from(document.querySelectorAll('[data-target]'))
+      const previews = Array.from(document.querySelectorAll('[data-preview]'))
+      const leagueName = document.querySelector('#league-name')
+      const leagueNote = document.querySelector('#league-note')
+
+      controls.forEach((control) => {
+        control.addEventListener('click', () => {
+          const target = control.dataset.target
+
+          controls.forEach((item) => {
+            item.setAttribute('aria-pressed', String(item === control))
+          })
+
+          previews.forEach((preview) => {
+            preview.hidden = preview.dataset.preview !== target
+          })
+
+          leagueName.textContent = control.dataset.name
+          leagueNote.textContent = control.dataset.note
+        })
+      })
+    </script>
+  </body>
+</html>
