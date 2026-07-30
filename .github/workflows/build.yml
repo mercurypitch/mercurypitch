@@ -6,6 +6,7 @@ on:
       - opened
       - synchronize
       - reopened
+      - closed
   push:
     branches:
       - main
@@ -26,9 +27,14 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: build-deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     name: Build & Deploy App
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
@@ -106,29 +112,111 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
-      # Uploads a new *version* of the mercurypitch-preview Worker and captures
-      # its unique, immutable preview URL. Unlike `deploy` (which always
-      # publishes to the Worker's single fixed URL, so every PR overwrote the
-      # last), `versions upload` gives each PR/commit its own URL — concurrent
-      # PRs never clobber each other. It does NOT change the active deployment.
+      # Creates or reuses an isolated D1 database for this PR, applies the
+      # branch's schema, and uploads the branch's DB Worker as an immutable
+      # version. The matching DB preview URL is baked into the frontend before
+      # its own immutable version is uploaded. Neither active dev deployment is
+      # changed, and concurrent PRs cannot share or overwrite authoring data.
       #
-      # Requires "Preview URLs" enabled on the mercurypitch-preview Worker
-      # (Cloudflare dashboard -> Workers & Pages -> mercurypitch-preview ->
-      # Settings -> Preview URLs). Without it, no URL is printed and the
-      # comment step is skipped (the build still passes).
+      # The DB version reuses the mercury-pitch-db-dev Worker name so Wrangler
+      # inherits its ADMIN_KEY and JWT_SECRET secrets. Its generated config
+      # explicitly enables Preview URLs while keeping the normal workers.dev
+      # route disabled.
       - name: Deploy PR Preview (versioned)
         id: deploy-preview
         if: github.event_name == 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -o pipefail
+          set -euo pipefail
+
+          pr_database_name="mercurypitch-pr-${PR_NUMBER}"
+          database_id=$(
+            pnpm exec wrangler d1 list --json \
+              | jq -r --arg name "$pr_database_name" \
+                '.[] | select(.name == $name) | .uuid' \
+              | head -1
+          )
+
+          if [ -z "$database_id" ]; then
+            pnpm exec wrangler d1 create "$pr_database_name" --location eeur
+            database_id=$(
+              pnpm exec wrangler d1 list --json \
+                | jq -r --arg name "$pr_database_name" \
+                  '.[] | select(.name == $name) | .uuid' \
+                | head -1
+            )
+          fi
+
+          if [ -z "$database_id" ]; then
+            echo "Could not resolve D1 database id for $pr_database_name."
+            exit 1
+          fi
+
+          generated_db_config="workers/db-worker/wrangler.pr-preview.generated.jsonc"
+          PR_DATABASE_NAME="$pr_database_name" \
+          PR_DATABASE_ID="$database_id" \
+          GENERATED_DB_CONFIG="$generated_db_config" \
+          node <<'NODE'
+          const { readFileSync, writeFileSync } = require('node:fs')
+
+          const template = readFileSync(
+            'workers/db-worker/wrangler.pr-preview.template.jsonc',
+            'utf8',
+          )
+          const generated = template
+            .replace('__PR_DATABASE_NAME__', process.env.PR_DATABASE_NAME)
+            .replace(
+              '00000000-0000-0000-0000-000000000000',
+              process.env.PR_DATABASE_ID,
+            )
+
+          writeFileSync(process.env.GENERATED_DB_CONFIG, generated)
+          NODE
+
+          pnpm exec wrangler d1 execute "$pr_database_name" \
+            --remote \
+            --file=workers/db-worker/schema.sql \
+            --config "$generated_db_config" \
+            -y
+
+          pnpm exec wrangler versions upload \
+            --config "$generated_db_config" \
+            --message "PR #${PR_NUMBER} ${GITHUB_SHA}" \
+            2>&1 | tee db-upload.log
+
+          db_preview_url=$(
+            grep -iE 'preview url' db-upload.log \
+              | grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' \
+              | head -1
+          )
+          if [ -z "$db_preview_url" ]; then
+            db_preview_url=$(
+              grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' db-upload.log \
+                | head -1
+            )
+          fi
+          if [ -z "$db_preview_url" ]; then
+            echo "DB Worker version did not provide a Preview URL."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "$db_preview_url/api/guided-exercises" \
+            > db-smoke.json
+          jq -e '.exercises | arrays' db-smoke.json > /dev/null
+
+          export VITE_API_BASE_URL="$db_preview_url"
           pnpm exec wrangler versions upload --env preview 2>&1 | tee upload.log
           # `versions upload` runs Wrangler's custom build a second time. Guard
-          # against the preview environment silently replacing the dev bundle
-          # with a production-API bundle during that upload.
-          grep -R -q --include='*.js' 'https://api-dev.mercurypitch.com' dist/assets
+          # both sides of the pairing: the generated bundle must point to this
+          # PR's immutable DB version and must never point at production.
+          grep -R -F -q --include='*.js' "$db_preview_url" dist/assets
           if grep -R -q --include='*.js' 'https://api.mercurypitch.com' dist/assets; then
             echo "Preview bundle unexpectedly targets the production API."
             exit 1
@@ -141,7 +229,8 @@ jobs:
             url=$(grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -1)
           fi
           echo "deployment-url=$url" >> "$GITHUB_OUTPUT"
-          echo "Preview URL: ${url:-<none — enable Preview URLs on the Worker>}"
+          echo "db-preview-url=$db_preview_url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: ${url:-<none - enable Preview URLs on the Worker>}"
 
       # Post or update PR comment with preview link from template
       - name: Post Preview Link
@@ -151,23 +240,23 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             const templatePath = path.join(process.env.GITHUB_WORKSPACE, '.github/workflows/pr-deployment-table.md');
             let body = fs.readFileSync(templatePath, 'utf8');
-            
+
             const url = '${{ steps.deploy-preview.outputs.deployment-url }}';
             const commit = context.sha.substring(0, 7);
             const commitUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
             const logsUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const updated = new Date().toUTCString();
-            
+
             body = body
               .replace('LOGS_URL', logsUrl)
               .replace('COMMIT_SHA', commit)
               .replace('COMMIT_URL', commitUrl)
               .replace('PREVIEW_URL', url)
               .replace('UPDATED_TIME', updated);
-            
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -203,3 +292,69 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env prod
           packageManager: 'pnpm'
+
+  cleanup-pr-preview:
+    name: Remove PR Preview Data
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Remove isolated D1 and guided media
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          pr_database_name="mercurypitch-pr-${PR_NUMBER}"
+          database_id=$(
+            pnpm exec wrangler d1 list --json \
+              | jq -r --arg name "$pr_database_name" \
+                '.[] | select(.name == $name) | .uuid' \
+              | head -1
+          )
+          if [ -z "$database_id" ]; then
+            echo "No D1 preview database exists for PR #${PR_NUMBER}."
+            exit 0
+          fi
+
+          media_json=$(
+            pnpm exec wrangler d1 execute "$pr_database_name" \
+              --remote \
+              --command "SELECT objectKey FROM guidedExerciseMedia" \
+              --json 2>/dev/null \
+              || true
+          )
+          while IFS= read -r object_key; do
+            if [ -n "$object_key" ]; then
+              if ! pnpm exec wrangler r2 object delete \
+                "mercurypitch-guided-media-dev/$object_key" \
+                --remote \
+                -y; then
+                echo "::warning::Could not remove preview media object $object_key"
+              fi
+            fi
+          done < <(
+            printf '%s' "$media_json" \
+              | jq -r '.[].results[]?.objectKey // empty' 2>/dev/null \
+              || true
+          )
+
+          pnpm exec wrangler d1 delete "$pr_database_name" -y

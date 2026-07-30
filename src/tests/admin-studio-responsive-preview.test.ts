@@ -33,6 +33,13 @@ const BUILD_WORKFLOW = readFileSync(
   resolve(__dirname, '../../.github/workflows/build.yml'),
   'utf-8',
 )
+const DB_PREVIEW_TEMPLATE = readFileSync(
+  resolve(
+    __dirname,
+    '../../workers/db-worker/wrangler.pr-preview.template.jsonc',
+  ),
+  'utf-8',
+)
 
 function extractRuleBlock(css: string, rule: RegExp): string {
   const match = rule.exec(css)
@@ -106,12 +113,48 @@ describe('PR preview API environment', () => {
     )
   })
 
-  it('fails deployment if the second build points at production', () => {
+  it('pairs each frontend preview with an isolated versioned DB worker', () => {
     expect(BUILD_WORKFLOW).toContain(
-      "grep -R -q --include='*.js' 'https://api-dev.mercurypitch.com' dist/assets",
+      'pr_database_name="mercurypitch-pr-${PR_NUMBER}"',
+    )
+    expect(BUILD_WORKFLOW).toContain('--file=workers/db-worker/schema.sql')
+    expect(BUILD_WORKFLOW).toContain(
+      'pnpm exec wrangler versions upload \\\n' +
+        '            --config "$generated_db_config"',
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'export VITE_API_BASE_URL="$db_preview_url"',
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      `grep -R -F -q --include='*.js' "$db_preview_url" dist/assets`,
+    )
+  })
+
+  it('inherits dev secrets without deploying over the active dev API', () => {
+    expect(DB_PREVIEW_TEMPLATE).toMatch(/"name"\s*:\s*"mercury-pitch-db-dev"/)
+    expect(DB_PREVIEW_TEMPLATE).toMatch(/"preview_urls"\s*:\s*true/)
+    expect(DB_PREVIEW_TEMPLATE).toMatch(/"workers_dev"\s*:\s*false/)
+    expect(DB_PREVIEW_TEMPLATE).toMatch(
+      /"required"\s*:\s*\["ADMIN_KEY",\s*"JWT_SECRET"\]/,
+    )
+  })
+
+  it('fails deployment if the paired build points at production', () => {
+    expect(BUILD_WORKFLOW).toContain(
+      `grep -R -F -q --include='*.js' "$db_preview_url" dist/assets`,
     )
     expect(BUILD_WORKFLOW).toContain(
       'Preview bundle unexpectedly targets the production API.',
+    )
+  })
+
+  it('removes preview data and uploaded media when the PR closes', () => {
+    expect(BUILD_WORKFLOW).toContain('cleanup-pr-preview:')
+    expect(BUILD_WORKFLOW).toContain(
+      'SELECT objectKey FROM guidedExerciseMedia',
+    )
+    expect(BUILD_WORKFLOW).toContain(
+      'pnpm exec wrangler d1 delete "$pr_database_name" -y',
     )
   })
 })
