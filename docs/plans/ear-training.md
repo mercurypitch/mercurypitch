@@ -368,7 +368,7 @@ Without it, "you resolve 14 ms" is a lie.
 
 | Phase | Ships | Why this order |
 | --- | --- | --- |
-| **0. Spike** ✅ | `staircase.ts`, `elo.ts`, `calibration.ts`, `drills.ts`, `mercury-index.ts` + 74 tests, headless | The measurement core is the product. Prove it converges before any UI. **Done** — see the table above. |
+| **0. Spike** (done) | `staircase.ts`, `elo.ts`, `calibration.ts`, `drills.ts`, `mercury-index.ts` + 74 tests, headless | The measurement core is the product. Prove it converges before any UI. **Done** — see the table above. |
 | **1. Vertical slice** | **Home** (Faculty II) + **Hairline** (Faculty I), tap-only, Mercury Column, one Calibration | Proves both rulers, both interaction models, and the hero visual end to end. |
 | **2. Answer modes** | Play + Sing, ear-vs-voice split diagnostic | The differentiator of §4. |
 | **3. Breadth** | Faculties III, IV, V; Ear Report + confusion matrix | Enough content that spaced repetition has something to schedule. |
@@ -400,6 +400,58 @@ and build order (measurement core first). Still open:
 5. **Timbre.** Every reading so far is on synthetic tones. Do thresholds measured on a sine
    transfer to the guitar and piano voices the drills will actually use? Worth a calibration
    run per timbre before claiming one number covers all instruments.
+
+---
+
+## 10. Status, decisions and handoff
+
+Running log so nothing lives only in a conversation. Newest first.
+
+### Decision log
+
+| Date | Decision |
+| --- | --- |
+| 2026-07-30 | Branch renamed `claude/ear-training-feature-plan-hvpzvj` → **`feat/ear-lab`**; old remote branch deleted. All Ear Lab work continues on `feat/ear-lab`. |
+| 2026-07-29 | Phase 0 landed: `src/lib/ear/` measurement core, 74 tests, full suite green (3389 passed). Simulation findings in §7 reshaped Calibration Day into 3 pooled interleaved tracks. |
+| 2026-07-29 | Naming locked: **Ear Lab / Mercury Index / Calibration**. Placement locked: **new top-level tab**. Build order locked: **measurement core headless first**. |
+| 2026-07-29 | Progress is never reported as percent-correct. Ruler A = thresholds in physical units via 2-down-1-up staircase; Ruler B = Elo vs. frozen-difficulty items with a guess floor. Only Calibration marks the Mercury Column; practice estimates render lighter. |
+
+### Phase 1 scope (the slice being built now)
+
+Tap-only, no mic, so nothing in it depends on latency calibration:
+
+- **Hairline** (Resolution) — 2AFC pitch discrimination: two tones, "which is higher?",
+  staircase-driven gap, base frequency roved between trials so absolute-pitch memory can't
+  substitute for discrimination. Practice mode = 1 track → practice reading; Calibration
+  mode = 3 interleaved tracks → pooled reading that marks the column.
+- **Home** (Function) — cadence plants the key, a probe note sounds, answer the scale
+  degree (7 buttons). Elo with 1/7 guess floor; per-item difficulties start from authored
+  seeds (tonic easiest → ♮7 hardest) and self-calibrate until frozen; confusions recorded
+  from day one so the Ear Report (Phase 3) has data waiting.
+- **Mercury Column** — the dashboard hero: calibrated fill, lighter practice meniscus,
+  etched dated marks, per-faculty readouts. Dashed cap while faculties are unmeasured.
+- **Persistence** — local-first via the existing persisted-signal store pattern
+  (`src/stores/`), matching `exercise-history-store.ts`; Dexie/D1 sync stays an open
+  question (§9.3) and is not blocking.
+- **Deliberately deferred:** page tour (added later so this PR doesn't trigger the full
+  two-viewport tour walk), sing/play answer modes (Phase 2), any ms-unit drill (blocked on
+  the latency wizard), Dexie entities.
+
+Ear Lab drills are *not* added to the vocal `ExerciseType` union — the Ear Lab owns its
+own catalogue (`src/lib/ear/drills.ts`) and its own page, keeping the two progression
+systems from tangling.
+
+### What the user tests on real hardware (owner: Komediruzecki)
+
+1. **Phase 1 smoke** — `pnpm dev`, open the Ear Lab tab: run a Hairline practice track
+   (should land near your real discrimination threshold, ~1 min), run a Calibration
+   (~3 min), watch the column mark. Run Home rounds; check the rating moves sensibly and
+   wrong answers replay the correct resolution.
+2. **Audio sanity** — tones audible and click-free on real speakers/headphones at short
+   durations; no clipping when the cadence chords play.
+3. **Phase 2 gate (when the wizard exists)** — mic-latency calibration on real
+   microphone hardware; until that reads a stable round-trip number, no ms-based drill
+   (The Grid, tap-response timing) ships. This is §7's hard correctness requirement.
 
 ---
 
