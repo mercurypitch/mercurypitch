@@ -1685,21 +1685,27 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         class="device-toggle-btn"
                         classList={{ active: !bandSplitChoice() }}
                         onClick={() => chooseBandSplit(false)}
-                        title={`Vocal + instrumental${songCost() !== undefined ? ` — ${songCost()} credit${songCost() === 1 ? '' : 's'}` : ''}`}
+                        title="Vocal + instrumental"
                         disabled={uploadQueue.isRunning()}
                         data-testid="uvr-stems-two"
                       >
                         <span>2 stems</span>
+                        <Show when={songCost() !== undefined}>
+                          <span class="mode-hq-pill">{songCost()}cr</span>
+                        </Show>
                       </button>
                       <button
                         class="device-toggle-btn"
                         classList={{ active: bandSplitChoice() }}
                         onClick={() => chooseBandSplit(true)}
-                        title={`Vocal, drums, bass, guitar & other — separation plus a band split${bandCost() !== undefined ? ` — ${bandCost()} credits` : ''}`}
+                        title="Vocal, drums, bass, guitar & other — separation plus a band split"
                         disabled={uploadQueue.isRunning()}
                         data-testid="uvr-stems-band"
                       >
                         <span>Full band</span>
+                        <Show when={bandCost() !== undefined}>
+                          <span class="mode-hq-pill">{bandCost()}cr</span>
+                        </Show>
                       </button>
                     </div>
                   </Show>
@@ -1889,7 +1895,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       ? activeUvrUploadQueueMode()
                       : uvrProcessingMode()
                   }
-                  costPerSong={songCost}
+                  costPerSong={() =>
+                    bandSplitChoice() ? bandCost() : songCost()
+                  }
                   onStart={() => void startUploadQueue()}
                   onRemove={uploadQueue.remove}
                   onSkip={uploadQueue.skipQueued}
