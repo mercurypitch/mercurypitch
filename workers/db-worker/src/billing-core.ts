@@ -107,11 +107,21 @@ export function isUvrTier(value: unknown): value is UvrTier {
 // Only the two-model ensemble (~2x compute, not user-exposed) carries a
 // multiplier. Keep the names in sync with MODEL_REGISTRY
 // (runpod/handler.py) and RUNPOD_ALLOWED_MODELS (src/lib/runpod.ts).
+//
+// The Demucs multi-stem tiers are priced off compute, not stem count:
+// `demucs` is one model pass, `demucs-6s` one pass over six sources, and
+// `demucs-ft` bags FOUR fine-tuned models (~4x). `shifts` (default 2)
+// multiplies all three, which is why even the single-model tiers sit
+// above the RoFormer base. These are provisional — measure a real song
+// with runpod/test_input.json and correct them before launch.
 export const UVR_MODEL_CREDIT_MULTIPLIERS = {
   mdx: 1,
   roformer: 1,
   karaoke: 1,
   ensemble: 2,
+  demucs: 2,
+  'demucs-6s': 2,
+  'demucs-ft': 4,
 } as const
 
 export type UvrModelName = keyof typeof UVR_MODEL_CREDIT_MULTIPLIERS
@@ -139,12 +149,15 @@ export function uvrJobCost(tierCredits: number, model?: string): number {
 export function uvrModelCredits(
   tierCredits: number,
 ): Record<UvrModelName, number> {
-  return {
-    mdx: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.mdx,
-    roformer: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.roformer,
-    karaoke: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.karaoke,
-    ensemble: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.ensemble,
-  }
+  // Derived from the multiplier map rather than hand-listed, so a new
+  // registry model is priced by adding one line above and nothing here.
+  const entries = Object.entries(UVR_MODEL_CREDIT_MULTIPLIERS) as [
+    UvrModelName,
+    number,
+  ][]
+  return Object.fromEntries(
+    entries.map(([model, mult]) => [model, tierCredits * mult]),
+  ) as Record<UvrModelName, number>
 }
 
 /** Job refs are worker-issued session ids (`rp_<tier>_<runpodJobId>`); keep

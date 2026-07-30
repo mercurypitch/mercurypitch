@@ -32,6 +32,11 @@ export const RUNPOD_ALLOWED_MODELS = [
   'mdx',
   'karaoke',
   'ensemble',
+  // Demucs v4 multi-stem tiers — these are what split an instrumental
+  // into drums/bass/guitar/piano/other.
+  'demucs',
+  'demucs-ft',
+  'demucs-6s',
   'UVR-MDX-NET-Inst_HQ_3',
 ] as const
 

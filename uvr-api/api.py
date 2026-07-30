@@ -111,11 +111,22 @@ _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 # of truth — keep them in sync). Doubles as the allowlist: anything not
 # listed is rejected. First use of a model downloads its weights into
 # model_file_dir (~0.6-1 GB for the RoFormer checkpoints).
+#
+# The `stems` key declares what each model PRODUCES — mirrored from the
+# RunPod handler so both paths advertise the same contract and no client
+# has to assume a two-stem world.
 MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
-    "roformer": {"files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"]},
-    "mdx": {"files": ["UVR-MDX-NET-Inst_HQ_3.onnx"]},
+    "roformer": {
+        "files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"],
+        "stems": ["vocal", "instrumental"],
+    },
+    "mdx": {
+        "files": ["UVR-MDX-NET-Inst_HQ_3.onnx"],
+        "stems": ["vocal", "instrumental"],
+    },
     "karaoke": {
-        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"]
+        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"],
+        "stems": ["vocal", "instrumental"],
     },
     "ensemble": {
         "files": [
@@ -123,8 +134,158 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
             "vocals_mel_band_roformer.ckpt",
         ],
         "algorithm": "avg_wave",
+        "stems": ["vocal", "instrumental"],
+    },
+    # Demucs v4 multi-stem tiers — see runpod/handler.py for the full
+    # rationale. demucs-ft is the quality default; demucs-6s adds guitar
+    # (usable) and piano (bleeds; surfaced as experimental).
+    "demucs": {
+        "files": ["htdemucs.yaml"],
+        "stems": ["vocal", "drums", "bass", "other"],
+    },
+    "demucs-ft": {
+        "files": ["htdemucs_ft.yaml"],
+        "stems": ["vocal", "drums", "bass", "other"],
+    },
+    "demucs-6s": {
+        "files": ["htdemucs_6s.yaml"],
+        "stems": ["vocal", "drums", "bass", "other", "guitar", "piano"],
     },
 }
+
+# Every stem name the registry can emit.
+KNOWN_STEMS = sorted({s for spec in MODEL_REGISTRY.values() for s in spec["stems"]})
+
+# audio-separator names outputs "<input>_(<Stem>)_<model>.<ext>". Match the
+# parenthesised marker FIRST so a song called e.g. "Piano Man" or "Vocal
+# Coach" can't misclassify its stems via a bare substring hit; the plain
+# substring scan is only a fallback. Mirrors _classify_stem in
+# runpod/handler.py — keep the two in sync.
+_STEM_MARKER_RE = re.compile(
+    r"\((vocals?|instrumental|karaoke|drums|bass|guitar|piano|other)\)",
+    re.IGNORECASE,
+)
+_STEM_KEYS = [
+    "vocal", "instrumental", "drums", "bass", "guitar", "piano", "other",
+]
+
+
+def _reconcile_residual(
+    input_path: str, stem_paths: Dict[str, str], residual_stem: str
+) -> bool:
+    """Rewrite `residual_stem` in place as input - sum(the other kept stems).
+
+    Makes the kept stems sum back exactly to what was fed in, so muting
+    every part in a mixer silences the whole. Only sound when the input is
+    genuinely the sum of the kept stems (a vocal-free instrumental) —
+    callers gate this on source_stem. Mirrors _reconcile_residual in
+    runpod/handler.py.
+    """
+    import librosa
+    import numpy as np
+    import soundfile as sf
+
+    residual_path = stem_paths[residual_stem]
+    info = sf.info(residual_path)
+    residual, sr = sf.read(residual_path, always_2d=True, dtype="float64")
+
+    # librosa (not soundfile) because the input may be mp3 / another rate.
+    mix = librosa.load(input_path, sr=sr, mono=False)[0]
+    mix = np.atleast_2d(mix)
+    if mix.shape[0] <= 8:  # librosa yields (channels, frames) if multichannel
+        mix = mix.T
+    mix = mix.astype("float64", copy=False)
+
+    n_frames, n_ch = residual.shape
+    if mix.shape[1] < n_ch:
+        mix = np.repeat(mix[:, :1], n_ch, axis=1)
+    elif mix.shape[1] > n_ch:
+        mix = mix[:, :n_ch]
+    if mix.shape[0] < n_frames:
+        mix = np.pad(mix, ((0, n_frames - mix.shape[0]), (0, 0)))
+    else:
+        mix = mix[:n_frames]
+
+    acc = mix
+    for name, path in stem_paths.items():
+        if name == residual_stem:
+            continue
+        other, _ = sf.read(path, always_2d=True, dtype="float64")
+        take = min(n_frames, other.shape[0])
+        acc[:take] -= other[:take, :n_ch]
+
+    # Integer subtypes wrap on overflow; clip instead of folding to the rail.
+    if not info.subtype.startswith(("FLOAT", "DOUBLE")):
+        np.clip(acc, -1.0, 1.0, out=acc)
+
+    sf.write(residual_path, acc, sr, subtype=info.subtype, format=info.format)
+    return True
+
+
+def _apply_stem_selection(
+    session_output_dir: str,
+    input_path: str,
+    drop_set: set,
+    do_reconcile: bool,
+    residual_stem: str,
+) -> None:
+    """Delete dropped stems on disk, then reconcile the residual.
+
+    Runs before /status walks the directory, so the endpoint reports
+    exactly the stems the caller asked to keep with no extra bookkeeping.
+    """
+    # os.walk, not listdir: ensemble runs write stems into subdirectories,
+    # and /status walks too — the two must see the same set.
+    produced = {}
+    for root, _dirs, filenames in os.walk(session_output_dir):
+        for name in filenames:
+            path = os.path.join(root, name)
+            if name in ("done.txt", "progress.json"):
+                continue
+            if name.startswith("input") and not name.startswith("input_"):
+                continue
+            produced[_classify_stem(name)] = path
+
+    for stem in list(produced):
+        if stem in drop_set:
+            try:
+                os.remove(produced.pop(stem))
+            except OSError:
+                logger.warning("Could not remove dropped stem %r", stem)
+
+    if do_reconcile and residual_stem in produced:
+        try:
+            _reconcile_residual(input_path, produced, residual_stem)
+        except Exception:
+            logger.exception(
+                "Residual reconciliation failed; keeping the model's own %r stem",
+                residual_stem,
+            )
+    elif do_reconcile:
+        logger.warning(
+            "residual_stem %r not among produced stems %s — skipping",
+            residual_stem,
+            sorted(produced),
+        )
+
+
+def _classify_stem(name: str) -> str:
+    """Map an output filename (or dir/filename) to a registry stem name."""
+    low = name.lower()
+    marker = _STEM_MARKER_RE.search(low)
+    if marker:
+        raw = marker.group(1)
+        if raw.startswith("vocal"):
+            return "vocal"
+        # Karaoke models label the music-plus-backing-vocals stem
+        # "(Karaoke)" — for the app's contract that IS the instrumental.
+        if raw == "karaoke":
+            return "instrumental"
+        return raw
+    for key in _STEM_KEYS:
+        if key in low:
+            return key
+    return "unknown"
 
 # Older clients send the MDX weights filename directly.
 _MODEL_ALIASES = {
@@ -261,6 +422,23 @@ async def health_check() -> HealthResponse:
         processing_sessions=0  # Could be tracked separately
     )
 
+@app.get("/registry")
+async def list_registry():
+    """The quality tiers this server accepts, and the stems each produces.
+
+    The app reads this instead of hard-coding a stem list, so adding a
+    multi-stem model here is all it takes for the UI to offer it.
+    """
+    return {
+        "default": DEFAULT_MODEL,
+        "known_stems": KNOWN_STEMS,
+        "models": {
+            key: {"stems": spec["stems"], "files": spec["files"]}
+            for key, spec in MODEL_REGISTRY.items()
+        },
+    }
+
+
 @app.get("/models")
 async def list_models():
     """List available UVR models by hooking into the CLI"""
@@ -311,7 +489,15 @@ async def process_audio(
     # JSON array string from the app; accepted for contract parity but
     # unused — separation always produces all stems and /status lists them.
     stems: Optional[str] = Form(None),
-    cpu_profile: str = Form('high')
+    cpu_profile: str = Form('high'),
+    # Second-pass controls — mirror of the RunPod handler's job inputs.
+    # "instrumental" marks this as a re-split of a stem an earlier job
+    # produced, which drops the near-silent vocal and reconciles the
+    # residual so the kept stems sum back to the input.
+    source_stem: str = Form('original'),
+    drop_stems: Optional[str] = Form(None),
+    reconcile_residual: Optional[str] = Form(None),
+    residual_stem: str = Form('other'),
 ):
     """
     Process an uploaded audio file to separate vocals and instrumental
@@ -337,6 +523,40 @@ async def process_audio(
             detail=f"Unknown model (use one of {sorted(MODEL_REGISTRY)})",
         )
     model_key, model_spec = resolved
+
+    # ── Second-pass options ──────────────────────────────────────
+    source_stem = (source_stem or "original").lower()
+    if source_stem != "original" and source_stem not in KNOWN_STEMS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid source_stem (use 'original' or one of {KNOWN_STEMS})",
+        )
+    residual_stem = (residual_stem or "other").lower()
+    if residual_stem not in KNOWN_STEMS:
+        raise HTTPException(status_code=400, detail="Invalid residual_stem")
+
+    if drop_stems is None:
+        drop_set = {"vocal"} if source_stem == "instrumental" else set()
+    else:
+        try:
+            parsed_drop = json.loads(drop_stems)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Invalid drop_stems")
+        if not isinstance(parsed_drop, list):
+            raise HTTPException(status_code=400, detail="Invalid drop_stems")
+        drop_set = {str(s).lower() for s in parsed_drop}
+        unknown = drop_set - set(KNOWN_STEMS)
+        if unknown:
+            raise HTTPException(
+                status_code=400, detail=f"Unknown drop_stems {sorted(unknown)}"
+            )
+
+    if reconcile_residual is None:
+        do_reconcile = source_stem == "instrumental"
+    else:
+        do_reconcile = str(reconcile_residual).strip().lower() in (
+            "1", "true", "yes", "on",
+        )
 
     # Reject obvious non-audio uploads early (empty/octet-stream/audio-* pass).
     ctype = (file.content_type or "").lower()
@@ -444,6 +664,15 @@ async def process_audio(
                     "overlap": 8,
                     "pitch_shift": 0,
                 },
+                # Demucs v4 (multi-stem tiers). `shifts` multiplies runtime
+                # almost linearly; 2 is the sweet spot, 1 halves it. This is
+                # the CPU path, so it stays conservative.
+                demucs_params={
+                    "segment_size": os.getenv("UVR_DEMUCS_SEGMENT_SIZE", "Default"),
+                    "shifts": int(os.getenv("UVR_DEMUCS_SHIFTS", "1")),
+                    "overlap": float(os.getenv("UVR_DEMUCS_OVERLAP", "0.25")),
+                    "segments_enabled": True,
+                },
             )
             if len(files) > 1:
                 separator_kwargs["ensemble_algorithm"] = spec.get(
@@ -480,6 +709,13 @@ async def process_audio(
                 raise separation_error[0]
 
             logger.info(f"Processing completed for session {session_id}")
+
+            # Drop unwanted stems and reconcile the residual BEFORE the
+            # done marker — /status must never observe a half-adjusted set.
+            _apply_stem_selection(
+                session_output_dir, input_path, drop_set, do_reconcile,
+                residual_stem,
+            )
 
             # Write completion markers
             write_progress(session_output_dir, 100.0, "completed",
@@ -566,25 +802,9 @@ async def get_status(session_id: str):
             # Detect stem type from directory name AND filename
             stem = os.path.basename(root) if root != session_output_dir else ""
             combined = (stem + "/" + filename).lower()
-            detected = None
-            for s in ["vocal", "instrumental", "drums", "bass", "other"]:
-                if s in combined:
-                    detected = s
-                    break
-            if detected is None:
-                # Fallback: try file extension hints or skip
-                if "(Vocals)" in filename or "vocals" in filename.lower():
-                    detected = "vocal"
-                elif "(Instrumental)" in filename or "instrumental" in filename.lower():
-                    detected = "instrumental"
-                elif "(Karaoke)" in filename:
-                    # Karaoke models label the music-plus-backing-vocals stem
-                    # "(Karaoke)" — for the app's contract that IS the
-                    # instrumental. (Checked after vocal/instrumental: every
-                    # stem from these models has "karaoke" in the MODEL name.)
-                    detected = "instrumental"
-                else:
-                    detected = stem if stem else "unknown"
+            detected = _classify_stem(combined)
+            if detected == "unknown" and stem:
+                detected = stem
 
             # Normalize rel_path: os.walk yields "." for root, strip it
             clean_rel = rel_path.lstrip("./") if rel_path != "." else ""
@@ -689,6 +909,7 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "health": "/health",
+            "registry": "/registry",
             "list_models": "/models",
             "process": "/process (POST)",
             "status": "/status/{session_id}",
