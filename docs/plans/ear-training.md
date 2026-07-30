@@ -411,6 +411,7 @@ Running log so nothing lives only in a conversation. Newest first.
 
 | Date | Decision |
 | --- | --- |
+| 2026-07-30 | **Phase 1 slice built** (pending real-hardware test): Hairline + Home drills, Mercury Column, calibration flow, `ear-lab-store`, Home item bank, and the Ear Lab as a new top-level tab (`TAB_EAR_LAB`, practice group, all instrument scopes; lands in the More sheet on mobile). Ear Lab CSS is deliberately separate from `exercises.css` so it never trips the vocal-exercise mobile audit. No page tour yet — deferred so the PR doesn't trigger the full tour walk. |
 | 2026-07-30 | Branch renamed `claude/ear-training-feature-plan-hvpzvj` → **`feat/ear-lab`**; old remote branch deleted. All Ear Lab work continues on `feat/ear-lab`. |
 | 2026-07-29 | Phase 0 landed: `src/lib/ear/` measurement core, 74 tests, full suite green (3389 passed). Simulation findings in §7 reshaped Calibration Day into 3 pooled interleaved tracks. |
 | 2026-07-29 | Naming locked: **Ear Lab / Mercury Index / Calibration**. Placement locked: **new top-level tab**. Build order locked: **measurement core headless first**. |

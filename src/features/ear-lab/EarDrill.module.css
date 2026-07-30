@@ -1,0 +1,365 @@
+/* Shared chrome for Ear Lab drill runners: header, status strip,
+   stage, answer buttons, end card. Kept separate from exercises.css
+   on purpose — the Ear Lab is its own progression system, and this
+   file changing must never trip the vocal-exercise mobile audit. */
+
+.drill {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.header h2 {
+  font-size: var(--text-xl);
+  margin: 0;
+  flex: 1;
+}
+
+.backBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  cursor: pointer;
+  font-size: var(--text-body);
+  transition: var(--transition-fast);
+}
+
+.backBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.modeChip {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.modeChip.calibration {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2xl);
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusValue {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.progressTrack {
+  width: 130px;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease;
+}
+
+.stage {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  min-height: 180px;
+  justify-content: center;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.stage.correct {
+  border-color: var(--green);
+  box-shadow:
+    0 0 0 1px var(--green),
+    0 0 18px var(--green-glow);
+}
+
+.stage.wrong {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red);
+}
+
+.stageHint {
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  margin: 0;
+  text-align: center;
+}
+
+.answerRow {
+  display: flex;
+  gap: var(--spacing-xl);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.answerBtn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-width: 150px;
+}
+
+.answerBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.answerBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.degreeGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 520px;
+}
+
+.degreeBtn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: var(--transition-fast);
+}
+
+.degreeBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.degreeBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.degreeNumber {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.degreeSolfege {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.degreeBtn.correctPick {
+  border-color: var(--green);
+  background: var(--green-dim);
+  opacity: 1;
+}
+
+.degreeBtn.wrongPick {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  opacity: 1;
+}
+
+.beads {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+}
+
+.bead {
+  fill: #b9c6d6;
+  transition: cx 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bead.active {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.beadRail {
+  stroke: var(--border);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+}
+
+.idleCard,
+.doneCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  text-align: center;
+}
+
+.idleCard p {
+  color: var(--text-secondary);
+  max-width: 460px;
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+.primaryBtn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.primaryBtn:hover {
+  background: var(--accent-hover);
+}
+
+.secondaryBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.secondaryBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.reading {
+  font-size: 2.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.readingUnit {
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.readingSpread {
+  color: var(--text-muted);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.provisionalBadge {
+  font-size: var(--text-xs);
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+}
+
+.deltaUp {
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+.deltaDown {
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+
+.outcomeDots {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.outcomeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.outcomeDot.miss {
+  background: var(--red);
+}
+
+.cadenceDots {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.cadenceDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  transition: var(--transition-fast);
+}
+
+.cadenceDot.lit {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+@media (max-width: 600px) {
+  .drill {
+    padding: var(--spacing-lg);
+  }
+
+  .degreeGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .status {
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+  }
+}

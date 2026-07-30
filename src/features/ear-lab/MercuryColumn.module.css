@@ -1,0 +1,60 @@
+.column {
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  display: block;
+}
+
+.glass {
+  fill: color-mix(in srgb, var(--bg-tertiary) 65%, transparent);
+}
+
+.glassStroke {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.mercuryFill {
+  /* Geometry properties animate: a new calibration pours, it does
+     not teleport. */
+  transition:
+    y 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    height 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scaleTick {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.scaleLabel {
+  fill: var(--text-muted);
+  font-size: 7.5px;
+  font-family: inherit;
+}
+
+.mark {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.markLabel {
+  fill: var(--text-secondary);
+  font-size: 7.5px;
+  font-family: inherit;
+}
+
+.meniscus {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  filter: drop-shadow(0 0 3px var(--accent-glow));
+}
+
+.dashedCap {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
+  stroke-linecap: round;
+}

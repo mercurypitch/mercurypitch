@@ -2,7 +2,7 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 import type { SettingsSection } from '@/stores/ui-store'
@@ -46,6 +46,7 @@ const VALID_TABS: Set<string> = new Set([
   TAB_KARAOKE,
   TAB_JAM,
   TAB_EXERCISES,
+  TAB_EAR_LAB,
   TAB_GUITAR,
   TAB_PITCH_TEST,
   TAB_PITCH_ALGO,

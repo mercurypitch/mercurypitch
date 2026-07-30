@@ -16,6 +16,7 @@ export const TAB_KARAOKE = 'karaoke' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
 export const TAB_EXERCISES = 'exercises' as const
+export const TAB_EAR_LAB = 'ear-lab' as const
 export const TAB_JAM = 'jam' as const
 export const TAB_GUITAR = 'guitar' as const
 
@@ -34,6 +35,7 @@ export type ActiveTab =
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
   | typeof TAB_EXERCISES
+  | typeof TAB_EAR_LAB
   | typeof TAB_JAM
   | typeof TAB_GUITAR
 
@@ -63,6 +65,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
       TAB_PIANO,
       TAB_GUITAR,
       TAB_EXERCISES,
+      TAB_EAR_LAB,
       TAB_KARAOKE,
     ],
   },
@@ -107,6 +110,8 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_PIANO]: ['piano'],
   [TAB_GUITAR]: ['guitar'],
   [TAB_EXERCISES]: ['singing'],
+  // The Ear Lab measures hearing, which every instrument shares.
+  [TAB_EAR_LAB]: ['singing', 'guitar', 'piano'],
   [TAB_KARAOKE]: ['singing'],
   [TAB_JAM]: ['singing'],
   [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
@@ -191,6 +196,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
   [TAB_EXERCISES]: 'exercises',
+  [TAB_EAR_LAB]: 'ear-lab',
   [TAB_JAM]: 'jam',
   [TAB_GUITAR]: 'guitar',
 }
@@ -222,6 +228,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
     [TAB_EXERCISES]: 'Exercises',
+    [TAB_EAR_LAB]: 'Ear Lab',
     [TAB_JAM]: 'Jam',
     [TAB_GUITAR]: 'Guitar',
   }
