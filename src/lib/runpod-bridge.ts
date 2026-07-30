@@ -8,7 +8,7 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, RUNPOD_STEM_NAMES, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
 import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 
@@ -424,6 +424,44 @@ async function startRunpodJob(
   const audioUrl = coerceFormString(form.get('audio_url'))
   const stems = parseStems(form.get('stems'))
 
+  // ── Second-pass fields (splitting a stem into its parts) ─────
+  // Validated before dispatch for the same reason as the model allowlist:
+  // a bad value must fail here for free, not inside a billable job.
+  const knownStems = RUNPOD_STEM_NAMES as readonly string[]
+  const sourceStem = coerceFormString(form.get('source_stem'))
+  if (
+    sourceStem !== undefined &&
+    sourceStem !== 'original' &&
+    !knownStems.includes(sourceStem)
+  ) {
+    return json(
+      {
+        error: `Invalid source_stem (use 'original' or one of: ${knownStems.join(', ')})`,
+      },
+      400,
+    )
+  }
+  const dropStemsRaw = form.get('drop_stems')
+  const dropStems = parseStems(dropStemsRaw)
+  if (dropStemsRaw !== null && dropStems === undefined) {
+    return json({ error: 'Invalid drop_stems (expected a JSON array)' }, 400)
+  }
+  if (dropStems !== undefined) {
+    const unknown = dropStems.filter((s) => !knownStems.includes(s))
+    if (unknown.length > 0) {
+      return json({ error: `Unknown drop_stems: ${unknown.join(', ')}` }, 400)
+    }
+  }
+  const residualStem = coerceFormString(form.get('residual_stem'))
+  if (residualStem !== undefined && !knownStems.includes(residualStem)) {
+    return json({ error: 'Invalid residual_stem' }, 400)
+  }
+  const reconcileRaw = coerceFormString(form.get('reconcile_residual'))
+  const reconcileResidual =
+    reconcileRaw === undefined
+      ? undefined
+      : ['1', 'true', 'yes', 'on'].includes(reconcileRaw.toLowerCase())
+
   // Hard cap first, whatever the transport.
   if (audioUrl === undefined && file.size > RUNPOD_MAX_UPLOAD_BYTES) {
     return json(
@@ -469,6 +507,10 @@ async function startRunpodJob(
     audioUrl,
     audioBase64,
     audioS3Key,
+    sourceStem,
+    dropStems,
+    reconcileResidual,
+    residualStem,
   })
 
   // One breadcrumb per dispatch: the session id logged on accept is the

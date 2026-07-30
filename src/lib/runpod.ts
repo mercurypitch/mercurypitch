@@ -177,6 +177,20 @@ export function runpodHeaders(cfg: RunpodConfig): Record<string, string> {
 
 // ── Job input ───────────────────────────────────────────────────
 
+/** Stem names the handler's registry can emit — the allowlist for the
+ *  second-pass fields below. Mirror of KNOWN_STEMS in runpod/handler.py
+ *  (kept local: the client-side uvr-api module must not be pulled into
+ *  the worker bundle). */
+export const RUNPOD_STEM_NAMES = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+] as const
+
 export interface RunpodJobInput {
   filename: string
   model: string
@@ -187,6 +201,13 @@ export interface RunpodJobInput {
   /** R2 object key for inputs too big to inline (>7 MB). The handler
    *  downloads it from S3_BUCKET with its own credentials — no public URL. */
   audio_s3_key?: string
+  /** Second pass: what the submitted audio IS ('instrumental' = re-split
+   *  of a stem an earlier job produced; drops the near-silent vocal and
+   *  reconciles the residual server-side). */
+  source_stem?: string
+  drop_stems?: string[]
+  reconcile_residual?: boolean
+  residual_stem?: string
 }
 
 export interface BuildJobInputParams {
@@ -197,6 +218,12 @@ export interface BuildJobInputParams {
   audioBase64?: string
   audioUrl?: string
   audioS3Key?: string
+  /** Second-pass fields — forwarded verbatim; the handler applies its own
+   *  defaults when absent (see runpod/handler.py). */
+  sourceStem?: string
+  dropStems?: string[]
+  reconcileResidual?: boolean
+  residualStem?: string
 }
 
 export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
@@ -217,6 +244,14 @@ export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
   } else if (p.audioBase64 !== undefined && p.audioBase64 !== '') {
     input.audio_base64 = p.audioBase64
   }
+  // Second-pass fields ride along only when set — an ordinary full-mix
+  // job's payload is unchanged, and older handlers ignore unknown keys.
+  if (p.sourceStem !== undefined) input.source_stem = p.sourceStem
+  if (p.dropStems !== undefined) input.drop_stems = p.dropStems
+  if (p.reconcileResidual !== undefined) {
+    input.reconcile_residual = p.reconcileResidual
+  }
+  if (p.residualStem !== undefined) input.residual_stem = p.residualStem
   return input
 }
 

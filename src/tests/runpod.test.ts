@@ -183,6 +183,31 @@ describe('buildJobInput', () => {
     expect(input.audio_url).toBeUndefined()
     expect(input.audio_base64).toBeUndefined()
   })
+
+  it('forwards the second-pass split fields when set', () => {
+    const input = buildJobInput({
+      audioBase64: 'AAAA',
+      model: 'demucs-6s',
+      sourceStem: 'instrumental',
+      dropStems: ['vocal', 'piano'],
+      reconcileResidual: true,
+      residualStem: 'other',
+    })
+    expect(input.source_stem).toBe('instrumental')
+    expect(input.drop_stems).toEqual(['vocal', 'piano'])
+    expect(input.reconcile_residual).toBe(true)
+    expect(input.residual_stem).toBe('other')
+  })
+
+  it('keeps an ordinary job payload free of split fields', () => {
+    // Absent means absent — the handler applies its own defaults, and
+    // older handlers must not see unexpected keys on normal jobs.
+    const input = buildJobInput({ audioBase64: 'AAAA' })
+    expect('source_stem' in input).toBe(false)
+    expect('drop_stems' in input).toBe(false)
+    expect('reconcile_residual' in input).toBe(false)
+    expect('residual_stem' in input).toBe(false)
+  })
 })
 
 // ── mapStatusToResponse ─────────────────────────────────────────
