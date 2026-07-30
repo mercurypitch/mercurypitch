@@ -6,34 +6,29 @@
 // section lets them upgrade to email/password or Google so progress,
 // challenges and leaderboard entries follow them across devices.
 // Karaoke/UVR data stays on-device regardless of login state.
+// Sign-in / registration itself lives in the shared AuthModal (opened
+// from here and from the header pill); this section shows the state
+// and manages the signed-in profile.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
-import { Eye, EyeOff } from '@/components/icons'
+import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
-import { getUserId } from '@/db/services/user-service'
+import { ensureAuth, fetchMe, googleSignInUrl, logout, } from '@/db/services/auth-service'
+import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
-import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
-import { PasswordRequirements } from './PasswordRequirements'
+import { GoogleMark } from './GoogleMark'
 
 // ── Component ───────────────────────────────────────────────────
-
-type FormMode = 'none' | 'login' | 'register'
 
 export const AccountSection: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
 
   const [me, setMe] = createSignal<MeResponse | null>(null)
-  const [mode, setMode] = createSignal<FormMode>('none')
-  const [email, setEmail] = createSignal('')
-  const [password, setPassword] = createSignal('')
-  const [showPassword, setShowPassword] = createSignal(false)
-  const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
@@ -85,7 +80,11 @@ export const AccountSection: Component = () => {
     setMe(await fetchMe())
   }
 
-  onMount(() => {
+  // Re-fetch on every auth transition — sign-in now happens in the shared
+  // AuthModal, so this section must notice it from the outside (same
+  // pattern as HeaderAccount).
+  createEffect(() => {
+    authVersion()
     if (!cloudConfigured) return
     void (async () => {
       await ensureAuth()
@@ -99,58 +98,9 @@ export const AccountSection: Component = () => {
     window.location.assign(googleSignInUrl())
   }
 
-  async function handleAuthAction(action: () => Promise<void>): Promise<void> {
-    setError('')
-    setBusy(true)
-    try {
-      await action()
-      setMode('none')
-      setPassword('')
-      await refreshMe()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Live password validity (register only) — drives the red border and the
-  // checklist so nobody discovers the rules one server rejection at a time.
-  const pwdInvalid = (): boolean =>
-    mode() === 'register' && password() !== '' && !isPasswordValid(password())
-
-  function handleSubmit(e: Event): void {
-    e.preventDefault()
-    // Snapshot the form inside the event handler — the async closures
-    // below run outside the tracked scope (and the form could change
-    // mid-request).
-    const credentials = { email: email(), password: password() }
-    if (mode() === 'register' && !isPasswordValid(credentials.password)) {
-      setError("Password doesn't meet the requirements yet.")
-      return
-    }
-    if (mode() === 'register') {
-      const name = displayName()
-      void handleAuthAction(async () => {
-        await registerWithPassword(
-          credentials.email,
-          credentials.password,
-          name,
-        )
-        showNotification('Account created — progress is now synced', 'info')
-      })
-    } else {
-      void handleAuthAction(async () => {
-        await loginWithPassword(credentials.email, credentials.password)
-        showNotification('Signed in', 'info')
-      })
-    }
-  }
-
   function handleLogout(): void {
     logout()
     setMe(null)
-    setMode('none')
     showNotification('Signed out', 'info')
   }
 
@@ -258,170 +208,43 @@ export const AccountSection: Component = () => {
             </Show>
           </Match>
 
-          {/* Anonymous (or signed out) */}
-          <Match when={mode() === 'none'}>
-            <p class={styles.mutedNote}>
-              {me() != null
-                ? 'You are using an anonymous account. Create an account to keep your progress across devices.'
-                : 'Sign in to sync your progress across devices.'}
-            </p>
-            <div class={styles.buttonRow}>
-              <button
-                class={styles.authButtonPrimary}
-                onClick={() => setMode('register')}
-                data-testid="show-register"
-              >
-                Create account
-              </button>
-              <button
-                class={styles.authButton}
-                onClick={() => setMode('login')}
-                data-testid="show-login"
-              >
-                Sign in
-              </button>
-            </div>
-            <button
-              class={styles.googleButton}
-              onClick={startGoogleSignIn}
-              data-testid="google-signin"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 48 48"
-                aria-hidden="true"
-              >
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                />
-              </svg>
-              Sign in with Google
-            </button>
-            <Show when={error() !== ''}>
-              <p class={styles.errorNote} data-testid="auth-error">
-                {error()}
+          {/* Anonymous (or signed out) — the actual form lives in AuthModal */}
+          <Match when={true}>
+            <div class={styles.signedOutCard}>
+              <p class={styles.signedOutLead}>
+                {me() != null
+                  ? 'You are practicing on an anonymous account.'
+                  : 'You are signed out.'}
               </p>
-            </Show>
-          </Match>
-
-          {/* Login / register form */}
-          <Match when={mode() !== 'none'}>
-            <form class={styles.authForm} onSubmit={handleSubmit}>
-              <Show when={mode() === 'register'}>
-                <input
-                  class={styles.authInput}
-                  type="text"
-                  placeholder="Display name (optional)"
-                  aria-label="Display name"
-                  autocomplete="nickname"
-                  value={displayName()}
-                  onInput={(e) => setDisplayName(e.currentTarget.value)}
-                  data-testid="auth-display-name"
-                />
-              </Show>
-              <input
-                class={styles.authInput}
-                type="email"
-                name="email"
-                id="auth-email"
-                placeholder="Email"
-                aria-label="Email"
-                autocomplete="username"
-                required
-                value={email()}
-                onInput={(e) => setEmail(e.currentTarget.value)}
-                aria-invalid={error() !== '' ? 'true' : undefined}
-                aria-describedby={error() !== '' ? 'auth-error' : undefined}
-                data-testid="auth-email"
-              />
-              <div class={styles.passwordField}>
-                <input
-                  class={styles.authInput}
-                  type={showPassword() ? 'text' : 'password'}
-                  name="password"
-                  id="auth-password"
-                  placeholder="Password"
-                  aria-label="Password"
-                  autocomplete={
-                    mode() === 'register' ? 'new-password' : 'current-password'
-                  }
-                  required
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                  aria-invalid={
-                    pwdInvalid() || error() !== '' ? 'true' : undefined
-                  }
-                  aria-describedby={error() !== '' ? 'auth-error' : undefined}
-                  data-testid="auth-password"
-                />
-                <button
-                  class={styles.revealButton}
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={
-                    showPassword() ? 'Hide password' : 'Show password'
-                  }
-                  aria-pressed={showPassword()}
-                  title={showPassword() ? 'Hide password' : 'Show password'}
-                  data-testid="auth-password-toggle"
-                >
-                  <Show when={showPassword()} fallback={<Eye />}>
-                    <EyeOff />
-                  </Show>
-                </button>
-              </div>
-              <Show when={mode() === 'register'}>
-                <PasswordRequirements
-                  password={password()}
-                  showInvalid={password() !== ''}
-                />
-              </Show>
-              <Show when={error() !== ''}>
-                <p
-                  class={styles.errorNote}
-                  id="auth-error"
-                  role="alert"
-                  data-testid="auth-error"
-                >
-                  {error()}
-                </p>
-              </Show>
+              <p class={styles.mutedNote}>
+                Create a free account to keep your progress, scores and credits
+                across devices.
+              </p>
               <div class={styles.buttonRow}>
                 <button
                   class={styles.authButtonPrimary}
-                  type="submit"
-                  disabled={busy()}
-                  data-testid="auth-submit"
+                  onClick={() => openAuthModal('register')}
+                  data-testid="show-register"
                 >
-                  {mode() === 'register' ? 'Create account' : 'Sign in'}
+                  Create account
                 </button>
                 <button
                   class={styles.authButton}
-                  type="button"
-                  onClick={() => {
-                    setMode('none')
-                    setError('')
-                    setShowPassword(false)
-                  }}
+                  onClick={() => openAuthModal('login')}
+                  data-testid="show-login"
                 >
-                  Cancel
+                  Sign in
+                </button>
+                <button
+                  class={styles.googleButton}
+                  onClick={startGoogleSignIn}
+                  data-testid="google-signin"
+                >
+                  <GoogleMark />
+                  Sign in with Google
                 </button>
               </div>
-            </form>
+            </div>
           </Match>
         </Switch>
       </Show>

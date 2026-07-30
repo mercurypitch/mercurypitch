@@ -321,6 +321,21 @@ body {
   border-color: rgba(255, 122, 122, 0.7);
 }
 
+/* "Forgot password?" — small trailing link under the password field;
+   leads to the studio app's reset form. */
+.kn-modal .kn-forgot-link {
+  align-self: flex-end;
+  margin-top: -0.2rem;
+  font-size: 0.78rem;
+  color: #b79ae0;
+  text-decoration: none;
+}
+
+.kn-modal .kn-forgot-link:hover {
+  color: #e8dcfa;
+  text-decoration: underline;
+}
+
 /* Password field with an in-field reveal toggle. */
 .kn-modal .kn-password-field {
   position: relative;

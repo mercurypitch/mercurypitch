@@ -37,6 +37,11 @@ export interface UseHashRouterDeps {
   openAdminWeekly: () => void
   /** Whether that overlay is open (keeps the tab→hash sync off it). */
   showAdminWeekly: Accessor<boolean>
+  /** Open the password-reset page (token from the emailed link, or null
+   *  for the bare request-a-link form). */
+  openResetPassword: (token: string | null) => void
+  /** Whether that page is open (keeps the tab→hash sync off it). */
+  showResetPassword: Accessor<boolean>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -105,6 +110,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'admin-weekly') {
       deps.dismissWelcome()
       deps.openAdminWeekly()
+    } else if (route.type === 'reset-password') {
+      // Emailed link landing — the welcome overlay must not cover the form.
+      deps.dismissWelcome()
+      deps.openResetPassword(route.token)
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
@@ -147,7 +156,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection() ||
-      deps.showAdminWeekly()
+      deps.showAdminWeekly() ||
+      deps.showResetPassword()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {

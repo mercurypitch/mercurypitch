@@ -30,6 +30,9 @@ export type HashRoute =
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
   | { type: 'admin-weekly' }
+  /** The password-reset form: emailed link landing (#/reset-password?token=…)
+   *  or the bare request-a-link form (#/reset-password). */
+  | { type: 'reset-password'; token: string | null }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -213,6 +216,16 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'admin-weekly' }
   }
 
+  // Match: /reset-password[?token=…] — the emailed reset-link landing, or
+  // the bare request-a-link form when no token rides along.
+  const resetMatch = hash.match(/^\/reset-password(?:\?token=([^&]+))?$/)
+  if (resetMatch) {
+    return {
+      type: 'reset-password',
+      token: resetMatch[1] != null ? decodeURIComponent(resetMatch[1]) : null,
+    }
+  }
+
   // Match: /tab-name
   const tabMatch = hash.match(/^\/([a-z-]+)$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
@@ -259,6 +272,10 @@ export function buildHash(route: HashRoute): string {
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
     case 'admin-weekly':
       return '/admin/weekly'
+    case 'reset-password':
+      return route.token != null && route.token !== ''
+        ? `/reset-password?token=${encodeURIComponent(route.token)}`
+        : '/reset-password'
     case 'unknown':
       return '/'
   }

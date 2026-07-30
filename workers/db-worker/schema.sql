@@ -59,6 +59,22 @@ CREATE TABLE IF NOT EXISTS emailVerifications (
 CREATE INDEX IF NOT EXISTS idx_emailVerifications_user
   ON emailVerifications(userId);
 
+-- ── Password reset tokens (see auth.ts handleForgotPassword) ─────────
+-- Same shape and lifecycle as emailVerifications: only the SHA-256 of the
+-- emailed token is stored, one outstanding link per user (superseded on
+-- re-request), consumed on use, expiry checked at use time (2 hours).
+-- Existing DBs: see scripts/migrate-add-passwordResets.sql.
+CREATE TABLE IF NOT EXISTS passwordResets (
+  tokenHash TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  email TEXT NOT NULL,
+  createdAt TEXT NOT NULL,
+  expiresAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_passwordResets_user
+  ON passwordResets(userId);
+
 -- ── User Profiles ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS userProfiles (
   id TEXT PRIMARY KEY,
