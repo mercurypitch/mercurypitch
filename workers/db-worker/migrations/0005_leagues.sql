@@ -22,7 +22,12 @@ CREATE TABLE IF NOT EXISTS leagues (
   updatedAt TEXT NOT NULL,
   rank INTEGER NOT NULL UNIQUE,           -- 1..7, ascending
   name TEXT NOT NULL,                     -- branded rung name ('???' while mystery)
+  -- Two assets per rung, because they do different jobs. trophyAsset is the
+  -- hero sculpture for the big rung card; badgeAsset is the enamel pin used
+  -- wherever the art renders small (the ladder strip is 56px, where a
+  -- photoreal glass trophy turns to mush). Falls back to trophyAsset if NULL.
   trophyAsset TEXT,                       -- '/leagues/lN.*' or R2 URL; NULL = no art yet
+  badgeAsset TEXT,                        -- '/leagues/lN-badge.*'; NULL = fall back to trophyAsset
   isMystery INTEGER NOT NULL DEFAULT 0,   -- 1 = locked "coming soon" rung (l7)
   promoteCount INTEGER NOT NULL,          -- top N of a cohort promote up a rung
   relegateCount INTEGER NOT NULL          -- bottom M relegate down a rung (0 = safe)
@@ -93,15 +98,16 @@ CREATE TABLE IF NOT EXISTS leaguePointsConfig (
 -- amethyst, sapphire) so a rung stays identifiable at the ~40px it renders in
 -- a standings row, where counting note-heads is not realistic.
 INSERT OR IGNORE INTO leagues
-  (id, createdAt, updatedAt, rank, name, trophyAsset, isMystery, promoteCount, relegateCount)
+  (id, createdAt, updatedAt, rank, name, trophyAsset, badgeAsset, isMystery, promoteCount, relegateCount)
 VALUES
-  ('l1', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 1, 'Mercling',  '/leagues/l1.webp', 0, 15, 0),
-  ('l2', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 2, 'Sparkwing', '/leagues/l2.webp', 0, 10, 10),
-  ('l3', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 3, 'Skyvox',    '/leagues/l3.webp', 0, 10, 10),
-  ('l4', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 4, 'Highnova',  '/leagues/l4.webp', 0, 10, 10),
-  ('l5', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 5, 'Starcrest', '/leagues/l5.webp', 0, 10, 10),
-  ('l6', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 6, 'Mercapex',  '/leagues/l6.webp', 0, 0,  10),
-  ('l7', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 7, '???',       '/leagues/l7.webp', 1, 0,  0);
+  ('l1', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 1, 'Mercling',  '/leagues/l1.webp', '/leagues/l1-badge.webp', 0, 15, 0),
+  ('l2', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 2, 'Sparkwing', '/leagues/l2.webp', '/leagues/l2-badge.webp', 0, 10, 10),
+  ('l3', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 3, 'Skyvox',    '/leagues/l3.webp', '/leagues/l3-badge.webp', 0, 10, 10),
+  ('l4', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 4, 'Highnova',  '/leagues/l4.webp', '/leagues/l4-badge.webp', 0, 10, 10),
+  ('l5', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 5, 'Starcrest', '/leagues/l5.webp', '/leagues/l5-badge.webp', 0, 10, 10),
+  ('l6', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 6, 'Mercapex',  '/leagues/l6.webp', '/leagues/l6-badge.webp', 0, 0,  10),
+  -- l7 has no badge yet: it renders locked, and the reveal art is held back.
+  ('l7', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 7, '???',       '/leagues/l7.webp', NULL, 1, 0,  0);
 
 -- Seed the single tunable points-config row (all weights default).
 INSERT OR IGNORE INTO leaguePointsConfig

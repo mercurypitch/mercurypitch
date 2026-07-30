@@ -203,8 +203,10 @@ export interface LeaderboardEntry extends DbEntity {
 export interface League extends DbEntity {
   rank: number // 1..7, ascending
   name: string // branded rung name; '???' while a mystery
-  /** Trophy art URL ('/leagues/lN.webp' or R2 key); null if a rung has no art. */
+  /** Hero sculpture for the rung card ('/leagues/lN.webp' or R2 key). */
   trophyAsset: string | null
+  /** Flat enamel badge for small sizes; null falls back to trophyAsset. */
+  badgeAsset: string | null
   /** True for a locked "coming soon" rung (l7) until it is revealed. */
   isMystery: boolean
   promoteCount: number // top N of a cohort promote up a rung

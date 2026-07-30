@@ -14,10 +14,25 @@ export interface LeagueRung {
   id: string
   rank: number
   name: string
+  /** Hero sculpture, for the big rung card. */
   trophyAsset: string | null
+  /** Enamel pin, for anywhere the art renders small. Falls back to the trophy. */
+  badgeAsset: string | null
   isMystery: boolean
   promoteCount: number
   relegateCount: number
+}
+
+/**
+ * The art to show at small sizes (the 56px ladder strip and below).
+ *
+ * The trophies are photoreal glass sculptures on a dark field — they are
+ * beautiful at card size and turn to mush at 56px, which is why each rung
+ * also carries a flat enamel badge. Rungs without one (the locked seventh)
+ * fall back to their trophy.
+ */
+export function smallArt(rung: LeagueRung): string | null {
+  return rung.badgeAsset ?? rung.trophyAsset
 }
 
 export interface LeagueStanding {

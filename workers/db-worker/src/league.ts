@@ -331,6 +331,7 @@ export interface LeagueMe {
     rank: number
     name: string
     trophyAsset: string | null
+    badgeAsset: string | null
     isMystery: boolean
     promoteCount: number
     relegateCount: number
@@ -371,11 +372,17 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
   const weekStart = isoWeekStart()
   const leagueId = await userLeagueId(env, userId)
   const league = await env.DB.prepare(
-    `SELECT id, rank, name, trophyAsset, isMystery, promoteCount, relegateCount
+    `SELECT id, rank, name, trophyAsset, badgeAsset, isMystery, promoteCount, relegateCount
      FROM leagues WHERE id = ?`,
   )
     .bind(leagueId)
-    .first<LeagueRow & { name: string; trophyAsset: string | null }>()
+    .first<
+      LeagueRow & {
+        name: string
+        trophyAsset: string | null
+        badgeAsset: string | null
+      }
+    >()
 
   const cohort = await env.DB.prepare(
     'SELECT id FROM leagueCohorts WHERE leagueId = ? AND weekStart = ?',
@@ -417,6 +424,7 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
           rank: league.rank,
           name: league.name,
           trophyAsset: league.trophyAsset,
+          badgeAsset: league.badgeAsset,
           isMystery: !!league.isMystery,
           promoteCount: league.promoteCount,
           relegateCount: league.relegateCount,
