@@ -7,9 +7,14 @@ vocal + instrumental.
 Status: **Phase 1 (server) implemented**; phases 2-5 still proposed.
 
 Decisions taken since the original proposal:
-- Six stems is the default, not an opt-in — `demucs-6s` is
-  `UVR_DEFAULT_MULTI_STEM_MODEL`. Piano ships marked experimental
-  (`experimentalStems`) rather than hidden.
+- **Ship drums, bass and guitar; hold piano.** `demucs-6s` is the default
+  model because it is the only source of a guitar stem — piano comes on the
+  same compute pass whether we want it or not, so it is *dropped* rather
+  than avoided, and the residual pass folds its audio into `other`.
+  Switching it on later is deleting one line (`defaultDropStems`).
+- "Rough" and "dropped" are separate fields (`experimentalStems` vs
+  `defaultDropStems`) so piano can ship *labelled* rough without that
+  meaning hidden — which is exactly the later migration.
 - Both separation paths accept `source_stem: "instrumental"`, so the
   "rerun on the instrumental" flow the mixer needs is a server feature,
   not something the client has to assemble.
@@ -276,11 +281,13 @@ to offer the breakdown as server-only and say so in the UI.
 
 ## 8. Open questions
 
-1. **Guitar**: ship `htdemucs_6s` guitar as experimental, or hold the whole
-   6-stem option until a better model exists? The request explicitly asks for
-   guitar, but piano quality is bad enough to hurt trust.
+1. ~~**Guitar**~~ — decided: ship guitar, drop piano by default (see above).
+   Revisit piano when a better 6-stem model lands, or when
+   `htdemucs_6s`'s piano is judged good enough for the material users
+   actually bring.
 2. **Pricing**: is the breakdown 1 credit, or free for users who already paid
-   for the session? It's a second GPU pass, so it has real cost.
+   for the session? It's a second GPU pass, so it has real cost. The Demucs
+   multipliers are still provisional — measure before launch.
 3. **Re-separation**: if a user replaces the instrumental stem manually
    (`setSessionStem` supports this today), do we invalidate the breakdown?
 4. Confirm the Demucs weight licensing against how we distribute the image.
