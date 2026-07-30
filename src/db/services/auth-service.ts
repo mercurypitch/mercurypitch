@@ -186,7 +186,9 @@ async function verifyTokenWithServer(): Promise<boolean> {
  * down, or the account was upgraded and requires an explicit login.
  * Never throws — callers must stay usable offline.
  */
-export async function ensureAuth(): Promise<boolean> {
+let ensureAuthInFlight: Promise<boolean> | null = null
+
+async function ensureAuthOnce(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
   if (hasValidToken() && (await verifyTokenWithServer())) return true
   if (requiresLogin()) return false
@@ -203,6 +205,18 @@ export async function ensureAuth(): Promise<boolean> {
     }
     return false
   }
+}
+
+export function ensureAuth(): Promise<boolean> {
+  if (ensureAuthInFlight !== null) return ensureAuthInFlight
+
+  const attempt = ensureAuthOnce()
+  ensureAuthInFlight = attempt
+  const clear = (): void => {
+    if (ensureAuthInFlight === attempt) ensureAuthInFlight = null
+  }
+  void attempt.then(clear, clear)
+  return attempt
 }
 
 export async function registerWithPassword(
