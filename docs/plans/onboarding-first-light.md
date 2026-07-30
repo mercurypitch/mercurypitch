@@ -17,7 +17,7 @@ baseline (115 steps / 2 pre-existing misses).
 door, beat 1 (sky), beat 3 (fork), beat 6 (the Map) including the hover reveal
 on room cards, the `#/map` replay route, and both skip paths sticking.
 
-**Now covered by `src/e2e/onboarding.spec.ts` + `onboarding-mic.spec.ts`** (11
+**Now covered by `src/e2e/onboarding.spec.ts` + `onboarding-mic.spec.ts`** (12
 tests, all passing):
 
 - The door, and that it no longer asks the three setup questions.
@@ -26,6 +26,10 @@ tests, all passing):
 - **Phone (390×844):** no horizontal overflow, the CTA on screen, and the Map
   collapsing to a single column.
 - **Reduced motion:** beats render fully opaque and the Map is reachable.
+- **Settings → "Replay the intro" reopens the door** after onboarding is
+  finished. Regression test for the dead-button bug (the door was gated on
+  `isFirstRun()` as well as its own flag; `finishOnboarding` now spends
+  `welcomeSeen`, so the extra gate is gone).
 - **The mic beats.** Chromium is fed a generated 220 Hz tone via
   `--use-file-for-fake-audio-capture` (`src/e2e/helpers/tone-wav.ts`), so beat
   2's note read-back (asserts A3 + Hz), the fork carrying that note, and the
@@ -445,10 +449,12 @@ flow and deep-links to Settings → Account. A hand-off at the moment of peak
 intent converts worse than an inline form would, but duplicating a credential
 form is not something to do casually — it needs its own review.
 
-**Write `src/e2e/onboarding.spec.ts`.** Specified under Verification and never
-written. It is the only thing that would catch a regression in the door/skip
-gating — the bug where the welcome screen came back over the Map and over a
-chosen room was found by hand, and nothing currently stops it returning.
+**No way back to the voiceprint once onboarding is done.** Settings → Voice
+says "take the guided voice map from the home screen", and there is no such
+entry point — `#/map` replays the Map, not the voiceprint. Someone who took the
+short track, or who wants a second take to see the growth line move, currently
+cannot get one without clearing storage. Either add the entry point (better:
+the growth timeline is worthless without repeat takes) or fix the copy.
 
 **Covers for the Ascent and Jam Map cards.** See Phase 4 remaining.
 
