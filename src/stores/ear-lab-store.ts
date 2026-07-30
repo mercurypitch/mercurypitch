@@ -11,7 +11,7 @@
 import { addScoredMs } from '@/db/services/practice-minutes'
 import { trackEvent } from '@/lib/analytics'
 import type { FacultyId } from '@/lib/ear/drills'
-import { findThresholdDrill, IDENTIFICATION_DRILLS } from '@/lib/ear/drills'
+import { IDENTIFICATION_DRILLS, THRESHOLD_DRILLS } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
 import { isProvisional, newRating, updateItemDifficulty, updateRating, } from '@/lib/ear/elo'
 import type { FacultyReading, MercuryIndex } from '@/lib/ear/mercury-index'
@@ -192,14 +192,11 @@ function facultyReadingsFrom(options: {
 }): FacultyReading[] {
   const out: FacultyReading[] = []
 
-  // Threshold faculties: one reading per drill that has one. Where a
-  // faculty has several drills, the composite takes the best-scored
-  // one implicitly (later entries overwrite in mercuryIndex parts);
-  // v1 ships one drill per threshold faculty, so this is moot today.
-  for (const drillId of ['hairline'] as const) {
-    const drill = findThresholdDrill(drillId)
-    const reading = options.thresholdFor(drillId)
-    if (drill && reading) {
+  // Threshold faculties: one reading per drill that has one; drills
+  // sharing a faculty are averaged inside mercuryIndex.
+  for (const drill of THRESHOLD_DRILLS) {
+    const reading = options.thresholdFor(drill.id)
+    if (reading) {
       out.push({
         faculty: drill.faculty,
         value: reading.value,

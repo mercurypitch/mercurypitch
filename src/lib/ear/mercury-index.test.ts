@@ -87,6 +87,17 @@ describe('mercuryIndex', () => {
     expect(strongFunction.value).toBeGreaterThan(strongTime.value)
   })
 
+  it('averages several drills measuring the same faculty', () => {
+    // Shape measured by two drills: a perfect one and a novice one
+    // must read as the middle, not as whichever came last.
+    const index = mercuryIndex([
+      reading('shape', 9, SPAN),
+      reading('shape', 3, SPAN),
+    ])
+    expect(index.parts.shape).toBe(INDEX_MAX / 2)
+    expect(index.value).toBe(INDEX_MAX / 2)
+  })
+
   it('normalises over present faculties rather than the full set', () => {
     const half = mercuryIndex([
       reading('resolution', Math.sqrt(40 * 3), CENTS),

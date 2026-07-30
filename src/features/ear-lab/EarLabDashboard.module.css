@@ -119,6 +119,29 @@
   font-style: italic;
 }
 
+.heroActions {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reportBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.reportBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
 .calibrateBtn {
   background: var(--accent);
   border: none;
@@ -128,7 +151,6 @@
   font-size: var(--text-md);
   font-weight: 600;
   cursor: pointer;
-  align-self: flex-start;
   transition: var(--transition-fast);
 }
 

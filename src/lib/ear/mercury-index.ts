@@ -78,14 +78,27 @@ export function scoreReading(reading: number, scale: ReadingScale): number {
 }
 
 /** Composite the measured faculties, weight-normalised over what is
- *  actually present. */
+ *  actually present. A faculty measured by several drills (Shape has
+ *  Leap and Contour) takes the mean of their scores — one strong
+ *  drill must not mask an untouched weakness, nor vice versa. */
 export function mercuryIndex(
   readings: readonly FacultyReading[],
   weights: Record<FacultyId, number> = FACULTY_WEIGHTS,
 ): MercuryIndex {
-  const parts: Partial<Record<FacultyId, number>> = {}
+  const sums: Partial<Record<FacultyId, { total: number; n: number }>> = {}
   for (const reading of readings) {
-    parts[reading.faculty] = scoreReading(reading.value, reading.scale)
+    const score = scoreReading(reading.value, reading.scale)
+    const bucket = sums[reading.faculty] ?? { total: 0, n: 0 }
+    bucket.total += score
+    bucket.n += 1
+    sums[reading.faculty] = bucket
+  }
+
+  const parts: Partial<Record<FacultyId, number>> = {}
+  for (const [faculty, bucket] of Object.entries(sums) as Array<
+    [FacultyId, { total: number; n: number }]
+  >) {
+    parts[faculty] = Math.round(bucket.total / bucket.n)
   }
 
   const measured = Object.keys(parts) as FacultyId[]

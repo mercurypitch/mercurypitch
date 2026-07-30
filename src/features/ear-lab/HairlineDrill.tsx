@@ -15,14 +15,14 @@ import { useEngines } from '@/contexts/EngineContext'
 import { findThresholdDrill } from '@/lib/ear/drills'
 import { latestThresholdReading } from '@/stores/ear-lab-store'
 import styles from './EarDrill.module.css'
-import type { HairlineMode } from './use-hairline-controller'
 import { useHairlineController } from './use-hairline-controller'
+import type { ThresholdRunMode } from './use-threshold-run'
 
 interface HairlineDrillProps {
   onBack: () => void
   /** When set, the run starts immediately in this mode (the
    *  dashboard's Calibrate CTA jumps straight in). */
-  autoStartMode?: HairlineMode
+  autoStartMode?: ThresholdRunMode
 }
 
 export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
@@ -163,7 +163,10 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
               <line class={styles.beadRail} x1="30" x2="290" y1="45" y2="45" />
               <circle
                 class={`${styles.bead} ${
-                  controller.phase() === 'tone-1' ? styles.active : ''
+                  controller.phase() === 'stimulus' &&
+                  controller.stimulusStep() === 1
+                    ? styles.active
+                    : ''
                 }`}
                 cx={160 - separation() / 2}
                 cy="45"
@@ -171,7 +174,10 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
               />
               <circle
                 class={`${styles.bead} ${
-                  controller.phase() === 'tone-2' ? styles.active : ''
+                  controller.phase() === 'stimulus' &&
+                  controller.stimulusStep() === 2
+                    ? styles.active
+                    : ''
                 }`}
                 cx={160 + separation() / 2}
                 cy="45"

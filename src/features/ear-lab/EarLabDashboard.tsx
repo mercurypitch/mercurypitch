@@ -17,7 +17,16 @@ import styles from './EarLabDashboard.module.css'
 import { LatencyWizard } from './LatencyWizard'
 import { MercuryColumn } from './MercuryColumn'
 
-export type EarLabView = 'dashboard' | 'hairline' | 'calibration' | 'home'
+export type EarLabView =
+  | 'dashboard'
+  | 'hairline'
+  | 'calibration'
+  | 'home'
+  | 'leap'
+  | 'stack'
+  | 'contour'
+  | 'grid'
+  | 'report'
 
 interface EarLabDashboardProps {
   onNavigate: (view: EarLabView) => void
@@ -32,27 +41,128 @@ const FACULTY_ORDER: FacultyId[] = [
   'wild',
 ]
 
+interface DrillCardDef {
+  view: EarLabView
+  title: string
+  blurb: string
+  /** One-line stat, or null for "not played yet". */
+  stat: () => string | null
+  emptyStat: string
+}
+
+function ratingStat(drillId: string): string | null {
+  const rating = earPlayerRating(drillId)
+  if (rating.attempts === 0) return null
+  return `Rating ${Math.round(rating.rating)}${
+    isProvisional(rating) ? ' · settling' : ''
+  }`
+}
+
+function thresholdStat(drillId: string): string | null {
+  const reading = latestThresholdReading(drillId)
+  if (!reading) return null
+  const unit = findThresholdDrill(drillId)?.unitShort ?? ''
+  const decimals = unit === 'ms' ? 0 : 1
+  return `Latest ${reading.value.toFixed(decimals)}${unit}`
+}
+
+const DRILL_CARDS: DrillCardDef[] = [
+  {
+    view: 'hairline',
+    title: 'Hairline',
+    blurb:
+      'Two tones, ever closer — the finest gap your ear still resolves, in cents.',
+    stat: () => thresholdStat('hairline'),
+    emptyStat: 'No reading yet',
+  },
+  {
+    view: 'home',
+    title: 'Home',
+    blurb:
+      'A cadence plants the key, one note sounds — name the degree, by tap or by voice. The hearing that transfers.',
+    stat: () => {
+      const ear = ratingStat('home')
+      const voice = earPlayerRating('home-sing')
+      if (ear === null) return null
+      return voice.attempts > 0
+        ? `${ear} · voice ${Math.round(voice.rating)}`
+        : ear
+    },
+    emptyStat: 'Unrated',
+  },
+  {
+    view: 'grid',
+    title: 'The Grid',
+    blurb:
+      'Six clicks, one off the lattice — the finest timing flaw you still catch, in milliseconds.',
+    stat: () => thresholdStat('the-grid'),
+    emptyStat: 'No reading yet',
+  },
+  {
+    view: 'leap',
+    title: 'Leap',
+    blurb: 'Name the interval. The supporting vocabulary drill behind Home.',
+    stat: () => ratingStat('leap'),
+    emptyStat: 'Unrated',
+  },
+  {
+    view: 'stack',
+    title: 'Stack',
+    blurb: 'One chord, roved root — name its quality. Colour hearing opens.',
+    stat: () => ratingStat('stack'),
+    emptyStat: 'Unrated',
+  },
+  {
+    view: 'contour',
+    title: 'Contour',
+    blurb:
+      'Up, down or same, fast — down to quarter-tone gaps at the top tier.',
+    stat: () => ratingStat('contour'),
+    emptyStat: 'Unrated',
+  },
+]
+
 export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
   const calibrated = () => latestCalibration()
   const estimate = () => practiceIndexEstimate()
 
   const facultyReadout = (faculty: FacultyId): string | null => {
-    if (faculty === 'resolution') {
-      const reading = latestThresholdReading('hairline')
-      if (!reading) return null
-      const unit = findThresholdDrill('hairline')?.unitShort ?? ''
-      return `${reading.value.toFixed(1)}${unit}`
+    switch (faculty) {
+      case 'resolution':
+        return thresholdStat('hairline')?.replace('Latest ', '') ?? null
+      case 'time':
+        return thresholdStat('the-grid')?.replace('Latest ', '') ?? null
+      case 'function': {
+        const rating = earPlayerRating('home')
+        if (rating.attempts === 0) return null
+        const provisional = isProvisional(rating) ? ' · settling' : ''
+        const voice = earPlayerRating('home-sing')
+        const voicePart =
+          voice.attempts > 0 ? ` · voice ${Math.round(voice.rating)}` : ''
+        return `${Math.round(rating.rating)}${provisional}${voicePart}`
+      }
+      case 'shape': {
+        // Leap and Contour average into the faculty; the readout
+        // shows whichever exist.
+        const parts = ['leap', 'contour']
+          .map((id) => ({ id, rating: earPlayerRating(id) }))
+          .filter((p) => p.rating.attempts > 0)
+        if (parts.length === 0) return null
+        const mean =
+          parts.reduce((sum, p) => sum + p.rating.rating, 0) / parts.length
+        const settling = parts.some((p) => isProvisional(p.rating))
+        return `${Math.round(mean)}${settling ? ' · settling' : ''}`
+      }
+      case 'colour': {
+        const rating = earPlayerRating('stack')
+        if (rating.attempts === 0) return null
+        return `${Math.round(rating.rating)}${
+          isProvisional(rating) ? ' · settling' : ''
+        }`
+      }
+      default:
+        return null
     }
-    if (faculty === 'function') {
-      const rating = earPlayerRating('home')
-      if (rating.attempts === 0) return null
-      const provisional = isProvisional(rating) ? ' · settling' : ''
-      const voice = earPlayerRating('home-sing')
-      const voicePart =
-        voice.attempts > 0 ? ` · voice ${Math.round(voice.rating)}` : ''
-      return `${Math.round(rating.rating)}${provisional}${voicePart}`
-    }
-    return null
   }
 
   const delta = (): number | null => {
@@ -129,13 +239,22 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             </For>
           </ul>
 
-          <button
-            type="button"
-            class={styles.calibrateBtn}
-            onClick={() => props.onNavigate('calibration')}
-          >
-            Run Calibration
-          </button>
+          <div class={styles.heroActions}>
+            <button
+              type="button"
+              class={styles.calibrateBtn}
+              onClick={() => props.onNavigate('calibration')}
+            >
+              Run Calibration
+            </button>
+            <button
+              type="button"
+              class={styles.reportBtn}
+              onClick={() => props.onNavigate('report')}
+            >
+              Ear Report
+            </button>
+          </div>
           <p class={styles.calibrateNote}>
             About 3 minutes. Three separate measurements run at once, shuffled
             trial by trial and averaged — the only reading that marks the
@@ -145,63 +264,31 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
       </section>
 
       <section class={styles.drills}>
-        <article class={styles.drillCard}>
-          <h3>Hairline</h3>
-          <p>
-            Two tones, ever closer — the finest gap your ear still resolves, in
-            cents.
-          </p>
-          <div class={styles.drillStats}>
-            <Show
-              when={latestThresholdReading('hairline')}
-              fallback={<span class={styles.unmeasured}>No reading yet</span>}
-            >
-              {(reading) => (
-                <span>
-                  Latest{' '}
-                  <strong>
-                    {reading().value.toFixed(1)}
-                    {'¢'}
-                  </strong>
-                </span>
-              )}
-            </Show>
-          </div>
-          <button
-            type="button"
-            class={styles.drillStartBtn}
-            onClick={() => props.onNavigate('hairline')}
-          >
-            Open
-          </button>
-        </article>
-
-        <article class={styles.drillCard}>
-          <h3>Home</h3>
-          <p>
-            A cadence plants the key, one note sounds — name the degree. The
-            hearing that transfers to real music.
-          </p>
-          <div class={styles.drillStats}>
-            <Show
-              when={earPlayerRating('home').attempts > 0}
-              fallback={<span class={styles.unmeasured}>Unrated</span>}
-            >
-              <span>
-                Rating{' '}
-                <strong>{Math.round(earPlayerRating('home').rating)}</strong>
-                {isProvisional(earPlayerRating('home')) ? ' · settling' : ''}
-              </span>
-            </Show>
-          </div>
-          <button
-            type="button"
-            class={styles.drillStartBtn}
-            onClick={() => props.onNavigate('home')}
-          >
-            Open
-          </button>
-        </article>
+        <For each={DRILL_CARDS}>
+          {(card) => (
+            <article class={styles.drillCard}>
+              <h3>{card.title}</h3>
+              <p>{card.blurb}</p>
+              <div class={styles.drillStats}>
+                <Show
+                  when={card.stat()}
+                  fallback={
+                    <span class={styles.unmeasured}>{card.emptyStat}</span>
+                  }
+                >
+                  {(stat) => <span>{stat()}</span>}
+                </Show>
+              </div>
+              <button
+                type="button"
+                class={styles.drillStartBtn}
+                onClick={() => props.onNavigate(card.view)}
+              >
+                Open
+              </button>
+            </article>
+          )}
+        </For>
       </section>
 
       <section class={styles.drills}>
@@ -213,9 +300,10 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         <p>
           Adaptive drills hold everyone near 75% correct forever, so a score can
           never show growth. The Ear Lab reports thresholds in real units
-          (cents, notes) that keep falling, and ratings against items of frozen
-          difficulty that keep rising. Calibration re-measures you on a sealed
-          protocol — the marks on the column are earned, not estimated.
+          (cents, milliseconds, notes) that keep falling, and ratings against
+          items of frozen difficulty that keep rising. Calibration re-measures
+          you on a sealed protocol — the marks on the column are earned, not
+          estimated.
         </p>
       </section>
     </div>

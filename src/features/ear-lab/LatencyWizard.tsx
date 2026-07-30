@@ -20,6 +20,7 @@ import type { LatencyReading } from '@/lib/ear/latency'
 import { aggregateLatency, detectClicks, MAX_TRUSTED_SPREAD_MS, } from '@/lib/ear/latency'
 import { micManager } from '@/lib/mic-manager'
 import { earLatency, recordLatencyReading } from '@/stores/ear-lab-store'
+import { scheduleClick } from './click-synth'
 import styles from './LatencyWizard.module.css'
 
 type WizardStatus = 'idle' | 'running' | 'error'
@@ -27,24 +28,8 @@ type WizardStatus = 'idle' | 'running' | 'error'
 const MIC_CONSUMER = 'ear-latency-wizard'
 const CLICKS = 5
 const CLICK_SPACING_S = 0.6
-const CLICK_HZ = 2000
-const CLICK_LEN_S = 0.03
 const SETTLE_S = 0.35
 const TAIL_S = 0.7
-
-function scheduleClick(ctx: AudioContext, at: number): void {
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.frequency.value = CLICK_HZ
-  gain.gain.setValueAtTime(0, at)
-  gain.gain.linearRampToValueAtTime(0.9, at + 0.001)
-  gain.gain.setValueAtTime(0.9, at + CLICK_LEN_S - 0.005)
-  gain.gain.linearRampToValueAtTime(0, at + CLICK_LEN_S)
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start(at)
-  osc.stop(at + CLICK_LEN_S + 0.01)
-}
 
 interface Capture {
   samples: Float32Array

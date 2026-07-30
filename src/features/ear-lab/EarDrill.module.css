@@ -156,6 +156,14 @@
   max-width: 520px;
 }
 
+/* Generic choice grid: column count set inline per drill. */
+.choiceGrid {
+  display: grid;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 520px;
+}
+
 .degreeBtn {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -390,6 +398,10 @@
 
   .degreeGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .choiceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
   .status {

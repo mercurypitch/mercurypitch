@@ -67,6 +67,57 @@ Report: does the named degree match what you actually sang (spot-check a
 few), do the cents read plausibly (deliberately sing flat once), and the
 ear-vs-voice line's two numbers.
 
+## 2b. The Grid — timing resolution — NEW in Phase 3
+
+The first millisecond drill. Perception only: you never tap, so your
+device's round trip cannot contaminate the reading (the clicks are
+scheduled sample-accurately on the audio clock).
+
+1. Open **The Grid** → Practice run.
+2. Six clicks play on a steady grid; one of the last four is nudged early
+   or late. Answer 3rd / 4th / 5th / 6th.
+3. Expect a reading around **20–60 ms** untrained, lower if you play
+   rhythm-heavy music. Same staircase feel as Hairline: mistakes lengthen
+   the run.
+4. Sanity check: at the opening offset (80 ms) the nudge should be
+   *obvious*. If even those feel random, flag it — that points at audio
+   scheduling, not your ear.
+5. Watch the six dots pulse: they must light in a perfectly even rhythm
+   regardless of which click was displaced. If the dots visibly reveal the
+   answer, that is a bug.
+
+## 2c. Leap / Stack / Contour — NEW in Phase 3
+
+Three button drills, 12 rounds each, all sharing one engine.
+
+1. **Leap** — name the interval (12 choices). Roved root, ascending or
+   descending. Wrong answers replay slower.
+2. **Stack** — name the chord quality (6 choices). Wrong answers replay
+   the chord **broken then re-stacked** — check you hear the arpeggio then
+   the block.
+3. **Contour** — up / down / same, fast. Deliberately easy at first; as
+   the rating climbs the gaps shrink toward quarter-tones.
+4. For each: the reveal should colour the correct button green (and your
+   wrong pick red), and the end card should show the rating with its
+   session delta.
+5. Dashboard check: Shape should now read a number (Leap and Contour
+   averaged), Colour should read Stack's rating.
+
+## 2d. Ear Report — NEW in Phase 3
+
+1. After playing the drills above, open **Ear Report** from the dashboard.
+2. **Thresholds over time**: sparklines for Hairline and The Grid. The
+   line should RISE as your readings fall (it is plotted inverted on
+   purpose — rising must mean improving). Check the "best" figure.
+3. **Confusion maps**: one section per drill. Expect sentences like *"You
+   answer Fa (4) as Sol (5) on 33% of attempts"* and a heatmap where rows
+   are what played and columns are what you answered.
+4. Deliberately miss the same degree the same way 3-4 times in Home, then
+   re-open the report — that pair should top the list.
+5. Sections with no misses should say so, not render an empty grid.
+6. Phone: the heatmap scrolls horizontally inside its own box; the page
+   itself must not scroll sideways.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,
@@ -81,11 +132,16 @@ ear-vs-voice line's two numbers.
 
 ## 4. Known limitations (do not file as bugs)
 
-- Millisecond drills (The Grid) are not shipped yet — the wizard's number is
-  banked for them; nothing consumes it visibly today.
+- The Grid is perception-only, so it does not consume the latency wizard's
+  number yet. The wizard stays banked for tap-timing drills (Pulse) later.
 - Mic mode uses the same YIN tracker as the singing surfaces: very low bass
   notes (below ~E2) and heavily distorted guitar tones read less reliably.
 - The Ear Lab has no guided tour yet (deferred deliberately).
+- Contour's confusion section shows counts, not rates: its answers are
+  directions rather than bank items, so there is no per-item denominator.
+- Faculties Shape/Colour/Time now read numbers, but the Mercury Index's
+  0-1000 anchors are still authored estimates from the JND literature, not
+  fitted to real users (plan §9.4).
 
 ---
 
