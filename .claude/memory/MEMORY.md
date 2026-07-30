@@ -4,3 +4,4 @@
 - [GitHub CLI](reference_gh-cli.md) — Use gh CLI, not WebFetch
 - [SolidJS Best Practices](solidjs-best-practices.md) — Never destructure props; plain value props; Show/For
 - [SolidJS Component Pattern](solidjs-component-pattern.md) — Signals first, JSX last
+- [Pop-free audio playback](audio-pop-free-playback.md) — MANDATORY gain envelopes for every audible start/stop/seek (30/50/15 ms); use src/lib/preview-player.ts for element playback
