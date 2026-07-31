@@ -1292,6 +1292,10 @@ async function getPublicMedia(
         AND EXISTS (
           SELECT 1 FROM guidedExerciseVersions v
            WHERE v.exampleMediaId = m.id
+             -- Public playback follows public specs: published versions and
+             -- the superseded ones still reachable by version deep-links.
+             -- Media attached only to a draft is admin-only until publish.
+             AND v.lifecycle IN ('published', 'superseded')
         )`,
   )
     .bind(mediaId)

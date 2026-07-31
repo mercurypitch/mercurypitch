@@ -48,6 +48,7 @@ public/assets/
 # wrangler files
 .wrangler
 .dev.vars*
+workers/db-worker/wrangler.pr-preview.generated.jsonc
 !.dev.vars.example
 !.env.example
 

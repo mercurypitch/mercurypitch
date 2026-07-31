@@ -100,6 +100,47 @@ describe('restoreAuth', () => {
 })
 
 describe('requireAuth', () => {
+  it('shares one anonymous bootstrap across concurrent callers', async () => {
+    const deviceId = getUserId()
+    let finishRequest: (() => void) | undefined
+    const requestStarted = new Promise<void>((resolve) => {
+      finishRequest = resolve
+    })
+    let releaseResponse: (() => void) | undefined
+    const responseReleased = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    const fetchMock = vi.fn(async () => {
+      finishRequest?.()
+      await responseReleased
+      return {
+        ok: true,
+        status: 200,
+        statusText: '200',
+        json: async () => ({
+          token: makeToken(3600),
+          userId: deviceId,
+          isNew: true,
+          user: { id: deviceId, authProvider: 'anonymous' },
+        }),
+        text: async () => '',
+      }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const first = requireAuth()
+    await requestStarted
+    const second = requireAuth()
+
+    // requireAuth is an async wrapper, so the outer promises differ; the
+    // invariant is that both ride one /api/auth/anonymous handshake.
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    releaseResponse?.()
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
   it('requests an anonymous token with the persisted device id', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {

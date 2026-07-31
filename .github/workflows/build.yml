@@ -26,6 +26,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: build-deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     name: Build & Deploy App
@@ -106,42 +110,166 @@ jobs:
           command: deploy --env dev
           packageManager: 'pnpm'
 
-      # Uploads a new *version* of the mercurypitch-preview Worker and captures
-      # its unique, immutable preview URL. Unlike `deploy` (which always
-      # publishes to the Worker's single fixed URL, so every PR overwrote the
-      # last), `versions upload` gives each PR/commit its own URL — concurrent
-      # PRs never clobber each other. It does NOT change the active deployment.
+      # Creates or reuses one shared D1 database for all PR previews, applies
+      # the branch's additive schema, and uploads the branch's DB Worker as an
+      # immutable version. The matching DB preview URL is baked into the
+      # frontend before its own immutable version is uploaded. Neither active
+      # dev deployment is changed, and Cloudflare retains only one preview D1.
       #
-      # Requires "Preview URLs" enabled on the mercurypitch-preview Worker
-      # (Cloudflare dashboard -> Workers & Pages -> mercurypitch-preview ->
-      # Settings -> Preview URLs). Without it, no URL is printed and the
-      # comment step is skipped (the build still passes).
+      # The DB version reuses the mercury-pitch-db-dev Worker name so Wrangler
+      # inherits its ADMIN_KEY and JWT_SECRET secrets. Its generated config
+      # explicitly enables Preview URLs while keeping the normal workers.dev
+      # route disabled.
       - name: Deploy PR Preview (versioned)
         id: deploy-preview
         if: github.event_name == 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -o pipefail
+          set -euo pipefail
+
+          preview_database_name="mercurypitch-db-preview"
+          db_worker_name="mercury-pitch-db-dev"
+          frontend_worker_name="mercurypitch-preview"
+          database_id=$(
+            pnpm exec wrangler d1 list --json \
+              | jq -r --arg name "$preview_database_name" \
+                '.[] | select(.name == $name) | .uuid' \
+              | head -1
+          )
+
+          if [ -z "$database_id" ]; then
+            pnpm exec wrangler d1 create "$preview_database_name" --location eeur
+            database_id=$(
+              pnpm exec wrangler d1 list --json \
+                | jq -r --arg name "$preview_database_name" \
+                  '.[] | select(.name == $name) | .uuid' \
+                | head -1
+            )
+          fi
+
+          if [ -z "$database_id" ]; then
+            echo "Could not resolve D1 database id for $preview_database_name."
+            exit 1
+          fi
+
+          generated_db_config="workers/db-worker/wrangler.pr-preview.generated.jsonc"
+          PREVIEW_DATABASE_ID="$database_id" \
+          GENERATED_DB_CONFIG="$generated_db_config" \
+          node <<'NODE'
+          const { readFileSync, writeFileSync } = require('node:fs')
+
+          const template = readFileSync(
+            'workers/db-worker/wrangler.pr-preview.template.jsonc',
+            'utf8',
+          )
+          const generated = template.replace(
+            '00000000-0000-0000-0000-000000000000',
+            process.env.PREVIEW_DATABASE_ID,
+          )
+
+          writeFileSync(process.env.GENERATED_DB_CONFIG, generated)
+          NODE
+
+          # The schema ships as the tracked migration chain (schema.sql was
+          # retired by the migration work): wrangler records applied files in
+          # d1_migrations, so re-runs from later PRs only apply what is new.
+          # Concurrent PR runs are not serialized by wrangler; the chain is
+          # additive-only, so a duplicate apply loses the race harmlessly on
+          # the tracking insert rather than corrupting the shared preview DB.
+          pnpm exec wrangler d1 migrations apply "$preview_database_name" \
+            --remote \
+            --config "$generated_db_config"
+
+          preview_settings=$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: application/json" \
+              --header "Cloudflare-Workers-Script-Api-Date: 2025-08-01" \
+              --data '{"enabled":false,"previews_enabled":true}' \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${db_worker_name}/subdomain"
+          )
+          printf '%s' "$preview_settings" \
+            | jq -e '.success == true and .result.previews_enabled == true' \
+            > /dev/null
+
+          account_subdomain_response=$(
+            curl --fail-with-body --silent --show-error \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain"
+          )
+          workers_dev_subdomain=$(
+            printf '%s' "$account_subdomain_response" \
+              | jq -r '.result.subdomain // empty'
+          )
+          if [ -z "$workers_dev_subdomain" ]; then
+            echo "Could not resolve the account workers.dev subdomain."
+            exit 1
+          fi
+
+          pnpm exec wrangler versions upload \
+            --config "$generated_db_config" \
+            --message "PR #${PR_NUMBER} ${GITHUB_SHA}" \
+            2>&1 | tee db-upload.log
+
+          db_version_id=$(
+            grep -E 'Worker Version ID:' db-upload.log \
+              | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27,}' \
+              | tail -1 \
+              || true
+          )
+          if [ -z "$db_version_id" ]; then
+            echo "DB Worker upload did not provide a version id."
+            exit 1
+          fi
+          db_version_prefix="${db_version_id%%-*}"
+          db_preview_url="https://${db_version_prefix}-${db_worker_name}.${workers_dev_subdomain}.workers.dev"
+
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "$db_preview_url/api/guided-exercises" \
+            > db-smoke.json
+          jq -e '.exercises | arrays' db-smoke.json > /dev/null
+
+          export VITE_API_BASE_URL="$db_preview_url"
           pnpm exec wrangler versions upload --env preview 2>&1 | tee upload.log
           # `versions upload` runs Wrangler's custom build a second time. Guard
-          # against the preview environment silently replacing the dev bundle
-          # with a production-API bundle during that upload.
-          grep -R -q --include='*.js' 'https://api-dev.mercurypitch.com' dist/assets
+          # both sides of the pairing: the generated bundle must point to this
+          # PR's immutable DB version and must never point at production.
+          grep -R -F -q --include='*.js' "$db_preview_url" dist/assets
           if grep -R -q --include='*.js' 'https://api.mercurypitch.com' dist/assets; then
             echo "Preview bundle unexpectedly targets the production API."
             exit 1
           fi
-          # Prefer the explicit "Version Preview URL" line; fall back to any
-          # workers.dev URL in the output.
-          url=$(grep -iE 'preview url' upload.log \
-                  | grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' | head -1)
-          if [ -z "$url" ]; then
-            url=$(grep -oiE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -1)
+
+          frontend_version_id=$(
+            grep -E 'Worker Version ID:' upload.log \
+              | grep -oE '[0-9a-f]{8}-[0-9a-f-]{27,}' \
+              | tail -1 \
+              || true
+          )
+          if [ -z "$frontend_version_id" ]; then
+            echo "Frontend Worker upload did not provide a version id."
+            exit 1
           fi
+          frontend_version_prefix="${frontend_version_id%%-*}"
+          url="https://${frontend_version_prefix}-${frontend_worker_name}.${workers_dev_subdomain}.workers.dev"
+
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-all-errors \
+            --retry-delay 2 \
+            "$url/" \
+            > /dev/null
+
           echo "deployment-url=$url" >> "$GITHUB_OUTPUT"
-          echo "Preview URL: ${url:-<none — enable Preview URLs on the Worker>}"
+          echo "db-preview-url=$db_preview_url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $url"
 
       # Post or update PR comment with preview link from template
       - name: Post Preview Link
@@ -151,23 +279,23 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             const templatePath = path.join(process.env.GITHUB_WORKSPACE, '.github/workflows/pr-deployment-table.md');
             let body = fs.readFileSync(templatePath, 'utf8');
-            
+
             const url = '${{ steps.deploy-preview.outputs.deployment-url }}';
             const commit = context.sha.substring(0, 7);
             const commitUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
             const logsUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const updated = new Date().toUTCString();
-            
+
             body = body
               .replace('LOGS_URL', logsUrl)
               .replace('COMMIT_SHA', commit)
               .replace('COMMIT_URL', commitUrl)
               .replace('PREVIEW_URL', url)
               .replace('UPDATED_TIME', updated);
-            
+
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
