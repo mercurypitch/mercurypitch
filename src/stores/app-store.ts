@@ -1281,73 +1281,45 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
 
 const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
   {
-    title: 'Three analysis tools',
+    title: 'Pick a take',
     description:
-      'Switch between Vocal Analysis, Pitch Detection, and Pitch Algorithms — the tour will visit each.',
-    targetSelector: '[data-tour="analysis.subtabs"]',
+      'Everything analysable in one place — your mic right now, songs you separated in Karaoke, and past practice sessions. Each card says what depth of analysis its data supports.',
+    targetSelector: '[data-tour="analysis.takes"]',
     placement: 'bottom',
     requiredTab: TAB_ANALYSIS,
-    viewport: 'desktop',
   },
   {
-    title: 'Vocal Analysis',
+    title: 'Sing and watch',
     description:
-      'Deep-dive a recording or your session history: pitch accuracy, range, vibrato and trends over time.',
-    targetSelector: '[data-tour="analysis.vocal"]',
+      'Start listening and your note, tuning and spectrogram update live as you sing. Stop whenever — the reading stays on screen.',
+    targetSelector: '[data-tour="analysis.live"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
   },
   {
-    title: 'History or live mic',
+    title: 'What your voice is doing',
     description:
-      'Analyze your saved practice sessions, or switch to Live and watch intensity, breathiness, vibrato, resonance and a full spectrogram react as you sing.',
-    targetSelector: '[data-testid="analysis-mode-toggle"]',
-    placement: 'bottom',
-    requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
-  },
-  {
-    title: 'Technique drills',
-    description:
-      'Focused vocal-technique exercises — belting, falsetto, crescendo, riffs and runs — each analyzed with targeted feedback.',
-    targetSelector: '.vocal-techniques',
+      'Once a few seconds are captured: intensity, breathiness, resonance, harmonics, vibrato and pitch steadiness — measured from the real spectrum, not estimated.',
+    targetSelector: '[data-testid="live-start"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
   },
   {
-    title: 'Pitch Detection',
+    title: 'Your pitch, plotted',
     description:
-      'Test the real-time detector against audio files, your mic, or generated tones to see how it tracks pitch.',
-    targetSelector: '[data-tour="analysis.detection"]',
+      'Every take gets a pitch plot — your live contour here, the detected notes of a separated song, or a practice run coloured by how close each note landed. On a phone the deeper sections start folded; tap a heading to open one.',
+    targetSelector: '[data-tour="analysis.trace"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Detection"]'],
-    viewport: 'desktop',
+    reveal: '[data-collapsible="analysis_open_trace"]',
   },
   {
-    title: 'Pick a signal source',
+    title: 'Progress over time',
     description:
-      'Feed the detector a generated tone, an audio file (with optional vocal separation first), or your live mic — then compare algorithms and thresholds on it.',
-    targetSelector: '#detection-mode-select',
-    placement: 'right',
-    requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Detection"]'],
-    viewport: 'desktop',
-  },
-  {
-    title: 'Pitch Algorithms',
-    description:
-      'Benchmark the detection algorithms head-to-head on the same test samples — run one or all, and compare accuracy per sample in the results table.',
-    targetSelector: '[data-tour="analysis.algorithms"]',
+      'Your streak and score trend across practice sessions. Pick a past session or a separated song above and this page fills in with its accuracy, tuning bias, range — and for a real vocal, a full spectrogram.',
+    targetSelector: '[data-tour="analysis.trends"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Algorithms"]'],
-    viewport: 'desktop',
   },
 ]
 
@@ -1676,7 +1648,8 @@ export const PAGE_TOUR_CATALOG: {
   {
     tab: TAB_ANALYSIS,
     title: 'Analysis',
-    description: 'Vocal analysis, pitch detection, and algorithm benchmarking',
+    description:
+      'Analyse a take — live mic, a separated song, or a past practice session',
   },
   {
     tab: TAB_EXERCISES,

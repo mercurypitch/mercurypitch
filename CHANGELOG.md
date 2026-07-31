@@ -3,6 +3,47 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [Unreleased]
+
+### Changed
+
+- **Analysis is one page now, and it works on your phone.** The tab used to
+  show three sub-tabs of dense tooling on desktop and something completely
+  different on mobile. It's now a single dashboard at every screen size: pick
+  what you want to look at — your mic right now, a song you separated in
+  Karaoke, or a past practice session — and see the analysis for it.
+- **Every number on the page is real.** The old page showed vibrato rate,
+  breathiness and a "spectrum" for past practice sessions, all calculated from
+  saved note scores rather than any audio — the spectrum was drawn from note
+  frequencies, not measured. Each take now says what depth of analysis its data
+  supports, and sections that would need audio you don't have simply aren't
+  shown. You'll see fewer numbers for old sessions, and the ones you see mean
+  something.
+- **Live singing is measured more accurately.** Breathiness, resonance and
+  harmonic richness now come from the real frequency analysis that was already
+  running, instead of being estimated from the pitch track alongside it.
+
+### Added
+
+- **See the shape of a take.** Every take now gets a pitch plot: your live
+  contour as you sing, the detected notes of a song you separated in Karaoke,
+  or a practice run drawn note by note and coloured by how close each one
+  landed. Practice notes are laid out by how long you actually spent on each,
+  so a held note is a wide bar.
+- **A real spectrogram for a separated vocal.** Pick a song you've separated
+  and hit "Analyse audio" — it reads the whole vocal in the background and
+  gives you a spectrogram plus breathiness, resonance and harmonics measured
+  across the take, not just the moment.
+- **Depth without clutter on a phone.** The heavier sections start folded on
+  mobile and open on desktop; tap a heading to expand one. Nothing is
+  desktop-only any more — the phone gets every section, just tidier.
+
+### Fixed
+
+- **Your practice streak was wrong on the Analysis page.** It counted every day
+  you'd ever practised rather than consecutive days, so "current streak" always
+  matched "best streak". It now uses the same streak as the rest of the app.
+
 ## [0.7.22] - 2026-07-21
 
 ### Fixed

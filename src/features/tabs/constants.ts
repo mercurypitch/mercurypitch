@@ -15,6 +15,8 @@ export const TAB_CHALLENGES = 'challenges' as const
 export const TAB_KARAOKE = 'karaoke' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
+/** Hidden audio-research surface. Hash route only — never in TAB_GROUPS. */
+export const TAB_LAB = 'lab' as const
 export const TAB_EXERCISES = 'exercises' as const
 export const TAB_JAM = 'jam' as const
 export const TAB_GUITAR = 'guitar' as const
@@ -33,6 +35,7 @@ export type ActiveTab =
   | typeof TAB_KARAOKE
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
+  | typeof TAB_LAB
   | typeof TAB_EXERCISES
   | typeof TAB_JAM
   | typeof TAB_GUITAR
@@ -118,6 +121,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   // Dev-only sub-surfaces (not in TAB_GROUPS); scoped like Analysis.
   [TAB_PITCH_TEST]: ['singing'],
   [TAB_PITCH_ALGO]: ['singing'],
+  [TAB_LAB]: ['singing'],
 }
 
 /** Simple mode keeps only the practice group + Settings (the way back). */
@@ -190,6 +194,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_KARAOKE]: 'karaoke',
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
+  [TAB_LAB]: 'lab',
   [TAB_EXERCISES]: 'exercises',
   [TAB_JAM]: 'jam',
   [TAB_GUITAR]: 'guitar',
@@ -221,6 +226,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_KARAOKE]: 'Karaoke',
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
+    [TAB_LAB]: 'Lab',
     [TAB_EXERCISES]: 'Exercises',
     [TAB_JAM]: 'Jam',
     [TAB_GUITAR]: 'Guitar',

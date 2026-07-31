@@ -8,13 +8,16 @@ vi.mock('@/lib/use-viewport', () => ({
 
 import { hasPageTour } from '@/stores/app-store'
 
-describe('Analysis tour viewport gate', () => {
-  it('does not offer the desktop analysis tour on phones', () => {
+// The Analysis page used to render a different component per viewport, and
+// its tour was gated to desktop as a result. There is one responsive page
+// now, so the tour must be offered everywhere.
+describe('Analysis tour viewport availability', () => {
+  it('offers the analysis tour on phones', () => {
     viewport.narrow = true
-    expect(hasPageTour('analysis')).toBe(false)
+    expect(hasPageTour('analysis')).toBe(true)
   })
 
-  it('keeps the full analysis tour available on desktop', () => {
+  it('offers the analysis tour on desktop', () => {
     viewport.narrow = false
     expect(hasPageTour('analysis')).toBe(true)
   })

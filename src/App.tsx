@@ -79,6 +79,7 @@ import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-m
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import type { LabTab } from '@/features/lab/LabSurface'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
@@ -95,7 +96,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -103,6 +104,7 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
 import { debounce } from '@/lib/debounce'
+import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
@@ -124,6 +126,7 @@ import { GuitarPage } from '@/pages/GuitarPage'
 import HomePage from '@/pages/HomePage'
 import { JamPage } from '@/pages/JamPage'
 import { KaraokePage } from '@/pages/KaraokePage'
+import { LabPage } from '@/pages/LabPage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
@@ -1310,6 +1313,19 @@ const AppShell: Component<AppProps> = (props) => {
   // While a tour runs the guard stands down entirely: tour steps re-assert
   // their requiredTab, and redirecting against that is an unbounded loop.
   // walkthroughActive is tracked, so the guard re-evaluates when it ends.
+
+  // Which Lab tool the current route points at, or null when the Lab isn't
+  // showing. The Lab is never in the tab bar — it is reached by hash route,
+  // and only with advanced features on (or in dev).
+  const labTab = createMemo<LabTab | null>(() => {
+    if (!advancedFeaturesEnabled() && !IS_DEV) return null
+    const tab = activeTab()
+    if (tab === TAB_LAB) return 'workbench'
+    if (tab === TAB_PITCH_TEST) return 'detection'
+    if (tab === TAB_PITCH_ALGO) return 'algorithms'
+    return null
+  })
+
   const appMountedAt = performance.now()
   createEffect(() => {
     const scope = practiceScope()
@@ -2898,6 +2914,14 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_ANALYSIS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_ANALYSIS)}>
                   <AnalysisPage />
+                </TabErrorBoundary>
+              </Show>
+
+              {/* Hidden Lab surface — hash route only (#lab / #pitch-test /
+                  #pitch-algo), and only with advanced features or in dev. */}
+              <Show when={labTab() !== null}>
+                <TabErrorBoundary tabName={tabLabel(TAB_LAB)}>
+                  <LabPage initialTab={labTab()!} />
                 </TabErrorBoundary>
               </Show>
 
