@@ -652,7 +652,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       URL.revokeObjectURL(existing)
       return
     }
-    showNotification('Splitting the band — drums, bass, guitar…', 'info')
+    showNotification('Splitting the band — drums, bass, guitar, piano…', 'info')
     try {
       await runStemSplit(sessionId)
       eventBus.dispatch('uvr:parts-updated', { sessionId })
@@ -1698,7 +1698,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         class="device-toggle-btn"
                         classList={{ active: bandSplitChoice() }}
                         onClick={() => chooseBandSplit(true)}
-                        title="Vocal, drums, bass, guitar & other — separation plus a band split"
+                        title="Vocal, drums, bass, guitar, piano & other — separation plus a band split"
                         disabled={uploadQueue.isRunning()}
                         data-testid="uvr-stems-band"
                       >

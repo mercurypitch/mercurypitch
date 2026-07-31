@@ -2,16 +2,16 @@
 // Stem split — break a session's instrumental into its parts
 // ============================================================
 // Second separation pass over the ALREADY-SEPARATED instrumental:
-// the server (demucs-6s by default) returns drums/bass/guitar/other,
-// drops the near-silent vocal and the rough piano, and reconciles the
-// residual so the parts sum back to the instrumental exactly. The parts
-// persist as ordinary UvrStemBlob rows keyed (sessionId, stemType), so a
-// reload restores them with no extra bookkeeping.
+// the server (demucs-6s by default) returns drums/bass/guitar/piano/other,
+// drops the near-silent vocal, and reconciles the residual so the parts
+// sum back to the instrumental exactly. The parts persist as ordinary
+// UvrStemBlob rows keyed (sessionId, stemType), so a reload restores
+// them with no extra bookkeeping.
 
 import type { UvrStemType } from '@/db/entities'
 import { deleteStemBlobs, getStemBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import type { OutputFile } from './uvr-api'
-import { buildStemSplitRequest, deleteSession, getOutputFile, pollForCompletion, processAudio, splitStemsFor, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
+import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, pollForCompletion, processAudio, splitStemsFor, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
 
 /** The stems a split can add to a session (everything except the core trio). */
 export type StemSplitPart = Exclude<
@@ -19,13 +19,20 @@ export type StemSplitPart = Exclude<
   'vocal' | 'instrumental' | 'original'
 >
 
-/** Parts the default split yields, in display order. Piano is produced by
- *  the model but dropped server-side (its audio folds into `other`) — see
- *  defaultDropStems in uvr-api.ts. */
+/** Parts the default split yields, in display order. */
 export const SPLIT_PART_STEMS: readonly StemSplitPart[] = splitStemsFor(
   UVR_DEFAULT_MULTI_STEM_MODEL,
   'instrumental',
 ) as StemSplitPart[]
+
+/** Parts of the default split that are shipped but visibly rougher than
+ *  the rest (currently piano) — the UI flags these instead of presenting
+ *  them as equals. */
+export const EXPERIMENTAL_PART_STEMS: readonly StemSplitPart[] = (
+  getUvrModel(UVR_DEFAULT_MULTI_STEM_MODEL)?.experimentalStems ?? []
+).filter((s): s is StemSplitPart =>
+  (SPLIT_PART_STEMS as readonly string[]).includes(s),
+)
 
 export interface StemSplitProgress {
   phase: 'uploading' | 'processing' | 'saving'

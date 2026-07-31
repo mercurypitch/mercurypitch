@@ -2,10 +2,9 @@
 // Stem split requests — which stems a second pass yields, and the
 // request that asks for them.
 // ============================================================
-// The contract these lock down: guitar is only reachable via the 6-stem
-// model, piano rides along on the same compute and is dropped rather than
-// shipped, and a dropped stem's audio survives in the residual instead of
-// vanishing.
+// The contract these lock down: guitar and piano are only reachable via
+// the 6-stem model, piano ships but stays labelled rough, and a dropped
+// stem's audio survives in the residual instead of vanishing.
 
 import { describe, expect, it } from 'vitest'
 import type { UvrStemName } from '@/lib/uvr-api'
@@ -31,11 +30,11 @@ describe('multi-stem model catalogue', () => {
   })
 
   it('keeps "rough" and "dropped" as separate concepts', () => {
-    // Turning piano on later must be a one-line change that leaves the
-    // quality label intact — so the two lists are not the same field.
+    // Piano ships (not dropped) but keeps its quality label — the two
+    // lists are separate fields precisely so this state can exist.
     const sixStem = getUvrModel('demucs-6s')
     expect(sixStem?.experimentalStems).toContain('piano')
-    expect(sixStem?.defaultDropStems).toContain('piano')
+    expect(sixStem?.defaultDropStems ?? []).not.toContain('piano')
   })
 
   it('never drops a stem a model does not produce', () => {
@@ -51,11 +50,12 @@ describe('multi-stem model catalogue', () => {
 })
 
 describe('splitStemsFor', () => {
-  it('yields drums, bass and guitar — not piano, not the source', () => {
+  it('yields drums, bass, guitar and piano — not the source', () => {
     expect(splitStemsFor('demucs-6s', 'instrumental')).toEqual([
       'drums',
       'bass',
       'guitar',
+      'piano',
       'other',
     ])
   })
@@ -93,13 +93,13 @@ describe('buildStemSplitRequest', () => {
     expect(req.residual_stem).toBe('other')
   })
 
-  it('drops the near-silent vocal and the piano by default', () => {
-    expect(buildStemSplitRequest().drop_stems).toEqual(['vocal', 'piano'])
+  it('drops only the near-silent vocal by default', () => {
+    expect(buildStemSplitRequest().drop_stems).toEqual(['vocal'])
   })
 
   it('requests exactly the stems it will keep', () => {
     const req = buildStemSplitRequest()
-    expect(req.stems).toEqual(['drums', 'bass', 'guitar', 'other'])
+    expect(req.stems).toEqual(['drums', 'bass', 'guitar', 'piano', 'other'])
     const dropped = new Set(req.drop_stems)
     for (const stem of req.stems ?? []) {
       expect(dropped.has(stem as UvrStemName)).toBe(false)
@@ -112,13 +112,14 @@ describe('buildStemSplitRequest', () => {
     ])
   })
 
-  it('can keep everything the model produces (piano, later)', () => {
-    const req = buildStemSplitRequest({ dropStems: [] })
-    expect(req.drop_stems).toEqual([])
-    // The point of the future switch-on: piano becomes requestable without
-    // touching anything but the drop list.
-    expect(splitStemsFor('demucs-6s')).not.toContain('piano')
-    expect(getUvrModel('demucs-6s')?.stems).toContain('piano')
+  it('ships piano by default and can drop it again explicitly', () => {
+    // The reverse switch: an explicit drop removes piano from both the
+    // drop list AND the request, so the client never asks the server for
+    // a file the drop pass deleted.
+    const req = buildStemSplitRequest({ dropStems: ['vocal', 'piano'] })
+    expect(req.drop_stems).toEqual(['vocal', 'piano'])
+    expect(req.stems).toEqual(['drums', 'bass', 'guitar', 'other'])
+    expect(splitStemsFor('demucs-6s')).toContain('piano')
   })
 
   it('de-duplicates an explicit drop list', () => {
@@ -126,11 +127,11 @@ describe('buildStemSplitRequest', () => {
     expect(req.drop_stems).toEqual(['piano'])
   })
 
-  it('passes the server tier through when given', () => {
-    expect(buildStemSplitRequest({ provider: 'runpod' }).provider).toBe(
-      'runpod',
+  it('opts into the GPU tier by default — the worker 400s tierless requests', () => {
+    expect(buildStemSplitRequest().provider).toBe('runpod')
+    expect(buildStemSplitRequest({ provider: 'runpod-cpu' }).provider).toBe(
+      'runpod-cpu',
     )
-    expect(buildStemSplitRequest().provider).toBeUndefined()
   })
 
   it('refuses to drop the stem that absorbs the residual', () => {

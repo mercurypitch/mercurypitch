@@ -11,7 +11,7 @@ import { generateVocalMidi } from '@/lib/midi-generator'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
 import type { StemSplitPart, StemSplitProgress } from '@/lib/uvr-stem-split'
-import { PART_STEM_DISPLAY, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
+import { EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
 import { getUvrSession } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
@@ -221,7 +221,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     setTimeout(() => setShareToast(''), 2500)
   }
 
-  // ── Instrument parts (drums / bass / guitar / other) ─────────
+  // ── Instrument parts (drums / bass / guitar / piano / other) ─
   // Loaded from IndexedDB by (sessionId, stemType); produced on demand by
   // a second separation pass over the instrumental (runStemSplit).
   const ALL_PARTS = Object.keys(PART_STEM_DISPLAY) as StemSplitPart[]
@@ -855,6 +855,11 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               Break the instrumental into {SPLIT_PART_STEMS.join(', ')} stems on
               the separation server — they appear above with the other stems,
               and always add back up to the instrumental.
+              <Show when={EXPERIMENTAL_PART_STEMS.length > 0}>
+                {' '}
+                The {EXPERIMENTAL_PART_STEMS.join(', ')} stem is early and can
+                bleed into the others.
+              </Show>
             </p>
           </Show>
         </div>

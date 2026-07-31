@@ -57,7 +57,7 @@ beforeEach(() => {
     ) => {
       onProgress(50)
       await onComplete(
-        serverFiles(['drums', 'bass', 'guitar', 'other', 'vocal']),
+        serverFiles(['drums', 'bass', 'guitar', 'piano', 'other', 'vocal']),
       )
     },
   )
@@ -67,7 +67,13 @@ describe('runStemSplit', () => {
   it('saves exactly the requested parts, with provenance', async () => {
     const result = await runStemSplit('session-1')
 
-    expect(result.saved.sort()).toEqual(['bass', 'drums', 'guitar', 'other'])
+    expect(result.saved.sort()).toEqual([
+      'bass',
+      'drums',
+      'guitar',
+      'other',
+      'piano',
+    ])
     expect(result.model).toBe('demucs-6s')
     // The stray vocal the server returned is never persisted.
     const savedTypes = db.saveStemBlobDurable.mock.calls.map((c) => c[1])
@@ -94,7 +100,9 @@ describe('runStemSplit', () => {
     expect((file as File).name).toBe('instrumental.wav')
     expect(request.source_stem).toBe('instrumental')
     expect(request.reconcile_residual).toBe(true)
-    expect(request.drop_stems).toEqual(['vocal', 'piano'])
+    expect(request.drop_stems).toEqual(['vocal'])
+    // Splits are server jobs — without a tier the worker rejects with 400.
+    expect(request.provider).toBe('runpod')
   })
 
   it('reports progress phases in order', async () => {

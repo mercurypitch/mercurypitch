@@ -17,11 +17,15 @@ import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 // are streamed to R2 and passed to the handler by S3 key instead.
 const RUNPOD_MAX_INLINE_BYTES = 7 * 1024 * 1024
 
-// Hard upload cap for server-side separation. Files between the inline cap
-// and this go through R2 (`audio_s3_key`). Mirror of the client's
-// SERVER_MAX_UPLOAD_BYTES. Kept comfortably under the handler's 100 MB byte
-// cap and the ~12-min duration cap.
-const RUNPOD_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+// Hard upload cap for server-side jobs. Files between the inline cap and
+// this go through R2 (`audio_s3_key`). Deliberately ABOVE the client's
+// 50 MB SERVER_MAX_UPLOAD_BYTES gate for source songs: a second-pass stem
+// split re-uploads the instrumental as uncompressed WAV (~10.6 MB/min at
+// 44.1 kHz 16-bit stereo, so a 7-minute song is ~78 MB), which is a
+// legitimate payload the source-file gate never sees. Kept under the
+// handler's own 100 MB byte cap and ~12-min duration cap, which remain
+// the real compute bound.
+const RUNPOD_MAX_UPLOAD_BYTES = 95 * 1024 * 1024
 
 /** Minimal R2 surface the bridge needs — a subset of R2Bucket, so this pure
  *  module stays testable with a plain mock. `put` stages large inputs; `list` +

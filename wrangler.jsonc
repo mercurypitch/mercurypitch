@@ -54,6 +54,19 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  // Local dev (plain `wrangler dev`, no --env) needs the R2 staging bucket
+  // too: without it every upload over the 7 MB inline cap — and every
+  // instrumental split, whose WAV payload is far bigger — 503s before
+  // dispatch. `remote: true` binds the REAL dev bucket (a local simulation
+  // would be useless: the RunPod handler must fetch the staged key with its
+  // own S3 creds). Dev bucket only — never the prod one.
+  "r2_buckets": [
+    {
+      "binding": "UVR_INPUT_BUCKET",
+      "bucket_name": "mercurypitch-uvr-output",
+      "remote": true
+    }
+  ],
   "env": {
     "prod": {
       "name": "mercurypitch",

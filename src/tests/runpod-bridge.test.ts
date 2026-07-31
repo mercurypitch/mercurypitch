@@ -214,10 +214,10 @@ describe('handleRunpodRequest — process', () => {
     expect(res?.status).toBe(503)
   })
 
-  it('413s an upload over the 50 MB hard cap', async () => {
+  it('413s an upload over the 95 MB hard cap', async () => {
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod' },
-      file: bigFile(51 * 1024 * 1024, 'huge.wav'),
+      file: bigFile(96 * 1024 * 1024, 'huge.wav'),
     })
     const res = await handleRunpodRequest(
       request,
@@ -234,7 +234,7 @@ describe('handleRunpodRequest — process', () => {
     const { request, url } = processReq('/api/uvr/process', {
       headers: {
         'x-uvr-provider': 'runpod',
-        'content-length': String(51 * 1024 * 1024),
+        'content-length': String(96 * 1024 * 1024),
       },
     })
     const res = await handleRunpodRequest(request, url, 'POST', CFG)

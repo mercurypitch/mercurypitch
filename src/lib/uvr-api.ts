@@ -52,11 +52,14 @@ function authHeaders(): Record<string, string> {
 }
 
 /**
- * Max upload size for SERVER (cloud GPU) processing. Files up to 7 MB are
- * inlined as base64 in the RunPod job; larger ones (up to this cap) are
- * streamed via R2 (`audio_s3_key`) by the worker. Mirror of the worker's
- * RUNPOD_MAX_UPLOAD_BYTES — keep the two in sync. Local (on-device)
- * processing has no transport limit and keeps the 100 MB default.
+ * Max upload size for SERVER (cloud GPU) processing of SOURCE songs. Files
+ * up to 7 MB are inlined as base64 in the RunPod job; larger ones are
+ * streamed via R2 (`audio_s3_key`) by the worker. The worker's own cap
+ * (RUNPOD_MAX_UPLOAD_BYTES) is deliberately higher, 95 MB: a stem split
+ * re-uploads the instrumental as uncompressed WAV, which blows past any
+ * sensible compressed-source limit. This 50 MB gate is UX for the upload
+ * queue only. Local (on-device) processing has no transport limit and
+ * keeps the 100 MB default.
  */
 export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
@@ -287,20 +290,18 @@ export const UVR_MODELS: readonly UvrModelInfo[] = [
   },
   {
     name: 'demucs-6s',
-    display: 'Parts — Drums, bass & guitar',
+    display: 'Parts — Drums, bass, guitar & piano',
     quality: 'Good',
     speed: 'Slow',
     description:
-      'Splits the music into drums, bass, guitar and everything else.',
+      'Splits the music into drums, bass, guitar, piano and everything else.',
     stems: ['vocal', 'drums', 'bass', 'guitar', 'piano', 'other'],
     multiStem: true,
+    // Piano ships (it rides on the same compute as guitar) but stays
+    // labelled rough — it bleeds noticeably more than the other parts.
+    // To pull it again, add `defaultDropStems: ['piano']`: the residual
+    // pass folds its audio back into `other`, nothing is lost.
     experimentalStems: ['piano'],
-    // Guitar is only available from the 6-stem model, so piano comes along
-    // for the same compute whether we want it or not. It bleeds badly
-    // enough to read as a bug, so it is dropped and its audio folded into
-    // `other` by the residual pass. Delete this line to ship piano — the
-    // model, the cost and the plumbing are already there.
-    defaultDropStems: ['piano'],
   },
 ]
 
@@ -310,8 +311,7 @@ export const UVR_MULTI_STEM_MODELS = UVR_MODELS.filter(
 )
 
 /** Default model for splitting an instrumental into its parts. The 6-stem
- *  model because guitar is only available there; piano rides along on the
- *  same compute and is dropped via `defaultDropStems`. */
+ *  model because guitar and piano are only available there. */
 export const UVR_DEFAULT_MULTI_STEM_MODEL = 'demucs-6s'
 
 export const getUvrModel = (name: string): UvrModelInfo | undefined =>
@@ -348,6 +348,9 @@ export interface StemSplitOptions {
   /** Stem that absorbs the residual. Defaults to 'other'. */
   residualStem?: UvrStemName
   outputFormat?: string
+  /** Server tier. Defaults to 'runpod' (GPU): a split is always a server
+   *  job, and the worker 400s any /process request that names no tier.
+   *  The local FastAPI container simply ignores the header. */
   provider?: 'runpod' | 'runpod-cpu'
 }
 
@@ -385,15 +388,18 @@ export function buildStemSplitRequest(
     )
   }
 
+  // An explicit drop list must also shrink the request — asking the server
+  // for a stem it was told to drop would download a file that never exists.
+  const dropped = new Set<UvrStemName>(dropStems)
   return {
     model: modelName,
     output_format: options.outputFormat ?? 'WAV',
-    stems: splitStemsFor(modelName, sourceStem),
+    stems: splitStemsFor(modelName, sourceStem).filter((s) => !dropped.has(s)),
     source_stem: sourceStem,
     drop_stems: dropStems,
     reconcile_residual: true,
     residual_stem: residualStem,
-    ...(options.provider !== undefined ? { provider: options.provider } : {}),
+    provider: options.provider ?? 'runpod',
   }
 }
 
