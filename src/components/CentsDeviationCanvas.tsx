@@ -143,6 +143,33 @@ export const CentsDeviationCanvas: Component<CentsDeviationCanvasProps> = (
     // Render to main canvas
     mainCtx.drawImage(offscreenCanvas, 0, 0)
 
+    // Fixed annotations (main canvas, never scrolled): what the axes and
+    // colors MEAN. Without them this read as mystery confetti - the dots
+    // are your distance from the nearest note, sharp above, flat below.
+    mainCtx.font = '10px sans-serif'
+    mainCtx.textAlign = 'left'
+    mainCtx.textBaseline = 'middle'
+    mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+    mainCtx.fillText('+50\u00A2 sharp', 4, centerY - h / 2 + 8)
+    mainCtx.fillText('0\u00A2 on pitch', 4, centerY)
+    mainCtx.fillText('\u221250\u00A2 flat', 4, centerY + h / 2 - 8)
+    const legend: [string, string][] = [
+      ['#22c55e', '\u226415\u00A2'],
+      ['#eab308', '\u226430\u00A2'],
+      ['#ef4444', '>30\u00A2'],
+    ]
+    let lx = 4
+    const ly = centerY - h / 2 + 22
+    for (const [color, label] of legend) {
+      mainCtx.fillStyle = color
+      mainCtx.beginPath()
+      mainCtx.arc(lx + 3, ly, 3, 0, 2 * Math.PI)
+      mainCtx.fill()
+      mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+      mainCtx.fillText(label, lx + 9, ly)
+      lx += 9 + mainCtx.measureText(label).width + 10
+    }
+
     // Draw target note overlay on main canvas (not offscreen so it stays fixed on the right)
     if (props.targetNote !== null && props.targetNote !== '') {
       mainCtx.fillStyle = 'rgba(15, 23, 42, 0.8)' // dark bg for text

@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { addPane, paneLayout, removePane, setPaneHeights, togglePaneCollapse, toggleSyncTime, } from '@/stores/pane-layout-store'
 import type { PaneConfig, PaneLayerType } from '@/types'
 import { CentsDeviationPane } from './panes/CentsDeviationPane'
@@ -89,6 +89,20 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
     if (!_initialized) {
       _initialized = true
       setTimeRange([0, dur])
+    }
+  })
+
+  // Live capture runs past the initial window; without following, the
+  // trace runs off the right edge and the pane goes blank (owner testing).
+  // Follow keeps the playhead at 85% of the window width once it would
+  // leave the view - width (the user's zoom) is preserved.
+  createEffect(() => {
+    if (!props.isPlaying) return
+    const pos = props.playheadPosition
+    const [t0, t1] = untrack(timeRange)
+    if (pos > t1) {
+      const width = Math.max(1, t1 - t0)
+      setTimeRange([pos - width * 0.85, pos + width * 0.15])
     }
   })
 

@@ -81,6 +81,11 @@
 }
 
 .toolBtn {
+  /* Rendered as <button> AND <label> (Import wraps a file input) - the
+     flex centering keeps both on one baseline in the toolbar. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 32px;
   padding: 0 var(--spacing-lg);
   background: var(--bg-tertiary);
@@ -138,7 +143,12 @@
 }
 
 .paneWrap {
-  height: 600px;
+  /* Tall by default and user-resizable: the pane splitters divide THIS
+     box, so growing it is how every pane gets more room at once. */
+  height: 70vh;
+  min-height: 480px;
+  resize: vertical;
+  overflow: auto;
 }
 
 .hint {
