@@ -964,7 +964,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               <button
                 class="rv-stem-btn rv-parts-split-btn"
                 onClick={() => void handleSplit()}
-                disabled={props.disabled || splitBlocked() !== undefined}
+                disabled={
+                  props.disabled === true || splitBlocked() !== undefined
+                }
                 title={`${
                   partsList().length > 0
                     ? 'Run the split again (replaces the parts)'

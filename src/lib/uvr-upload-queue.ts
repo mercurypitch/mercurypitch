@@ -218,7 +218,13 @@ export function createUvrUploadQueue(
     setItems((current) =>
       current.map((item) =>
         item.status === 'error'
-          ? { ...item, status: 'queued' as const, progress: 0, message: undefined, sessionId: undefined }
+          ? {
+              ...item,
+              status: 'queued' as const,
+              progress: 0,
+              message: undefined,
+              sessionId: undefined,
+            }
           : item,
       ),
     )
