@@ -13,7 +13,7 @@ import type { UvrStemType } from '@/db/entities'
 import { deleteStemBlobs, getStemBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import { eventBus } from './event-bus'
 import type { OutputFile } from './uvr-api'
-import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, pollForCompletion, processAudio, splitStemsFor, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
+import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, pollForCompletion, processAudio, splitStemsFor, TerminalPollError, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
 import { wavDurationSeconds } from './wav-meta'
 
 /** The stems a split can add to a session (everything except the core trio). */
@@ -52,7 +52,19 @@ export interface StemSplitResult {
   elapsedMs: number
 }
 
-export class StemSplitError extends Error {}
+export class StemSplitError extends Error {
+  /** True when the underlying JOB may still be fine (a download hiccup, a
+   *  worker restart mid-pickup, a network blip) — the persisted resume
+   *  marker must survive so a later attach can still collect the stems.
+   *  False only for a definitive server verdict (job FAILED — refunded)
+   *  or an unusable result. */
+  readonly recoverable: boolean
+
+  constructor(message: string, options: { recoverable?: boolean } = {}) {
+    super(message)
+    this.recoverable = options.recoverable ?? false
+  }
+}
 
 // ── Module-level split state ─────────────────────────────────────
 // The poll runs OUTSIDE any component, so navigating between views can't
@@ -124,7 +136,9 @@ export async function runStemSplit(
   const model = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
   const startedAt = Date.now()
   if (isStemSplitActive(sessionId)) {
-    throw new StemSplitError('A split is already running for this song.')
+    throw new StemSplitError('A split is already running for this song.', {
+      recoverable: true,
+    })
   }
   reportSplit(sessionId, { phase: 'uploading', pct: 0 })
   options.onProgress?.({ phase: 'uploading', pct: 0 })
@@ -234,7 +248,9 @@ export async function attachToStemSplitJob(
 ): Promise<Omit<StemSplitResult, 'elapsedMs'>> {
   const model = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
   if (options.skipActiveGuard !== true && isStemSplitActive(sessionId)) {
-    throw new StemSplitError('A split is already running for this song.')
+    throw new StemSplitError('A split is already running for this song.', {
+      recoverable: true,
+    })
   }
   // Server progress can jitter backwards at the start of a job (queued vs
   // processing snapshots race each other) — clamp so the UI only ever
@@ -261,7 +277,9 @@ export async function attachToStemSplitJob(
           const wanted = new Set<string>(splitStemsFor(model, 'instrumental'))
           const parts = files.filter((f) => wanted.has(f.stem))
           if (parts.length === 0) {
-            throw new StemSplitError('The split produced no part stems.')
+            throw new StemSplitError('The split produced no part stems.', {
+              recoverable: false,
+            })
           }
           let done = 0
           for (const part of parts) {
@@ -272,15 +290,41 @@ export async function attachToStemSplitJob(
               phase: 'saving',
               pct: Math.round((done / parts.length) * 100),
             })
-            const resp = await getOutputFile(
-              serverSessionId,
-              part.filename,
-              options.signal,
-            )
-            if (!resp.ok) {
-              throw new StemSplitError(
-                `Downloading the ${part.stem} stem failed (HTTP ${resp.status}).`,
-              )
+            // A worker restart or network blip mid-pickup must not kill
+            // the whole completion — retry each file a couple of times.
+            let resp: Response | null = null
+            for (let attempt = 0; ; attempt++) {
+              try {
+                const r = await getOutputFile(
+                  serverSessionId,
+                  part.filename,
+                  options.signal,
+                )
+                if (r.ok) {
+                  resp = r
+                  break
+                }
+                if (attempt >= 2) {
+                  throw new StemSplitError(
+                    `Downloading the ${part.stem} stem failed (HTTP ${r.status}).`,
+                    { recoverable: true },
+                  )
+                }
+              } catch (fetchErr) {
+                if (
+                  fetchErr instanceof StemSplitError ||
+                  (fetchErr instanceof Error && fetchErr.name === 'AbortError')
+                ) {
+                  throw fetchErr
+                }
+                if (attempt >= 2) {
+                  throw new StemSplitError(
+                    `Downloading the ${part.stem} stem failed.`,
+                    { recoverable: true },
+                  )
+                }
+              }
+              await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
             }
             const blob = await resp.blob()
             // Replace-then-save so a re-run never leaves two rows for a part
@@ -295,7 +339,9 @@ export async function attachToStemSplitJob(
               { derivedFrom: 'instrumental', producedBy: model },
             )
             if (!write.ok) {
-              throw new StemSplitError(`Saving the ${part.stem} stem failed.`)
+              throw new StemSplitError(`Saving the ${part.stem} stem failed.`, {
+                recoverable: true,
+              })
             }
             saved.push(part.stem as StemSplitPart)
             done++
@@ -317,7 +363,12 @@ export async function attachToStemSplitJob(
       if (completionError !== undefined) throw completionError
       if (err instanceof Error && err.name === 'AbortError') throw err
       const detail = err instanceof Error ? err.message : String(err)
-      throw new StemSplitError(`Splitting the instrumental failed: ${detail}`)
+      throw new StemSplitError(`Splitting the instrumental failed: ${detail}`, {
+        // Only a server-reported verdict (job FAILED — auto-refunded)
+        // means the job is truly dead. Poll/network trouble is not a
+        // verdict: the stems may be sitting in R2 waiting to be fetched.
+        recoverable: !(err instanceof TerminalPollError),
+      })
     })
   } finally {
     clearSplit(sessionId)

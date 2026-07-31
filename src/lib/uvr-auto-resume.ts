@@ -27,7 +27,7 @@ import { createEffect, onCleanup } from 'solid-js'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
 import type { StemSplitResult } from '@/lib/uvr-stem-split'
-import { attachToStemSplitJob, isStemSplitActive, runStemSplit, } from '@/lib/uvr-stem-split'
+import { attachToStemSplitJob, isStemSplitActive, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
 import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
 
 export interface AutoResumeHooks {
@@ -112,7 +112,14 @@ export async function startManagedStemSplit(
     void recordUvrSplitTime(sessionId, result.elapsedMs)
     return result
   } catch (err) {
-    void clearUvrSplitJob(sessionId)
+    // Clear the resume marker ONLY on a definitive dead-job verdict. A
+    // recoverable failure (download hiccup, worker restart mid-pickup)
+    // leaves the paid job's stems in R2 — the marker is the claim ticket
+    // the next auto-resume uses to collect them. Stale markers self-clean:
+    // resuming a truly gone job yields a non-recoverable error here.
+    if (err instanceof StemSplitError && !err.recoverable) {
+      void clearUvrSplitJob(sessionId)
+    }
     throw err
   }
 }
@@ -134,9 +141,14 @@ export async function autoResumeStemSplits(): Promise<void> {
           void clearUvrSplitJob(session.sessionId)
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.warn('[uvr-auto-resume] split resume failed:', err)
-        void clearUvrSplitJob(session.sessionId)
+        // Same discipline as startManagedStemSplit: only a definitive
+        // verdict burns the marker; transient trouble retries on the
+        // next trigger (load / tab visible / back online).
+        if (err instanceof StemSplitError && !err.recoverable) {
+          void clearUvrSplitJob(session.sessionId)
+        }
       })
   }
 }

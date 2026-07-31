@@ -23,7 +23,10 @@ vi.mock('@/stores/app-store', () => ({
   recordUvrSplitTime: vi.fn(() => Promise.resolve(true)),
   clearUvrSplitJob: vi.fn(() => Promise.resolve(true)),
 }))
-vi.mock('@/lib/uvr-stem-split', () => ({
+vi.mock('@/lib/uvr-stem-split', async (importOriginal) => ({
+  // Keep StemSplitError (and friends) real — the orchestrator branches on
+  // instanceof + .recoverable to decide whether a resume marker survives.
+  ...(await importOriginal<Record<string, unknown>>()),
   attachToStemSplitJob: vi.fn(() =>
     Promise.resolve({ saved: ['drums'], model: 'demucs-6s' }),
   ),
@@ -35,7 +38,7 @@ vi.mock('@/lib/uvr-stem-split', () => ({
 
 import { autoResumeServerSessions, autoResumeStemSplits, startManagedStemSplit, } from '@/lib/uvr-auto-resume'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
-import { attachToStemSplitJob, isStemSplitActive, runStemSplit, } from '@/lib/uvr-stem-split'
+import { attachToStemSplitJob, isStemSplitActive, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
 import type { UvrSession } from '@/stores/app-store'
 import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
 
@@ -186,16 +189,28 @@ describe('autoResumeStemSplits', () => {
     expect(attachToStemSplitJob).not.toHaveBeenCalled()
   })
 
-  it('clears the marker when the job is unrecoverable', async () => {
+  it('clears the marker on a definitive dead-job verdict', async () => {
     vi.mocked(getAllUvrSessions).mockReturnValue([
       splitSeed('s1', 'rp_gpu_gone'),
     ])
     vi.mocked(attachToStemSplitJob).mockRejectedValueOnce(
-      new Error('job vanished'),
+      new StemSplitError('job FAILED server-side', { recoverable: false }),
     )
     await autoResumeStemSplits()
     await flush()
     expect(clearUvrSplitJob).toHaveBeenCalledWith('s1')
+  })
+
+  it('keeps the marker through recoverable trouble — the claim ticket survives', async () => {
+    vi.mocked(getAllUvrSessions).mockReturnValue([
+      splitSeed('s1', 'rp_gpu_alive'),
+    ])
+    vi.mocked(attachToStemSplitJob).mockRejectedValueOnce(
+      new StemSplitError('download hiccup', { recoverable: true }),
+    )
+    await autoResumeStemSplits()
+    await flush()
+    expect(clearUvrSplitJob).not.toHaveBeenCalled()
   })
 
   it('rides along with the main auto-resume triggers', async () => {
@@ -221,10 +236,20 @@ describe('startManagedStemSplit', () => {
     expect(recordUvrSplitTime).toHaveBeenCalledWith('s1', 5)
   })
 
-  it('clears the resume marker when the split fails', async () => {
-    vi.mocked(runStemSplit).mockRejectedValueOnce(new Error('boom'))
-    await expect(startManagedStemSplit('s1')).rejects.toThrow('boom')
+  it('clears the resume marker only on a definitive failure', async () => {
+    vi.mocked(runStemSplit).mockRejectedValueOnce(
+      new StemSplitError('job FAILED', { recoverable: false }),
+    )
+    await expect(startManagedStemSplit('s1')).rejects.toThrow('job FAILED')
     expect(clearUvrSplitJob).toHaveBeenCalledWith('s1')
     expect(recordUvrSplitTime).not.toHaveBeenCalled()
+  })
+
+  it('keeps the marker when the failure is recoverable', async () => {
+    vi.mocked(runStemSplit).mockRejectedValueOnce(
+      new StemSplitError('worker restarted mid-pickup', { recoverable: true }),
+    )
+    await expect(startManagedStemSplit('s1')).rejects.toThrow('mid-pickup')
+    expect(clearUvrSplitJob).not.toHaveBeenCalled()
   })
 })

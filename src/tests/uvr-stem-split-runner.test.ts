@@ -8,6 +8,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OutputFile } from '@/lib/uvr-api'
+import { TerminalPollError } from '@/lib/uvr-api'
 
 const api = vi.hoisted(() => ({
   processAudio: vi.fn(),
@@ -198,5 +199,28 @@ describe('runStemSplit', () => {
     await expect(runStemSplit('session-1')).rejects.toThrow(
       /Splitting the instrumental failed: GPU exploded/,
     )
+  })
+
+  it('marks a network-style poll death recoverable — the job may be fine', async () => {
+    api.pollForCompletion.mockRejectedValue(new TypeError('fetch failed'))
+    const err = await runStemSplit('session-1').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as StemSplitError).recoverable).toBe(true)
+  })
+
+  it('marks a server verdict non-recoverable — the job is dead and refunded', async () => {
+    api.pollForCompletion.mockRejectedValue(
+      new TerminalPollError('executionTimeout exceeded'),
+    )
+    const err = await runStemSplit('session-1').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as StemSplitError).recoverable).toBe(false)
+  })
+
+  it('marks a failed part save recoverable — the stems still live server-side', async () => {
+    db.saveStemBlobDurable.mockResolvedValue({ ok: false })
+    const err = await runStemSplit('session-1').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as StemSplitError).recoverable).toBe(true)
   })
 })
