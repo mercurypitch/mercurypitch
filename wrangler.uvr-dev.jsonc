@@ -1,0 +1,38 @@
+{
+  // ============================================================
+  // LOCAL DEV ONLY — worker-only config for the /api/uvr chain
+  // ============================================================
+  // The main wrangler.jsonc declares `build.command = "pnpm run build"`
+  // and an assets directory; `wrangler dev` on that config re-runs a FULL
+  // production vite build on every src/ edit. During active development
+  // that pegged all cores continuously (2026-07-31 post-mortem: machine
+  // starved to a reboot). Local dev never serves assets from the worker —
+  // vite serves the frontend and proxies only /api/uvr/* here — so this
+  // config drops the assets block and the custom build entirely. Wrangler
+  // bundles src/worker.ts with its own fast incremental esbuild.
+  //
+  // Launch: npx wrangler dev -c wrangler.uvr-dev.jsonc --port 8790 \
+  //           --var DB_API_URL:http://localhost:8788
+  // Secrets come from .dev.vars as usual. NEVER deploy this config.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mercurypitch-uvr-local",
+  "compatibility_date": "2026-04-30",
+  "main": "src/worker.ts",
+  "compatibility_flags": ["nodejs_compat"],
+  // Same remote staging bucket as the main config's top-level binding:
+  // >7 MB uploads and every instrumental split stage through real R2 so
+  // the RunPod handler can fetch them. Dev bucket only.
+  "r2_buckets": [
+    {
+      "binding": "UVR_INPUT_BUCKET",
+      "bucket_name": "mercurypitch-uvr-output",
+      "remote": true
+    }
+  ],
+  "vars": {
+    // Local dev always talks to the DEV RunPod endpoint, whose handler
+    // writes stems under this prefix (endpoint S3_KEY_PREFIX). Required
+    // for R2 stem recovery and second-pass reuse to find them.
+    "RUNPOD_STEM_PREFIX": "runpod-dev"
+  }
+}

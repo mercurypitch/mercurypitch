@@ -45,7 +45,9 @@ RUN python -m pip install torch torchaudio --index-url https://download.pytorch.
 # Keep this list in sync with MODEL_REGISTRY in handler.py. Loading each
 # model at build (CPU, no GPU — onnxruntime warning is normal) both fetches
 # the weights and validates the file names against the installed
-# audio-separator release. Adds ~2 GB to the image; disk is 20 GB.
+# audio-separator release. Adds ~2.5 GB to the image; disk is 20 GB.
+# (htdemucs_ft is four bagged checkpoints, so it alone pulls ~4x a single
+# Demucs model — that is also why its credit multiplier is the highest.)
 # Baked BEFORE the handler COPY on purpose: a handler-only change must not
 # invalidate this layer (each re-bake re-downloads ~2.5 GB of weights).
 RUN python -c "from audio_separator.separator import Separator; \
@@ -56,6 +58,9 @@ s = Separator(model_file_dir='/models'); \
     'UVR-MDX-NET-Inst_HQ_3.onnx', \
     'mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt', \
     'vocals_mel_band_roformer.ckpt', \
+    'htdemucs.yaml', \
+    'htdemucs_ft.yaml', \
+    'htdemucs_6s.yaml', \
 )]"
 
 COPY handler.py .

@@ -179,9 +179,18 @@ export default defineConfig(({ mode }) => {
           ws: true,
         },
         '/api/uvr': {
-          target: `http://localhost:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
+          // 127.0.0.1, not localhost: node resolves localhost to ::1 first,
+        // and the docker container only publishes on IPv4 — the proxy
+        // would hang on the unreachable IPv6 socket.
+        target: `http://127.0.0.1:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/uvr/, ''), // Removes prefix before sending to API
+          // The FastAPI container serves /process at its root — strip the
+        // prefix. The Cloudflare worker (wrangler dev; VITE_UVR_WORKER=1)
+        // serves the full /api/uvr/* paths — keep it, so the real
+        // auth/metering/RunPod chain can be exercised locally.
+        ...(process.env.VITE_UVR_WORKER === '1'
+          ? {}
+          : { rewrite: (path) => path.replace(/^\/api\/uvr/, '') }),
         },
         // Proxy the large model to bypass CORS during development
         '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {

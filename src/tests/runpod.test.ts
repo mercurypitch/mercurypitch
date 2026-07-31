@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig, RunpodStatus } from '@/lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -182,6 +182,57 @@ describe('buildJobInput', () => {
     expect(input.audio_s3_key).toBe('input/abc.mp3')
     expect(input.audio_url).toBeUndefined()
     expect(input.audio_base64).toBeUndefined()
+  })
+
+  it('forwards the second-pass split fields when set', () => {
+    const input = buildJobInput({
+      audioBase64: 'AAAA',
+      model: 'demucs-6s',
+      sourceStem: 'instrumental',
+      dropStems: ['vocal', 'piano'],
+      reconcileResidual: true,
+      residualStem: 'other',
+    })
+    expect(input.source_stem).toBe('instrumental')
+    expect(input.drop_stems).toEqual(['vocal', 'piano'])
+    expect(input.reconcile_residual).toBe(true)
+    expect(input.residual_stem).toBe('other')
+  })
+
+  it('keeps an ordinary job payload free of split fields', () => {
+    // Absent means absent — the handler applies its own defaults, and
+    // older handlers must not see unexpected keys on normal jobs.
+    const input = buildJobInput({ audioBase64: 'AAAA' })
+    expect('source_stem' in input).toBe(false)
+    expect('drop_stems' in input).toBe(false)
+    expect('reconcile_residual' in input).toBe(false)
+    expect('residual_stem' in input).toBe(false)
+    expect('declared_duration_seconds' in input).toBe(false)
+  })
+
+  it('forwards the declared duration for handler-side billing verification', () => {
+    const input = buildJobInput({
+      audioBase64: 'AAAA',
+      declaredDurationSeconds: 1080,
+    })
+    expect(input.declared_duration_seconds).toBe(1080)
+  })
+})
+
+// ── jobExecutionTimeoutMs ───────────────────────────────────────
+
+describe('jobExecutionTimeoutMs', () => {
+  it('scales the kill budget with the declared song length', () => {
+    // 10 min base + 1 s per song-second: an 18-min song gets 28 min.
+    expect(jobExecutionTimeoutMs(1080)).toBe((600 + 1080) * 1000)
+    expect(jobExecutionTimeoutMs(210)).toBe((600 + 210) * 1000)
+  })
+
+  it('caps at 30 minutes and skips unknown durations', () => {
+    expect(jobExecutionTimeoutMs(7200)).toBe(1800 * 1000)
+    expect(jobExecutionTimeoutMs(undefined)).toBeUndefined()
+    expect(jobExecutionTimeoutMs(0)).toBeUndefined()
+    expect(jobExecutionTimeoutMs(Number.NaN)).toBeUndefined()
   })
 })
 

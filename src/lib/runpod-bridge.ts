@@ -8,7 +8,7 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, RUNPOD_STEM_NAMES, submitJob, toSessionId, } from './runpod'
 import type { MeteringConfig } from './uvr-metering'
 import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 
@@ -17,11 +17,15 @@ import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 // are streamed to R2 and passed to the handler by S3 key instead.
 const RUNPOD_MAX_INLINE_BYTES = 7 * 1024 * 1024
 
-// Hard upload cap for server-side separation. Files between the inline cap
-// and this go through R2 (`audio_s3_key`). Mirror of the client's
-// SERVER_MAX_UPLOAD_BYTES. Kept comfortably under the handler's 100 MB byte
-// cap and the ~12-min duration cap.
-const RUNPOD_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+// Hard upload cap for server-side jobs. Files between the inline cap and
+// this go through R2 (`audio_s3_key`). Deliberately ABOVE the client's
+// 50 MB SERVER_MAX_UPLOAD_BYTES gate for source songs: a second-pass stem
+// split re-uploads the instrumental as uncompressed WAV (~10.6 MB/min at
+// 44.1 kHz 16-bit stereo, so a 7-minute song is ~78 MB), which is a
+// legitimate payload the source-file gate never sees. Kept under the
+// handler's own 100 MB byte cap and ~12-min duration cap, which remain
+// the real compute bound.
+const RUNPOD_MAX_UPLOAD_BYTES = 95 * 1024 * 1024
 
 /** Minimal R2 surface the bridge needs — a subset of R2Bucket, so this pure
  *  module stays testable with a plain mock. `put` stages large inputs; `list` +
@@ -78,7 +82,10 @@ async function statusFromR2(
         size: o.size,
       }
     })
-    .filter((f) => f.stem === 'vocal' || f.stem === 'instrumental')
+    // Any classified stem counts: split jobs leave drums/bass/guitar/piano/
+    // other here, and limiting recovery to vocal+instrumental silently broke
+    // re-attaching to a finished split after a reload.
+    .filter((f) => (RUNPOD_STEM_NAMES as readonly string[]).includes(f.stem))
   if (files.length === 0) return null
   return { session_id: sessionId, status: 'completed', progress: 100, files }
 }
@@ -192,7 +199,15 @@ export async function handleRunpodRequest(
     const tier = resolveTier(cfg, requested)
     const endpointId = endpointFor(cfg, tier)
     if (endpointId === null) return null
-    return startRunpodJob(request, cfg, endpointId, tier, meter, bucket)
+    return startRunpodJob(
+      request,
+      cfg,
+      endpointId,
+      tier,
+      meter,
+      bucket,
+      stemPrefix,
+    )
   }
 
   // Follow-up calls route to RunPod by the rp_<tier>_ session id, so
@@ -334,6 +349,7 @@ async function startRunpodJob(
   tier: RunpodTier,
   meter: MeteringConfig | null,
   bucket: UvrInputBucket | null,
+  stemPrefix = 'runpod',
 ): Promise<Response> {
   const modelHeader = request.headers.get('X-UVR-Model')
   const declaredModel =
@@ -347,6 +363,22 @@ async function startRunpodJob(
       },
       400,
     )
+  }
+
+  // Client-declared song length: prices the long-song surcharge into the
+  // quote AND the debit, and rides in the job input so the handler can
+  // verify it against the probed duration (under-declaring gets the job
+  // rejected before separation and auto-refunded — it can't buy a cheap
+  // long job). Garbage values are a hard 400: silently ignoring one would
+  // debit the base price for a job the handler then refuses.
+  const durationHeader = request.headers.get('X-UVR-Duration-Seconds')
+  let declaredDuration: number | undefined
+  if (durationHeader !== null && durationHeader.trim() !== '') {
+    const parsed = Number(durationHeader)
+    if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 86_400) {
+      return json({ error: 'Invalid X-UVR-Duration-Seconds header' }, 400)
+    }
+    declaredDuration = parsed
   }
 
   // Reject an obviously oversized multipart request before formData() buffers
@@ -371,6 +403,7 @@ async function startRunpodJob(
       request.headers.get('Authorization'),
       tier,
       declaredModel,
+      declaredDuration,
     )
     if (!admission.allowed) {
       const status = admission.status ?? 503
@@ -392,8 +425,14 @@ async function startRunpodJob(
   }
 
   const form = await request.formData()
-  const file = form.get('file')
-  if (!(file instanceof File)) {
+  const fileEntry = form.get('file')
+  const file = fileEntry instanceof File ? fileEntry : null
+  // Second-pass reuse: instead of re-uploading a stem the handler itself
+  // wrote to R2 (an instrumental WAV is ~60-190 MB), the client names the
+  // session that produced it and the worker resolves the R2 object key.
+  // Nothing travels, so upload size caps stop applying to splits.
+  const reuseSession = coerceFormString(form.get('reuse_session'))
+  if (file === null && reuseSession === undefined) {
     return json({ error: 'No file provided' }, 400)
   }
 
@@ -424,8 +463,84 @@ async function startRunpodJob(
   const audioUrl = coerceFormString(form.get('audio_url'))
   const stems = parseStems(form.get('stems'))
 
+  // ── Second-pass fields (splitting a stem into its parts) ─────
+  // Validated before dispatch for the same reason as the model allowlist:
+  // a bad value must fail here for free, not inside a billable job.
+  const knownStems = RUNPOD_STEM_NAMES as readonly string[]
+  const sourceStem = coerceFormString(form.get('source_stem'))
+  if (
+    sourceStem !== undefined &&
+    sourceStem !== 'original' &&
+    !knownStems.includes(sourceStem)
+  ) {
+    return json(
+      {
+        error: `Invalid source_stem (use 'original' or one of: ${knownStems.join(', ')})`,
+      },
+      400,
+    )
+  }
+  const dropStemsRaw = form.get('drop_stems')
+  const dropStems = parseStems(dropStemsRaw)
+  if (dropStemsRaw !== null && dropStems === undefined) {
+    return json({ error: 'Invalid drop_stems (expected a JSON array)' }, 400)
+  }
+  if (dropStems !== undefined) {
+    const unknown = dropStems.filter((s) => !knownStems.includes(s))
+    if (unknown.length > 0) {
+      return json({ error: `Unknown drop_stems: ${unknown.join(', ')}` }, 400)
+    }
+  }
+  const residualStem = coerceFormString(form.get('residual_stem'))
+  if (residualStem !== undefined && !knownStems.includes(residualStem)) {
+    return json({ error: 'Invalid residual_stem' }, 400)
+  }
+  const reconcileRaw = coerceFormString(form.get('reconcile_residual'))
+  const reconcileResidual =
+    reconcileRaw === undefined
+      ? undefined
+      : ['1', 'true', 'yes', 'on'].includes(reconcileRaw.toLowerCase())
+
+  // Resolve the reused stem to a live R2 key BEFORE any billing: an
+  // expired object must fail here for free, not inside a debited job.
+  let reuseKey: { key: string; size: number; name: string } | undefined
+  if (reuseSession !== undefined) {
+    const parsedReuse = parseSession(reuseSession)
+    if (parsedReuse === null) {
+      return json({ error: 'Invalid reuse_session' }, 400)
+    }
+    if (bucket === null) {
+      return json({ error: 'Stem reuse is not available right now.' }, 503)
+    }
+    const wanted = sourceStem ?? 'instrumental'
+    const listed = await bucket.list({
+      prefix: stemDir(stemPrefix, parsedReuse.jobId),
+    })
+    const match = (listed.objects ?? []).find(
+      (o) => classifyStemFromFilename(baseName(o.key)) === wanted,
+    )
+    if (match === undefined) {
+      // The handler's stems live ~24 h; after that the client must fall
+      // back to uploading the stored blob. 410 tells it apart from every
+      // transient failure.
+      return json(
+        {
+          error: 'The stored stem has expired on the server — re-uploading it.',
+          code: 'stem-expired',
+        },
+        410,
+      )
+    }
+    reuseKey = { key: match.key, size: match.size, name: baseName(match.key) }
+  }
+
   // Hard cap first, whatever the transport.
-  if (audioUrl === undefined && file.size > RUNPOD_MAX_UPLOAD_BYTES) {
+  if (
+    reuseKey === undefined &&
+    audioUrl === undefined &&
+    file !== null &&
+    file.size > RUNPOD_MAX_UPLOAD_BYTES
+  ) {
     return json(
       {
         error: `File too large (max ${RUNPOD_MAX_UPLOAD_BYTES / (1024 * 1024)} MB for server processing).`,
@@ -442,7 +557,10 @@ async function startRunpodJob(
   let audioBase64: string | undefined
   let audioS3Key: string | undefined
   let via = 'audio_url'
-  if (audioUrl === undefined) {
+  if (reuseKey !== undefined) {
+    audioS3Key = reuseKey.key
+    via = 'reuse'
+  } else if (audioUrl === undefined && file !== null) {
     if (file.size <= RUNPOD_MAX_INLINE_BYTES) {
       audioBase64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()))
       via = 'inline'
@@ -462,29 +580,34 @@ async function startRunpodJob(
   }
 
   const input = buildJobInput({
-    filename: file.name,
+    filename: file?.name ?? reuseKey?.name ?? 'input',
     model,
     output_format: outputFormat,
     stems,
     audioUrl,
     audioBase64,
     audioS3Key,
+    sourceStem,
+    dropStems,
+    reconcileResidual,
+    residualStem,
+    declaredDurationSeconds: declaredDuration,
   })
 
   // One breadcrumb per dispatch: the session id logged on accept is the
   // correlation key across worker logs, RunPod's console and the credit
   // ledger's jobRef.
-  const sizeMb = (file.size / 1_000_000).toFixed(1)
+  const sizeMb = ((file?.size ?? reuseKey?.size ?? 0) / 1_000_000).toFixed(1)
   const res = await submitJob(cfg, endpointId, input)
   if (res.id === undefined || res.id === '') {
     console.error(
-      `[runpod] submit failed (tier=${tier} file="${file.name}" ${sizeMb}MB ${via}): ${res.error ?? 'no job id'}`,
+      `[runpod] submit failed (tier=${tier} file="${input.filename}" ${sizeMb}MB ${via}): ${res.error ?? 'no job id'}`,
     )
     return json({ error: res.error ?? 'RunPod did not return a job id' }, 502)
   }
   const sessionId = toSessionId(tier, res.id)
   console.log(
-    `[runpod] ${sessionId} accepted: "${file.name}" ${sizeMb}MB ${via} tier=${tier}`,
+    `[runpod] ${sessionId} accepted: "${input.filename}" ${sizeMb}MB ${via} tier=${tier}`,
   )
 
   // Debit on acceptance (premium.md): the session id is the job's ledger
@@ -499,6 +622,7 @@ async function startRunpodJob(
       // input.model is always set (buildJobInput defaults it), so the debit
       // is priced for the model that actually runs.
       input.model,
+      declaredDuration,
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)

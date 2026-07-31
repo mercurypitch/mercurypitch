@@ -247,11 +247,21 @@ export function isUvrTier(value: unknown): value is UvrTier {
 // Only the two-model ensemble (~2x compute, not user-exposed) carries a
 // multiplier. Keep the names in sync with MODEL_REGISTRY
 // (runpod/handler.py) and RUNPOD_ALLOWED_MODELS (src/lib/runpod.ts).
+//
+// The Demucs multi-stem tiers are priced off compute, not stem count:
+// `demucs` is one model pass, `demucs-6s` one pass over six sources, and
+// `demucs-ft` bags FOUR fine-tuned models (~4x). `shifts` (default 2)
+// multiplies all three, which is why even the single-model tiers sit
+// above the RoFormer base. These are provisional — measure a real song
+// with runpod/test_input.json and correct them before launch.
 export const UVR_MODEL_CREDIT_MULTIPLIERS = {
   mdx: 1,
   roformer: 1,
   karaoke: 1,
   ensemble: 2,
+  demucs: 2,
+  'demucs-6s': 2,
+  'demucs-ft': 4,
 } as const
 
 export type UvrModelName = keyof typeof UVR_MODEL_CREDIT_MULTIPLIERS
@@ -262,16 +272,49 @@ const UVR_MODEL_ALIASES: Record<string, UvrModelName> = {
   'UVR-MDX-NET-Inst_HQ_3.onnx': 'mdx',
 }
 
-/** Credit cost of one job: tier base × the model's multiplier. Absent or
- *  unknown models charge the base — an older main worker that doesn't send
- *  a model is running the old MDX default, and pricing must never turn a
- *  version skew into a refused job. */
-export function uvrJobCost(tierCredits: number, model?: string): number {
-  if (model === undefined || model === '') return tierCredits
-  const key = UVR_MODEL_ALIASES[model] ?? model
-  const mult =
-    (UVR_MODEL_CREDIT_MULTIPLIERS as Record<string, number>)[key] ?? 1
-  return tierCredits * mult
+/** Song length included in the base price. Mirrors the RunPod handler's
+ *  UVR_MAX_INPUT_MINUTES default — with a declared duration the handler
+ *  cap is raised and length is priced instead of rejected. */
+export const UVR_BASE_MINUTES = 12
+/** Each STARTED block of this many minutes past the base adds one extra
+ *  multiple of the model cost (an 18.0-min song costs 2×). */
+export const UVR_SURCHARGE_BLOCK_MINUTES = 6
+
+/** Length multiplier: 1 within the base window, +1 per started surcharge
+ *  block past it. Unknown/absent duration charges the base — the handler
+ *  independently probes the real length and rejects a job whose actual
+ *  billing factor exceeds the declared one, so under-declaring cannot buy
+ *  a cheap long job. */
+export function uvrLengthFactor(durationSeconds?: number): number {
+  if (
+    durationSeconds === undefined ||
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds <= 0
+  ) {
+    return 1
+  }
+  const overage = durationSeconds - UVR_BASE_MINUTES * 60
+  if (overage <= 0) return 1
+  return 1 + Math.ceil(overage / (UVR_SURCHARGE_BLOCK_MINUTES * 60))
+}
+
+/** Credit cost of one job: tier base × the model's multiplier × the length
+ *  factor. Absent or unknown models charge the base — an older main worker
+ *  that doesn't send a model is running the old MDX default, and pricing
+ *  must never turn a version skew into a refused job. */
+export function uvrJobCost(
+  tierCredits: number,
+  model?: string,
+  durationSeconds?: number,
+): number {
+  const modelCost =
+    model === undefined || model === ''
+      ? tierCredits
+      : tierCredits *
+        ((UVR_MODEL_CREDIT_MULTIPLIERS as Record<string, number>)[
+          UVR_MODEL_ALIASES[model] ?? model
+        ] ?? 1)
+  return modelCost * uvrLengthFactor(durationSeconds)
 }
 
 /** Absolute per-model credit costs for the pricing endpoint (UI display),
@@ -279,12 +322,15 @@ export function uvrJobCost(tierCredits: number, model?: string): number {
 export function uvrModelCredits(
   tierCredits: number,
 ): Record<UvrModelName, number> {
-  return {
-    mdx: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.mdx,
-    roformer: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.roformer,
-    karaoke: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.karaoke,
-    ensemble: tierCredits * UVR_MODEL_CREDIT_MULTIPLIERS.ensemble,
-  }
+  // Derived from the multiplier map rather than hand-listed, so a new
+  // registry model is priced by adding one line above and nothing here.
+  const entries = Object.entries(UVR_MODEL_CREDIT_MULTIPLIERS) as [
+    UvrModelName,
+    number,
+  ][]
+  return Object.fromEntries(
+    entries.map(([model, mult]) => [model, tierCredits * mult]),
+  ) as Record<UvrModelName, number>
 }
 
 /** Job refs are worker-issued session ids (`rp_<tier>_<runpodJobId>`); keep

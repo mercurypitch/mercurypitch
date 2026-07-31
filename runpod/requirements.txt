@@ -11,6 +11,13 @@ runpod>=1.6.0
 # behavior (invert_using_spec, mdx_params) validated against this version.
 audio-separator==0.44.2
 
+# Imported directly by the residual-reconciliation pass (_reconcile_residual):
+# read/write stems and decode the source at the stems' sample rate. Already
+# transitive deps of audio-separator — pinned here because we import them.
+numpy
+soundfile
+librosa
+
 # Fetch audio_url inputs
 requests>=2.31.0
 

@@ -13,11 +13,22 @@
 #     "filename":      "song.mp3",
 #     "model":         "roformer",                         # optional registry name
 #     "output_format": "FLAC",                             # WAV | MP3 | FLAC
-#     "stems":         ["vocal", "instrumental"]           # optional
+#     "stems":         ["vocal", "instrumental"],          # optional, advisory
+#     "source_stem":   "original",                         # or "instrumental"
+#     "drop_stems":    ["vocal"],                          # optional
+#     "reconcile_residual": true,                          # optional
+#     "residual_stem": "other"                             # optional
 #   }
 #
-# `model` is a REGISTRY name (roformer | mdx | karaoke | ensemble), not a
-# raw weights filename — see MODEL_REGISTRY below.
+# `model` is a REGISTRY name (roformer | mdx | karaoke | ensemble |
+# demucs | demucs-ft | demucs-6s), not a raw weights filename — see
+# MODEL_REGISTRY below. Each entry declares the stems it produces, so
+# nothing downstream hard-codes a two-stem world.
+#
+# A second pass — splitting an instrumental an earlier job produced into
+# drums/bass/guitar/piano/other — is the same endpoint with
+# `source_stem: "instrumental"`; that flips on vocal-dropping and residual
+# reconciliation so the returned stems sum back to the instrumental.
 #
 # Returns:
 #   {
@@ -40,6 +51,7 @@ from __future__ import annotations
 import base64
 import glob
 import logging
+import math
 import os
 import re
 import time
@@ -97,11 +109,23 @@ DEFAULT_MODEL = os.getenv("UVR_DEFAULT_MODEL", "roformer")
 #   ensemble  BS-RoFormer + Mel-Band RoFormer Kim averaged per stem
 #             (avg_wave) — max quality, roughly 2x the time of roformer;
 #             ensemble members reload per job (audio-separator design).
+#
+# The `stems` key declares what each model PRODUCES. It is the source of
+# truth the app reads (via /models) to build its stem UI, so nothing
+# downstream has to hard-code "vocal + instrumental" — a model that emits
+# six stems advertises six here and the client follows.
 MODEL_REGISTRY: dict[str, dict[str, Any]] = {
-    "roformer": {"files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"]},
-    "mdx": {"files": ["UVR-MDX-NET-Inst_HQ_3.onnx"]},
+    "roformer": {
+        "files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"],
+        "stems": ["vocal", "instrumental"],
+    },
+    "mdx": {
+        "files": ["UVR-MDX-NET-Inst_HQ_3.onnx"],
+        "stems": ["vocal", "instrumental"],
+    },
     "karaoke": {
-        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"]
+        "files": ["mel_band_roformer_karaoke_aufr33_viperx_sdr_10.1956.ckpt"],
+        "stems": ["vocal", "instrumental"],
     },
     "ensemble": {
         "files": [
@@ -109,8 +133,38 @@ MODEL_REGISTRY: dict[str, dict[str, Any]] = {
             "vocals_mel_band_roformer.ckpt",
         ],
         "algorithm": "avg_wave",
+        "stems": ["vocal", "instrumental"],
+    },
+    # ── Multi-stem (Demucs v4) ──────────────────────────────────
+    # Split a mix — or an already-separated instrumental, see
+    # `source_stem` below — into the rhythm section and friends.
+    # audio-separator ships Demucs v4 natively, so these add no new
+    # dependency; only baked weights (see Dockerfile).
+    #
+    #   demucs     htdemucs — one model, 4 stems. The fast tier.
+    #   demucs-ft  htdemucs_ft — 4 fine-tuned models bagged: ~4x the
+    #              compute of `demucs` and the best 4-stem quality
+    #              available in this engine. The multi-stem default.
+    #   demucs-6s  htdemucs_6s — adds guitar and piano. Guitar is usable;
+    #              piano bleeds badly (upstream: "not working great"), so
+    #              the app labels it experimental rather than hiding it.
+    "demucs": {
+        "files": ["htdemucs.yaml"],
+        "stems": ["vocal", "drums", "bass", "other"],
+    },
+    "demucs-ft": {
+        "files": ["htdemucs_ft.yaml"],
+        "stems": ["vocal", "drums", "bass", "other"],
+    },
+    "demucs-6s": {
+        "files": ["htdemucs_6s.yaml"],
+        "stems": ["vocal", "drums", "bass", "other", "guitar", "piano"],
     },
 }
+
+# Every stem name the registry can emit — the allowlist for `stems`,
+# `drop_stems` and `residual_stem` job inputs.
+KNOWN_STEMS = sorted({s for spec in MODEL_REGISTRY.values() for s in spec["stems"]})
 
 # Older app clients send the MDX weights filename as the model — keep them
 # working by mapping the legacy names onto the registry.
@@ -148,6 +202,43 @@ MAX_INPUT_BYTES = int(os.getenv("UVR_MAX_INPUT_BYTES", str(100 * 1024 * 1024)))
 # the credit. 0 disables the cap.
 MAX_INPUT_MINUTES = float(os.getenv("UVR_MAX_INPUT_MINUTES", "12"))
 
+# Long-song billing blocks — MUST mirror billing-core.ts (UVR_BASE_MINUTES /
+# UVR_SURCHARGE_BLOCK_MINUTES). Songs past the base window pay one extra
+# multiple of the model cost per STARTED block; the worker debits on the
+# CLIENT-declared duration, and _billing_blocks() below is how this handler
+# refuses a job whose probed duration lands in a higher block than paid for.
+BILLING_BASE_MINUTES = float(os.getenv("UVR_BILLING_BASE_MINUTES", "12"))
+BILLING_BLOCK_MINUTES = float(os.getenv("UVR_BILLING_BLOCK_MINUTES", "6"))
+
+
+def _is_allowed_s3_key(key: str) -> bool:
+    """Allowlist for `audio_s3_key` — the field must never become a read
+    primitive for arbitrary bucket paths. Two shapes are legal:
+      • `input/<safe>` — an input the worker staged for this job, and
+      • `<S3_KEY_PREFIX>/<jobId>/<stem file>` — a stem THIS handler wrote
+        (second-pass reuse). Stem filenames carry spaces/parens, so the
+        charset is wider there, but traversal and foreign prefixes stay
+        rejected."""
+    if re.match(r"^input/[A-Za-z0-9._-]+$", key):
+        return True
+    return (
+        key.startswith(f"{S3_KEY_PREFIX}/")
+        and ".." not in key
+        and "\\" not in key
+        and re.match(r"^[A-Za-z0-9 ._()\[\]'&,+/-]+$", key) is not None
+    )
+
+
+def _billing_blocks(duration_seconds: float) -> int:
+    """Billing factor for a song length: 1 in the base window, +1 per
+    started surcharge block past it. Mirrors uvrLengthFactor()."""
+    if not duration_seconds or duration_seconds <= 0:
+        return 1
+    overage = duration_seconds - BILLING_BASE_MINUTES * 60
+    if overage <= 0:
+        return 1
+    return 1 + math.ceil(overage / (BILLING_BLOCK_MINUTES * 60))
+
 # Minimum input duration. RoFormer models process ~11 s windows; a shorter
 # input yields zero chunks in audio-separator 0.44.2 and dies mid-separation
 # with an opaque tensor-size error ("size of tensor a (0) must match ...").
@@ -172,6 +263,14 @@ MDX_SEGMENT_SIZE = int(os.getenv("UVR_MDX_SEGMENT_SIZE", "256"))
 # MDXC/RoFormer overlap is an integer chunk-overlap count (2-50, library
 # default 8) — different semantics from the MDX 0-1 fraction above.
 MDXC_OVERLAP = int(os.getenv("UVR_MDXC_OVERLAP", "8"))
+# Demucs knobs. `shifts` is the random-shift trick: N passes at different
+# offsets, averaged. It multiplies runtime almost linearly, so it is the
+# main cost dial for the multi-stem tiers — 2 is the audible sweet spot,
+# 1 halves the bill. Demucs segment_size is a SECONDS-per-chunk value
+# (library range 1-100), unrelated to the MDX bin count above.
+DEMUCS_SHIFTS = int(os.getenv("UVR_DEMUCS_SHIFTS", "2"))
+DEMUCS_OVERLAP = float(os.getenv("UVR_DEMUCS_OVERLAP", "0.25"))
+DEMUCS_SEGMENT_SIZE = os.getenv("UVR_DEMUCS_SEGMENT_SIZE", "Default")
 
 # Object storage (S3-compatible — Cloudflare R2 works). When set, stems
 # are uploaded and returned as URLs instead of inline base64. This is the
@@ -195,7 +294,13 @@ S3_KEY_PREFIX = os.getenv("S3_KEY_PREFIX", "runpod").strip("/") or "runpod"
 
 _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _VALID_FORMATS = {"WAV", "MP3", "FLAC"}
-_STEM_KEYS = ["vocal", "instrumental", "drums", "bass", "other"]
+# Substring fallback for stem classification (the parenthesised marker in
+# _STEM_MARKER_RE wins first). Order matters: "instrumental" must be tried
+# before "other" would ever match, and the list stays a superset of every
+# registry `stems` entry.
+_STEM_KEYS = [
+    "vocal", "instrumental", "drums", "bass", "guitar", "piano", "other",
+]
 
 os.makedirs(WORK_DIR, exist_ok=True)
 
@@ -270,6 +375,15 @@ def _quality_from_input(job_input: dict) -> dict:
     overlap = _as_num(job_input.get("mdx_overlap"), MDX_OVERLAP)
     segment = int(_as_num(job_input.get("mdx_segment_size"), MDX_SEGMENT_SIZE))
     mdxc_overlap = int(_as_num(job_input.get("mdxc_overlap"), MDXC_OVERLAP))
+    demucs_shifts = int(_as_num(job_input.get("demucs_shifts"), DEMUCS_SHIFTS))
+    demucs_overlap = _as_num(job_input.get("demucs_overlap"), DEMUCS_OVERLAP)
+    # "Default" is a valid library value (means "use the model's own"), so
+    # this one stays a string unless a numeric override parses cleanly.
+    demucs_segment = job_input.get("demucs_segment_size", DEMUCS_SEGMENT_SIZE)
+    if str(demucs_segment).strip().lower() != "default":
+        demucs_segment = int(min(100, max(1, _as_num(demucs_segment, 10))))
+    else:
+        demucs_segment = "Default"
     return {
         "invert_using_spec": _as_bool(
             job_input.get("invert_using_spec"), INVERT_USING_SPEC
@@ -278,6 +392,9 @@ def _quality_from_input(job_input: dict) -> dict:
         "enable_denoise": _as_bool(job_input.get("mdx_denoise"), MDX_DENOISE),
         "segment_size": min(4096, max(64, segment)),
         "mdxc_overlap": min(50, max(2, mdxc_overlap)),
+        "demucs_shifts": min(20, max(0, demucs_shifts)),
+        "demucs_overlap": min(0.95, max(0.1, demucs_overlap)),
+        "demucs_segment_size": demucs_segment,
     }
 
 
@@ -351,6 +468,9 @@ def _get_separator(
         quality["enable_denoise"],
         quality["segment_size"],
         quality["mdxc_overlap"],
+        quality["demucs_shifts"],
+        quality["demucs_overlap"],
+        quality["demucs_segment_size"],
     )
 
     if _separator is None or _loaded_key != key:
@@ -375,6 +495,14 @@ def _get_separator(
                 "batch_size": 1,
                 "overlap": quality["mdxc_overlap"],
                 "pitch_shift": 0,
+            },
+            # Demucs v4 (the multi-stem tiers). `shifts` dominates runtime
+            # — see DEMUCS_SHIFTS above.
+            "demucs_params": {
+                "segment_size": quality["demucs_segment_size"],
+                "shifts": quality["demucs_shifts"],
+                "overlap": quality["demucs_overlap"],
+                "segments_enabled": True,
             },
         }
         if len(files) > 1:
@@ -468,16 +596,21 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
     audio_s3_key = job_input.get("audio_s3_key")
 
     if audio_s3_key:
-        # Big inputs the worker streamed to R2 under `input/`. Download with
-        # our own S3 credentials (same bucket we upload stems to) — no public
-        # URL is ever minted for the source audio.
+        # Big inputs the worker streamed to R2 under `input/`, or — for a
+        # second-pass split — a stem THIS handler wrote under its own
+        # S3_KEY_PREFIX (reused in place instead of re-uploaded). Download
+        # with our own S3 credentials (same bucket we upload stems to) — no
+        # public URL is ever minted for the source audio.
         if not _storage_enabled():
             raise ValueError("audio_s3_key given but S3 storage is not configured")
         key = str(audio_s3_key)
-        if not re.match(r"^input/[A-Za-z0-9._-]+$", key):
+        if not _is_allowed_s3_key(key):
             raise ValueError("Invalid audio_s3_key")
         _s3().download_file(S3_BUCKET, key, local_path)
-        if os.path.getsize(local_path) > MAX_INPUT_BYTES:
+        # The byte cap targets hostile UPLOADS. Our own stems are as big as
+        # the duration cap allows (a 30-min WAV is ~320 MB) — for those the
+        # duration guard below is the real spend bound.
+        if key.startswith("input/") and os.path.getsize(local_path) > MAX_INPUT_BYTES:
             raise ValueError(f"Input exceeds {MAX_INPUT_BYTES // (1024 * 1024)} MB cap")
     elif audio_url:
         import requests
@@ -517,7 +650,8 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
 # label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
 # contract that IS the instrumental.
 _STEM_MARKER_RE = re.compile(
-    r"\((vocals?|instrumental|karaoke|drums|bass|other)\)", re.IGNORECASE
+    r"\((vocals?|instrumental|karaoke|drums|bass|guitar|piano|other)\)",
+    re.IGNORECASE,
 )
 
 
@@ -561,6 +695,71 @@ def _audio_duration(path: str) -> float:
         return 0.0
 
 
+def _reconcile_residual(
+    input_path: str, stem_paths: dict[str, str], residual_stem: str
+) -> bool:
+    """Rewrite `residual_stem` in place as input − Σ(the other kept stems).
+
+    Without this the kept stems do not sum back to what was fed in, so in a
+    mixer UI muting every child stem does not silence the parent and any
+    energy the model failed to place simply vanishes. Folding the difference
+    into one stem makes the decomposition exact, and puts the leftovers
+    (including whatever the dropped stems held) where they are least
+    objectionable.
+
+    Only sound when the input really is the sum of the kept stems — i.e.
+    when separating an already-vocal-free instrumental. Reconciling a full
+    mix while dropping the vocal would fold the VOCAL into the residual,
+    which is why the caller gates this on `source_stem`.
+
+    Returns True when the residual was rewritten. Best-effort: any failure
+    leaves the model's own stem untouched, since a slightly non-summing set
+    of stems beats a failed job.
+    """
+    import librosa
+    import numpy as np
+    import soundfile as sf
+
+    residual_path = stem_paths[residual_stem]
+    info = sf.info(residual_path)
+    residual, sr = sf.read(residual_path, always_2d=True, dtype="float64")
+
+    # Load the job input at the stems' rate/layout. librosa (not soundfile)
+    # because the input may be mp3 and/or a different sample rate.
+    mix = librosa.load(input_path, sr=sr, mono=False)[0]
+    mix = np.atleast_2d(mix)
+    if mix.shape[0] <= 8:  # librosa gives (channels, frames) when multichannel
+        mix = mix.T
+    mix = mix.astype("float64", copy=False)
+
+    # Reconcile geometry: stems are authoritative for channels and length.
+    n_frames, n_ch = residual.shape
+    if mix.shape[1] < n_ch:
+        mix = np.repeat(mix[:, :1], n_ch, axis=1)
+    elif mix.shape[1] > n_ch:
+        mix = mix[:, :n_ch]
+    if mix.shape[0] < n_frames:
+        mix = np.pad(mix, ((0, n_frames - mix.shape[0]), (0, 0)))
+    else:
+        mix = mix[:n_frames]
+
+    acc = mix
+    for name, path in stem_paths.items():
+        if name == residual_stem:
+            continue
+        other, _ = sf.read(path, always_2d=True, dtype="float64")
+        take = min(n_frames, other.shape[0])
+        acc[:take] -= other[:take, :n_ch]
+
+    # Integer subtypes wrap on overflow, and subtraction can push past full
+    # scale — clip rather than let a sample fold to the opposite rail.
+    if not info.subtype.startswith("FLOAT") and not info.subtype.startswith("DOUBLE"):
+        np.clip(acc, -1.0, 1.0, out=acc)
+
+    sf.write(residual_path, acc, sr, subtype=info.subtype, format=info.format)
+    return True
+
+
 def _upload_stem(local_path: str, key: str) -> str:
     content_types = {
         ".wav": "audio/wav",
@@ -602,6 +801,36 @@ def handler(job: dict) -> dict:
     if output_format not in _VALID_FORMATS:
         return {"error": f"Invalid output_format (use {sorted(_VALID_FORMATS)})"}
 
+    # What the submitted audio IS. "original" (a full mix) is the default;
+    # "instrumental" means this is a second pass over a stem an earlier job
+    # produced, which is what lets a session split its instrumental into
+    # drums/bass/guitar/… without re-uploading the song.
+    source_stem = str(job_input.get("source_stem") or "original").lower()
+    if source_stem != "original" and source_stem not in KNOWN_STEMS:
+        return {
+            "error": (
+                f"Invalid source_stem {source_stem!r} "
+                f"(use 'original' or one of {KNOWN_STEMS})"
+            )
+        }
+
+    # Stems to discard. Separating an instrumental still emits a (near-silent)
+    # vocal stem; keeping it would hand the app a dead track. Callers may
+    # override — including to [] to inspect everything the model produced.
+    drop_stems = job_input.get("drop_stems")
+    if drop_stems is None:
+        drop_stems = ["vocal"] if source_stem == "instrumental" else []
+    drop_stems = {str(s).lower() for s in drop_stems}
+
+    # Fold the difference into one stem so the kept stems sum back to the
+    # input — only defensible when the input is already vocal-free, see
+    # _reconcile_residual.
+    residual_stem = str(job_input.get("residual_stem") or "other").lower()
+    reconcile = job_input.get("reconcile_residual")
+    reconcile = (
+        source_stem == "instrumental" if reconcile is None else bool(reconcile)
+    )
+
     wanted = job_input.get("stems") or ["vocal", "instrumental"]
     quality = _quality_from_input(job_input)
     job_dir = os.path.join(WORK_DIR, job_id)
@@ -618,7 +847,8 @@ def handler(job: dict) -> dict:
         # here is the tail of the app's rp_<tier>_<id> session id, which is
         # the correlation key across worker logs and the credit ledger.
         logger.info(
-            "Job %s start: %r (%.1f MB via %s) model=%s%s format=%s quality=%s",
+            "Job %s start: %r (%.1f MB via %s) model=%s%s format=%s "
+            "source=%s drop=%s reconcile=%s quality=%s",
             job_id,
             os.path.basename(input_path),
             os.path.getsize(input_path) / 1_000_000,
@@ -628,6 +858,9 @@ def handler(job: dict) -> dict:
             model_key,
             model_spec["files"],
             output_format,
+            source_stem,
+            sorted(drop_stems) or "-",
+            residual_stem if reconcile else "off",
             quality,
         )
 
@@ -648,6 +881,33 @@ def handler(job: dict) -> dict:
                     f"separation. The limit is {MAX_INPUT_MINUTES:.0f} minutes."
                 )
             }
+        # Billing verification: the worker debits on the CLIENT-declared
+        # duration. If the probed song lands in a HIGHER billing block than
+        # was declared (= paid for), refuse before the expensive separation
+        # — the error path auto-refunds, so an honest mistake costs nothing
+        # and a dishonest declaration buys nothing. Fail-open on a failed
+        # probe (0.0), same as the caps.
+        declared = float(job_input.get("declared_duration_seconds") or 0)
+        if (
+            declared > 0
+            and in_duration > 0
+            and _billing_blocks(in_duration) > _billing_blocks(declared)
+        ):
+            logger.warning(
+                "Job %s rejected: probed %.1f min exceeds the declared "
+                "%.1f min billing block",
+                job_id,
+                in_duration / 60,
+                declared / 60,
+            )
+            return {
+                "error": (
+                    f"The song is {in_duration / 60:.1f} min but was "
+                    f"submitted as {declared / 60:.1f} min — the price "
+                    f"depends on length. Please retry the upload."
+                )
+            }
+
         # Same probe, opposite bound (probe failure = 0.0 stays fail-open).
         if MIN_INPUT_SECONDS > 0 and 0 < in_duration < MIN_INPUT_SECONDS:
             logger.warning(
@@ -690,15 +950,41 @@ def handler(job: dict) -> dict:
                 if cand and os.path.isfile(cand) and cand not in produced:
                     produced.append(cand)
 
+        # Classify before uploading: dropping and residual reconciliation
+        # both rewrite files on disk, so they must run first.
+        classified = [(p, _classify_stem(os.path.basename(p))) for p in produced]
+        dropped = [s for _, s in classified if s in drop_stems]
+        kept = [(p, s) for p, s in classified if s not in drop_stems]
+
+        reconciled = False
+        if reconcile:
+            stem_paths = {s: p for p, s in kept}
+            if residual_stem in stem_paths:
+                try:
+                    reconciled = _reconcile_residual(
+                        input_path, stem_paths, residual_stem
+                    )
+                except Exception:
+                    logger.exception(
+                        "Job %s: residual reconciliation failed; keeping the "
+                        "model's own %r stem",
+                        job_id,
+                        residual_stem,
+                    )
+            else:
+                logger.warning(
+                    "Job %s: residual_stem %r not among produced stems %s — "
+                    "skipping reconciliation",
+                    job_id,
+                    residual_stem,
+                    [s for _, s in kept],
+                )
+
         t0 = time.time()
         stems: list[dict] = []
         use_storage = _storage_enabled()
-        for path in produced:
+        for path, stem in kept:
             name = os.path.basename(path)
-            stem = _classify_stem(name)
-            if wanted and stem not in wanted and stem != "unknown":
-                # Still return everything the model produced; clients pick.
-                pass
             entry: dict[str, Any] = {
                 "stem": stem,
                 "filename": name,
@@ -715,6 +1001,22 @@ def handler(job: dict) -> dict:
         timings["upload"] = round(time.time() - t0, 3)
 
         if not stems:
+            # Distinguish "the model produced nothing" from "drop_stems
+            # discarded everything it produced" — same empty result, very
+            # different cause.
+            if produced:
+                logger.error(
+                    "Job %s: drop_stems %s discarded every produced stem %s",
+                    job_id,
+                    sorted(drop_stems),
+                    sorted(dropped),
+                )
+                return {
+                    "error": (
+                        f"drop_stems {sorted(drop_stems)} discarded every stem "
+                        f"the model produced ({sorted(set(dropped))})"
+                    )
+                }
             logger.error(
                 "Job %s: separation produced no output stems (dir had %d files)",
                 job_id,
@@ -744,10 +1046,17 @@ def handler(job: dict) -> dict:
             "stems": stems,
             "model": model_key,
             "model_files": model_spec["files"],
+            "model_stems": model_spec["stems"],
             "output_format": output_format,
             "device": _detect_device(),
             "storage": "s3" if use_storage else "base64",
             "quality": quality,
+            # Provenance for the app: which stem was fed in, what was
+            # discarded, and whether the kept stems sum back to the input.
+            "source_stem": source_stem,
+            "requested_stems": wanted,
+            "dropped_stems": sorted(set(dropped)),
+            "reconciled_stem": residual_stem if reconciled else None,
             "timings": timings,
             "cost": {
                 "gpu_usd_per_hr": GPU_USD_PER_HR,

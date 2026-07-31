@@ -16,7 +16,7 @@ import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
 import { StemMixerMicMonitor } from './StemMixerMicMonitor'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
-import { StemMixerStemControls } from './StemMixerStemControls'
+import { StemMixerStemControls, StemStripViewToggle, } from './StemMixerStemControls'
 
 interface StemMixerGridWorkspaceProps {
   // Layout
@@ -407,6 +407,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                 <path fill="currentColor" d="M20 9H4v2h16V9zM4 15h16v-2H4v2z" />
               </svg>
               Stem Controls
+              <StemStripViewToggle />
             </div>
             <StemMixerStemControls {...props.stemControls} />
             <StemMixerMicMonitor {...props.micMonitor} />

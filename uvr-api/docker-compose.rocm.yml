@@ -1,0 +1,29 @@
+# ============================================================
+# GPU (AMD ROCm) override — local development
+# ============================================================
+# The base compose builds the CPU Dockerfile (the Cloudflare Containers
+# image). This override swaps in the ROCm image, passes the GPU through,
+# and pins port 8000 — the app's vite proxy default (VITE_UVR_PROXY_PORT),
+# so `pnpm dev` talks to this container with no extra env. (8080, the base
+# default, is also a popular port for other local services.)
+#
+#   docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d --build
+services:
+  uvr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.rocm
+    ports: !override
+      - "8000:8000"
+    environment:
+      - UVR_API_PORT=8000
+    command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    # Numeric host GIDs, deliberately: the base file's `video` resolves
+    # against the CONTAINER's group db (GID 44 in Debian), not the host's.
+    # 986 = host video (card node), 984 = host render (kfd/renderD128).
+    group_add:
+      - "986"
+      - "984"

@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
     ffmpeg \
+    curl \
     wget \
     && wget http://archive.ubuntu.com/ubuntu/pool/universe/p/prelink/execstack_0.0.20131005-1.1_amd64.deb \
     && apt-get install -y --no-install-recommends ./execstack_0.0.20131005-1.1_amd64.deb \
@@ -36,6 +37,17 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 RUN ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so /usr/local/lib/python3.11/site-packages/torch/lib/libhipblas.so.2 \
     && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so /usr/local/lib/python3.11/site-packages/torch/lib/librocm_smi64.so.7 \
     && ln -sf /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so /usr/local/lib/python3.11/site-packages/torch/lib/libamdhip64.so.6
+
+# The global LD_LIBRARY_PATH above is required so onnxruntime-rocm finds the
+# ROCm runtime bundled in torch's wheels — but torch also bundles an old,
+# unversioned libtinfo.so.6 that shadows the system one, and any spawned
+# ffmpeg/ffprobe then dies with "symbol lookup error: _nc_safe_fopen"
+# (audio-separator hard-fails on its ffmpeg check, so every job errors).
+# Wrappers earlier in PATH give child processes a clean loader environment
+# while the python process keeps the torch libs.
+RUN printf '#!/bin/sh\nLD_LIBRARY_PATH= exec /usr/bin/ffmpeg "$@"\n' > /usr/local/sbin/ffmpeg \
+    && printf '#!/bin/sh\nLD_LIBRARY_PATH= exec /usr/bin/ffprobe "$@"\n' > /usr/local/sbin/ffprobe \
+    && chmod +x /usr/local/sbin/ffmpeg /usr/local/sbin/ffprobe
 
 RUN mkdir -p /app/output /app/uploads
 

@@ -72,6 +72,7 @@ export async function admitUvrJob(
   authorization: string | null,
   tier: RunpodTier,
   model?: string,
+  durationSeconds?: number,
 ): Promise<DebitVerdict> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -83,7 +84,11 @@ export async function admitUvrJob(
     const response = await fetch(`${cfg.baseUrl}/api/billing/uvr-admit`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(model !== undefined ? { tier, model } : { tier }),
+      body: JSON.stringify({
+        tier,
+        ...(model !== undefined ? { model } : {}),
+        ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+      }),
     })
     if (!response.ok) {
       const error = await readMeteringError(
@@ -129,6 +134,7 @@ export async function debitForJob(
   tier: RunpodTier,
   jobRef: string,
   model?: string,
+  durationSeconds?: number,
 ): Promise<DebitVerdict> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -140,9 +146,12 @@ export async function debitForJob(
     const res = await fetch(`${cfg.baseUrl}/api/billing/debit`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(
-        model !== undefined ? { tier, jobRef, model } : { tier, jobRef },
-      ),
+      body: JSON.stringify({
+        tier,
+        jobRef,
+        ...(model !== undefined ? { model } : {}),
+        ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+      }),
     })
     if (!res.ok) {
       const error = await readMeteringError(

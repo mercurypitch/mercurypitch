@@ -382,6 +382,13 @@ export interface UvrSessionRecord extends DbEntity {
   provider?: string
   numChunks?: number
   processingTime?: number
+  /** Wall-clock ms of the instrumental-split second pass (drums/bass/…). */
+  splitTime?: number
+  /** RunPod session id of an IN-FLIGHT instrumental split — persisted
+   *  before polling (like apiSessionId for the main separation) so a
+   *  reload re-attaches instead of orphaning the paid job. Cleared when
+   *  the split settles. */
+  splitApiSessionId?: string
   error?: string
   vocalStemId?: string // FK -> uvrStemBlobs.id
   instrumentalStemId?: string
@@ -394,9 +401,28 @@ export interface UvrSessionRecord extends DbEntity {
   groupId?: string
 }
 
+/** Every stem a blob row can hold. 'original' is the uploaded source file;
+ *  the part stems (drums/bass/guitar/piano/other) come from splitting the
+ *  instrumental. Dexie indexes stemType as a plain index, so widening this
+ *  union needs no schema migration. */
+export type UvrStemType =
+  | 'vocal'
+  | 'instrumental'
+  | 'original'
+  | 'drums'
+  | 'bass'
+  | 'guitar'
+  | 'piano'
+  | 'other'
+
 export interface UvrStemBlob extends DbEntity {
   sessionId: string // matches UvrSession.sessionId from app-store
-  stemType: 'vocal' | 'instrumental' | 'original'
+  stemType: UvrStemType
+  /** Stem this one was derived from — 'instrumental' for the part stems
+   *  produced by splitting it into drums/bass/guitar/other. */
+  derivedFrom?: UvrStemType
+  /** Server registry model that produced it (e.g. 'demucs-6s'). */
+  producedBy?: string
   mimeType: string // 'audio/wav' | 'audio/mpeg'
   data: ArrayBuffer // binary audio data
   size: number // byte size
