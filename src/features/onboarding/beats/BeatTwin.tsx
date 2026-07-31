@@ -20,6 +20,8 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import styles from '../onboarding.module.css'
 
 export interface BeatTwinProps {
+  /** Share the freshly made voiceprint card (twin + numbers). */
+  onShare?: () => void
   result: MirrorResult
   onContinue: () => void
 }
@@ -87,8 +89,8 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
       </div>
 
       <p class={styles.mapExplainer}>
-        The map is your guided next step — rooms in the app picked for what
-        your voice showed us, so you know exactly where to go from here.
+        The map is your guided next step — rooms in the app picked for what your
+        voice showed us, so you know exactly where to go from here.
       </p>
       <div class={styles.actions}>
         <button
@@ -98,6 +100,15 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         >
           See my map
         </button>
+        <Show when={props.onShare !== undefined}>
+          <button
+            type="button"
+            class={styles.secondary}
+            onClick={() => props.onShare?.()}
+          >
+            Share now
+          </button>
+        </Show>
       </div>
     </div>
   )

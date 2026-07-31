@@ -20,8 +20,10 @@ import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
+import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { showNotification } from '@/stores/notifications-store'
 import styles from './VoiceSection.module.css'
 
 function formatDate(iso: string): string {
@@ -49,6 +51,23 @@ export interface VoiceSectionProps {
 export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   const [prints] = createResource(listVoiceprints)
   const [zoomed, setZoomed] = createSignal(false)
+  // In the zoom overlay a click on the card flips it (portrait <-> the
+  // record's numbers); a click outside closes. Reset on every open.
+  const [flipped, setFlipped] = createSignal(false)
+  const [sharing, setSharing] = createSignal(false)
+
+  const shareLatest = async (variant: 'face' | 'stats') => {
+    const record = latest()
+    if (record == null || sharing()) return
+    setSharing(true)
+    try {
+      const outcome = await shareVoiceprintRecord(record, variant)
+      if (outcome === 'unavailable')
+        showNotification('This voiceprint has no twin card to share.', 'info')
+    } finally {
+      setSharing(false)
+    }
+  }
 
   /** The raster portrait for the current twin, if one has been drawn. */
   const portraitSrc = (): string | undefined => {
@@ -127,7 +146,18 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           </Show>
           <div class={styles.latestBody}>
             <Show when={latest()?.twin != null && latest()?.twin !== ''}>
-              <p class={styles.twinName}>{latest()?.twin}</p>
+              <p class={styles.twinName}>
+                {latest()?.twin}
+                <button
+                  type="button"
+                  class={styles.shareBtn}
+                  disabled={sharing()}
+                  onClick={() => void shareLatest('stats')}
+                  title="Share this voiceprint card (twin + your numbers)"
+                >
+                  Share
+                </button>
+              </p>
             </Show>
             <div class={styles.stats}>
               <Show when={latest()?.summary.lowMidi != null}>
@@ -220,17 +250,63 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           role="dialog"
           aria-modal="true"
           aria-label={`${latest()?.twin ?? ''} portrait`}
-          onClick={() => setZoomed(false)}
+          onClick={() => {
+            setZoomed(false)
+            setFlipped(false)
+          }}
         >
-          <figure class={styles.zoomFigure}>
-            <img
-              class={styles.zoomImg}
-              src={portraitSrc()}
-              width="928"
-              height="1152"
-              alt={`${latest()?.twin ?? ''} — your voice twin`}
-            />
-            <figcaption class={styles.zoomCaption}>{latest()?.twin}</figcaption>
+          {/* Click the card to flip portrait <-> numbers; the backdrop
+              closes. stopPropagation keeps the flip from also closing. */}
+          <figure
+            class={styles.zoomFigure}
+            onClick={(event) => {
+              event.stopPropagation()
+              setFlipped((f) => !f)
+            }}
+          >
+            <Show
+              when={!flipped()}
+              fallback={
+                <div class={styles.zoomBack}>
+                  <p class={styles.zoomBackTwin}>{latest()?.twin}</p>
+                  <p class={styles.zoomBackRange}>
+                    {midiToNoteNameOctave(latest()?.summary.lowMidi ?? 0)}–
+                    {midiToNoteNameOctave(latest()?.summary.highMidi ?? 0)}
+                  </p>
+                  <p class={styles.zoomBackMeta}>
+                    {latest()?.summary.semitones ?? 0} semitones ·{' '}
+                    {latest()?.summary.steadiness ?? 0} steadiness ·{' '}
+                    {Math.round(latest()?.summary.accuracy ?? 0)} accuracy
+                  </p>
+                  <p class={styles.zoomBackDate}>
+                    {new Date(latest()?.takenAt ?? '').toLocaleDateString()}
+                  </p>
+                </div>
+              }
+            >
+              <img
+                class={styles.zoomImg}
+                src={portraitSrc()}
+                width="928"
+                height="1152"
+                alt={`${latest()?.twin ?? ''} — your voice twin`}
+              />
+            </Show>
+            <figcaption class={styles.zoomCaption}>
+              {latest()?.twin}
+              <span class={styles.zoomHint}> — click card to flip</span>
+              <button
+                type="button"
+                class={styles.shareBtn}
+                disabled={sharing()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  void shareLatest('stats')
+                }}
+              >
+                Share
+              </button>
+            </figcaption>
           </figure>
         </div>
       </Show>

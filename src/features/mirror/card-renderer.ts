@@ -142,7 +142,18 @@ export function renderTwinFaceCard(input: {
   /** Swap the "your voice twin" caption for the run's data block —
    *  range, accuracy · steadiness and the pills (card option). */
   showData?: boolean
-  result?: MirrorResult
+  /** Structural slice of MirrorResult the data block reads — widened so a
+   *  stored voiceprint (summary numbers only) can rebuild the same card. */
+  result?: {
+    range: {
+      lowNote: string
+      highNote: string
+      semitones: number
+      voiceHint?: string | null
+    } | null
+    accuracy: { score: number } | null
+    steadiness: { score: number } | null
+  }
   glides?: F0Frame[][]
 }): HTMLCanvasElement {
   const width = 1080
@@ -191,7 +202,10 @@ export function renderTwinFaceCard(input: {
   ) {
     drawVoiceTrace(
       ctx,
-      { result: input.result, glides: input.glides },
+      // Only the live Mirror passes glides, and it always passes its full
+      // MirrorResult alongside them - the widened structural type exists for
+      // the stored-voiceprint path, which never sets showTrace.
+      { result: input.result as MirrorResult, glides: input.glides },
       width,
       height * 0.08,
       height * 0.52,

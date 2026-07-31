@@ -14,6 +14,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
+import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
@@ -237,6 +238,20 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <BeatTwin
               result={voiceprint() as MirrorResult}
               onContinue={() => advanceBeat()}
+              onShare={() => {
+                const result = voiceprint()
+                if (result == null) return
+                void shareVoiceprintRecord(
+                  {
+                    id: 'fresh',
+                    summary: summarize(result as MirrorResult),
+                    twin: twin(),
+                    source: 'onboarding',
+                    takenAt: new Date().toISOString(),
+                  },
+                  'face',
+                )
+              }}
             />
           </Match>
           <Match when={currentBeat() === 'map'}>

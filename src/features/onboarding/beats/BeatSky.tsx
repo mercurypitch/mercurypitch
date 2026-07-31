@@ -25,10 +25,10 @@ export const BeatSky: Component<BeatSkyProps> = (props) => (
       Your voice, <span class={styles.lit}>made visible</span>
     </h1>
     <p class={styles.sub}>
-      Sing one note and watch it light the sky — that single note already
-      tells us roughly where your voice sits. Sing a little more afterwards
-      and we can map your whole range. Nothing is uploaded or stored; it all
-      happens on your device.
+      Sing one note and watch it light the sky — that single note already tells
+      us roughly where your voice sits. Sing a little more afterwards and we can
+      map your whole range. Nothing is uploaded or stored; it all happens on
+      your device.
     </p>
 
     <div class={styles.actions}>

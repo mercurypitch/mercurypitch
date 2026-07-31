@@ -374,8 +374,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       <Show when={current().kind === 'record'}>
         <p class={styles.recordingTag}>Recording</p>
         <p class={styles.recordHint}>
-          Done before the count ends? Just stop singing — we keep what we
-          heard.
+          Done before the count ends? Just stop singing — we keep what we heard.
         </p>
       </Show>
 

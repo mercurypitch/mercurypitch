@@ -214,9 +214,9 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Getting started</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              Replay the guided intro — map your voice again, or just see
-              everything the app can do. You can also open the Voice Mirror, a
-              free 60-second voiceprint of your range.
+              Replay the guided intro — or make another voiceprint any time in
+              the Voice Mirror (a free 60-second run; no need to redo the
+              intro). Every voiceprint stacks in your history above.
             </p>
             <div class={styles.settingsActionRow}>
               <button
@@ -227,7 +227,7 @@ export const SettingsPanel: Component = () => {
                 Replay the intro
               </button>
               <a href="/mirror" class={styles.settingsActionBtn}>
-                Open Voice Mirror
+                Create another voiceprint
               </a>
               <a href="/glass" class={styles.settingsActionBtn}>
                 Open Glass
