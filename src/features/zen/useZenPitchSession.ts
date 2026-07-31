@@ -49,6 +49,10 @@ export interface ZenPitchSession {
   finish: () => void
   previousRun: () => void
   nextRun: () => void
+  /** Delete a finished take from this session's strip. Returns true when
+   *  the id was present. Persistence is the caller's job (the session
+   *  doesn't know whether a run was ever saved). */
+  removeRun: (runId: string) => boolean
   followLive: () => void
   hydrateRuns: (history: readonly ZenPitchRun[]) => void
 }
@@ -443,6 +447,20 @@ export function useZenPitchSession(
     setSelectedRunId(null)
   }
 
+  const removeRun = (runId: string): boolean => {
+    const history = runs()
+    const index = history.findIndex((run) => run.id === runId)
+    if (index < 0) return false
+    // Selection moves to the neighbour so review flow keeps its place;
+    // deleting the last one drops back to live.
+    if (selectedRunId() === runId) {
+      const neighbour = history[index + 1] ?? history[index - 1]
+      setSelectedRunId(neighbour?.id ?? null)
+    }
+    setRuns((previous) => previous.filter((run) => run.id !== runId))
+    return true
+  }
+
   const hydrateRuns = (history: readonly ZenPitchRun[]): void => {
     if (liveStatus !== 'idle') return
     const relevant = history
@@ -522,6 +540,7 @@ export function useZenPitchSession(
     finish,
     previousRun,
     nextRun,
+    removeRun,
     followLive,
     hydrateRuns,
   }

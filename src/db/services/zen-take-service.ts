@@ -373,3 +373,18 @@ export async function listZenTakes(
     return []
   }
 }
+
+/** Delete one persisted take. True when a row went away; corrupt/missing
+ *  ids report false rather than throwing (same stance as the readers). */
+export async function deleteZenTake(id: string): Promise<boolean> {
+  if (typeof id !== 'string' || id === '') return false
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<ZenTakeRecord>('zenTakes')
+    if ((await repo.findById(id)) == null) return false
+    await repo.delete(id)
+    return true
+  } catch {
+    return false
+  }
+}

@@ -1,10 +1,11 @@
 import type { Accessor, Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { MusicNote, Pause, Play, Volume2, X } from '@/components/icons'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { MusicNote, Pause, Play, Volume2, VolumeX, X } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import { listZenTakes, saveZenTake } from '@/db/services/zen-take-service'
+import { deleteZenTake, listZenTakes, saveZenTake, } from '@/db/services/zen-take-service'
+import { playReferenceTone } from '@/features/mirror/tone-player'
 import type { PracticeFrame, PracticeFrameListener, } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { midiToNote } from '@/lib/scale-data'
@@ -76,12 +77,75 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     startMic: () => props.startMic(),
     stopMic: () => props.stopMic(),
     onRunFinalized: (run) => {
-      const { id: _sessionId, ...draft } = run
+      const { id: sessionRunId, ...draft } = run
       void saveZenTake({
         ...draft,
         exerciseVersion: run.exerciseVersion,
+      }).then((saved) => {
+        // Session run ids and persisted row ids differ; remember the pair so
+        // deleting a take from the strip can also delete its stored row.
+        if (saved !== null) persistedIdByRunId.set(sessionRunId, saved.id)
       })
     },
+  })
+
+  const persistedIdByRunId = new Map<string, string>()
+
+  const deleteSelectedRun = (): void => {
+    const run = session.selectedRun()
+    if (run === null) return
+    // Hydrated runs carry their stored id directly; fresh runs go through
+    // the map filled when their save resolved.
+    const storedId = persistedIdByRunId.get(run.id) ?? run.id
+    session.removeRun(run.id)
+    persistedIdByRunId.delete(run.id)
+    void deleteZenTake(storedId)
+  }
+
+  // ── Target note playback ────────────────────────────────────
+  // The guide notes can SOUND, like the singing practice page - but only
+  // when they are fully shown: hidden or dimmed targets are a deliberate
+  // "from memory" mode, and sounding them would defeat it. The mute button
+  // is the manual override on top; visibility drives the hard gate.
+  const [notesMuted, setNotesMuted] = createSignal(false)
+  let toneCtx: AudioContext | null = null
+  let playedTargetKeys = new Set<string>()
+  const notePlaybackActive = (): boolean =>
+    !notesMuted() &&
+    session.targetVisibility() === 'on' &&
+    session.exercise() !== null
+
+  createEffect(() => {
+    // Re-arm the played set on every loop restart / exercise change.
+    session.exerciseId()
+    session.status()
+    playedTargetKeys = new Set()
+  })
+
+  createEffect(() => {
+    if (!notePlaybackActive()) return
+    if (session.status() !== 'running') return
+    const elapsed = session.elapsedSec()
+    const loop = Math.floor(elapsed / Math.max(1e-6, session.loopDurationSec()))
+    const inLoop = elapsed - loop * session.loopDurationSec()
+    for (const target of session.targets()) {
+      const key = `${loop}:${target.startSec}:${target.startMidi}`
+      if (playedTargetKeys.has(key)) continue
+      if (inLoop >= target.startSec && inLoop < target.endSec) {
+        playedTargetKeys.add(key)
+        toneCtx ??= new AudioContext()
+        void playReferenceTone(
+          toneCtx,
+          target.startMidi,
+          Math.min(1.2, Math.max(0.3, target.endSec - target.startSec)),
+        )
+      }
+    }
+  })
+
+  onCleanup(() => {
+    void toneCtx?.close().catch(() => undefined)
+    toneCtx = null
   })
 
   const title = (): string => session.exercise()?.title ?? 'Open Pitch Monitor'
@@ -404,6 +468,25 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
         <Show when={session.exercise() !== null}>
           <div class={styles.visibilityControl}>
             <span>Target notes</span>
+            <button
+              type="button"
+              class={styles.iconButton}
+              onClick={() => setNotesMuted((m) => !m)}
+              disabled={session.targetVisibility() !== 'on'}
+              aria-pressed={!notesMuted()}
+              aria-label={
+                notesMuted() ? 'Unmute guide notes' : 'Mute guide notes'
+              }
+              title={
+                session.targetVisibility() !== 'on'
+                  ? 'Guide notes only sound while targets are fully shown'
+                  : notesMuted()
+                    ? 'Unmute guide notes'
+                    : 'Mute guide notes'
+              }
+            >
+              {notesMuted() ? <VolumeX /> : <Volume2 />}
+            </button>
             <div role="group" aria-label="Target note visibility">
               <For each={['on', 'dim', 'off'] as const}>
                 {(visibility) => (
@@ -507,6 +590,16 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           aria-label="Next take"
         >
           ›
+        </button>
+        <button
+          type="button"
+          class={styles.iconButton}
+          onClick={() => deleteSelectedRun()}
+          disabled={session.selectedRun() === null}
+          aria-label="Delete this take (permanent)"
+          title="Delete this take (permanent)"
+        >
+          ×
         </button>
       </div>
 

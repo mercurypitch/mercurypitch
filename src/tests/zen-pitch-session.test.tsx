@@ -1,6 +1,7 @@
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeFrame } from '@/features/practice/usePracticeController'
+import type { ZenPitchRun } from '@/features/zen/types'
 import type { ZenPitchSession } from '@/features/zen/useZenPitchSession'
 import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
 import type { PitchResult } from '@/types'
@@ -149,5 +150,49 @@ describe('Zen pitch session', () => {
 
     await expect(pendingStart).resolves.toBe(false)
     expect(stopMic).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('removeRun', () => {
+  it('drops a finished take and moves selection to a neighbour', () => {
+    let session: ZenPitchSession | null = null
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        subscribeFrames: () => () => undefined,
+        micActive: () => false,
+        startMic: async () => true,
+        stopMic: () => undefined,
+      })
+      return disposeRoot
+    })
+
+    const run = (id: string, takeNumber: number): ZenPitchRun => ({
+      id,
+      takeNumber,
+      completedAt: takeNumber,
+      mode: 'monitor',
+      durationSec: 8,
+      points: [
+        { timeSec: 0, midi: 60 },
+        { timeSec: 1, midi: 61 },
+      ],
+      viewport: { minMidi: 48, maxMidi: 72 },
+    })
+    session!.hydrateRuns([run('r1', 1), run('r2', 2), run('r3', 3)])
+    session!.previousRun() // select r3
+    session!.previousRun() // select r2
+    expect(session!.selectedRunId()).toBe('r2')
+
+    expect(session!.removeRun('r2')).toBe(true)
+    // Selection stays useful: the neighbour, not a dead id.
+    expect(session!.selectedRunId()).toBe('r3')
+    expect(session!.runs().map((r) => r.id)).toEqual(['r1', 'r3'])
+
+    // Removing the rest falls back to live.
+    session!.removeRun('r3')
+    session!.removeRun('r1')
+    expect(session!.selectedRunId()).toBeNull()
+    expect(session!.removeRun('missing')).toBe(false)
+    dispose()
   })
 })
