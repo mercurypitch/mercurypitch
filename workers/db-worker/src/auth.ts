@@ -636,7 +636,7 @@ async function handleRegister(
       }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
       await sendVerificationEmail(request, env, anon.id, email, body.displayName?.trim())
-      return issueSession(env, row, respond)
+      return issueSession(env, row, respond, true)
     }
   }
 
@@ -705,7 +705,7 @@ async function resolveGoogleUser(
         .bind(claims.sub, email ?? null, emailVerified ? 1 : 0, nowIso(), anon.id)
         .run()
       await sendWelcomeEmail(env, email, claims.name)
-      return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: false }
+      return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: true }
     }
   }
 
