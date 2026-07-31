@@ -89,6 +89,43 @@ jobs:
       # hashes, billing ids) must never be uploaded as one. If a migration
       # goes wrong, restore to the pre-deploy timestamp instead:
       #   pnpm exec wrangler d1 time-travel restore <DB_NAME> --timestamp=<ISO>
+      # PROD ONLY: capture two independent restore paths BEFORE migrations
+      # touch the database.
+      #
+      # 1. The Time Travel bookmark - D1's built-in point-in-time restore
+      #    (30 days). Printed to the job log so a rollback is one command:
+      #      wrangler d1 time-travel restore mercurypitch-db --bookmark=<id>
+      # 2. A full copy into the dedicated mercurypitch-db-backup database -
+      #    a live duplicate usable for debugging or forward repair. The SQL
+      #    dump exists only on this ephemeral runner and is NEVER uploaded
+      #    as an artifact (public repo: an exported database with emails and
+      #    password hashes must not be downloadable). The backup database is
+      #    dropped and recreated each release; the hardcoded -backup name
+      #    can never collide with the real database.
+      - name: Back up prod database (bookmark + copy)
+        if: env.DEPLOY_ENV == 'prod'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: workers/db-worker
+        run: |
+          set -euo pipefail
+          echo "== Time Travel bookmark (restore point) =="
+          pnpm exec wrangler d1 time-travel info "${DB_NAME}" --env "${DEPLOY_ENV}"
+
+          echo "== Copying ${DB_NAME} into mercurypitch-db-backup =="
+          pnpm exec wrangler d1 export "${DB_NAME}" --remote --env "${DEPLOY_ENV}"             --output=/tmp/prod-backup.sql
+          pnpm exec wrangler d1 delete mercurypitch-db-backup --skip-confirmation || true
+          pnpm exec wrangler d1 create mercurypitch-db-backup --location eeur
+          backup_id=$(pnpm exec wrangler d1 list --json             | jq -r '.[] | select(.name == "mercurypitch-db-backup") | .uuid' | head -1)
+          if [ -z "$backup_id" ]; then
+            echo "Could not resolve the backup database id."
+            exit 1
+          fi
+          pnpm exec wrangler d1 execute mercurypitch-db-backup --remote             --file=/tmp/prod-backup.sql -y
+          rm -f /tmp/prod-backup.sql
+          echo "Backup complete: mercurypitch-db-backup ($backup_id)"
+
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
         with:
