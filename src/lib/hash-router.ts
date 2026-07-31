@@ -26,8 +26,14 @@ export type HashRoute =
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
   /** Return from Stripe checkout (success_url / cancel_url in the
-   *  db-worker's billing.ts) — lands on Settings → Credits. */
-  | { type: 'billing-return'; outcome: 'success' | 'cancel' }
+   *  db-worker's billing.ts) — lands on Settings → Credits. `kind` separates a
+   *  donation return (grants a supporter entitlement) from a credit purchase;
+   *  they need different confirmation copy and different follow-up. */
+  | {
+      type: 'billing-return'
+      outcome: 'success' | 'cancel'
+      kind?: 'credits' | 'donation'
+    }
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
   | { type: 'admin'; section: AdminSection }
@@ -207,10 +213,13 @@ export function parseHash(rawHash: string): HashRoute {
   // success lands on Settings → Account with a confirmation; the cancel URL
   // is /pricing, which is where the pricing panel lives too.
   if (hash === '/billing/success') {
-    return { type: 'billing-return', outcome: 'success' }
+    return { type: 'billing-return', outcome: 'success', kind: 'credits' }
   }
   if (hash === '/pricing') {
-    return { type: 'billing-return', outcome: 'cancel' }
+    return { type: 'billing-return', outcome: 'cancel', kind: 'credits' }
+  }
+  if (hash === '/donate/thanks') {
+    return { type: 'billing-return', outcome: 'success', kind: 'donation' }
   }
 
   // Match: /settings/<section> — deep link to a Settings sub-tab. The
@@ -292,7 +301,10 @@ export function buildHash(route: HashRoute): string {
         ? '/guide/all'
         : `/guide/${route.sectionId}`
     case 'billing-return':
-      return route.outcome === 'success' ? '/billing/success' : '/pricing'
+      // Only the SUCCESS return has a donation-specific hash; a cancelled
+      // donation goes back to the credits tab, same as a cancelled purchase.
+      if (route.outcome === 'cancel') return '/pricing'
+      return route.kind === 'donation' ? '/donate/thanks' : '/billing/success'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
     case 'admin':

@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
 import { ConsoleLog } from '@/components/ConsoleLog'
+import { GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { APP_VERSION } from '@/lib/defaults'
 import { replaceHash } from '@/lib/hash-router'
 import { appError } from '@/stores'
@@ -260,7 +261,7 @@ export const CrashModal: Component = () => {
 
               <div class={styles.crashSecondaryActions}>
                 <a
-                  href="https://github.com/mercurypitch/mercurypitch/issues/new"
+                  href={GITHUB_NEW_ISSUE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   class={styles.crashActionLink}

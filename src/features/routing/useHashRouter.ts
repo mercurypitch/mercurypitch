@@ -28,7 +28,10 @@ export interface UseHashRouterDeps {
   handleShareShort: (shortId: string) => void
   /** Return from Stripe checkout — toast + balance refresh happen here;
    *  the route itself lands on Settings -> Credits. */
-  handleBillingReturn: (outcome: 'success' | 'cancel') => void
+  handleBillingReturn: (
+    outcome: 'success' | 'cancel',
+    kind: 'credits' | 'donation',
+  ) => void
   /** Open Settings with a specific sub-tab (deep links + billing return). */
   openSettingsSection: (section: SettingsSection) => void
   /** Current Settings sub-tab — synced into #/settings/<slug>. */
@@ -141,7 +144,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
       deps.setActiveUvrSessionId(null)
-      deps.handleBillingReturn(route.outcome)
+      deps.handleBillingReturn(route.outcome, route.kind ?? 'credits')
       // Clean the one-shot return hash so a reload can't re-fire the toast
       // (the tab-sync effect is muted by hashSyncing here). replaceState
       // fires no hashchange, so this can't loop.

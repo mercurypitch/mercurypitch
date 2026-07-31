@@ -18,6 +18,8 @@ export type AppFunnelEvent =
   | 'challenge_attempt'
   | 'pricing_view'
   | 'checkout_start'
+  | 'donate_view'
+  | 'donate_start'
   | 'weekly_join'
   | 'weekly_attempt'
 

@@ -30,3 +30,10 @@ export const PRIVACY_URL = `${LANDING_ORIGIN}/privacy`
  * the rights to" is the message that matters most.
  */
 export const CONTENT_POLICY_URL = `${LANDING_ORIGIN}/terms#your-content`
+
+/**
+ * Deep link to the payments/donations section of the Terms — used under the
+ * credits and donation panels, where "is this refundable?" is the question
+ * that actually matters.
+ */
+export const PAYMENTS_TERMS_URL = `${LANDING_ORIGIN}/terms#donations`

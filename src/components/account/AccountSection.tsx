@@ -12,12 +12,15 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
+import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { deleteAccount, fetchMe, googleSignInUrl, logout, restoreAuth, } from '@/db/services/auth-service'
+import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
+import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -25,6 +28,8 @@ import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
 
 // ── Component ───────────────────────────────────────────────────
+
+type SupporterGrant = NonNullable<ReturnType<typeof supporterEntitlement>>
 
 export const AccountSection: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
@@ -34,6 +39,9 @@ export const AccountSection: Component = () => {
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
   const [confirmDelete, setConfirmDelete] = createSignal(false)
+  // Supporter status rides along with the account fetch — it is the same
+  // round trip the header already makes, and drives the badge below.
+  const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -80,6 +88,7 @@ export const AccountSection: Component = () => {
 
   async function refreshMe(): Promise<void> {
     setMe(await fetchMe())
+    setSupporter(supporterEntitlement(await fetchBillingMe()))
   }
 
   const optIn = (): boolean => me()?.profile?.leaderboardOptIn === true
@@ -142,6 +151,7 @@ export const AccountSection: Component = () => {
   function handleLogout(): void {
     logout()
     setMe(null)
+    setSupporter(null)
     showNotification('Signed out', 'info')
   }
 
@@ -201,6 +211,17 @@ export const AccountSection: Component = () => {
                 >
                   {profileName() !== '' ? profileName() : 'Signed in'}
                 </span>
+                <Show when={supporter()}>
+                  {(grant) => (
+                    <span data-testid="account-supporter-pill">
+                      <SupporterBadge
+                        planId={supporterPlanId(grant())}
+                        label={grant().sourceLabel}
+                        expiresAt={grant().expiresAt}
+                      />
+                    </span>
+                  )}
+                </Show>
                 <div class={styles.identityRight}>
                   <span class={styles.emailValue} data-testid="account-email">
                     {me()?.user.email ?? ''}
@@ -362,6 +383,57 @@ export const AccountSection: Component = () => {
         </Show>
       </Show>
 
+      {/* Say hello — outside the cloud-configured gate on purpose: reaching a
+          human never depended on having an account. */}
+      <div class={styles.helloBlock} data-testid="say-hello">
+        <span class={styles.helloTitle}>Say hello</span>
+        <p class={styles.helloText}>
+          Questions, ideas, or something broken? We read everything.
+        </p>
+        <div class={styles.helloLinks}>
+          <a
+            class={styles.helloLink}
+            href={`mailto:${CONTACT_EMAIL}`}
+            data-testid="say-hello-email"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+              />
+            </svg>
+            Email us
+          </a>
+          <a
+            class={styles.helloLink}
+            href={GITHUB_NEW_ISSUE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="say-hello-issue"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+              />
+            </svg>
+            Report a bug
+          </a>
+          <a
+            class={styles.helloLink}
+            href="#/settings/credits"
+            data-testid="say-hello-support"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+            Support the project
+          </a>
+        </div>
+      </div>
       <ConfirmDialog
         open={confirmDelete()}
         title="Delete account"

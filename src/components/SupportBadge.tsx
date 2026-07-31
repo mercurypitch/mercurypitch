@@ -1,8 +1,8 @@
 // ============================================================
-// Support Badge — a header double-pill: app version + Ko-fi heart
+// Support Badge — a header double-pill: app version + support heart
 // ============================================================
-// Left segment shows the running app version; right segment is a heart
-// that links to the support (Ko-fi) page. Right-anchored in the header.
+// Left segment shows the running app version; right segment is a heart that
+// opens the in-app support surface. Right-anchored in the header.
 
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
@@ -10,9 +10,10 @@ import { ChangelogModal } from '@/components/ChangelogModal'
 import { APP_VERSION, COMMIT_SHA } from '@/lib/defaults'
 import styles from './SupportBadge.module.css'
 
-/** Where the heart links. Donation-only support for now (no feature gating);
- *  see docs/plans/premium.md. */
-const SUPPORT_URL = 'https://ko-fi.com/chaosmatters'
+/** Where the heart goes. Settings → Credits is where every support option now
+ *  lives — supporter tiers, Ko-fi, Sponsors — rather than one off-site link.
+ *  Donations never gate features; see docs/plans/premium.md. */
+const SUPPORT_HASH = '#/settings/credits'
 
 export const SupportBadge: Component = () => {
   const [showChangelog, setShowChangelog] = createSignal(false)
@@ -35,11 +36,10 @@ export const SupportBadge: Component = () => {
       </Show>
       <a
         class={styles.support}
-        href={SUPPORT_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Support MercuryPitch on Ko-fi"
-        aria-label="Support MercuryPitch on Ko-fi"
+        href={SUPPORT_HASH}
+        title="Support MercuryPitch"
+        aria-label="Support MercuryPitch"
+        data-testid="support-heart"
       >
         <svg
           class={styles.heart}

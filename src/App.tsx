@@ -711,7 +711,28 @@ const AppShell: Component<AppProps> = (props) => {
   // until the stashed expected balance shows up, and SAY SO if it doesn't
   // (a silent webhook failure once left buyers with a success toast over an
   // unchanged balance).
-  const handleBillingReturn = (outcome: 'success' | 'cancel'): void => {
+  const handleBillingReturn = (
+    outcome: 'success' | 'cancel',
+    kind: 'credits' | 'donation' = 'credits',
+  ): void => {
+    if (kind === 'donation') {
+      // Donations buy no credits, so there is nothing to poll for and no
+      // credits_purchase ads conversion to fire (a custom amount has no
+      // client-known value anyway). The supporter entitlement lands via the
+      // same webhook; refreshing the balance re-fetches /billing/me with it.
+      if (outcome === 'success') {
+        showNotification(
+          'Thank you for supporting MercuryPitch. Your supporter perks are being applied.',
+          'success',
+          { channel: 'billing-return' },
+        )
+        refreshBalance()
+        window.setTimeout(refreshBalance, 3000)
+      } else {
+        showNotification('Donation cancelled.', 'info')
+      }
+      return
+    }
     if (outcome === 'success') {
       showNotification(
         'Payment received — credits are being added to your account.',

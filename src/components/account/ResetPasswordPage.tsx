@@ -45,8 +45,8 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
 
   // Static-by-design: the App mounts this keyed on the route object, so a
   // new token remounts the component rather than mutating this prop.
-
   const [view, setView] = createSignal<View>(
+    // eslint-disable-next-line solid/reactivity -- static: keyed remount
     props.token != null ? 'checking' : 'request',
   )
   const [password, setPassword] = createSignal('')

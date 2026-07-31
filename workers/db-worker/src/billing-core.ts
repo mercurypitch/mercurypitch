@@ -28,6 +28,12 @@ export interface PricingRow {
   stripePriceId: string | null
   badge: string | null
   sortOrder: number
+  /** Donations: days of `supporter` entitlement this row grants. */
+  entitlementDays?: number | null
+  /** Donations: 1 when the Stripe price uses custom_unit_amount. */
+  customAmount?: number | null
+  /** Donations: JSON array of perk strings. */
+  perks?: string | null
 }
 
 export interface PricingPlanDto {
@@ -40,14 +46,36 @@ export interface PricingPlanDto {
   currency: string
   credits: number | null
   badge: string | null
-  /** True only when an amount AND a Stripe price are set — i.e. buyable. */
+  /** True when a Stripe price is set AND either the amount is fixed or the
+   *  donor picks it on Stripe's page (custom_unit_amount). */
   purchasable: boolean
+  /** Donations: the donor names the amount on Stripe's hosted page. */
+  customAmount: boolean
+  /** Donations: days of `supporter` entitlement granted (null = none). */
+  entitlementDays: number | null
+  /** Donations: perk bullet list ([] when unset or malformed). */
+  perks: string[]
 }
 
 export interface PricingResponse {
   currency: string
   tiers: PricingPlanDto[]
   packs: PricingPlanDto[]
+  donations: PricingPlanDto[]
+}
+
+/** Parse the `perks` JSON column. Bad data is a copy bug, not a reason to 500
+ *  the whole pricing endpoint — degrade to no bullets. */
+function parsePerks(raw: string | null | undefined): string[] {
+  if (raw == null || raw === '') return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed.filter((p): p is string => typeof p === 'string')
+      : []
+  } catch {
+    return []
+  }
 }
 
 /** Shape DB rows into the public pricing DTO. Never leaks stripePriceId;
@@ -55,23 +83,135 @@ export interface PricingResponse {
  *  client can render "Soon". */
 export function mapPricingPlans(rows: PricingRow[]): PricingResponse {
   const sorted = [...rows].sort((a, b) => a.sortOrder - b.sortOrder)
-  const toDto = (r: PricingRow): PricingPlanDto => ({
-    id: r.id,
-    kind: r.kind,
-    label: r.label,
-    description: r.description ?? null,
-    unit: r.unit ?? null,
-    amount: r.amount ?? null,
-    currency: r.currency,
-    credits: r.credits ?? null,
-    badge: r.badge ?? null,
-    purchasable: r.amount != null && (r.stripePriceId ?? '') !== '',
-  })
+  const toDto = (r: PricingRow): PricingPlanDto => {
+    const customAmount = r.customAmount === 1
+    return {
+      id: r.id,
+      kind: r.kind,
+      label: r.label,
+      description: r.description ?? null,
+      unit: r.unit ?? null,
+      amount: r.amount ?? null,
+      currency: r.currency,
+      credits: r.credits ?? null,
+      badge: r.badge ?? null,
+      // A custom-amount row has no `amount` by design — the donor types it on
+      // Stripe's page — so requiring one here would make it permanently "Soon".
+      purchasable:
+        (r.amount != null || customAmount) && (r.stripePriceId ?? '') !== '',
+      customAmount,
+      entitlementDays: r.entitlementDays ?? null,
+      perks: parsePerks(r.perks),
+    }
+  }
   return {
     currency: sorted[0]?.currency ?? 'eur',
     tiers: sorted.filter((r) => r.kind === 'tier').map(toDto),
     packs: sorted.filter((r) => r.kind === 'pack').map(toDto),
+    donations: sorted.filter((r) => r.kind === 'donation').map(toDto),
   }
+}
+
+// ── Donations ────────────────────────────────────────────────────────
+
+/** Entitlement length for a "choose your own amount" donation: one block per
+ *  DONATION_SCALE_UNIT paid. Fixed tiers ignore this and use their own value. */
+const DONATION_SCALE_UNIT = 500 // minor units (EUR 5.00)
+const DONATION_SCALE_DAYS = 30
+/** Nobody buys a decade of supporter status with one generous donation. */
+const DONATION_MAX_DAYS = 365
+
+/** How many days of `supporter` a completed donation grants.
+ *
+ *  Fixed tiers grant exactly what the row says. A custom-amount row scales with
+ *  what was actually paid, floored at the row's own value so a minimum donation
+ *  still counts, and capped so a large one stays sane. */
+export function donationDays(
+  plan: { entitlementDays?: number | null; customAmount?: number | null },
+  amountTotalMinor: number | null | undefined,
+): number {
+  // Metadata from a session created outside handleCheckout can carry a
+  // non-numeric entitlementDays; NaN sails past every <= 0 guard and later
+  // throws inside toISOString - in the reconciliation sweep that poisoned
+  // one event's grant on every run. Unparseable means "grants nothing".
+  const rawBase = plan.entitlementDays
+  const base = typeof rawBase === 'number' && Number.isFinite(rawBase) ? rawBase : 0
+  if (plan.customAmount !== 1) return Math.max(0, base)
+  const paid =
+    typeof amountTotalMinor === 'number' && Number.isFinite(amountTotalMinor)
+      ? amountTotalMinor
+      : 0
+  const scaled =
+    Math.floor(paid / DONATION_SCALE_UNIT) * DONATION_SCALE_DAYS
+  return Math.min(DONATION_MAX_DAYS, Math.max(base, scaled))
+}
+
+/** A fixed-price donation tier, for level resolution. */
+export interface DonationTier {
+  id: string
+  amount: number | null
+}
+
+/** Which supporter level an amount earns.
+ *
+ *  Fixed tiers resolve to themselves; a custom amount reaches the highest tier
+ *  it covers, so EUR 59 lands on Voice rather than a nameless "custom" badge.
+ *  Below the cheapest tier it still counts — a donation is a thank-you, not a
+ *  purchase — so it floors at the lowest tier rather than resolving to nothing.
+ *  Null only when no priced tier exists at all. */
+export function supporterLevel(
+  tiers: DonationTier[],
+  amountPaidMinor: number | null | undefined,
+): string | null {
+  const priced = tiers
+    .filter((t): t is { id: string; amount: number } => t.amount != null)
+    .sort((a, b) => b.amount - a.amount)
+  if (priced.length === 0) return null
+  const paid =
+    typeof amountPaidMinor === 'number' && Number.isFinite(amountPaidMinor)
+      ? amountPaidMinor
+      : 0
+  return (priced.find((t) => paid >= t.amount) ?? priced[priced.length - 1]).id
+}
+
+/** Keep the better of two levels when donations stack.
+ *
+ *  Donating EUR 5 after EUR 59 must not demote a Voice supporter to Fund — the
+ *  badge reflects the high-water mark for as long as the grant runs. */
+export function bestSupporterLevel(
+  tiers: DonationTier[],
+  a: string | null,
+  b: string | null,
+): string | null {
+  if (a == null) return b
+  if (b == null) return a
+  const rank = (id: string): number =>
+    tiers.find((t) => t.id === id)?.amount ?? -1
+  return rank(a) >= rank(b) ? a : b
+}
+
+/** The planId embedded in an entitlement's `source` (`donation:<planId>`). */
+export function sourcePlanId(source: string | null | undefined): string | null {
+  if (source == null || !source.startsWith('donation:')) return null
+  const id = source.slice('donation:'.length)
+  return id === '' ? null : id
+}
+
+/** New `supporter` expiry after a donation.
+ *
+ *  Stacks: a second donation while the first is still live ADDS its days on top
+ *  rather than resetting the clock. An expired (or absent) grant restarts from
+ *  now, so lapsed supporters aren't credited for the gap. */
+export function extendSupporterExpiry(
+  existingIso: string | null | undefined,
+  nowIso: string,
+  days: number,
+): string {
+  const now = Date.parse(nowIso)
+  const existing =
+    existingIso != null && existingIso !== '' ? Date.parse(existingIso) : NaN
+  const from = Number.isFinite(existing) && existing > now ? existing : now
+  return new Date(from + days * 24 * 60 * 60 * 1000).toISOString()
 }
 
 /** Credit balance = sum of ledger deltas (grants positive, debits negative). */
