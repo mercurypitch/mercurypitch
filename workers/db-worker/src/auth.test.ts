@@ -41,6 +41,19 @@ class AuthStatement {
       return (this.db.users.get(String(this.values[0])) ?? null) as T | null
     }
 
+    if (this.sql === 'SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?') {
+      const user = this.db.users.get(String(this.values[0]))
+      if (!user) return null
+      return {
+        tokenVersion: user.tokenVersion,
+        lastActiveAt: user.lastActiveAt,
+      } as T
+    }
+
+    if (this.sql === 'SELECT * FROM userProfiles WHERE id = ?') {
+      return (this.db.profiles.get(String(this.values[0])) ?? null) as T | null
+    }
+
     if (this.sql === 'SELECT * FROM users WHERE email = ?') {
       const email = String(this.values[0])
       return ([...this.db.users.values()].find(
@@ -129,6 +142,9 @@ class AuthStatement {
 
 class AuthDatabase {
   readonly users = new Map<string, UserRecord>()
+  // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
+  // the /me normalization regression below tests the real shape.
+  readonly profiles = new Map<string, Record<string, unknown>>()
 
   prepare(sql: string): AuthStatement {
     return new AuthStatement(this, sql.replace(/\s+/g, ' ').trim())
@@ -291,5 +307,44 @@ describe('db-worker account creation classification', () => {
       isNew: true,
       user: { id: ANONYMOUS_DEVICE_ID, authProvider: 'google' },
     })
+  })
+})
+
+describe('GET /api/auth/me profile shape', () => {
+  it('returns leaderboardOptIn as a real boolean, not SQLite 0/1', async () => {
+    const db = new AuthDatabase()
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'optin@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      makeEnv(db),
+    )
+    const userId = String((auth.user as Record<string, unknown>).id)
+    // Raw row, as D1 stores it: the opt-in column is the integer 1.
+    db.profiles.set(userId, {
+      id: userId,
+      displayName: 'Opt In',
+      leaderboardOptIn: 1,
+    })
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      makeEnv(db),
+      '/api/auth/me',
+      respond,
+    )
+    expect(response?.status).toBe(200)
+    const body = (await response!.json()) as {
+      profile: { leaderboardOptIn: unknown }
+    }
+    // The account UI checks `=== true`; an unconverted 1 rendered the
+    // consent checkbox unchecked forever, and clicking an unchecked box
+    // re-opts in - so opting OUT from the UI was impossible.
+    expect(body.profile.leaderboardOptIn).toBe(true)
   })
 })

@@ -1337,8 +1337,17 @@ async function handleMe(
     'SELECT * FROM userProfiles WHERE id = ?',
   )
     .bind(auth.userId)
-    .first()
-  return respond({ user: publicUser(row), profile })
+    .first<Record<string, unknown>>()
+  // Raw D1 rows carry SQLite's 0/1 for booleans. The generic CRUD layer
+  // converts via tables.ts boolCols, but this endpoint bypasses it - and the
+  // account UI checks `leaderboardOptIn === true`, so an unconverted 1 read
+  // as "not opted in", the checkbox always rendered unchecked, and clicking
+  // it could only ever re-opt-in: opting OUT from the UI was impossible.
+  const normalized =
+    profile == null
+      ? profile
+      : { ...profile, leaderboardOptIn: profile.leaderboardOptIn === 1 || profile.leaderboardOptIn === true }
+  return respond({ user: publicUser(row), profile: normalized })
 }
 
 async function handleLogout(
