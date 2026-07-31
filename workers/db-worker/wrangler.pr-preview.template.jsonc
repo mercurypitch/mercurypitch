@@ -18,6 +18,7 @@
   "vars": {
     "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
     "ALLOWED_ORIGINS": "*.workers.dev",
+    "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
   },
   "d1_databases": [
     {

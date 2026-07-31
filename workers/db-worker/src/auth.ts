@@ -23,6 +23,10 @@ import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './e
 import { shouldTouchLastActive } from './last-active'
 
 export interface Env {
+  /** Where emailed links land when the request Origin is not a first-party
+   *  app origin (e.g. a PR preview on workers.dev). Set per environment in
+   *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
+  APP_FALLBACK_ORIGIN?: string
   DB: D1Database
   /** Permanent short guided-exercise playback assets. Unlike UVR staging,
    * this bucket must not have an automatic expiry lifecycle. */
@@ -635,7 +639,7 @@ async function sendVerificationEmail(
     const requestOrigin = request.headers.get('Origin') ?? ''
     const returnTo = isAllowedReturnTo(requestOrigin, env)
       ? requestOrigin
-      : 'https://mercurypitch.com'
+      : fallbackAppOrigin(env)
     const verifyUrl =
       `${new URL(request.url).origin}/api/auth/verify-email` +
       `?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(returnTo)}`
@@ -707,7 +711,7 @@ async function sendPasswordResetEmail(
     const requestOrigin = request.headers.get('Origin') ?? ''
     const returnTo = isAllowedReturnTo(requestOrigin, env)
       ? requestOrigin
-      : 'https://mercurypitch.com'
+      : fallbackAppOrigin(env)
     const resetUrl = `${returnTo}/#/reset-password?token=${encodeURIComponent(token)}`
     if (!env.RESEND_API_KEY) {
       console.log(`[auth] reset link (email skipped, no RESEND_API_KEY): ${resetUrl}`)
@@ -1065,6 +1069,16 @@ const DEFAULT_APP_ORIGINS = [
   'http://localhost:3000',
 ]
 
+/** The environment's own app origin, for links minted without a usable
+ *  request Origin. Reflecting arbitrary origins (say, *.workers.dev) into
+ *  emailed links would hand tokens to whoever controls that origin, so
+ *  anything off the allowlist falls back HERE - and on the dev worker that
+ *  is the dev domain, never production. */
+function fallbackAppOrigin(env: Env): string {
+  const configured = (env.APP_FALLBACK_ORIGIN ?? '').trim()
+  return configured !== '' ? configured : 'https://mercurypitch.com'
+}
+
 function isAllowedReturnTo(returnTo: string, env: Env): boolean {
   let origin: string
   try {
@@ -1256,7 +1270,7 @@ async function handleVerifyEmail(
   const returnToRaw = url.searchParams.get('returnTo') ?? ''
   const returnTo = isAllowedReturnTo(returnToRaw, env)
     ? returnToRaw
-    : 'https://mercurypitch.com'
+    : fallbackAppOrigin(env)
   const fail = (reason: string): Response =>
     redirect(`${returnTo}/#everified_error=${encodeURIComponent(reason)}`)
 
