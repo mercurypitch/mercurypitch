@@ -1,5 +1,7 @@
 # Singing — mobile stage spec (Phase 1)
 
+**Status:** proposed — Phase 1 of the mobile program. Note: `SingingPanel.tsx` referenced below no longer exists.
+
 The flagship redesign: the default tab, the surface ad traffic lands on.
 Today the desktop chrome (status bar + overlay control bar + sidebar) simply
 compresses; the control bar overflows and setup lives in a hamburger drawer.

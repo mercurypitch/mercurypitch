@@ -1,5 +1,7 @@
 # Capacitor readiness — checklist & spike plan
 
+**Status:** proposed — no `capacitor.config.ts` in the repo; the spike has not been run.
+
 Decision (interview): make the web app native-ready during the redesign, run
 an early throwaway iOS spike, commit native projects only when the mobile
 shell stabilizes (Phase 5). Capacitor has an official SolidJS + Vite

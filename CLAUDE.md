@@ -1,42 +1,28 @@
 # CLAUDE.md
 
-## Git Workflow
+Agent instructions live in **[AGENTS.md](AGENTS.md)** — read it. This file is a
+pointer so the two cannot drift apart.
 
-- Always work on feature branches, never push directly to `main`
-- Name branches with a `feat/` prefix (e.g. `feat/mobile-nav`). Never use a
-  `claude/` prefix
-- Commit and push after every task
-- Use `gh` CLI for issues and PRs (not WebFetch)
-- Never force push
-- Never add "Generated with Claude Code" or any Claude attribution (including
-  `Co-Authored-By` / `Claude-Session` trailers) to commit messages, PR
-  descriptions, or any other artifact
+Before exploring the codebase, read
+**[docs/agent/INDEX.md](docs/agent/INDEX.md)** — a generated module map with
+entry points for every feature, store and worker. It is cheaper than grepping,
+and CI keeps it from going stale.
 
-## Code Quality
+| Document | Read it when |
+|---|---|
+| [docs/agent/INDEX.md](docs/agent/INDEX.md) | Orienting, or looking for where something lives |
+| [docs/agent/CONVENTIONS.md](docs/agent/CONVENTIONS.md) | Writing code |
+| [docs/agent/MISTAKES.md](docs/agent/MISTAKES.md) | Before a first change in an unfamiliar area |
+| [docs/agent/REFACTOR-PLAN.md](docs/agent/REFACTOR-PLAN.md) | Touching an oversized file |
+| [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md) | Before trusting `docs/plans/` — many "pending" plans have shipped |
 
-- Always run `pnpm check` after making any code changes to ensure there are no TypeScript, ESLint, or formatting errors.
+The guardrails in full are in [AGENTS.md](AGENTS.md). The ones that must not
+wait for that read:
 
-## Guided Tours
-
-- The full `/tour-check` browser walk (`pnpm run test:tours` via
-  `.claude/skills/tour-check/SKILL.md`) is required only:
-  - **before a prod release** (it is a step of `/prod-upd`), and
-  - when a change **directly edits the tours themselves** — `Walkthrough.tsx`
-    or `WALKTHROUGH_STEPS`/`PAGE_TOURS`/`PAGE_TOUR_CATALOG` in
-    `src/stores/app-store.ts`.
-- For other UI changes that touch tour-targeted surfaces (`data-tour` hooks,
-  control bars, sidebar, settings panel), a lightweight check is enough:
-  verify the affected `targetSelector`s still resolve (grep the selectors, or
-  walk just the affected page's tour). Don't run the full two-viewport walk
-  per PR — it's a release gate, not a per-change gate.
-- Known pre-existing misses are tracked in the walker output; only NEW misses
-  introduced by your change are blockers outside a release.
-- Tours should cover ≥80% of a page's user-visible features — when adding a
-  feature to a page with a tour, update the tour in the same PR.
-
-## Tech Stack
-
-- SolidJS + TypeScript
-- Vite
-- Web Audio API for audio processing
-- Dexie.js for IndexedDB
+- **Never test against production** — local or dev only.
+- **Never push to `main`, never force-push.** Branches use a `feat/` prefix,
+  never `claude/`.
+- **Do not commit, push, open a PR, or merge unless asked.**
+- **No Claude attribution** in commits, PR bodies, or any artifact.
+- **No emojis** anywhere. Use an SVG icon component.
+- **Run `pnpm check`** after any code change.

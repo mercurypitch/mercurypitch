@@ -1,5 +1,7 @@
 # Lyrics word-sync: deep dive + improvement plan
 
+**Status:** in progress — investigation complete and partly implemented (`src/lib/word-sync.ts`, `canonical-lrc.ts`); the RunPod forced-alignment track is not started.
+
 Investigation into (a) why our word highlighting feels off, (b) what Apple
 Music actually does, (c) whether the vocal stem can auto-generate word-level
 LRC via forced alignment, and (d) how to make the manual tap-mapping flow

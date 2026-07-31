@@ -1,3 +1,17 @@
+// ============================================================
+// UVR Store — stem separation: settings, job status, and session records
+// ============================================================
+//
+// Covers both processing modes: `local` (ONNX in-browser, WebGPU when
+// available) and `server` (RunPod GPU, billed in credits). A server run is
+// resumable -- the apiSessionId is persisted so a page reload re-attaches to
+// the in-flight job instead of paying for it twice.
+//
+// Separated stems and their session/group records live in IndexedDB via
+// @/db/services/uvr-service; this store holds the reactive view plus the
+// delete cascades. Deleting a session must also clear its lyrics and
+// transcription rows, which is why those services are imported here.
+
 import { createSignal, untrack } from 'solid-js'
 import type { SessionGroupRecord, UvrSessionRecord } from '@/db'
 import { getDb } from '@/db'

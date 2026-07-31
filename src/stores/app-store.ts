@@ -1,3 +1,23 @@
+// ============================================================
+// App Store — audio-engine singleton, key/scale, and ALL guided-tour content
+// ============================================================
+//
+// Two unrelated things share this file for historical reasons:
+//
+//   1. Global musical context (key, scale, instrument) and the lazily
+//      constructed AudioEngine singleton -- `initAudioEngine()` is the only
+//      sanctioned way to get it.
+//   2. Every guided tour in the app: WALKTHROUGH_STEPS, PAGE_TOURS,
+//      PAGE_TOUR_CATALOG, GUIDE_SECTIONS.
+//
+// Tour steps address the DOM by `targetSelector`, so renaming a `data-tour`
+// hook or restructuring a control bar breaks a tour with no type error. After
+// editing tours, verify the affected selectors still resolve; the full
+// `pnpm test:tours` walk is a release gate, not a per-change gate (20+ min).
+//
+// This file re-exports all of ./uvr-store, so importing from '@/stores' pulls
+// that in too. Prefer importing the specific store module directly.
+
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'

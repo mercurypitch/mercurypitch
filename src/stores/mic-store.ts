@@ -1,3 +1,11 @@
+// ============================================================
+// Mic Store — page-facing mic indicator (NOT the device owner)
+// ============================================================
+//
+// Device ownership lives in src/lib/mic-manager.ts. This store is only the
+// per-page "is this page's mic on" light. See the comment below before wiring
+// anything new to it.
+
 import { createSignal } from 'solid-js'
 
 // `micActive`/`micError` reflect the SHARED practice/analysis engine mic

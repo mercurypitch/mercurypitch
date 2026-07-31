@@ -1,3 +1,12 @@
+// ============================================================
+// useRecordingController — sung input captured as editable notes
+// ============================================================
+//
+// Feeds mic frames through the shared live-pitch pipeline
+// (@/lib/pitch-pipeline) and commits each stable segment as a note on the
+// Compose timeline. A note is only emitted once its boundary is committed, so
+// the in-progress note is held separately from the committed list.
+
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { TAB_COMPOSE } from '@/features/tabs/constants'

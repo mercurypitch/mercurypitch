@@ -1,3 +1,11 @@
+// ============================================================
+// Theme Store — the nine colour presets
+// ============================================================
+//
+// Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple,
+// a `THEME_INFO` entry, and the matching `body[data-theme='...']` token block
+// in src/styles/app.css. Miss the CSS and the theme silently renders as dark.
+
 import { createPersistedSignal } from '@/lib/storage'
 
 export const THEME_PRESETS = [

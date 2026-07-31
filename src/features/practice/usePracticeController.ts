@@ -1,3 +1,12 @@
+// ============================================================
+// usePracticeController — mic capture and scoring for the Singing tab
+// ============================================================
+//
+// Owns one mic lease for the duration of the practice run. It calls
+// `registerMicIndicator` on start and must release unconditionally on
+// unmount -- the device itself is owned by @/lib/mic-manager.ts, and skipping
+// the release leaks the mic into whatever page the user visits next.
+
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'

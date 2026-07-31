@@ -1,3 +1,15 @@
+// ============================================================
+// Settings Store — every persisted user preference, plus its defaults
+// ============================================================
+//
+// `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback used on
+// first run and on reset. Adding a setting means: extend the interface, give
+// it a default here, then surface it in SettingsPanel.tsx -- a setting with no
+// default silently reads `undefined` for every existing user.
+//
+// Also owns the pitch-detection tuning knobs (buffer size, sensitivity preset,
+// accuracy tier) that the live analysis pipeline reads.
+
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { IS_DEV } from '@/lib/defaults'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'

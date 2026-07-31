@@ -1,5 +1,7 @@
 # Voice Mirror — Legend Portraits: MidJourney Prompts (copy-paste ready)
 
+**Status:** reference — prompt library for the portrait work tracked in [voice-mirror-handoff-2026-07-09.md](voice-mirror-handoff-2026-07-09.md).
+
 > **STATUS 2026-07-09: superseded as the primary route.** All 14 portraits
 > were generated with the **Higgsfield MCP (Nano Banana 2, Style A "mercury
 > accents", 1.5 cr/image)** — master template + recipe in

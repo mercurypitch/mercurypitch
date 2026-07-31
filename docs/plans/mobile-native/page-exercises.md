@@ -1,5 +1,7 @@
 # Exercises — alignment spec (Phase 3)
 
+**Status:** proposed — Phase 3 of the mobile program. See [README.md](README.md) for order.
+
 Exercises is the most mobile-mature surface already (`mobile-polish.css:76-252`
 reworks the runner; `scripts/audit-exercises-mobile.mjs` + the
 `mobile-ui-check` skill gate it). This phase is **alignment, not redesign**:

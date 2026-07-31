@@ -1,3 +1,15 @@
+// ============================================================
+// KaraokeNightApp — the standalone Karaoke Night shell
+// ============================================================
+//
+// A separate entry surface from the in-app Karaoke tab: its own stage, song
+// rails and account strip, reachable by share link. Stage opacity and rail
+// collapse are read from localStorage at module scope, so a malformed stored
+// value must fall back rather than throw before first paint.
+//
+// Carries its own funnel instrumentation (./funnel) -- this is a top-of-funnel
+// landing surface, not just another tab.
+
 import { createSignal, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
