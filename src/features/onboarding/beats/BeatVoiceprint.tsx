@@ -189,6 +189,11 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       GLIDE_SEC,
     )
     if (!alive()) return
+    // A beat of acknowledgement between tasks: without it the flow jumps
+    // straight to the next instruction and singers can't tell whether the
+    // take even registered (owner testing).
+    await brief('Got it.', 'That was 1 of 3.', 1)
+    if (!alive()) return
 
     setStep(2)
     await taskIntro(
@@ -204,6 +209,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       'High to low, one smooth slide.',
       GLIDE_SEC,
     )
+    if (!alive()) return
+    await brief('Both directions in.', 'That was 2 of 3.', 1)
     if (!alive()) return
 
     // ── Task B: hold. ──
@@ -230,6 +237,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     await brief('Ready…', 'Take a breath.', 2)
     if (!alive()) return
     const hold = await record('Hold it', 'Steady as you can.', HOLD_SEC)
+    if (!alive()) return
+    await brief('Nice and steady.', 'Last one: sing a note back to us.', 1)
     if (!alive()) return
 
     // ── Task C: match five. Reference then record, never together. ──
@@ -364,6 +373,10 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
       <Show when={current().kind === 'record'}>
         <p class={styles.recordingTag}>Recording</p>
+        <p class={styles.recordHint}>
+          Done before the count ends? Just stop singing — we keep what we
+          heard.
+        </p>
       </Show>
 
       <Show when={current().kind === 'done'}>

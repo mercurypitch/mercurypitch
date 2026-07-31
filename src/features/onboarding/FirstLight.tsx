@@ -135,11 +135,15 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
   const handleCreateAccount = () => {
     trackOnboarding('onboarding_account_created')
-    leave()
     // The shared AuthModal on its register pane - no navigation hand-off.
-    // The old '#/settings/account' hash-jump raced the flow teardown (a
-    // dead first click in testing) and landed on a signed-out settings
-    // section instead of a credential form.
+    // The old '#/settings/account' hash-jump left the flow entirely, which
+    // raced the teardown (a dead first click in testing), landed on a
+    // signed-out settings section, AND skipped the Map beat - creating an
+    // account was the one path that never saw "See my map" pay off. The
+    // modal (z 3200) opens above the flow (z 3000); underneath, the flow
+    // advances to the Map so closing the modal lands exactly where the
+    // button promised.
+    advanceBeat()
     openAuthModal('register')
   }
 

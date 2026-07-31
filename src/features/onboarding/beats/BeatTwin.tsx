@@ -86,6 +86,10 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         </Show>
       </div>
 
+      <p class={styles.mapExplainer}>
+        The map is your guided next step — rooms in the app picked for what
+        your voice showed us, so you know exactly where to go from here.
+      </p>
       <div class={styles.actions}>
         <button
           type="button"
