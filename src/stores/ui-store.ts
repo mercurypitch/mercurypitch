@@ -290,6 +290,24 @@ export function dismissSurvey(): void {
   setSurveySeen('1')
 }
 
+/**
+ * User-initiated feedback survey (Settings → Account).
+ *
+ * Deliberately NOT gated on surveySeen: the automatic prompt fires once, but
+ * this is the standing "I have an idea" channel, so it can be reopened and
+ * submitted as often as someone has something to say. It stays anonymous —
+ * no account or email is revealed by sending one.
+ */
+export const [feedbackSurveyOpen, setFeedbackSurveyOpen] = createSignal(false)
+
+export function openFeedbackSurvey(): void {
+  setFeedbackSurveyOpen(true)
+}
+
+export function closeFeedbackSurvey(): void {
+  setFeedbackSurveyOpen(false)
+}
+
 // ── User Profile ────────────────────
 
 export function userProfile(): { name: string; email?: string } {

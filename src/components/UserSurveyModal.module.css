@@ -185,9 +185,16 @@
   font-family: inherit;
 }
 
-.skipBtn:hover {
+.skipBtn:hover:not(:disabled) {
   color: rgba(255, 255, 255, 0.6);
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Armed after a beat, so a click already in motion when the modal appeared
+   cannot dismiss it. The countdown in the label says why. */
+.skipBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .submitBtn {

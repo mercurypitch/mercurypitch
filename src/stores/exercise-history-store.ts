@@ -4,7 +4,7 @@ import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { createPersistedSignal } from '@/lib/storage'
-import { recordActivity } from './usage-store'
+import { recordCompletion } from './usage-store'
 
 const STORAGE_KEY = 'mercurypitch_exercise_history'
 
@@ -50,7 +50,9 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   autoAdvanceRoutineSegment(entry.type, entry.metrics)
   // session_complete fires in saveSessionRecord — every branch below funnels
   // into it exactly once, so firing here too would double the funnel metric.
-  recordActivity()
+  // recordCompletion counts a FINISHED run for the survey gate (and counts
+  // as activity too, so recordActivity is folded in).
+  recordCompletion()
 
   // Persisting the run is async and order-dependent: a run launched from a
   // challenge or weekly is recorded by that path (with source 'challenge' /

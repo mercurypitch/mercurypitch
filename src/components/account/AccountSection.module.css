@@ -374,6 +374,10 @@
 }
 
 .helloLink {
+  /* Rendered as both <a> and <button> (Share feedback) — neutralise the UA
+     button styling so the row reads as one set of controls. */
+  font-family: inherit;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;

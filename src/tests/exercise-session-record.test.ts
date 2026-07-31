@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   autoAdvanceRoutineSegment: vi.fn(),
   trackEvent: vi.fn(),
   recordActivity: vi.fn(),
+  recordCompletion: vi.fn(),
 }))
 
 vi.mock('@/db/services/session-service', () => ({
@@ -31,6 +32,7 @@ vi.mock('@/features/routines/use-daily-routine', () => ({
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: mocks.trackEvent }))
 vi.mock('@/stores/usage-store', () => ({
+  recordCompletion: mocks.recordCompletion,
   recordActivity: mocks.recordActivity,
 }))
 
@@ -117,7 +119,9 @@ describe('recordExerciseResult → sessionRecords', () => {
       completedAt: 1,
     })
     await flush()
-    expect(mocks.recordActivity).toHaveBeenCalledOnce()
+    // recordCompletion counts the finished run for the survey gate and
+    // folds recordActivity in (see usage-store).
+    expect(mocks.recordCompletion).toHaveBeenCalledOnce()
     // session_complete is saveSessionRecord's job (every run funnels through
     // it exactly once) — firing it here too would double the funnel metric.
     expect(mocks.trackEvent).not.toHaveBeenCalledWith('session_complete')
