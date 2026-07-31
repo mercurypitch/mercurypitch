@@ -23,6 +23,12 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
   googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
   openAuthModal: vi.fn(),
+  takeGoogleRedirectResult: vi.fn(() => null),
+  // Read by the nested VoiceSection (via voiceprint-service) to decide
+  // whether a cloud copy of the voiceprints exists. This mock replaces
+  // the whole module, so anything the panel reaches transitively has to
+  // be listed here or the call throws.
+  hasValidToken: vi.fn(() => false),
 }))
 
 const dbMocks = vi.hoisted(() => {

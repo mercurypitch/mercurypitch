@@ -26,6 +26,7 @@ import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
 import { GoogleMark } from './GoogleMark'
+import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
 
@@ -383,6 +384,8 @@ export const AccountSection: Component = () => {
         </Show>
       </Show>
 
+      {/* The other half of onboarding's promise: what an account keeps. */}
+      <VoiceSection signedIn={isUpgraded()} />
       {/* Say hello — outside the cloud-configured gate on purpose: reaching a
           human never depended on having an account. */}
       <div class={styles.helloBlock} data-testid="say-hello">

@@ -62,6 +62,13 @@ const ZenPitchStage = lazy(async () =>
     default: m.ZenPitchStage,
   })),
 )
+// First Light onboarding — lazy so a returning visitor pays nothing for a
+// flow they have already walked.
+const FirstLight = lazy(async () =>
+  import('@/features/onboarding/FirstLight').then((m) => ({
+    default: m.FirstLight,
+  })),
+)
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import { AuthModal } from '@/components/account/AuthModal'
@@ -78,6 +85,8 @@ import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
+import { authVersion } from '@/db/services/user-service'
+import { syncLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -147,6 +156,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
+import { flowOpen, openBeat, startOnboarding } from '@/stores/onboarding-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -504,6 +514,21 @@ const AppShell: Component<AppProps> = (props) => {
       setShowWelcome(true)
     }
   }
+  // ── First Light onboarding ──────────────────────────────────
+  // A replay (#/map) reopens the Map without re-running the first-run
+  // bookkeeping, so closing it can't rewind anyone's seen-flag.
+  const [onboardingReplay, setOnboardingReplay] = createSignal(false)
+
+  const startFirstLight = () => {
+    setOnboardingReplay(false)
+    startOnboarding()
+  }
+
+  const openOnboardingMap = () => {
+    setOnboardingReplay(true)
+    openBeat('map')
+  }
+
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
     // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
@@ -795,6 +820,7 @@ const AppShell: Component<AppProps> = (props) => {
     adminContentSection,
     openResetPassword: (token) => setResetPasswordView({ token }),
     showResetPassword: () => resetPasswordView() != null,
+    openOnboardingMap,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -1637,6 +1663,16 @@ const AppShell: Component<AppProps> = (props) => {
   // the analytics module.
   onMount(() => trackEvent('app_open'))
 
+  // Rescue anonymous voiceprints on sign-in. Someone who made one during
+  // onboarding and then created the account we told them would keep it
+  // must not find it missing — which is what would happen, since the
+  // local copy is all they had. Re-runs on every auth transition; it is
+  // idempotent (deduped by takenAt) and a no-op with nothing to upload.
+  createEffect(() => {
+    authVersion()
+    void syncLocalVoiceprints()
+  })
+
   // Restore the imported song behind the current melody on reload. Melodies
   // persist (melody store), but singingSong is a fresh signal each load, so
   // the Track button vanished after a refresh. Imports are stored as a saved
@@ -1663,15 +1699,11 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
-  // Welcome overlay "Enable Mic": enable-only (never toggles an active mic
-  // off), and surface denial — startMic() swallows getUserMedia errors and
-  // returns false, so without this check the welcome screen would show its
-  // "Mic enabled" chip even when permission was refused.
-  const handleWelcomeEnableMic = async () => {
-    if (micActive()) return
-    const ok = await practiceEngine.startMic()
-    if (!ok) throw new Error('Microphone permission denied')
-  }
+  // (The welcome screen's "Enable Mic" pill is gone — First Light beat 2 asks
+  // for the mic at the moment of intent instead. Phase 2 wires it there, and
+  // must re-add the enable-only + surface-denial handling that lived here:
+  // startMic() swallows getUserMedia errors and returns false, so a caller
+  // that ignores the result reports success on a refused permission.)
 
   // Nudge once if singing playback starts while the mic is off.
   usePlaybackMicNudge({
@@ -2184,10 +2216,12 @@ const AppShell: Component<AppProps> = (props) => {
     showSessionBrowser() ||
     showShortcutHelp() ||
     showAdminContentStudio() ||
-    // Never pop the survey over the sign-in modal or an already-open
-    // feedback modal - both are surfaces the user is mid-thought in.
+    // Never pop the survey over the sign-in modal, an already-open feedback
+    // modal, or the First Light onboarding flow - all surfaces the user is
+    // mid-thought in.
     authModalMode() !== null ||
-    feedbackSurveyOpen()
+    feedbackSurveyOpen() ||
+    flowOpen()
 
   // Show optional survey after welcome screen is dismissed (once per browser,
   // tracked via the persisted surveySeen flag — same as the welcome screen).
@@ -2302,12 +2336,20 @@ const AppShell: Component<AppProps> = (props) => {
         <a class="skip-link" href="#main-content">
           Skip to main content
         </a>
-        {/* Welcome Screen (shown on first visit) */}
-        <Show when={showWelcome()}>
-          <WelcomeScreen
-            onTakeTour={openGuideSelection}
-            onEnableMic={handleWelcomeEnableMic}
-          />
+        {/* Welcome Screen (first visit, and on demand from Settings) */}
+        {/* Gated only on its own flag and on the flow not being open.
+            `finishOnboarding` now spends `welcomeSeen` itself, so the door
+            no longer comes back over the Map once the flow ends — which is
+            what an extra `isFirstRun()` condition here used to paper over,
+            at the cost of making Settings → "Show welcome screen" dead for
+            anyone who had finished onboarding. */}
+        <Show when={showWelcome() && !flowOpen()}>
+          <WelcomeScreen onStart={startFirstLight} />
+        </Show>
+
+        {/* First Light — the guided onboarding the door opens into. */}
+        <Show when={flowOpen()}>
+          <FirstLight replay={onboardingReplay()} />
         </Show>
 
         {/* Guide Selection dialog */}

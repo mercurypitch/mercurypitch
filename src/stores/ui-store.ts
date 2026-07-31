@@ -2,7 +2,6 @@ import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
-import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
@@ -189,20 +188,24 @@ exposeForE2E('__exitKaraokeZen', () => setKaraokeZen(false))
 // ── Welcome Screen (GH #131) ────────────────────────────────────
 const PITCH_PERFECT_WELCOME_VERSION_KEY = 'pitchperfect_welcome_version'
 
-// The value stored is the version string. We want to show welcome if the stored string doesn't match APP_VERSION.
-// A simpler way: store a boolean 'true' if they have seen this specific version.
+// A seen flag is a seen flag. This used to store APP_VERSION and show the
+// welcome whenever the stored string didn't match — which meant every
+// release re-imposed the first-run overlay on people who had been using
+// the app for months. Version news belongs in the changelog modal.
+//
+// The key and its type are unchanged so existing installs still read as
+// "seen": anything non-empty (a stored version string, or the '1' we
+// write now) suppresses it.
 export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   PITCH_PERFECT_WELCOME_VERSION_KEY,
   '',
 )
 
-export const [showWelcome, setShowWelcome] = createSignal(
-  welcomeSeen() !== APP_VERSION,
-)
+export const [showWelcome, setShowWelcome] = createSignal(welcomeSeen() === '')
 
 export function dismissWelcome(): void {
   setShowWelcome(false)
-  setWelcomeSeen(APP_VERSION)
+  setWelcomeSeen('1')
 }
 
 // ── Owner-only Content Studio (#/admin/*) ───────────────────────

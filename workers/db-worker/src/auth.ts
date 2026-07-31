@@ -1381,6 +1381,9 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'sharedSessions', column: 'userId' },
   { table: 'userSettings', column: 'userId' },
   { table: 'userSurveyResponses', column: 'userId' },
+  // Voiceprints are the account's measured voice history - personal data
+  // that must not outlive the account.
+  { table: 'voiceprints', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
   // League rows are per-user too: leaving them would keep a ghost entry in
   // this week's standings (rendered as Singer-<id>) and a point history for

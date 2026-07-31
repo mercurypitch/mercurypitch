@@ -1,0 +1,913 @@
+/* ============================================================
+   First Light — the shared branded frame
+   ============================================================
+
+   Every beat wears the same structure: a thin progress hairline and
+   an escape at the top, a radially symmetric stage in the middle, and
+   one primary action in the bottom third. Rotating a beat 180° should
+   still balance (BRAND.md — branded symmetry).
+
+   The flow carries its OWN tokens instead of inheriting the app's
+   nine theme presets. It is a full-screen cinematic moment on the
+   brand's home ground, and the star field only reads against
+   obsidian; a light-theme replay would otherwise wash it out. The app
+   returns to the visitor's chosen theme the moment the flow closes.
+   ============================================================ */
+
+.overlay {
+  --ob-ground: #0d1117;
+  --ob-ink: #e6edf3;
+  --ob-ink-2: #a8b3bf;
+  --ob-ink-3: #6e7681;
+  --ob-rule: #30363d;
+  --ob-card: rgba(28, 33, 40, 0.72);
+  --ob-blue: #58a6ff;
+  --ob-teal: #2dd4bf;
+  --ob-violet: #bc8cff;
+  /* Dimmer than it would be on its own: the plate already supplies
+     ambient stars, and two overlapping fields read as noise. The
+     canvas is here for the ignition, not the ambience. */
+  --star-dim: rgba(230, 237, 243, 0.1);
+  --ob-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: var(--ob-ground);
+  color: var(--ob-ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Contains the plate's blend mode, so it can never reach through to
+     whatever the app is painting behind this overlay. */
+  isolation: isolate;
+}
+
+/* ── The sky plate ───────────────────────────────────────────────
+   Generated backdrop: a quicksilver ribbon across the top, star
+   clusters at the edges, empty in the middle where the copy sits.
+
+   `screen` is doing real work here, not decoration. The plate's dark
+   areas are not the same black as --ob-ground, so painting it
+   normally would leave a visible rectangle edge wherever `cover`
+   didn't reach. Under screen, black contributes nothing and only the
+   ribbon and stars composite through — the plate can never be darker
+   than the ground, at any aspect ratio, with no black-point matching.
+
+   Missing files degrade to the bare ground plus the canvas field. */
+.plate {
+  position: absolute;
+  inset: 0;
+  /* Sized to WIDTH and anchored top — deliberately not `cover`. Cover has
+     to fill both axes, so on a tall or square viewport it scales a 16:9
+     plate enormously and the ribbon swallows the headline. At `100% auto`
+     the ribbon stays proportionate to the viewport width at every shape,
+     and the area below the image simply isn't painted — which under
+     `screen` is exactly the obsidian ground, seamlessly. */
+  background: url('/onboarding/sky-wide.webp') top center / 100% auto no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* A genuine portrait recomposition, not a crop — the ribbon sits in
+   the top fifth and the stars run down the sides. */
+@media (max-aspect-ratio: 1/1) {
+  .plate {
+    background-image: url('/onboarding/sky-tall.webp');
+  }
+}
+
+/* Behind the Map the plate steps well back. That beat is dense — six
+   cards, a side-door strip and a CTA — and the artwork has to stop
+   competing with the thing it is framing. */
+.plateRecede {
+  opacity: 0.28;
+}
+
+/* The quicksilver wash — the meniscus glow the composition centres on. */
+.overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    68% 52% at 50% 46%,
+    rgba(88, 166, 255, 0.1),
+    transparent 68%
+  );
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Rail: progress + escape ─────────────────────────────────── */
+
+.rail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px 0;
+  flex: 0 0 auto;
+}
+
+.progress {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ob-rule);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  transition: width 0.5s var(--ob-ease);
+}
+
+.skip {
+  background: none;
+  border: 0;
+  color: var(--ob-ink-3);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: color 0.2s var(--ob-ease);
+}
+
+.skip:hover {
+  color: var(--ob-ink-2);
+}
+
+.skip:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+  color: var(--ob-ink);
+}
+
+/* ── Stage: the symmetric middle ─────────────────────────────── */
+
+.frame {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 24px 22px 40px;
+  text-align: center;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 620px;
+  animation: beatIn 0.55s var(--ob-ease) both;
+}
+
+/* The Map carries a grid, so it gets more room than the narrow beats. */
+.beatWide {
+  max-width: 1000px;
+}
+
+@keyframes beatIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+.headline {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.headline .lit {
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+  max-width: 42ch;
+  text-wrap: balance;
+}
+
+.mascot {
+  display: block;
+  filter: drop-shadow(0 8px 26px rgba(88, 166, 255, 0.22));
+}
+
+/* ── Actions ─────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 30px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #06090f;
+  cursor: pointer;
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 60%,
+    var(--ob-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  transition:
+    transform 0.25s var(--ob-ease),
+    box-shadow 0.25s var(--ob-ease);
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+}
+
+.primary:focus-visible {
+  outline: 2px solid var(--ob-ink);
+  outline-offset: 3px;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ob-ink-2);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ob-ease),
+    color 0.2s var(--ob-ease);
+}
+
+.secondary:hover {
+  border-color: var(--ob-ink-3);
+  color: var(--ob-ink);
+}
+
+.secondary:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* ── Beat 2: mic meter, readout ──────────────────────────────── */
+
+.meter {
+  width: min(280px, 80%);
+  height: 4px;
+  border-radius: 3px;
+  background: var(--ob-rule);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--ob-blue), var(--ob-teal));
+  transition: width 0.08s linear;
+}
+
+.readout {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ob-teal);
+}
+
+.deviceList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── Beat 4: demo stage, countdown ───────────────────────────── */
+
+/* Holds the Voice Mirror's TaskDemo canvas. It draws at a fixed size,
+   so the wrapper scales it down rather than letting it overflow a
+   phone. */
+.demoStage {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  justify-content: center;
+}
+
+.demoStage canvas {
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+}
+
+/* Task titles are instructions, not the flow's headline — at display
+   size they shout, and they change every few seconds. */
+.headlineSmall {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* ── Beat 4: countdown ───────────────────────────────────────── */
+
+.countdown {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ob-ink);
+}
+
+.recordingTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-violet);
+}
+
+.recordingTag::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ob-violet);
+  animation: recPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* ── Beat 5: twin ────────────────────────────────────────────── */
+
+/* The caricature carries real drawn detail — at the old size it read as a
+   generic blob. It is the payoff of the whole flow, so it gets the room. */
+.twinArt {
+  display: block;
+  width: clamp(200px, 34vw, 320px);
+  filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
+}
+
+.twinArt svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.stat {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 12px;
+  background: var(--ob-card);
+}
+
+.statValue {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.statLabel {
+  font-size: 0.72rem;
+  color: var(--ob-ink-3);
+}
+
+/* ── Beat 7: keep ────────────────────────────────────────────── */
+
+/* Smaller than beat 5's: the twin is the reason here, not the subject —
+   but still large enough to recognise who it is. */
+.twinArtSmall {
+  display: block;
+  width: clamp(130px, 22vw, 180px);
+  filter: drop-shadow(0 10px 28px rgba(188, 140, 255, 0.22));
+}
+
+.twinArtSmall svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.keepList {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  max-width: 44ch;
+  text-align: left;
+}
+
+.keepList li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+.keepList li::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--ob-blue), var(--ob-teal));
+}
+
+.keepList em {
+  color: var(--ob-teal);
+  font-style: normal;
+}
+
+.keepFootnote {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ob-ink-3);
+  max-width: 44ch;
+}
+
+/* ── Fork ────────────────────────────────────────────────────── */
+
+.forkOptions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+@media (min-width: 620px) {
+  .forkOptions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.forkCard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--ob-rule);
+  background: var(--ob-card);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.25s var(--ob-ease),
+    transform 0.25s var(--ob-ease);
+}
+
+.forkCard:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ob-blue) 50%, var(--ob-rule));
+}
+
+.forkCard:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.forkLead {
+  border-color: color-mix(in srgb, var(--ob-violet) 44%, var(--ob-rule));
+}
+
+.forkTitle {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.forkTime {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+.forkBody {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+/* ── Map ─────────────────────────────────────────────────────── */
+
+/* auto-fit, so a 4-, 6- or 8-room set lays out without reflowing —
+   PR #359's two extra cards become a data change and nothing else. */
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.roomCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 18px;
+  border-radius: 13px;
+  border: 1px solid var(--ob-rule);
+  background: var(--ob-card);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  /* Contains the artwork, which is drawn much larger than the card and
+     scales past its edges as it settles in. */
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    border-color 0.4s var(--ob-ease),
+    transform 0.4s var(--ob-ease),
+    box-shadow 0.4s var(--ob-ease);
+}
+
+/* ── The reveal ───────────────────────────────────────────────────
+   The Home gallery's cover art, parked behind the card: pushed back,
+   blurred and dim. Bringing it forward is the whole gesture — it reads
+   as the room opening up rather than a picture fading in. */
+.roomArt {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.16;
+  transform: scale(1.18);
+  filter: blur(7px) saturate(0.8);
+  transition:
+    opacity 0.75s var(--ob-ease),
+    transform 0.75s var(--ob-ease),
+    filter 0.75s var(--ob-ease);
+  pointer-events: none;
+}
+
+.roomArt > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Rooms with no drawing yet get a quiet spectrum wash rather than
+   another room's picture. */
+.roomArtFallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(
+      70% 90% at 20% 0%,
+      color-mix(in srgb, var(--ob-blue) 55%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      70% 90% at 90% 100%,
+      color-mix(in srgb, var(--ob-violet) 50%, transparent),
+      transparent 70%
+    );
+}
+
+/* Keeps the copy readable at every stage of the reveal. */
+.roomScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, #0d1117 62%, transparent),
+    color-mix(in srgb, #0d1117 88%, transparent) 70%
+  );
+  opacity: 0;
+  transition: opacity 0.75s var(--ob-ease);
+  pointer-events: none;
+}
+
+/* The card's own content sits above both layers. */
+.roomCard > *:not(.roomArt):not(.roomScrim) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Pointer devices only. On touch the art stays at its resting opacity
+   and a tap enters the room — a tap-to-reveal would make entering cost
+   two taps, and sticky :hover on touch is a known trap (PR #359). */
+@media (hover: hover) {
+  .roomCard:hover .roomArt,
+  .roomCard:focus-visible .roomArt {
+    opacity: 0.62;
+    transform: scale(1);
+    filter: blur(0) saturate(1);
+  }
+
+  .roomCard:hover .roomScrim,
+  .roomCard:focus-visible .roomScrim {
+    opacity: 1;
+  }
+}
+
+.roomCard:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+.roomCard:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.roomFirst {
+  border-color: color-mix(in srgb, var(--ob-blue) 54%, var(--ob-rule));
+  background:
+    linear-gradient(180deg, rgba(88, 166, 255, 0.08), transparent 62%),
+    var(--ob-card);
+}
+
+.roomPlate {
+  width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ob-ink-3);
+}
+
+.roomFirst .roomPlate {
+  width: 56px;
+  background: linear-gradient(
+    90deg,
+    var(--ob-blue),
+    var(--ob-teal),
+    var(--ob-violet)
+  );
+}
+
+/* In flow, not absolute. Absolutely positioned it sat on top of the
+   title as soon as the card narrowed — the label is longer than the
+   corner it was pinned into. */
+.roomFlag {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ob-blue);
+  white-space: nowrap;
+}
+
+.roomTitle {
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.roomLine {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+}
+
+.roomReason {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ob-blue);
+}
+
+.roomTour {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ob-ink-3);
+  border-bottom: 1px solid currentColor;
+  cursor: pointer;
+  transition: color 0.2s var(--ob-ease);
+}
+
+.roomTour:hover {
+  color: var(--ob-teal);
+}
+
+.roomTour:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sideDoors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sideDoor {
+  border: 1px solid var(--ob-rule);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  color: var(--ob-ink-2);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color 0.2s var(--ob-ease),
+    color 0.2s var(--ob-ease);
+}
+
+.sideDoor:hover {
+  border-color: var(--ob-ink-3);
+  color: var(--ob-ink);
+}
+
+.sideDoor:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+.sideLabel {
+  margin: 14px 0 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+/* ── Motion ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .beat {
+    animation: none;
+  }
+
+  .progressFill,
+  .primary,
+  .secondary,
+  .forkCard,
+  .roomCard,
+  .sideDoor,
+  .skip {
+    transition: none;
+  }
+
+  .forkCard:hover,
+  .roomCard:hover,
+  .primary:hover {
+    transform: none;
+  }
+
+  /* The artwork still resolves on hover — losing it entirely would cost
+     the information, not just the flourish — it simply arrives without
+     the settle. */
+  .roomArt,
+  .roomScrim {
+    transition: none;
+  }
+
+  .roomArt {
+    transform: none;
+    filter: none;
+  }
+
+  .meterFill {
+    transition: none;
+  }
+
+  /* The dot stays visible rather than pulsing — "recording" must still
+     read at a glance when motion is off. */
+  .recordingTag::before {
+    animation: none;
+  }
+}
+
+/* ── Phone ───────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .frame {
+    justify-content: flex-start;
+    padding-top: 40px;
+    gap: 20px;
+  }
+
+  .actions {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .actions .primary,
+  .actions .secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mapGrid {
+    grid-template-columns: 1fr;
+  }
+}
