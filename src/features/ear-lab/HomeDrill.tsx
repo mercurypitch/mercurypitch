@@ -21,8 +21,7 @@ import { HOME_DEGREES, HOME_DRILL_ID, HOME_SING_DRILL_ID, } from '@/lib/ear/item
 import { micManager } from '@/lib/mic-manager'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
-import { createPersistedSignal } from '@/lib/storage'
-import { earPlayerRating } from '@/stores/ear-lab-store'
+import { earPlayerRating, homeAnswerMode, setHomeAnswerMode, } from '@/stores/ear-lab-store'
 import styles from './EarDrill.module.css'
 import type { HomeAnswerMode, SingCapture } from './use-home-controller'
 import { useHomeController } from './use-home-controller'
@@ -33,11 +32,6 @@ interface HomeDrillProps {
 
 const CADENCE_LABELS = ['I', 'IV', 'V', 'I']
 const MIC_CONSUMER = 'ear-home-drill'
-
-const [preferredMode, setPreferredMode] = createPersistedSignal<HomeAnswerMode>(
-  'mercurypitch_ear_home_mode',
-  'tap',
-)
 
 export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const { audioEngine } = useEngines()
@@ -53,21 +47,21 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
       })),
   }
 
-  const controller = useHomeController(audioEngine, capture)
+  const controller = useHomeController(audioEngine, capture, {
+    cancelAudio: () => audioEngine.stopTone(60),
+  })
 
   function releaseMic(): void {
     f0?.dispose()
     f0 = null
     micManager.release(MIC_CONSUMER)
   }
-  onCleanup(() => {
-    controller.dispose()
-    releaseMic()
-  })
+  // The controller registers its own cleanup; this one owns the mic.
+  onCleanup(releaseMic)
 
   async function handleStart(): Promise<void> {
     setMicError('')
-    let mode = preferredMode()
+    let mode: HomeAnswerMode = homeAnswerMode()
     if (mode === 'mic' && f0 === null) {
       try {
         await audioEngine.init()
@@ -82,6 +76,10 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         )
         mode = 'tap'
       }
+    } else if (mode === 'tap' && f0 !== null) {
+      // Switched back to tapping: hand the device back rather than
+      // holding an open mic for a run that will never listen.
+      releaseMic()
     }
     controller.start(mode)
   }
@@ -205,27 +203,27 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   <button
                     type="button"
                     class={`${styles.modeOption} ${
-                      preferredMode() === 'tap' ? styles.modeActive : ''
+                      homeAnswerMode() === 'tap' ? styles.modeActive : ''
                     }`}
                     role="radio"
-                    aria-checked={preferredMode() === 'tap'}
-                    onClick={() => setPreferredMode('tap')}
+                    aria-checked={homeAnswerMode() === 'tap'}
+                    onClick={() => setHomeAnswerMode('tap')}
                   >
                     Tap
                   </button>
                   <button
                     type="button"
                     class={`${styles.modeOption} ${
-                      preferredMode() === 'mic' ? styles.modeActive : ''
+                      homeAnswerMode() === 'mic' ? styles.modeActive : ''
                     }`}
                     role="radio"
-                    aria-checked={preferredMode() === 'mic'}
-                    onClick={() => setPreferredMode('mic')}
+                    aria-checked={homeAnswerMode() === 'mic'}
+                    onClick={() => setHomeAnswerMode('mic')}
                   >
                     Sing or play
                   </button>
                 </div>
-                <Show when={preferredMode() === 'mic'}>
+                <Show when={homeAnswerMode() === 'mic'}>
                   <p>
                     Mic mode answers by ear alone — no buttons to luck into —
                     and reads your intonation on every note. Octave does not

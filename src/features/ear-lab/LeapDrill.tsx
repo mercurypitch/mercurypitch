@@ -11,13 +11,11 @@ import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { LEAP_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
+import { LEAP_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
-
-const TONE_MS = 550
-const GAP_MS = 140
 
 export function LeapDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -39,12 +37,15 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
 
     return {
       expectedId: item.itemId,
-      play: () => playPair(TONE_MS, GAP_MS),
-      replayOnWrong: () => playPair(700, 200),
+      play: () => playPair(LEAP_TIMING.toneMs, LEAP_TIMING.gapMs),
+      replayOnWrong: () =>
+        playPair(LEAP_TIMING.replayToneMs, LEAP_TIMING.replayGapMs),
     }
   }
 
-  const controller = useIdentificationController(drill, LEAP_BANK, makeTrial)
+  const controller = useIdentificationController(drill, LEAP_BANK, makeTrial, {
+    cancelAudio: () => audioEngine.stopTone(60),
+  })
 
   return (
     <IdentificationDrillView

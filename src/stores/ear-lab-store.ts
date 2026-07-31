@@ -85,6 +85,17 @@ export function earLatency(): LatencyEntry | null {
   return latency()
 }
 
+/** How Home takes its answers. Persisted here rather than in the
+ *  component so the preference survives navigation and stays with
+ *  the rest of the Ear Lab's state. */
+const [homeMode, setHomeMode] = createPersistedSignal<'tap' | 'mic'>(
+  `${KEY_PREFIX}home_mode`,
+  'tap',
+)
+
+export const homeAnswerMode = homeMode
+export const setHomeAnswerMode = setHomeMode
+
 export function recordLatencyReading(reading: {
   medianMs: number
   spreadMs: number

@@ -6,19 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import type { StaircaseState } from './staircase'
 import { createStaircase, DEFAULT_STAIRCASE, recordTrial, thresholdOf, } from './staircase'
-
-/** Deterministic PRNG (mulberry32) so the simulations below cannot
- *  flake in CI. */
-function rng(seed: number): () => number {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
+import { rng } from './test-rng'
 
 /** A simulated listener whose 70.7% point sits exactly at
  *  `threshold`. Weibull psychometric function over a 2-alternative

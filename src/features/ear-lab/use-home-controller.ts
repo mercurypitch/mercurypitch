@@ -14,13 +14,14 @@
 // ear hears the distance it just misjudged.
 // ============================================================
 
-import { batch, createSignal } from 'solid-js'
+import { batch, createSignal, onCleanup } from 'solid-js'
 import { playTierSfx } from '@/features/exercises/feedback'
 import type { SungFrame } from '@/lib/ear/degree-detect'
 import { detectSungDegree } from '@/lib/ear/degree-detect'
 import type { Rating } from '@/lib/ear/elo'
 import type { HomeDegree } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_CHOICES, HOME_DRILL_ID, HOME_SING_DRILL_ID, homeItemId, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
+import { HOME_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { creditEarSession, earItemStates, earPlayerRating, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
 
@@ -68,13 +69,12 @@ export interface SingCapture {
 
 export const HOME_ROUNDS = 12
 
-const CHORD_MS = 520
-const CHORD_GAP_MS = 130
-const PROBE_MS = 950
-const REVEAL_CORRECT_MS = 650
-const REVEAL_WRONG_MS = 1500
-/** How long the mic listens for a sung answer. */
-const SING_WINDOW_MS = 2600
+export interface HomeOptions {
+  /** Silence anything already sounding. Called on stop and unmount,
+   *  before the phase flips — a cadence committed to the audio clock
+   *  outlives its setTimeout. */
+  cancelAudio?: () => void
+}
 
 interface AudioLike {
   playTone: (
@@ -99,6 +99,7 @@ function drillIdFor(mode: HomeAnswerMode): string {
 export function useHomeController(
   audioEngine: AudioLike,
   singCapture?: SingCapture,
+  options?: HomeOptions,
 ) {
   const [phase, setPhase] = createSignal<HomePhase>('idle')
   const [mode, setMode] = createSignal<HomeAnswerMode>('tap')
@@ -195,16 +196,18 @@ export function useHomeController(
     for (let i = 0; i < chords.length; i++) {
       if (cancelled) return
       setCadenceStep(i + 1)
-      await playChord(chords[i], CHORD_MS)
-      await wait(CHORD_GAP_MS)
+      await playChord(chords[i], HOME_TIMING.chordMs)
+      await wait(HOME_TIMING.chordGapMs)
     }
     if (cancelled) return
 
     setPhase('probe')
     await audioEngine.playTone(
       midiToFreq(probeMidi(rootMidi, pick.degree.degree)),
-      PROBE_MS,
+      HOME_TIMING.probeMs,
     )
+    // Stop may have landed while the probe was sounding; arming the
+    // answer here would resurrect a finished run.
     if (cancelled) return
     setPhase('answer')
 
@@ -217,7 +220,7 @@ export function useHomeController(
   async function listenForAnswer(): Promise<void> {
     if (!singCapture) return
     singCapture.startWindow()
-    await wait(SING_WINDOW_MS)
+    await wait(HOME_TIMING.singWindowMs)
     if (cancelled || phase() !== 'answer') return
 
     const sung = detectSungDegree(singCapture.takeFrames(), rootMidi)
@@ -248,7 +251,7 @@ export function useHomeController(
       if (cancelled) return
       setRound((r) => r + 1)
       void playRound()
-    }, REVEAL_WRONG_MS)
+    }, REVEAL_TIMING.identificationWrongMs)
   }
 
   function submit(degree: number, centsOff?: number): void {
@@ -297,7 +300,9 @@ export function useHomeController(
         setRound((r) => r + 1)
         void playRound()
       },
-      correct ? REVEAL_CORRECT_MS : REVEAL_WRONG_MS,
+      correct
+        ? REVEAL_TIMING.identificationCorrectMs
+        : REVEAL_TIMING.identificationWrongMs,
     )
   }
 
@@ -310,9 +315,15 @@ export function useHomeController(
   /** Replay the probe, then land on the tonic — the distance the ear
    *  just misjudged, heard once more with the answer known. */
   async function playResolution(degree: number): Promise<void> {
-    await audioEngine.playTone(midiToFreq(probeMidi(rootMidi, degree)), 420)
+    await audioEngine.playTone(
+      midiToFreq(probeMidi(rootMidi, degree)),
+      HOME_TIMING.resolutionProbeMs,
+    )
     if (cancelled) return
-    await audioEngine.playTone(midiToFreq(rootMidi), 500)
+    await audioEngine.playTone(
+      midiToFreq(rootMidi),
+      HOME_TIMING.resolutionTonicMs,
+    )
   }
 
   function finish(): void {
@@ -342,7 +353,12 @@ export function useHomeController(
    *  no take-backs), so the end card just reports what happened. */
   function stop(): void {
     if (phase() === 'idle' || phase() === 'done') return
+    // Cancel FIRST — the in-flight cadence/probe checks this after
+    // every await, and without it the round would re-arm its answer
+    // phase after the end card is already showing.
+    cancelled = true
     clearTimeout(timer)
+    options?.cancelAudio?.()
     finish()
   }
 
@@ -357,7 +373,10 @@ export function useHomeController(
   function dispose(): void {
     cancelled = true
     clearTimeout(timer)
+    options?.cancelAudio?.()
   }
+
+  onCleanup(dispose)
 
   return {
     phase,

@@ -11,12 +11,11 @@ import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
+import { STACK_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
-
-const CHORD_MS = 1100
 
 export function StackDrill(props: { onBack: () => void }): JSX.Element {
   const { audioEngine } = useEngines()
@@ -45,19 +44,24 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
 
     return {
       expectedId: item.itemId,
-      play: () => playBlock(CHORD_MS),
+      play: () => playBlock(STACK_TIMING.chordMs),
       replayOnWrong: async () => {
         // Broken, then re-stacked.
-        await audioEngine.playTone(rootFreq, 280)
+        await audioEngine.playTone(rootFreq, STACK_TIMING.brokenNoteMs)
         for (const semis of intervals) {
-          await audioEngine.playTone(midiToFreq(root + semis), 280)
+          await audioEngine.playTone(
+            midiToFreq(root + semis),
+            STACK_TIMING.brokenNoteMs,
+          )
         }
-        await playBlock(900)
+        await playBlock(STACK_TIMING.replayChordMs)
       },
     }
   }
 
-  const controller = useIdentificationController(drill, STACK_BANK, makeTrial)
+  const controller = useIdentificationController(drill, STACK_BANK, makeTrial, {
+    cancelAudio: () => audioEngine.stopTone(60),
+  })
 
   return (
     <IdentificationDrillView

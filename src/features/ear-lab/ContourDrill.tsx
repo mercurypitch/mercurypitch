@@ -11,12 +11,10 @@ import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { CONTOUR_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
+import { CONTOUR_TIMING } from '@/lib/ear/timing'
 import { IdentificationDrillView } from './IdentificationDrillView'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
-
-const TONE_MS = 330
-const GAP_MS = 110
 
 const DIRECTIONS = [
   { id: 'up', label: 'Up', name: 'Up' },
@@ -46,12 +44,18 @@ export function ContourDrill(props: { onBack: () => void }): JSX.Element {
 
     return {
       expectedId: direction.id,
-      play: () => playPair(TONE_MS, GAP_MS),
-      replayOnWrong: () => playPair(550, 180),
+      play: () => playPair(CONTOUR_TIMING.toneMs, CONTOUR_TIMING.gapMs),
+      replayOnWrong: () =>
+        playPair(CONTOUR_TIMING.replayToneMs, CONTOUR_TIMING.replayGapMs),
     }
   }
 
-  const controller = useIdentificationController(drill, CONTOUR_BANK, makeTrial)
+  const controller = useIdentificationController(
+    drill,
+    CONTOUR_BANK,
+    makeTrial,
+    { cancelAudio: () => audioEngine.stopTone(60) },
+  )
 
   return (
     <IdentificationDrillView

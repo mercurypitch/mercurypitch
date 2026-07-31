@@ -10,13 +10,14 @@
 // numbers — is identical across drills and lives here once.
 // ============================================================
 
-import { batch, createSignal } from 'solid-js'
+import { batch, createSignal, onCleanup } from 'solid-js'
 import { playTierSfx } from '@/features/exercises/feedback'
 import type { EarBankItem } from '@/lib/ear/banks'
 import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
+import { REVEAL_TIMING } from '@/lib/ear/timing'
 import { creditEarSession, earItemStates, earPlayerRating, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
 
 export type IdentificationPhase =
@@ -51,13 +52,18 @@ export interface IdentificationResult {
 
 export const IDENTIFICATION_ROUNDS = 12
 
-const REVEAL_CORRECT_MS = 650
-const REVEAL_WRONG_MS = 1500
+export interface IdentificationOptions {
+  /** Silence anything already sounding. Called on stop and unmount,
+   *  before the phase flips — a prompt committed to the audio clock
+   *  outlives its setTimeout. */
+  cancelAudio?: () => void
+}
 
 export function useIdentificationController(
   drill: IdentificationDrill,
   bank: readonly EarBankItem[],
   makeTrial: (item: EarBankItem) => IdentificationTrial,
+  options?: IdentificationOptions,
 ) {
   const [phase, setPhase] = createSignal<IdentificationPhase>('idle')
   const [round, setRound] = createSignal(0)
@@ -109,6 +115,8 @@ export function useIdentificationController(
     })
 
     await trial.play()
+    // Stop may have landed while the prompt was sounding; arming the
+    // answer here would resurrect a finished run.
     if (cancelled) return
     setPhase('answer')
   }
@@ -151,7 +159,9 @@ export function useIdentificationController(
         setRound((r) => r + 1)
         void playRound()
       },
-      correct ? REVEAL_CORRECT_MS : REVEAL_WRONG_MS,
+      correct
+        ? REVEAL_TIMING.identificationCorrectMs
+        : REVEAL_TIMING.identificationWrongMs,
     )
   }
 
@@ -170,14 +180,20 @@ export function useIdentificationController(
 
   function stop(): void {
     if (phase() === 'idle' || phase() === 'done') return
+    // Cancel FIRST — see playRound()'s post-await guard.
+    cancelled = true
     clearTimeout(timer)
+    options?.cancelAudio?.()
     finish()
   }
 
   function dispose(): void {
     cancelled = true
     clearTimeout(timer)
+    options?.cancelAudio?.()
   }
+
+  onCleanup(dispose)
 
   return {
     phase,

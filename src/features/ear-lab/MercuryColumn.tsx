@@ -32,9 +32,16 @@ interface MercuryColumnProps {
 const TUBE_X = 60
 const TUBE_W = 30
 const TUBE_TOP = 30
+/** The 0 mark. */
 const TUBE_BOTTOM = 292
 const BULB_CY = 306
-const BULB_R = 21
+/** Wide enough to swallow the tube's rounded bottom cap whole — the
+ *  bulb is painted over it, so the tube appears to run INTO the
+ *  bulb instead of being stroked as an oval across its face. */
+const BULB_R = 25
+/** The tube's glass ends at the bulb's centre, hidden inside it. */
+const TUBE_GLASS_TOP = TUBE_TOP - 8
+const TUBE_GLASS_HEIGHT = BULB_CY - TUBE_GLASS_TOP
 
 function yFor(index: number): number {
   const t = Math.max(0, Math.min(INDEX_MAX, index)) / INDEX_MAX
@@ -95,14 +102,15 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
         )}
       </For>
 
-      {/* The glass tube; its top segment goes dashed while faculties
-          are still unmeasured. */}
+      {/* The glass tube. It runs down INTO the bulb; the bulb is
+          painted over its bottom, so no cap is ever stroked across
+          the mercury ball. */}
       <rect
         class={styles.glass}
         x={TUBE_X}
-        y={TUBE_TOP - 8}
+        y={TUBE_GLASS_TOP}
         width={TUBE_W}
-        height={TUBE_BOTTOM - TUBE_TOP + 12}
+        height={TUBE_GLASS_HEIGHT}
         rx={TUBE_W / 2}
       />
       <Show when={props.missingCount > 0}>
@@ -117,14 +125,7 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
         </line>
       </Show>
 
-      {/* Mercury: bulb always charged, column only as calibrated. */}
-      <circle
-        class={styles.mercury}
-        cx={TUBE_X + TUBE_W / 2}
-        cy={BULB_CY}
-        r={BULB_R - 4}
-        fill="url(#ear-mercury)"
-      />
+      {/* Mercury in the tube, only as high as the last calibration. */}
       <Show when={props.calibrated !== null}>
         <rect
           class={styles.mercuryFill}
@@ -135,24 +136,8 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
           rx={(TUBE_W - 10) / 2}
           fill="url(#ear-mercury)"
         />
-      </Show>
-
-      {/* Glass outline + sheen above the fill. */}
-      <rect
-        class={styles.glassStroke}
-        x={TUBE_X}
-        y={TUBE_TOP - 8}
-        width={TUBE_W}
-        height={TUBE_BOTTOM - TUBE_TOP + 12}
-        rx={TUBE_W / 2}
-      />
-      <circle
-        class={styles.glassStroke}
-        cx={TUBE_X + TUBE_W / 2}
-        cy={BULB_CY}
-        r={BULB_R}
-      />
-      <Show when={props.calibrated !== null}>
+        {/* Specular strip on the mercury itself — never on empty
+            glass, which read as a floating white blob. */}
         <rect
           class={styles.mercuryFill}
           x={TUBE_X + 8}
@@ -164,6 +149,31 @@ export function MercuryColumn(props: MercuryColumnProps): JSX.Element {
           opacity="0.28"
         />
       </Show>
+
+      <rect
+        class={styles.glassStroke}
+        x={TUBE_X}
+        y={TUBE_GLASS_TOP}
+        width={TUBE_W}
+        height={TUBE_GLASS_HEIGHT}
+        rx={TUBE_W / 2}
+      />
+
+      {/* The bulb, drawn last: always charged, and opaque enough to
+          hide where the tube ends. */}
+      <circle
+        class={styles.mercury}
+        cx={TUBE_X + TUBE_W / 2}
+        cy={BULB_CY}
+        r={BULB_R - 4}
+        fill="url(#ear-mercury)"
+      />
+      <circle
+        class={styles.glassStroke}
+        cx={TUBE_X + TUBE_W / 2}
+        cy={BULB_CY}
+        r={BULB_R}
+      />
 
       {/* Etched marks: every past calibration, dated. */}
       <For each={shownMarks()}>

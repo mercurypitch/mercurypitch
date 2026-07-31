@@ -6,7 +6,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createMemo, For, onCleanup, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import { isProvisional } from '@/lib/ear/elo'
 import styles from './EarDrill.module.css'
 import type { useIdentificationController } from './use-identification-controller'
@@ -36,8 +36,8 @@ interface IdentificationDrillViewProps {
 export function IdentificationDrillView(
   props: IdentificationDrillViewProps,
 ): JSX.Element {
-  onCleanup(() => props.controller.dispose())
-
+  // No cleanup here: the controller registers its own onCleanup, so
+  // disposing from the view too would just double up.
   const running = () =>
     props.controller.phase() !== 'idle' && props.controller.phase() !== 'done'
 

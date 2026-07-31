@@ -18,6 +18,7 @@ import { createSignal, onCleanup, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import type { LatencyReading } from '@/lib/ear/latency'
 import { aggregateLatency, detectClicks, MAX_TRUSTED_SPREAD_MS, } from '@/lib/ear/latency'
+import { LATENCY_TIMING } from '@/lib/ear/timing'
 import { micManager } from '@/lib/mic-manager'
 import { earLatency, recordLatencyReading } from '@/stores/ear-lab-store'
 import { scheduleClick } from './click-synth'
@@ -26,10 +27,6 @@ import styles from './LatencyWizard.module.css'
 type WizardStatus = 'idle' | 'running' | 'error'
 
 const MIC_CONSUMER = 'ear-latency-wizard'
-const CLICKS = 5
-const CLICK_SPACING_S = 0.6
-const SETTLE_S = 0.35
-const TAIL_S = 0.7
 
 interface Capture {
   samples: Float32Array
@@ -39,7 +36,11 @@ interface Capture {
 
 /** Record the mic through a ScriptProcessor until `stopAt` on the
  *  context clock. Chunks are contiguous, so one concatenated buffer
- *  plus the first chunk's playbackTime maps samples to clock time. */
+ *  plus the first chunk's playbackTime maps samples to clock time.
+ *
+ *  A wall-clock timeout backs the audio-clock stop condition: if the
+ *  processor never fires (dead track, suspended context) the promise
+ *  would otherwise hang and strand the wizard in 'running' forever. */
 function captureUntil(
   ctx: AudioContext,
   stream: MediaStream,
@@ -55,6 +56,30 @@ function captureUntil(
     let firstChunkAt: number | null = null
     let stopped = false
 
+    const teardown = (): void => {
+      processor.onaudioprocess = null
+      processor.disconnect()
+      source.disconnect()
+      sink.disconnect()
+    }
+
+    const finish = (): void => {
+      if (stopped) return
+      stopped = true
+      clearTimeout(bailout)
+      teardown()
+      const total = chunks.reduce((n, c) => n + c.length, 0)
+      const samples = new Float32Array(total)
+      let offset = 0
+      for (const chunk of chunks) {
+        samples.set(chunk, offset)
+        offset += chunk.length
+      }
+      resolve({ samples, startAt: firstChunkAt ?? 0 })
+    }
+
+    const bailout = setTimeout(finish, LATENCY_TIMING.captureTimeoutMs)
+
     processor.onaudioprocess = (event) => {
       if (stopped) return
       // playbackTime = context time of this buffer's first sample; the
@@ -67,20 +92,7 @@ function captureUntil(
       if (firstChunkAt === null) firstChunkAt = at
       chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)))
 
-      if (at + 4096 / ctx.sampleRate >= stopAt) {
-        stopped = true
-        processor.disconnect()
-        source.disconnect()
-        sink.disconnect()
-        const total = chunks.reduce((n, c) => n + c.length, 0)
-        const samples = new Float32Array(total)
-        let offset = 0
-        for (const chunk of chunks) {
-          samples.set(chunk, offset)
-          offset += chunk.length
-        }
-        resolve({ samples, startAt: firstChunkAt ?? 0 })
-      }
+      if (at + 4096 / ctx.sampleRate >= stopAt) finish()
     }
 
     source.connect(processor)
@@ -108,17 +120,17 @@ export function LatencyWizard(): JSX.Element {
 
       const stream = await micManager.acquire(MIC_CONSUMER)
 
-      const t0 = ctx.currentTime + SETTLE_S
+      const t0 = ctx.currentTime + LATENCY_TIMING.settleS
       const scheduled = Array.from(
-        { length: CLICKS },
-        (_, i) => t0 + i * CLICK_SPACING_S,
+        { length: LATENCY_TIMING.clicks },
+        (_, i) => t0 + i * LATENCY_TIMING.spacingS,
       )
       for (const at of scheduled) scheduleClick(ctx, at)
 
       const capture = await captureUntil(
         ctx,
         stream,
-        scheduled[scheduled.length - 1] + TAIL_S,
+        scheduled[scheduled.length - 1] + LATENCY_TIMING.tailS,
       )
       micManager.release(MIC_CONSUMER)
 

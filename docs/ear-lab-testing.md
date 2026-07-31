@@ -130,6 +130,28 @@ Three button drills, 12 rounds each, all sharing one engine.
    tube top, the dashed cap floats above the glass, tube centred, column no
    longer fills the whole first screen.
 
+## 3b. Stop behaviour — regression check
+
+The bug found on 2026-07-31: Stop showed the end card but the clicks kept
+playing, then the question came back. Worth re-checking on every drill.
+
+1. In **each** of Hairline, The Grid, Home and Leap/Stack/Contour: start a
+   run and press **Stop while the sound is still playing**.
+2. Expect: audio cuts within a beat, the end card appears, and **nothing
+   comes back** — no returning question, no further sounds.
+3. Press **Back** mid-run on one drill too: same silence.
+4. A stopped *practice* run should still show a reading (marked
+   "Provisional" if short). A stopped *calibration* must show "nothing was
+   marked" and leave the column untouched.
+
+## 3c. Pacing — the one file to tune
+
+If a drill feels rushed or draggy, all note lengths and gaps live in
+`src/lib/ear/timing.ts`, grouped per drill. Note which drill and roughly how
+much slower/faster you want it, and it is a one-file edit. Changing pacing
+does not change what a drill measures, but big changes are worth a fresh
+calibration since longer gaps make a task genuinely easier.
+
 ## 4. Known limitations (do not file as bugs)
 
 - The Grid is perception-only, so it does not consume the latency wizard's

@@ -9,18 +9,28 @@
 // abandoned calibration is discarded, because a half-measured
 // mark must never hit the column.
 //
+// Stopping CANCELS the run, not just its timer. A stimulus is
+// already committed to the audio clock by the time Stop is
+// pressed, so the drill also gets a cancelStimulus hook to
+// silence what is already scheduled; without both halves, a
+// stopped drill keeps sounding and then re-arms its own question
+// when the in-flight playStimulus() resolves.
+//
 // The drill supplies one hook: playStimulus(level), which may
 // report visual steps (which tone / which click) through the
-// provided setter.
+// provided api.
 // ============================================================
 
-import { batch, createSignal } from 'solid-js'
-import { gradeForScore, playTierSfx } from '@/features/exercises/feedback'
+import { batch, createSignal, onCleanup } from 'solid-js'
+import { gradeForScore } from '@/features/exercises/feedback'
+import { playTierSfx } from '@/features/exercises/feedback'
 import type { CalibrationTrack, PooledThreshold } from '@/lib/ear/calibration'
 import { calibrationReading, createCalibrationTracks, isCalibrationComplete, nextTrackIndex, recordCalibrationTrial, } from '@/lib/ear/calibration'
 import type { ThresholdDrill } from '@/lib/ear/drills'
+import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
+import { REVEAL_TIMING } from '@/lib/ear/timing'
 import { completeCalibrationRun, creditEarSession, recordThresholdReading, } from '@/stores/ear-lab-store'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
@@ -43,15 +53,21 @@ export interface ThresholdRunResult {
 export interface StimulusApi {
   /** Report a visual step (1-based tone/click index) to the view. */
   step: (index: number) => void
-  /** True once the run was torn down — stimulus loops should bail. */
+  /** True once the run was stopped or torn down — stimulus loops
+   *  must check this after every await and bail. */
   cancelled: () => boolean
 }
 
-const REVEAL_MS = 420
+export interface ThresholdRunOptions {
+  /** Silence anything already committed to the audio clock. Called
+   *  on stop and on unmount, before the phase flips. */
+  cancelStimulus?: () => void
+}
 
 export function useThresholdRun(
   drill: ThresholdDrill,
   playStimulus: (level: number, api: StimulusApi) => Promise<void>,
+  options?: ThresholdRunOptions,
 ) {
   const [phase, setPhase] = createSignal<ThresholdRunPhase>('idle')
   const [mode, setMode] = createSignal<ThresholdRunMode>('practice')
@@ -127,6 +143,8 @@ export function useThresholdRun(
       setPhase('stimulus')
     })
     await playStimulus(currentLevel, api)
+    // Stop may have landed while the stimulus was sounding; arming
+    // the answer here would resurrect a finished run.
     if (cancelled) return
     setPhase('answer')
   }
@@ -162,7 +180,7 @@ export function useThresholdRun(
       if (cancelled) return
       setLastCorrect(null)
       void playRound()
-    }, REVEAL_MS)
+    }, REVEAL_TIMING.thresholdMs)
   }
 
   function finish(): void {
@@ -206,7 +224,13 @@ export function useThresholdRun(
 
   function stop(): void {
     if (phase() === 'idle' || phase() === 'done') return
+    // Cancel FIRST: the in-flight playStimulus() checks this when it
+    // resolves, and without it the run would re-arm its question
+    // after the user has already seen the end card.
+    cancelled = true
     clearTimeout(timer)
+    options?.cancelStimulus?.()
+
     if (mode() === 'practice' || isCalibrationComplete(tracks)) {
       finish()
       return
@@ -216,7 +240,9 @@ export function useThresholdRun(
   }
 
   function reset(): void {
+    cancelled = true
     clearTimeout(timer)
+    options?.cancelStimulus?.()
     setPhase('idle')
     setResult(null)
     setLastCorrect(null)
@@ -225,20 +251,20 @@ export function useThresholdRun(
   function dispose(): void {
     cancelled = true
     clearTimeout(timer)
+    options?.cancelStimulus?.()
   }
 
-  /** Letter grade from how far down the drill's 0-1000 scale the
-   *  reading lands (the app's shared grading language). */
+  onCleanup(dispose)
+
+  /** Letter grade from where the reading lands on the drill's own
+   *  0-1000 scale — the same mapping the Mercury Index uses, so a
+   *  grade and a column contribution can never disagree. */
   function grade(): 'S' | 'A' | 'B' | 'C' | 'D' | null {
     const r = result()
     if (!r?.estimate) return null
-    const { novice, expert, curve } = drill.scale
-    const t =
-      curve === 'log'
-        ? (Math.log(r.estimate.value) - Math.log(novice)) /
-          (Math.log(expert) - Math.log(novice))
-        : (r.estimate.value - novice) / (expert - novice)
-    return gradeForScore(Math.max(0, Math.min(1, t)) * 100)
+    return gradeForScore(
+      (scoreReading(r.estimate.value, drill.scale) / INDEX_MAX) * 100,
+    )
   }
 
   return {

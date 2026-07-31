@@ -8,7 +8,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import type { FacultyId } from '@/lib/ear/drills'
 import { FACULTY_LABEL, findThresholdDrill } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
@@ -124,7 +124,9 @@ const DRILL_CARDS: DrillCardDef[] = [
 
 export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
   const calibrated = () => latestCalibration()
-  const estimate = () => practiceIndexEstimate()
+  // Memoized: the hero reads it three times per render and it walks
+  // every drill's readings and ratings to build the composite.
+  const estimate = createMemo(() => practiceIndexEstimate())
 
   const facultyReadout = (faculty: FacultyId): string | null => {
     switch (faculty) {
