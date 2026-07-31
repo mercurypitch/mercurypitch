@@ -901,7 +901,9 @@ async function handleRegister(
         email,
         body.displayName?.trim(),
       )
-      return issueSession(env, row, respond)
+      // Upgrading an anonymous device to a password account creates a real
+      // account: report isNew so the client's signup funnel event fires.
+      return issueSession(env, row, respond, true)
     }
   }
 
@@ -996,7 +998,8 @@ async function resolveGoogleUser(
       await sendWelcomeEmail(env, email, claims.name)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
-        isNew: false,
+        // First-time Google over an anonymous device is account creation.
+        isNew: true,
       }
     }
   }

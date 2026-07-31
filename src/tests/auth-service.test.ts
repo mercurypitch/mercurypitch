@@ -7,9 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'http://api.test',
 }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
+}))
 
-import { hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
+import { trackEvent } from '@/lib/analytics'
+
+const trackEventMock = vi.mocked(trackEvent)
 
 function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
   const payload = {
@@ -41,6 +47,9 @@ function mockFetchOnce(
 
 beforeEach(() => {
   localStorage.clear()
+  sessionStorage.clear()
+  trackEventMock.mockClear()
+  history.replaceState(null, '', '/')
 })
 
 afterEach(() => {
@@ -141,7 +150,9 @@ describe('requireAuth', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it('requests an anonymous token with the persisted device id', async () => {
+  // REQ-SFA-003: anonymous provisioning is not account creation and must
+  // never emit the signup funnel event.
+  it('requests an anonymous token with the persisted device id, without tracking signup', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {
       token: makeToken(3600),
@@ -153,6 +164,7 @@ describe('requireAuth', () => {
     const ok = await requireAuth()
     expect(ok).toBe(true)
     expect(getAuthToken()).not.toBeNull()
+    expect(trackEventMock).not.toHaveBeenCalled()
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
       string,
@@ -207,6 +219,24 @@ describe('requireAuth', () => {
     await loginWithPassword('a@b.com', 'secret123')
     expect(await requireAuth()).toBe(true)
     infoSpy.mockRestore()
+  })
+})
+
+describe('Google redirect signup tracking', () => {
+  it('REQ-SFA-004 fires signup exactly once when gauth_new=1 is present', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
+    )
+
+    consumeGoogleRedirect()
+    consumeGoogleRedirect()
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith('signup')
+    expect(window.location.hash).toBe('#/mirror')
   })
 })
 
