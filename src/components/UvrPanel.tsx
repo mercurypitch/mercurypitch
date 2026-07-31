@@ -23,7 +23,7 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, uvrLengthFactor, } from '@/lib/uvr-api'
+import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
@@ -2260,16 +2260,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     processingTime={sess().processingTime}
                     sessionId={sess().sessionId}
                     originalFileName={sess().originalFile?.name}
-                    splitCostCredits={(() => {
-                      // Long instrumentals pay the same started-block
-                      // surcharge as source songs — quote it on the button.
-                      const base = splitCost()
-                      if (base === undefined) return undefined
-                      return (
-                        base *
-                        uvrLengthFactor(sess().stemMeta?.instrumental?.duration)
-                      )
-                    })()}
+                    splitCostCredits={splitCost()}
                     onStartPractice={(mode) => {
                       void handlePracticeStart(mode)
                     }}

@@ -135,13 +135,25 @@ export async function runStemSplit(
   // (stem-expired) falls through to the classic upload path.
   let started: Awaited<ReturnType<typeof processAudio>> | undefined
   try {
+    // Billing depends on the stem's length; a caller with no metadata
+    // must not silently under-declare a long song, so fall back to
+    // reading it off the stored WAV's header ourselves.
+    let instrumentalBlob: Blob | null = null
+    let duration = options.durationSeconds
+    if (duration === undefined) {
+      instrumentalBlob = await getStemBlob(sessionId, 'instrumental')
+      if (instrumentalBlob !== null) {
+        duration = await blobWavDuration(instrumentalBlob)
+      }
+    }
+
     if (
       options.reuseApiSessionId !== undefined &&
       options.reuseApiSessionId !== ''
     ) {
       const request = buildStemSplitRequest({
         model,
-        durationSeconds: options.durationSeconds,
+        durationSeconds: duration,
       })
       try {
         started = await processAudio(
@@ -163,17 +175,16 @@ export async function runStemSplit(
     }
 
     if (started === undefined) {
-      const instrumental = await getStemBlob(sessionId, 'instrumental')
+      const instrumental =
+        instrumentalBlob ?? (await getStemBlob(sessionId, 'instrumental'))
       if (!instrumental) {
         throw new StemSplitError(
           'No instrumental stem is stored for this session yet.',
         )
       }
-      const duration =
-        options.durationSeconds ?? (await blobWavDuration(instrumental))
       const request = buildStemSplitRequest({
         model,
-        durationSeconds: duration,
+        durationSeconds: duration ?? (await blobWavDuration(instrumental)),
       })
       const file = new File([instrumental], 'instrumental.wav', {
         type: instrumental.type || 'audio/wav',

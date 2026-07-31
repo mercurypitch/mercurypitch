@@ -11,6 +11,7 @@ import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
+import { uvrLengthFactor } from '@/lib/uvr-api'
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { activeStemSplits, EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
@@ -118,8 +119,10 @@ interface ResultViewerProps {
   ) => void
   onClose?: () => void
   onRerunHq?: (sessionId: string, target: 'same' | 'new') => void
-  /** Credit cost of the instrumental split, when known (server pricing).
-   *  Shown on the Split button so a paid second pass is never a surprise. */
+  /** BASE credit cost of the instrumental split, when known (server
+   *  pricing). The viewer multiplies in the long-song length factor —
+   *  it owns the duration knowledge — and shows the result on the Split
+   *  button so a paid second pass is never a surprise. */
   splitCostCredits?: number
 }
 
@@ -242,6 +245,40 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       ? (activeStemSplits()[props.sessionId] ?? null)
       : null
   const splitBusy = () => splitProgress() !== null
+
+  // Sessions completed through the recovery path can lack duration/size in
+  // stemMeta — backfill from the stored blobs' WAV headers so the cards
+  // and the split quote never depend on HOW the session completed.
+  const [coreMeta, setCoreMeta] = createSignal<Record<string, StemMeta>>({})
+  let coreMetaToken = 0
+  createEffect(() => {
+    const sessionId = props.sessionId
+    const have = props.stemMeta
+    const token = ++coreMetaToken
+    setCoreMeta({})
+    if (sessionId === undefined || sessionId === '') return
+    for (const stem of ['vocal', 'instrumental'] as const) {
+      if (have?.[stem]?.duration !== undefined) continue
+      void getStemBlobEntry(sessionId, stem).then((entry) => {
+        if (entry === null) return
+        URL.revokeObjectURL(entry.url)
+        if (token !== coreMetaToken) return
+        setCoreMeta((prev) => ({
+          ...prev,
+          [stem]: { duration: entry.duration, size: entry.size },
+        }))
+      })
+    }
+  })
+
+  const instrumentalDuration = () =>
+    props.stemMeta?.instrumental?.duration ?? coreMeta().instrumental?.duration
+
+  /** What the split will actually debit: base cost × length factor. */
+  const splitQuote = () =>
+    props.splitCostCredits !== undefined
+      ? props.splitCostCredits * uvrLengthFactor(instrumentalDuration())
+      : undefined
   // ── Inline preview player ────────────────────────────────────
   // One shared player for every stem card: Play previews the stem right
   // here (the mixer is reached by selecting stems and mixing), an rAF
@@ -405,7 +442,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         // Split the copy the server still holds in R2 when possible — no
         // re-upload; falls back to the stored blob when expired.
         reuseApiSessionId: session()?.apiSessionId,
-        durationSeconds: props.stemMeta?.instrumental?.duration,
+        // Undefined is fine: runStemSplit then reads the stored WAV's
+        // header itself, so billing never under-declares a long song.
+        durationSeconds: instrumentalDuration(),
       })
       showNotification('Instrumental split into parts', 'success')
     } catch (err) {
@@ -618,7 +657,16 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       <div class="rv-stems-grid">
         <For each={stems()}>
           {(stem) => {
-            const meta = stem.meta ?? props.stemMeta?.[stem.key]
+            const base = props.stemMeta?.[stem.key]
+            const fill = coreMeta()[stem.key]
+            const meta =
+              stem.meta ??
+              (base !== undefined || fill !== undefined
+                ? {
+                    duration: base?.duration ?? fill?.duration,
+                    size: base?.size ?? fill?.size,
+                  }
+                : undefined)
             const isSelected = () => selectedKeys().has(stem.key)
             return (
               <div
@@ -884,16 +932,20 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                     ? 'Run the split again (replaces the parts)'
                     : 'Separate the instrumental into drums, bass, guitar and other'
                 }${
-                  props.splitCostCredits !== undefined
-                    ? ` — ${props.splitCostCredits} credit${props.splitCostCredits === 1 ? '' : 's'}`
+                  splitQuote() !== undefined
+                    ? ` — ${splitQuote()} credit${splitQuote() === 1 ? '' : 's'}${
+                        uvrLengthFactor(instrumentalDuration()) > 1
+                          ? ' (long song)'
+                          : ''
+                      }`
                     : ''
                 }`}
               >
                 <SlidersHorizontal />
                 {partsList().length > 0 ? 'Re-split' : 'Split into parts'}
-                <Show when={props.splitCostCredits !== undefined}>
+                <Show when={splitQuote() !== undefined}>
                   <span class="rv-split-cost">
-                    {props.splitCostCredits}
+                    {splitQuote()}
                     {' cr'}
                   </span>
                 </Show>
