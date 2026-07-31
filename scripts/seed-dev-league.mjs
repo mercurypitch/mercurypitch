@@ -66,8 +66,13 @@ const busyHelp = () =>
     'Your app can keep running throughout — only the worker has to pause.',
   ].join('\n')
 
-/** Is something listening on the db-worker port? */
-function workerRunning() {
+/**
+ * Is something listening on the db-worker port? Advisory only: another
+ * checkout's worker can sit on the port without holding THIS worktree's
+ * sqlite lock, so a listener is a warning, not proof — the authoritative
+ * signal is the SQLITE_BUSY catch in run().
+ */
+function workerListening() {
   try {
     execFileSync(
       'node',
@@ -133,9 +138,12 @@ function query(command) {
   }
 }
 
-if (workerRunning()) {
-  console.error(busyHelp())
-  process.exit(1)
+if (workerListening()) {
+  console.warn(
+    `note: something is listening on :${WORKER_PORT} — if it is THIS ` +
+      "worktree's db-worker, the writes below will fail with the lock help; " +
+      "another checkout's worker is harmless.",
+  )
 }
 
 const q = (s) => String(s).replace(/'/g, "''")
@@ -298,6 +306,13 @@ if (me) {
     `UPDATE userProfiles SET currentLeagueId = 'l3', leaderboardOptIn = 1,
        currentStreak = MAX(currentStreak, 6), longestStreak = MAX(longestStreak, 9)
      WHERE id = '${me.id}'`,
+  )
+  // The self row has a fixed id so --reset can find it — but that means a
+  // rerun after switching accounts leaves it bound to the PREVIOUS user
+  // (INSERT OR IGNORE no-ops on the id), giving the new account a profile
+  // move with no standings row. Evict a stale one first.
+  sql(
+    `DELETE FROM leagueMembership WHERE id = 'dev-mem-self' AND userId != '${me.id}'`,
   )
   sql(
     `INSERT OR IGNORE INTO leagueMembership (id, updatedAt, userId, cohortId, weekStart, points)
