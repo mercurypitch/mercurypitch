@@ -118,6 +118,20 @@ export interface PreviewPlayer {
   dispose(): void
 }
 
+// Every live player registers here so a vite hot-swap can never orphan a
+// playing <audio> element — the swapped-in UI reads "stopped" while the
+// old element plays on with no reachable handle, unstoppable short of a
+// tab kill (2026-07-31: a leaked preview looped through an HMR-heavy
+// session). When this module is hot-replaced, every surviving player is
+// hard-stopped before the new module takes over.
+const livePlayers = new Set<() => void>()
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    for (const hardStop of livePlayers) hardStop()
+    livePlayers.clear()
+  })
+}
+
 export function createPreviewPlayer(
   options: PreviewPlayerOptions = {},
 ): PreviewPlayer {
@@ -249,6 +263,30 @@ export function createPreviewPlayer(
     )
   }
 
+  // Immediate, envelope-free teardown — dispose() and the module's HMR
+  // guard both land here. Detaching src tears down the element's fetch/
+  // decode pipeline so nothing can keep producing audio.
+  const hardStop = () => {
+    clearTimers()
+    wantPlaying = false
+    if (el) {
+      el.pause()
+      el.removeAttribute('src')
+      el.load()
+    }
+    try {
+      gain?.disconnect()
+    } catch {
+      /* already disconnected */
+    }
+    void ctx?.close().catch(() => {})
+    el = null
+    ctx = null
+    gain = null
+    currentUrl = null
+  }
+  livePlayers.add(hardStop)
+
   return {
     play,
     pause,
@@ -265,19 +303,8 @@ export function createPreviewPlayer(
       return wantPlaying
     },
     dispose() {
-      clearTimers()
-      wantPlaying = false
-      el?.pause()
-      try {
-        gain?.disconnect()
-      } catch {
-        /* already disconnected */
-      }
-      void ctx?.close().catch(() => {})
-      el = null
-      ctx = null
-      gain = null
-      currentUrl = null
+      livePlayers.delete(hardStop)
+      hardStop()
     },
   }
 }
