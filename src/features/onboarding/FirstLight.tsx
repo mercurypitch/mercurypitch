@@ -20,7 +20,7 @@ import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { startPageTour } from '@/stores/app-store'
 import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingProgress, recordFirstNote, recordVoiceprint, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
-import { setActiveTab } from '@/stores/ui-store'
+import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
 import { BeatFirstLight } from './beats/BeatFirstLight'
 import { BeatFork } from './beats/BeatFork'
@@ -136,11 +136,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   const handleCreateAccount = () => {
     trackOnboarding('onboarding_account_created')
     leave()
-    // Reuse the real account form rather than shipping a second auth
-    // surface. Follow-up: an inline register step would convert better
-    // than a hand-off, but duplicating a credential form is not
-    // something to do casually.
-    window.location.hash = '#/settings/account'
+    // The shared AuthModal on its register pane - no navigation hand-off.
+    // The old '#/settings/account' hash-jump raced the flow teardown (a
+    // dead first click in testing) and landed on a signed-out settings
+    // section instead of a credential form.
+    openAuthModal('register')
   }
 
   const handleDismissAccount = () => {
