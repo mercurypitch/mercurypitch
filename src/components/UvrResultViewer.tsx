@@ -461,7 +461,12 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     if (p === null) return 'Starting…'
     if (p.phase === 'uploading') return 'Uploading instrumental…'
     if (p.phase === 'saving') return 'Saving stems…'
-    return `Separating… ${Math.round(p.pct)}%`
+    const pct = Math.round(p.pct)
+    // The tail end is the server writing stems with no finer progress —
+    // keep saying "working" instead of parking on a number.
+    return pct >= 90
+      ? `Separating… ${pct}% — still working`
+      : `Separating… ${pct}%`
   }
 
   const stems = () => {

@@ -4844,3 +4844,20 @@ button.server-cost-hint:hover {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
+
+/* Liveness pulse for the session-list progress ring: the last percent of a
+   separation reports no granular progress, and a static ring at ~95% reads
+   as hung. */
+.status-ring-live {
+  animation: uvr-ring-pulse 2s ease-in-out infinite;
+}
+
+@keyframes uvr-ring-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}

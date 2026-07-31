@@ -444,15 +444,42 @@ export function bytesToBase64(bytes: Uint8Array): string {
 
 // ── Fetch wrappers ──────────────────────────────────────────────
 
+/** Per-job execution budget in ms: RunPod kills the job past this. Scaled
+ *  to the declared song length so a 5-minute endpoint default can't kill a
+ *  legitimate 18-minute split mid-upload (2026-07-31: `executionTimeout
+ *  exceeded` after the stems were already separated). 10 min base covers
+ *  cold image pulls; one realtime-second per song-second covers the
+ *  heaviest model (demucs-6s, shifts) plus stem uploads; capped at 30 min. */
+export function jobExecutionTimeoutMs(
+  declaredDurationSeconds?: number,
+): number | undefined {
+  if (
+    declaredDurationSeconds === undefined ||
+    !Number.isFinite(declaredDurationSeconds) ||
+    declaredDurationSeconds <= 0
+  ) {
+    return undefined
+  }
+  return Math.min(1800, 600 + Math.round(declaredDurationSeconds)) * 1000
+}
+
 export async function submitJob(
   cfg: RunpodConfig,
   endpointId: string,
   input: RunpodJobInput,
 ): Promise<RunpodRunResponse> {
+  const executionTimeout = jobExecutionTimeoutMs(
+    input.declared_duration_seconds,
+  )
   const resp = await fetch(runpodEndpointUrl(cfg, endpointId, '/run'), {
     method: 'POST',
     headers: runpodHeaders(cfg),
-    body: JSON.stringify({ input }),
+    body: JSON.stringify({
+      input,
+      ...(executionTimeout !== undefined
+        ? { policy: { executionTimeout } }
+        : {}),
+    }),
   })
   if (!resp.ok) {
     throw new Error(`RunPod submit failed: ${resp.status} ${resp.statusText}`)

@@ -256,6 +256,9 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             viewBox="0 0 24 24"
             width="1em"
             height="1em"
+            // The final stretch reports no granular progress — the pulse
+            // keeps a ring parked at ~95% reading as "alive", not hung.
+            class="status-ring-live"
             style={{ transform: 'rotate(-90deg)' }}
           >
             <circle
@@ -385,8 +388,14 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
             if (st === 'cancelled') return 'Cancelled before completion'
             if (st === 'finalizing') return 'Saving stems…'
             if (st === 'completed') return 'Completed'
-            if (st === 'processing')
-              return `Processing... ${Math.round(session()?.progress ?? 0)}%`
+            if (st === 'processing') {
+              const pct = Math.round(session()?.progress ?? 0)
+              // ≥90% = the server is writing/uploading stems with no finer
+              // progress to report — say so instead of parking on a number.
+              return pct >= 90
+                ? `Finishing up… ${pct}% — still working`
+                : `Processing... ${pct}%`
+            }
             return st ?? 'Idle'
           })()}
         </span>
