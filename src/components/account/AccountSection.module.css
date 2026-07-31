@@ -192,6 +192,30 @@
     inset 0 0 12px rgba(88, 166, 255, 0.08);
 }
 
+/* ── Signed-out card ───────────────────────────────────────────────
+   State line + one action row; the sign-in form itself is the shared
+   AuthModal. */
+.signedOutCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.2));
+}
+
+.signedOutLead {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #eee);
+}
+
+.signedOutCard .buttonRow {
+  margin-top: 4px;
+}
+
 /* ── Signed-in account card ────────────────────────────────────────
    Account type (subtitle) → name (left) + email (right) → name editor. */
 .accountCard {

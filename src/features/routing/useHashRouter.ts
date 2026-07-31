@@ -41,6 +41,11 @@ export interface UseHashRouterDeps {
   showAdminContentStudio: Accessor<boolean>
   /** Current studio section, used to restore a cancelled history navigation. */
   adminContentSection: Accessor<AdminSection>
+  /** Open the password-reset page (token from the emailed link, or null
+   *  for the bare request-a-link form). */
+  openResetPassword: (token: string | null) => void
+  /** Whether that page is open (keeps the tab→hash sync off it). */
+  showResetPassword: Accessor<boolean>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -128,6 +133,10 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.setActiveUvrSessionId(null)
     } else if (route.type === 'admin') {
       deps.dismissWelcome()
+    } else if (route.type === 'reset-password') {
+      // Emailed link landing — the welcome overlay must not cover the form.
+      deps.dismissWelcome()
+      deps.openResetPassword(route.token)
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
@@ -170,7 +179,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection() ||
-      deps.showAdminContentStudio()
+      deps.showAdminContentStudio() ||
+      deps.showResetPassword()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {

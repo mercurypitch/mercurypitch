@@ -408,6 +408,66 @@ export async function resendVerificationEmail(): Promise<void> {
   }
 }
 
+// ── Password reset (forgot / choose-new) ─────────────────────────────
+//
+// Forgot-password emails a single-use link to the app's #/reset-password
+// form; completing it revokes every existing session server-side, so the
+// user signs in fresh with the password they just chose (no auto-login).
+
+/** Pull the server's {"error": …} message out of a failed response. */
+async function extractError(res: Response, fallback: string): Promise<string> {
+  const detail = await res.text().catch(() => '')
+  try {
+    const message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    if (message !== '') return message
+  } catch {
+    /* not JSON */
+  }
+  return `${fallback} (${res.status})`
+}
+
+/** Ask the server to email a password-reset link. The response never
+ *  reveals whether the address has an account. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(`${requireBaseUrl()}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not send the reset email'))
+  }
+}
+
+/** Non-consuming validity probe for an emailed reset token, so the form can
+ *  show "link expired" before the user types anything. Throws on network /
+ *  server failure — callers decide whether to fall through to the form. */
+export async function checkResetToken(token: string): Promise<boolean> {
+  const res = await fetch(
+    `${requireBaseUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`,
+  )
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not check the reset link'))
+  }
+  const data = (await res.json()) as { valid?: boolean }
+  return data.valid === true
+}
+
+/** Complete the reset: consume the token and set the new password. */
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<void> {
+  const res = await fetch(`${requireBaseUrl()}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  })
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not reset the password'))
+  }
+}
+
 export function logout(): void {
   const token = getAuthToken()
   const payload = token != null ? decodeToken(token) : null

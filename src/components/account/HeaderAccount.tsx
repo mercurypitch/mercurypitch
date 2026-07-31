@@ -13,6 +13,7 @@ import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './HeaderAccount.module.css'
 
 function UserIcon() {
@@ -53,8 +54,14 @@ export const HeaderAccount: Component = () => {
   }
 
   function openAccount(): void {
-    // The full account UI lives in Settings → Account.
+    // The full account UI (profile, sign-out) lives in Settings → Account.
     window.location.hash = '#/settings/account'
+  }
+
+  function openSignIn(): void {
+    // Signed out: straight into the shared sign-in dialog — no detour
+    // through Settings.
+    openAuthModal('login')
   }
 
   function handleLogout(): void {
@@ -70,7 +77,7 @@ export const HeaderAccount: Component = () => {
         fallback={
           <button
             class={styles.signInPill}
-            onClick={openAccount}
+            onClick={openSignIn}
             title="Sign in"
             data-testid="header-signin"
           >

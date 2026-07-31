@@ -548,6 +548,120 @@ export function renderEmailVerification(v: EmailVerifyVars): RenderedEmail {
   return { subject, html, text }
 }
 
+// ── Password reset (choose a new password) ───────────────────────────
+export interface PasswordResetVars {
+  /** Account holder's display name; falls back to a neutral greeting. */
+  displayName?: string | null
+  /** Absolute app link (…/#/reset-password?token=…) opening the form. */
+  resetUrl: string
+  /** Link lifetime, for the "expires in" copy. Keep in sync with
+   *  RESET_TOKEN_TTL_MS in auth.ts (the caller passes it through). */
+  ttlHours: number
+}
+
+/** Pure renderer for the "reset your password" message. Image-light like
+ *  the verification email — better inboxing, renders anywhere. */
+export function renderPasswordReset(v: PasswordResetVars): RenderedEmail {
+  const name = v.displayName?.trim()
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
+  const subject = 'Reset your MercuryPitch password'
+  const ttl = v.ttlHours === 1 ? '1 hour' : `${v.ttlHours} hours`
+  const preheader = `Choose a new password — the link expires in ${ttl}.`
+  const url = escapeHtml(v.resetUrl)
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
+    ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+          <tr>
+            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
+
+              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
+                Reset your password
+              </h1>
+              <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:${C.text};">${greeting}</p>
+              <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:${C.muted};">
+                We received a request to reset the password for your
+                MercuryPitch account. Click the button below to choose a
+                new one.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px;">
+                <tr>
+                  <td align="center" bgcolor="${C.blue}" style="border-radius:10px;">
+                    <a href="${url}"
+                      style="display:inline-block; padding:13px 26px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#04121f; text-decoration:none; border-radius:10px;">
+                      Choose a new password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:18px 0 0; font-size:13px; line-height:1.7; color:${C.muted};">
+                The link expires in ${ttl} and can be used once. If the
+                button doesn&#39;t open, paste this into your browser:<br>
+                <a href="${url}" style="color:${C.blue}; text-decoration:none; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;">${url}</a>
+              </p>
+
+              <div style="border-top:1px solid ${C.border}; margin:24px 0 0; padding-top:16px;">
+                <p style="margin:0; font-size:13px; line-height:1.6; color:${C.muted};">
+                  Didn&#39;t request a reset? You can safely ignore this
+                  email — your password won&#39;t change.
+                </p>
+              </div>
+            </td>
+          </tr>
+
+          ${footerHtml('You&#39;re receiving this because a password reset was requested for your account on')}
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  const text = [
+    `Reset your MercuryPitch password`,
+    ``,
+    name ? `Hi ${name},` : `Hi there,`,
+    ``,
+    `We received a request to reset the password for your MercuryPitch account. Open this link to choose a new one (expires in ${ttl}, single use):`,
+    ``,
+    v.resetUrl,
+    ``,
+    `Didn't request a reset? You can safely ignore this email — your password won't change.`,
+    ``,
+    `— MercuryPitch · Learn to sing, together.`,
+    `${ABOUT_URL} · ${REPO_URL}`,
+    `You're receiving this because a password reset was requested for your account on mercurypitch.com.`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 // ── Sending (Resend) ─────────────────────────────────────────────────
 
 export interface ResendConfig {
@@ -665,6 +779,17 @@ export async function sendEmailVerification(
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderEmailVerification(vars))
   if (ok) console.log(`[email] verification sent to ${to}`)
+  return ok
+}
+
+/** Send the reset-your-password message. Best-effort; see resendSend. */
+export async function sendPasswordReset(
+  cfg: ResendConfig,
+  to: string,
+  vars: PasswordResetVars,
+): Promise<boolean> {
+  const ok = await resendSend(cfg, to, renderPasswordReset(vars))
+  if (ok) console.log(`[email] password reset sent to ${to}`)
   return ok
 }
 

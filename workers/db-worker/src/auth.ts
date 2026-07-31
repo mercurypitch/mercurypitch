@@ -10,13 +10,16 @@
 //   GET  /api/auth/google/callback?code=&state=       (Google redirect URI)
 //   GET  /api/auth/verify-email?token=&returnTo=      (email confirm link)
 //   POST /api/auth/resend-verification                (Bearer token)
+//   POST /api/auth/forgot-password { email }          (emails a reset link)
+//   GET  /api/auth/reset-password?token=              (link validity probe)
+//   POST /api/auth/reset-password { token, password } (sets the new password)
 //   GET  /api/auth/me        (Bearer token)
 //
 // `deviceId` is the client's persisted anonymous UUID. Passing it to
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { sendEmailVerification, sendSignupWelcome } from './email'
+import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './email'
 import { shouldTouchLastActive } from './last-active'
 
 export interface Env {
@@ -443,6 +446,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Account erasure is irreversible and needs a valid token anyway; the cap
   // just bounds a scripted sweep against harvested tokens.
   'delete-account': { max: 5, windowMs: 600_000 },      // 5/10min
+  // Password reset: forgot-password sends mail (tight, like resend); the
+  // per-ADDRESS cap (keyed by email, not IP — see handleForgotPassword)
+  // stops inbox-bombing from rotating IPs. reset-password covers the cheap
+  // GET probe + the POST that consumes the token.
+  'forgot-password': { max: 3, windowMs: 600_000 },     // 3/10min per IP
+  'forgot-email': { max: 3, windowMs: 3_600_000 },      // 3/h per address
+  'reset-password': { max: 10, windowMs: 300_000 },     // 10/5min
   // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
   // index.ts. Generous for normal use (session saves, settings, follows) but
   // bounds scripted spam / unbounded row creation. Tunable.
@@ -532,6 +542,8 @@ interface AuthBody {
   password?: string
   displayName?: string
   idToken?: string
+  /** Password-reset token from the emailed link (reset-password). */
+  token?: string
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -639,15 +651,189 @@ async function sendVerificationEmail(
   }
 }
 
-async function handleAnonymous(
+// ── Password reset (forgot-password flow) ────────────────────────────
+//
+// Mirrors the email-verification token lifecycle: 256-bit token, only its
+// SHA-256 stored, one outstanding link per user, single-use, expiry checked
+// at consume time. The link opens the app's #/reset-password form (unlike
+// verify-email there's nothing to confirm by GET alone — the user must type
+// a new password), and completing it revokes every existing session.
+
+const RESET_TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 2 hours
+
+// One message for every dead-token case (unknown, already used, expired,
+// email since changed) — distinguishing them would let an attacker probe
+// token state.
+const RESET_LINK_DEAD = 'This reset link is invalid or has expired'
+
+/** Mint a single-use reset token (superseding any older ones for the user)
+ *  and store only its SHA-256. Returns the raw token for the link. */
+async function createPasswordReset(
+  db: D1Database,
+  userId: string,
+  email: string,
+): Promise<string> {
+  const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
+  const tokenHash = await sha256b64url(token)
+  await db.prepare('DELETE FROM passwordResets WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare(
+      'INSERT INTO passwordResets (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
+    )
+    .bind(
+      tokenHash,
+      userId,
+      email,
+      nowIso(),
+      new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString(),
+    )
+    .run()
+  return token
+}
+
+// Mint a token and email the reset link — best-effort, callers never let a
+// mail failure change the (deliberately uniform) forgot-password response.
+// The link points at the app origin the request came from (validated, prod
+// fallback), so dev resets stay on dev. With Resend unconfigured (local
+// wrangler) the link is logged instead so the flow stays testable.
+async function sendPasswordResetEmail(
+  request: Request,
+  env: Env,
+  user: UserRow,
+): Promise<void> {
+  if (!user.email) return
+  try {
+    const token = await createPasswordReset(env.DB, user.id, user.email)
+    const requestOrigin = request.headers.get('Origin') ?? ''
+    const returnTo = isAllowedReturnTo(requestOrigin, env)
+      ? requestOrigin
+      : 'https://mercurypitch.com'
+    const resetUrl = `${returnTo}/#/reset-password?token=${encodeURIComponent(token)}`
+    if (!env.RESEND_API_KEY) {
+      console.log(`[auth] reset link (email skipped, no RESEND_API_KEY): ${resetUrl}`)
+      return
+    }
+    const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+      .bind(user.id)
+      .first<{ displayName: string | null }>()
+    await sendPasswordReset(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      user.email,
+      {
+        displayName: profile?.displayName,
+        resetUrl,
+        ttlHours: RESET_TOKEN_TTL_MS / 3_600_000,
+      },
+    )
+  } catch (err) {
+    console.error(`[auth] password-reset email failed (non-fatal): ${String(err)}`)
+  }
+}
+
+/** POST /api/auth/forgot-password { email } — always { ok: true } (except
+ *  malformed input), so the response never reveals whether the address has
+ *  an account. */
+async function handleForgotPassword(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+  ctx?: ExecutionContext,
+): Promise<Response> {
+  const email = body.email?.trim().toLowerCase()
+  if (!email || !EMAIL_RE.test(email)) {
+    return respond({ error: 'Valid email required' }, { status: 400 })
+  }
+  // Per-address cap on top of the per-IP one (rotating IPs must not be able
+  // to bomb one inbox). Applied silently — a visible 429 here would reveal
+  // that the address exists.
+  const emailRl = await checkRateLimit(env.DB, email, 'forgot-email')
+  if (emailRl.allowed) {
+    const user = await findUserByEmail(env.DB, email)
+    if (user) {
+      // Mint + send AFTER the response: run inline, the Resend round-trip
+      // makes a known address answer hundreds of ms slower than an unknown
+      // one — a timing oracle that defeats the uniform { ok: true } body.
+      const work = sendPasswordResetEmail(request, env, user)
+      if (ctx !== undefined) ctx.waitUntil(work)
+      else await work // tests / non-CF runtimes
+    }
+  }
+  return respond({ ok: true })
+}
+
+/** GET /api/auth/reset-password?token= — non-consuming validity probe, so
+ *  the reset form can show "link expired" before the user types anything. */
+async function handleResetPasswordCheck(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const token = new URL(request.url).searchParams.get('token') ?? ''
+  if (token === '') return respond({ valid: false })
+  const tokenHash = await sha256b64url(token)
+  const row = await env.DB.prepare(
+    'SELECT userId, email, expiresAt FROM passwordResets WHERE tokenHash = ?',
+  )
+    .bind(tokenHash)
+    .first<{ userId: string; email: string; expiresAt: string }>()
+  if (!row || Date.parse(row.expiresAt) < Date.now()) {
+    return respond({ valid: false })
+  }
+  const user = await findUserById(env.DB, row.userId)
+  const valid = user != null && user.email?.toLowerCase() === row.email.toLowerCase()
+  return respond({ valid })
+}
+
+/** POST /api/auth/reset-password { token, password } — consume the token and
+ *  set the new password. No auto-login: the tokenVersion bump revokes every
+ *  session, and the user signs in fresh with the password they just chose. */
+async function handleResetPassword(
   body: AuthBody,
   env: Env,
   respond: Respond,
 ): Promise<Response> {
-  const id =
-    body.deviceId && UUID_RE.test(body.deviceId)
-      ? body.deviceId
-      : crypto.randomUUID()
+  if (!body.token || !body.password) {
+    return respond({ error: 'Token and password required' }, { status: 400 })
+  }
+  const pwdCheck = isStrongPassword(body.password)
+  if (!pwdCheck.ok) {
+    return respond({ error: pwdCheck.reason }, { status: 400 })
+  }
+  const tokenHash = await sha256b64url(body.token)
+  // Consume atomically: the DELETE both fetches and burns the row, so two
+  // concurrent requests bearing the same token cannot both pass a separate
+  // SELECT before either deletes. Input validation above never touches the
+  // row, so a weak password does not cost the user their link.
+  const row = await env.DB.prepare(
+    'DELETE FROM passwordResets WHERE tokenHash = ? RETURNING userId, email, expiresAt',
+  )
+    .bind(tokenHash)
+    .first<{ userId: string; email: string; expiresAt: string }>()
+  if (!row) return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  if (Date.parse(row.expiresAt) < Date.now()) {
+    return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  }
+  const user = await findUserById(env.DB, row.userId)
+  // The address must still be the one the token was minted for.
+  if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
+    return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  }
+  const passwordHash = await hashPassword(body.password)
+  // Set the password, mark the address verified (they just proved control of
+  // it), and bump tokenVersion so every previously issued session is revoked.
+  // For a Google-linked account this adds email+password as a login method —
+  // same trust as the verified-email auto-link in resolveGoogleUser.
+  await env.DB.prepare(
+    'UPDATE users SET passwordHash = ?, emailVerified = 1, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+  )
+    .bind(passwordHash, nowIso(), user.id)
+    .run()
+  return respond({ ok: true })
+}
+
+async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+  const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
   if (existing) {
     // Knowing the random UUID is the anonymous credential. Upgraded
@@ -1182,6 +1368,8 @@ async function handleLogout(
  */
 const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'sessionRecords', column: 'userId' },
+  // Reset tokens carry the account's email; they die with the account.
+  { table: 'passwordResets', column: 'userId' },
   { table: 'challengeProgress', column: 'userId' },
   { table: 'userBadges', column: 'userId' },
   { table: 'userAchievements', column: 'userId' },
@@ -1248,6 +1436,7 @@ export async function handleAuth(
   env: Env,
   pathname: string,
   respond: Respond,
+  ctx?: ExecutionContext,
 ): Promise<Response | null> {
   if (!pathname.startsWith('/api/auth/')) return null
   if (!env.JWT_SECRET) {
@@ -1295,6 +1484,17 @@ export async function handleAuth(
     }
     return handleVerifyEmail(request, env)
   }
+  if (route === 'reset-password' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'reset-password')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleResetPasswordCheck(request, env, respond)
+  }
   if (request.method !== 'POST') {
     return respond({ error: 'Method not allowed' }, { status: 405 })
   }
@@ -1331,6 +1531,10 @@ export async function handleAuth(
       return handleLogin(body, env, respond)
     case 'google':
       return handleGoogle(body, env, respond)
+    case 'forgot-password':
+      return handleForgotPassword(request, body, env, respond, ctx)
+    case 'reset-password':
+      return handleResetPassword(body, env, respond)
     default:
       return respond({ error: 'Not found' }, { status: 404 })
   }

@@ -1527,7 +1527,11 @@ async function handleWeekly(
 // ── Router ───────────────────────────────────────────────────────────
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     if (!originAllowed(request, env)) {
       return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
@@ -1535,7 +1539,7 @@ export default {
       return new Response(null, { headers: CORS })
     }
     try {
-      return await handleRequest(request, env)
+      return await handleRequest(request, env, ctx)
     } catch (err) {
       // Without this boundary an unhandled throw returns Cloudflare's error
       // page with no CORS headers, which the browser surfaces to the app as
@@ -1564,10 +1568,14 @@ export default {
   },
 }
 
-async function handleRequest(request: Request, env: Env): Promise<Response> {
+async function handleRequest(
+  request: Request,
+  env: Env,
+  ctx?: ExecutionContext,
+): Promise<Response> {
   const url = new URL(request.url)
 
-  const authResponse = await handleAuth(request, env, url.pathname, respond)
+  const authResponse = await handleAuth(request, env, url.pathname, respond, ctx)
   if (authResponse) return authResponse
 
   const billingResponse = await handleBilling(

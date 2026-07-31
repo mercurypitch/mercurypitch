@@ -42,6 +42,11 @@ const AdminContentStudio = lazy(async () =>
     default: m.AdminContentStudio,
   })),
 )
+const ResetPasswordPage = lazy(async () =>
+  import('@/components/account/ResetPasswordPage').then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+)
 const SessionEditor = lazy(async () =>
   import('@/components/SessionEditor').then((m) => ({
     default: m.SessionEditor,
@@ -59,6 +64,7 @@ const ZenPitchStage = lazy(async () =>
 )
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
+import { AuthModal } from '@/components/account/AuthModal'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
@@ -132,7 +138,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { adminContentSection, celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { adminContentSection, celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -765,6 +771,8 @@ const AppShell: Component<AppProps> = (props) => {
     closeAdminContent: requestCloseAdminContentStudio,
     showAdminContentStudio,
     adminContentSection,
+    openResetPassword: (token) => setResetPasswordView({ token }),
+    showResetPassword: () => resetPasswordView() != null,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -3317,6 +3325,21 @@ const AppShell: Component<AppProps> = (props) => {
             />
           </Suspense>
         </Show>
+
+        {/* keyed: a new reset link while the page is open restarts its
+            state machine with the fresh token */}
+        <Show when={resetPasswordView()} keyed>
+          {(view) => (
+            <Suspense>
+              <ResetPasswordPage
+                token={view.token}
+                onClose={() => setResetPasswordView(null)}
+              />
+            </Suspense>
+          )}
+        </Show>
+
+        <AuthModal />
 
         <Notifications />
         <VerifyEmailBanner />

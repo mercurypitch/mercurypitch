@@ -250,6 +250,31 @@ export function requestCloseAdminContentStudio(): boolean {
   return true
 }
 
+// ── Auth modal (sign in / create account / forgot password) ─────
+// One shared dialog, opened from the header pill, the Settings account
+// section, or anywhere else that wants a sign-in. The value picks the
+// pane it opens on; null = closed.
+export type AuthModalMode = 'login' | 'register'
+
+export const [authModalMode, setAuthModalMode] =
+  createSignal<AuthModalMode | null>(null)
+
+export function openAuthModal(mode: AuthModalMode = 'login'): void {
+  setAuthModalMode(mode)
+}
+
+export function closeAuthModal(): void {
+  setAuthModalMode(null)
+}
+
+// ── Password-reset page (#/reset-password[?token=…]) ────────────
+// Full-screen overlay reached from the emailed reset link. token = the
+// link's token, null for the bare request-a-link form; the object is
+// null while the page is closed.
+export const [resetPasswordView, setResetPasswordView] = createSignal<{
+  token: string | null
+} | null>(null)
+
 // ── Onboarding survey (GH #97) ──────────────────────────────────
 // Shown once on real deployments after the welcome screen. A non-empty
 // stored value means the user has already seen (submitted or skipped) it,

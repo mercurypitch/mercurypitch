@@ -36,6 +36,8 @@ function mountRouter(options: {
       openAdminContent,
       closeAdminContent,
       showAdminContentStudio: () => true,
+      openResetPassword: vi.fn(),
+      showResetPassword: () => false,
       adminContentSection: () => options.adminContentSection ?? 'exercises',
       activeTab: () => 'singing',
       activeUvrView: () => 'upload',

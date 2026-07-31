@@ -31,6 +31,9 @@ export type HashRoute =
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
   | { type: 'admin'; section: AdminSection }
+  /** The password-reset form: emailed link landing (#/reset-password?token=…)
+   *  or the bare request-a-link form (#/reset-password). */
+  | { type: 'reset-password'; token: string | null }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -230,6 +233,17 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'admin', section: adminMatch[1] }
   }
 
+  // Match: /reset-password[?token=…] — the emailed reset-link landing, or
+  // the bare request-a-link form when no token rides along. Parsed before
+  // the generic tab match so the token query never hits the tab stasher.
+  const resetMatch = hash.match(/^\/reset-password(?:\?token=([^&]+))?$/)
+  if (resetMatch) {
+    return {
+      type: 'reset-password',
+      token: resetMatch[1] != null ? decodeURIComponent(resetMatch[1]) : null,
+    }
+  }
+
   // Match: /tab-name — optionally carrying a query. Invite links use
   // `#/leaderboard?add=CODE`, and the router canonicalises the hash right
   // after this parse (erasing the query), so the code must be stashed the
@@ -283,6 +297,10 @@ export function buildHash(route: HashRoute): string {
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
     case 'admin':
       return `/admin/${route.section}`
+    case 'reset-password':
+      return route.token != null && route.token !== ''
+        ? `/reset-password?token=${encodeURIComponent(route.token)}`
+        : '/reset-password'
     case 'unknown':
       return '/'
   }

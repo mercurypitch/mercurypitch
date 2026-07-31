@@ -196,6 +196,13 @@ export function KaraokeAccount() {
                   </Show>
                 </button>
               </div>
+              <Show when={mode() === 'login'}>
+                {/* The reset form lives in the studio app (#/reset-password);
+                    same origin, so a plain root-relative link works. */}
+                <a class="kn-forgot-link" href="/#/reset-password">
+                  Forgot password?
+                </a>
+              </Show>
               <Show when={mode() === 'register'}>
                 <PasswordRequirements
                   password={password()}
