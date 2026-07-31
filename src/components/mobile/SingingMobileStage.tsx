@@ -56,6 +56,7 @@ export interface SingingMobileStageProps {
   // Mic
   micActive: () => boolean
   onMicToggle: () => void
+  onOpenZen: () => void
 
   // Transport
   isPlaying: () => boolean
@@ -148,6 +149,13 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
           data-tour="singing-songs"
         >
           {songName()}
+        </button>
+        <button
+          classList={{ [styles.chip]: true, [styles.zenChip]: true }}
+          onClick={() => props.onOpenZen()}
+          aria-label="Open Zen pitch practice"
+        >
+          Zen
         </button>
       </div>
 

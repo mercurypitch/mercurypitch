@@ -124,4 +124,5 @@ export type {
   UvrSessionLyrics,
   WhisperTranscriptionRecord,
   UserSurveyResponse,
+  ZenTakeRecord,
 } from './entities'

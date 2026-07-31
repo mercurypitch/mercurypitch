@@ -5,7 +5,8 @@ import { DAYS_PER_WEEK } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { ringFill, startAscent } from '@/features/path/path-progress'
 import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
-import { startExercise } from '@/stores/ui-store'
+import { getZenExercise } from '@/features/zen/exercise-catalog'
+import { openSingingZen, startExercise } from '@/stores/ui-store'
 import styles from './PathWeekGuide.module.css'
 
 export interface PathWeekGuideProps {
@@ -93,6 +94,24 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
                 title={`Practise ${exercise} now`}
               >
                 {exercise}
+              </button>
+            )}
+          </For>
+          <For each={props.week.zenExercises ?? []}>
+            {(exerciseId) => (
+              <button
+                type="button"
+                class={`${styles.chip} ${styles.zenChip}`}
+                onClick={() =>
+                  openSingingZen({
+                    mode: 'exercise',
+                    exerciseId,
+                    source: 'path',
+                  })
+                }
+                title={`Open ${getZenExercise(exerciseId)?.title ?? 'guided pattern'} in Zen practice`}
+              >
+                Zen · {getZenExercise(exerciseId)?.title ?? exerciseId}
               </button>
             )}
           </For>

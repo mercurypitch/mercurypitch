@@ -9,6 +9,19 @@ import { micActive, setMicActive, setMicError, showNotification, } from '@/store
 import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
+export interface PracticeFrame {
+  /** Monotonic timestamp for this detection frame. */
+  atMs: number
+  /** Current transport position when the frame was detected. */
+  beat: number
+  /** The one result returned by PracticeEngine.update() for this frame. */
+  pitch: PitchResult | null
+  /** Snapshot of the shared microphone state for this frame. */
+  micActive: boolean
+}
+
+export type PracticeFrameListener = (frame: PracticeFrame) => void
+
 export interface PracticeController {
   pitchHistory: Accessor<PitchSample[]>
   setPitchHistory: Setter<PitchSample[]>
@@ -25,6 +38,11 @@ export interface PracticeController {
   setTargetPitch: Setter<number | null>
   countInBeat: Accessor<number>
   isCountingIn: Accessor<boolean>
+  /**
+   * Subscribe to the canonical app-level pitch frame stream.
+   * Consumers must not call PracticeEngine.update() themselves.
+   */
+  subscribeFrames: (listener: PracticeFrameListener) => () => void
 }
 
 interface Deps {
@@ -62,6 +80,14 @@ export function usePracticeController(deps: Deps): PracticeController {
   const [targetPitch, setTargetPitch] = createSignal<number | null>(null)
   const [countInBeat, setCountInBeat] = createSignal(0)
   const [isCountingIn, setIsCountingIn] = createSignal(false)
+  const frameListeners = new Set<PracticeFrameListener>()
+
+  const subscribeFrames = (listener: PracticeFrameListener): (() => void) => {
+    frameListeners.add(listener)
+    return () => {
+      frameListeners.delete(listener)
+    }
+  }
 
   // Wire practice engine callbacks. This controller lives for the whole app
   // session and is the one place the shared mic-state signal gets updated,
@@ -113,6 +139,28 @@ export function usePracticeController(deps: Deps): PracticeController {
     const loop = () => {
       const pitch = practiceEngine.update()
       const beat = playbackRuntime.getCurrentBeat()
+      const micIsActive = practiceEngine.isMicActive()
+      const frame: PracticeFrame = {
+        atMs: performance.now(),
+        beat,
+        pitch,
+        micActive: micIsActive,
+      }
+
+      // PracticeEngine.update() has exactly one app-level owner. Downstream
+      // features observe that result through this stream instead of starting
+      // competing detector loops. One faulty observer must not interrupt the
+      // remaining listeners or the animation loop.
+      for (const listener of [...frameListeners]) {
+        try {
+          listener(frame)
+        } catch (error) {
+          console.error(
+            '[usePracticeController] pitch-frame listener failed:',
+            error,
+          )
+        }
+      }
 
       // Collect the trace only while the transport runs. Without the gate,
       // singing with the mic on after stop/pause kept appending samples at
@@ -154,7 +202,7 @@ export function usePracticeController(deps: Deps): PracticeController {
       recording.processPitchFrame(pitch, beat, editorIsPlaying())
 
       // Capture waveform data when mic is active
-      if (practiceEngine.isMicActive()) {
+      if (micIsActive) {
         setWaveformData(practiceEngine.getWaveformData())
       }
 
@@ -165,6 +213,7 @@ export function usePracticeController(deps: Deps): PracticeController {
 
   onCleanup(() => {
     cancelAnimationFrame(animId)
+    frameListeners.clear()
   })
 
   return {
@@ -183,5 +232,6 @@ export function usePracticeController(deps: Deps): PracticeController {
     setTargetPitch,
     countInBeat,
     isCountingIn,
+    subscribeFrames,
   }
 }

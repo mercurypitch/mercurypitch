@@ -30,7 +30,7 @@ import { bpm, enterFocusMode, micActive, micWaveVisible, setBpm, settings, toggl
 import { setTonicAnchor } from '@/stores/settings-store'
 import type { PracticeSubMode } from '@/types'
 import type { PlaybackMode, SpacedRestMode } from '@/types'
-import { SlidersHorizontal } from '../icons'
+import { SlidersHorizontal, Sparkles } from '../icons'
 
 interface SingingControlBarProps {
   isPlaying: () => boolean
@@ -57,6 +57,7 @@ interface SingingControlBarProps {
   speed: number
   onSpeedChange: (speed: number) => void
   onMicToggle: () => void
+  onOpenZen: () => void
   // A-B Loop
   loopEnabled: Accessor<boolean>
   loopA: Accessor<number>
@@ -311,6 +312,18 @@ export const SingingControlBar: Component<SingingControlBarProps> = (props) => {
         onToggleLoop={props.onToggleLoop}
         onClearLoop={props.onClearLoop}
       />
+
+      {/* Focus */}
+      <button
+        type="button"
+        class={styles.btn}
+        data-testid="zen-btn"
+        title="Open Zen pitch practice"
+        aria-label="Open Zen pitch practice"
+        onClick={() => props.onOpenZen()}
+      >
+        <Sparkles />
+      </button>
 
       {/* Focus */}
       <button
