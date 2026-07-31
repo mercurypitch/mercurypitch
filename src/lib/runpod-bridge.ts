@@ -353,6 +353,22 @@ async function startRunpodJob(
     )
   }
 
+  // Client-declared song length: prices the long-song surcharge into the
+  // quote AND the debit, and rides in the job input so the handler can
+  // verify it against the probed duration (under-declaring gets the job
+  // rejected before separation and auto-refunded — it can't buy a cheap
+  // long job). Garbage values are a hard 400: silently ignoring one would
+  // debit the base price for a job the handler then refuses.
+  const durationHeader = request.headers.get('X-UVR-Duration-Seconds')
+  let declaredDuration: number | undefined
+  if (durationHeader !== null && durationHeader.trim() !== '') {
+    const parsed = Number(durationHeader)
+    if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 86_400) {
+      return json({ error: 'Invalid X-UVR-Duration-Seconds header' }, 400)
+    }
+    declaredDuration = parsed
+  }
+
   // Reject an obviously oversized multipart request before formData() buffers
   // it. Allow bounded room for multipart headers and the small option fields.
   const contentLength = Number(request.headers.get('Content-Length'))
@@ -375,6 +391,7 @@ async function startRunpodJob(
       request.headers.get('Authorization'),
       tier,
       declaredModel,
+      declaredDuration,
     )
     if (!admission.allowed) {
       const status = admission.status ?? 503
@@ -515,6 +532,7 @@ async function startRunpodJob(
     dropStems,
     reconcileResidual,
     residualStem,
+    declaredDurationSeconds: declaredDuration,
   })
 
   // One breadcrumb per dispatch: the session id logged on accept is the
@@ -545,6 +563,7 @@ async function startRunpodJob(
       // input.model is always set (buildJobInput defaults it), so the debit
       // is priced for the model that actually runs.
       input.model,
+      declaredDuration,
     )
     if (!verdict.allowed) {
       await cancelJob(cfg, endpointId, res.id)

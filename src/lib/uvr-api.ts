@@ -109,6 +109,34 @@ export interface ProcessRequest {
    *  tier), 'runpod-cpu' = cheaper tier. The worker rejects unconfigured or
    *  headerless server processing instead of using unmetered compute. */
   provider?: 'runpod' | 'runpod-cpu'
+  /** Song length (X-UVR-Duration-Seconds) — prices the long-song
+   *  surcharge into the quote/debit. The RunPod handler verifies it
+   *  against the probed duration, so under-declaring gets the job
+   *  rejected (and refunded), never under-billed. */
+  duration_seconds?: number
+}
+
+// ── Long-song pricing (client mirror) ─────────────────────────────
+// MIRROR of billing-core.ts (UVR_BASE_MINUTES / UVR_SURCHARGE_BLOCK_MINUTES
+// / uvrLengthFactor) for cost display only — the db-worker computes the
+// authoritative amount, and the handler verifies the declared length.
+
+export const UVR_BASE_MINUTES = 12
+export const UVR_SURCHARGE_BLOCK_MINUTES = 6
+
+/** 1 within the included window, +1 per started block past it — an
+ *  18.0-min song pays 2× the model cost. */
+export function uvrLengthFactor(durationSeconds?: number): number {
+  if (
+    durationSeconds === undefined ||
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds <= 0
+  ) {
+    return 1
+  }
+  const overage = durationSeconds - UVR_BASE_MINUTES * 60
+  if (overage <= 0) return 1
+  return 1 + Math.ceil(overage / (UVR_SURCHARGE_BLOCK_MINUTES * 60))
 }
 
 // Default processing options. `model` is a server-side registry name
@@ -456,6 +484,13 @@ export async function processAudio(
   const headers: Record<string, string> = { ...authHeaders() }
   if (options.provider !== undefined) {
     headers['X-UVR-Provider'] = options.provider
+  }
+  if (options.duration_seconds !== undefined && options.duration_seconds > 0) {
+    // Header, not form field: the worker admits/quotes (incl. the
+    // long-song surcharge) before buffering the multipart body.
+    headers['X-UVR-Duration-Seconds'] = String(
+      Math.round(options.duration_seconds),
+    )
   }
   if (options.model !== undefined) {
     // The worker admits/quotes the job before buffering the multipart body.

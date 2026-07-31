@@ -207,6 +207,15 @@ describe('buildJobInput', () => {
     expect('drop_stems' in input).toBe(false)
     expect('reconcile_residual' in input).toBe(false)
     expect('residual_stem' in input).toBe(false)
+    expect('declared_duration_seconds' in input).toBe(false)
+  })
+
+  it('forwards the declared duration for handler-side billing verification', () => {
+    const input = buildJobInput({
+      audioBase64: 'AAAA',
+      declaredDurationSeconds: 1080,
+    })
+    expect(input.declared_duration_seconds).toBe(1080)
   })
 })
 

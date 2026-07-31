@@ -208,6 +208,11 @@ export interface RunpodJobInput {
   drop_stems?: string[]
   reconcile_residual?: boolean
   residual_stem?: string
+  /** Client-declared song length the job was BILLED for. The handler
+   *  probes the real duration and rejects (cheap, auto-refunded) when the
+   *  actual billing factor exceeds the declared one — see
+   *  _billing_blocks in runpod/handler.py. */
+  declared_duration_seconds?: number
 }
 
 export interface BuildJobInputParams {
@@ -224,6 +229,7 @@ export interface BuildJobInputParams {
   dropStems?: string[]
   reconcileResidual?: boolean
   residualStem?: string
+  declaredDurationSeconds?: number
 }
 
 export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
@@ -252,6 +258,9 @@ export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
     input.reconcile_residual = p.reconcileResidual
   }
   if (p.residualStem !== undefined) input.residual_stem = p.residualStem
+  if (p.declaredDurationSeconds !== undefined) {
+    input.declared_duration_seconds = p.declaredDurationSeconds
+  }
   return input
 }
 

@@ -2059,6 +2059,17 @@
   white-space: nowrap;
 }
 
+/* Long-song surcharge marker on a queued item ("18 min · 2x credits") —
+   priced per started block past the included length, quoted before
+   Process is pressed. */
+.uvr-queue-long-song {
+  flex-shrink: 0;
+  color: var(--warning, #f59e0b);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .uvr-queue-message::before {
   content: '·';
   margin-right: 0.55rem;

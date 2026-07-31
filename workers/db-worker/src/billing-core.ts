@@ -132,16 +132,49 @@ const UVR_MODEL_ALIASES: Record<string, UvrModelName> = {
   'UVR-MDX-NET-Inst_HQ_3.onnx': 'mdx',
 }
 
-/** Credit cost of one job: tier base × the model's multiplier. Absent or
- *  unknown models charge the base — an older main worker that doesn't send
- *  a model is running the old MDX default, and pricing must never turn a
- *  version skew into a refused job. */
-export function uvrJobCost(tierCredits: number, model?: string): number {
-  if (model === undefined || model === '') return tierCredits
-  const key = UVR_MODEL_ALIASES[model] ?? model
-  const mult =
-    (UVR_MODEL_CREDIT_MULTIPLIERS as Record<string, number>)[key] ?? 1
-  return tierCredits * mult
+/** Song length included in the base price. Mirrors the RunPod handler's
+ *  UVR_MAX_INPUT_MINUTES default — with a declared duration the handler
+ *  cap is raised and length is priced instead of rejected. */
+export const UVR_BASE_MINUTES = 12
+/** Each STARTED block of this many minutes past the base adds one extra
+ *  multiple of the model cost (an 18.0-min song costs 2×). */
+export const UVR_SURCHARGE_BLOCK_MINUTES = 6
+
+/** Length multiplier: 1 within the base window, +1 per started surcharge
+ *  block past it. Unknown/absent duration charges the base — the handler
+ *  independently probes the real length and rejects a job whose actual
+ *  billing factor exceeds the declared one, so under-declaring cannot buy
+ *  a cheap long job. */
+export function uvrLengthFactor(durationSeconds?: number): number {
+  if (
+    durationSeconds === undefined ||
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds <= 0
+  ) {
+    return 1
+  }
+  const overage = durationSeconds - UVR_BASE_MINUTES * 60
+  if (overage <= 0) return 1
+  return 1 + Math.ceil(overage / (UVR_SURCHARGE_BLOCK_MINUTES * 60))
+}
+
+/** Credit cost of one job: tier base × the model's multiplier × the length
+ *  factor. Absent or unknown models charge the base — an older main worker
+ *  that doesn't send a model is running the old MDX default, and pricing
+ *  must never turn a version skew into a refused job. */
+export function uvrJobCost(
+  tierCredits: number,
+  model?: string,
+  durationSeconds?: number,
+): number {
+  const modelCost =
+    model === undefined || model === ''
+      ? tierCredits
+      : tierCredits *
+        ((UVR_MODEL_CREDIT_MULTIPLIERS as Record<string, number>)[
+          UVR_MODEL_ALIASES[model] ?? model
+        ] ?? 1)
+  return modelCost * uvrLengthFactor(durationSeconds)
 }
 
 /** Absolute per-model credit costs for the pricing endpoint (UI display),

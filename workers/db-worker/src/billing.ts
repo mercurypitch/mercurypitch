@@ -400,22 +400,32 @@ interface DebitBody {
   /** Registry model name (e.g. "roformer") — scales the tier's base cost
    *  by the model's credit multiplier. Absent = base cost. */
   model?: string
+  /** Client-declared song length — adds the long-song surcharge blocks
+   *  (uvrLengthFactor). The RunPod handler probes the REAL duration and
+   *  rejects a job whose actual factor exceeds the declared one, so this
+   *  can only over-pay, never under-pay. Absent = base factor. */
+  durationSeconds?: number
 }
 
 const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
+
+/** Sane declared-duration bounds: positive, finite, under a day. */
+const isValidDuration = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 && value < 86_400
 
 async function getUvrQuote(
   env: Env,
   userId: string,
   tier: 'gpu' | 'cpu',
   model?: string,
+  durationSeconds?: number,
 ): Promise<{ cost: number; balance: number }> {
   const plan = await env.DB.prepare(
     'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
   )
     .bind(UVR_TIER_PLAN_IDS[tier])
     .first<{ credits: number | null }>()
-  const cost = uvrJobCost(plan?.credits ?? 0, model)
+  const cost = uvrJobCost(plan?.credits ?? 0, model, durationSeconds)
   const ledger = await env.DB.prepare(
     'SELECT delta FROM creditLedger WHERE userId = ?',
   )
@@ -438,9 +448,11 @@ async function handleUvrAdmission(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: Pick<DebitBody, 'tier' | 'model'>
+  let body: Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
   try {
-    body = await request.json<Pick<DebitBody, 'tier' | 'model'>>()
+    body = await request.json<
+      Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
+    >()
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
   }
@@ -449,6 +461,9 @@ async function handleUvrAdmission(
   }
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
+  }
+  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+    return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
   }
 
   const rateKey = `user:${auth.userId}`
@@ -468,7 +483,13 @@ async function handleUvrAdmission(
     }
   }
 
-  const quote = await getUvrQuote(env, auth.userId, body.tier, body.model)
+  const quote = await getUvrQuote(
+    env,
+    auth.userId,
+    body.tier,
+    body.model,
+    body.durationSeconds,
+  )
   if (quote.cost <= 0) {
     return respond(
       { error: 'Server processing metering is unavailable' },
@@ -517,12 +538,16 @@ async function handleDebit(
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
   }
+  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+    return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
+  }
 
   const { cost, balance } = await getUvrQuote(
     env,
     auth.userId,
     body.tier,
     body.model,
+    body.durationSeconds,
   )
 
   if (cost <= 0) {

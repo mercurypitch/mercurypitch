@@ -1,5 +1,6 @@
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { audioDurationSecs } from './uvr-processing-pipeline'
 
 export const MAX_UVR_UPLOAD_QUEUE_ITEMS = 15
 
@@ -20,6 +21,10 @@ export interface UvrUploadQueueItem {
   progress: number
   sessionId?: string
   message?: string
+  /** Probed async right after enqueue (audio metadata only). Feeds the
+   *  long-song surcharge display; absent while probing or when the probe
+   *  failed — the server then applies its own duration rules. */
+  durationSeconds?: number
 }
 
 export interface UvrUploadQueueOutcome {
@@ -119,15 +124,26 @@ export function createUvrUploadQueue(
     const available = Math.max(0, maxItems - items().length)
     const accepted = files.slice(0, available)
     if (accepted.length > 0) {
-      setItems((current) => [
-        ...current,
-        ...accepted.map((file) => ({
-          id: createId(),
-          file,
-          status: 'queued' as const,
-          progress: 0,
-        })),
-      ])
+      const newItems = accepted.map((file) => ({
+        id: createId(),
+        file,
+        status: 'queued' as const,
+        progress: 0,
+      }))
+      setItems((current) => [...current, ...newItems])
+      // Fire-and-forget duration probes so long songs can show their
+      // surcharge before Process is pressed. Metadata-only decode; a
+      // failed probe simply leaves the field unset.
+      for (const item of newItems) {
+        void audioDurationSecs(item.file).then((secs) => {
+          if (secs === null) return
+          setItems((current) =>
+            current.map((it) =>
+              it.id === item.id ? { ...it, durationSeconds: secs } : it,
+            ),
+          )
+        })
+      }
     }
     return { added: accepted.length, overflow: files.length - accepted.length }
   }

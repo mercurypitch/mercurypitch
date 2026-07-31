@@ -51,6 +51,7 @@ from __future__ import annotations
 import base64
 import glob
 import logging
+import math
 import os
 import re
 import time
@@ -200,6 +201,25 @@ MAX_INPUT_BYTES = int(os.getenv("UVR_MAX_INPUT_BYTES", str(100 * 1024 * 1024)))
 # job then errors cheaply (download + probe only) and the worker auto-refunds
 # the credit. 0 disables the cap.
 MAX_INPUT_MINUTES = float(os.getenv("UVR_MAX_INPUT_MINUTES", "12"))
+
+# Long-song billing blocks — MUST mirror billing-core.ts (UVR_BASE_MINUTES /
+# UVR_SURCHARGE_BLOCK_MINUTES). Songs past the base window pay one extra
+# multiple of the model cost per STARTED block; the worker debits on the
+# CLIENT-declared duration, and _billing_blocks() below is how this handler
+# refuses a job whose probed duration lands in a higher block than paid for.
+BILLING_BASE_MINUTES = float(os.getenv("UVR_BILLING_BASE_MINUTES", "12"))
+BILLING_BLOCK_MINUTES = float(os.getenv("UVR_BILLING_BLOCK_MINUTES", "6"))
+
+
+def _billing_blocks(duration_seconds: float) -> int:
+    """Billing factor for a song length: 1 in the base window, +1 per
+    started surcharge block past it. Mirrors uvrLengthFactor()."""
+    if not duration_seconds or duration_seconds <= 0:
+        return 1
+    overage = duration_seconds - BILLING_BASE_MINUTES * 60
+    if overage <= 0:
+        return 1
+    return 1 + math.ceil(overage / (BILLING_BLOCK_MINUTES * 60))
 
 # Minimum input duration. RoFormer models process ~11 s windows; a shorter
 # input yields zero chunks in audio-separator 0.44.2 and dies mid-separation
@@ -838,6 +858,33 @@ def handler(job: dict) -> dict:
                     f"separation. The limit is {MAX_INPUT_MINUTES:.0f} minutes."
                 )
             }
+        # Billing verification: the worker debits on the CLIENT-declared
+        # duration. If the probed song lands in a HIGHER billing block than
+        # was declared (= paid for), refuse before the expensive separation
+        # — the error path auto-refunds, so an honest mistake costs nothing
+        # and a dishonest declaration buys nothing. Fail-open on a failed
+        # probe (0.0), same as the caps.
+        declared = float(job_input.get("declared_duration_seconds") or 0)
+        if (
+            declared > 0
+            and in_duration > 0
+            and _billing_blocks(in_duration) > _billing_blocks(declared)
+        ):
+            logger.warning(
+                "Job %s rejected: probed %.1f min exceeds the declared "
+                "%.1f min billing block",
+                job_id,
+                in_duration / 60,
+                declared / 60,
+            )
+            return {
+                "error": (
+                    f"The song is {in_duration / 60:.1f} min but was "
+                    f"submitted as {declared / 60:.1f} min — the price "
+                    f"depends on length. Please retry the upload."
+                )
+            }
+
         # Same probe, opposite bound (probe failure = 0.0 stays fail-open).
         if MIN_INPUT_SECONDS > 0 and 0 < in_duration < MIN_INPUT_SECONDS:
             logger.warning(

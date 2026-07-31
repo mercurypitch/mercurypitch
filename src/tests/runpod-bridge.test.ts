@@ -625,6 +625,49 @@ describe('handleRunpodRequest — metering', () => {
     })
   })
 
+  it('400s a garbage duration header instead of silently base-billing', async () => {
+    for (const bad of ['abc', '-5', '0', '999999']) {
+      const { request, url } = processReq('/api/uvr/process', {
+        headers: {
+          'x-uvr-provider': 'runpod',
+          'x-uvr-duration-seconds': bad,
+        },
+        file: smallFile(),
+      })
+      const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+      expect(res?.status).toBe(400)
+    }
+  })
+
+  it('prices the declared duration into the quote, the debit, and the job', async () => {
+    const calls = mockRoutes({
+      '/api/billing/uvr-admit': { body: { allowed: true } },
+      '/run': { body: { id: 'job-long' } },
+      '/api/billing/debit': { body: { debited: 2, balance: 8 } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: {
+        'x-uvr-provider': 'runpod',
+        Authorization: 'Bearer tok',
+        'x-uvr-duration-seconds': '1080',
+      },
+      file: smallFile(),
+    })
+
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, METER)
+    expect(res?.status).toBe(200)
+    const admit = calls.find((c) => c.url.includes('/api/billing/uvr-admit'))
+    expect(JSON.parse(admit?.init?.body as string).durationSeconds).toBe(1080)
+    const debit = calls.find((c) => c.url.includes('/api/billing/debit'))
+    expect(JSON.parse(debit?.init?.body as string).durationSeconds).toBe(1080)
+    // The handler re-verifies the declared length against the probed one —
+    // it must reach the job input.
+    const run = calls.find((c) => c.url.includes('/run'))
+    expect(
+      JSON.parse(run?.init?.body as string).input.declared_duration_seconds,
+    ).toBe(1080)
+  })
+
   it('debits with the explicitly requested model', async () => {
     const calls = mockRoutes({
       '/run': { body: { id: 'job-2' } },

@@ -3117,19 +3117,21 @@ export const StemMixerStyles: string = `
 }
 
 /* ── Expanded: the classic deck ── */
-/* Wrap into extra rows first (vertical space is usually free in the side
-   panel); the horizontal scroll only engages when a single strip is wider
-   than the panel itself. */
+/* A real grid, not flex-wrap: with an odd strip count the leftover strip
+   must sit exactly under the column above it — flex centers the last row
+   and the lone fader looked misaligned. Wraps into extra rows first
+   (vertical space is usually free in the side panel). */
 .sm-strips-expanded .sm-strips-body {
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  justify-items: center;
   overflow-x: auto;
   padding-bottom: 0.25rem;
   scrollbar-width: thin;
 }
 
 .sm-strips-expanded .sm-stem-strip {
-  flex: 1 1 5rem;
+  width: 100%;
   min-width: 5rem;
   max-width: 9rem;
   flex-direction: column;

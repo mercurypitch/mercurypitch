@@ -228,5 +228,32 @@ def test_reconciliation_matches_mono_input_to_stereo_stems(handler, tmp_path):
     assert np.abs((other + drums) - _stereo(loud)).max() < 1e-6
 
 
+# ── Long-song billing blocks (mirror of billing-core.ts uvrLengthFactor) ──
+
+
+def test_billing_blocks_base_window(handler):
+    assert handler._billing_blocks(0) == 1
+    assert handler._billing_blocks(-5) == 1
+    assert handler._billing_blocks(3.5 * 60) == 1
+    assert handler._billing_blocks(handler.BILLING_BASE_MINUTES * 60) == 1
+
+
+def test_billing_blocks_started_blocks(handler):
+    base = handler.BILLING_BASE_MINUTES * 60
+    block = handler.BILLING_BLOCK_MINUTES * 60
+    assert handler._billing_blocks(base + 1) == 2
+    assert handler._billing_blocks(base + block) == 2
+    assert handler._billing_blocks(base + block + 1) == 3
+    assert handler._billing_blocks(base + 3 * block) == 4
+
+
+def test_billing_constants_match_worker_defaults(handler):
+    # billing-core.ts: UVR_BASE_MINUTES = 12, UVR_SURCHARGE_BLOCK_MINUTES = 6.
+    # The worker debits on these numbers; the handler must reject on the
+    # SAME block boundaries or honest jobs get refused / cheap jobs slip by.
+    assert handler.BILLING_BASE_MINUTES == 12
+    assert handler.BILLING_BLOCK_MINUTES == 6
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

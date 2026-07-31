@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_MODEL_CREDIT_MULTIPLIERS, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_BASE_MINUTES, UVR_MODEL_CREDIT_MULTIPLIERS, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrLengthFactor, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
 
 /** Expected uvrModelCredits output for a given tier base, derived from the
  *  multiplier map so adding a registry model doesn't break these tests —
@@ -120,6 +120,39 @@ describe('uvrJobCost / uvrModelCredits', () => {
     // collapse to a constant.
     expect(uvrModelCredits(1).roformer).toBe(1)
     expect(uvrModelCredits(1).ensemble).toBe(2)
+  })
+})
+
+describe('uvrLengthFactor — long-song surcharge blocks', () => {
+  const min = (m: number) => m * 60
+
+  it('charges the base within the included window', () => {
+    expect(uvrLengthFactor(undefined)).toBe(1)
+    expect(uvrLengthFactor(0)).toBe(1)
+    expect(uvrLengthFactor(min(3.5))).toBe(1)
+    expect(uvrLengthFactor(min(UVR_BASE_MINUTES))).toBe(1)
+  })
+
+  it('adds one multiple per STARTED block past the base', () => {
+    expect(uvrLengthFactor(min(UVR_BASE_MINUTES) + 1)).toBe(2)
+    expect(uvrLengthFactor(min(18))).toBe(2)
+    expect(uvrLengthFactor(min(18) + 1)).toBe(3)
+    expect(uvrLengthFactor(min(24))).toBe(3)
+    expect(uvrLengthFactor(min(30))).toBe(4)
+  })
+
+  it('treats garbage durations as the base factor', () => {
+    expect(uvrLengthFactor(Number.NaN)).toBe(1)
+    expect(uvrLengthFactor(-30)).toBe(1)
+    expect(uvrLengthFactor(Number.POSITIVE_INFINITY)).toBe(1)
+  })
+
+  it('multiplies into the job cost together with the model', () => {
+    // An 18-minute Full-band-quality job: base 1 × demucs-6s 2 × length 2.
+    expect(uvrJobCost(1, 'demucs-6s', min(18))).toBe(4)
+    expect(uvrJobCost(1, 'roformer', min(18))).toBe(2)
+    expect(uvrJobCost(1, 'roformer', min(5))).toBe(1)
+    expect(uvrJobCost(1, undefined, min(18))).toBe(2)
   })
 
   it('prices the multi-stem Demucs tiers above the RoFormer base', () => {
