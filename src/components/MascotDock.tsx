@@ -2,6 +2,8 @@ import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { MascotProps } from '@/components/Mascot'
 import { Mascot } from '@/components/Mascot'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import styles from './MascotDock.module.css'
 
 /**
@@ -73,45 +75,42 @@ export const MascotDock: Component<MascotDockProps> = (props) => {
     saveCorner(c)
   }
 
-  const onPointerDown = (e: PointerEvent) => {
-    if (el === undefined) return
-    const r = el.getBoundingClientRect()
-    grabX = e.clientX - r.left
-    grabY = e.clientY - r.top
-    setDrag({ x: r.left, y: r.top })
-    el.setPointerCapture(e.pointerId)
-    e.preventDefault()
-  }
-
-  const onPointerMove = (e: PointerEvent) => {
-    if (drag() === null || el === undefined) return
-    const m = 6
-    const w = el.offsetWidth
-    const h = el.offsetHeight
-    const x = Math.min(
-      Math.max(m, e.clientX - grabX),
-      window.innerWidth - w - m,
-    )
-    const y = Math.min(
-      Math.max(m, e.clientY - grabY),
-      window.innerHeight - h - m,
-    )
-    setDrag({ x, y })
-  }
-
-  const onPointerUp = (e: PointerEvent) => {
-    const d = drag()
-    if (d === null || el === undefined) return
-    el.releasePointerCapture(e.pointerId)
-    place(
-      nearestCorner(
-        d.x + el.offsetWidth / 2,
-        d.y + el.offsetHeight / 2,
-        window.innerWidth,
-        window.innerHeight,
-      ),
-    )
-    setDrag(null)
+  const dockDrag: DragGestureOptions = {
+    onStart: (event) => {
+      if (el === undefined) return
+      const rect = el.getBoundingClientRect()
+      grabX = event.clientX - rect.left
+      grabY = event.clientY - rect.top
+      setDrag({ x: rect.left, y: rect.top })
+    },
+    onMove: (event) => {
+      if (drag() === null || el === undefined) return
+      const margin = 6
+      const x = Math.min(
+        Math.max(margin, event.clientX - grabX),
+        window.innerWidth - el.offsetWidth - margin,
+      )
+      const y = Math.min(
+        Math.max(margin, event.clientY - grabY),
+        window.innerHeight - el.offsetHeight - margin,
+      )
+      setDrag({ x, y })
+    },
+    onEnd: (_event, reason) => {
+      const currentDrag = drag()
+      if (currentDrag === null || el === undefined) return
+      if (reason === 'pointerup') {
+        place(
+          nearestCorner(
+            currentDrag.x + el.offsetWidth / 2,
+            currentDrag.y + el.offsetHeight / 2,
+            window.innerWidth,
+            window.innerHeight,
+          ),
+        )
+      }
+      setDrag(null)
+    },
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -129,7 +128,10 @@ export const MascotDock: Component<MascotDockProps> = (props) => {
 
   return (
     <div
-      ref={el}
+      ref={(element) => {
+        el = element
+        dragGesture(element, () => dockDrag)
+      }}
       class={`${styles.dock} ${styles[corner()]} ${
         drag() !== null ? styles.dragging : ''
       }`}
@@ -138,9 +140,6 @@ export const MascotDock: Component<MascotDockProps> = (props) => {
       tabindex="0"
       aria-label="Merc — drag to reposition, or press Enter to move to the next corner"
       title="Drag Merc anywhere"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
       onKeyDown={onKeyDown}
     >
       <Mascot

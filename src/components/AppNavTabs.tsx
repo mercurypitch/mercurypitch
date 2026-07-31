@@ -1,5 +1,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
@@ -416,6 +418,41 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   const updateScrollable = (): void => {
     setScrollable(navRef.scrollWidth > navRef.clientWidth + 1)
   }
+  let dragged = false
+  let dragResetTimer: ReturnType<typeof setTimeout> | undefined
+  let startX = 0
+  let startScroll = 0
+  const navDrag: DragGestureOptions = {
+    // Touch deliberately keeps the bar's native horizontal momentum scroll.
+    touchAction: 'pan-x',
+    preventDefault: false,
+    activationDistance: 6,
+    canStart: (event) => event.pointerType === 'mouse' && event.button === 0,
+    onStart: (event) => {
+      if (dragResetTimer !== undefined) {
+        clearTimeout(dragResetTimer)
+        dragResetTimer = undefined
+      }
+      dragged = true
+      startX = event.clientX
+      startScroll = navRef.scrollLeft
+      navRef.classList.add('dragging')
+    },
+    onMove: (event) => {
+      const dx = event.clientX - startX
+      navRef.scrollLeft = startScroll - dx
+      event.preventDefault()
+    },
+    onEnd: () => {
+      navRef.classList.remove('dragging')
+      // Keep suppression armed for the click synthesized by pointerup, then
+      // recover even when cancellation/out-of-window release emits no click.
+      dragResetTimer = setTimeout(() => {
+        dragged = false
+        dragResetTimer = undefined
+      }, 0)
+    },
+  }
   createEffect(() => {
     collapsed() // re-measure overflow when a group collapses/expands
     practiceScope() // ...and when scope/UI mode change the visible tabs
@@ -434,53 +471,20 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
       e.preventDefault()
     }
 
-    let down = false
-    let dragged = false
-    let startX = 0
-    let startScroll = 0
-    const DRAG_THRESHOLD = 6
-    const onPointerDown = (e: PointerEvent): void => {
-      if (e.pointerType !== 'mouse' || e.button !== 0) return
-      down = true
-      dragged = false
-      startX = e.clientX
-      startScroll = el.scrollLeft
-    }
-    const onPointerMove = (e: PointerEvent): void => {
-      if (!down) return
-      const dx = e.clientX - startX
-      if (!dragged && Math.abs(dx) > DRAG_THRESHOLD) {
-        dragged = true
-        el.classList.add('dragging')
-        try {
-          el.setPointerCapture(e.pointerId)
-        } catch {
-          /* setPointerCapture can throw if the pointer was already released */
-        }
-      }
-      if (dragged) {
-        el.scrollLeft = startScroll - dx
-        e.preventDefault()
-      }
-    }
-    const endDrag = (): void => {
-      down = false
-      el.classList.remove('dragging')
-    }
     // Swallow the click that fires after a drag so panning never activates a tab.
     const onClickCapture = (e: MouseEvent): void => {
       if (dragged) {
         e.stopPropagation()
         e.preventDefault()
         dragged = false
+        if (dragResetTimer !== undefined) {
+          clearTimeout(dragResetTimer)
+          dragResetTimer = undefined
+        }
       }
     }
 
     el.addEventListener('wheel', onWheel, { passive: false })
-    el.addEventListener('pointerdown', onPointerDown)
-    el.addEventListener('pointermove', onPointerMove)
-    el.addEventListener('pointerup', endDrag)
-    el.addEventListener('pointercancel', endDrag)
     el.addEventListener('click', onClickCapture, true)
 
     const ro = new ResizeObserver(updateScrollable)
@@ -489,13 +493,10 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
 
     onCleanup(() => {
       el.removeEventListener('wheel', onWheel)
-      el.removeEventListener('pointerdown', onPointerDown)
-      el.removeEventListener('pointermove', onPointerMove)
-      el.removeEventListener('pointerup', endDrag)
-      el.removeEventListener('pointercancel', endDrag)
       el.removeEventListener('click', onClickCapture, true)
       ro.disconnect()
       window.removeEventListener('resize', updateScrollable)
+      if (dragResetTimer !== undefined) clearTimeout(dragResetTimer)
     })
   })
 
@@ -506,7 +507,10 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   return (
     <nav
       id="app-tabs"
-      ref={navRef}
+      ref={(element) => {
+        navRef = element
+        dragGesture(element, () => navDrag)
+      }}
       classList={{
         'tabs-scrollable': scrollable(),
         'tabs-simple': uiMode() === 'simple',
