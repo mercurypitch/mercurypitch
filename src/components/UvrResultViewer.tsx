@@ -3,7 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createResource, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { hasValidToken } from '@/db/services/auth-service'
+import { fetchBillingMe } from '@/db/services/billing-service'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { StemBlobEntry } from '@/db/services/uvr-service'
 import { getStemBlobEntry } from '@/db/services/uvr-service'
@@ -16,7 +18,9 @@ import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { activeStemSplits, EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
 import { getUvrSession } from '@/stores/app-store'
+import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal, openSettingsSection } from '@/stores/ui-store'
 import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
 import { UvrSessionActions } from './UvrSessionActions'
 
@@ -279,6 +283,32 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     props.splitCostCredits !== undefined
       ? props.splitCostCredits * uvrLengthFactor(instrumentalDuration())
       : undefined
+  // The split always runs on the cloud GPU (there is no browser-side model
+  // for the four-part split), so the button must be honest about the two
+  // things that can stop it before dispatch: no session, or no credits.
+  // Read-only fetch keyed on balanceVersion - never provisions an identity.
+  const [billingMe] = createResource(
+    () => balanceVersion() + 1,
+    () => fetchBillingMe(),
+  )
+  const splitBalance = () =>
+    billingMe.loading || billingMe.error != null
+      ? undefined
+      : (billingMe()?.creditBalance ?? undefined)
+  const splitBlocked = ():
+    | { reason: 'signed-out' | 'no-credits'; label: string }
+    | undefined => {
+    if (!hasValidToken())
+      return { reason: 'signed-out', label: 'Sign in to split' }
+    const quote = splitQuote()
+    const balance = splitBalance()
+    if (quote !== undefined && balance !== undefined && balance < quote)
+      return {
+        reason: 'no-credits',
+        label: `Needs ${quote} cr - you have ${balance}`,
+      }
+    return undefined
+  }
   // ── Inline preview player ────────────────────────────────────
   // One shared player for every stem card: Play previews the stem right
   // here (the mixer is reached by selecting stems and mixing), an rAF
@@ -919,7 +949,10 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       <Show when={props.sessionId !== undefined && hasInstrumental()}>
         <div class="rv-parts">
           <div class="rv-parts-header">
-            <span class="rv-parts-title">Instrument parts</span>
+            <span class="rv-parts-title">
+              Instrument parts
+              <span class="rv-parts-cloud-note">cloud GPU</span>
+            </span>
             <Show
               when={!splitBusy() && !partsLoading()}
               fallback={
@@ -931,20 +964,20 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               <button
                 class="rv-stem-btn rv-parts-split-btn"
                 onClick={() => void handleSplit()}
-                disabled={props.disabled}
+                disabled={props.disabled || splitBlocked() !== undefined}
                 title={`${
                   partsList().length > 0
                     ? 'Run the split again (replaces the parts)'
                     : 'Separate the instrumental into drums, bass, guitar and other'
-                }${
+                } — runs on the cloud GPU${
                   splitQuote() !== undefined
-                    ? ` — ${splitQuote()} credit${splitQuote() === 1 ? '' : 's'}${
+                    ? `, ${splitQuote()} credit${splitQuote() === 1 ? '' : 's'}${
                         uvrLengthFactor(instrumentalDuration()) > 1
                           ? ' (long song)'
                           : ''
                       }`
                     : ''
-                }`}
+                }${splitBlocked() !== undefined ? `. ${splitBlocked()!.label}.` : ''}`}
               >
                 <SlidersHorizontal />
                 {partsList().length > 0 ? 'Re-split' : 'Split into parts'}
@@ -955,6 +988,22 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
                   </span>
                 </Show>
               </button>
+              <Show when={splitBlocked()}>
+                {(blocked) => (
+                  <button
+                    class="rv-stem-btn rv-parts-cta"
+                    onClick={() =>
+                      blocked().reason === 'signed-out'
+                        ? openAuthModal('login')
+                        : openSettingsSection('credits')
+                    }
+                  >
+                    {blocked().reason === 'signed-out'
+                      ? 'Sign in'
+                      : 'Get credits'}
+                  </button>
+                )}
+              </Show>
             </Show>
           </div>
           <Show

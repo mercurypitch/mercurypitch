@@ -4861,3 +4861,27 @@ button.server-cost-hint:hover {
     opacity: 0.45;
   }
 }
+
+/* ── Parts split gating (cloud-only annotation + credit/sign-in CTA) ── */
+.rv-parts-cloud-note {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #30363d);
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.rv-parts-cta {
+  margin-left: 6px;
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.rv-parts-cta:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 15%, transparent);
+}

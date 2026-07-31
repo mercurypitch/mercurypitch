@@ -3,7 +3,7 @@
 // ============================================================
 
 import { z } from 'zod/v4'
-import { requireAuth } from '@/db/services/auth-service'
+import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 
 const API_BASE = '/api/uvr'
@@ -550,8 +550,13 @@ export async function processAudio(
       // Auth/metering refusals become something a singer can act on
       // (UvrPanel upgrades these to action toasts linking to Account).
       if (response.status === 401) {
-        message =
-          'Sign in to use cloud GPU processing — open Settings, under Account.'
+        // A 401 with a locally valid session is not a sign-in problem - it
+        // means THIS deployment could not verify the token (PR previews and
+        // half-configured environments do this). Telling a signed-in user
+        // to sign in reads as a bug; name the real situation instead.
+        message = hasValidToken()
+          ? 'The processing service could not verify your session in this environment. Try the dev or production site, or sign out and back in.'
+          : 'Sign in to use cloud GPU processing — open Settings, under Account.'
       }
       if (response.status === 402) {
         const need =

@@ -60,6 +60,8 @@ export interface UvrUploadQueue {
   skipRemaining: () => number
   cancelActive: () => void
   clearFinished: () => void
+  /** Requeue every error row for another run (deliberate cancels stay). */
+  requeueFailed: () => void
   clear: () => void
   run: (worker: UvrUploadQueueWorker) => Promise<void>
 }
@@ -206,6 +208,22 @@ export function createUvrUploadQueue(
     )
   }
 
+  /** Put every failed song back in line for another run. The next Process
+   *  click uses whatever mode is selected THEN, so a batch that failed on
+   *  the server tier can be retried on the browser tier (or vice versa)
+   *  without re-picking the files. Cancelled rows stay cancelled - that
+   *  was a choice, not a failure. */
+  const requeueFailed = () => {
+    if (isRunning()) return
+    setItems((current) =>
+      current.map((item) =>
+        item.status === 'error'
+          ? { ...item, status: 'queued' as const, progress: 0, message: undefined, sessionId: undefined }
+          : item,
+      ),
+    )
+  }
+
   const clear = () => {
     // cancelActive marks the row terminal synchronously, while run() releases
     // isRunning on the following microtask. Let Close dismiss that terminal
@@ -305,6 +323,7 @@ export function createUvrUploadQueue(
     skipRemaining,
     cancelActive,
     clearFinished,
+    requeueFailed,
     clear,
     run,
   }

@@ -39,7 +39,7 @@ describe('UvrUploadQueue controls and terminal states', () => {
         onSkip={vi.fn()}
         onSkipRemaining={vi.fn()}
         onCancel={vi.fn()}
-        onClear={onClear}
+        onRetryFailed={vi.fn()} onClear={onClear}
       />
     ))
 
@@ -70,7 +70,7 @@ describe('UvrUploadQueue controls and terminal states', () => {
         onSkip={vi.fn()}
         onSkipRemaining={vi.fn()}
         onCancel={vi.fn()}
-        onClear={vi.fn()}
+        onRetryFailed={vi.fn()} onClear={vi.fn()}
       />
     ))
 
@@ -96,7 +96,7 @@ describe('UvrUploadQueue controls and terminal states', () => {
         onSkip={onSkip}
         onSkipRemaining={vi.fn()}
         onCancel={onCancel}
-        onClear={vi.fn()}
+        onRetryFailed={vi.fn()} onClear={vi.fn()}
       />
     ))
 
@@ -122,7 +122,7 @@ describe('UvrUploadQueue controls and terminal states', () => {
         onSkip={vi.fn()}
         onSkipRemaining={onSkipRemaining}
         onCancel={vi.fn()}
-        onClear={vi.fn()}
+        onRetryFailed={vi.fn()} onClear={vi.fn()}
       />
     ))
 
@@ -154,7 +154,7 @@ describe('UvrUploadQueue controls and terminal states', () => {
         onSkip={vi.fn()}
         onSkipRemaining={vi.fn()}
         onCancel={vi.fn()}
-        onClear={vi.fn()}
+        onRetryFailed={vi.fn()} onClear={vi.fn()}
       />
     ))
 

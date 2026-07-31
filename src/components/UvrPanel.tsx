@@ -1908,6 +1908,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   onSkip={uploadQueue.skipQueued}
                   onSkipRemaining={uploadQueue.skipRemaining}
                   onCancel={uploadQueue.cancelActive}
+                  onRetryFailed={uploadQueue.requeueFailed}
                   onClear={uploadQueue.clear}
                 />
               </Show>

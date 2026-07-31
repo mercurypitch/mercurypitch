@@ -5,7 +5,7 @@ import { uvrLengthFactor } from '@/lib/uvr-api'
 import type { UvrUploadQueueItem, UvrUploadQueueStatus, } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode } from '@/stores/app-store'
-import { CheckCircle, Clock, Cpu, Loader2, MusicNote, SkipForward, Trash2, X, XCircle, Zap, } from './icons'
+import { CheckCircle, Clock, Cpu, Loader2, MusicNote, RotateCcw, SkipForward, Trash2, X, XCircle, Zap, } from './icons'
 
 interface UvrUploadQueueProps {
   items: Accessor<UvrUploadQueueItem[]>
@@ -13,6 +13,9 @@ interface UvrUploadQueueProps {
   mode: Accessor<UvrProcessingMode>
   costPerSong?: Accessor<number | undefined>
   onStart: () => void
+  /** Requeue every failed row so Process can rerun them - on whatever
+   *  processing mode is selected at that moment. */
+  onRetryFailed: () => void
   onRemove: (itemId: string) => void
   onSkip: (itemId: string) => void
   onSkipRemaining: () => void
@@ -96,7 +99,7 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
       return 'Cancelled cleanly. Close this queue to choose new songs or processing options.'
     }
     if (errorCount() > 0) {
-      return 'Finished with errors. Successful songs are available in Recent Sessions.'
+      return 'Finished with errors. Retry puts the failed songs back in line - switch the processing mode first if this one keeps failing. Successful songs are in Recent Sessions.'
     }
     return 'Batch complete. Every successful song is ready in Recent Sessions.'
   }
@@ -308,6 +311,16 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
             </button>
           </Show>
           <Show when={allFinished()}>
+            <Show when={errorCount() > 0}>
+              <button
+                type="button"
+                class="uvr-queue-button"
+                onClick={() => props.onRetryFailed()}
+                title="Put the failed songs back in the queue. Pick a different processing mode first if this one keeps failing."
+              >
+                <RotateCcw /> Retry {errorCount()} failed
+              </button>
+            </Show>
             <button
               type="button"
               class="uvr-queue-button uvr-queue-button--primary"
