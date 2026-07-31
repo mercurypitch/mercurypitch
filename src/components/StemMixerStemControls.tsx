@@ -115,45 +115,51 @@ const StemStrip: Component<{
           {calcVolPct(track(), props.anySoloed())}%
         </span>
       </div>
-      <div class="sm-stem-actions">
-        <button
-          class={`sm-action-btn ${track().soloed ? 'sm-active' : ''}`}
-          onClick={() => props.toggleSolo(props.label)}
-          title="Solo"
-          style={{ color: track().soloed ? track().color : '' }}
-        >
-          <Ear />
-        </button>
-        <button
-          class={`sm-action-btn ${track().muted ? 'sm-muted' : ''}`}
-          onClick={() => props.toggleMute(props.label)}
-          title="Mute"
-        >
-          {track().muted ? <VolumeX /> : <Volume2 />}
-        </button>
-        <button
-          class="sm-action-btn"
-          onClick={() => {
-            void props.handleDownload(track())
-          }}
-          title={props.downloadTitle ?? 'Download'}
-        >
-          <Download />
-        </button>
+      {/* Actions + slider share a wrapper so the compact row can only break
+          between the header and this group — never between the buttons and
+          the slider (a short stem name used to orphan the slider on its own
+          line). Expanded mode flattens it with display: contents. */}
+      <div class="sm-stem-controls">
+        <div class="sm-stem-actions">
+          <button
+            class={`sm-action-btn ${track().soloed ? 'sm-active' : ''}`}
+            onClick={() => props.toggleSolo(props.label)}
+            title="Solo"
+            style={{ color: track().soloed ? track().color : '' }}
+          >
+            <Ear />
+          </button>
+          <button
+            class={`sm-action-btn ${track().muted ? 'sm-muted' : ''}`}
+            onClick={() => props.toggleMute(props.label)}
+            title="Mute"
+          >
+            {track().muted ? <VolumeX /> : <Volume2 />}
+          </button>
+          <button
+            class="sm-action-btn"
+            onClick={() => {
+              void props.handleDownload(track())
+            }}
+            title={props.downloadTitle ?? 'Download'}
+          >
+            <Download />
+          </button>
+        </div>
+        <input
+          type="range"
+          class="sm-volume-slider"
+          min="0"
+          max="100"
+          value={Math.round(track().volume * 100)}
+          onInput={(e) =>
+            props.setTrackVolume(
+              props.label,
+              parseInt(e.currentTarget.value) / 100,
+            )
+          }
+        />
       </div>
-      <input
-        type="range"
-        class="sm-volume-slider"
-        min="0"
-        max="100"
-        value={Math.round(track().volume * 100)}
-        onInput={(e) =>
-          props.setTrackVolume(
-            props.label,
-            parseInt(e.currentTarget.value) / 100,
-          )
-        }
-      />
     </div>
   )
 }

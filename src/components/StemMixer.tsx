@@ -3142,6 +3142,12 @@ export const StemMixerStyles: string = `
   gap: 0.25rem;
 }
 
+/* The controls wrapper only exists for the compact wrap rule — here the
+   strip lays out header/actions/fader directly, so flatten it away. */
+.sm-strips-expanded .sm-stem-controls {
+  display: contents;
+}
+
 /* ── Compact: one row per stem ── */
 .sm-strips-compact .sm-strips-body {
   flex-direction: column;
@@ -3163,8 +3169,19 @@ export const StemMixerStyles: string = `
   margin-right: auto;
 }
 
-/* Inline when the row is wide enough; wraps to its own full-width line in
-   narrow panels instead of being squeezed out. */
+/* Buttons + slider move as ONE unit: inline after the name when the row is
+   wide enough, otherwise together onto a full-width second line. Splitting
+   them made the break point depend on the stem name's width — "Vocal" kept
+   its buttons up top and orphaned the slider below. */
+.sm-strips-compact .sm-stem-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem 0.65rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+/* Fills whatever width the controls row gives it. */
 .sm-strips-compact .sm-volume-slider {
   writing-mode: horizontal-tb;
   direction: ltr;
