@@ -12,6 +12,7 @@ import type { UvrStemType } from '@/db/entities'
 import { deleteStemBlobs, getStemBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import type { OutputFile } from './uvr-api'
 import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, pollForCompletion, processAudio, splitStemsFor, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
+import { wavDurationSeconds } from './wav-meta'
 
 /** The stems a split can add to a session (everything except the core trio). */
 export type StemSplitPart = Exclude<
@@ -51,6 +52,19 @@ export interface StemSplitResult {
 
 export class StemSplitError extends Error {}
 
+/** Header-only duration of a stored WAV blob; undefined when the bytes
+ *  aren't parseable OR the environment's Blob lacks the slice/arrayBuffer
+ *  APIs (old WebViews, jsdom) — billing then falls back to the base
+ *  factor and the server enforces its own duration rules. */
+async function blobWavDuration(blob: Blob): Promise<number | undefined> {
+  try {
+    const head = await blob.slice(0, 4096).arrayBuffer()
+    return wavDurationSeconds(head, blob.size)
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * Run the split for a session and persist the resulting part stems.
  *
@@ -64,6 +78,14 @@ export async function runStemSplit(
     model?: string
     onProgress?: (p: StemSplitProgress) => void
     signal?: AbortSignal
+    /** The server session (`rp_<tier>_<jobId>`) that produced this
+     *  session's stems. When set, the split is requested IN PLACE on the
+     *  stem the server still holds in R2 (~24 h) — no upload, no size
+     *  cap. Expired stems fall back to uploading the stored blob. */
+    reuseApiSessionId?: string
+    /** Length of the instrumental (for long-song billing). Falls back to
+     *  parsing the stored WAV's header on the upload path. */
+    durationSeconds?: number
   } = {},
 ): Promise<StemSplitResult> {
   const model = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
@@ -79,19 +101,53 @@ export async function runStemSplit(
     raw(last)
   }
 
-  const instrumental = await getStemBlob(sessionId, 'instrumental')
-  if (!instrumental) {
-    throw new StemSplitError(
-      'No instrumental stem is stored for this session yet.',
-    )
+  notify({ phase: 'uploading', pct: 0 })
+
+  // Reuse-first: the server separation that made this session left its
+  // stems in R2 for ~24 h — splitting THAT copy skips uploading a
+  // ~60-190 MB WAV entirely (and is the only way long songs fit). A 410
+  // (stem-expired) falls through to the classic upload path.
+  let started: Awaited<ReturnType<typeof processAudio>> | undefined
+  if (
+    options.reuseApiSessionId !== undefined &&
+    options.reuseApiSessionId !== ''
+  ) {
+    const request = buildStemSplitRequest({
+      model,
+      durationSeconds: options.durationSeconds,
+    })
+    try {
+      started = await processAudio(
+        null,
+        { ...request, reuse_session: options.reuseApiSessionId },
+        options.signal,
+      )
+    } catch (err) {
+      const status = (err as Error & { status?: number }).status
+      if (status !== 410) {
+        if (err instanceof Error && err.name === 'AbortError') throw err
+        const detail = err instanceof Error ? err.message : String(err)
+        throw new StemSplitError(`Splitting the instrumental failed: ${detail}`)
+      }
+      // Expired on the server — fall through to the upload below.
+    }
   }
 
-  notify({ phase: 'uploading', pct: 0 })
-  const request = buildStemSplitRequest({ model })
-  const file = new File([instrumental], 'instrumental.wav', {
-    type: instrumental.type || 'audio/wav',
-  })
-  const started = await processAudio(file, request, options.signal)
+  if (started === undefined) {
+    const instrumental = await getStemBlob(sessionId, 'instrumental')
+    if (!instrumental) {
+      throw new StemSplitError(
+        'No instrumental stem is stored for this session yet.',
+      )
+    }
+    const duration =
+      options.durationSeconds ?? (await blobWavDuration(instrumental))
+    const request = buildStemSplitRequest({ model, durationSeconds: duration })
+    const file = new File([instrumental], 'instrumental.wav', {
+      type: instrumental.type || 'audio/wav',
+    })
+    started = await processAudio(file, request, options.signal)
+  }
   notify({ phase: 'processing', pct: 0 })
 
   const saved: StemSplitPart[] = []
@@ -102,7 +158,7 @@ export async function runStemSplit(
     (pct) => notify({ phase: 'processing', pct }),
     async (files: OutputFile[]) => {
       try {
-        const wanted = new Set<string>(request.stems ?? [])
+        const wanted = new Set<string>(splitStemsFor(model, 'instrumental'))
         const parts = files.filter((f) => wanted.has(f.stem))
         if (parts.length === 0) {
           throw new StemSplitError('The split produced no part stems.')

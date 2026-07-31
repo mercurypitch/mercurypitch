@@ -122,6 +122,13 @@ describe('buildStemSplitRequest', () => {
     expect(splitStemsFor('demucs-6s')).toContain('piano')
   })
 
+  it('carries the stem length so long splits pay the surcharge too', () => {
+    expect(
+      buildStemSplitRequest({ durationSeconds: 1080 }).duration_seconds,
+    ).toBe(1080)
+    expect(buildStemSplitRequest().duration_seconds).toBeUndefined()
+  })
+
   it('de-duplicates an explicit drop list', () => {
     const req = buildStemSplitRequest({ dropStems: ['piano', 'piano'] })
     expect(req.drop_stems).toEqual(['piano'])

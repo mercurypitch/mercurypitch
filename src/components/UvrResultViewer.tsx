@@ -396,6 +396,10 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     try {
       const result = await runStemSplit(sessionId, {
         onProgress: setSplitProgress,
+        // Split the copy the server still holds in R2 when possible — no
+        // re-upload; falls back to the stored blob when expired.
+        reuseApiSessionId: session()?.apiSessionId,
+        durationSeconds: props.stemMeta?.instrumental?.duration,
       })
       void recordUvrSplitTime(sessionId, result.elapsedMs)
       await loadPartUrls(sessionId)

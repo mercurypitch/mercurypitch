@@ -47,6 +47,11 @@ export interface Env {
    *  (>7 MB). Same bucket the handler reads via S3 creds. Per-env binding in
    *  wrangler.jsonc; when absent the large-file path is unavailable. */
   UVR_INPUT_BUCKET?: R2Bucket
+  /** Object-key prefix this env's handler writes stems under ("runpod" on
+   *  prod, "runpod-dev" on dev) — MUST match the endpoint's S3_KEY_PREFIX.
+   *  Locates a job's stems for the R2 recovery fallback and second-pass
+   *  stem reuse. Defaults to "runpod" when unset. */
+  RUNPOD_STEM_PREFIX?: string
 }
 
 // Paths that serve the Voice Mirror entry (mirror.html): the canonical path
@@ -152,6 +157,7 @@ export default {
             // R2Bucket's overloaded put() doesn't structurally match the
             // bridge's minimal interface; the runtime shape is compatible.
             (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
+            env.RUNPOD_STEM_PREFIX ?? 'runpod',
           )
           if (handled !== null) return handled
           // A valid process request can still be unhandled when the selected

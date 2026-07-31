@@ -28,5 +28,11 @@
       "bucket_name": "mercurypitch-uvr-output",
       "remote": true
     }
-  ]
+  ],
+  "vars": {
+    // Local dev always talks to the DEV RunPod endpoint, whose handler
+    // writes stems under this prefix (endpoint S3_KEY_PREFIX). Required
+    // for R2 stem recovery and second-pass reuse to find them.
+    "RUNPOD_STEM_PREFIX": "runpod-dev"
+  }
 }

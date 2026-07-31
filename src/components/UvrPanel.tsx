@@ -24,7 +24,7 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
-import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
+import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, uvrLengthFactor, } from '@/lib/uvr-api'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
@@ -654,7 +654,11 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
     showNotification('Splitting the band — drums, bass, guitar, piano…', 'info')
     try {
-      const result = await runStemSplit(sessionId)
+      const chainSession = getUvrSession(sessionId)
+      const result = await runStemSplit(sessionId, {
+        reuseApiSessionId: chainSession?.apiSessionId,
+        durationSeconds: chainSession?.stemMeta?.instrumental?.duration,
+      })
       void recordUvrSplitTime(sessionId, result.elapsedMs)
       eventBus.dispatch('uvr:parts-updated', { sessionId })
       refreshBalance()
@@ -2256,7 +2260,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     processingTime={sess().processingTime}
                     sessionId={sess().sessionId}
                     originalFileName={sess().originalFile?.name}
-                    splitCostCredits={splitCost()}
+                    splitCostCredits={(() => {
+                      // Long instrumentals pay the same started-block
+                      // surcharge as source songs — quote it on the button.
+                      const base = splitCost()
+                      if (base === undefined) return undefined
+                      return (
+                        base *
+                        uvrLengthFactor(sess().stemMeta?.instrumental?.duration)
+                      )
+                    })()}
                     onStartPractice={(mode) => {
                       void handlePracticeStart(mode)
                     }}

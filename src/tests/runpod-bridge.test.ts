@@ -625,6 +625,83 @@ describe('handleRunpodRequest — metering', () => {
     })
   })
 
+  it('splits a stem in place from R2 — no upload, no size cap', async () => {
+    const calls = mockRoutes({
+      '/api/billing/uvr-admit': { body: { allowed: true } },
+      '/run': { body: { id: 'split-1' } },
+      '/api/billing/debit': { body: { debited: 2, balance: 8 } },
+    })
+    const bucket = mockBucket([
+      {
+        key: 'runpod-dev/prev-job/Song_(Instrumental)_model.wav',
+        size: 190 * 1024 * 1024,
+      },
+      {
+        key: 'runpod-dev/prev-job/Song_(Vocals)_model.wav',
+        size: 180 * 1024 * 1024,
+      },
+    ])
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      fields: {
+        reuse_session: 'rp_gpu_prev-job',
+        source_stem: 'instrumental',
+        model: 'demucs-6s',
+      },
+      // Deliberately NO file: the whole point is that nothing is uploaded.
+    })
+
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'POST',
+      CFG,
+      METER,
+      bucket,
+      'runpod-dev',
+    )
+    expect(res?.status).toBe(200)
+    expect(bucket.put).not.toHaveBeenCalled()
+    const run = calls.find((c) => c.url.includes('/run'))
+    const input = JSON.parse(run?.init?.body as string).input
+    expect(input.audio_s3_key).toBe(
+      'runpod-dev/prev-job/Song_(Instrumental)_model.wav',
+    )
+    expect(input.source_stem).toBe('instrumental')
+  })
+
+  it('410s an expired reuse target so the client falls back to uploading', async () => {
+    mockRoutes({
+      '/api/billing/uvr-admit': { body: { allowed: true } },
+      '/run': { body: { id: 'must-not-run' } },
+    })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod', Authorization: 'Bearer tok' },
+      fields: { reuse_session: 'rp_gpu_gone-job', source_stem: 'instrumental' },
+    })
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'POST',
+      CFG,
+      METER,
+      mockBucket([]),
+      'runpod-dev',
+    )
+    expect(res?.status).toBe(410)
+    const body = (await res?.json()) as { code?: string }
+    expect(body.code).toBe('stem-expired')
+  })
+
+  it('still 400s a request with neither file nor reuse target', async () => {
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      fields: { model: 'roformer' },
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG, null)
+    expect(res?.status).toBe(400)
+  })
+
   it('400s a garbage duration header instead of silently base-billing', async () => {
     for (const bad of ['abc', '-5', '0', '999999']) {
       const { request, url } = processReq('/api/uvr/process', {

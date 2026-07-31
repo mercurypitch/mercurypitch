@@ -114,6 +114,11 @@ export interface ProcessRequest {
    *  against the probed duration, so under-declaring gets the job
    *  rejected (and refunded), never under-billed. */
   duration_seconds?: number
+  /** Second-pass reuse: the `rp_<tier>_<jobId>` session whose R2 stems
+   *  should be split IN PLACE — the worker resolves the object key and no
+   *  audio is uploaded at all. 410 (`stem-expired`) means the ~24 h R2
+   *  window has passed and the caller must re-upload the stored blob. */
+  reuse_session?: string
 }
 
 // ── Long-song pricing (client mirror) ─────────────────────────────
@@ -380,6 +385,10 @@ export interface StemSplitOptions {
    *  job, and the worker 400s any /process request that names no tier.
    *  The local FastAPI container simply ignores the header. */
   provider?: 'runpod' | 'runpod-cpu'
+  /** Length of the stem being split — bills the long-song surcharge on
+   *  the second pass too (the handler verifies it like any declared
+   *  duration). */
+  durationSeconds?: number
 }
 
 /**
@@ -428,6 +437,9 @@ export function buildStemSplitRequest(
     reconcile_residual: true,
     residual_stem: residualStem,
     provider: options.provider ?? 'runpod',
+    ...(options.durationSeconds !== undefined && options.durationSeconds > 0
+      ? { duration_seconds: options.durationSeconds }
+      : {}),
   }
 }
 
@@ -447,12 +459,17 @@ export async function listModels(): Promise<string[]> {
  * Start processing an audio file
  */
 export async function processAudio(
-  file: File,
+  /** Null ONLY with `options.reuse_session` — the worker then splits the
+   *  stem it already holds in R2 instead of receiving an upload. */
+  file: File | null,
   options: ProcessRequest = DEFAULT_PROCESS_REQUEST,
   signal?: AbortSignal,
 ): Promise<ProcessResponse> {
   const formData = new FormData()
-  formData.append('file', file)
+  if (file !== null) formData.append('file', file)
+  if (options.reuse_session !== undefined) {
+    formData.append('reuse_session', options.reuse_session)
+  }
 
   if (options.model !== undefined) {
     formData.append('model', options.model)
@@ -545,10 +562,14 @@ export async function processAudio(
     // HTTP/2 has no statusText and gateway-level failures can have an empty
     // body — always name the status code so the user (and our logs) see
     // something actionable instead of a bare "Failed to process audio:".
-    throw new Error(
+    const error = new Error(
       message ||
         `The processing server could not be reached (HTTP ${response.status}). Please try again in a moment.`,
-    )
+    ) as Error & { status?: number }
+    // Callers branch on specific refusals (410 stem-expired → fall back to
+    // uploading the stored blob) without parsing message strings.
+    error.status = response.status
+    throw error
   }
 
   return ProcessResponseSchema.parse(await response.json())

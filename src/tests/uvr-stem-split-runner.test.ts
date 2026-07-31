@@ -140,6 +140,46 @@ describe('runStemSplit', () => {
     expect(phases).toEqual(['uploading', 'processing', 'saving'])
   })
 
+  it('splits in place via the server-held R2 stem when a session is reusable', async () => {
+    await runStemSplit('session-1', {
+      reuseApiSessionId: 'rp_gpu_prev-job',
+      durationSeconds: 1080,
+    })
+    // No blob leaves the browser: the stored instrumental is never read.
+    expect(db.getStemBlob).not.toHaveBeenCalled()
+    const [file, request] = api.processAudio.mock.calls[0]
+    expect(file).toBeNull()
+    expect(request.reuse_session).toBe('rp_gpu_prev-job')
+    expect(request.duration_seconds).toBe(1080)
+  })
+
+  it('falls back to uploading the stored blob when the R2 stem expired', async () => {
+    const expired = Object.assign(new Error('stem expired'), { status: 410 })
+    api.processAudio
+      .mockRejectedValueOnce(expired)
+      .mockResolvedValueOnce({ session_id: 'srv-2' })
+    const result = await runStemSplit('session-1', {
+      reuseApiSessionId: 'rp_gpu_prev-job',
+    })
+    expect(result.saved.length).toBeGreaterThan(0)
+    expect(api.processAudio).toHaveBeenCalledTimes(2)
+    // Second attempt is the classic upload of the stored instrumental.
+    const [file] = api.processAudio.mock.calls[1]
+    expect((file as File).name).toBe('instrumental.wav')
+    expect(db.getStemBlob).toHaveBeenCalledWith('session-1', 'instrumental')
+  })
+
+  it('surfaces a non-expiry reuse failure instead of silently re-uploading', async () => {
+    const denied = Object.assign(new Error('Not enough credits'), {
+      status: 402,
+    })
+    api.processAudio.mockRejectedValueOnce(denied)
+    await expect(
+      runStemSplit('session-1', { reuseApiSessionId: 'rp_gpu_prev-job' }),
+    ).rejects.toThrow(/Not enough credits/)
+    expect(api.processAudio).toHaveBeenCalledTimes(1)
+  })
+
   it('throws a readable error when no instrumental is stored', async () => {
     db.getStemBlob.mockResolvedValue(null)
     await expect(runStemSplit('session-1')).rejects.toThrow(StemSplitError)
