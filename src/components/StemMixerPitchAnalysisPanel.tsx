@@ -328,9 +328,20 @@ export const StemMixerPitchAnalysisPanel: Component<
             disabled={!props.canEdit}
             aria-pressed={props.editMode}
             onClick={() => props.onToggleEditMode()}
+            title={
+              props.canEdit
+                ? 'Open the Pitch Studio to edit these notes'
+                : 'Editing lives in the Karaoke studio - open this song from the Karaoke tab to edit its notes. (The stage keeps performances read-only.)'
+            }
           >
             {props.editMode ? 'Editing notes…' : 'Edit notes'}
           </button>
+          <Show when={!props.canEdit}>
+            <p class={styles.cardHint}>
+              Read-only here - open this song from the Karaoke tab to edit its
+              notes.
+            </p>
+          </Show>
 
           <Show when={props.hasEdits}>
             <div

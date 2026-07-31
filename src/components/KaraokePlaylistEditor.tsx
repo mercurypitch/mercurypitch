@@ -160,6 +160,12 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
           {/* Items */}
           <Show when={pl().items.length > 0}>
             <div class={styles.itemsHeader}>
+              {/* Every change here commits to the store as it happens; say
+                  so once, instead of leaving people hunting for a Save
+                  button that does not exist (owner testing). */}
+              <span class={styles.autoSaveHint}>
+                Changes save automatically
+              </span>
               <span class={styles.itemsHeaderLabel}>
                 In playlist ({pl().items.length})
               </span>
