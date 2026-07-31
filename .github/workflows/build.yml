@@ -31,6 +31,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Release tags migrate the prod database and deploy the prod db-worker via
+  # the same reusable workflow the dev path uses (migrations apply before the
+  # worker inside that job). The frontend prod deploy below runs in parallel;
+  # that is safe because the migration chain is additive-only and the app
+  # tolerates a briefly older API (bundled-seed fallbacks) - the invariant
+  # that matters, migrations-before-worker, is guaranteed in-job.
+  deploy-db-prod:
+    name: Prod DB migrations + worker
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    uses: ./.github/workflows/deploy-db.yml
+    with:
+      environment: prod
+    secrets: inherit
+
   build-and-deploy:
     name: Build & Deploy App
     runs-on: ubuntu-latest

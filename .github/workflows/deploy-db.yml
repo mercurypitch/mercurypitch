@@ -5,6 +5,9 @@ name: Deploy DB Worker
 # - Push to main touching workers/db-worker/** → dev
 #   (mercury-pitch-db-dev + mercurypitch-db-dev)
 # - Manual dispatch → dev or prod
+# - workflow_call from build.yml on a v* release tag → prod
+#   (migrations always run in this job BEFORE the worker deploys, so the
+#   erasure/award code never runs against a database missing its tables)
 #
 # Schema changes ship as tracked migrations in workers/db-worker/migrations/,
 # applied here by `wrangler d1 migrations apply` (wrangler records applied
@@ -40,6 +43,12 @@ on:
         options:
           - dev
           - prod
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -49,8 +58,10 @@ jobs:
     name: Deploy DB Worker
     runs-on: ubuntu-latest
     env:
-      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
-      DB_NAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod') && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
+      # `inputs` is populated by workflow_dispatch AND workflow_call; a plain
+      # push (main -> dev) has neither and falls through to dev.
+      DEPLOY_ENV: ${{ inputs.environment || 'dev' }}
+      DB_NAME: ${{ inputs.environment == 'prod' && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
 
     steps:
       - name: Checkout code
