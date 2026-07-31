@@ -1571,6 +1571,10 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Tap any orb to open its guidebook: what to focus on, the goals, and the drills this week leans into. Completed weeks stay open — replay them any time.',
     targetSelector: '.path-week-card',
+    // The guide only mounts once an orb is expanded. The class sits on the
+    // orb's wrapper; the CLICKABLE toggle is the inner button, and its
+    // aria-expanded is what makes the reveal click idempotent.
+    reveal: '.path-orb-current button[aria-expanded]',
     placement: 'top',
     requiredTab: TAB_PATH,
   },
@@ -1579,6 +1583,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
     targetSelector: '.path-cta',
+    reveal: '.path-orb-current button[aria-expanded]',
     placement: 'top',
     requiredTab: TAB_PATH,
   },
