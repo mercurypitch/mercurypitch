@@ -211,6 +211,24 @@ BILLING_BASE_MINUTES = float(os.getenv("UVR_BILLING_BASE_MINUTES", "12"))
 BILLING_BLOCK_MINUTES = float(os.getenv("UVR_BILLING_BLOCK_MINUTES", "6"))
 
 
+def _is_allowed_s3_key(key: str) -> bool:
+    """Allowlist for `audio_s3_key` — the field must never become a read
+    primitive for arbitrary bucket paths. Two shapes are legal:
+      • `input/<safe>` — an input the worker staged for this job, and
+      • `<S3_KEY_PREFIX>/<jobId>/<stem file>` — a stem THIS handler wrote
+        (second-pass reuse). Stem filenames carry spaces/parens, so the
+        charset is wider there, but traversal and foreign prefixes stay
+        rejected."""
+    if re.match(r"^input/[A-Za-z0-9._-]+$", key):
+        return True
+    return (
+        key.startswith(f"{S3_KEY_PREFIX}/")
+        and ".." not in key
+        and "\\" not in key
+        and re.match(r"^[A-Za-z0-9 ._()\[\]'&,+/-]+$", key) is not None
+    )
+
+
 def _billing_blocks(duration_seconds: float) -> int:
     """Billing factor for a song length: 1 in the base window, +1 per
     started surcharge block past it. Mirrors uvrLengthFactor()."""
@@ -578,16 +596,21 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
     audio_s3_key = job_input.get("audio_s3_key")
 
     if audio_s3_key:
-        # Big inputs the worker streamed to R2 under `input/`. Download with
-        # our own S3 credentials (same bucket we upload stems to) — no public
-        # URL is ever minted for the source audio.
+        # Big inputs the worker streamed to R2 under `input/`, or — for a
+        # second-pass split — a stem THIS handler wrote under its own
+        # S3_KEY_PREFIX (reused in place instead of re-uploaded). Download
+        # with our own S3 credentials (same bucket we upload stems to) — no
+        # public URL is ever minted for the source audio.
         if not _storage_enabled():
             raise ValueError("audio_s3_key given but S3 storage is not configured")
         key = str(audio_s3_key)
-        if not re.match(r"^input/[A-Za-z0-9._-]+$", key):
+        if not _is_allowed_s3_key(key):
             raise ValueError("Invalid audio_s3_key")
         _s3().download_file(S3_BUCKET, key, local_path)
-        if os.path.getsize(local_path) > MAX_INPUT_BYTES:
+        # The byte cap targets hostile UPLOADS. Our own stems are as big as
+        # the duration cap allows (a 30-min WAV is ~320 MB) — for those the
+        # duration guard below is the real spend bound.
+        if key.startswith("input/") and os.path.getsize(local_path) > MAX_INPUT_BYTES:
             raise ValueError(f"Input exceeds {MAX_INPUT_BYTES // (1024 * 1024)} MB cap")
     elif audio_url:
         import requests

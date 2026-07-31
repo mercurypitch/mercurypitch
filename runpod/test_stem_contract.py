@@ -228,6 +228,29 @@ def test_reconciliation_matches_mono_input_to_stereo_stems(handler, tmp_path):
     assert np.abs((other + drums) - _stereo(loud)).max() < 1e-6
 
 
+# ── audio_s3_key allowlist ───────────────────────────────────────
+
+
+def test_s3_key_allowlist_accepts_staged_inputs_and_own_stems(handler):
+    ok = handler._is_allowed_s3_key
+    assert ok("input/abc-123.mp3")
+    prefix = handler.S3_KEY_PREFIX
+    assert ok(f"{prefix}/job-1/Song_(Instrumental)_model.wav")
+    # Real stem names carry spaces — the 2026-07-31 reuse failure.
+    assert ok(f"{prefix}/job-1/Empire of the Clouds_(Instrumental)_model.wav")
+
+
+def test_s3_key_allowlist_rejects_everything_else(handler):
+    ok = handler._is_allowed_s3_key
+    prefix = handler.S3_KEY_PREFIX
+    assert not ok("some-other-prefix/job/file.wav")
+    assert not ok(f"{prefix}-evil/job/file.wav")
+    assert not ok(f"{prefix}/../secrets.txt")
+    assert not ok("input/../../etc/passwd")
+    assert not ok("input/has space.mp3")  # staged inputs stay strict
+    assert not ok(f"{prefix}/job/back\\slash.wav")
+
+
 # ── Long-song billing blocks (mirror of billing-core.ts uvrLengthFactor) ──
 
 
