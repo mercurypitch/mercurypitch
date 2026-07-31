@@ -11,9 +11,10 @@ import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
-import type { StemSplitPart, StemSplitProgress } from '@/lib/uvr-stem-split'
-import { EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
-import { getUvrSession, recordUvrSplitTime } from '@/stores/app-store'
+import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
+import type { StemSplitPart } from '@/lib/uvr-stem-split'
+import { activeStemSplits, EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
+import { getUvrSession } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
 import { UvrSessionActions } from './UvrSessionActions'
@@ -233,9 +234,14 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   // seconds for a full band). The Split button hides meanwhile: showing
   // "Split into parts" and then having cards pop in reads as a bug.
   const [partsLoading, setPartsLoading] = createSignal(false)
-  const [splitBusy, setSplitBusy] = createSignal(false)
-  const [splitProgress, setSplitProgress] =
-    createSignal<StemSplitProgress | null>(null)
+  // Split busy/progress live in the module-level registry (the poll runs
+  // outside the component), so navigating away and back — or a second
+  // viewer instance — shows the same in-flight split.
+  const splitProgress = () =>
+    props.sessionId !== undefined
+      ? (activeStemSplits()[props.sessionId] ?? null)
+      : null
+  const splitBusy = () => splitProgress() !== null
   // ── Inline preview player ────────────────────────────────────
   // One shared player for every stem card: Play previews the stem right
   // here (the mixer is reached by selecting stems and mixing), an rAF
@@ -391,18 +397,16 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   const handleSplit = async () => {
     const sessionId = props.sessionId
     if (sessionId === undefined || sessionId === '' || splitBusy()) return
-    setSplitBusy(true)
-    setSplitProgress(null)
     try {
-      const result = await runStemSplit(sessionId, {
-        onProgress: setSplitProgress,
+      // Lifecycle (job-id persistence for reload-resume, split-time
+      // recording, registry state) is owned by startManagedStemSplit;
+      // parts refresh via the 'uvr:parts-updated' event it fires.
+      await startManagedStemSplit(sessionId, {
         // Split the copy the server still holds in R2 when possible — no
         // re-upload; falls back to the stored blob when expired.
         reuseApiSessionId: session()?.apiSessionId,
         durationSeconds: props.stemMeta?.instrumental?.duration,
       })
-      void recordUvrSplitTime(sessionId, result.elapsedMs)
-      await loadPartUrls(sessionId)
       showNotification('Instrumental split into parts', 'success')
     } catch (err) {
       const message =
@@ -410,9 +414,6 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           ? err.message
           : 'Splitting the instrumental failed.'
       showNotification(message, 'error')
-    } finally {
-      setSplitBusy(false)
-      setSplitProgress(null)
     }
   }
 

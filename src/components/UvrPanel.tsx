@@ -15,7 +15,6 @@ import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHa
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
-import { eventBus } from '@/lib/event-bus'
 import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
@@ -25,14 +24,15 @@ import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, uvrLengthFactor, } from '@/lib/uvr-api'
+import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
-import { PART_STEM_DISPLAY, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
+import { PART_STEM_DISPLAY, StemSplitError } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, recordUvrSplitTime, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -655,12 +655,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     showNotification('Splitting the band — drums, bass, guitar, piano…', 'info')
     try {
       const chainSession = getUvrSession(sessionId)
-      const result = await runStemSplit(sessionId, {
+      // Lifecycle bookkeeping (resume marker, split time, parts-updated
+      // event) is owned by startManagedStemSplit.
+      await startManagedStemSplit(sessionId, {
         reuseApiSessionId: chainSession?.apiSessionId,
         durationSeconds: chainSession?.stemMeta?.instrumental?.duration,
       })
-      void recordUvrSplitTime(sessionId, result.elapsedMs)
-      eventBus.dispatch('uvr:parts-updated', { sessionId })
       refreshBalance()
       showNotification('Instrumental split into parts', 'success')
     } catch (err) {

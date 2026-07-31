@@ -172,6 +172,10 @@ export interface UvrSession {
   /** Wall-clock ms of the instrumental-split second pass — shown next to
    *  processingTime on the results header. */
   splitTime?: number
+  /** RunPod session id of an in-flight split (mirror of apiSessionId for
+   *  the second pass) — set before polling, cleared when it settles, so a
+   *  reload can re-attach via attachToStemSplitJob. */
+  splitApiSessionId?: string
   error?: string
   fileHash?: string
   originalFile?: {
@@ -645,6 +649,7 @@ function sessionToDbRecord(
     numChunks: session.numChunks,
     processingTime: session.processingTime,
     splitTime: session.splitTime,
+    splitApiSessionId: session.splitApiSessionId,
     error: session.error,
     stemMetaJson:
       session.stemMeta !== undefined
@@ -683,6 +688,7 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
     numChunks: rec.numChunks,
     processingTime: rec.processingTime,
     splitTime: rec.splitTime,
+    splitApiSessionId: rec.splitApiSessionId,
     error: rec.error,
     createdAt: rec.appCreatedAt ?? Date.parse(rec.createdAt),
     groupId: rec.groupId,
@@ -1220,7 +1226,8 @@ export async function completeUvrSession(
 
 /**
  * Record how long the instrumental-split second pass took. Durable like
- * completeUvrSession — the timing survives reloads with the session.
+ * completeUvrSession — the timing survives reloads with the session. Also
+ * clears the in-flight split job marker: a recorded time means it settled.
  */
 export async function recordUvrSplitTime(
   sessionId: string,
@@ -1228,7 +1235,36 @@ export async function recordUvrSplitTime(
 ): Promise<boolean> {
   const session = getUvrSession(sessionId)
   if (!session) return false
-  const updated: UvrSession = { ...session, splitTime: splitTimeMs }
+  const updated: UvrSession = {
+    ...session,
+    splitTime: splitTimeMs,
+    splitApiSessionId: undefined,
+  }
+  updateSessionCache(updated)
+  setCurrentSessionIfActive(updated)
+  return persistSessionDurable(updated)
+}
+
+/** Persist the RunPod session id of a just-started split so a teardown
+ *  during the poll can re-attach on the next load (autoResumeStemSplits). */
+export async function recordUvrSplitJobStarted(
+  sessionId: string,
+  splitApiSessionId: string,
+): Promise<boolean> {
+  const session = getUvrSession(sessionId)
+  if (!session) return false
+  const updated: UvrSession = { ...session, splitApiSessionId }
+  updateSessionCache(updated)
+  setCurrentSessionIfActive(updated)
+  return persistSessionDurable(updated)
+}
+
+/** Forget an in-flight split marker (the job failed or is unrecoverable —
+ *  a failed job auto-refunds server-side, so dropping it costs nothing). */
+export async function clearUvrSplitJob(sessionId: string): Promise<boolean> {
+  const session = getUvrSession(sessionId)
+  if (!session || session.splitApiSessionId === undefined) return true
+  const updated: UvrSession = { ...session, splitApiSessionId: undefined }
   updateSessionCache(updated)
   setCurrentSessionIfActive(updated)
   return persistSessionDurable(updated)

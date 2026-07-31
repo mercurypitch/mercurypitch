@@ -26,7 +26,9 @@
 import { createEffect, onCleanup } from 'solid-js'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
-import { completeUvrSession, isSessionStoreReady, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
+import type { StemSplitResult } from '@/lib/uvr-stem-split'
+import { attachToStemSplitJob, isStemSplitActive, runStemSplit, } from '@/lib/uvr-stem-split'
+import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
 
 export interface AutoResumeHooks {
   /** Fired after a resumed job settles (complete or error) so the host can
@@ -63,6 +65,8 @@ function backgroundCallbacks(
 export async function autoResumeServerSessions(
   hooks?: AutoResumeHooks,
 ): Promise<void> {
+  // Interrupted second passes ride the same triggers.
+  void autoResumeStemSplits()
   const recoverable = await resumableServerSessions()
   for (const session of recoverable) {
     const apiId = session.apiSessionId
@@ -81,6 +85,59 @@ export async function autoResumeServerSessions(
       // just don't leave the rejection unhandled.
       console.warn('[uvr-auto-resume] resume failed:', err)
     })
+  }
+}
+
+/**
+ * Start an instrumental split with full lifecycle bookkeeping — THE way
+ * every surface launches one (results viewer, Full band chain). Persists
+ * the job id for reload-resume, records the split time on success, and
+ * clears the marker on failure. Progress/busy state lives in the
+ * module-level registry (activeStemSplits), so navigation can't lose it;
+ * the caller only handles its own toasts.
+ */
+export async function startManagedStemSplit(
+  sessionId: string,
+  options: {
+    reuseApiSessionId?: string
+    durationSeconds?: number
+  } = {},
+): Promise<StemSplitResult> {
+  try {
+    const result = await runStemSplit(sessionId, {
+      ...options,
+      onJobStarted: (serverSessionId) =>
+        void recordUvrSplitJobStarted(sessionId, serverSessionId),
+    })
+    void recordUvrSplitTime(sessionId, result.elapsedMs)
+    return result
+  } catch (err) {
+    void clearUvrSplitJob(sessionId)
+    throw err
+  }
+}
+
+/** Re-attach to every split whose poll a teardown killed (splitApiSessionId
+ *  persisted before polling). Free: the job is already paid; RunPod holds
+ *  the result ~30 min and the stems live in R2 ~24 h. A job that can't be
+ *  recovered any more just has its marker cleared — failed jobs were
+ *  auto-refunded server-side. */
+export async function autoResumeStemSplits(): Promise<void> {
+  for (const session of getAllUvrSessions()) {
+    const splitId = session.splitApiSessionId
+    if (splitId === undefined || splitId === '') continue
+    if (isStemSplitActive(session.sessionId)) continue
+    void attachToStemSplitJob(session.sessionId, splitId)
+      .then(() => {
+        // Keep an existing recorded time; the marker just needs clearing.
+        if (getUvrSession(session.sessionId)?.splitApiSessionId !== undefined) {
+          void clearUvrSplitJob(session.sessionId)
+        }
+      })
+      .catch((err) => {
+        console.warn('[uvr-auto-resume] split resume failed:', err)
+        void clearUvrSplitJob(session.sessionId)
+      })
   }
 }
 

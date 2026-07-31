@@ -277,6 +277,11 @@ export interface UvrSessionRecord extends DbEntity {
   processingTime?: number
   /** Wall-clock ms of the instrumental-split second pass (drums/bass/…). */
   splitTime?: number
+  /** RunPod session id of an IN-FLIGHT instrumental split — persisted
+   *  before polling (like apiSessionId for the main separation) so a
+   *  reload re-attaches instead of orphaning the paid job. Cleared when
+   *  the split settles. */
+  splitApiSessionId?: string
   error?: string
   vocalStemId?: string // FK -> uvrStemBlobs.id
   instrumentalStemId?: string

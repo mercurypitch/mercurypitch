@@ -82,7 +82,10 @@ async function statusFromR2(
         size: o.size,
       }
     })
-    .filter((f) => f.stem === 'vocal' || f.stem === 'instrumental')
+    // Any classified stem counts: split jobs leave drums/bass/guitar/piano/
+    // other here, and limiting recovery to vocal+instrumental silently broke
+    // re-attaching to a finished split after a reload.
+    .filter((f) => (RUNPOD_STEM_NAMES as readonly string[]).includes(f.stem))
   if (files.length === 0) return null
   return { session_id: sessionId, status: 'completed', progress: 100, files }
 }

@@ -17,12 +17,27 @@ vi.mock('@/stores/app-store', () => ({
   completeUvrSession: vi.fn(() => Promise.resolve(true)),
   setErrorUvrSession: vi.fn(),
   isSessionStoreReady: vi.fn(() => true),
+  getAllUvrSessions: vi.fn(() => []),
+  getUvrSession: vi.fn(),
+  recordUvrSplitJobStarted: vi.fn(() => Promise.resolve(true)),
+  recordUvrSplitTime: vi.fn(() => Promise.resolve(true)),
+  clearUvrSplitJob: vi.fn(() => Promise.resolve(true)),
+}))
+vi.mock('@/lib/uvr-stem-split', () => ({
+  attachToStemSplitJob: vi.fn(() =>
+    Promise.resolve({ saved: ['drums'], model: 'demucs-6s' }),
+  ),
+  isStemSplitActive: vi.fn(() => false),
+  runStemSplit: vi.fn(() =>
+    Promise.resolve({ saved: ['drums'], model: 'demucs-6s', elapsedMs: 5 }),
+  ),
 }))
 
-import { autoResumeServerSessions } from '@/lib/uvr-auto-resume'
+import { autoResumeServerSessions, autoResumeStemSplits, startManagedStemSplit, } from '@/lib/uvr-auto-resume'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
+import { attachToStemSplitJob, isStemSplitActive, runStemSplit, } from '@/lib/uvr-stem-split'
 import type { UvrSession } from '@/stores/app-store'
-import { completeUvrSession, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
+import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
 
 const mockedResumable = vi.mocked(resumableServerSessions)
 const mockedActive = vi.mocked(isServerPollActive)
@@ -130,5 +145,86 @@ describe('autoResumeServerSessions', () => {
       'server exploded',
     )
     expect(onCreditsMaybeChanged).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── Split resume + managed launch ────────────────────────────────
+
+const flush = () => new Promise((r) => setTimeout(r, 0))
+
+describe('autoResumeStemSplits', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // clearAllMocks keeps implementations — reset the ones tests override.
+    vi.mocked(isStemSplitActive).mockReturnValue(false)
+    vi.mocked(attachToStemSplitJob).mockResolvedValue({
+      saved: ['drums'],
+      model: 'demucs-6s',
+    })
+  })
+
+  const splitSeed = (sessionId: string, splitApiSessionId?: string) =>
+    ({ sessionId, splitApiSessionId }) as unknown as UvrSession
+
+  it('re-attaches every session with a persisted split job', async () => {
+    vi.mocked(getAllUvrSessions).mockReturnValue([
+      splitSeed('s1', 'rp_gpu_split-1'),
+      splitSeed('s2'),
+    ])
+    await autoResumeStemSplits()
+    await flush()
+    expect(attachToStemSplitJob).toHaveBeenCalledTimes(1)
+    expect(attachToStemSplitJob).toHaveBeenCalledWith('s1', 'rp_gpu_split-1')
+  })
+
+  it('never double-attaches an already-running split', async () => {
+    vi.mocked(getAllUvrSessions).mockReturnValue([
+      splitSeed('s1', 'rp_gpu_split-1'),
+    ])
+    vi.mocked(isStemSplitActive).mockReturnValue(true)
+    await autoResumeStemSplits()
+    expect(attachToStemSplitJob).not.toHaveBeenCalled()
+  })
+
+  it('clears the marker when the job is unrecoverable', async () => {
+    vi.mocked(getAllUvrSessions).mockReturnValue([
+      splitSeed('s1', 'rp_gpu_gone'),
+    ])
+    vi.mocked(attachToStemSplitJob).mockRejectedValueOnce(
+      new Error('job vanished'),
+    )
+    await autoResumeStemSplits()
+    await flush()
+    expect(clearUvrSplitJob).toHaveBeenCalledWith('s1')
+  })
+
+  it('rides along with the main auto-resume triggers', async () => {
+    mockedResumable.mockResolvedValue([])
+    vi.mocked(getAllUvrSessions).mockReturnValue([])
+    await autoResumeServerSessions()
+    expect(getAllUvrSessions).toHaveBeenCalled()
+  })
+})
+
+describe('startManagedStemSplit', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('persists the job id on start and the split time on success', async () => {
+    await startManagedStemSplit('s1', { reuseApiSessionId: 'rp_gpu_a' })
+    const opts = vi.mocked(runStemSplit).mock.calls[0][1]!
+    expect(opts.reuseApiSessionId).toBe('rp_gpu_a')
+    await opts.onJobStarted?.('rp_gpu_split-9')
+    expect(recordUvrSplitJobStarted).toHaveBeenCalledWith(
+      's1',
+      'rp_gpu_split-9',
+    )
+    expect(recordUvrSplitTime).toHaveBeenCalledWith('s1', 5)
+  })
+
+  it('clears the resume marker when the split fails', async () => {
+    vi.mocked(runStemSplit).mockRejectedValueOnce(new Error('boom'))
+    await expect(startManagedStemSplit('s1')).rejects.toThrow('boom')
+    expect(clearUvrSplitJob).toHaveBeenCalledWith('s1')
+    expect(recordUvrSplitTime).not.toHaveBeenCalled()
   })
 })
