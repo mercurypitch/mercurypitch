@@ -9,6 +9,7 @@ import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlo
 import { getUserId } from '@/db/seed'
 import type { DatabaseAdapter } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
+import { wavDurationSeconds } from '@/lib/wav-meta'
 
 interface LocalTransactionAdapter extends DatabaseAdapter {
   transactionLocal: DatabaseAdapter['transaction']
@@ -139,6 +140,42 @@ export async function getStemBlobUrl(
     return URL.createObjectURL(blob)
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getStemBlobUrl failed:', err)
+    return null
+  }
+}
+
+/** A hydrated stem: playable object URL plus the display metadata the
+ *  results cards show, from one IndexedDB read. Duration comes off the
+ *  WAV header — no decode of the multi-MB payload. */
+export interface StemBlobEntry {
+  url: string
+  size: number
+  duration?: number
+}
+
+export async function getStemBlobEntry(
+  sessionId: string,
+  stemType: UvrStemType,
+): Promise<StemBlobEntry | null> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const results = await repo.findAll({
+      where: { sessionId, stemType },
+      orderBy: 'createdAt',
+      orderDir: 'desc',
+      limit: 1,
+    })
+    if (results.length === 0) return null
+    const entry = results[0]
+    const blob = new Blob([entry.data], { type: entry.mimeType })
+    return {
+      url: URL.createObjectURL(blob),
+      size: entry.size,
+      duration: wavDurationSeconds(entry.data.slice(0, 4096), entry.size),
+    }
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] getStemBlobEntry failed:', err)
     return null
   }
 }

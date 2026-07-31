@@ -275,6 +275,8 @@ export interface UvrSessionRecord extends DbEntity {
   provider?: string
   numChunks?: number
   processingTime?: number
+  /** Wall-clock ms of the instrumental-split second pass (drums/bass/…). */
+  splitTime?: number
   error?: string
   vocalStemId?: string // FK -> uvrStemBlobs.id
   instrumentalStemId?: string

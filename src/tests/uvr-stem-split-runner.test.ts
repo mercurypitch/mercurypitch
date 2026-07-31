@@ -105,6 +105,31 @@ describe('runStemSplit', () => {
     expect(request.provider).toBe('runpod')
   })
 
+  it('never reports progress moving backwards within a phase', async () => {
+    // Server status snapshots race at job start (queued vs processing) and
+    // the raw pct sequence can flap 0,1,0,1,2 — the clamp keeps the UI
+    // monotonic.
+    api.pollForCompletion.mockImplementation(
+      async (
+        _sid: string,
+        onProgress: (pct: number) => void,
+        onComplete: (files: OutputFile[]) => void | Promise<void>,
+      ) => {
+        for (const pct of [0, 1, 0, 1, 2]) onProgress(pct)
+        await onComplete(serverFiles(['drums', 'bass', 'guitar', 'other']))
+      },
+    )
+    const seen: { phase: string; pct: number }[] = []
+    await runStemSplit('session-1', { onProgress: (p) => seen.push(p) })
+    const processing = seen
+      .filter((p) => p.phase === 'processing')
+      .map((p) => p.pct)
+    for (let i = 1; i < processing.length; i++) {
+      expect(processing[i]).toBeGreaterThanOrEqual(processing[i - 1])
+    }
+    expect(processing.at(-1)).toBe(2)
+  })
+
   it('reports progress phases in order', async () => {
     const phases: string[] = []
     await runStemSplit('session-1', {

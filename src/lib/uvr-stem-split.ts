@@ -44,6 +44,9 @@ export interface StemSplitResult {
   /** Stems that were saved to the session, in server order. */
   saved: StemSplitPart[]
   model: string
+  /** Wall-clock ms of the whole split (upload -> process -> saved) — the
+   *  caller records it on the session (recordUvrSplitTime). */
+  elapsedMs: number
 }
 
 export class StemSplitError extends Error {}
@@ -64,7 +67,17 @@ export async function runStemSplit(
   } = {},
 ): Promise<StemSplitResult> {
   const model = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
-  const notify = options.onProgress ?? (() => {})
+  const startedAt = Date.now()
+  // Server progress can jitter backwards at the start of a job (queued vs
+  // processing snapshots race each other) — clamp so the UI only ever
+  // moves forward within a phase.
+  const raw = options.onProgress ?? (() => {})
+  let last: StemSplitProgress = { phase: 'uploading', pct: -1 }
+  const notify = (p: StemSplitProgress) => {
+    const pct = p.phase === last.phase ? Math.max(last.pct, p.pct) : p.pct
+    last = { phase: p.phase, pct }
+    raw(last)
+  }
 
   const instrumental = await getStemBlob(sessionId, 'instrumental')
   if (!instrumental) {
@@ -154,7 +167,7 @@ export async function runStemSplit(
   // Best-effort server cleanup — the stems are safely in IndexedDB.
   void deleteSession(started.session_id).catch(() => {})
 
-  return { saved, model }
+  return { saved, model, elapsedMs: Date.now() - startedAt }
 }
 
 /** Display metadata for part stems, aligned with the vocal/instrumental

@@ -169,6 +169,9 @@ export interface UvrSession {
    *  (cold start / image pull), processing = actually separating. */
   phase?: 'queued' | 'processing'
   processingTime?: number
+  /** Wall-clock ms of the instrumental-split second pass — shown next to
+   *  processingTime on the results header. */
+  splitTime?: number
   error?: string
   fileHash?: string
   originalFile?: {
@@ -641,6 +644,7 @@ function sessionToDbRecord(
     provider: session.provider,
     numChunks: session.numChunks,
     processingTime: session.processingTime,
+    splitTime: session.splitTime,
     error: session.error,
     stemMetaJson:
       session.stemMeta !== undefined
@@ -678,6 +682,7 @@ function dbRecordToSession(rec: UvrSessionRecord): UvrSession {
     provider: rec.provider,
     numChunks: rec.numChunks,
     processingTime: rec.processingTime,
+    splitTime: rec.splitTime,
     error: rec.error,
     createdAt: rec.appCreatedAt ?? Date.parse(rec.createdAt),
     groupId: rec.groupId,
@@ -1208,6 +1213,22 @@ export async function completeUvrSession(
     // job reporting ~3272 s.
     processingTime: session.processingTime ?? Date.now() - session.createdAt,
   }
+  updateSessionCache(updated)
+  setCurrentSessionIfActive(updated)
+  return persistSessionDurable(updated)
+}
+
+/**
+ * Record how long the instrumental-split second pass took. Durable like
+ * completeUvrSession — the timing survives reloads with the session.
+ */
+export async function recordUvrSplitTime(
+  sessionId: string,
+  splitTimeMs: number,
+): Promise<boolean> {
+  const session = getUvrSession(sessionId)
+  if (!session) return false
+  const updated: UvrSession = { ...session, splitTime: splitTimeMs }
   updateSessionCache(updated)
   setCurrentSessionIfActive(updated)
   return persistSessionDurable(updated)

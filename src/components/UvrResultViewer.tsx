@@ -5,14 +5,15 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
-import { getStemBlobUrl } from '@/db/services/uvr-service'
+import type { StemBlobEntry } from '@/db/services/uvr-service'
+import { getStemBlobEntry } from '@/db/services/uvr-service'
 import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { drawStemPeaks, evictStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
 import type { StemSplitPart, StemSplitProgress } from '@/lib/uvr-stem-split'
 import { EXPERIMENTAL_PART_STEMS, PART_STEM_DISPLAY, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
-import { getUvrSession } from '@/stores/app-store'
+import { getUvrSession, recordUvrSplitTime } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
 import { UvrSessionActions } from './UvrSessionActions'
@@ -225,9 +226,13 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
   // Loaded from IndexedDB by (sessionId, stemType); produced on demand by
   // a second separation pass over the instrumental (runStemSplit).
   const ALL_PARTS = Object.keys(PART_STEM_DISPLAY) as StemSplitPart[]
-  const [partUrls, setPartUrls] = createSignal<
-    Partial<Record<StemSplitPart, string>>
+  const [partEntries, setPartEntries] = createSignal<
+    Partial<Record<StemSplitPart, StemBlobEntry>>
   >({})
+  // True while stored parts hydrate from IndexedDB (multi-MB blob reads —
+  // seconds for a full band). The Split button hides meanwhile: showing
+  // "Split into parts" and then having cards pop in reads as a bug.
+  const [partsLoading, setPartsLoading] = createSignal(false)
   const [splitBusy, setSplitBusy] = createSignal(false)
   const [splitProgress, setSplitProgress] =
     createSignal<StemSplitProgress | null>(null)
@@ -297,29 +302,48 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     if (previewDuration() > 0) setPreviewTime(fraction * previewDuration())
   }
 
+  // Guards against a stale hydration finishing after the session changed:
+  // its URLs are revoked instead of applied.
+  let partLoadToken = 0
+
+  const clearPartEntries = () => {
+    setPartEntries((prev) => {
+      for (const entry of Object.values(prev)) {
+        URL.revokeObjectURL(entry.url)
+        evictStemPeaks(entry.url)
+      }
+      return {}
+    })
+  }
+
   const loadPartUrls = async (sessionId: string) => {
-    const entries = await Promise.all(
+    const token = ++partLoadToken
+    clearPartEntries()
+    setPartsLoading(true)
+    // Parts land one by one as each blob read resolves — with five ~60 MB
+    // stems a single all-or-nothing barrier keeps the section empty for
+    // seconds and then dumps everything at once.
+    await Promise.all(
       ALL_PARTS.map(async (part) => {
-        const url = await getStemBlobUrl(sessionId, part)
-        return [part, url] as const
+        const entry = await getStemBlobEntry(sessionId, part)
+        if (entry === null) return
+        if (token !== partLoadToken) {
+          URL.revokeObjectURL(entry.url)
+          return
+        }
+        setPartEntries((prev) => ({ ...prev, [part]: entry }))
       }),
     )
-    const next: Partial<Record<StemSplitPart, string>> = {}
-    for (const [part, url] of entries) if (url !== null) next[part] = url
-    setPartUrls((prev) => {
-      for (const url of Object.values(prev)) {
-        URL.revokeObjectURL(url)
-        evictStemPeaks(url)
-      }
-      return next
-    })
+    if (token === partLoadToken) setPartsLoading(false)
   }
 
   createEffect(() => {
     const sessionId = props.sessionId
     stopPreview()
     if (sessionId === undefined || sessionId === '') {
-      setPartUrls({})
+      partLoadToken++
+      clearPartEntries()
+      setPartsLoading(false)
       return
     }
     void loadPartUrls(sessionId)
@@ -347,17 +371,19 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     unsubPartsUpdated?.()
     stopPreview()
     player.dispose()
-    for (const url of Object.values(partUrls())) {
-      URL.revokeObjectURL(url)
-      evictStemPeaks(url)
-    }
+    partLoadToken++
+    clearPartEntries()
   })
 
   const partsList = () => {
-    const urls = partUrls()
-    return ALL_PARTS.filter((p) => urls[p] !== undefined).map((part) => ({
+    const entries = partEntries()
+    return ALL_PARTS.filter((p) => entries[p] !== undefined).map((part) => ({
       part,
-      url: urls[part]!,
+      url: entries[part]!.url,
+      meta: {
+        duration: entries[part]!.duration,
+        size: entries[part]!.size,
+      } as StemMeta,
       ...PART_STEM_DISPLAY[part],
     }))
   }
@@ -368,7 +394,10 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     setSplitBusy(true)
     setSplitProgress(null)
     try {
-      await runStemSplit(sessionId, { onProgress: setSplitProgress })
+      const result = await runStemSplit(sessionId, {
+        onProgress: setSplitProgress,
+      })
+      void recordUvrSplitTime(sessionId, result.elapsedMs)
       await loadPartUrls(sessionId)
       showNotification('Instrumental split into parts', 'success')
     } catch (err) {
@@ -404,6 +433,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       /** Part stems (drums/bass/…) have no practice/export/replace flows —
        *  they preview inline and join mixes via selection. */
       isPart?: boolean
+      /** Parts carry their own meta (read off the stored blob at hydration
+       *  time); the core stems read props.stemMeta instead. */
+      meta?: StemMeta
     }[] = []
 
     if (props.outputs?.vocal !== undefined) {
@@ -444,6 +476,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         practiceMode: 'instrumental',
         exportType: 'instrumental',
         isPart: true,
+        meta: entry.meta,
       })
     }
     if (props.outputs?.vocal !== undefined) {
@@ -525,11 +558,21 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
         <div class="rv-header-left">
           <h3>Stems</h3>
           <Show when={props.processingTime}>
-            <span class="rv-processing-time">
+            <span
+              class="rv-processing-time"
+              title={
+                session()?.splitTime !== undefined
+                  ? 'Separation + instrumental split time'
+                  : 'Separation time'
+              }
+            >
               <span class="rv-time-icon">
                 <Clock />
               </span>
               {Math.round(props.processingTime! / 1000)}s
+              <Show when={session()?.splitTime}>
+                {(split) => <> + {Math.round(split() / 1000)}s</>}
+              </Show>
             </span>
           </Show>
         </div>
@@ -570,7 +613,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
       <div class="rv-stems-grid">
         <For each={stems()}>
           {(stem) => {
-            const meta = props.stemMeta?.[stem.key]
+            const meta = stem.meta ?? props.stemMeta?.[stem.key]
             const isSelected = () => selectedKeys().has(stem.key)
             return (
               <div
@@ -820,9 +863,11 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
           <div class="rv-parts-header">
             <span class="rv-parts-title">Instrument parts</span>
             <Show
-              when={!splitBusy()}
+              when={!splitBusy() && !partsLoading()}
               fallback={
-                <span class="rv-parts-progress">{splitProgressLabel()}</span>
+                <span class="rv-parts-progress">
+                  {splitBusy() ? splitProgressLabel() : 'Loading stems…'}
+                </span>
               }
             >
               <button
@@ -850,7 +895,9 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               </button>
             </Show>
           </div>
-          <Show when={partsList().length === 0 && !splitBusy()}>
+          <Show
+            when={partsList().length === 0 && !splitBusy() && !partsLoading()}
+          >
             <p class="rv-parts-hint">
               Break the instrumental into {SPLIT_PART_STEMS.join(', ')} stems on
               the separation server — they appear above with the other stems,
