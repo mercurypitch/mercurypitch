@@ -402,6 +402,18 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     return items
   })
 
+  /**
+   * The climb reveals the art: rungs ABOVE yours show a draped, veiled
+   * trophy instead of their render — the name stays, the prize is the
+   * surprise. Your rung and everything below it (already climbed through)
+   * show real art; the mystery league keeps its own '?' identity. Display
+   * gating only — the public ladder API still serves every trophyAsset.
+   * With no league yet (signed out, still loading), only rung 1 shows.
+   */
+  const LOCKED_TROPHY = '/leagues/locked.webp'
+  const rungRevealed = (rung: LeagueRung): boolean =>
+    rung.isMystery || rung.rank <= (leagueMe()?.league?.rank ?? 1)
+
   // Center the signed-in rung in the trophy rail (it scrolls on phones).
   let stripEl: HTMLDivElement | undefined
   const centerCurrentRung = (): void => {
@@ -613,17 +625,35 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     <div
                       class={`league-strip-rung ${
                         rung.id === leagueMe()?.league?.id ? 'current' : ''
-                      } ${rung.isMystery ? 'mystery' : ''}`}
+                      } ${rung.isMystery ? 'mystery' : ''} ${
+                        rungRevealed(rung) ? '' : 'locked'
+                      }`}
                       data-current={
                         rung.id === leagueMe()?.league?.id ? 'true' : undefined
                       }
-                      title={rung.isMystery ? 'Coming soon' : rung.name}
+                      title={
+                        rung.isMystery
+                          ? 'Coming soon'
+                          : rungRevealed(rung)
+                            ? rung.name
+                            : `Reach ${rung.name} to unveil its trophy`
+                      }
                     >
                       <Show when={rung.trophyAsset}>
                         <img
                           class="league-strip-trophy"
-                          src={rung.trophyAsset ?? ''}
-                          alt={rung.isMystery ? 'Mystery league' : rung.name}
+                          src={
+                            rungRevealed(rung)
+                              ? (rung.trophyAsset ?? '')
+                              : LOCKED_TROPHY
+                          }
+                          alt={
+                            rung.isMystery
+                              ? 'Mystery league'
+                              : rungRevealed(rung)
+                                ? rung.name
+                                : `${rung.name} trophy, veiled until you reach it`
+                          }
                         />
                       </Show>
                       <span class="league-strip-name">{rung.name}</span>
@@ -754,7 +784,9 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                             {item.row.rank}
                           </span>
                           <span class="league-standing-name">
-                            {item.row.displayName}
+                            <span class="league-standing-name-text">
+                              {item.row.displayName}
+                            </span>
                             <Show when={item.row.userId === getUserId()}>
                               <span class="league-standing-you">you</span>
                             </Show>
