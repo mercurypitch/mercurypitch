@@ -395,6 +395,9 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 },        // 30/min
   'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
+  // Account erasure is irreversible and needs a valid token anyway; the cap
+  // just bounds a scripted sweep against harvested tokens.
+  'delete-account': { max: 5, windowMs: 600_000 },      // 5/10min
   // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
   // index.ts. Generous for normal use (session saves, settings, follows) but
   // bounds scripted spam / unbounded row creation. Tunable.
@@ -406,6 +409,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // one minute leaves ample room for retries while stopping a loop or multiple
   // tabs from rapidly burning GPU spend. The sustained cap mirrors the
   // 15-song upload queue and bounds any one account to one full batch/hour.
+  // Friend-code redemption: generous for a human typing a code, tight enough
+  // that nobody scripts their way through the code space.
+  'friend-redeem': { max: 20, windowMs: 300_000 },
+  // Minting is one UPDATE the first time and a pure read after, but it IS a
+  // write behind a GET — cap it so a scripted loop can't spam profile writes.
+  'friend-code': { max: 10, windowMs: 300_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
 }
@@ -995,6 +1004,80 @@ async function handleLogout(request: Request, env: Env, respond: Respond): Promi
   return respond({ ok: true })
 }
 
+/**
+ * Every table holding rows owned by a user, in deletion order (children
+ * before the users row). `follows` is matched on BOTH sides so a deleted
+ * account doesn't linger in other people's follow lists.
+ *
+ * Deliberately absent:
+ *   - billingEvents — Stripe event ids for webhook idempotency, no personal
+ *     data and no userId column.
+ *   - mirrorEvents — keyed by an unrelated random clientId that is never
+ *     linked to an account, so it isn't reachable from here (it has its own
+ *     retention story).
+ */
+const USER_OWNED_TABLES: { table: string; column: string }[] = [
+  { table: 'sessionRecords', column: 'userId' },
+  { table: 'challengeProgress', column: 'userId' },
+  { table: 'userBadges', column: 'userId' },
+  { table: 'userAchievements', column: 'userId' },
+  { table: 'leaderboardEntries', column: 'userId' },
+  { table: 'sharedMelodies', column: 'userId' },
+  { table: 'sharedSessions', column: 'userId' },
+  { table: 'userSettings', column: 'userId' },
+  { table: 'userSurveyResponses', column: 'userId' },
+  { table: 'emailVerifications', column: 'userId' },
+  // League rows are per-user too: leaving them would keep a ghost entry in
+  // this week's standings (rendered as Singer-<id>) and a point history for
+  // an account that asked to be erased. Safe to reference unconditionally:
+  // deploy-db.yml applies migrations before deploying the worker, so this
+  // code never runs against a database missing migration 0005's tables.
+  { table: 'leagueMembership', column: 'userId' },
+  { table: 'leaguePointEvents', column: 'userId' },
+  // Credits and entitlements go with the account. Stripe remains the
+  // authoritative financial record (and keeps its own retention), so this
+  // erases our copy without destroying the accounting trail.
+  { table: 'creditLedger', column: 'userId' },
+  { table: 'entitlements', column: 'userId' },
+]
+
+/**
+ * Hard-delete the caller's account and everything owned by it (GDPR Art. 17).
+ * Irreversible, and deliberately so: a soft delete would leave exactly the
+ * personal data the request is asking us to remove.
+ *
+ * Unspent credits are forfeited — the client confirms that before calling.
+ *
+ * Safe to run without touching Stripe: checkout is `mode: 'payment'` (one-off
+ * credit packs, see billing.ts), so there is no subscription left billing a
+ * deleted account. The Stripe customer object survives at Stripe under its own
+ * financial-records retention; dropping `users.stripeCustomerId` with the row
+ * severs our link to it.
+ *
+ * A second call with the same token 401s — `getAuth` can no longer resolve the
+ * user — so this is naturally idempotent from the client's point of view.
+ */
+async function handleDeleteMe(request: Request, env: Env, respond: Respond): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const { userId } = auth
+
+  const statements = [
+    ...USER_OWNED_TABLES.map(({ table, column }) =>
+      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(userId),
+    ),
+    env.DB.prepare('DELETE FROM follows WHERE userId = ? OR followedUserId = ?').bind(userId, userId),
+    env.DB.prepare('DELETE FROM userProfiles WHERE id = ?').bind(userId),
+    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
+  ]
+
+  // One batch so a mid-way failure can't strand a user row without its data
+  // (or, worse, orphaned data without its user).
+  await env.DB.batch(statements)
+
+  return respond({ ok: true, deleted: userId })
+}
+
 /** Route /api/auth/* requests. Returns null when the path doesn't match. */
 export async function handleAuth(
   request: Request,
@@ -1011,6 +1094,17 @@ export async function handleAuth(
 
   if (route === 'me' && request.method === 'GET') {
     return handleMe(request, env, respond)
+  }
+  if (route === 'me' && request.method === 'DELETE') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'delete-account')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleDeleteMe(request, env, respond)
   }
   if (route === 'logout' && request.method === 'POST') {
     return handleLogout(request, env, respond)

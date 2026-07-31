@@ -60,15 +60,20 @@ export function weeklyTier(
   return 'attempted'
 }
 
+/**
+ * Returns true when the run was consumed as a weekly "Sing the Legend"
+ * attempt (and a `source: 'weekly'` sessionRecord written), so the caller
+ * knows not to also write a plain `source: 'exercise'` record for it.
+ */
 export async function recordWeeklyAttempt(entry: {
   type: ExerciseType
   score: number
-}): Promise<void> {
+}): Promise<boolean> {
   const a = active()
-  if (a === null) return
+  if (a === null) return false
   if (entry.type !== a.exercise) {
     setActive(null)
-    return
+    return false
   }
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
@@ -82,6 +87,7 @@ export async function recordWeeklyAttempt(entry: {
       notesHit: 0,
       notesTotal: 0,
       weeklyChallengeId: a.challengeId,
+      source: 'weekly',
     })
     trackEvent('weekly_attempt')
 
@@ -110,4 +116,5 @@ export async function recordWeeklyAttempt(entry: {
     // The drill result stands even if persistence fails.
   }
   setVersion((v) => v + 1)
+  return true
 }

@@ -100,16 +100,20 @@ export function computeAttemptOutcome(
  * every recorded result; no-ops unless an attempt is armed. A result of a
  * different exercise type means the user moved on — disarm silently.
  * Never throws into the exercise completion flow.
+ *
+ * Returns true when the run was consumed as a challenge attempt (and a
+ * `source: 'challenge'` sessionRecord written), so the caller knows not to
+ * ALSO write a plain `source: 'exercise'` record for the same run.
  */
 export async function recordChallengeAttempt(entry: {
   type: ExerciseType
   score: number
-}): Promise<void> {
+}): Promise<boolean> {
   const attempt = activeAttempt()
-  if (attempt === null) return
+  if (attempt === null) return false
   if (entry.type !== attempt.exercise) {
     setActiveAttempt(null)
-    return
+    return false
   }
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
@@ -148,12 +152,14 @@ export async function recordChallengeAttempt(entry: {
 
     // The attempt counts as a real practice session: it feeds the
     // server-derived leaderboard and the badge engine's session stats.
+    // A challenge is a fixed task, so it is one of the sources that rank.
     await saveSessionRecord({
       melodyName: `Challenge: ${attempt.title}`,
       score,
       accuracy: score,
       notesHit: 0,
       notesTotal: 0,
+      source: 'challenge',
     })
 
     if (outcome.newlyCompleted) {
@@ -177,4 +183,7 @@ export async function recordChallengeAttempt(entry: {
     // the exercise flow.
   }
   setAttemptVersion((v) => v + 1)
+  // Consumed: even if persistence threw, this run was a challenge attempt and
+  // must not also be recorded as a plain exercise (the record was attempted).
+  return true
 }

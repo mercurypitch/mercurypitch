@@ -14,7 +14,7 @@ vi.mock('@/db', () => ({
   getDb: async () => adapter,
 }))
 
-import type { ChallengeDefinition, UserProfile } from '@/db/entities'
+import type { ChallengeDefinition, SessionSource, UserProfile, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { loadCurrentUserEntry, loadLeaderboard, } from '@/db/services/leaderboard-service'
 import { loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, } from '@/db/services/share-service'
@@ -27,11 +27,18 @@ beforeEach(async () => {
 const nowIso = (): string => new Date().toISOString()
 
 /** Seed a sessionRecords row — the leaderboard is now derived from these. */
+/**
+ * Seed a ranked attempt. Defaults to 'challenge' because only fixed tasks
+ * rank — free 'practice' is deliberately invisible to the leaderboard (see
+ * the exclusion test below), so a practice fixture would silently produce an
+ * empty board and make every assertion here meaningless.
+ */
 function seedSession(
   userId: string,
   score: number,
   accuracy: number,
   endedAt: string = nowIso(),
+  source: SessionSource = 'challenge',
 ): Promise<unknown> {
   return adapter.getRepository('sessionRecords').create({
     userId,
@@ -43,6 +50,7 @@ function seedSession(
     notesHit: 0,
     notesTotal: 0,
     streak: 0,
+    source,
     results: [],
   } as never)
 }
@@ -88,6 +96,47 @@ describe('leaderboard flows', () => {
     // 'b' wins on accuracy despite the lower score
     expect(users[0].userId).toBe('b')
     expect(users[0].rank).toBe(1)
+  })
+
+  // Ranking only means something when everyone attempted the same task.
+  // Free practice is a self-chosen melody at a self-chosen difficulty, so a
+  // perfect score on an easy tune must not outrank a hard challenge run.
+  it('excludes free practice, ranking only fixed tasks', async () => {
+    await seedSession('practiser', 100, 100, nowIso(), 'practice')
+    await seedSession('challenger', 60, 60, nowIso(), 'challenge')
+
+    const users = await loadLeaderboard('overall', 'all-time')
+    expect(users.map((u) => u.userId)).toEqual(['challenger'])
+  })
+
+  it('counts only eligible attempts in a mixed history', async () => {
+    await seedSession(getUserId(), 60, 60, nowIso(), 'challenge')
+    await seedSession(getUserId(), 80, 80, nowIso(), 'weekly')
+    await seedSession(getUserId(), 100, 100, nowIso(), 'practice')
+
+    const entry = await loadCurrentUserEntry()
+    expect(entry?.score).toBe(70) // avg(60, 80) — the practice run is ignored
+    expect(entry?.totalSessions).toBe(2)
+  })
+
+  it('treats rows predating the source column as practice', async () => {
+    // Older records carry no source; they were free practice by definition,
+    // since challenges and exercises began tagging themselves at the same
+    // time the column was added.
+    await adapter.getRepository('sessionRecords').create({
+      userId: getUserId(),
+      melodyName: 'legacy',
+      startedAt: nowIso(),
+      endedAt: nowIso(),
+      score: 100,
+      accuracy: 100,
+      notesHit: 0,
+      notesTotal: 0,
+      streak: 0,
+      results: [],
+    } as never)
+
+    expect(await loadCurrentUserEntry()).toBeNull()
   })
 })
 

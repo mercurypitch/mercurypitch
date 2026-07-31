@@ -1438,9 +1438,17 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_LEADERBOARD,
   },
   {
+    title: 'Weekly leagues',
+    description:
+      'Climb a seven-league ladder: exercises and challenges earn weekly points, and every Monday the top of each league advances while the bottom drops down.',
+    targetSelector: '[data-testid="league-tab"]',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
     title: 'Rank by metric',
     description:
-      'Sort the board by overall score, best score, accuracy, streak or sessions.',
+      'Sort the board by overall score, best score, accuracy or sessions — and by streak when you are viewing friends.',
     targetSelector: '.category-tabs',
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,

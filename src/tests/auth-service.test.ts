@@ -8,7 +8,7 @@ vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'http://api.test',
 }))
 
-import { ensureAuth, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
+import { hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 
 function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
@@ -65,7 +65,41 @@ describe('token storage', () => {
   })
 })
 
-describe('ensureAuth', () => {
+describe('restoreAuth', () => {
+  // The whole point of lazy provisioning: a visitor who only browses must
+  // never end up with a users row. Startup and the account UI call this.
+  it('never provisions an identity when no token is stored', async () => {
+    const fetchMock = mockFetchOnce(200, {
+      token: makeToken(3600),
+      userId: 'u',
+      isNew: true,
+      user: { authProvider: 'anonymous' },
+    })
+    expect(await restoreAuth()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(getAuthToken()).toBeNull()
+  })
+
+  it('reuses a stored session without re-authenticating', async () => {
+    setAuthToken(makeToken(3600))
+    const fetchMock = mockFetchOnce(200, {})
+    expect(await restoreAuth()).toBe(true)
+    // One /api/auth/me verification, never an /anonymous handshake.
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      'http://api.test/api/auth/anonymous',
+      expect.anything(),
+    )
+  })
+
+  it('reports signed-out for an expired token', async () => {
+    setAuthToken(makeToken(-100))
+    const fetchMock = mockFetchOnce(200, {})
+    expect(await restoreAuth()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('requireAuth', () => {
   it('requests an anonymous token with the persisted device id', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {
@@ -75,7 +109,7 @@ describe('ensureAuth', () => {
       user: { id: deviceId, authProvider: 'anonymous' },
     })
 
-    const ok = await ensureAuth()
+    const ok = await requireAuth()
     expect(ok).toBe(true)
     expect(getAuthToken()).not.toBeNull()
 
@@ -90,7 +124,7 @@ describe('ensureAuth', () => {
   it('skips the network when a valid token exists', async () => {
     setAuthToken(makeToken(3600))
     const fetchMock = mockFetchOnce(200, {})
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -102,18 +136,18 @@ describe('ensureAuth', () => {
       }),
     )
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     warnSpy.mockRestore()
   })
 
   it('stops retrying anonymous auth after a 403 (upgraded account)', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     const fetchMock = mockFetchOnce(403, { error: 'Account requires login' })
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
 
     // The 403 is remembered — no further network attempts
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
     infoSpy.mockRestore()
   })
@@ -121,7 +155,7 @@ describe('ensureAuth', () => {
   it('resumes after an explicit login clears the signed-out state', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     mockFetchOnce(403, { error: 'Account requires login' })
-    await ensureAuth()
+    await requireAuth()
 
     mockFetchOnce(200, {
       token: makeToken(3600, 'password'),
@@ -130,7 +164,7 @@ describe('ensureAuth', () => {
       user: { authProvider: 'password' },
     })
     await loginWithPassword('a@b.com', 'secret123')
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     infoSpy.mockRestore()
   })
 })
@@ -141,9 +175,9 @@ describe('logout', () => {
     logout()
     expect(getAuthToken()).toBeNull()
 
-    // ensureAuth must not attempt (and fail) an anonymous handshake
+    // requireAuth must not attempt (and fail) an anonymous handshake
     const fetchMock = mockFetchOnce(200, {})
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -157,7 +191,7 @@ describe('logout', () => {
       isNew: false,
       user: { authProvider: 'anonymous' },
     })
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 })

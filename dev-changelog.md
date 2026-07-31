@@ -6,6 +6,52 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.23] - 2026-07-31
+
+### Added
+
+- **Weekly leagues** (#361): seven seeded rungs (`l1`–`l7`, `l7` flagged
+  `isMystery`) with per-rung trophy + enamel-badge art in `public/leagues/`;
+  server-side points engine (`league-points.ts`, config-driven via the
+  single-row `leaguePointsConfig` table: exercise/challenge/weekly bases,
+  score bonus, daily-variety, once-per-day goal-met, streak milestones);
+  awards hook `handleCreate` on `source`-carrying sessionRecords and
+  `handleUpdate` on streak raises; weekly promotion/relegation cut
+  (`league-cut.ts`, pure + tested) runs off the existing 6-hourly cron with a
+  `leagueMeta.lastCutWeekStart` once-per-week guard; `/api/league/me` returns
+  `{eligible:false}` for anonymous users and never 500s on a pre-league DB.
+  Client: Duolingo-style League tab — trophy rail (current rung spotlit,
+  auto-centered, sideways-scroll on phones), typographic hero, standings cut
+  into promotion/safe/relegation zones with labelled dividers.
+- **Friend codes** (#361): `userProfiles.friendCode` (Crockford base32,
+  I/L/O/U-free), add-by-code endpoint gated to registered accounts, friends
+  leaderboard view.
+- **Account erasure** (#361): `DELETE /api/auth/me` removes the user's rows
+  across all cloud tables; client type-to-confirm modal, local identity reset
+  (`resetUserId()` + token clear) after deletion.
+- **Dev league seeder** (#361): `pnpm dev:seed` populates a LOCAL-only D1
+  cast across rungs (l3 sized so zone dividers actually render); batches all
+  writes into one `wrangler d1 execute` call and refuses up front when the
+  dev worker holds the sqlite lock.
+
+### Changed
+
+- **Anonymous identities provision lazily** (#361): `restoreAuth()` (silent
+  resume) split from `requireAuth()` (provision-on-first-write); page loads
+  no longer mint cloud users. `findOwnProfile` lost its cloud-mode `findAll`
+  fallback that could return a stranger's profile.
+- **Leaderboards rank fixed tasks only** (#361): sessionRecords carry
+  `source` ('practice' | 'exercise' | 'challenge' | 'weekly'); ranking,
+  publication opt-in (`leaderboardOptIn` + display name), registered-only
+  eligibility and the sticky `longestStreak` threshold are driven by the new
+  `leaderboardConfig` row. Streak category is friends-only (400 otherwise).
+- **Tracked D1 migrations replace schema.sql** (#361): numbered files in
+  `workers/db-worker/migrations/` (0001 = old schema verbatim, no-op on
+  existing DBs) applied via `wrangler d1 migrations apply` in deploy-db.yml
+  before the worker deploy; `schema.sql` and the ad-hoc
+  `scripts/migrate-*.sql` are deleted. Every `d1_databases` block carries
+  `migrations_dir`.
+
 ## [0.7.18] - 2026-07-19
 
 ### Changed

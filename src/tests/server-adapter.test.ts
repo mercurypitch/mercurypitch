@@ -109,6 +109,66 @@ describe('ServerAdapter retry semantics', () => {
   })
 })
 
+describe('ServerAdapter lazy identity provisioning', () => {
+  function hookedRepo(beforeWrite: () => Promise<unknown>) {
+    return new ServerAdapter({
+      baseUrl: 'http://api.test',
+      beforeWrite,
+    }).getRepository<Rec>('sessionRecords')
+  }
+
+  it('awaits beforeWrite before create/update/delete', async () => {
+    const order: string[] = []
+    const beforeWrite = vi.fn(async () => {
+      order.push('provision')
+    })
+    const fetchMock = vi.fn(async () => {
+      order.push('fetch')
+      return ok({ id: 'a', score: 1 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const r = hookedRepo(beforeWrite)
+
+    await r.create({ score: 1 })
+    await r.update('a', { score: 2 })
+    await r.delete('a')
+
+    expect(beforeWrite).toHaveBeenCalledTimes(3)
+    // Provisioning must complete first, or the request goes out unauthenticated.
+    expect(order).toEqual([
+      'provision',
+      'fetch',
+      'provision',
+      'fetch',
+      'provision',
+      'fetch',
+    ])
+  })
+
+  it('never calls beforeWrite for reads — browsing must not create an account', async () => {
+    const beforeWrite = vi.fn(async () => undefined)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok([])))
+    const r = hookedRepo(beforeWrite)
+
+    await r.findAll()
+    await r.findById('x')
+    await r.count()
+
+    expect(beforeWrite).not.toHaveBeenCalled()
+  })
+
+  it('resolves reads empty on 401 (no identity yet) without warning', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
+
+    await expect(repo().findAll()).resolves.toEqual([])
+    await expect(repo().findById('x')).resolves.toBeNull()
+    await expect(repo().count()).resolves.toBe(0)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
 describe('ServerAdapter response handling', () => {
   it('findById swallows a 404 and returns null', async () => {
     const fetchMock = vi.fn().mockResolvedValue(fail(404))

@@ -1,3 +1,10 @@
+-- 0001_baseline.sql — schema as of the introduction of tracked migrations.
+--
+-- Every deployed database already had these objects (created by the old
+-- `d1 execute --file=schema.sql` deploy step), so this applies as a no-op
+-- there and as a full bootstrap on a fresh one. Later files carry the
+-- ALTERs that schema.sql could never express.
+
 -- =====================================================================
 -- MercuryPitch Cloudflare D1 (SQLite) Schema — CLOUD TABLES ONLY
 --

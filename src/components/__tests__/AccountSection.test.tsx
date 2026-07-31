@@ -10,7 +10,7 @@ vi.mock('@/lib/defaults', () => ({
 }))
 
 const mocks = vi.hoisted(() => ({
-  ensureAuth: vi.fn(async () => true),
+  restoreAuth: vi.fn(async () => true),
   fetchMe: vi.fn(),
   loginWithPassword: vi.fn(),
   registerWithPassword: vi.fn(),
@@ -66,7 +66,7 @@ describe('AccountSection', () => {
 
     expect(await screen.findByTestId('show-register')).toBeTruthy()
     expect(screen.getByTestId('show-login')).toBeTruthy()
-    expect(mocks.ensureAuth).toHaveBeenCalledOnce()
+    expect(mocks.restoreAuth).toHaveBeenCalledOnce()
   })
 
   it('registers with email, password and display name', async () => {

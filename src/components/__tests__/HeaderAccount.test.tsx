@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
 
 const mocks = vi.hoisted(() => ({
-  ensureAuth: vi.fn(async () => true),
+  restoreAuth: vi.fn(async () => true),
   fetchMe: vi.fn(),
   logout: vi.fn(),
 }))

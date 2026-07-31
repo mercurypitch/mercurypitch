@@ -25,8 +25,20 @@ import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 /** Preference keys all share this prefix (see src/stores/*.ts). */
 const SYNCED_PREFIX = 'pitchperfect_'
 
-/** Prefixed keys that are data, not preferences — never synced. */
-const EXCLUDED_KEYS = new Set(['pitchperfect_session_history'])
+/**
+ * Prefixed keys that are data, not preferences — never synced.
+ *
+ * The usage counters are per-device telemetry (usage_ms ticks every 15s the
+ * tab is visible), so syncing them was both semantically wrong and the single
+ * largest source of userSettings rows: it wrote a cloud row for anyone who
+ * left the tab open, which made "has settings" useless as an activity signal.
+ * Cross-device state (welcome_version, survey_seen) stays synced.
+ */
+const EXCLUDED_KEYS = new Set([
+  'pitchperfect_session_history',
+  'pitchperfect_usage_ms',
+  'pitchperfect_activity_count',
+])
 
 /** Safety valve: skip anything suspiciously large for a preference. */
 const MAX_VALUE_BYTES = 8 * 1024

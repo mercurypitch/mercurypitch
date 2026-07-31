@@ -3,6 +3,7 @@
 // ============================================================
 
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { stashPendingFriendCode } from '@/lib/pending-friend-code'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
 import type { SettingsSection } from '@/stores/ui-store'
@@ -214,9 +215,16 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'admin-weekly' }
   }
 
-  // Match: /tab-name
-  const tabMatch = hash.match(/^\/([a-z-]+)$/)
+  // Match: /tab-name — optionally carrying a query. Invite links use
+  // `#/leaderboard?add=CODE`, and the router canonicalises the hash right
+  // after this parse (erasing the query), so the code must be stashed the
+  // one time we see it; the Friends panel picks it up from the stash.
+  const tabMatch = hash.match(/^\/([a-z-]+)(?:\?(.*))?$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
+    if (tabMatch[2] !== undefined && tabMatch[2] !== '') {
+      const add = new URLSearchParams(tabMatch[2]).get('add')
+      if (add !== null && add !== '') stashPendingFriendCode(add)
+    }
     return { type: 'tab', tab: tabMatch[1] }
   }
 

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { z } from 'zod/v4'
+import { requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 
 const API_BASE = '/api/uvr'
@@ -41,8 +42,9 @@ async function fetchWithTimeout(
 /**
  * Authorization header for state-changing UVR calls. The production worker
  * gates non-GET /api/uvr/* behind a valid app JWT (see src/worker.ts); GET
- * reads stay open. An anonymous token is available after startup (ensureAuth),
- * so this is populated for every user, signed-in or not.
+ * reads stay open. Identities are provisioned lazily, so callers that
+ * dispatch a job must await requireAuth() first — this only reads whatever
+ * token exists by then.
  */
 function authHeaders(): Record<string, string> {
   const token = getAuthToken()
@@ -244,6 +246,10 @@ export async function processAudio(
   if (options.cpu_profile) {
     formData.append('cpu_profile', options.cpu_profile)
   }
+
+  // Dispatching a job spends credits and creates server-side state, so this
+  // is exactly the kind of action that earns an identity.
+  await requireAuth()
 
   const headers: Record<string, string> = { ...authHeaders() }
   if (options.provider !== undefined) {

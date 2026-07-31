@@ -6,6 +6,7 @@
 // an optional `base` (defaults to API_BASE_URL) so the fetch paths are
 // unit-testable even though tests run with VITE_API_BASE_URL unset.
 
+import { requireAuth } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -159,6 +160,9 @@ export async function startCheckout(
 ): Promise<string> {
   const b = apiBase(base)
   if (b === '') throw new Error('Billing is not available in this build')
+  // Buying credits needs somewhere to put them — provision on demand, since
+  // identities are no longer minted at startup.
+  await requireAuth()
   const res = await fetch(`${b}/api/billing/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },

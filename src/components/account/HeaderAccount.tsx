@@ -9,7 +9,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, logout } from '@/db/services/auth-service'
+import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
@@ -37,7 +37,9 @@ export const HeaderAccount: Component = () => {
     authVersion()
     if (!cloudConfigured) return
     void (async () => {
-      await ensureAuth()
+      // Restore only — rendering the header must never provision an
+      // identity, or every page load would create an account again.
+      await restoreAuth()
       setMe(await fetchMe())
     })()
   })

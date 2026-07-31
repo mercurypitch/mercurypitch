@@ -4,14 +4,18 @@
 
 import type { Component } from 'solid-js'
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
+import type { LeagueMe, LeagueRung, LeagueStanding, } from '@/db/services/league-service'
+import { fetchLeagueLadder, fetchLeagueMe, formatCutCountdown, msUntilNextCut, } from '@/db/services/league-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { peekPendingFriendCode } from '@/lib/pending-friend-code'
 import { showNotification } from '@/stores/notifications-store'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
@@ -186,11 +190,22 @@ function renderIcon(icon: Component | string) {
 // Mock Data
 // ============================================================
 
+/**
+ * `friendsOnly` categories are hidden on the global board and rejected by
+ * the worker there. A streak measures showing up rather than skill, and it
+ * counts every practice day — worth comparing with friends who chose to see
+ * each other, not a behavioural record to publish to strangers.
+ */
 const leaderboardCategories = [
   { id: 'overall' as const, name: 'Overall', icon: IconOverall },
   { id: 'best-score' as const, name: 'Best Score', icon: IconScore },
   { id: 'accuracy' as const, name: 'Accuracy', icon: IconAccuracy },
-  { id: 'streak' as const, name: 'Longest Streak', icon: IconStreak },
+  {
+    id: 'streak' as const,
+    name: 'Longest Streak',
+    icon: IconStreak,
+    friendsOnly: true,
+  },
   { id: 'sessions' as const, name: 'Most Sessions', icon: IconSessions },
 ]
 
@@ -209,8 +224,17 @@ interface WeeklyChallengeCard {
 // ============================================================
 
 export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
-  // eslint-disable-next-line solid/reactivity -- one-time signal init
-  const initialView = (props.view ?? 'global') as LeaderboardView
+  // An invite link (#/leaderboard?add=CODE) stashes its code before the
+  // router erases the query; landing from one should open straight onto the
+  // Friends view where the panel prefills it. Peek, don't take — the panel
+  // is the consumer.
+
+  const initialView = (
+    peekPendingFriendCode() != null
+      ? 'friends'
+      : // eslint-disable-next-line solid/reactivity -- one-time signal init
+        (props.view ?? 'global')
+  ) as LeaderboardView
   // eslint-disable-next-line solid/reactivity -- one-time signal init
   const initialCategory = (props.category ?? 'overall') as LeaderboardCategory
   const [activeView, setActiveView] = createSignal<LeaderboardView>(initialView)
@@ -223,6 +247,25 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const PAGE_SIZE = 25
+
+  const visibleCategories = createMemo(() =>
+    leaderboardCategories.filter(
+      (c) => c.friendsOnly !== true || activeView() === 'friends',
+    ),
+  )
+
+  // Leaving Friends while on a friends-only category would send the boards
+  // a request the server refuses (streak is friends-only); fall back instead
+  // of erroring. League never queries a board, so merely passing through it
+  // must not clobber the selection — Friends+streak → League → Friends
+  // should come back still on streak.
+  createEffect(() => {
+    const view = activeView()
+    if (view === 'league' || view === 'friends') return
+    if (!visibleCategories().some((c) => c.id === activeCategory())) {
+      setActiveCategory('overall')
+    }
+  })
 
   // DB-backed leaderboard data (paged)
   const [dbLeaderboardUsers, setDbLeaderboardUsers] = createSignal<
@@ -270,8 +313,123 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   createEffect(() => {
     authVersion()
     activeCategory()
-    activeView()
+    const view = activeView()
+    // The league view has its own loader below — no board page to fetch.
+    if (view === 'league') return
     void loadPage(0)
+  })
+
+  // ── League view state ─────────────────────────────────────────
+  const [leagueMe, setLeagueMe] = createSignal<LeagueMe | null>(null)
+  const [leagueLadder, setLeagueLadder] = createSignal<LeagueRung[]>([])
+  const [nowMs, setNowMs] = createSignal(Date.now())
+  const cutTimer = setInterval(() => setNowMs(Date.now()), 60_000)
+  onCleanup(() => clearInterval(cutTimer))
+
+  createEffect(() => {
+    authVersion()
+    if (activeView() !== 'league' || !cloudConfigured) return
+    void (async () => {
+      const [me, ladder] = await Promise.all([
+        fetchLeagueMe(),
+        fetchLeagueLadder(),
+      ])
+      // Both fetchers resolve empty on network failure. Keep whatever was
+      // already loaded rather than blanking the rail — and, worse, showing a
+      // signed-in user the "create an account" copy — over a blip.
+      if (me != null) setLeagueMe(me)
+      if (ladder.length > 0) setLeagueLadder(ladder)
+    })()
+  })
+
+  /** The rung one above / below the signed-in user's, for zone hints. */
+  const leagueNeighbours = createMemo(() => {
+    const rank = leagueMe()?.league?.rank
+    if (rank == null) return { up: undefined, down: undefined }
+    const ladder = leagueLadder()
+    return {
+      up: ladder.find((r) => r.rank === rank + 1 && !r.isMystery),
+      down: ladder.find((r) => r.rank === rank - 1),
+    }
+  })
+
+  type LeagueBoardItem =
+    | { kind: 'row'; row: LeagueStanding; zone: '' | 'promote' | 'demote' }
+    | { kind: 'divider'; zone: 'promote' | 'demote'; to?: string }
+
+  /**
+   * Standings cut into promotion / safe / relegation zones, with divider
+   * rows at the boundaries (the Duolingo pattern). Mirrors the server cut
+   * (league-cut.ts): only members with points promote, up to promoteCount;
+   * the bottom relegateCount of the REST relegate; small cohorts can have no
+   * safe band at all. The relegation boundary is derived from the full
+   * cohortSize, not the visible slice, because the server caps standings at
+   * its top rows.
+   */
+  const leagueBoard = createMemo<LeagueBoardItem[]>(() => {
+    const me = leagueMe()
+    const rows = me?.standings ?? []
+    const n = rows.length
+    const total = me?.cohortSize ?? n
+    const promoteCount = me?.league?.promoteCount ?? 0
+    const relegateCount = me?.league?.relegateCount ?? 0
+    // Only active members promote — trim trailing zero-point rows out.
+    let promoteEnd = Math.min(promoteCount, n)
+    while (promoteEnd > 0 && (rows[promoteEnd - 1]?.points ?? 0) <= 0)
+      promoteEnd--
+    const demoteStart =
+      relegateCount > 0 ? Math.max(promoteEnd, total - relegateCount) : total
+    const items: LeagueBoardItem[] = []
+    rows.forEach((row, i) => {
+      if (promoteEnd > 0 && promoteEnd < total && i === promoteEnd)
+        items.push({
+          kind: 'divider',
+          zone: 'promote',
+          to: leagueNeighbours().up?.name,
+        })
+      if (demoteStart < total && i === demoteStart)
+        items.push({
+          kind: 'divider',
+          zone: 'demote',
+          to: leagueNeighbours().down?.name,
+        })
+      items.push({
+        kind: 'row',
+        row,
+        zone: i < promoteEnd ? 'promote' : i >= demoteStart ? 'demote' : '',
+      })
+    })
+    return items
+  })
+
+  /**
+   * The climb reveals the art: rungs ABOVE yours show a draped, veiled
+   * trophy instead of their render — the name stays, the prize is the
+   * surprise. Your rung and everything below it (already climbed through)
+   * show real art; the mystery league keeps its own '?' identity. Display
+   * gating only — the public ladder API still serves every trophyAsset.
+   * With no league yet (signed out, still loading), only rung 1 shows.
+   */
+  const LOCKED_TROPHY = '/leagues/locked.webp'
+  const rungRevealed = (rung: LeagueRung): boolean =>
+    rung.isMystery || rung.rank <= (leagueMe()?.league?.rank ?? 1)
+
+  // Center the signed-in rung in the trophy rail (it scrolls on phones).
+  let stripEl: HTMLDivElement | undefined
+  const centerCurrentRung = (): void => {
+    const strip = stripEl
+    if (!strip) return
+    requestAnimationFrame(() => {
+      const cur = strip.querySelector<HTMLElement>('[data-current="true"]')
+      if (cur)
+        strip.scrollLeft =
+          cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2
+    })
+  }
+  createEffect(() => {
+    leagueLadder()
+    leagueMe()
+    centerCurrentRung()
   })
 
   createEffect(() => {
@@ -308,6 +466,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     } finally {
       setLoadingMore(false)
     }
+  }
+
+  async function refreshFollowing(): Promise<void> {
+    setFollowing(await getFollowing())
   }
 
   async function toggleFollow(userId: string): Promise<void> {
@@ -405,12 +567,20 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           <span class="tab-name">Weekly</span>
           <span class="tab-count">{weeklyChallenges().length}</span>
         </button>
+        <button
+          class={`leaderboard-tab ${activeView() === 'league' ? 'active' : ''}`}
+          onClick={() => setActiveView('league')}
+          data-testid="league-tab"
+        >
+          <IconTrophy />
+          <span class="tab-name">League</span>
+        </button>
       </div>
 
       {/* Category Tabs */}
-      {activeView() !== 'weekly' && (
+      {activeView() !== 'weekly' && activeView() !== 'league' && (
         <div class="category-tabs">
-          <For each={leaderboardCategories}>
+          <For each={visibleCategories()}>
             {(cat) => (
               <button
                 class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
@@ -424,19 +594,232 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div class="search-container">
-        <input
-          type="text"
-          class="search-input"
-          placeholder="Search players..."
-          value={searchQuery()}
-          onInput={(e) => setSearchQuery(e.currentTarget.value)}
-        />
-        <button class="filter-btn" aria-label="Filter" title="Filter">
-          <IconFilter />
-        </button>
-      </div>
+      {/* League View */}
+      <Show when={activeView() === 'league'}>
+        <div class="league-view" data-testid="league-view">
+          <Show
+            when={cloudConfigured}
+            fallback={
+              <p class="weekly-challenges-desc">
+                Leagues need a cloud account (not available in this build).
+              </p>
+            }
+          >
+            {/* The trophy rail — the first thing the tab shows. All seven
+                rungs at full size; the signed-in rung is spotlit and
+                auto-centered, the rest step back. Scrolls sideways on
+                phones instead of shrinking the art. All rungs are visible
+                for now — gating the view to "your league and below" (the
+                surprise reveal) is a planned follow-up. */}
+            <Show when={leagueLadder().length > 0}>
+              <div
+                class={`league-strip ${leagueMe()?.league != null ? 'has-current' : ''}`}
+                data-testid="league-ladder"
+                ref={(el) => {
+                  stripEl = el
+                  centerCurrentRung()
+                }}
+              >
+                <For each={leagueLadder()}>
+                  {(rung) => (
+                    <div
+                      class={`league-strip-rung ${
+                        rung.id === leagueMe()?.league?.id ? 'current' : ''
+                      } ${rung.isMystery ? 'mystery' : ''} ${
+                        rungRevealed(rung) ? '' : 'locked'
+                      }`}
+                      data-current={
+                        rung.id === leagueMe()?.league?.id ? 'true' : undefined
+                      }
+                      title={
+                        rung.isMystery
+                          ? 'Coming soon'
+                          : rungRevealed(rung)
+                            ? rung.name
+                            : `Reach ${rung.name} to unveil its trophy`
+                      }
+                    >
+                      <Show when={rung.trophyAsset}>
+                        <img
+                          class="league-strip-trophy"
+                          src={
+                            rungRevealed(rung)
+                              ? (rung.trophyAsset ?? '')
+                              : LOCKED_TROPHY
+                          }
+                          alt={
+                            rung.isMystery
+                              ? 'Mystery league'
+                              : rungRevealed(rung)
+                                ? rung.name
+                                : `${rung.name} trophy, veiled until you reach it`
+                          }
+                        />
+                      </Show>
+                      <span class="league-strip-name">{rung.name}</span>
+                    </div>
+                  )}
+                </For>
+              </div>
+            </Show>
+
+            <Show
+              when={leagueMe()?.eligible === true}
+              fallback={
+                <div class="league-locked" data-testid="league-locked">
+                  <p class="weekly-challenges-desc">
+                    {/* Until /api/league/me answers, say nothing committal —
+                        a fetch blip must not tell a signed-in user to go
+                        create an account. */}
+                    <Show
+                      when={leagueMe() != null}
+                      fallback={<>Loading your league…</>}
+                    >
+                      <Show
+                        when={leagueMe()?.reason !== 'unavailable'}
+                        fallback={
+                          <>
+                            Leagues aren’t enabled on this environment yet — its
+                            database predates the league tables. Apply the D1
+                            migrations that ship with this change and the ladder
+                            lights up.
+                          </>
+                        }
+                      >
+                        Leagues are for registered singers — create an account
+                        in Settings → Account to climb the ladder. Practice
+                        earns weekly points; the top of each league advances
+                        every Monday.
+                      </Show>
+                    </Show>
+                  </p>
+                </div>
+              }
+            >
+              {/* Your league, written large. The trophy itself lives in the
+                  rail above — spotlit — so the hero is pure typography. */}
+              <div class="league-hero" data-testid="league-rung-card">
+                <span class="league-hero-eyebrow">Your league</span>
+                <h3 class="league-hero-name" data-testid="league-rung-name">
+                  {leagueMe()?.league?.name}
+                </h3>
+                <p class="league-hero-stats">
+                  <strong>{leagueMe()?.points ?? 0} pts</strong> this week
+                  <Show when={leagueMe()?.rank != null}>
+                    {' '}
+                    · #{leagueMe()?.rank} of {leagueMe()?.cohortSize}
+                  </Show>
+                </p>
+                {/* Zone sentence needs the ladder for neighbour names; if it
+                    hasn't loaded, saying nothing beats a wrong "top of the
+                    ladder" or a dangling "drop to ." */}
+                <Show when={leagueLadder().length > 0}>
+                  <p class="league-hero-zones">
+                    <Show
+                      when={leagueNeighbours().up}
+                      fallback={<>Top of the playable ladder — defend it.</>}
+                    >
+                      Top {leagueMe()?.league?.promoteCount} advance to{' '}
+                      {leagueNeighbours().up?.name}.
+                    </Show>{' '}
+                    <Show
+                      when={
+                        (leagueMe()?.league?.relegateCount ?? 0) > 0 &&
+                        leagueNeighbours().down != null
+                      }
+                    >
+                      Bottom {leagueMe()?.league?.relegateCount} drop to{' '}
+                      {leagueNeighbours().down?.name}.
+                    </Show>
+                  </p>
+                </Show>
+                <span class="league-cut-countdown">
+                  Weekly cut in {formatCutCountdown(msUntilNextCut(nowMs()))}
+                </span>
+              </div>
+
+              <Show
+                when={(leagueMe()?.standings?.length ?? 0) > 0}
+                fallback={
+                  <p class="weekly-challenges-desc">
+                    Nobody has scored league points yet this week — finish an
+                    exercise or challenge to open the board.
+                  </p>
+                }
+              >
+                <div class="league-standings" data-testid="league-standings">
+                  <For each={leagueBoard()}>
+                    {(item) =>
+                      item.kind === 'divider' ? (
+                        <div class={`league-zone-divider ${item.zone}`}>
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="11"
+                            height="11"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fill="currentColor"
+                              d={
+                                item.zone === 'promote'
+                                  ? 'M12 4l7 8h-4.5v8h-5v-8H5z'
+                                  : 'M12 20l-7-8h4.5V4h5v8H19z'
+                              }
+                            />
+                          </svg>
+                          <span>
+                            {item.zone === 'promote'
+                              ? 'Promotion zone'
+                              : 'Relegation zone'}
+                            <Show when={item.to}> · {item.to}</Show>
+                          </span>
+                        </div>
+                      ) : (
+                        <div
+                          class={`league-standing-row ${
+                            item.row.userId === getUserId() ? 'me' : ''
+                          } ${item.zone}`}
+                        >
+                          <span class="league-standing-rank">
+                            {item.row.rank}
+                          </span>
+                          <span class="league-standing-name">
+                            <span class="league-standing-name-text">
+                              {item.row.displayName}
+                            </span>
+                            <Show when={item.row.userId === getUserId()}>
+                              <span class="league-standing-you">you</span>
+                            </Show>
+                          </span>
+                          <span class="league-standing-points">
+                            {item.row.points} pts
+                          </span>
+                        </div>
+                      )
+                    }
+                  </For>
+                </div>
+              </Show>
+            </Show>
+          </Show>
+        </div>
+      </Show>
+
+      {/* Search Bar (board views only) */}
+      <Show when={activeView() !== 'league'}>
+        <div class="search-container">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search players..."
+            value={searchQuery()}
+            onInput={(e) => setSearchQuery(e.currentTarget.value)}
+          />
+          <button class="filter-btn" aria-label="Filter" title="Filter">
+            <IconFilter />
+          </button>
+        </div>
+      </Show>
 
       {/* Weekly Challenges View */}
       <Show when={activeView() === 'weekly'}>
@@ -508,18 +891,31 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       </Show>
 
       {/* Leaderboard Table View */}
-      <Show when={activeView() !== 'weekly'}>
+      <Show when={activeView() !== 'weekly' && activeView() !== 'league'}>
         <div class="leaderboard-content">
-          {/* Friends tab: empty-state hint */}
+          {/* Friends tab: share/redeem codes, then the empty-state hint */}
+          <Show when={activeView() === 'friends' && cloudConfigured}>
+            <FriendCodePanel
+              onFriendAdded={() => {
+                void refreshFollowing()
+                void loadPage(0)
+              }}
+            />
+          </Show>
           <Show
             when={
               activeView() === 'friends' && allLeaderboardUsers().length === 0
             }
           >
+            {/* An added friend with no ranked attempts yet produces no board
+                row, and "No friends yet" would read as though the add
+                failed — so distinguish "nobody added" from "nothing to rank". */}
             <p class="weekly-challenges-desc" data-testid="friends-empty">
-              {cloudConfigured
-                ? 'No friends yet — open a player on the Global tab and hit Follow. Sign in to keep your friends across devices.'
-                : 'Friends leaderboards need a cloud account (not available in this build).'}
+              {!cloudConfigured
+                ? 'Friends leaderboards need a cloud account (not available in this build).'
+                : following().length > 0
+                  ? 'Your friends are added — this fills in once they finish an exercise or challenge.'
+                  : 'No friends yet — swap codes above, or open a player on the Global tab and hit Follow.'}
             </p>
           </Show>
           {/* Top 3 Podium */}
@@ -588,9 +984,14 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                           </div>
                           <div class="user-details">
                             <div class="user-name">{user.displayName}</div>
-                            <div class="user-streak-badge">
-                              {user.streak} day streak
-                            </div>
+                            {/* The server only publishes streaks on the
+                                friends view (your own row aside); a zero
+                                here means "not shared", not "zero days". */}
+                            <Show when={user.streak > 0}>
+                              <div class="user-streak-badge">
+                                {user.streak} day streak
+                              </div>
+                            </Show>
                           </div>
                         </div>
                       </td>
@@ -600,16 +1001,21 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                         </span>
                       </td>
                       <td class="streak-td">
-                        <div class="streak-bar">
-                          <div
-                            class="streak-fill"
-                            style={{
-                              width: `${Math.min(user.streak * 10, 100)}%`,
-                              '--streak-color': getStreakColor(user.streak),
-                            }}
-                          />
-                        </div>
-                        <span class="streak-count">{user.streak}</span>
+                        <Show
+                          when={user.streak > 0}
+                          fallback={<span class="streak-count">—</span>}
+                        >
+                          <div class="streak-bar">
+                            <div
+                              class="streak-fill"
+                              style={{
+                                width: `${Math.min(user.streak * 10, 100)}%`,
+                                '--streak-color': getStreakColor(user.streak),
+                              }}
+                            />
+                          </div>
+                          <span class="streak-count">{user.streak}</span>
+                        </Show>
                       </td>
                       <td class="sessions-td">{user.totalSessions}</td>
                       <td class="best-td">{user.bestScore}%</td>

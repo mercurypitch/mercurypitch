@@ -1,9 +1,8 @@
-import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
+import { saveSessionRecord } from '@/db/services/session-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
-import { trackEvent } from '@/lib/analytics'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -33,29 +32,57 @@ export function exerciseHistory(): ExerciseHistoryEntry[] {
   return history()
 }
 
+/** Title-case an exercise slug for a human record name: long-note → Long Note. */
+function exerciseLabel(type: ExerciseType): string {
+  return type
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
 export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   setHistory((prev) => {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
   })
 
-  // If this run was launched from a challenge, report the score back so the
-  // challenge records the attempt (and completes when the target is met).
-  void recordChallengeAttempt({ type: entry.type, score: entry.score })
-  // Same return path for a weekly "Sing the Legend" attempt.
-  void recordWeeklyAttempt({ type: entry.type, score: entry.score })
-
   // Auto-advance daily routine if this exercise matches the current segment
   autoAdvanceRoutineSegment(entry.type, entry.metrics)
-
-  // Credit practice minutes toward today's daily goal (which bumps the streak
-  // once met). Leaderboard standings are derived server-side from
-  // sessionRecords, so exercises no longer post leaderboard entries.
-  const runMs = entry.metrics.durationMs ?? entry.metrics.elapsedMs
-  void addScoredMs(runMs !== undefined && runMs > 0 ? runMs : NOMINAL_RUN_MS)
-
-  trackEvent('session_complete')
+  // session_complete fires in saveSessionRecord — every branch below funnels
+  // into it exactly once, so firing here too would double the funnel metric.
   recordActivity()
+
+  // Persisting the run is async and order-dependent: a run launched from a
+  // challenge or weekly is recorded by that path (with source 'challenge' /
+  // 'weekly'), and must NOT also be written as a plain exercise — that would
+  // double it on the leaderboard and double-credit practice minutes. So ask
+  // those paths first, and only write a 'source: exercise' record when
+  // neither claimed the run. Each path credits practice minutes exactly once
+  // via saveSessionRecord; there is no separate addScoredMs here anymore.
+  void (async () => {
+    // Call both unconditionally (not short-circuited): a mismatched-type run
+    // is how each path learns the user moved on and disarms itself.
+    const consumedChallenge = await recordChallengeAttempt({
+      type: entry.type,
+      score: entry.score,
+    })
+    const consumedWeekly = await recordWeeklyAttempt({
+      type: entry.type,
+      score: entry.score,
+    })
+    if (consumedChallenge || consumedWeekly) return
+
+    const runMs = entry.metrics.durationMs ?? entry.metrics.elapsedMs
+    await saveSessionRecord({
+      melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
+      score: entry.score,
+      accuracy: entry.score,
+      notesHit: 0,
+      notesTotal: 0,
+      durationMs: runMs !== undefined && runMs > 0 ? runMs : undefined,
+      source: 'exercise',
+    })
+  })()
 }
 
 export function getExerciseStats(type: ExerciseType): ExerciseStats {

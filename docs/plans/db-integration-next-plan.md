@@ -8,7 +8,7 @@ Follow-up to [db-migration-plan.md](./db-migration-plan.md) and [users-auth-plan
 - Cloud/local split locked in: D1 holds only user/social data (users, profiles, session scores, challenges, badges, achievements, leaderboard, shared content, settings). Karaoke/UVR sessions, audio blobs, and derived analysis stay in IndexedDB forever — no sync, no R2.
 - `mercurypitch-db` created and initialized: **remote** (production) and **local** (`workers/db-worker/.wrangler/state`, used by `wrangler dev`). Database id `35d9bae5-4818-4acf-8bd1-4644b6b24949`, bound in `workers/db-worker/wrangler.jsonc`.
 - Idempotent setup via `pnpm db:init` / `pnpm db:init:local` (`scripts/init-cloudflare-db.sh`).
-- No Drizzle: the worker is a generic CRUD layer over an allowlist — plain D1 prepared statements + hand-maintained `schema.sql`.
+- No Drizzle: the worker is a generic CRUD layer over an allowlist — plain D1 prepared statements + tracked migrations in `workers/db-worker/migrations/` (originally a hand-maintained `schema.sql`, retired in #361).
 
 ### db-worker (`workers/db-worker/src/`)
 Zero-dependency fetch handler (same style as jam-worker, no Hono):
@@ -30,7 +30,7 @@ Zero-dependency fetch handler (same style as jam-worker, no Hono):
 
 ### 1. HybridAdapter — ✅ done
 - `src/db/adapters/hybrid-adapter.ts`: `CLOUD_ENTITIES` set mirroring `workers/db-worker/src/tables.ts`; cloud entities → `ServerAdapter`, everything else → `DexieAdapter`. Unit-tested (`src/tests/hybrid-adapter.test.ts`).
-- `src/db/services/auth-service.ts`: full auth client — `ensureAuth()` (silent anonymous bootstrap at startup, offline-tolerant), `registerWithPassword`, `loginWithPassword`, `loginWithGoogle(idToken)`, `logout`, `fetchMe`, client-side token-expiry check.
+- `src/db/services/auth-service.ts`: full auth client — `ensureAuth()` (since split in #361 into `restoreAuth()` — silent resume — and `requireAuth()` — provision on first write), `registerWithPassword`, `loginWithPassword`, `loginWithGoogle(idToken)`, `logout`, `fetchMe`, client-side token-expiry check.
 - `ServerAdapter` accepts a headers **getter**, so the Authorization header always reflects the current token.
 - `src/db/index.ts`: `VITE_API_BASE_URL` set → HybridAdapter (with anonymous auth bootstrap); unset → all-Dexie as before. Setting `VITE_API_BASE_URL` is now safe.
 
@@ -45,7 +45,7 @@ Zero-dependency fetch handler (same style as jam-worker, no Hono):
 Public content stays available without an account; personal data simply isn't tracked:
 - Worker already serves public reads (definitions, leaderboard, profiles, public shares); only private per-user tables 401.
 - `HybridAdapter` now guards user-scoped entities (`sessionRecords`, `challengeProgress`, `userBadges`, `userAchievements`, `userSettings`): signed out, reads resolve empty and writes fail fast — no doomed 401 round-trips.
-- After signing out of an upgraded account, the device's anonymous re-auth is refused by design (403). `ensureAuth()` now remembers that (`mp:requiresLogin`) and stays quietly signed out instead of retrying/erroring at every startup; an explicit login clears it.
+- After signing out of an upgraded account, the device's anonymous re-auth is refused by design (403). `requireAuth()` (formerly `ensureAuth()`) now remembers that (`mp:requiresLogin`) and stays quietly signed out instead of retrying/erroring at every startup; an explicit login clears it.
 - `authVersion` signal (bumped on every token change) makes CommunityLeaderboard, CommunityShare, VocalChallenges and VocalAnalysis history reload when the signed-in identity changes — no full-page reload needed after login/logout.
 - Fixed: streak-service and share-service resolved "my profile" via unfiltered `findAll()[0]`, which in cloud mode returns *other users'* public profiles. Now resolved by id (cloud profile id == userId) with a local fallback.
 
@@ -81,7 +81,7 @@ pnpm exec wrangler secret put ADMIN_KEY  --config workers/db-worker/wrangler.jso
 # put the printed URL into .env.development as VITE_API_BASE_URL and commit it
 ```
 
-**Ongoing (automated):** `.github/workflows/deploy-db.yml` — on every push to main touching `workers/db-worker/**`, CI re-applies `schema.sql` to the remote dev DB (idempotent `CREATE IF NOT EXISTS` = the migration step) and deploys the dev worker. The existing `build.yml` then deploys the app (built with `.env.development`) to dev.mercurypitch.com. Prod: manual `workflow_dispatch` of deploy-db.yml with env=prod (after `pnpm db:init` + prod secrets, also one-time).
+**Ongoing (automated):** `.github/workflows/deploy-db.yml` — on every push to main touching `workers/db-worker/**`, CI applies the tracked migrations in `workers/db-worker/migrations/` to the remote dev DB (`wrangler d1 migrations apply`; each file runs exactly once per database) and deploys the dev worker. The existing `build.yml` then deploys the app (built with `.env.development`) to dev.mercurypitch.com. Prod: manual `workflow_dispatch` of deploy-db.yml with env=prod. (Historical note: this originally re-applied a whole `schema.sql` on every deploy — idempotent for new tables but silently a no-op for new columns, which is why it was replaced.)
 
 **Local testing (no deploy needed):**
 ```bash

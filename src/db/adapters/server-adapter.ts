@@ -21,6 +21,13 @@ export interface ServerAdapterConfig {
   baseUrl: string
   /** Static headers, or a getter re-evaluated per request (e.g. auth token). */
   headers?: Record<string, string> | (() => Record<string, string>)
+  /**
+   * Awaited before every create/update/delete, after which `headers()` is
+   * read. Lets the caller provision a cloud identity lazily — the first
+   * write is what turns a visitor into a user. Reads deliberately skip it:
+   * browsing must never create an account.
+   */
+  beforeWrite?: () => Promise<unknown>
 }
 
 // Cloud reads degrade to empty when the backend is unreachable so the app
@@ -28,6 +35,7 @@ export interface ServerAdapterConfig {
 let offlineWarned = false
 
 function warnCloudUnreachable(err: unknown): void {
+  if (err instanceof NoIdentityError) return // expected, not a failure
   if (offlineWarned) return
   offlineWarned = true
   console.warn(
@@ -36,6 +44,19 @@ function warnCloudUnreachable(err: unknown): void {
       'VITE_API_BASE_URL for full local mode.',
     err,
   )
+}
+
+/**
+ * A read of a user-scoped table with no cloud identity yet. Routine since
+ * identities are provisioned lazily: a visitor who hasn't written anything
+ * simply has no rows. Reads resolve empty and stay silent — only writes
+ * provision (see ServerAdapterConfig.beforeWrite).
+ */
+class NoIdentityError extends Error {
+  constructor() {
+    super('ServerAdapter: no cloud identity yet')
+    this.name = 'NoIdentityError'
+  }
 }
 
 // ── ServerRepository ────────────────────────────────────────────
@@ -79,6 +100,8 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
           await new Promise((r) => setTimeout(r, delay))
           continue
         }
+
+        if (res.status === 401) throw new NoIdentityError()
 
         if (!res.ok) {
           const body = await res.text().catch(() => '')
@@ -138,6 +161,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
+    await this.config.beforeWrite?.()
     return this.request<T>('', {
       method: 'POST',
       body: JSON.stringify(entity),
@@ -148,6 +172,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
+    await this.config.beforeWrite?.()
     return this.request<T>(`/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),
@@ -155,6 +180,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async delete(id: string): Promise<void> {
+    await this.config.beforeWrite?.()
     await this.request(`/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     })

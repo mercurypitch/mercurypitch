@@ -27,6 +27,15 @@ export interface UserProfile extends DbEntity {
   /** When the streak last reset to 1 (drives the 72h repair window). */
   streakResetDate?: string | null // YYYY-MM-DD
   lastRepairDate?: string | null // YYYY-MM-DD (repair allowed once per 30 days)
+  /**
+   * Consent to appear on the public leaderboard. Off unless explicitly set:
+   * qualifying on activity is necessary but not sufficient — nobody is
+   * published without saying yes.
+   */
+  leaderboardOptIn?: boolean
+  leaderboardOptInAt?: string | null
+  /** Shareable friend code (registered accounts only; server-minted). */
+  friendCode?: string | null
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────
@@ -54,6 +63,13 @@ export interface PracticeResultRecord {
   noteResult: NoteResultRecord[]
 }
 
+/**
+ * What kind of attempt produced a SessionRecord. Only fixed tasks are
+ * publicly ranked — 'practice' is free singing over a self-chosen melody,
+ * which is not comparable between people (see leaderboardConfig).
+ */
+export type SessionSource = 'practice' | 'challenge' | 'weekly' | 'exercise'
+
 export interface SessionRecord extends DbEntity {
   userId: string
   melodyId?: string
@@ -69,6 +85,8 @@ export interface SessionRecord extends DbEntity {
   rating?: string
   /** Set when this attempt was a weekly "Sing the Legend" challenge take. */
   weeklyChallengeId?: string
+  /** Drives leaderboard eligibility. Older rows predate it — treat as 'practice'. */
+  source?: SessionSource
   results: PracticeResultRecord[]
 }
 
@@ -198,6 +216,69 @@ export interface LeaderboardEntry extends DbEntity {
   totalSessions: number
   bestScore: number
   accuracy: number
+}
+
+// ── Leagues (weekly promotion ladder) ───────────────────────────
+// Foundation data model for the Duolingo-style weekly league (see
+// docs — league-system-plan). League config lives in `leagues` rows
+// (admin-editable); cohorts/membership/point-events are server-written
+// only. Leagues are a REGISTERED-users-only surface (enforced on the
+// award/cut request path, not in these types).
+
+/** One of the seven ascending league rungs (l1..l7); l7 is the mystery. */
+export interface League extends DbEntity {
+  rank: number // 1..7, ascending
+  name: string // branded rung name; '???' while a mystery
+  /** Hero sculpture for the rung card ('/leagues/lN.webp' or R2 key). */
+  trophyAsset: string | null
+  /** Flat enamel badge for small sizes; null falls back to trophyAsset. */
+  badgeAsset: string | null
+  /** True for a locked "coming soon" rung (l7) until it is revealed. */
+  isMystery: boolean
+  promoteCount: number // top N of a cohort promote up a rung
+  relegateCount: number // bottom M relegate down a rung (0 = safe rung)
+}
+
+/**
+ * A league instance for one ISO week (one global cohort per league/week at
+ * launch). Immutable once minted, so it carries `createdAt` but no
+ * `updatedAt` — hence it does not extend {@link DbEntity}.
+ */
+export interface LeagueCohort {
+  id: string
+  createdAt: string // ISO 8601
+  leagueId: string
+  weekStart: string // ISO Monday 00:00 UTC
+}
+
+/**
+ * A user's standing in the current ISO week. Created then mutated in place as
+ * points accrue, so it carries `updatedAt` but no `createdAt` — hence it does
+ * not extend {@link DbEntity}. `points` resets to 0 each Monday.
+ */
+export interface LeagueMembership {
+  id: string
+  updatedAt: string // ISO 8601
+  userId: string
+  cohortId: string
+  weekStart: string // ISO Monday 00:00 UTC
+  points: number
+}
+
+/**
+ * The single-row (id='default') tunable point weights. Mirrors the pure
+ * calculator's config in workers/db-worker/src/league-points.ts (which omits
+ * these DbEntity bookkeeping fields).
+ */
+export interface LeaguePointsConfig extends DbEntity {
+  exerciseBase: number
+  challengeBase: number
+  weeklyBase: number
+  scoreDivisor: number
+  dailyVarietyBonus: number
+  goalMetBonus: number
+  streakMilestoneBonus: number
+  milestoneEvery: number
 }
 
 // ── Shared Content ──────────────────────────────────────────────

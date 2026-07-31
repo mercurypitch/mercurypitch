@@ -6,9 +6,18 @@ name: Deploy DB Worker
 #   (mercury-pitch-db-dev + mercurypitch-db-dev)
 # - Manual dispatch → dev or prod
 #
-# The schema step is idempotent (CREATE IF NOT EXISTS) and doubles as
-# a migration runner: new tables/indexes added to schema.sql are
-# applied on the next deploy.
+# Schema changes ship as tracked migrations in workers/db-worker/migrations/,
+# applied here by `wrangler d1 migrations apply` (wrangler records applied
+# files in a d1_migrations table, so each runs exactly once per database).
+#
+# This replaced re-applying a whole schema.sql on every deploy. That was
+# idempotent for new TABLES but silently did nothing for new COLUMNS —
+# CREATE TABLE IF NOT EXISTS skips an existing table wholesale — so every
+# ALTER had to be remembered and run by hand, and an index over a
+# never-added column failed the deploy.
+#
+# Adding a change: drop a new NNNN_name.sql in migrations/ (next number).
+# Never edit an applied file; databases that already ran it won't re-run it.
 #
 # One-time prerequisites per environment (NOT done by CI):
 #   pnpm db:init:dev   (creates the DB and commits its id to wrangler.jsonc)
@@ -63,13 +72,19 @@ jobs:
       - name: Typecheck worker
         run: pnpm typecheck:db
 
-      - name: Apply D1 schema (idempotent migrations)
+      # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is
+      # public, and workflow artifacts on a public repo are downloadable by
+      # any logged-in GitHub user — an exported database (emails, password
+      # hashes, billing ids) must never be uploaded as one. If a migration
+      # goes wrong, restore to the pre-deploy timestamp instead:
+      #   pnpm exec wrangler d1 time-travel restore <DB_NAME> --timestamp=<ISO>
+      - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/db-worker
-          command: d1 execute ${{ env.DB_NAME }} --remote --file=schema.sql --env ${{ env.DEPLOY_ENV }} -y
+          command: d1 migrations apply ${{ env.DB_NAME }} --remote --env ${{ env.DEPLOY_ENV }}
           packageManager: 'pnpm'
 
       - name: Deploy worker

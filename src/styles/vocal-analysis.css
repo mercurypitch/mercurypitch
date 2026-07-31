@@ -3333,3 +3333,286 @@
 .settings-panel .info-list li {
   padding-left: 14px;
 }
+
+/* ── League view (weekly promotion ladder) ─────────────────────────── */
+
+.league-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0 16px;
+}
+
+/* 1 · The trophy rail. One horizontal line of all seven rungs, your rung
+   spotlit and auto-centered, the rest dimmed to supporting cast. On narrow
+   screens it scrolls sideways (Duolingo-style) instead of shrinking the
+   art — the renders are the best thing in this feature and they stay big. */
+.league-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 28px 20px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(88, 166, 255, 0.09),
+      transparent 62%
+    ),
+    var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.league-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.league-strip-rung {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  scroll-snap-align: center;
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+.league-strip-trophy {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.league-strip-name {
+  font-size: 11px;
+  color: var(--text-secondary, #9aa4b2);
+  white-space: nowrap;
+}
+
+/* Your rung is the protagonist; everything else steps back. Only once a
+   current rung exists — signed-out visitors see all seven at full volume. */
+.league-strip.has-current .league-strip-rung:not(.current) {
+  opacity: 0.45;
+  filter: saturate(0.75);
+}
+
+.league-strip.has-current .league-strip-rung:not(.current):hover {
+  opacity: 0.85;
+  filter: saturate(1);
+}
+
+.league-strip-rung.mystery {
+  opacity: 0.55;
+}
+
+.league-strip.has-current .league-strip-rung.mystery {
+  opacity: 0.3;
+}
+
+.league-strip-rung.current {
+  transform: translateY(-6px);
+}
+
+.league-strip-rung.current .league-strip-trophy {
+  width: 124px;
+  height: 124px;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 2px var(--accent, #58a6ff),
+    0 14px 40px rgba(88, 166, 255, 0.35);
+}
+
+.league-strip-rung.current .league-strip-name {
+  color: var(--text-primary, #e6edf3);
+  font-weight: 600;
+}
+
+/* 2 · Your league, written large under the rail. The trophy lives in the
+   rail, so this block is pure typography — no second image. */
+.league-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 2px 16px 0;
+}
+
+.league-locked {
+  text-align: center;
+  padding: 2px 16px 0;
+}
+
+.league-hero-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.league-hero-name {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #eee);
+}
+
+.league-hero-stats {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--text-primary, #ddd);
+}
+
+.league-hero-stats strong {
+  color: var(--accent, #58a6ff);
+}
+
+.league-hero-zones {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9aa4b2);
+  max-width: 52ch;
+}
+
+.league-cut-countdown {
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+/* 3 · Standings, cut into promotion / safe / relegation zones. */
+.league-standings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.league-standing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary, #ddd);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+}
+
+.league-standing-row.me {
+  border-color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+}
+
+.league-standing-rank {
+  width: 30px;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.league-standing-row.promote .league-standing-rank {
+  color: #3fb950;
+}
+
+.league-standing-row.demote .league-standing-rank {
+  color: #f85149;
+}
+
+/* Name cell: the TEXT ellipsizes, but the cell itself must not clip — the
+   "you" chip lives beside the name, and an overflow:hidden on the cell was
+   shaving the chip's bottom border. */
+.league-standing-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.league-standing-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-standing-you {
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.league-standing-points {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent, #58a6ff);
+}
+
+.league-zone-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.league-zone-divider::before,
+.league-zone-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.league-zone-divider.promote {
+  color: #3fb950;
+}
+
+.league-zone-divider.demote {
+  color: #f85149;
+}
+
+/* Phones: the rail scrolls; the art stays big. */
+@media (max-width: 640px) {
+  .league-strip {
+    gap: 14px;
+    padding: 22px 14px 12px;
+  }
+
+  .league-strip-trophy {
+    width: 72px;
+    height: 72px;
+  }
+
+  .league-strip-rung.current .league-strip-trophy {
+    width: 104px;
+    height: 104px;
+  }
+
+  .league-hero-name {
+    font-size: 26px;
+  }
+}
