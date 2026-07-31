@@ -114,7 +114,8 @@
     "preview": {
       "name": "mercurypitch-preview",
       "vars": {
-        "ENVIRONMENT": "preview"
+        "ENVIRONMENT": "preview",
+        "DB_API_URL": "https://api-dev.mercurypitch.com"
       }
     }
   }

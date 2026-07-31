@@ -143,6 +143,7 @@ export interface SingingZenLaunch {
   launchId: number
   mode: 'monitor' | 'exercise'
   exerciseId?: string
+  exerciseVersion?: number
   source: SingingZenSource
 }
 
@@ -155,6 +156,7 @@ export function openSingingZen(
     | {
         mode: 'exercise'
         exerciseId: string
+        exerciseVersion?: number
         source: SingingZenSource
       },
 ): void {
@@ -203,8 +205,50 @@ export function dismissWelcome(): void {
   setWelcomeSeen(APP_VERSION)
 }
 
-// ── Admin authoring overlay (#/admin/weekly) ────────────────────
-export const [showAdminWeekly, setShowAdminWeekly] = createSignal(false)
+// ── Owner-only Content Studio (#/admin/*) ───────────────────────
+export type AdminSection = 'exercises' | 'ascent' | 'weekly'
+
+export const [adminContentSection, setAdminContentSection] =
+  createSignal<AdminSection>('exercises')
+export const [showAdminContentStudio, setShowAdminContentStudio] =
+  createSignal(false)
+
+let adminContentCloseGuard: (() => boolean) | null = null
+
+/**
+ * Registers the currently mounted Content Studio's synchronous leave guard.
+ * The store owns routing state, so browser history, the close button, and
+ * section navigation all consult the same guard before discarding an editor.
+ */
+export function registerAdminContentCloseGuard(
+  guard: () => boolean,
+): () => void {
+  adminContentCloseGuard = guard
+  return () => {
+    if (adminContentCloseGuard === guard) adminContentCloseGuard = null
+  }
+}
+
+export function requestAdminContentSection(section: AdminSection): boolean {
+  if (
+    showAdminContentStudio() &&
+    section !== adminContentSection() &&
+    adminContentCloseGuard?.() === false
+  ) {
+    return false
+  }
+  setAdminContentSection(section)
+  setShowAdminContentStudio(true)
+  return true
+}
+
+export function requestCloseAdminContentStudio(): boolean {
+  if (showAdminContentStudio() && adminContentCloseGuard?.() === false) {
+    return false
+  }
+  setShowAdminContentStudio(false)
+  return true
+}
 
 // ── Onboarding survey (GH #97) ──────────────────────────────────
 // Shown once on real deployments after the welcome screen. A non-empty

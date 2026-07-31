@@ -37,9 +37,9 @@ const SessionBrowser = lazy(async () =>
     default: m.SessionBrowser,
   })),
 )
-const AdminWeeklyPage = lazy(async () =>
-  import('@/features/challenges/AdminWeeklyPage').then((m) => ({
-    default: m.AdminWeeklyPage,
+const AdminContentStudio = lazy(async () =>
+  import('@/features/admin/AdminContentStudio').then((m) => ({
+    default: m.AdminContentStudio,
   })),
 )
 const SessionEditor = lazy(async () =>
@@ -106,6 +106,7 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { debounce } from '@/lib/debounce'
 import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
+import { navigateTo } from '@/lib/hash-router'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -131,7 +132,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { adminContentSection, celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -760,8 +761,10 @@ const AppShell: Component<AppProps> = (props) => {
     handleBillingReturn,
     openSettingsSection,
     settingsSection,
-    openAdminWeekly: () => setShowAdminWeekly(true),
-    showAdminWeekly,
+    openAdminContent: requestAdminContentSection,
+    closeAdminContent: requestCloseAdminContentStudio,
+    showAdminContentStudio,
+    adminContentSection,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -3043,7 +3046,12 @@ const AppShell: Component<AppProps> = (props) => {
             <Suspense>
               <ZenPitchStage
                 {...(launch.mode === 'exercise'
-                  ? { initialExerciseId: launch.exerciseId }
+                  ? {
+                      initialExerciseId: launch.exerciseId,
+                      ...(launch.exerciseVersion === undefined
+                        ? {}
+                        : { initialExerciseVersion: launch.exerciseVersion }),
+                    }
                   : {})}
                 subscribeFrames={practice.subscribeFrames}
                 micActive={micActive}
@@ -3296,9 +3304,17 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={showAdminWeekly()}>
+        <Show when={showAdminContentStudio()}>
           <Suspense>
-            <AdminWeeklyPage onClose={() => setShowAdminWeekly(false)} />
+            <AdminContentStudio
+              section={adminContentSection()}
+              onNavigate={(section) => {
+                if (requestAdminContentSection(section)) {
+                  navigateTo({ type: 'admin', section })
+                }
+              }}
+              onClose={requestCloseAdminContentStudio}
+            />
           </Suspense>
         </Show>
 

@@ -17,6 +17,7 @@
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
+import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import type { TableDef } from './tables'
 import { maskPublicRow, TABLES } from './tables'
@@ -24,10 +25,14 @@ import { validateWrite } from './validation'
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods':
+    'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
   // Spec quirk: a `*` wildcard does NOT cover the Authorization header
   // (Firefox already warns it will block it) — list everything we use.
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Key',
+  'Access-Control-Allow-Headers':
+    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key',
+  'Access-Control-Expose-Headers':
+    'Accept-Ranges, Content-Length, Content-Range, ETag',
 }
 
 /**
@@ -200,7 +205,11 @@ function scopeRead(
       return {}
     }
     case 'shared': {
-      if (auth) return { clause: '("isPublic" = 1 OR "userId" = ?)', binds: [auth.userId] }
+      if (auth)
+        return {
+          clause: '("isPublic" = 1 OR "userId" = ?)',
+          binds: [auth.userId],
+        }
       return { clause: '"isPublic" = 1', binds: [] }
     }
     default:
@@ -209,7 +218,12 @@ function scopeRead(
 }
 
 /** Check whether an existing row may be written by this requester. */
-function canWriteRow(def: TableDef, row: Row, auth: AuthUser | null, admin: boolean): boolean {
+function canWriteRow(
+  def: TableDef,
+  row: Row,
+  auth: AuthUser | null,
+  admin: boolean,
+): boolean {
   switch (def.access) {
     case 'admin':
       return admin
@@ -254,7 +268,9 @@ async function handleList(
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
   if (countOnly) {
-    const result = await env.DB.prepare(`SELECT COUNT(*) AS count FROM "${entity}"${where}`)
+    const result = await env.DB.prepare(
+      `SELECT COUNT(*) AS count FROM "${entity}"${where}`,
+    )
       .bind(...binds)
       .first<{ count: number }>()
     return respond({ count: result?.count ?? 0 })
@@ -269,7 +285,9 @@ async function handleList(
     binds.push(q.offset)
   }
 
-  const { results } = await env.DB.prepare(sql).bind(...binds).all<Row>()
+  const { results } = await env.DB.prepare(sql)
+    .bind(...binds)
+    .all<Row>()
   return respond(
     results.map((r) =>
       maskPublicRow(def, fromSql(def, r), auth?.userId ?? null, admin),
@@ -277,8 +295,14 @@ async function handleList(
   )
 }
 
-async function fetchRow(entity: string, id: string, env: Env): Promise<Row | null> {
-  return env.DB.prepare(`SELECT * FROM "${entity}" WHERE id = ?`).bind(id).first<Row>()
+async function fetchRow(
+  entity: string,
+  id: string,
+  env: Env,
+): Promise<Row | null> {
+  return env.DB.prepare(`SELECT * FROM "${entity}" WHERE id = ?`)
+    .bind(id)
+    .first<Row>()
 }
 
 async function handleGetById(
@@ -295,7 +319,11 @@ async function handleGetById(
   if (def.access === 'user' && (!auth || row.userId !== auth.userId)) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
-  if (def.access === 'shared' && !row.isPublic && (!auth || row.userId !== auth.userId)) {
+  if (
+    def.access === 'shared' &&
+    !row.isPublic &&
+    (!auth || row.userId !== auth.userId)
+  ) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
   return respond(maskPublicRow(def, fromSql(def, row), auth?.userId ?? null, admin))
@@ -310,7 +338,8 @@ async function handleCreate(
   env: Env,
 ): Promise<Response> {
   if (def.access === 'admin') {
-    if (!isAdmin(request, env)) return respond({ error: 'Admin key required' }, { status: 403 })
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
   } else if (!auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -335,7 +364,8 @@ async function handleCreate(
   }
 
   // userProfiles: the row id IS the user id
-  const id = def.access === 'owner' ? (auth as AuthUser).userId : crypto.randomUUID()
+  const id =
+    def.access === 'owner' ? (auth as AuthUser).userId : crypto.randomUUID()
   if (def.access === 'owner' && (await fetchRow(entity, id, env))) {
     return respond({ error: 'Profile already exists' }, { status: 409 })
   }
@@ -344,7 +374,8 @@ async function handleCreate(
   const binds: SqlValue[] = [id, now, now]
   for (const [col, val] of Object.entries(body)) {
     if (val === undefined) continue
-    if (!IDENT.test(col)) return respond({ error: `Invalid column: ${col}` }, { status: 400 })
+    if (!IDENT.test(col))
+      return respond({ error: `Invalid column: ${col}` }, { status: 400 })
     cols.push(col)
     binds.push(toSql(val))
   }
@@ -352,7 +383,9 @@ async function handleCreate(
   const placeholders = cols.map(() => '?').join(', ')
   const quoted = cols.map((c) => `"${c}"`).join(', ')
   try {
-    await env.DB.prepare(`INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})`)
+    await env.DB.prepare(
+      `INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})`,
+    )
       .bind(...binds)
       .run()
   } catch (err) {
@@ -410,14 +443,17 @@ async function handleUpdate(
   const binds: SqlValue[] = [new Date().toISOString()]
   for (const [col, val] of Object.entries(body)) {
     if (val === undefined) continue
-    if (!IDENT.test(col)) return respond({ error: `Invalid column: ${col}` }, { status: 400 })
+    if (!IDENT.test(col))
+      return respond({ error: `Invalid column: ${col}` }, { status: 400 })
     sets.push(`"${col}" = ?`)
     binds.push(toSql(val))
   }
   binds.push(id)
 
   try {
-    await env.DB.prepare(`UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?`)
+    await env.DB.prepare(
+      `UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?`,
+    )
       .bind(...binds)
       .run()
   } catch (err) {
@@ -928,7 +964,9 @@ async function handleMirrorEvent(
   const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
   if (!rl.allowed) {
     return respond(
-      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      {
+        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+      },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
     )
   }
@@ -973,10 +1011,19 @@ async function handleMirrorEvent(
 
   // Metrics ride along only on results_view, filtered to known numeric keys.
   let metricsJson: string | null = null
-  if (event === 'results_view' && typeof metrics === 'object' && metrics !== null) {
+  if (
+    event === 'results_view' &&
+    typeof metrics === 'object' &&
+    metrics !== null
+  ) {
     const clean: Record<string, number | null> = {}
-    for (const [key, value] of Object.entries(metrics as Record<string, unknown>)) {
-      if (MIRROR_METRIC_KEYS.has(key) && (typeof value === 'number' || value === null)) {
+    for (const [key, value] of Object.entries(
+      metrics as Record<string, unknown>,
+    )) {
+      if (
+        MIRROR_METRIC_KEYS.has(key) &&
+        (typeof value === 'number' || value === null)
+      ) {
         clean[key] = value
       }
     }
@@ -1160,8 +1207,7 @@ async function handleWeeklyBoard(
         rank,
         percentile:
           attemptedCount > 0 ? Math.round((100 * rank) / attemptedCount) : 100,
-        beatFounder:
-          row.founderScore !== null && mine.best > row.founderScore,
+        beatFounder: row.founderScore !== null && mine.best > row.founderScore,
         completed: mine.best >= row.targetScore,
       }
     }
@@ -1242,7 +1288,15 @@ async function encoreWeekly(
       ev.evergreen,
     )
     .run()
-  return { ...ev, id, slug, startsAt, endsAt, status: 'active', resultsJson: null }
+  return {
+    ...ev,
+    id,
+    slug,
+    startsAt,
+    endsAt,
+    status: 'active',
+    resultsJson: null,
+  }
 }
 
 /** Resolve the current challenge; lazily activate/close/encore (no cron). */
@@ -1420,7 +1474,12 @@ async function handleWeekly(
       return respond({ error: 'Admin key required' }, { status: 403 })
     return createWeekly(request, env)
   }
-  if (method === 'PATCH' && sub !== '' && sub !== 'board' && sub !== 'archive') {
+  if (
+    method === 'PATCH' &&
+    sub !== '' &&
+    sub !== 'board' &&
+    sub !== 'archive'
+  ) {
     if (!isAdmin(request, env))
       return respond({ error: 'Admin key required' }, { status: 403 })
     return updateWeekly(sub, request, env)
@@ -1511,8 +1570,51 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   const authResponse = await handleAuth(request, env, url.pathname, respond)
   if (authResponse) return authResponse
 
-  const billingResponse = await handleBilling(request, env, url.pathname, respond)
+  const billingResponse = await handleBilling(
+    request,
+    env,
+    url.pathname,
+    respond,
+  )
   if (billingResponse) return billingResponse
+
+  const isGuidedRoute =
+    url.pathname.startsWith('/api/guided-exercises') ||
+    url.pathname.startsWith('/api/guided-media') ||
+    url.pathname.startsWith('/api/guided-paths') ||
+    url.pathname.startsWith('/api/admin/guided-')
+  if (isGuidedRoute) {
+    if (
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.method !== 'OPTIONS'
+    ) {
+      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
+      if (!rl.allowed) {
+        return respond(
+          {
+            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+          },
+        )
+      }
+    }
+    const guidedResponse = await handleGuidedExerciseRequest(
+      request,
+      env,
+      url,
+      {
+        admin: isAdmin(request, env),
+        corsHeaders: CORS,
+        respond,
+      },
+    )
+    if (guidedResponse !== null) return guidedResponse
+  }
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
     return handleLeaderboard(url, await getAuth(request, env), env)
@@ -1582,7 +1684,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   const entity = match[1]
   const def = TABLES[entity]
-  if (!def) return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
+  if (!def)
+    return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
 
   const sub = match[2] ? decodeURIComponent(match[2]) : undefined
   const auth = await getAuth(request, env)
@@ -1601,7 +1704,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         {
           error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
         },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
   }
@@ -1613,13 +1719,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   if (sub === undefined) {
     if (request.method === 'GET')
       return handleList(entity, def, url, auth, env, false, isAdmin(request, env))
-    if (request.method === 'POST') return handleCreate(entity, def, request, auth, env)
+    if (request.method === 'POST')
+      return handleCreate(entity, def, request, auth, env)
     return respond({ error: 'Method not allowed' }, { status: 405 })
   }
 
   if (request.method === 'GET')
     return handleGetById(entity, def, sub, auth, env, isAdmin(request, env))
-  if (request.method === 'PATCH') return handleUpdate(entity, def, sub, request, auth, env)
-  if (request.method === 'DELETE') return handleDelete(entity, def, sub, request, auth, env)
+  if (request.method === 'PATCH')
+    return handleUpdate(entity, def, sub, request, auth, env)
+  if (request.method === 'DELETE')
+    return handleDelete(entity, def, sub, request, auth, env)
   return respond({ error: 'Method not allowed' }, { status: 405 })
 }

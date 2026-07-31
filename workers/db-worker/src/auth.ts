@@ -21,6 +21,9 @@ import { shouldTouchLastActive } from './last-active'
 
 export interface Env {
   DB: D1Database
+  /** Permanent short guided-exercise playback assets. Unlike UVR staging,
+   * this bucket must not have an automatic expiry lifecycle. */
+  GUIDED_MEDIA_BUCKET?: R2Bucket
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
@@ -103,7 +106,10 @@ const PASSWORD_MIN_LENGTH = 8
 // keep the two in sync.
 function isStrongPassword(password: string): { ok: boolean; reason?: string } {
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return { ok: false, reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` }
+    return {
+      ok: false,
+      reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    }
   }
   if (!/[A-Za-z]/.test(password)) {
     return { ok: false, reason: 'Password must contain at least one letter' }
@@ -152,14 +158,23 @@ interface JwtPayload {
 }
 
 async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
-  const header = b64urlEncode(encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })))
+  const header = b64urlEncode(
+    encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
+  )
   const body = b64urlEncode(encoder.encode(JSON.stringify(payload)))
   const data = `${header}.${body}`
-  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(data))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    await hmacKey(secret),
+    encoder.encode(data),
+  )
   return `${data}.${b64urlEncode(sig)}`
 }
 
-async function verifyJwt(token: string, secret: string): Promise<JwtPayload | null> {
+async function verifyJwt(
+  token: string,
+  secret: string,
+): Promise<JwtPayload | null> {
   const parts = token.split('.')
   if (parts.length !== 3) return null
   const [header, body, sig] = parts
@@ -174,7 +189,8 @@ async function verifyJwt(token: string, secret: string): Promise<JwtPayload | nu
     const payload = JSON.parse(
       new TextDecoder().decode(b64urlDecode(body)),
     ) as JwtPayload
-    if (typeof payload.sub !== 'string' || typeof payload.exp !== 'number') return null
+    if (typeof payload.sub !== 'string' || typeof payload.exp !== 'number')
+      return null
     if (payload.exp < Math.floor(Date.now() / 1000)) return null
     return payload
   } catch {
@@ -183,7 +199,10 @@ async function verifyJwt(token: string, secret: string): Promise<JwtPayload | nu
 }
 
 /** Extract and verify the Bearer token. Returns null when absent/invalid. */
-export async function getAuth(request: Request, env: Env): Promise<AuthUser | null> {
+export async function getAuth(
+  request: Request,
+  env: Env,
+): Promise<AuthUser | null> {
   if (!env.JWT_SECRET) return null
   const header = request.headers.get('Authorization')
   if (!header?.startsWith('Bearer ')) return null
@@ -194,7 +213,9 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   // the stored tokenVersion was revoked (logout, etc.). A missing `v` claim is
   // treated as version 0 so a single tokenVersion bump also revokes legacy
   // tokens.
-  const user = await env.DB.prepare('SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?')
+  const user = await env.DB.prepare(
+    'SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?',
+  )
     .bind(payload.sub)
     .first<{ tokenVersion: number; lastActiveAt: string | null }>()
   if (!user) return null
@@ -221,7 +242,11 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
 
 // ── Password hashing (PBKDF2-SHA256) ─────────────────────────────────
 
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<ArrayBuffer> {
+async function pbkdf2(
+  password: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<ArrayBuffer> {
   const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(password),
@@ -242,10 +267,15 @@ async function hashPassword(password: string): Promise<string> {
   return `pbkdf2$${PBKDF2_ITERATIONS}$${b64urlEncode(salt)}$${b64urlEncode(bits)}`
 }
 
-async function verifyPassword(password: string, stored: string): Promise<boolean> {
+async function verifyPassword(
+  password: string,
+  stored: string,
+): Promise<boolean> {
   const [scheme, iters, saltB64, hashB64] = stored.split('$')
   if (scheme !== 'pbkdf2') return false
-  const bits = new Uint8Array(await pbkdf2(password, b64urlDecode(saltB64), Number(iters)))
+  const bits = new Uint8Array(
+    await pbkdf2(password, b64urlDecode(saltB64), Number(iters)),
+  )
   const expected = b64urlDecode(hashB64)
   if (bits.length !== expected.length) return false
   let diff = 0
@@ -278,7 +308,10 @@ interface GoogleClaims {
   picture?: string
 }
 
-async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<GoogleClaims | null> {
+async function verifyGoogleIdToken(
+  idToken: string,
+  clientId: string,
+): Promise<GoogleClaims | null> {
   // Use the v3 tokeninfo endpoint (POST body, not query param — avoids
   // token leakage in intermediate proxy/server logs).
   const res = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo', {
@@ -298,12 +331,24 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
-async function findUserById(db: D1Database, id: string): Promise<UserRow | null> {
-  return db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<UserRow>()
+async function findUserById(
+  db: D1Database,
+  id: string,
+): Promise<UserRow | null> {
+  return db
+    .prepare('SELECT * FROM users WHERE id = ?')
+    .bind(id)
+    .first<UserRow>()
 }
 
-async function findUserByEmail(db: D1Database, email: string): Promise<UserRow | null> {
-  return db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<UserRow>()
+async function findUserByEmail(
+  db: D1Database,
+  email: string,
+): Promise<UserRow | null> {
+  return db
+    .prepare('SELECT * FROM users WHERE email = ?')
+    .bind(email)
+    .first<UserRow>()
 }
 
 async function createUser(
@@ -386,14 +431,14 @@ interface RateLimitBucket {
 }
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
-  anonymous: { max: 30, windowMs: 60_000 },   // 30/min
-  register: { max: 5, windowMs: 300_000 },     // 5/5min
-  login: { max: 10, windowMs: 300_000 },       // 10/5min
-  google: { max: 30, windowMs: 60_000 },       // 30/min
-  logout: { max: 30, windowMs: 60_000 },       // 30/min
+  anonymous: { max: 30, windowMs: 60_000 }, // 30/min
+  register: { max: 5, windowMs: 300_000 }, // 5/5min
+  login: { max: 10, windowMs: 300_000 }, // 10/5min
+  google: { max: 30, windowMs: 60_000 }, // 30/min
+  logout: { max: 30, windowMs: 60_000 }, // 30/min
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
-  'verify-email': { max: 30, windowMs: 60_000 },        // 30/min
+  'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
   'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
   // Account erasure is irreversible and needs a valid token anyway; the cap
   // just bounds a scripted sweep against harvested tokens.
@@ -443,7 +488,9 @@ export async function checkRateLimit(
     .first<{ count: number; windowStart: number }>()
 
   if (row && row.count > limit.max) {
-    const retryAfter = Math.ceil((limit.windowMs - (now - row.windowStart)) / 1000)
+    const retryAfter = Math.ceil(
+      (limit.windowMs - (now - row.windowStart)) / 1000,
+    )
     return { allowed: false, retryAfter }
   }
   return { allowed: true }
@@ -469,7 +516,12 @@ async function createSession(env: Env, row: UserRow): Promise<string> {
   return token
 }
 
-async function issueSession(env: Env, row: UserRow, respond: Respond, isNew = false): Promise<Response> {
+async function issueSession(
+  env: Env,
+  row: UserRow,
+  respond: Respond,
+  isNew = false,
+): Promise<Response> {
   const token = await createSession(env, row)
   return respond({ token, userId: row.id, isNew, user: publicUser(row) })
 }
@@ -535,7 +587,10 @@ async function createEmailVerification(
 ): Promise<string> {
   const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
   const tokenHash = await sha256b64url(token)
-  await db.prepare('DELETE FROM emailVerifications WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare('DELETE FROM emailVerifications WHERE userId = ?')
+    .bind(userId)
+    .run()
   await db
     .prepare(
       'INSERT INTO emailVerifications (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
@@ -578,12 +633,21 @@ async function sendVerificationEmail(
       { displayName, verifyUrl },
     )
   } catch (err) {
-    console.error(`[auth] verification email failed (non-fatal): ${String(err)}`)
+    console.error(
+      `[auth] verification email failed (non-fatal): ${String(err)}`,
+    )
   }
 }
 
-async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
-  const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
+async function handleAnonymous(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const id =
+    body.deviceId && UUID_RE.test(body.deviceId)
+      ? body.deviceId
+      : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
   if (existing) {
     // Knowing the random UUID is the anonymous credential. Upgraded
@@ -644,20 +708,39 @@ async function handleRegister(
           .run()
       }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
-      await sendVerificationEmail(request, env, anon.id, email, body.displayName?.trim())
+      await sendVerificationEmail(
+        request,
+        env,
+        anon.id,
+        email,
+        body.displayName?.trim(),
+      )
       return issueSession(env, row, respond)
     }
   }
 
   const id = crypto.randomUUID()
-  await createUser(env.DB, { id, authProvider: 'password', email, passwordHash })
-  await ensureProfile(env.DB, id, body.displayName?.trim() || defaultDisplayName(id))
+  await createUser(env.DB, {
+    id,
+    authProvider: 'password',
+    email,
+    passwordHash,
+  })
+  await ensureProfile(
+    env.DB,
+    id,
+    body.displayName?.trim() || defaultDisplayName(id),
+  )
   const row = (await findUserById(env.DB, id)) as UserRow
   await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
   return issueSession(env, row, respond, true)
 }
 
-async function handleLogin(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+async function handleLogin(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const email = body.email?.trim().toLowerCase()
   if (!email || !body.password) {
     return respond({ error: 'Email and password required' }, { status: 400 })
@@ -683,7 +766,9 @@ async function resolveGoogleUser(
   env: Env,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   // 1. Returning Google user
-  const linked = await env.DB.prepare('SELECT * FROM users WHERE providerId = ?')
+  const linked = await env.DB.prepare(
+    'SELECT * FROM users WHERE providerId = ?',
+  )
     .bind(claims.sub)
     .first<UserRow>()
   if (linked) return { row: linked, isNew: false }
@@ -700,7 +785,10 @@ async function resolveGoogleUser(
       )
         .bind(claims.sub, nowIso(), byEmail.id)
         .run()
-      return { row: (await findUserById(env.DB, byEmail.id)) as UserRow, isNew: false }
+      return {
+        row: (await findUserById(env.DB, byEmail.id)) as UserRow,
+        isNew: false,
+      }
     }
   }
 
@@ -711,10 +799,19 @@ async function resolveGoogleUser(
       await env.DB.prepare(
         `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?`,
       )
-        .bind(claims.sub, email ?? null, emailVerified ? 1 : 0, nowIso(), anon.id)
+        .bind(
+          claims.sub,
+          email ?? null,
+          emailVerified ? 1 : 0,
+          nowIso(),
+          anon.id,
+        )
         .run()
       await sendWelcomeEmail(env, email, claims.name)
-      return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: false }
+      return {
+        row: (await findUserById(env.DB, anon.id)) as UserRow,
+        isNew: false,
+      }
     }
   }
 
@@ -727,12 +824,21 @@ async function resolveGoogleUser(
     email,
     emailVerified,
   })
-  await ensureProfile(env.DB, id, claims.name || defaultDisplayName(id), claims.picture)
+  await ensureProfile(
+    env.DB,
+    id,
+    claims.name || defaultDisplayName(id),
+    claims.picture,
+  )
   await sendWelcomeEmail(env, email, claims.name)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
 
-async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogle(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   if (!env.GOOGLE_CLIENT_ID) {
     return respond({ error: 'Google login not configured' }, { status: 501 })
   }
@@ -792,11 +898,18 @@ interface OAuthState {
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
   const body = b64urlEncode(encoder.encode(JSON.stringify(state)))
-  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(body))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    await hmacKey(secret),
+    encoder.encode(body),
+  )
   return `${body}.${b64urlEncode(sig)}`
 }
 
-async function verifyState(raw: string, secret: string): Promise<OAuthState | null> {
+async function verifyState(
+  raw: string,
+  secret: string,
+): Promise<OAuthState | null> {
   const [body, sig] = raw.split('.')
   if (!body || !sig) return null
   const valid = await crypto.subtle.verify(
@@ -807,8 +920,11 @@ async function verifyState(raw: string, secret: string): Promise<OAuthState | nu
   )
   if (!valid) return null
   try {
-    const state = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as OAuthState
-    if (typeof state.returnTo !== 'string' || typeof state.ts !== 'number') return null
+    const state = JSON.parse(
+      new TextDecoder().decode(b64urlDecode(body)),
+    ) as OAuthState
+    if (typeof state.returnTo !== 'string' || typeof state.ts !== 'number')
+      return null
     if (Date.now() - state.ts > STATE_TTL_MS) return null
     return state
   } catch {
@@ -824,9 +940,16 @@ function redirectWithError(returnTo: string, message: string): Response {
   return redirect(`${returnTo}#gauth_error=${encodeURIComponent(message)}`)
 }
 
-async function handleGoogleStart(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogleStart(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
-    return respond({ error: 'Google login not configured (client id/secret missing)' }, { status: 501 })
+    return respond(
+      { error: 'Google login not configured (client id/secret missing)' },
+      { status: 501 },
+    )
   }
   const url = new URL(request.url)
   const returnTo = url.searchParams.get('returnTo') ?? ''
@@ -834,7 +957,8 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
     return respond({ error: 'returnTo origin not allowed' }, { status: 400 })
   }
   const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
-  const deviceId = deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
+  const deviceId =
+    deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
 
   const state = await signState(
     { deviceId, returnTo, ts: Date.now() },
@@ -843,7 +967,10 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
 
   const auth = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   auth.searchParams.set('client_id', env.GOOGLE_CLIENT_ID)
-  auth.searchParams.set('redirect_uri', `${url.origin}/api/auth/google/callback`)
+  auth.searchParams.set(
+    'redirect_uri',
+    `${url.origin}/api/auth/google/callback`,
+  )
   auth.searchParams.set('response_type', 'code')
   auth.searchParams.set('scope', 'openid email profile')
   auth.searchParams.set('state', state)
@@ -851,7 +978,11 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
   return redirect(auth.toString())
 }
 
-async function handleGoogleCallback(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogleCallback(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const url = new URL(request.url)
   const state = await verifyState(
     url.searchParams.get('state') ?? '',
@@ -887,7 +1018,11 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     // misconfiguration (bad secret, redirect_uri mismatch, …) — log it
     // and surface the code so the failure is diagnosable from the UI.
     const detail = await tokenRes.text().catch(() => '')
-    console.error('[google-callback] code exchange failed:', tokenRes.status, detail)
+    console.error(
+      '[google-callback] code exchange failed:',
+      tokenRes.status,
+      detail,
+    )
     let code = ''
     try {
       code = (JSON.parse(detail) as { error?: string }).error ?? ''
@@ -904,7 +1039,10 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     return redirectWithError(state.returnTo, 'No id_token from Google')
   }
 
-  const claims = await verifyGoogleIdToken(tokenData.id_token, env.GOOGLE_CLIENT_ID as string)
+  const claims = await verifyGoogleIdToken(
+    tokenData.id_token,
+    env.GOOGLE_CLIENT_ID as string,
+  )
   if (!claims) {
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
@@ -921,7 +1059,10 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
 /** GET /api/auth/verify-email?token=&returnTo= — the emailed confirm link.
  *  A top-level navigation, so success/failure land back in the app as a
  *  fragment (#everified=1 / #everified_error=…), mirroring the Google flow. */
-async function handleVerifyEmail(request: Request, env: Env): Promise<Response> {
+async function handleVerifyEmail(
+  request: Request,
+  env: Env,
+): Promise<Response> {
   const url = new URL(request.url)
   const returnToRaw = url.searchParams.get('returnTo') ?? ''
   const returnTo = isAllowedReturnTo(returnToRaw, env)
@@ -949,7 +1090,9 @@ async function handleVerifyEmail(request: Request, env: Env): Promise<Response> 
   if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
     return fail('invalid_or_used')
   }
-  await env.DB.prepare('UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?')
+  await env.DB.prepare(
+    'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
+  )
     .bind(nowIso(), row.userId)
     .run()
   return redirect(`${returnTo}/#everified=1`)
@@ -972,27 +1115,48 @@ async function handleResendVerification(
     return respond({ ok: true, alreadyVerified: true })
   }
   if (!env.RESEND_API_KEY) {
-    return respond({ error: 'Email sending is not configured' }, { status: 501 })
+    return respond(
+      { error: 'Email sending is not configured' },
+      { status: 501 },
+    )
   }
-  const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+  const profile = await env.DB.prepare(
+    'SELECT displayName FROM userProfiles WHERE id = ?',
+  )
     .bind(row.id)
     .first<{ displayName: string | null }>()
-  await sendVerificationEmail(request, env, row.id, row.email, profile?.displayName)
+  await sendVerificationEmail(
+    request,
+    env,
+    row.id,
+    row.email,
+    profile?.displayName,
+  )
   return respond({ ok: true })
 }
 
-async function handleMe(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleMe(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const row = await findUserById(env.DB, auth.userId)
   if (!row) return respond({ error: 'User not found' }, { status: 404 })
-  const profile = await env.DB.prepare('SELECT * FROM userProfiles WHERE id = ?')
+  const profile = await env.DB.prepare(
+    'SELECT * FROM userProfiles WHERE id = ?',
+  )
     .bind(auth.userId)
     .first()
   return respond({ user: publicUser(row), profile })
 }
 
-async function handleLogout(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleLogout(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   // Increment token version — all previously issued JWTs become invalid
@@ -1120,8 +1284,13 @@ export async function handleAuth(
     const rl = await checkRateLimit(env.DB, ip, 'verify-email')
     if (!rl.allowed) {
       return respond(
-        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
     return handleVerifyEmail(request, env)
@@ -1135,7 +1304,9 @@ export async function handleAuth(
   const rl = await checkRateLimit(env.DB, ip, route)
   if (!rl.allowed) {
     return respond(
-      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      {
+        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+      },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
     )
   }

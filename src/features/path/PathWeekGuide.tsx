@@ -1,11 +1,12 @@
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createMemo, For, onMount, Show } from 'solid-js'
 import type { PathWeek } from '@/features/path/path-content'
 import { DAYS_PER_WEEK } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { ringFill, startAscent } from '@/features/path/path-progress'
 import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { getZenExercise } from '@/features/zen/exercise-catalog'
+import { ascentGuidedAssignmentsForWeek, refreshGuidedContent, } from '@/features/zen/guided-content-store'
 import { openSingingZen, startExercise } from '@/stores/ui-store'
 import styles from './PathWeekGuide.module.css'
 
@@ -17,8 +18,38 @@ export interface PathWeekGuideProps {
   themeLabel: string
 }
 
+interface WeekZenExercise {
+  exerciseId: string
+  exerciseVersion?: number
+}
+
 export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
   const routine = useDailyRoutine()
+  const zenExercises = createMemo<readonly WeekZenExercise[]>(() => {
+    const published = ascentGuidedAssignmentsForWeek(props.week.order)
+    if (published.length > 0) {
+      const practiceDay = Math.min(
+        DAYS_PER_WEEK,
+        ringFill(props.week.order) + 1,
+      )
+      return published
+        .filter(
+          (assignment) =>
+            assignment.dayNumber === 0 || assignment.dayNumber === practiceDay,
+        )
+        .map((assignment) => ({
+          exerciseId: assignment.exerciseId,
+          exerciseVersion: assignment.exerciseVersion,
+        }))
+    }
+    return (props.week.zenExercises ?? []).map((exerciseId) => ({
+      exerciseId,
+    }))
+  })
+
+  onMount(() => {
+    void refreshGuidedContent()
+  })
 
   function practiseToday(): void {
     routine.startOrResume()
@@ -97,21 +128,29 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
               </button>
             )}
           </For>
-          <For each={props.week.zenExercises ?? []}>
-            {(exerciseId) => (
+          <For each={zenExercises()}>
+            {(exercise) => (
               <button
                 type="button"
                 class={`${styles.chip} ${styles.zenChip}`}
                 onClick={() =>
                   openSingingZen({
                     mode: 'exercise',
-                    exerciseId,
+                    exerciseId: exercise.exerciseId,
+                    ...(exercise.exerciseVersion === undefined
+                      ? {}
+                      : { exerciseVersion: exercise.exerciseVersion }),
                     source: 'path',
                   })
                 }
-                title={`Open ${getZenExercise(exerciseId)?.title ?? 'guided pattern'} in Zen practice`}
+                title={`Open ${
+                  getZenExercise(exercise.exerciseId, exercise.exerciseVersion)
+                    ?.title ?? 'guided pattern'
+                } in Zen practice`}
               >
-                Zen · {getZenExercise(exerciseId)?.title ?? exerciseId}
+                Zen ·{' '}
+                {getZenExercise(exercise.exerciseId, exercise.exerciseVersion)
+                  ?.title ?? exercise.exerciseId}
               </button>
             )}
           </For>

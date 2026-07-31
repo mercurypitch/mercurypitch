@@ -1,4 +1,6 @@
+import { createSignal } from 'solid-js'
 import type { ZenExerciseDefinition, ZenExerciseTarget } from './types'
+import { parseZenExercise } from './validate-exercise'
 
 const DEFAULT_SCORING = {
   pitchWeight: 0.55,
@@ -244,9 +246,85 @@ export const ZEN_EXERCISES: readonly ZenExerciseDefinition[] = [
   },
 ] as const
 
+const [activeExercises, setActiveExercises] =
+  createSignal<readonly ZenExerciseDefinition[]>(ZEN_EXERCISES)
+const [catalogRevision, setCatalogRevision] = createSignal(0)
+
+const seedVersionIndex = (): Map<string, ZenExerciseDefinition> =>
+  new Map(
+    ZEN_EXERCISES.map((exercise) => [
+      `${exercise.id}@${exercise.version}`,
+      exercise,
+    ]),
+  )
+
+let versionIndex = seedVersionIndex()
+
+function indexExercise(exercise: ZenExerciseDefinition): void {
+  versionIndex.set(`${exercise.id}@${exercise.version}`, exercise)
+}
+
+/** Reactive catalogue used by the runtime after a published API response has
+ * passed the same structural and semantic checks as the bundled seeds. */
+export function zenExerciseCatalog(): readonly ZenExerciseDefinition[] {
+  return activeExercises()
+}
+
+/**
+ * Replace the runtime catalogue atomically. A partially invalid response is
+ * rejected as a whole so a bad publication can never remove the offline
+ * fallback or leave Ascent pointing at a half-loaded catalogue.
+ */
+export function installPublishedZenExercises(input: unknown): boolean {
+  if (!Array.isArray(input) || input.length === 0) return false
+
+  const exercises: ZenExerciseDefinition[] = []
+  const ids = new Set<string>()
+  for (const candidate of input) {
+    const parsed = parseZenExercise(candidate)
+    if (parsed.exercise === null || ids.has(parsed.exercise.id)) return false
+    ids.add(parsed.exercise.id)
+    exercises.push(parsed.exercise)
+  }
+
+  exercises.sort(
+    (a, b) =>
+      a.category.localeCompare(b.category) || a.title.localeCompare(b.title),
+  )
+  exercises.forEach(indexExercise)
+  setActiveExercises(exercises)
+  setCatalogRevision((revision) => revision + 1)
+  return true
+}
+
+/** Add one exact immutable version without changing the current catalogue
+ * pointer. Path assignments use this before launching an older pinned lesson. */
+export function installPublishedZenExerciseVersion(input: unknown): boolean {
+  const parsed = parseZenExercise(input)
+  if (parsed.exercise === null) return false
+  indexExercise(parsed.exercise)
+  setCatalogRevision((revision) => revision + 1)
+  return true
+}
+
+export function restoreSeedZenExercises(): void {
+  versionIndex = seedVersionIndex()
+  setActiveExercises(ZEN_EXERCISES)
+  setCatalogRevision((revision) => revision + 1)
+}
+
 export function getZenExercise(
   id: string | null | undefined,
+  version?: number,
 ): ZenExerciseDefinition | null {
   if (id === null || id === undefined) return null
-  return ZEN_EXERCISES.find((exercise) => exercise.id === id) ?? null
+  catalogRevision()
+  if (version !== undefined) {
+    return versionIndex.get(`${id}@${version}`) ?? null
+  }
+  return (
+    activeExercises().find((exercise) => exercise.id === id) ??
+    ZEN_EXERCISES.find((exercise) => exercise.id === id) ??
+    null
+  )
 }

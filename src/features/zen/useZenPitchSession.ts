@@ -12,6 +12,7 @@ const MIN_VOICED_POINTS = 3
 
 export interface UseZenPitchSessionOptions {
   initialExerciseId?: string
+  initialExerciseVersion?: number
   initialCenterMidi?: number
   subscribeFrames: (listener: (frame: PracticeFrame) => void) => () => void
   micActive: Accessor<boolean>
@@ -84,7 +85,10 @@ function percentileRange(points: readonly ZenPitchPoint[]): number[] {
 export function useZenPitchSession(
   options: UseZenPitchSessionOptions,
 ): ZenPitchSession {
-  const initialExercise = getZenExercise(options.initialExerciseId)
+  const initialExercise = getZenExercise(
+    options.initialExerciseId,
+    options.initialExerciseVersion,
+  )
   const initialRoot = initialExercise?.defaultRootMidi ?? 60
   const initialTargets =
     initialExercise === null
@@ -189,6 +193,7 @@ export function useZenPitchSession(
       completedAt: Date.now(),
       mode: liveExercise === null ? 'monitor' : 'exercise',
       exerciseId: liveExerciseId ?? undefined,
+      exerciseVersion: liveExercise?.version,
       rootMidi: liveExercise === null ? undefined : liveRoot,
       durationSec,
       points: completedPoints,
@@ -444,7 +449,10 @@ export function useZenPitchSession(
       .filter((run) =>
         liveExerciseId === null
           ? run.mode === 'monitor'
-          : run.mode === 'exercise' && run.exerciseId === liveExerciseId,
+          : run.mode === 'exercise' &&
+            run.exerciseId === liveExerciseId &&
+            (run.exerciseVersion === undefined ||
+              run.exerciseVersion === liveExercise?.version),
       )
       .sort((left, right) => left.completedAt - right.completedAt)
       .slice(-MAX_SESSION_RUNS)

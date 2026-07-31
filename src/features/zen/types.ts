@@ -98,6 +98,8 @@ export interface ZenPitchRun {
   completedAt: number
   mode: ZenPracticeMode
   exerciseId?: string
+  /** Immutable published revision used for this pass. */
+  exerciseVersion?: number
   /** Exercise root used for this take, so historical targets stay aligned. */
   rootMidi?: number
   durationSec: number
