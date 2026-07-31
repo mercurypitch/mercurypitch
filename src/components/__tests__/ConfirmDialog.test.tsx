@@ -40,7 +40,7 @@ describe('ConfirmDialog', () => {
   it('fires onConfirm (not onCancel) when the delete button is clicked', () => {
     const onConfirm = vi.fn()
     const onCancel = vi.fn()
-    const { container } = render(() => (
+    render(() => (
       <ConfirmDialog
         {...baseProps}
         open={true}
@@ -48,27 +48,26 @@ describe('ConfirmDialog', () => {
         onCancel={onCancel}
       />
     ))
-    fireEvent.click(container.querySelector('[data-testid="confirm-delete"]')!)
+    fireEvent.click(screen.getByTestId('confirm-delete'))
     expect(onConfirm).toHaveBeenCalledTimes(1)
     expect(onCancel).not.toHaveBeenCalled()
   })
 
   it('fires onCancel when the cancel button is clicked', () => {
     const onCancel = vi.fn()
-    const { container } = render(() => (
+    render(() => (
       <ConfirmDialog {...baseProps} open={true} onCancel={onCancel} />
     ))
-    fireEvent.click(container.querySelector('[data-testid="confirm-cancel"]')!)
+    fireEvent.click(screen.getByTestId('confirm-cancel'))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
   it('fires onCancel when the overlay backdrop is clicked', () => {
     const onCancel = vi.fn()
-    const { container } = render(() => (
+    render(() => (
       <ConfirmDialog {...baseProps} open={true} onCancel={onCancel} />
     ))
-    const overlay = container.querySelector('[data-testid="confirm-overlay"]')!
-    fireEvent.click(overlay)
+    fireEvent.click(screen.getByTestId('confirm-overlay'))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
@@ -91,12 +90,10 @@ describe('ConfirmDialog', () => {
   })
 
   it('honors a custom confirm label', () => {
-    const { container } = render(() => (
+    render(() => (
       <ConfirmDialog {...baseProps} open={true} confirmLabel="Remove" />
     ))
-    const confirmBtn = container.querySelector(
-      '[data-testid="confirm-delete"]',
-    )!
+    const confirmBtn = screen.getByTestId('confirm-delete')
     expect(confirmBtn.textContent).toContain('Remove')
     expect(confirmBtn.textContent).not.toContain('Delete')
   })
@@ -122,7 +119,7 @@ describe('ConfirmDialog', () => {
   it('locks dismissal and duplicate confirmation while busy', () => {
     const onConfirm = vi.fn()
     const onCancel = vi.fn()
-    const { container } = render(() => (
+    render(() => (
       <ConfirmDialog
         {...baseProps}
         open={true}
@@ -141,7 +138,7 @@ describe('ConfirmDialog', () => {
 
     fireEvent.click(confirm)
     fireEvent.click(cancel)
-    fireEvent.click(container.querySelector('[data-testid="confirm-overlay"]')!)
+    fireEvent.click(screen.getByTestId('confirm-overlay'))
     fireEvent.keyDown(dialog, { key: 'Escape' })
     expect(onConfirm).not.toHaveBeenCalled()
     expect(onCancel).not.toHaveBeenCalled()
