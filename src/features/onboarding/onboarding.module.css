@@ -167,7 +167,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* NOT justify-content: center — a centred flex column pushes overflow
+     out of BOTH ends, and the top half becomes unreachable (the twin
+     beat lost the top of the portrait on a landscape tablet, where
+     width is plentiful and height is not). The beat's auto block
+     margins centre it while there is room and collapse when there
+     isn't, so the content simply scrolls instead of being cut. */
+  justify-content: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 26px;
   padding: 24px 22px 40px;
   text-align: center;
@@ -182,6 +190,8 @@
   gap: 18px;
   width: 100%;
   max-width: 620px;
+  /* Centres in a tall frame, collapses in a short one (see .frame). */
+  margin-block: auto;
   animation: beatIn 0.55s var(--ob-ease) both;
 }
 
@@ -482,7 +492,10 @@
    generic blob. It is the payoff of the whole flow, so it gets the room. */
 .twinArt {
   display: block;
-  width: clamp(200px, 34vw, 320px);
+  /* Bounded by HEIGHT as well as width: a landscape tablet has width to
+     spare and very little height, and a width-only clamp made the
+     portrait taller than the whole frame. */
+  width: min(clamp(200px, 34vw, 320px), 42vh);
   filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
 }
 

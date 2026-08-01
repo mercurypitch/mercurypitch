@@ -41,6 +41,11 @@ export interface StemSplitProgress {
   phase: 'uploading' | 'processing' | 'saving'
   /** 0-100 within the current phase. */
   pct: number
+  /** Saving phase: the part being written right now (e.g. 'guitar'). */
+  part?: string
+  /** Saving phase: 1-based position and total, for "3 of 5". */
+  partIndex?: number
+  partTotal?: number
 }
 
 export interface StemSplitResult {
@@ -366,9 +371,15 @@ export async function attachToStemSplitJob(
             if (options.signal?.aborted === true) {
               throw new DOMException('Stem split aborted', 'AbortError')
             }
+            // Hundreds of MB per part on a tablet takes real time — name
+            // the part and its position so the wait is legible instead of
+            // one motionless "Saving stems…".
             notify({
               phase: 'saving',
               pct: Math.round((done / parts.length) * 100),
+              part: part.stem,
+              partIndex: done + 1,
+              partTotal: parts.length,
             })
             // A worker restart or network blip mid-pickup must not kill
             // the whole completion — retry each file a couple of times.

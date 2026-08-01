@@ -241,26 +241,28 @@ export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
       <Show when={(props.addableStems?.() ?? []).length > 0}>
         <div class="sm-add-stem-row">
           <span class="sm-add-stem-label">Add stem</span>
-          <For each={props.addableStems?.() ?? []}>
-            {(part) => (
-              <button
-                type="button"
-                class="sm-add-stem-pill"
-                style={{ '--stem-color': part.color }}
-                disabled={props.addingStem?.() !== null}
-                onClick={() => props.onAddStem?.(part.key)}
-                title={`Add the ${part.label} stem to the mix`}
-              >
-                <span
-                  class="sm-add-stem-dot"
-                  style={{ background: part.color }}
-                />
-                {props.addingStem?.() === part.key
-                  ? 'Adding…'
-                  : `+ ${part.label}`}
-              </button>
-            )}
-          </For>
+          <div class="sm-add-stem-pills">
+            <For each={props.addableStems?.() ?? []}>
+              {(part) => (
+                <button
+                  type="button"
+                  class="sm-add-stem-pill"
+                  style={{ '--stem-color': part.color }}
+                  disabled={props.addingStem?.() !== null}
+                  onClick={() => props.onAddStem?.(part.key)}
+                  title={`Add the ${part.label} stem to the mix`}
+                >
+                  <span
+                    class="sm-add-stem-dot"
+                    style={{ background: part.color }}
+                  />
+                  {props.addingStem?.() === part.key
+                    ? 'Adding…'
+                    : `+ ${part.label}`}
+                </button>
+              )}
+            </For>
+          </div>
         </div>
       </Show>
     </div>
