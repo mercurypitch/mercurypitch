@@ -25,7 +25,9 @@ import type { PracticeFrameListener } from '@/features/practice/usePracticeContr
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { midiToNote } from '@/lib/scale-data'
+import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { vocalRangePreset } from '@/stores/settings-store'
 import type { ChallengeStageLaunch } from '@/stores/ui-store'
 import { setActiveTab } from '@/stores/ui-store'
 import type { ZenPitchRun } from '../zen/types'
@@ -34,6 +36,7 @@ import type { ZenCanvasRenderModel } from '../zen/zen-canvas-renderer'
 import { ZenPitchCanvas } from '../zen/ZenPitchCanvas'
 import { CHALLENGE_LEAD_IN_BEATS, challengeTargetHighlights, challengeToZenExercise, summarizeChallengeRun, } from './challenge-stage-model'
 import styles from './ChallengeStage.module.css'
+import { clearWeeklyAttempt } from './weekly-attempt'
 
 interface ChallengeStageProps {
   launch: ChallengeStageLaunch
@@ -61,11 +64,16 @@ export function ChallengeStage(props: ChallengeStageProps) {
   // The launch object is immutable for this mount (keyed <Show>), so the
   // synthetic exercise is built once.
   const launch = untrack(() => props.launch)
-  const definition = challengeToZenExercise({
-    id: launch.challengeId,
-    title: launch.title,
-    targetItems: launch.targetItems,
-  })
+  // Fitted to the singer's comfortable range by whole octaves — the
+  // drill this replaces always generated notes the singer could reach.
+  const definition = challengeToZenExercise(
+    {
+      id: launch.challengeId,
+      title: launch.title,
+      targetItems: launch.targetItems,
+    },
+    getComfortableMidiRange(vocalRangePreset()),
+  )
 
   const [outcome, setOutcome] = createSignal<ChallengeOutcome | null>(null)
   const [startError, setStartError] = createSignal<string | null>(null)
@@ -257,6 +265,15 @@ export function ChallengeStage(props: ChallengeStageProps) {
     // Abandoning mid-run (tab navigation unmounts the stage) records
     // nothing — parity with leaving a drill. The zen session releases a mic
     // it acquired in its own cleanup.
+    //
+    // Leaving also DISARMS the attempt. The stage is the only way to sing a
+    // Legend, but recordWeeklyAttempt matches on exercise type alone — so an
+    // attempt left armed here would be silently consumed by the next
+    // ordinary sight-singing drill, whose notes are randomly generated
+    // inside the singer's own comfortable range. That easier run would post
+    // to the Legend board as the attempt. Arming lives exactly as long as
+    // the stage does.
+    if (!completing) clearWeeklyAttempt()
   })
 
   const noteRange = (): string => {
