@@ -25,7 +25,7 @@ import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { autoTimeLineWords } from '@/lib/word-sync'
-import { enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
+import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -2136,7 +2136,10 @@ export function useStemMixerLyricsController(
       }
     }
 
-    const allMapped = lrcGenLineIdx() >= lines.length
+    // Honest "all mapped": every line explicitly touched — the cursor
+    // reaching the end only means the user finished at the end, not that
+    // they started there (see isSessionFullyMapped).
+    const allMapped = isSessionFullyMapped(lines.length, touchedLines)
 
     let finalTimes: (number | undefined)[]
     let mergedWordTimesCanon: WordTimingsMap

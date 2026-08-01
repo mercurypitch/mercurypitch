@@ -7,7 +7,7 @@
 // original timings when the user only mapped a subset of lines.
 
 import { describe, expect, it } from 'vitest'
-import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from '@/features/stem-mixer/lrc-gen-engine'
+import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from '@/features/stem-mixer/lrc-gen-engine'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
 import type { WordTimingsMap } from '@/features/stem-mixer/types'
 
@@ -510,5 +510,47 @@ describe('buildFinalPartialTimes', () => {
     expect(result[0]).toBe(5) // origWtCanon[0][0]
     expect(result[1]).toBe(20) // touched
     expect(result[2]).toBe(25) // origWtCanon[2][0]
+  })
+})
+
+describe('isSessionFullyMapped (the remap-last-lines zeroing guard)', () => {
+  it('a cursor past the end is NOT all-mapped when earlier lines are untouched', () => {
+    // The owner scenario: jump to the last 4 of 60 lines, map them, the
+    // cursor walks out. Taking the all-mapped shortcut here discarded
+    // every earlier line's original timestamp (serialized as 0:00).
+    const touched = new Set([56, 57, 58, 59])
+    expect(isSessionFullyMapped(60, touched)).toBe(false)
+  })
+
+  it('a genuine full walk is all-mapped', () => {
+    expect(isSessionFullyMapped(3, new Set([0, 1, 2]))).toBe(true)
+    expect(isSessionFullyMapped(0, new Set())).toBe(true)
+  })
+
+  it('partial remap of the tail preserves every earlier original time', () => {
+    // End-to-end through the partial pipeline: 10 lines with original
+    // canonical times every 100s (an 18-minute song), only the last two
+    // remapped near 17:00.
+    const lines = Array.from({ length: 10 }, (_, i) => `line ${i}`)
+    const canonical = lines.map((text, i) => makeCanonical(i, i * 100, text))
+    const lineTimes: (number | undefined)[] = lines.map(() => undefined)
+    lineTimes[8] = 1020
+    lineTimes[9] = 1050
+    const touched = new Set([8, 9])
+
+    const result = buildFinalPartialTimes({
+      lines,
+      lineTimes,
+      touchedLines: touched,
+      origWtCanon: undefined,
+      canonical,
+      duration: 1080,
+    })
+
+    for (let i = 0; i < 8; i++) {
+      expect(result[i]).toBe(i * 100) // originals intact, no 0:00 wipe
+    }
+    expect(result[8]).toBe(1020)
+    expect(result[9]).toBe(1050)
   })
 })

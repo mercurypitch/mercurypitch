@@ -151,6 +151,24 @@ export function restoreTouchedLines(params: {
 }
 
 /**
+ * True only when EVERY line was explicitly mapped this session. The gen
+ * cursor passing the last line is NOT enough: jumping to the final lines
+ * and mapping just those walks the cursor out while everything earlier
+ * stays untouched — and taking the all-mapped shortcut then discards the
+ * untouched lines' original timestamps, which serialize as 0:00 (owner
+ * hit this remapping the last 4 lines of an 18-minute song).
+ */
+export function isSessionFullyMapped(
+  lineCount: number,
+  touchedLines: ReadonlySet<number>,
+): boolean {
+  for (let i = 0; i < lineCount; i++) {
+    if (!touchedLines.has(i)) return false
+  }
+  return true
+}
+
+/**
  * Merge partial LRC gen results with pre-existing timing data.
  *
  * For each line:
