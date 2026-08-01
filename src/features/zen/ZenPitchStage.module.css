@@ -547,3 +547,25 @@
     transition: none;
   }
 }
+
+/* The target-notes row must fit the rail whole — the three-way selector's
+   "Off" used to clip at the panel edge (owner testing). Tighter run:
+   smaller gap/padding and slimmer buttons; the label may shrink. */
+.visibilityControl {
+  gap: 6px;
+  padding: 8px;
+}
+
+.visibilityControl > span {
+  min-width: 0;
+}
+
+.visibilityControl > div[role='group'] {
+  display: flex;
+  flex: none;
+}
+
+.visibilityControl button {
+  min-width: 30px;
+  font-size: 0.66rem;
+}

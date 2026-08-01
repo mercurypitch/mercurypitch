@@ -123,6 +123,16 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   })
 
   createEffect(() => {
+    // Unmuting must be audible NOW, not at the next loop: clear the
+    // played keys so a target currently inside its window fires
+    // immediately (passed windows stay silent — the window check gates
+    // them). Without this, pause+resume was the only thing that re-armed
+    // playback mid-run (owner testing). Muting mid-note lets the current
+    // tone's short tail (<=1.2s) ring out — cutting it would pop.
+    if (!notesMuted()) playedTargetKeys = new Set()
+  })
+
+  createEffect(() => {
     if (!notePlaybackActive()) return
     if (session.status() !== 'running') return
     const elapsed = session.elapsedSec()
@@ -134,6 +144,9 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
       if (inLoop >= target.startSec && inLoop < target.endSec) {
         playedTargetKeys.add(key)
         toneCtx ??= new AudioContext()
+        // A context created outside a click can start suspended
+        // (autoplay policy) — resume before scheduling or nothing sounds.
+        if (toneCtx.state === 'suspended') void toneCtx.resume()
         void playReferenceTone(
           toneCtx,
           target.startMidi,
