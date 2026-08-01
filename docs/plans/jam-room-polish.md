@@ -1,7 +1,7 @@
 # Jam room: polish + a reason to be there
 
-**Status:** proposal. Phase 0 (room glass) is implemented on
-`feat/jam-tab-polish-transparency-55a592`; phases 1-6 are unbuilt.
+**Status:** phases 0 and 1 are implemented on
+`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 2-6 are unbuilt.
 
 The Jam tab has a working multiplayer spine and almost nothing to do with it.
 This plan is about the second half.
@@ -75,32 +75,43 @@ photo, so the backdrop only ever showed at the page margins.
 - Header slider next to the mic/camera controls. The invite modal opts out —
   a dialog you copy a room code out of must not go see-through.
 
-## 4. Phase 1 — a reason to press Create Room
+## 4. Phase 1 — a reason to press Create Room (implemented)
 
-Cheapest phase, largest effect. No protocol change.
+Cheapest phase, largest effect. No protocol change: `selectJamExercise`
+already broadcasts a whole `MelodyData`, so a built target reaches peers
+exactly as a saved melody does.
 
-**Bring the catalogue in.** The picker gets four sources instead of one:
+**`src/lib/jam/jam-catalog.ts`** is the adapter. The picker now shelves four
+sources instead of listing one:
 
-- **Exercises** — the 18 in `src/features/exercises/`.
-- **This week's challenge** — via `weekly-service.getActiveWeekly()`.
-- **Your Ascent week** — via `path-content.ts`.
-- **Melodies and songs** — today's list, plus `saved-midi-songs-store`.
+- **This week's challenge** — `weekly-service.getActiveWeekly()`, fetched
+  when the room goes live. `targetItems` is already `MelodyItem[]`.
+- **Your Ascent week** — `activePathWeek()` (added to `path-progress.ts`),
+  whose `exercises` run through the same drill table.
+- **Exercises** — twelve of the eighteen.
+- **Your melodies** — the original shelf, unchanged.
 
-Exercises are controllers, not melodies, so they need a **jam-exercise
-adapter**: exercise config in, `{ targetMelody, scorer }` out.
-`challenge-drill-generator.ts` already does the adjacent job of turning a
-challenge into a drill and is the shape to copy. Not every exercise adapts —
-`drone-intonation`, `long-note`, `siren`, `interval-trainer`, `scale-runner`,
-`arpeggio-jumper` and `sight-singing` all reduce to a target contour cleanly;
-`vibrato` and `dynamic-swell` need a metric lane rather than a note lane and
-can come later.
+Drill notes are written at octave 4 and transposed into the host's vocal
+range on build, which makes the octave the host's call for everyone — the
+same deal the room already has for BPM. The **weekly is deliberately not
+transposed**: a shared board only means something if everyone sang the same
+notes.
 
-**Lobby.** Replace the bare form with what the room is: the backdrop it will
-land in, the modes available, "up to 12", and a single Create Room. Keep the
-join-by-code path exactly as-is.
+Six exercises are excluded, and the module says so in
+`JAM_EXCLUDED_EXERCISES` rather than leaving them quietly missing: `vibrato`
+and `dynamic-swell` score a rate and an envelope rather than a pitch target
+and need their own canvas lane; `warmup` and `routine-runner` are coached
+multi-block flows; `call-response` and `mirror-melody` need a phrase played
+to the room first, which is a room mode (phase 4), not a target.
 
-**Header.** The full URL as a `<code>` chip plus two separate Copy buttons is
-noise in a 12-peer header. One Invite control; the modal already exists.
+Two bits of header and lobby debt went with it: the header dropped its
+duplicate room-code copy (the invite modal has had both copies all along)
+while keeping the code visible because people read it aloud, and the lobby
+now states what the room is and what can be run in it.
+
+Covered by `src/tests/jam-catalog.test.ts` — transposition per range, beat
+layout, the `"G44"` bare-note-name trap, weekly pass-through, and the
+exclusion list.
 
 ## 5. Phase 2 — one shared truth
 
@@ -183,10 +194,11 @@ The largest lift; do it last.
 
 ## 10. Order, and why
 
-Phase 1 first — the room is empty and that is the whole problem. Phase 2 next
-because a competitive room with a disagreeing scoreboard is worse than no
-competitive room. 3 and 4 can go in parallel once 2 lands. 5 and 6 are real
-projects and should be re-scoped after 1-4 are in front of users.
+Phase 1 first — the room is empty and that is the whole problem. **Done.**
+Phase 2 next, because a competitive room with a disagreeing scoreboard is
+worse than no competitive room. 3 and 4 can go in parallel once 2 lands. 5
+and 6 are real projects and should be re-scoped after 1-4 are in front of
+users.
 
 Risks worth naming up front: mesh cost at 12 peers is 66 connections and the
 pitch rate (20 Hz per peer) should be measured before the peer cap is raised;
