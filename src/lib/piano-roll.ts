@@ -263,6 +263,34 @@ export function downloadMIDI(
   return true
 }
 
+/**
+ * Read a Standard MIDI File's tempo, in BPM.
+ *
+ * `importMelodyFromMIDI` skips every meta event, so an imported file's tempo
+ * was discarded and the song played at whatever BPM happened to be set. This
+ * scans the track chunks for the first Set Tempo meta (0xFF 0x51, three bytes
+ * of microseconds-per-quarter-note) without disturbing the note parser.
+ *
+ * Returns null when the file carries no tempo (the MIDI default is 120 BPM,
+ * but the caller decides whether to apply a default).
+ */
+export function readMidiTempoBpm(data: Uint8Array): number | null {
+  // Scan for the 3-byte Set Tempo payload. Meta events can appear in any
+  // track; the first one wins, which matches how DAWs treat an initial tempo.
+  for (let i = 0; i + 5 < data.length; i++) {
+    if (data[i] !== 0xff || data[i + 1] !== 0x51 || data[i + 2] !== 0x03) {
+      continue
+    }
+    const microsPerBeat = (data[i + 3] << 16) | (data[i + 4] << 8) | data[i + 5]
+    if (microsPerBeat <= 0) continue
+    const bpm = 60000000 / microsPerBeat
+    // Ignore absurd values from a false-positive byte match.
+    if (bpm < 20 || bpm > 400) continue
+    return Math.round(bpm)
+  }
+  return null
+}
+
 /** Import a melody from a Standard MIDI File (Format 0 or 1).
  *  Parses Note On/Off events and converts them to MelodyItems.
  *  Returns null on parse error.
@@ -507,6 +535,9 @@ export interface PianoRollOptions {
    *  as a melody NAMED after the file rather than overwriting whatever melody
    *  was current under its old name. */
   onMelodyImport?: (melody: MelodyItem[], name: string) => void
+  /** An imported MIDI declared its own tempo — apply it to the transport so
+   *  the song plays at the speed it was written at. */
+  onTempoImport?: (bpm: number) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -704,6 +735,7 @@ export class PianoRollEditor {
   private onGridToggle?: () => void
   private onHoverHintsToggle?: () => void
   private onMelodyImport?: (melody: MelodyItem[], name: string) => void
+  private onTempoImport?: (bpm: number) => void
 
   constructor(options: PianoRollOptions) {
     this.container = options.container
@@ -720,6 +752,7 @@ export class PianoRollEditor {
     this.onGridToggle = options.onGridToggle
     this.onHoverHintsToggle = options.onHoverHintsToggle
     this.onMelodyImport = options.onMelodyImport
+    this.onTempoImport = options.onTempoImport
 
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
@@ -3046,7 +3079,9 @@ export class PianoRollEditor {
           const melody = importMelodyFromMIDI(data)
           if (melody && melody.length > 0) {
             const name = file.name.replace(/\.(mid|midi)$/i, '')
+            const tempo = readMidiTempoBpm(data)
             this.setMelody(melody)
+            if (tempo !== null) this.onTempoImport?.(tempo)
             // Prefer the naming import so the library records what was loaded;
             // fall back to a plain change when the host doesn't handle it.
             if (this.onMelodyImport) this.onMelodyImport(melody, name)

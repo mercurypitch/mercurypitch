@@ -8,7 +8,7 @@
 // never scrolled.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PianoRollEditor } from '../lib/piano-roll'
+import { PianoRollEditor, readMidiTempoBpm } from '../lib/piano-roll'
 import { buildMultiOctaveScale, midiToFreq, midiToNote, } from '../lib/scale-data'
 import type { MelodyItem } from '../types'
 
@@ -199,5 +199,66 @@ describe('row auto-fit', () => {
     editor.setMelody([note(21, 0), note(108, 1)])
     // 11 octaves max — the grid must stay finite even for a full piano.
     expect(editor.getScale().length).toBeLessThanOrEqual(12 * 11 + 1)
+  })
+})
+
+describe('readMidiTempoBpm', () => {
+  /** Minimal SMF with a Set Tempo meta event of the given BPM. */
+  function midiWithTempo(bpm: number): Uint8Array {
+    const micros = Math.round(60000000 / bpm)
+    return new Uint8Array([
+      0x4d,
+      0x54,
+      0x68,
+      0x64,
+      0,
+      0,
+      0,
+      6,
+      0,
+      1,
+      0,
+      1,
+      0x01,
+      0xe0,
+      0x4d,
+      0x54,
+      0x72,
+      0x6b,
+      0,
+      0,
+      0,
+      11,
+      0x00,
+      0xff,
+      0x51,
+      0x03,
+      (micros >> 16) & 0xff,
+      (micros >> 8) & 0xff,
+      micros & 0xff,
+      0x00,
+      0xff,
+      0x2f,
+      0x00,
+    ])
+  }
+
+  it('reads the tempo an imported file was written at', () => {
+    expect(readMidiTempoBpm(midiWithTempo(140))).toBe(140)
+    expect(readMidiTempoBpm(midiWithTempo(72))).toBe(72)
+  })
+
+  it('returns null when the file declares no tempo', () => {
+    const noTempo = new Uint8Array([
+      0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 1, 0, 1, 0x01, 0xe0, 0x4d, 0x54,
+      0x72, 0x6b, 0, 0, 0, 4, 0x00, 0xff, 0x2f, 0x00,
+    ])
+    expect(readMidiTempoBpm(noTempo)).toBeNull()
+  })
+
+  it('ignores out-of-range values from a false byte match', () => {
+    // micros = 1 -> 60,000,000 BPM: a coincidental byte run, not a tempo.
+    const bogus = new Uint8Array([0xff, 0x51, 0x03, 0x00, 0x00, 0x01, 0x00])
+    expect(readMidiTempoBpm(bogus)).toBeNull()
   })
 })

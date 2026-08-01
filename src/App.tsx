@@ -1625,6 +1625,10 @@ const AppShell: Component<AppProps> = (props) => {
     if (song === null && existing) {
       // Library melody picked from the modal — just make it current.
       melodyStore.setCurrentMelody(existing)
+      // Adopt its tempo like the sidebar's load path does; picking a melody
+      // from the modal used to leave the transport on the previous song's
+      // BPM, so the melody played at the wrong speed.
+      if (existing.bpm > 0) setBpm(existing.bpm)
       return
     }
     // Imported MIDI song: upsert a library melody named after it so the
@@ -1635,6 +1639,10 @@ const AppShell: Component<AppProps> = (props) => {
       bpm: songBpm,
     })
     if (updated) melodyStore.setCurrentMelody(updated)
+    // The song's own tempo was stored on the melody but never applied to the
+    // transport, so an imported MIDI played at whatever BPM was already set
+    // (the 60 default on a fresh session) — audibly wrong for the whole song.
+    if (songBpm > 0) setBpm(songBpm)
     showNotification(`Loaded "${name}" (${items.length} notes)`, 'success')
   }
 
@@ -3065,6 +3073,7 @@ const AppShell: Component<AppProps> = (props) => {
                         onMelodyImport={(melody, name) => {
                           melodyStore.loadImportedMelody(melody, name)
                         }}
+                        onTempoImport={(importedBpm) => setBpm(importedBpm)}
                         onInstrumentChange={(instrument) => {
                           // Update three things at once:
                           //   1. App's primary AudioEngine (used during practice

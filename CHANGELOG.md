@@ -24,6 +24,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   shared link) used to pour the notes into whatever melody was open and keep
   that melody's old name; imports now become a melody named after the file or
   the shared song.
+- **Songs play at their own tempo.** Loading a song or melody left the tempo
+  wherever it was — usually the default — so an imported MIDI played at the
+  wrong speed from the first note. Loading now adopts the song's tempo, and
+  Compose's own MIDI import reads the tempo out of the file too.
 
 ### Added
 
