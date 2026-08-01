@@ -6,7 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { needsSignIn } from '@/db/services/auth-service'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
-import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
+import { clearChallengeResult, lastChallengeResult, } from '@/features/challenges/challenge-result-store'
+import { activeWeeklyAttempt, beginWeeklyAttempt, clearWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -30,6 +31,11 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
   TOUR_OFFER_CHANNEL: 'tour-offer',
 }))
+
+afterEach(() => {
+  clearWeeklyAttempt()
+  clearChallengeResult()
+})
 
 describe('weeklyTier', () => {
   it('grades below target as attempted', () => {
@@ -146,6 +152,24 @@ describe('recordWeeklyAttempt', () => {
       false,
     )
     expect(activeWeeklyAttempt()).toBe(null)
+  })
+
+  it('hands the Exercise capture outcome to the Legend result', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w4',
+      title: 'A New Line',
+      exercise: 'sight-singing',
+      targetScore: 75,
+    })
+    const voiceCapture = { state: 'unsupported', take: null } as const
+
+    await recordWeeklyAttempt({
+      type: 'sight-singing',
+      score: 82,
+      voiceCapture,
+    })
+
+    expect(lastChallengeResult()?.voiceCapture).toBe(voiceCapture)
   })
 })
 
