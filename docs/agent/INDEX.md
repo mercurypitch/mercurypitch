@@ -97,7 +97,7 @@ These are the rules that break things when ignored.
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
-| `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 83 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
+| `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
@@ -120,7 +120,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [piano-roll.ts](../../src/lib/piano-roll.ts) | 5.6k | Piano Roll Editor — Canvas-based note editor |
+| [piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k | Piano Roll Editor — Canvas-based note editor |
 | [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 956 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
@@ -146,7 +146,7 @@ These are the rules that break things when ignored.
 | File | LOC | What it is |
 |---|---|---|
 | [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
-| [melody-store.ts](../../src/stores/melody-store.ts) | 1.6k | Melody Store — Melody items and scale data (in-memory) |
+| [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [jam-store.ts](../../src/stores/jam-store.ts) | 716 | ── Jam store Reactive state management for P2P jam sessions. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 647 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
@@ -278,7 +278,7 @@ Grep for the symbol and read the surrounding range instead.
 | File | LOC |
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.5k |
-| [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 5.6k |
+| [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/App.tsx](../../src/App.tsx) | 3.6k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
@@ -291,7 +291,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
-| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.6k |
+| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |

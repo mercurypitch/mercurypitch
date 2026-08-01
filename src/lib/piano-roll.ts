@@ -30,6 +30,15 @@ const PIANO_ROLL_CONFIG: PianoRollConfig = {
   },
 }
 
+/** How long playback leaves the view alone after the user scrolls it. Long
+ *  enough to read a passage, short enough that the playhead comes back on its
+ *  own — the same "let them look, then resume" feel as the lyrics scroller. */
+const FOLLOW_GRACE_MS = 1800
+
+/** A scroll event landing within this long of an editor-driven scroll is
+ *  ours, not the user's. Covers the async dispatch of a programmatic scroll. */
+const AUTO_SCROLL_ECHO_MS = 120
+
 /** Hard ceiling for a canvas's backing store in device px. Browsers cap canvas
  *  dimensions (Chrome 65,535; Safari lower) and silently fail to allocate past
  *  it. The grid is viewport-sized so this is only a safety net. */
@@ -593,6 +602,12 @@ export class PianoRollEditor {
   private viewportWidth = 0
   /** Horizontal scroll offset in content px. Content x = canvas x + scrollX. */
   private scrollX = 0
+  /** When the editor last moved the view itself. A scroll event arriving
+   *  within a frame or two of that is our own, not the user's. */
+  private _lastAutoScrollAt = Number.NEGATIVE_INFINITY
+  /** While set in the future, playback does not drag the view back — so a
+   *  user can look around mid-playback without fighting the playhead. */
+  private _followSuspendedUntil = 0
 
   // Playback
   private playbackState: PlaybackState = 'stopped'
@@ -1282,6 +1297,9 @@ export class PianoRollEditor {
       if (this.isCountingIn) {
         this.isCountingIn = false
       }
+      // Pressing play is a request to watch the playhead — drop any leftover
+      // hands-off period from browsing before the run.
+      this._followSuspendedUntil = 0
       // Re-seed the ball for this run — stopPlayback tears it down, and
       // without this the ball only ever existed for the first play.
       if (this.ballState === null && this.melody.length > 0) {
@@ -2281,9 +2299,19 @@ export class PianoRollEditor {
     this.scrollX = x
     this._clampScroll()
     if (this.gridContainer && this.gridContainer.scrollLeft !== this.scrollX) {
+      // Timestamp rather than a boolean flag: a programmatic scroll that gets
+      // clamped fires no event, and a stuck flag would swallow the user's
+      // next real scroll.
+      this._lastAutoScrollAt = performance.now()
       this.gridContainer.scrollLeft = this.scrollX
     }
     this._positionViewportCanvases()
+  }
+
+  /** Hand the view to the user for a moment — playback stops pulling it back
+   *  until the grace period lapses. */
+  private _suspendFollow(): void {
+    this._followSuspendedUntil = performance.now() + FOLLOW_GRACE_MS
   }
 
   /** Scroll so a content-x is visible, then redraw. For user-driven jumps
@@ -2303,12 +2331,15 @@ export class PianoRollEditor {
     const beatsPerBar = this.config.beatsPerBar
     const totalBars = Math.max(1, Math.ceil(this.totalBeats / beatsPerBar))
     const clamped = Math.max(1, Math.min(Math.round(bar), totalBars))
+    // Deliberate navigation, so hold the view here even mid-playback.
+    this._suspendFollow()
     this.scrollToContentX((clamped - 1) * beatsPerBar * this.beatWidth, 'start')
     this._updateBarNavigator()
   }
 
   /** Page the view by whole viewports. */
   pageView(direction: -1 | 1): void {
+    this._suspendFollow()
     this.scrollToContentX(
       this.scrollX +
         this.viewportWidth * 0.9 * direction +
@@ -2915,6 +2946,11 @@ export class PianoRollEditor {
         if (!this.gridContainer) return
         const next = this.gridContainer.scrollLeft
         if (next === this.scrollX) return
+        // A scroll the editor didn't cause is the user looking around: give
+        // them the view for a beat instead of yanking it back every frame.
+        if (performance.now() - this._lastAutoScrollAt > AUTO_SCROLL_ECHO_MS) {
+          this._suspendFollow()
+        }
         this.scrollX = next
         this._clampScroll()
         this._positionViewportCanvases()
@@ -4978,6 +5014,8 @@ export class PianoRollEditor {
     const recording = this.isRecording?.() === true
     const playing = this.playbackState === 'playing'
     if (!recording && !playing) return
+    // The user just scrolled — leave their view alone until it lapses.
+    if (performance.now() < this._followSuspendedUntil) return
 
     if (recording) {
       const target = playheadX - this.viewportWidth * 0.5

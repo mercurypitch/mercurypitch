@@ -262,3 +262,75 @@ describe('readMidiTempoBpm', () => {
     expect(readMidiTempoBpm(bogus)).toBeNull()
   })
 })
+
+describe('playback follow yields to the user', () => {
+  let container: HTMLElement
+  let editor: PianoRollEditor
+  let scroller: HTMLElement
+
+  beforeEach(() => {
+    mockCanvasContext()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    editor = new PianoRollEditor({
+      container,
+      scale: buildMultiOctaveScale('C', 3, 2, 'major'),
+      bpm: 120,
+      totalBeats: 1068,
+    })
+    scroller = container.querySelector('.roll-grid-container') as HTMLElement
+    Object.defineProperty(scroller, 'clientWidth', {
+      value: VIEWPORT,
+      configurable: true,
+    })
+    editor.setTotalBeats(1068)
+    editor.setMelody(bigSong())
+    editor.setExternalPlayback(true)
+    editor.setPlaybackState('playing')
+  })
+
+  function userScrollsTo(x: number): void {
+    scroller.scrollLeft = x
+    scroller.dispatchEvent(new Event('scroll'))
+  }
+
+  it('does not snap the view back while the user is browsing', () => {
+    // Playhead near the start, user scrolls far away mid-playback.
+    editor.updatePlaybackPosition(4)
+    userScrollsTo(20000)
+    const parked = scroller.scrollLeft
+    expect(parked).toBeGreaterThan(10000)
+
+    // Several playback frames later the view is still where they left it.
+    for (let beat = 4; beat < 12; beat++) {
+      editor.updatePlaybackPosition(beat)
+    }
+    expect(scroller.scrollLeft).toBe(parked)
+  })
+
+  it('resumes following once the grace period lapses', () => {
+    editor.updatePlaybackPosition(4)
+    userScrollsTo(20000)
+    expect(scroller.scrollLeft).toBeGreaterThan(10000)
+
+    // Jump past the hands-off window, then let playback advance.
+    const realNow = performance.now.bind(performance)
+    const spy = vi
+      .spyOn(performance, 'now')
+      .mockImplementation(() => realNow() + 5000)
+    editor.updatePlaybackPosition(6)
+    spy.mockRestore()
+
+    // Back on the playhead (6 beats in), not stranded at bar 100.
+    expect(scroller.scrollLeft).toBeLessThan(5000)
+  })
+
+  it('pressing play clears a leftover hands-off period', () => {
+    editor.updatePlaybackPosition(4)
+    userScrollsTo(20000)
+    editor.setPlaybackState('stopped')
+    editor.setPlaybackState('playing')
+    editor.updatePlaybackPosition(6)
+    expect(scroller.scrollLeft).toBeLessThan(5000)
+  })
+})
