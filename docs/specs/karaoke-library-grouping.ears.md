@@ -4,13 +4,10 @@ Requirements for the Karaoke Night "Your library" rail, which lists a user's
 completed separations. When songs are organised into session groups, the rail
 renders a group -> song-list hierarchy instead of one flat list.
 
-Implementation:
-
-- Pure folding helper: `src/features/karaoke-night/library-grouping.ts`
-  (`groupLibrarySongs`).
-- Rail rendering: `src/features/karaoke-night/KaraokeRailPanels.tsx`.
-
-Unit tests (`LIB-GROUP-*`): `src/tests/karaoke-library-grouping.test.ts`.
+**Source:** `src/features/karaoke-night/library-grouping.ts` — pure folding
+helper (`groupLibrarySongs`);
+`src/features/karaoke-night/KaraokeRailPanels.tsx` — rail rendering
+**Tests:** `src/tests/karaoke-library-grouping.test.ts` (`LIB-GROUP-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
