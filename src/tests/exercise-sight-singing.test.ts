@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { useSightSingingController } from '@/features/exercises/sight-singing/use-sight-singing-controller'
+import { finalizeSightSingingScore, useSightSingingController, } from '@/features/exercises/sight-singing/use-sight-singing-controller'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import type { BaseExerciseController } from '@/features/exercises/use-base-exercise'
 import type { ScaleDegree } from '@/types'
@@ -208,5 +208,26 @@ describe('useSightSingingController', () => {
     expect(result.score).toBeLessThanOrEqual(100)
     expect(result.metrics.notesScored).toBe(total)
     expect(result.metrics.notesAttempted).toBe(total)
+  })
+})
+
+describe('finalizeSightSingingScore (the 1-of-6 = 70% board fix)', () => {
+  it('a one-note run scores its coverage, not its cherry-picked average', () => {
+    // The owner scenario: matched note 1 (floor 70), quit before 2..6.
+    const final = finalizeSightSingingScore([70], 6)
+    expect(final.score).toBe(12)
+    expect(final.avgAccuracy).toBe(70) // quality of what WAS sung, for the card
+    expect(final.bestNote).toBe(70)
+  })
+
+  it('a full run scores the plain average, unchanged', () => {
+    const final = finalizeSightSingingScore([80, 90, 100], 3)
+    expect(final.score).toBe(90)
+    expect(final.avgAccuracy).toBe(90)
+  })
+
+  it('empty inputs stay zeroed', () => {
+    expect(finalizeSightSingingScore([], 6).score).toBe(0)
+    expect(finalizeSightSingingScore([70], 0).score).toBe(0)
   })
 })

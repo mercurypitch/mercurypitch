@@ -326,9 +326,13 @@ const SightSingingExercise: Component<Props> = (props) => {
         </>
       }
       resultSummary={
+        // The score spans ALL notes (unsung ones count zero), so say the
+        // parts out loud: coverage, then quality on what was sung — a
+        // bare "1 of 6 - 70%" read as nonsense (owner testing).
         <>
           {base.result()?.metrics.notesScored} of{' '}
-          {base.result()?.metrics.notesAttempted} notes hit · Best:{' '}
+          {base.result()?.metrics.notesAttempted} notes sung ·{' '}
+          {base.result()?.metrics.avgAccuracy}% on those · Best:{' '}
           {base.result()?.metrics.bestNote}%
         </>
       }
