@@ -87,7 +87,7 @@ These are the rules that break things when ignored.
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 927 | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 833 | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
-| `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 607 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
+| `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 678 | The cover artwork on its own, so surfaces other than this gallery can show the same rooms without a second set of drawings. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 507 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 436 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 328 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
@@ -181,12 +181,12 @@ These are the rules that break things when ignored.
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 310 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 217 | Exercise selection state lives in AppShell (also set by share/deep-link and pending-drill flows), so it is threaded in rather than owned... |
 | [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
+| [JamPage.tsx](../../src/pages/JamPage.tsx) | 41 | Jam tab (TAB_JAM). |
 | [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 20 | Challenges tab (TAB_CHALLENGES). |
 | [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 20 | Community tab (TAB_COMMUNITY). |
 | [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 19 | One dashboard at every width. |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 17 | Hidden research surface. |
-| [JamPage.tsx](../../src/pages/JamPage.tsx) | 11 | Jam tab (TAB_JAM). |
 | [SettingsPage.tsx](../../src/pages/SettingsPage.tsx) | 11 | Settings tab (TAB_SETTINGS). |
 
 #### Cloudflare Workers (`workers/`) — backend
