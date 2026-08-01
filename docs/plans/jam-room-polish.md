@@ -1,7 +1,8 @@
 # Jam room: polish + a reason to be there
 
-**Status:** phases 0-3 are implemented on
-`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 4-6 are unbuilt.
+**Status:** phases 0-4 are implemented on
+`feat/jam-tab-polish-transparency-55a592` (PR #388), except for two of
+phase 4's four modes; phases 5-6 are unbuilt.
 
 The Jam tab has a working multiplayer spine and almost nothing to do with it.
 This plan is about the second half.
@@ -198,31 +199,49 @@ with" badge. Both want a decision about what a room result means publicly,
 which is easier to make once phase 4's modes exist — a Duel result is a much
 more natural leaderboard row than "sang a scale near someone".
 
-## 7. Phase 4 — modes worth having
+## 7. Phase 4 — modes worth having (Harmony Stack + Relay implemented)
 
-One host-chosen mode per room, broadcast on the existing `melody`/`playback`
-channel pattern. Ranked by how much each one justifies a second person being
-present.
+One host-chosen mode per room. **Roles are never sent**: every peer sorts the
+room's ids and takes its index — the same trick `peer-colors.ts` already uses
+for colours — so there is no assignment handshake to fall out of sync, and a
+peer joining or leaving simply reshuffles. Only the mode itself rides the
+wire, on the melody message it reshapes.
 
-**Harmony Stack** — each peer is assigned a scale degree (root / third /
-fifth), the logic `chord-stacker` already owns. Three target lanes on the
-canvas; the scoreboard shows chord lock — how in tune the *stack* is, not the
-individuals. Nobody can do this alone, ever, and it survives latency because
-each peer sings to the same click and only the scoreboard combines. This is
-the strongest argument for the whole feature.
+Everything lands through one seam: **`jamMyTarget`** is the melody as I should
+sing it. The canvas draws it and the scorer scores it, so a mode only has to
+answer *what are my notes* and the piano roll, the MIDI range, the per-note
+scoring and the take chip all follow.
 
-**Relay** — the melody splits into phrases, one per peer, in a round. The
-canvas colours whose bar is coming and hands off. Turn-taking is inherently
-latency-proof, it scales from 2 to 12, and it is fun in a way solo practice
-cannot be. Uses the existing protocol unchanged.
+**Harmony Stack** — each singer gets a chord tone: root, third, fifth,
+diatonic in the melody's own key. A fixed +4/+7 would put a major chord on
+every degree, so a run up C major would harmonise the second as D-F#-A and
+leave the key; walking the scale's own pitch classes gives D-F-A. The one
+thing nobody can do alone, and it survives latency because no singer has to
+hear another in time.
 
-**Call & Response** — one peer sings a phrase live; the live pitch pipeline
-captures the contour; everyone else echoes it and is scored against the
-*human* phrase via the `shazam/melody-matcher` DTW scorer. The `call-response`
-exercise and the matcher both already exist. Most musical of the four.
+**Relay** — the melody cuts into a phrase each, round the room. Turn-taking
+is latency-proof by construction and scales from two to twelve. A phrase that
+is not mine is *dropped* from my target rather than left silent, because an
+unsung target note scores zero — keeping someone else's phrase would score me
+on their turn.
 
-**Duel** — two peers, same target, best of three, winner to the leaderboard.
-Least novel, most shareable.
+The canvas needed two changes to keep up: its live scoreboard now scores each
+peer against **their** part (otherwise Harmony Stack marks the whole chord
+wrong for everyone not on my line), and it reads each sample's room beat where
+there is one, which brings the HUD into phase 2's coordinate.
+
+Covered by `src/tests/jam-modes.test.ts`.
+
+**Not built — the two that need more than role assignment:**
+
+- **Call & Response** — one peer sings a phrase live, the pitch pipeline
+  captures the contour, everyone else echoes it and is scored against the
+  *human* phrase via the `shazam/melody-matcher` DTW scorer. Needs live
+  phrase capture and a new message kind carrying the captured contour; it is
+  the first mode where the target is not derived from the shared melody.
+- **Duel** — two peers, same target, best of three, winner to the
+  leaderboard. Blocked on the same question as phase 3's leftovers: what a
+  room result means publicly.
 
 ## 8. Phase 5 — the other instruments
 
@@ -251,10 +270,11 @@ The largest lift; do it last.
 
 Phase 1 first — the room was empty and that was the whole problem. **Done.**
 Phase 2 next, because a competitive room with a disagreeing scoreboard is
-worse than no competitive room. **Done.** 3 and 4 can now go in parallel;
-phase 3 starts from `scoreOwnJamRun`, which already produces the number it
-needs to record. 5 and 6 are real projects and should be re-scoped after
-1-4 are in front of users.
+worse than no competitive room. **Done.** **Done**, and phase 4's two role-based
+modes with it. What is left of 4 (Call & Response, Duel) and phase 3's
+leaderboard slice share one open question — what a room result means
+publicly — and are better decided together, with a real room in front of
+users. 5 and 6 are still real projects and should be re-scoped then.
 
 Risks worth naming up front: mesh cost at 12 peers is 66 connections and the
 pitch rate (20 Hz per peer) should be measured before the peer cap is raised;
