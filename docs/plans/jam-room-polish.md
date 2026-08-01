@@ -243,6 +243,61 @@ Covered by `src/tests/jam-modes.test.ts`.
   leaderboard. Blocked on the same question as phase 3's leftovers: what a
   room result means publicly.
 
+## 7b. Phase 7 — connection stability (researched, mostly unbuilt)
+
+The room's *content* is now in reasonable shape; its *connection* is the
+part that has cost the most pain, so this is what to fix next.
+
+### What is already right
+
+Perfect negotiation is implemented (`service.ts`): polite/impolite decided by
+lexicographic peer id, rollback on glare, roles fixed for the connection's
+lifetime — which is the canonical W3C pattern, and both peers being polite
+is the deadlock the split avoids.
+
+**ICE restart** now recovers failed pairs (phase 7 item 1, done — see
+`lib/jam/ice-recovery.ts`). This was the biggest single gap: without it a
+connection that drops for any reason never comes back.
+
+### The remaining problem: TURN
+
+`ICE_SERVERS` uses Google STUN plus **`openrelay.metered.ca`, a free public
+TURN relay**. That is the single least reliable thing in the stack: no SLA,
+shared rate limits, and it is the fallback every symmetric-NAT and
+mobile-network peer depends on. When a jam "just doesn't connect" for one
+person and works for everyone else, this is almost always why.
+
+**Cloudflare Realtime TURN** replaces it and fits the stack we already run:
+
+- Anycast across 250+ cities, so the relay is near both peers.
+- **$0.05/GB, with 1,000 GB free** — and free entirely when paired with
+  Cloudflare's SFU.
+- Credentials are short-lived and **must be minted server-side**: POST to
+  `https://rtc.live.cloudflare.com/v1/turn/keys/$KEY_ID/credentials/generate-ice-servers`
+  with `{"ttl": 86400}` and a bearer token, which returns a ready-made
+  `iceServers` array. The long-term key never reaches a browser.
+
+The jam worker is the natural place for that endpoint — it already exists,
+already fronts `/api/jam/*`, and the client already talks to it. Shape:
+
+1. `TURN_KEY_ID` + `TURN_KEY_API_TOKEN` as worker secrets.
+2. `GET /api/jam/ice` on the jam worker → mints and returns `iceServers`.
+3. `service.ts` fetches it before the first `RTCPeerConnection` instead of
+   using the hardcoded constant, falling back to STUN-only if the call fails
+   (better a direct-only room than no room).
+4. TTL comfortably longer than a session; `setConfiguration()` can refresh
+   mid-call if a room ever outlives it.
+
+### After that
+
+- **Cloudflare Realtime SFU** instead of the mesh. At 12 peers a mesh is 66
+  connections and every peer uploads its audio N times; an SFU makes it one
+  up, N down. Worth it only if rooms actually get large — measure first.
+- **Connection quality surfaced in the UI.** `measureLatency` already reads
+  `currentRoundTripTime`; showing it per peer, and saying plainly when a peer
+  is relayed rather than direct, turns "it's broken" into "your network is
+  making us relay".
+
 ## 8. Phase 5 — the other instruments
 
 The largest lift; do it last.
