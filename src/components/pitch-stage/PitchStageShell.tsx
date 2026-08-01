@@ -2,7 +2,11 @@ import type { Component, JSX } from 'solid-js'
 import { children, For, Show } from 'solid-js'
 import styles from './PitchStageShell.module.css'
 
-export type PitchStageMode = 'stem-edit' | 'zen-monitor' | 'zen-exercise'
+export type PitchStageMode =
+  | 'stem-edit'
+  | 'zen-monitor'
+  | 'zen-exercise'
+  | 'challenge'
 
 export interface PitchStageLegendItem {
   label: string
