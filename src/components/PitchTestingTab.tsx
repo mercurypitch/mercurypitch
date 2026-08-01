@@ -172,6 +172,11 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   const whisper = useWhisperTranscription({
     getAudioBuffer: () => activeTrack()?.audioBuffer,
     logTag: 'PitchTestingTab',
+    // Song identity in every transcription log line — the owner asked
+    // for this after chasing a garbage run with no idea which song ran.
+    get label() {
+      return activeTrack()?.file.name
+    },
     onTranscriptionComplete: (segments) => {
       setTimeout(() => {
         const r = activeAlignment()
@@ -2178,6 +2183,25 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           title={`${activeAlignment().mappedWords} of ${activeAlignment().totalWords} words mapped to pitch`}
                         >
                           {Math.round(activeAlignment().accuracy * 100)}% mapped
+                        </span>
+                      </Show>
+                      {/* The hallucination guard's verdict must reach the
+                          user — a silent zero-word "success" is what made
+                          the fp16 garbage so confusing to debug. */}
+                      <Show
+                        when={
+                          whisperStatus() === 'error' &&
+                          whisper.errorMessage() !== null
+                        }
+                      >
+                        <span
+                          style={{
+                            'font-size': '0.72rem',
+                            color: 'var(--red, #f85149)',
+                          }}
+                          role="alert"
+                        >
+                          {whisper.errorMessage()}
                         </span>
                       </Show>
                     </div>

@@ -72,7 +72,13 @@ async function loadModel() {
         'Xenova/whisper-tiny',
         {
           device: 'webgpu', // Try WebGPU first if supported
-          dtype: 'fp16',
+          // fp32, NOT fp16: word-level timestamps come from DTW over the
+          // cross-attention tensors, and fp16 corrupts those numerics —
+          // the text still decodes but every word time collapses onto
+          // the segment end (20ms spans, repeated line-final tokens; the
+          // owner's "that."/" idea." garbage). Upstream's own WebGPU
+          // whisper examples pin fp32 for exactly this reason.
+          dtype: 'fp32',
           progress_callback: handleProgressCallback,
         },
       )
