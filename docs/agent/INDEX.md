@@ -71,7 +71,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 11.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
-| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.6k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
+| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.8k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 4.3k | _(no header comment)_ |
@@ -124,16 +124,18 @@ These are the rules that break things when ignored.
 | [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
 | [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 956 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
-| [uvr-api.ts](../../src/lib/uvr-api.ts) | 834 | UVR API Client - Frontend Integration |
-| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 757 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
+| [uvr-api.ts](../../src/lib/uvr-api.ts) | 860 | UVR API Client - Frontend Integration |
+| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 766 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 690 | Lyrics Service — fetch, parse, and sync lyrics |
 | [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 581 | Shared Whisper transcription controller hook. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 555 | Practice Engine — Mic, pitch detection, accuracy scoring |
-| [runpod.ts](../../src/lib/runpod.ts) | 518 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
+| [runpod.ts](../../src/lib/runpod.ts) | 534 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 506 | Pitch Algorithm Tester — Compare pitch detection algorithms |
+| [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 479 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 464 | Scale Data — Music theory utilities for MercuryPitch |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 428 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 402 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
@@ -275,7 +277,7 @@ Grep for the symbol and read the surrounding range instead.
 
 | File | LOC |
 |---|---|
-| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.4k |
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.5k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 5.6k |
 | [src/App.tsx](../../src/App.tsx) | 3.6k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
@@ -298,6 +300,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.3k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.2k |
 <!-- END:GENERATED heavy-files -->
 
 CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,
