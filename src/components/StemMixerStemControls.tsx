@@ -10,7 +10,7 @@
 
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
-import { createSignal, Index } from 'solid-js'
+import { createSignal, For, Index, Show } from 'solid-js'
 import { Download, Ear, ListRows, SlidersVertical, Volume2, VolumeX, } from './icons'
 
 interface StemTrack {
@@ -40,6 +40,16 @@ export interface StemMixerStemControlsProps {
   practiceMode?: 'vocal' | 'instrumental' | 'full' | 'midi'
   requestedStems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }
   direction?: 'row' | 'column'
+  /** Session stems on this device but not yet in the mix — rendered as
+   *  add pills under the strips, so nobody has to leave the mixer (or
+   *  the karaoke page, which has no stem-results view at all) to bring
+   *  in drums/guitar/piano. Absent or empty hides the row. */
+  addableStems?: Accessor<
+    ReadonlyArray<{ key: string; label: string; color: string }>
+  >
+  onAddStem?: (key: string) => void
+  /** Key of the stem currently hydrating, for the pill's busy state. */
+  addingStem?: Accessor<string | null>
 }
 
 type StripView = 'compact' | 'expanded'
@@ -228,6 +238,31 @@ export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
           )}
         </Index>
       </div>
+      <Show when={(props.addableStems?.() ?? []).length > 0}>
+        <div class="sm-add-stem-row">
+          <span class="sm-add-stem-label">Add stem</span>
+          <For each={props.addableStems?.() ?? []}>
+            {(part) => (
+              <button
+                type="button"
+                class="sm-add-stem-pill"
+                style={{ '--stem-color': part.color }}
+                disabled={props.addingStem?.() !== null}
+                onClick={() => props.onAddStem?.(part.key)}
+                title={`Add the ${part.label} stem to the mix`}
+              >
+                <span
+                  class="sm-add-stem-dot"
+                  style={{ background: part.color }}
+                />
+                {props.addingStem?.() === part.key
+                  ? 'Adding…'
+                  : `+ ${part.label}`}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
     </div>
   )
 }

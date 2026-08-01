@@ -4,6 +4,7 @@
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { getStemBlobUrl } from '@/db/services/uvr-service'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
@@ -29,13 +30,15 @@ import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, sele
 import { useConfirm } from '@/lib/use-confirm'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
+import type { StemSplitPart } from '@/lib/uvr-stem-split'
+import { PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
-import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
+import { getAllUvrSessionsReactive, getUvrSession } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
@@ -894,6 +897,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     logTag: 'StemMixer',
     // eslint-disable-next-line solid/reactivity
     sessionId: props.sessionId,
+    // Song identity in every transcription log line (owner request).
+    get label() {
+      return props.songTitle
+    },
     onTranscriptionComplete: (segments) => {
       // Log alignment comparison after transcription
       setTimeout(() => {
@@ -1458,6 +1465,56 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Stem controls props bundle ─────────────────────────────────
+  // ── Add-stem pills ───────────────────────────────────────────
+  // Session part stems on this device but not yet in the mix. stemMeta
+  // is stored metadata (no blob loads); the karaoke page especially
+  // needs this — it stages vocal+instrumental with no stem-results view
+  // to go back to.
+  const [addingStem, setAddingStem] = createSignal<string | null>(null)
+  const addableStems = (): Array<{
+    key: string
+    label: string
+    color: string
+  }> => {
+    const meta = getUvrSession(props.sessionId)?.stemMeta
+    if (meta === undefined) return []
+    const inMix = new Set(tracks().map((t) => t.label))
+    return Object.keys(meta)
+      .filter((k): k is StemSplitPart => k in PART_STEM_DISPLAY)
+      .filter((k) => !inMix.has(PART_STEM_DISPLAY[k].label))
+      .map((k) => ({
+        key: k,
+        label: PART_STEM_DISPLAY[k].label,
+        color: PART_STEM_DISPLAY[k].color,
+      }))
+  }
+
+  const handleAddStem = async (key: string): Promise<void> => {
+    if (addingStem() !== null) return
+    setAddingStem(key)
+    try {
+      const part = key as StemSplitPart
+      const url = await getStemBlobUrl(props.sessionId, part)
+      if (url === null) {
+        showNotification(
+          "That stem isn't on this device anymore — run the full-band split again to bring it back.",
+          'warning',
+        )
+        return
+      }
+      const ok = await audio.addExtraStem({
+        label: PART_STEM_DISPLAY[part].label,
+        color: PART_STEM_DISPLAY[part].color,
+        url,
+      })
+      if (!ok) {
+        showNotification("Couldn't load that stem — try again.", 'error')
+      }
+    } finally {
+      setAddingStem(null)
+    }
+  }
+
   const stemControls = {
     vocal,
     midi,
@@ -1468,6 +1525,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     toggleMute,
     setTrackVolume,
     handleDownload: audio.handleDownload,
+    addableStems,
+    onAddStem: (key: string) => void handleAddStem(key),
+    addingStem,
     /* eslint-disable solid/reactivity */
     practiceMode: props.practiceMode,
     requestedStems: props.requestedStems,
@@ -3105,6 +3165,55 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+}
+
+/* "Add stem" pills — session parts on this device not yet in the mix. */
+.sm-add-stem-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding-top: 0.15rem;
+}
+
+.sm-add-stem-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-tertiary, #484f58);
+}
+
+.sm-add-stem-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 999px;
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.sm-add-stem-pill:hover:not(:disabled) {
+  border-color: var(--stem-color, var(--accent, #58a6ff));
+  color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-add-stem-pill:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.sm-add-stem-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
 }
 
 /* View toggle lives in the panel HEADER row (all three workspaces). */
