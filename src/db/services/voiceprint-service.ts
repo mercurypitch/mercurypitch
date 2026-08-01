@@ -40,6 +40,25 @@ export interface VoiceprintRecord {
   twin: string | null
   source: VoiceprintSource
   takenAt: string
+  /**
+   * Who made this take on this device: the signed-in user's id, or
+   * `'anonymous'` when nobody was signed in. Absent on records from
+   * before tagging existed — treated as `'anonymous'`. Device-side
+   * only; never sent to the cloud (cloud rows are keyed by userId).
+   *
+   * This is what keeps a shared PC honest: one singer's takes never
+   * silently upload into the next singer's account (owner decision D2,
+   * 2026-08-01 — see docs/specs/voiceprints.ears.md §4).
+   */
+  madeBy?: string
+}
+
+/** Tag value for takes made with nobody signed in. */
+export const MADE_ANONYMOUSLY = 'anonymous'
+
+/** The identity a record was made under, with legacy records anonymous. */
+export function recordMadeBy(record: VoiceprintRecord): string {
+  return record.madeBy ?? MADE_ANONYMOUSLY
 }
 
 // ── Local ────────────────────────────────────────────────────────
@@ -99,11 +118,24 @@ export async function saveVoiceprint(input: {
     twin: input.twin,
     source: input.source,
     takenAt: input.takenAt ?? new Date().toISOString(),
+    // The token decides the tag, not the local device id — the device id
+    // survives sign-in/out and would make every signed-out take look like
+    // it belonged to whoever signs in next.
+    madeBy: tokenHeld() ? getUserId() : MADE_ANONYMOUSLY,
   }
 
   writeLocal([record, ...loadLocalVoiceprints()])
   if (cloudAvailable()) await pushToCloud([record])
   return record
+}
+
+/** hasValidToken, guarded like cloudAvailable — a throw must never lose a save. */
+function tokenHeld(): boolean {
+  try {
+    return hasValidToken()
+  } catch {
+    return false
+  }
 }
 
 function cloudAvailable(): boolean {
@@ -142,13 +174,18 @@ async function pushToCloud(
 // ── Read ─────────────────────────────────────────────────────────
 
 /**
- * Every voiceprint we know about, newest first. Signed in: the cloud
- * history (uncapped). Otherwise: whatever is on this device.
+ * Every voiceprint we know about, newest first. Signed out: whatever is
+ * on this device, whoever made it — device data. Signed in: the account
+ * history (uncapped) merged with the device takes **made by this
+ * account**; takes made anonymously or under another account stay off
+ * the signed-in list until the adoption notice resolves them (owner
+ * decision D2 — shared-PC accounts must not see each other's takes).
  */
 export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
   const local = loadLocalVoiceprints()
   if (!cloudAvailable()) return sortNewestFirst(local)
 
+  const mine = local.filter((r) => recordMadeBy(r) === getUserId())
   try {
     const db = await getDb()
     const repo = db.getRepository<Voiceprint>('voiceprints')
@@ -162,9 +199,9 @@ export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
     }))
     // Merge rather than replace: a take made moments ago may not have
     // reached the server yet, and it should still show.
-    return sortNewestFirst(dedupeByTakenAt([...remote, ...local]))
+    return sortNewestFirst(dedupeByTakenAt([...remote, ...mine]))
   } catch {
-    return sortNewestFirst(local)
+    return sortNewestFirst(mine)
   }
 }
 
@@ -219,7 +256,12 @@ export function syncLocalVoiceprints(): Promise<number> {
 
 async function runSync(): Promise<number> {
   if (!cloudAvailable()) return 0
-  const local = loadLocalVoiceprints()
+  // Only takes made under THIS identity upload by themselves. Anything
+  // anonymous (or from before tagging) waits for the adoption notice —
+  // uploading it here is exactly the shared-PC leak D2 closes.
+  const local = loadLocalVoiceprints().filter(
+    (record) => recordMadeBy(record) === getUserId(),
+  )
   if (local.length === 0) return 0
 
   try {
@@ -234,4 +276,91 @@ async function runSync(): Promise<number> {
   } catch {
     return 0
   }
+}
+
+// ── Adoption (owner decision D2, 2026-08-01) ─────────────────────
+//
+// A signed-in account is offered the device's unclaimed takes once,
+// explicitly. Accepting retags them to this account and uploads them;
+// declining hides the notice for this account until a NEWER unclaimed
+// take appears. Takes tagged to a different account are never offered —
+// their owner sees them by signing in, and everyone sees them signed out.
+
+const ADOPT_DECLINE_KEY = 'mercurypitch.voiceprints.adoptDecline.v1'
+
+/** Device takes the signed-in account could adopt (anonymous or legacy). */
+export function listAdoptableVoiceprints(): VoiceprintRecord[] {
+  if (!cloudAvailable()) return []
+  return sortNewestFirst(
+    loadLocalVoiceprints().filter(
+      (record) => recordMadeBy(record) === MADE_ANONYMOUSLY,
+    ),
+  )
+}
+
+function readDeclines(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(ADOPT_DECLINE_KEY)
+    if (raw === null) return {}
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return {}
+    return parsed as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Should the "keep these on this account?" notice show right now?
+ * True while adoptable takes exist that are newer than this account's
+ * last "Not now".
+ */
+export function adoptionNoticeDue(): boolean {
+  const adoptable = listAdoptableVoiceprints()
+  if (adoptable.length === 0) return false
+  const declinedUpTo = readDeclines()[getUserId()]
+  if (declinedUpTo === undefined) return true
+  return adoptable.some((record) => record.takenAt > declinedUpTo)
+}
+
+/** "Not now": quiet for this account until a newer unclaimed take exists. */
+export function declineAdoption(): void {
+  const newest = listAdoptableVoiceprints()[0]
+  if (newest === undefined) return
+  try {
+    localStorage.setItem(
+      ADOPT_DECLINE_KEY,
+      JSON.stringify({ ...readDeclines(), [getUserId()]: newest.takenAt }),
+    )
+  } catch {
+    // Blocked storage: the notice may reappear next visit — acceptable.
+  }
+}
+
+/**
+ * Adopt the device's unclaimed takes into the signed-in account: retag
+ * locally, then upload. Returns how many were adopted.
+ */
+export async function adoptDeviceVoiceprints(): Promise<number> {
+  const adoptable = listAdoptableVoiceprints()
+  if (adoptable.length === 0) return 0
+  const me = getUserId()
+  const adopting = new Set(adoptable.map((record) => record.id))
+  // Retag FIRST: even if the upload below fails, the takes are now
+  // own-tagged and the next ordinary sync carries them up.
+  writeLocal(
+    loadLocalVoiceprints().map((record) =>
+      adopting.has(record.id) ? { ...record, madeBy: me } : record,
+    ),
+  )
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<Voiceprint>('voiceprints')
+    const rows = await repo.findAll({ where: { userId: me } })
+    const known = new Set(rows.map((row) => row.takenAt))
+    await pushToCloud(adoptable.filter((r) => !known.has(r.takenAt)))
+  } catch {
+    // Covered by the retag-first note above.
+  }
+  return adoptable.length
 }

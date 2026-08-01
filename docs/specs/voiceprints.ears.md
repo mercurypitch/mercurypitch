@@ -46,16 +46,18 @@ evicting the oldest; the uncapped history lives on the account.
 **While** signed in with a configured API, a save shall also create a cloud
 row keyed to the signed-in user.
 
-### REQ-VPR-006 — Sign-in rescues device takes
-**When** a user signs in, device records the account does not have shall be
-uploaded exactly once (single-flight guard; identity = `takenAt`, so retried
-or overlapping syncs cannot duplicate a take).
+### REQ-VPR-006 — Sign-in rescues the account's own takes
+**When** a user signs in, device records **tagged to that account** which the
+account does not have shall be uploaded exactly once (single-flight guard;
+identity = `takenAt`, so retried or overlapping syncs cannot duplicate a
+take). Unclaimed records are never auto-uploaded — see REQ-VPR-011.
 
 ### REQ-VPR-007 — Listing
 **Ubiquitous:** The voiceprint list shall show, newest first: signed out —
-the device records; signed in — the account history merged with device
-records, de-duplicated by `takenAt` (a just-made take shows before its upload
-lands).
+every device record, whoever made it; signed in — the account history merged
+with the device records **made by this account**, de-duplicated by `takenAt`
+(a just-made take shows before its upload lands). Records made anonymously
+or under another account stay off the signed-in list.
 
 ### REQ-VPR-008 — Cross-boundary identity
 **Ubiquitous:** `takenAt` is the identity of a take across the device/cloud
@@ -73,19 +75,26 @@ they were made on this device and belong to whoever is holding it. (This is
 why a freshly deleted account followed by another sign-in still shows the
 device's latest print.)
 
-### Open decision D2 — who may adopt a device take
-Today, REQ-VPR-006 uploads device records into **whichever** account signs in
-next. On a shared or multi-account device that can move singer A's take into
-singer B's account. Options:
+### REQ-VPR-011 — Takes tag who made them (decision D2, 2026-08-01)
+**Ubiquitous:** Every record shall carry `madeBy`: the signed-in user's id at
+capture, or `'anonymous'` when nobody was signed in. Records from before
+tagging (no `madeBy`) count as anonymous. The tag is device-side only and is
+never sent to the cloud.
 
-1. Current: adopt-all (device = one singer, simplest; what shipped).
-2. Tag each record at capture with the identity that made it (anonymous or
-   user id); sign-in adopts only anonymous-made and own records, and shows a
-   one-time "keep these on this account?" prompt when foreign-tagged records
-   exist.
-3. Always prompt before adopting anything.
+### REQ-VPR-014 — Unclaimed takes are offered, never taken
+**While** signed in **and** the device holds anonymous/legacy records, the
+voiceprint section shall show a notice ("keep these on this account?") with
+explicit accept and "Not now" actions. **When** accepted, those records are
+retagged to the account and uploaded (retag-first, so a failed upload is
+recovered by the next ordinary sync; already-known `takenAt` are skipped).
+Records tagged to a **different** account are never offered and never
+adopted — their owner sees them by signing in; everyone sees them signed
+out.
 
-Owner decision pending; once made, this section becomes REQ-VPR-011.
+### REQ-VPR-015 — "Not now" is quiet, per account
+**When** the notice is declined, it shall stay hidden **for that account**
+until an unclaimed record newer than the declined set appears; a different
+account signing in on the same device is asked independently.
 
 ## 5. Sharing and the settings card
 
@@ -103,13 +112,14 @@ record has no twin portrait to build a card from.
 ## 6. End-to-end scenarios (Playwright backlog)
 
 1. Anonymous capture → record visible in settings, survives reload.
-2. Anonymous capture → register → record appears in the account (REQ-VPR-006)
-   and on a second signed-in browser context.
+2. Anonymous capture → register → adoption notice shows; accept → record in
+   the account (REQ-VPR-014) and on a second signed-in browser context.
 3. Signed-in capture → visible on another device signed into the same account.
 4. Delete account → cloud gone (list empty on a fresh context), device copy
-   still shown locally (REQ-VPR-009/010).
-5. Delete account → sign in with a different account on the same device →
-   behavior per the D2 decision.
+   still shown locally when signed out (REQ-VPR-009/010).
+5. Two accounts, one device: A's signed-in takes never appear in B's list and
+   are never offered to B; anonymous takes are offered to whichever account
+   is signed in, once each until declined (REQ-VPR-011/014/015).
 6. Thirteen captures anonymous → oldest evicted locally (REQ-VPR-004).
 7. Flip card → Share exports the stats variant; front exports the face
    variant (REQ-VPR-012).

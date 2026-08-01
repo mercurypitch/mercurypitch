@@ -18,7 +18,7 @@
 import type { Component } from 'solid-js'
 import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
-import { listVoiceprints } from '@/db/services/voiceprint-service'
+import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
 import { renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
 import { computeDelta } from '@/lib/mirror/metrics'
@@ -49,8 +49,44 @@ export interface VoiceSectionProps {
 }
 
 export const VoiceSection: Component<VoiceSectionProps> = (props) => {
-  const [prints] = createResource(listVoiceprints)
+  const [prints, { refetch: refetchPrints }] = createResource(listVoiceprints)
   const [zoomed, setZoomed] = createSignal(false)
+
+  // Unclaimed device takes (made signed-out, or before tagging existed)
+  // are offered to the signed-in account once, explicitly — never
+  // uploaded behind its back (shared-PC rule, spec REQ-VPR-011).
+  // Armed once per mount; per-account quiet periods live in the service.
+  const adoptionArmed = adoptionNoticeDue()
+  const [adoptionDone, setAdoptionDone] = createSignal(false)
+  const [adopting, setAdopting] = createSignal(false)
+  const adoptableCount = () => listAdoptableVoiceprints().length
+  const showAdoption = () =>
+    props.signedIn && adoptionArmed && !adoptionDone() && adoptableCount() > 0
+
+  const acceptAdoption = async () => {
+    if (adopting()) return
+    setAdopting(true)
+    try {
+      const count = await adoptDeviceVoiceprints()
+      if (count > 0) {
+        showNotification(
+          count === 1
+            ? 'Voiceprint saved to your account.'
+            : `${count} voiceprints saved to your account.`,
+          'success',
+        )
+      }
+      setAdoptionDone(true)
+      void refetchPrints()
+    } finally {
+      setAdopting(false)
+    }
+  }
+
+  const dismissAdoption = () => {
+    declineAdoption()
+    setAdoptionDone(true)
+  }
   // In the zoom overlay a click on the card flips it (portrait <-> the
   // record's numbers); a click outside closes. Reset on every open.
   const [flipped, setFlipped] = createSignal(false)
@@ -119,6 +155,35 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   return (
     <div class={styles.section}>
       <h3 class={styles.heading}>Your voice</h3>
+
+      <Show when={showAdoption()}>
+        <div class={styles.adoptNotice} data-testid="voiceprint-adopt-notice">
+          <p class={styles.adoptText}>
+            {adoptableCount() === 1
+              ? 'A voiceprint made on this device before signing in is not part of this account yet.'
+              : `${adoptableCount()} voiceprints made on this device before signing in are not part of this account yet.`}{' '}
+            Keep {adoptableCount() === 1 ? 'it' : 'them'} here?
+          </p>
+          <div class={styles.adoptActions}>
+            <button
+              type="button"
+              class={styles.adoptKeep}
+              disabled={adopting()}
+              onClick={() => void acceptAdoption()}
+            >
+              {adopting() ? 'Saving…' : 'Keep on this account'}
+            </button>
+            <button
+              type="button"
+              class={styles.adoptLater}
+              disabled={adopting()}
+              onClick={dismissAdoption}
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      </Show>
 
       <Show
         when={latest() !== null}
