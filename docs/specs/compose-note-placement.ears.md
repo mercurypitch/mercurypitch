@@ -1,11 +1,13 @@
 # Compose Note Placement — EARS Requirements
 
 Requirements for where a click places a new note in the Compose piano roll
-(`snapPlacementBeat` and `placeNote` in `src/lib/piano-roll.ts`, driven by the
-`PianoRollCanvas` component). Written in EARS (Easy Approach to Requirements
-Syntax). Each requirement has an ID referenced by the unit tests in:
+(`snapPlacementBeat` and `placeNote`, driven by the `PianoRollCanvas`
+component). Written in EARS (Easy Approach to Requirements Syntax). Each
+requirement has an ID referenced by the unit tests.
 
-- `src/tests/piano-roll-placement.test.ts` (placement quantization — `PLACE-*`)
+**Source:** `src/lib/piano-roll.ts` (`snapPlacementBeat`, `placeNote`)
+**Tests:** `src/tests/piano-roll-placement.test.ts` (placement quantization —
+`PLACE-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
