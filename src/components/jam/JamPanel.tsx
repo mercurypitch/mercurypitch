@@ -6,7 +6,7 @@ import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'sol
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import jamStyles from './Jam.module.css'
@@ -375,6 +375,36 @@ export const JamPanel: Component = () => {
                 </div>
               </div>
               <div class={jamStyles.roomActions}>
+                {/* Room glass — how much of the rehearsal room shows through */}
+                <label
+                  class={panelStyles.glassControl}
+                  title="Room transparency — how much of the backdrop shows through"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+                    />
+                  </svg>
+                  <input
+                    type="range"
+                    class={panelStyles.glassSlider}
+                    min="0.05"
+                    max="1"
+                    step="0.05"
+                    value={jamRoomAlpha()}
+                    aria-label="Room transparency"
+                    onInput={(e) =>
+                      setJamRoomAlpha(Number(e.currentTarget.value))
+                    }
+                  />
+                </label>
+
                 {/* Sidebar toggle */}
                 <button
                   class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}

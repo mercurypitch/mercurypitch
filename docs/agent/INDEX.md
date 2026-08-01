@@ -148,7 +148,7 @@ These are the rules that break things when ignored.
 | [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
-| [jam-store.ts](../../src/stores/jam-store.ts) | 716 | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 761 | ── Jam store Reactive state management for P2P jam sessions. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 647 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 469 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
@@ -183,7 +183,7 @@ These are the rules that break things when ignored.
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 310 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 217 | Exercise selection state lives in AppShell (also set by share/deep-link and pending-drill flows), so it is threaded in rather than owned... |
 | [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
-| [JamPage.tsx](../../src/pages/JamPage.tsx) | 41 | Jam tab (TAB_JAM). |
+| [JamPage.tsx](../../src/pages/JamPage.tsx) | 47 | Jam tab (TAB_JAM). |
 | [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 20 | Challenges tab (TAB_CHALLENGES). |
 | [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 20 | Community tab (TAB_COMMUNITY). |
@@ -195,7 +195,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.1k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.3k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 455 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->

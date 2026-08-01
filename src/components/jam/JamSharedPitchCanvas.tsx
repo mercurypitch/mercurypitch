@@ -83,9 +83,8 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       const w = canvasRef.clientWidth
       const h = canvasRef.clientHeight
 
+      // Transparent base -- the container's background owns the room glass.
       ctx.clearRect(0, 0, w, h)
-      ctx.fillStyle = '#0d1117'
-      ctx.fillRect(0, 0, w, h)
 
       drawYAxis(w, h)
       drawTimeTicks(w, h)

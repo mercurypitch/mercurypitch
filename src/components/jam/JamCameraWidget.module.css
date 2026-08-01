@@ -71,7 +71,7 @@
   height: 54px;
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(13, 17, 23, 0.9);
+  background: var(--jam-float, rgba(13, 17, 23, 0.9));
   border: 1px solid var(--border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transition:
@@ -110,7 +110,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: rgba(13, 17, 23, 0.95);
+  background: var(--jam-float, rgba(13, 17, 23, 0.95));
   color: var(--fg-tertiary);
   font-size: 0.6rem;
   font-weight: 500;

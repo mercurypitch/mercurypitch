@@ -131,9 +131,10 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       const w = canvasRef.clientWidth
       const h = canvasRef.clientHeight
 
+      // Left transparent on purpose: the container's background carries the
+      // room-glass alpha, so painting an opaque base here would hide the
+      // rehearsal-room backdrop no matter where the slider sits.
       ctx.clearRect(0, 0, w, h)
-      ctx.fillStyle = '#0d1117'
-      ctx.fillRect(0, 0, w, h)
 
       // Read all signals once per frame (rAF runs outside reactive graph)
       const { min, max, totalBeats } = midiRange()

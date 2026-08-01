@@ -1,6 +1,6 @@
 import { createMemo } from 'solid-js'
 import { JamPanel } from '@/components/jam/JamPanel'
-import { jamRoomId, jamState } from '@/stores/jam-store'
+import { jamRoomAlpha, jamRoomId, jamState } from '@/stores/jam-store'
 import styles from './JamPage.module.css'
 
 // Generated rehearsal-room stills (public/jam/, 2K + 4K via image-set),
@@ -32,7 +32,13 @@ export function JamPage() {
   })
 
   return (
-    <div id="jam-panel" class={styles.page}>
+    <div
+      id="jam-panel"
+      class={styles.page}
+      // The room's glass, driven by the header slider. Every jam surface
+      // resolves its background from this one number (see JamPage.module.css).
+      style={{ '--jam-alpha': String(jamRoomAlpha()) }}
+    >
       <div class={`${styles.backdrop} ${backdrop()}`} aria-hidden="true" />
       <JamPanel />
     </div>

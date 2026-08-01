@@ -11,8 +11,11 @@
   animation: fadeIn 0.15s ease;
 }
 
+/* A dialog opts out of the room glass: the jam page rebinds --bg-secondary
+   to the transparency slider, and a modal you have to read (and copy a room
+   code out of) must not go see-through with the rest of the room. */
 .modal {
-  background: var(--bg-secondary, #161b22);
+  background: #161b22;
   border: 1px solid var(--border);
   border-radius: 8px;
   width: 90%;
