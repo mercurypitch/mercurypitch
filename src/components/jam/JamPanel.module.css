@@ -8,12 +8,6 @@
   gap: 8px;
 }
 
-.roomLinkRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .titleRow {
   display: flex;
   align-items: center;
@@ -43,20 +37,15 @@
   justify-content: center;
 }
 
-.roomLink {
-  flex: 1;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-family:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+/* ── Lobby ────────────────────────────────────────────────────────── */
+
+/* The second line of the pitch: what there is to actually do in here. */
+.lobbyRunnable {
+  margin: -6px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: center;
   color: var(--accent);
-  background: var(--bg-primary, #0d1117);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  user-select: all;
 }
 
 /* ── Session layout — fills parent jam-panel fully ────────────────── */
@@ -327,7 +316,7 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: 6px;
-  max-height: 200px;
+  max-height: 320px;
   overflow-y: auto;
   flex-shrink: 0;
   animation: fadeDown 0.15s ease-out;
@@ -342,6 +331,25 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.pickShelf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pickShelfLabel {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 6px 2px 2px;
+}
+
+.pickShelf:first-child .pickShelfLabel {
+  padding-top: 0;
 }
 
 .pickItem {

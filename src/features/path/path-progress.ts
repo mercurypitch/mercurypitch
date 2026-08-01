@@ -18,6 +18,7 @@
 // practised offline must never lose days to a staler copy.
 
 import type { ExerciseType } from '@/features/exercises/types'
+import type { PathWeek } from '@/features/path/path-content'
 import { ASCENT_ID, ASCENT_WEEKS, DAYS_PER_WEEK, getWeek, } from '@/features/path/path-content'
 import { IS_DEV, IS_TEST } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
@@ -214,6 +215,16 @@ export function activePathExercises(): ExerciseType[] | null {
   const p = progress()
   if (p === null || pathComplete(p)) return null
   return getWeek(p.currentWeek)?.exercises ?? null
+}
+
+/**
+ * The active week itself, for surfaces that want its title and theme as
+ * well as its drills (the jam room's picker). Null when no path is running.
+ */
+export function activePathWeek(): PathWeek | null {
+  const p = progress()
+  if (p === null || pathComplete(p)) return null
+  return getWeek(p.currentWeek) ?? null
 }
 
 /** The active week's warm-up pattern override (null = default rotation). */
