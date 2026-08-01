@@ -201,10 +201,27 @@ export class JamRoom extends DurableObject<JamEnv> {
       const stored = await this.ctx.storage.get<string>('ownerToken')
       if (stored !== undefined) this.ownerToken = stored
     }
+    // An ownerless room adopts its first joiner. The DO deletes its storage
+    // five minutes after the last peer leaves, so a host walking back into
+    // their own room later finds a blank object -- without this they would
+    // sit in it with no transport, no mode and no way to get them back.
+    // Not a hole: a room with no stored owner has no one to impersonate,
+    // and an occupied room always reloads its token from storage above.
+    let freshToken: string | null = null
+    if (this.ownerToken === null && this.peers.size === 0) {
+      freshToken = crypto.randomUUID()
+      this.ownerToken = freshToken
+      this.ownerName = msg.displayName
+      void this.ctx.storage.put('ownerName', msg.displayName)
+      void this.ctx.storage.put('ownerToken', freshToken)
+      console.log(`[JamRoom ${this.roomId}] ownerless room adopted by ${msg.displayName || 'Anonymous'} (${peerId})`)
+    }
+
     const isHost =
-      this.ownerToken !== null &&
-      typeof msg.ownerToken === 'string' &&
-      timingSafeEqual(msg.ownerToken, this.ownerToken)
+      freshToken !== null ||
+      (this.ownerToken !== null &&
+        typeof msg.ownerToken === 'string' &&
+        timingSafeEqual(msg.ownerToken, this.ownerToken))
     if (isHost) this.ownerId = peerId
     console.log(`[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`)
     this.send(ws, {
@@ -213,6 +230,9 @@ export class JamRoom extends DurableObject<JamEnv> {
       peerId,
       isHost,
       peers: existing,
+      // Only when this join created the ownership -- otherwise the joiner
+      // already holds the secret, and it is never handed out again.
+      ...(freshToken === null ? {} : { ownerToken: freshToken }),
     })
 
     console.log(`[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size + 1}`)

@@ -104,8 +104,8 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
+| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 2.1k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
-| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 1.9k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.8k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 1.8k | Voice Mirror — pure metrics over F0 frame streams. |
 | `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 1.3k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
@@ -196,7 +196,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.1k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
-| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 455 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
+| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 475 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
 
