@@ -4835,16 +4835,14 @@ export class PianoRollEditor {
     // A-B loop span (stopped state; no count-in offset)
     this.drawGridLoop(ctx, 0, totalHeight)
 
-    ctx.restore()
-
-    // Box selection rectangle — its corners are stored in content space.
+    // Box selection rectangle — its corners are already in content space, so
+    // it draws inside the same shift rather than re-applying its own.
     if (this.isBoxSelecting) {
       const bx = Math.min(this.boxStartX, this.boxEndX)
       const by = Math.min(this.boxStartY, this.boxEndY)
       const bw = Math.abs(this.boxEndX - this.boxStartX)
       const bh = Math.abs(this.boxEndY - this.boxStartY)
       ctx.save()
-      ctx.translate(-this.scrollX, 0)
       ctx.fillStyle = 'rgba(88, 166, 255, 0.15)'
       ctx.fillRect(bx, by, bw, bh)
       ctx.strokeStyle = 'rgba(88, 166, 255, 0.7)'
@@ -4853,6 +4851,8 @@ export class PianoRollEditor {
       ctx.strokeRect(bx, by, bw, bh)
       ctx.restore()
     }
+
+    ctx.restore()
   }
 
   private drawGridWithPlayhead(): void {

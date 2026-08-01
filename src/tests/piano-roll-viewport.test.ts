@@ -325,6 +325,54 @@ describe('playback follow yields to the user', () => {
     expect(scroller.scrollLeft).toBeLessThan(5000)
   })
 
+  it('still follows the playhead when the user is not scrolling', () => {
+    // The guard that ignores our OWN scroll events: if auto-follow mistook
+    // its own scroll for a user scroll it would suspend itself forever and
+    // the playhead would simply run off the right edge.
+    editor.updatePlaybackPosition(4)
+    const early = scroller.scrollLeft
+    for (let beat = 4; beat <= 120; beat += 4) {
+      editor.updatePlaybackPosition(beat)
+    }
+    expect(scroller.scrollLeft).toBeGreaterThan(early)
+    // The playhead (beat 120) is inside the visible window, not off-screen.
+    const playheadX = 120 * BEAT_WIDTH
+    expect(scroller.scrollLeft).toBeLessThanOrEqual(playheadX)
+    expect(scroller.scrollLeft + VIEWPORT).toBeGreaterThanOrEqual(playheadX)
+  })
+
+  it('ignores its own auto-follow scroll even when the browser rounds it', () => {
+    // The handler's exact-value check absorbs a clean echo, but browsers can
+    // report a rounded/clamped scrollLeft (fractional DPR zoom), which would
+    // look like a user scroll and suspend follow the first time the editor
+    // moved the view — permanently, since every follow scroll re-triggers it.
+    editor.updatePlaybackPosition(40)
+    const moved = scroller.scrollLeft
+    expect(moved).toBeGreaterThan(0)
+    // Browser reports a slightly different value than we set, then echoes.
+    scroller.scrollLeft = moved + 0.5
+    scroller.dispatchEvent(new Event('scroll'))
+
+    for (let beat = 44; beat <= 140; beat += 4) {
+      editor.updatePlaybackPosition(beat)
+    }
+    const playheadX = 140 * BEAT_WIDTH
+    expect(scroller.scrollLeft).toBeGreaterThan(moved)
+    expect(scroller.scrollLeft + VIEWPORT).toBeGreaterThanOrEqual(playheadX)
+  })
+
+  it('a bar jump holds the view mid-playback', () => {
+    editor.updatePlaybackPosition(4)
+    editor.goToBar(120)
+    const jumped = scroller.scrollLeft
+    expect(jumped).toBeGreaterThan(10000)
+    // Deliberate navigation counts as hands-off too.
+    for (let beat = 4; beat < 12; beat++) {
+      editor.updatePlaybackPosition(beat)
+    }
+    expect(scroller.scrollLeft).toBe(jumped)
+  })
+
   it('pressing play clears a leftover hands-off period', () => {
     editor.updatePlaybackPosition(4)
     userScrollsTo(20000)
