@@ -25,14 +25,23 @@ const OUT_DIR = dirname(OUT)
 const CHECK = process.argv.includes('--check')
 
 const CODE_EXT = new Set(['.ts', '.tsx'])
-const SKIP_DIR = new Set(['node_modules', 'dist', '__tests__', '.git'])
+const SKIP_DIR = new Set(['node_modules', 'dist', '__tests__'])
+/**
+ * Dot-directories are tool state and build caches -- .wrangler, .vite, .git.
+ * They are gitignored, so they exist on a developer's machine and not on CI,
+ * and counting them makes the index depend on whose machine generated it:
+ * `.wrangler/tmp/**\/middleware-loader.entry.ts` alone moved db-worker from
+ * 8.1k to 8.3k and failed docs:index:check on a tree that was locally clean.
+ * No source lives under a dot-directory, so skip the lot.
+ */
+const skipDir = (name) => SKIP_DIR.has(name) || name.startsWith('.')
 const isTest = (p) => /\.(test|spec)\.[tj]sx?$/.test(p) || p.includes('/e2e/')
 
 /** Every code file under `dir`, recursively, excluding tests and build output. */
 function walk(dir, acc = []) {
   if (!existsSync(dir)) return acc
   for (const name of readdirSync(dir)) {
-    if (SKIP_DIR.has(name)) continue
+    if (skipDir(name)) continue
     const full = join(dir, name)
     const st = statSync(full)
     if (st.isDirectory()) walk(full, acc)
@@ -139,7 +148,7 @@ function dirTable(base, label) {
   const dir = join(ROOT, base)
   if (!existsSync(dir)) return ''
   const rows = readdirSync(dir)
-    .filter((n) => !SKIP_DIR.has(n) && statSync(join(dir, n)).isDirectory())
+    .filter((n) => !skipDir(n) && statSync(join(dir, n)).isDirectory())
     .map((name) => {
       const files = walk(join(dir, name))
       if (!files.length) return null
