@@ -3,19 +3,15 @@
 Requirements for adaptive difficulty, weakness analysis, generated micro-drills,
 and the trends overlay.
 
-Source:
-
-- `src/features/practice-intelligence/adaptive-difficulty.ts` — EMA and the
-  difficulty ladder (`EMA_WINDOW` 10, `DIFFICULTY_MIN` 1, `MAX` 10, `DEFAULT` 5)
-- `src/features/practice-intelligence/drill-generator.ts` — micro-drill synthesis
-- `src/features/practice-intelligence/difficulty-store.ts` — persistence
-- `src/features/practice-intelligence/components/WeaknessPanel.tsx` — the panel
-- `src/stores/exercise-history-store.ts` — the run log the analysis reads
-
-Tests:
-
-- `src/tests/` — adaptive difficulty and drill generation unit tests
-  (`REQ-PI-001..027`)
+**Source:** `src/features/practice-intelligence/adaptive-difficulty.ts` — EMA
+and the difficulty ladder (`EMA_WINDOW` 10, `DIFFICULTY_MIN` 1, `MAX` 10,
+`DEFAULT` 5); `src/features/practice-intelligence/drill-generator.ts` —
+micro-drill synthesis; `src/features/practice-intelligence/difficulty-store.ts`
+— persistence;
+`src/features/practice-intelligence/components/WeaknessPanel.tsx` — the panel;
+`src/stores/exercise-history-store.ts` — the run log the analysis reads
+**Tests:** `src/tests/` — adaptive difficulty and drill generation unit tests
+(`REQ-PI-001..027`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

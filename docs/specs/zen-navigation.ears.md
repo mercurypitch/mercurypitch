@@ -4,16 +4,11 @@ Requirements for the zen karaoke stage's transport: the back-to-beginning
 control, the next-song button, and the autoplay toggle. Written in EARS (Easy
 Approach to Requirements Syntax).
 
-Source:
-
-- `src/features/stem-mixer/zen-navigation.ts` — pure navigation decisions
-- `src/components/KaraokeMobileStage.tsx` — the zen transport UI
-- `src/components/StemMixer.tsx` — wires the controls to the audio engine,
-  the playlist store, and library staging (`onPickSession`)
-
-Tests:
-
-- `src/tests/zen-navigation.test.ts` (`REQ-ZEN-001..006`)
+**Source:** `src/features/stem-mixer/zen-navigation.ts` — pure navigation
+decisions; `src/components/KaraokeMobileStage.tsx` — the zen transport UI;
+`src/components/StemMixer.tsx` — wires the controls to the audio engine, the
+playlist store, and library staging (`onPickSession`)
+**Tests:** `src/tests/zen-navigation.test.ts` (`REQ-ZEN-001..006`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
