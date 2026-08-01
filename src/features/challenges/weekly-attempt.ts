@@ -16,6 +16,7 @@ import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import { trackEvent } from '@/lib/analytics'
 import { removeNotification, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -123,6 +124,7 @@ export async function recordWeeklyAttempt(entry: {
   durationMs?: number
   /** The drill's own metrics, for the note tally it published. */
   metrics?: Readonly<Record<string, number>>
+  voiceCapture?: ExerciseVoiceCaptureOutcome
 }): Promise<boolean> {
   const a = active()
   if (a === null) {
@@ -217,6 +219,7 @@ export async function recordWeeklyAttempt(entry: {
         tier,
         badgeGranted,
         targetItems: a.targetItems,
+        voiceCapture: entry.voiceCapture,
       })
     })
   } catch {

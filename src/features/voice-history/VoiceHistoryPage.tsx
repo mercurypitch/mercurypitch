@@ -420,9 +420,9 @@ export function VoiceHistoryPage(): JSX.Element {
               <div>
                 <h2>Your first thread starts with one kept take.</h2>
                 <p>
-                  Glass already records your short reps locally. Keep one there,
-                  then return here to replay it. A second matching take unlocks
-                  Earlier/Later comparison.
+                  Keep a useful replay from Glass, a repeatable Exercise, or a
+                  Weekly Legend result, then return here to hear it. A second
+                  matching take unlocks Earlier/Later comparison.
                 </p>
                 <a class={styles.primaryAction} href="/glass">
                   Try Glass
@@ -497,8 +497,8 @@ export function VoiceHistoryPage(): JSX.Element {
                           <div>
                             <h3>One more matching take unlocks comparison.</h3>
                             <p>
-                              Replay this one now, then return to the same Glass
-                              target later.
+                              Replay this one now, then return to the same
+                              practice context later.
                             </p>
                             <button
                               type="button"

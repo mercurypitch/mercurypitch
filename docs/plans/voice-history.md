@@ -1,8 +1,8 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **local vault, Glass, and repeatable Exercise capture implemented on
-draft PR #364**, updated 2026-08-01. Weekly Legend remains the next adapter on
-the same neutral vault contract.
+Status: **local vault, Glass, repeatable Exercise, and Weekly Legend capture
+implemented on draft PR #364**, updated 2026-08-01. The remaining local-release
+gate is browser validation, especially the real iPhone Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -428,19 +428,28 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   never enter the same comparison thread accidentally.
 - Exercise result states for preparing, keeping, retrying, unsupported capture,
   and explicit discard without changing the saved score.
+- Weekly Legend handoff from the scored exercise into its result card, where
+  the temporary replay is kept or discarded explicitly without changing the
+  recorded score.
+- Challenge-scoped Legend comparison threads with the weekly challenge ID,
+  title snapshot, target score, result score, and tier attached locally.
+- Authored Weekly Legend note sequences used exactly as launched so the saved
+  voice take, scoring context, and comparison metadata describe the same run.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
 - Count-only vault events and focused service/component coverage.
 
-### Follow-on — Weekly Legend integration
+### Follow-on — local beta validation
 
-- Attach the weekly challenge ID, title snapshot, score, and tier to the
-  existing exercise take before it is kept.
-- Keep same-week takes directly comparable while leaving cross-week attempts
-  browseable in separate threads.
-- Accessibility, mobile behavior, funnel events, and end-to-end tests.
-- Open the beta only after two-take comparison passes on Chromium and Safari.
+- Exercise the complete keep, reload, playback, comparison, export, and delete
+  flow in Chromium desktop and a narrow mobile viewport.
+- Validate the MediaRecorder, decode, replay, keep, and reload path on real
+  iPhone Safari. Chromium mobile emulation checks layout, not WebKit audio
+  behavior.
+- Confirm same-challenge Weekly Legend takes compare directly and cross-week
+  attempts remain in separate threads.
+- Open the beta only after the two-take flow passes on Chromium and Safari.
 
 ### PR 5 — source expansion
 
