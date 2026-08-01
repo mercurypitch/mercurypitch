@@ -51,6 +51,28 @@ function noteFromMidi(midi: number, index: number): SightSingingNote {
   }
 }
 
+/**
+ * Final scoring, pure. The SCORE spans the whole sequence — notes never
+ * sung count zero. Averaging only the attempted notes let a one-note
+ * run post 70% to the weekly Legend board and outrank honest full
+ * passes (owner testing: "1 of 6 notes hit - 70%"). avgAccuracy remains
+ * the quality-of-what-you-sang metric the result card explains.
+ */
+export function finalizeSightSingingScore(
+  scored: readonly number[],
+  sequenceLength: number,
+): { score: number; avgAccuracy: number; bestNote: number } {
+  if (scored.length === 0 || sequenceLength === 0) {
+    return { score: 0, avgAccuracy: 0, bestNote: 0 }
+  }
+  const sum = scored.reduce((a, b) => a + b, 0)
+  return {
+    score: Math.round(sum / sequenceLength),
+    avgAccuracy: Math.round(sum / scored.length),
+    bestNote: Math.max(...scored),
+  }
+}
+
 export function useSightSingingController(base: BaseExerciseController) {
   let sequence: SightSingingNote[] = []
   let currentIndex = 0
@@ -228,32 +250,16 @@ export function useSightSingingController(base: BaseExerciseController) {
 
   function computeResult(): ExerciseResult {
     const scored = noteScores.filter((s) => typeof s === 'number')
-    if (scored.length === 0) {
-      return {
-        type: EXERCISE_SIGHT_SINGING,
-        score: 0,
-        metrics: {
-          notesAttempted: sequence.length,
-          notesScored: 0,
-          avgAccuracy: 0,
-          bestNote: 0,
-        },
-        completedAt: Date.now(),
-      }
-    }
-    const avgAccuracy = Math.round(
-      scored.reduce((a, b) => a + b, 0) / scored.length,
-    )
-    const bestNote = Math.max(...scored)
+    const final = finalizeSightSingingScore(scored, sequence.length)
 
     return {
       type: EXERCISE_SIGHT_SINGING,
-      score: avgAccuracy,
+      score: final.score,
       metrics: {
         notesAttempted: sequence.length,
         notesScored: scored.length,
-        avgAccuracy,
-        bestNote,
+        avgAccuracy: final.avgAccuracy,
+        bestNote: final.bestNote,
       },
       completedAt: Date.now(),
     }
