@@ -1224,3 +1224,11 @@ body {
     font-size: 1.7rem;
   }
 }
+
+/* "+N" on a library row: full-band part stems already on this device.
+   Sits at the row's end; the title ellipsizes first. */
+.kn-chip--stems {
+  margin-left: auto;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
