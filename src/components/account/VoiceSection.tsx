@@ -17,6 +17,7 @@
 
 import type { Component } from 'solid-js'
 import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
+import { authVersion } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
@@ -49,7 +50,14 @@ export interface VoiceSectionProps {
 }
 
 export const VoiceSection: Component<VoiceSectionProps> = (props) => {
-  const [prints, { refetch: refetchPrints }] = createResource(listVoiceprints)
+  // Keyed on authVersion: signing in or out (or switching accounts)
+  // changes WHOSE voiceprints these are, and an unkeyed resource kept
+  // showing the previous identity's until a manual page reload (owner
+  // testing).
+  const [prints, { refetch: refetchPrints }] = createResource(
+    authVersion,
+    listVoiceprints,
+  )
   const [zoomed, setZoomed] = createSignal(false)
 
   // Unclaimed device takes (made signed-out, or before tagging existed)

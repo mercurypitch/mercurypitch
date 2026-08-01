@@ -3,9 +3,10 @@
 // account chip and the rail's processing toggle — can share one source of
 // truth without threading props or pulling the app shell.
 
-import { createSignal } from 'solid-js'
+import { createEffect, createRoot, createSignal } from 'solid-js'
 import { fetchMe, hasValidToken, logout as authLogout, } from '@/db/services/auth-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
+import { authVersion } from '@/db/services/user-service'
 
 export interface KnAccount {
   email: string | null
@@ -45,6 +46,20 @@ export async function refreshAccount(): Promise<void> {
     setAccountReady(true)
   }
 }
+
+// Signing in through the SHARED AuthModal (or out from anywhere) bumps
+// authVersion but never told this module — so the karaoke surfaces kept
+// their stale account until the widget remounted, and a fresh sign-in
+// still read "signed out": the stem-result view went on offering sign-in
+// instead of the server-side split, and only a manual reload fixed it
+// (owner testing). One app-lifetime subscriber, owned by createRoot so
+// it is never torn down with whichever component happened to mount it.
+createRoot(() => {
+  createEffect(() => {
+    authVersion()
+    void refreshAccount()
+  })
+})
 
 export async function refreshCredits(): Promise<void> {
   try {

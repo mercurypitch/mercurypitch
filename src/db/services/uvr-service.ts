@@ -102,6 +102,25 @@ export async function countStemBlobs(sessionId: string): Promise<number> {
   }
 }
 
+/**
+ * Which stem types this session actually has on this device. The blob
+ * table is the TRUTH for part stems: a full-band split writes its
+ * drums/bass/guitar/piano blobs here and never touches the session's
+ * stemMeta (which only ever describes the original separation) — so
+ * anything asking "what else could we load?" must ask here.
+ */
+export async function listStemTypes(sessionId: string): Promise<UvrStemType[]> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const blobs = await repo.findAll({ where: { sessionId } })
+    return [...new Set(blobs.map((b) => b.stemType))]
+  } catch (err) {
+    if (IS_DEV) console.warn('[UvrService] listStemTypes failed:', err)
+    return []
+  }
+}
+
 /** Whether a session has at least one playable stem (vocal or instrumental)
  *  persisted locally. The original blob alone doesn't make a session openable. */
 export async function sessionHasPlayableStems(

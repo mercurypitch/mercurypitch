@@ -264,7 +264,7 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await expect(createBtn).toBeVisible()
   })
 
@@ -320,7 +320,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Created Melody')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await expect(createBtn).toBeVisible()
     await createBtn.click()
     await page.waitForTimeout(500)
@@ -337,7 +337,7 @@ test.describe('Melody Library', () => {
     })
     await page.waitForTimeout(500)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await expect(createBtn).toBeVisible()
 
     // Click create without filling name
@@ -365,7 +365,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Editable Melody')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -401,7 +401,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Saveable Melody')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -439,7 +439,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Deleteable Melody')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -757,7 +757,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Complete Flow Melody')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -820,7 +820,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Persistence Test')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -851,7 +851,7 @@ test.describe('Melody Library', () => {
       await nameInput.fill(`E2E Multi-Melody ${i + 1}`)
       await page.waitForTimeout(200)
 
-      const createBtn = page.locator('button:has-text("Create")')
+      const createBtn = page.getByRole('button', { name: 'Create melody' })
       await createBtn.click()
       await page.waitForTimeout(500)
 
@@ -938,7 +938,7 @@ test.describe('Melody Library', () => {
     await bpmInput.fill('120')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 
@@ -990,7 +990,7 @@ test.describe('Melody Library', () => {
     await nameInput.fill('E2E Confirm Delete Test')
     await page.waitForTimeout(200)
 
-    const createBtn = page.locator('button:has-text("Create")')
+    const createBtn = page.getByRole('button', { name: 'Create melody' })
     await createBtn.click()
     await page.waitForTimeout(500)
 

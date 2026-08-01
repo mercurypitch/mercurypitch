@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
-import { getStemBlobUrl } from '@/db/services/uvr-service'
+import { createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
@@ -31,14 +31,14 @@ import { useConfirm } from '@/lib/use-confirm'
 import { isNarrow } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
-import { PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
+import { activeStemSplits, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
-import { getAllUvrSessionsReactive, getUvrSession } from '@/stores/uvr-store'
+import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
@@ -1471,15 +1471,29 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // needs this — it stages vocal+instrumental with no stem-results view
   // to go back to.
   const [addingStem, setAddingStem] = createSignal<string | null>(null)
+  // Part stems come from the stem BLOB table, not the session's
+  // stemMeta: a full-band split writes its drums/bass/guitar/piano
+  // blobs and never touches stemMeta (which describes the original
+  // separation only), so the metadata read always returned nothing and
+  // the pills never appeared. Metadata-only query, refreshed when a
+  // background split lands.
+  const [deviceStems, { refetch: refetchDeviceStems }] = createResource(
+    () => props.sessionId,
+    listStemTypes,
+  )
+  createEffect(() => {
+    // A full-band split finishing mid-session adds parts under us.
+    activeStemSplits()
+    void refetchDeviceStems()
+  })
+
   const addableStems = (): Array<{
     key: string
     label: string
     color: string
   }> => {
-    const meta = getUvrSession(props.sessionId)?.stemMeta
-    if (meta === undefined) return []
     const inMix = new Set(tracks().map((t) => t.label))
-    return Object.keys(meta)
+    return (deviceStems() ?? [])
       .filter((k): k is StemSplitPart => k in PART_STEM_DISPLAY)
       .filter((k) => !inMix.has(PART_STEM_DISPLAY[k].label))
       .map((k) => ({
