@@ -4,8 +4,10 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
+import { roleCountFor, roleIndexOf, targetForRole } from '@/lib/jam/jam-modes'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamPeers, jamPitchHistory, setJamExerciseHistory, } from '@/stores/jam-store'
+import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamMyTarget, jamPeers, jamPitchHistory, jamRoomMode, setJamExerciseHistory, } from '@/stores/jam-store'
+import type { MelodyData } from '@/types'
 
 const MARGIN_LEFT = 40
 const MARGIN_RIGHT = 20
@@ -44,8 +46,11 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     return buildPeerColorMap(peerIds)
   })
 
+  // MY part, not the room's raw melody: in Harmony Stack this is the line
+  // transposed to my chord tone, in Relay it is only my phrases. Unison
+  // hands back the melody untouched, so this is a no-op in the default room.
   const melodyNotes = createMemo(() => {
-    const melody = jamExerciseMelody()
+    const melody = jamMyTarget()
     if (!melody) return []
     return melody.items
       .filter((item) => item.isRest !== true)
@@ -57,6 +62,41 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
         octave: item.note.octave,
         id: item.id,
       }))
+  })
+
+  /**
+   * Every singer's part, keyed by peer id, for the live scoreboard.
+   *
+   * Roles come out of the sorted peer list exactly as they do in the store
+   * (jam-modes.ts), so this agrees with what each peer is drawing on their
+   * own screen without anything being sent. The '' key is the fallback part
+   * for a sample from someone who has already left the room.
+   */
+  const partNotes = createMemo(() => {
+    const melody = jamExerciseMelody()
+    const mode = jamRoomMode()
+    const ids = jamPeers().map((p) => p.id)
+    const myId = props.myPeerId()
+    if (myId !== null && myId !== '') ids.push(myId)
+    const roleCount = roleCountFor(mode, ids.length)
+
+    const toNotes = (m: MelodyData | null) =>
+      (m?.items ?? [])
+        .filter((item) => item.isRest !== true)
+        .map((item) => ({
+          startBeat: item.startBeat,
+          endBeat: item.startBeat + item.duration,
+          midi: item.note.midi,
+        }))
+        .sort((a, b) => a.startBeat - b.startBeat)
+
+    const map = new Map<string, ReturnType<typeof toNotes>>()
+    map.set('', toNotes(melody))
+    for (const id of ids) {
+      const index = roleIndexOf(id, ids)
+      map.set(id, toNotes(targetForRole(melody, mode, index, roleCount)))
+    }
+    return map
   })
 
   // MIDI range for display — find min/max from melody, pad by one full octave
@@ -588,11 +628,17 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     const ids = Object.keys(history)
     if (ids.length === 0 || notes.length === 0) return
 
-    // Build a sorted note array for fast lookup
-    const sortedNotes = [...notes].sort((a, b) => a.startBeat - b.startBeat)
+    // Each singer is scored against THEIR OWN part. In Harmony Stack the
+    // room is singing three different lines, so scoring everyone against
+    // the line I happen to be on would mark the whole chord wrong.
+    const partOf = (peerId: string) => {
+      const own = partNotes()
+      const roleNotes = own.get(peerId)
+      return roleNotes ?? own.get('') ?? []
+    }
 
-    const getNoteAtBeat = (beat: number) => {
-      for (const note of sortedNotes) {
+    const getNoteAtBeat = (peerId: string, beat: number) => {
+      for (const note of partOf(peerId)) {
         if (beat >= note.startBeat && beat < note.endBeat) return note
       }
       return null
@@ -615,12 +661,15 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
 
       for (const s of samples) {
         if (s.frequency <= 0 || s.midi <= 0) continue
-        // Estimate what beat this sample corresponds to
-        const ageMs = Date.now() - s.timestamp
-        const sampleBeat = currentBeat - ageMs * beatsPerMs
+        // The sender's own room beat when it was heard, which every peer
+        // agrees on. The wall-clock estimate is the fallback for a peer
+        // old enough not to stamp one -- it reads the sender's clock, so
+        // it measures machine skew as much as musical time.
+        const sampleBeat =
+          s.beat ?? currentBeat - (Date.now() - s.timestamp) * beatsPerMs
         if (sampleBeat < 0 || sampleBeat > totalBeats) continue
 
-        const note = getNoteAtBeat(sampleBeat)
+        const note = getNoteAtBeat(id, sampleBeat)
         if (!note) continue
 
         total++

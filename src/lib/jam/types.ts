@@ -1,5 +1,6 @@
 // ── Jam session type definitions ────────────────────────────────────
 
+import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import type { MelodyData } from '@/types'
 
 export interface JamPeer {
@@ -102,6 +103,15 @@ export interface JamMelodyMessage {
   type: 'melody'
   action: 'set' | 'clear'
   melody?: MelodyData
+  /**
+   * The room's mode, riding along with the melody that it reshapes.
+   * Changing mode re-broadcasts the current melody, so there is one code
+   * path for "the room's part assignment changed" instead of two.
+   *
+   * Roles are NOT sent: every peer derives them from the sorted peer list
+   * (see jam-modes.ts), so there is no handshake to fall out of sync.
+   */
+  mode?: JamRoomMode
 }
 
 export interface JamPlaybackMessage {
