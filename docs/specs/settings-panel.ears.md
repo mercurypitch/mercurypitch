@@ -3,17 +3,12 @@
 Requirements for the settings surface: theme, transport defaults, instrument,
 profile, and reset.
 
-Source:
-
-- `src/stores/settings-store.ts` — `SettingsConfig` and `DEFAULT_SETTINGS`
-- `src/stores/transport-store.ts` — `bpm` (40-280, default 60), `countIn`
-- `src/stores/theme-store.ts` — `THEME_PRESETS`, `THEME_INFO`
-- `src/components/SettingsPanel.tsx` — the panel UI
-- `src/stores/ui-store.ts` — `openSettingsSection`
-
-Tests:
-
-- `src/e2e/settings.spec.ts` (`REQ-SET-001..023`)
+**Source:** `src/stores/settings-store.ts` — `SettingsConfig` and
+`DEFAULT_SETTINGS`; `src/stores/transport-store.ts` — `bpm` (40-280, default
+60), `countIn`; `src/stores/theme-store.ts` — `THEME_PRESETS`, `THEME_INFO`;
+`src/components/SettingsPanel.tsx` — the panel UI; `src/stores/ui-store.ts` —
+`openSettingsSection`
+**Tests:** `src/e2e/settings.spec.ts` (`REQ-SET-001..023`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

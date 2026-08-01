@@ -5,12 +5,8 @@
 
 ---
 
-Implementation:
-- Cogwheel button gate: `src/components/StemMixer.tsx` — the `sm-pitch-debug-btn` button.
-- Panel mount gate: `src/components/StemMixer.tsx` — the `StemMixerPitchAnalysisPanel` `<Show>` wrapper.
-- Karaoke render site: `src/features/karaoke-night/KaraokeStageHost.tsx` — `<StemMixer preset="performance">`.
-
-Unit tests (`KPC-*`): `src/tests/karaoke-pitch-cogwheel.test.ts`.
+**Source:** `src/components/StemMixer.tsx` — the `sm-pitch-debug-btn` cogwheel button gate and the `StemMixerPitchAnalysisPanel` `<Show>` panel mount gate; `src/features/karaoke-night/KaraokeStageHost.tsx` — the Karaoke render site (`<StemMixer preset="performance">`)
+**Tests:** `src/tests/karaoke-pitch-cogwheel.test.ts` (`KPC-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 

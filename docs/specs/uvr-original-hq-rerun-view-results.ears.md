@@ -2,13 +2,8 @@
 
 Requirements for mirroring the Original download button and HQ re-run menu from session history cards (`UvrSessionResult`) into the result-viewer header (`UvrResultViewer`).
 
-Implementation:
-
-- Header UI: `src/components/UvrResultViewer.tsx`
-- Parent integration: `src/components/UvrPanel.tsx`
-- Styles: `src/styles/uvr.css`
-
-Unit tests (`REQ-UVR-*`): `src/components/__tests__/UvrResultViewer.test.tsx`
+**Source:** `src/components/UvrResultViewer.tsx` — header UI; `src/components/UvrPanel.tsx` — parent integration; `src/styles/uvr.css` — styles
+**Tests:** `src/components/__tests__/UvrResultViewer.test.tsx` (`REQ-UVR-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 

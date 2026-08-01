@@ -2,12 +2,8 @@
 
 Requirements for bidirectional linking and session URL state synchronization between the main MercuryPitch studio app and the standalone Karaoke Night stage (`/karaoke-night`).
 
-Implementation:
-- Deep link helpers: `src/lib/karaoke-night-link.ts` (`karaokeNightSessionUrl`, `studioSessionUrl`).
-- Karaoke Night URL state sync & restoration: `src/features/karaoke-night/KaraokeNightApp.tsx`.
-- Studio topbar link: `src/components/UvrPanel.tsx`.
-
-Unit tests (`SK-LINK-*`): `src/tests/karaoke-night-link.test.ts`.
+**Source:** `src/lib/karaoke-night-link.ts` — deep link helpers (`karaokeNightSessionUrl`, `studioSessionUrl`); `src/features/karaoke-night/KaraokeNightApp.tsx` — Karaoke Night URL state sync & restoration; `src/components/UvrPanel.tsx` — studio topbar link
+**Tests:** `src/tests/karaoke-night-link.test.ts` (`SK-LINK-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 

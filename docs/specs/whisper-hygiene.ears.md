@@ -2,11 +2,8 @@
 
 Requirements for filtering zero-length/hallucinated Whisper segments before alignment and skipping Whisper in favor of line-only LRC when Whisper match quality is clearly bad.
 
-Implementation:
-- Alignment segment filtering & quality evaluation: `src/lib/transcription-alignment-utils.ts` and `src/lib/pitch-word-alignment.ts`.
-- Component wiring: `src/components/StemMixer.tsx` and `src/components/PitchTestingTab.tsx`.
-
-Unit tests (`WSP-*`): `src/lib/pitch-word-alignment.test.ts` and `src/tests/whisper-hygiene.test.ts`.
+**Source:** `src/lib/transcription-alignment-utils.ts` and `src/lib/pitch-word-alignment.ts` — alignment segment filtering & quality evaluation; `src/components/StemMixer.tsx` and `src/components/PitchTestingTab.tsx` — component wiring
+**Tests:** `src/lib/pitch-word-alignment.test.ts` and `src/tests/whisper-hygiene.test.ts` (`WSP-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 

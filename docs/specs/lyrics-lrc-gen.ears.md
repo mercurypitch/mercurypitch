@@ -1,18 +1,13 @@
 # Lyrics & LRC Generator — EARS Requirements
 
-Source:
-
-- `src/features/stem-mixer/useStemMixerLyricsController.ts` — lyrics state and actions
-- `src/features/stem-mixer/lrc-gen-engine.ts` — merge, interpolation, partial-gen logic
-- `src/lib/canonical-lrc.ts` — canonical entry construction and index mapping
-- `src/lib/lyrics-service.ts` — fetch, parse, sync
-- `src/lib/word-sync.ts`, `src/lib/lyric-sweep.ts` — word-level highlighting
-- `src/components/StemMixerLyricsPanelBody.tsx` — the panel UI
-
-Tests:
-
-- `src/tests/` — canonical-LRC and lrc-gen-engine unit tests
-  (`REQ-UV-025..053`, `REQ-LYR-001..015`)
+**Source:** `src/features/stem-mixer/useStemMixerLyricsController.ts` — lyrics
+state and actions; `src/features/stem-mixer/lrc-gen-engine.ts` — merge,
+interpolation, partial-gen logic; `src/lib/canonical-lrc.ts` — canonical entry
+construction and index mapping; `src/lib/lyrics-service.ts` — fetch, parse,
+sync; `src/lib/word-sync.ts`, `src/lib/lyric-sweep.ts` — word-level
+highlighting; `src/components/StemMixerLyricsPanelBody.tsx` — the panel UI
+**Tests:** `src/tests/` — canonical-LRC and lrc-gen-engine unit tests
+(`REQ-UV-025..053`, `REQ-LYR-001..015`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
