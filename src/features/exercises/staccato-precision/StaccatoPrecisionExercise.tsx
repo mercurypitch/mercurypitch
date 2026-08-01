@@ -43,10 +43,10 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: {
+    config: () => ({
       type: 'staccato-precision',
-      targetNote: untrack(() => startNote()),
-    },
+      targetNote: startNote(),
+    }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -109,6 +109,7 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconZap size={20} />}

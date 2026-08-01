@@ -41,7 +41,7 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'siren', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'siren', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -125,6 +125,7 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconSiren size={20} />}

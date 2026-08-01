@@ -2,16 +2,16 @@
 version: 1
 slug: "src-features-voice-history-voicehistorypage-tsx"
 primary_target: "src/features/voice-history/VoiceHistoryPage.tsx"
-related_targets: ["src/App.tsx","src/features/glass/GlassApp.tsx","src/features/home/DestinationGallery.tsx"]
+related_targets: ["src/App.tsx","src/features/glass/GlassApp.tsx","src/features/exercises/ExerciseShell.tsx","src/features/exercises/use-base-exercise.ts","src/features/home/DestinationGallery.tsx"]
 ---
 
 # Voice history surface brief
 
 - Scope and mode: in-app Operate surface for local voice-take history,
   practice threads, playback, management, and Earlier/Later comparison.
-- Audience and job: a returning singer wants to keep a meaningful Glass take,
-  find it after reload, and hear an older take beside a newer take from the
-  same target without uploading audio.
+- Audience and job: a returning singer wants to keep a meaningful Glass or
+  Exercise take, find it after reload, and hear an older take beside a newer
+  take from the same practice context without uploading audio.
 - Primary task and proof: comparable contexts lead; two real local recordings
   unlock an immediate A/B switch. Storage, export, and delete make the privacy
   promise inspectable rather than decorative copy.

@@ -59,11 +59,15 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
-    // v6: exact stem reads plus explicit local real-voice history. Voice-take
-    // metadata stays separate from audio so journal queries never materialize
-    // large binary payloads.
+    // v6: exact session-and-stem reads let standalone playback rooms hydrate
+    // only the band parts they selected instead of materializing every blob.
     this.version(6).stores({
       uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+    })
+    // v7: explicit local real-voice history. Metadata is split from audio so
+    // journal queries never pull large binary payloads into memory. This must
+    // be a new version because main has already shipped schema version 6.
+    this.version(7).stores({
       voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
       voiceTakeAudio: 'id, &takeId',
     })
