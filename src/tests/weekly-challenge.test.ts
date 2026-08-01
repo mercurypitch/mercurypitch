@@ -2,9 +2,19 @@
 // Weekly Legend — pure client logic tests
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
-import { weeklyTier } from '@/features/challenges/weekly-attempt'
+import { describe, expect, it, vi } from 'vitest'
+import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
+
+vi.mock('@/db/services/session-service', () => ({
+  saveSessionRecord: vi.fn(async () => ({})),
+}))
+vi.mock('@/db/services/badge-grant-engine', () => ({
+  checkAndGrantBadges: vi.fn(async () => undefined),
+  grantBadgeByRef: vi.fn(async () => undefined),
+}))
+vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
 
 describe('weeklyTier', () => {
   it('grades below target as attempted', () => {
@@ -28,6 +38,34 @@ describe('weeklyTier', () => {
   it('ignores the founder when no seed score exists', () => {
     expect(weeklyTier(95, 70, null)).toBe('completed')
     expect(weeklyTier(95, 70, undefined)).toBe('completed')
+  })
+})
+
+describe('recordWeeklyAttempt', () => {
+  it('consumes exactly one matching run, then disarms', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w1',
+      title: 'The Impossible Note',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+
+    expect(await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })).toBe(true)
+    // The next same-type run is ordinary practice — staying armed used to
+    // post every later sight-singing run to the Legend board.
+    expect(activeWeeklyAttempt()).toBe(null)
+    expect(await recordWeeklyAttempt({ type: 'sight-singing', score: 95 })).toBe(false)
+  })
+
+  it('a mismatched run disarms without being consumed', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w2',
+      title: 'T',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+    expect(await recordWeeklyAttempt({ type: 'vibrato', score: 50 })).toBe(false)
+    expect(activeWeeklyAttempt()).toBe(null)
   })
 })
 

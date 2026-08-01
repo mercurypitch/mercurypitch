@@ -115,6 +115,12 @@ export async function recordWeeklyAttempt(entry: {
   } catch {
     // The drill result stands even if persistence fails.
   }
+  // One armed attempt consumes exactly one run. Staying armed meant every
+  // later run of the same exercise type — any melody, days later — kept
+  // posting to the Legend board. Another go is one tap on the hero.
+  // (challenge-attempt.ts deliberately differs: its board ranks best-of,
+  // so repeat runs counting is the design there.)
+  setActive(null)
   setVersion((v) => v + 1)
   return true
 }

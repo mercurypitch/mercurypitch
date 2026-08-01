@@ -2,6 +2,9 @@
   max-width: 920px;
   margin: 0 auto;
   padding: 20px 16px 48px;
+  /* .main-content is a flex column; without this the page clips instead
+     of scrolling (same rule every page follows — see PathPage). */
+  flex-shrink: 0;
 }
 
 .head {

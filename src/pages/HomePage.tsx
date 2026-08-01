@@ -99,7 +99,9 @@ const HomePage: Component = () => {
 
   return (
     <div class={styles.page}>
-      <header class={styles.head}>
+      {/* A <div>, not <header>: the global app-bar CSS targets header and
+          adds padding plus a doubled safe-area inset on phones. */}
+      <div class={styles.head}>
         <h1 class={styles.greeting}>{greeting()}</h1>
         <p class={styles.date}>
           {new Date().toLocaleDateString(undefined, {
@@ -108,7 +110,7 @@ const HomePage: Component = () => {
             day: 'numeric',
           })}
         </p>
-      </header>
+      </div>
 
       <div class={styles.grid}>
         {/* ── Streak ─────────────────────────────────────────── */}
@@ -124,11 +126,9 @@ const HomePage: Component = () => {
               <div class={styles.streakNumber}>
                 {streak()?.currentStreak ?? 0}
               </div>
-              <div class={styles.streakLabel}>
-                {(streak()?.currentStreak ?? 0) === 1
-                  ? 'day streak'
-                  : 'day streak'}
-              </div>
+              {/* Invariant on purpose — "5 day streak" reads as a compound,
+                  so there is nothing to pluralise. */}
+              <div class={styles.streakLabel}>day streak</div>
             </div>
             <div
               class={styles.freezes}
