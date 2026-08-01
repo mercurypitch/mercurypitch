@@ -16,6 +16,7 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+import type { MelodyItem } from '@/types'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
 
 export type { ActiveTab } from '@/features/tabs/constants'
@@ -133,7 +134,10 @@ export function hideSessionPresetsLibrary(): void {
 export const [focusMode, _setFocusMode] = createSignal<boolean>(false)
 
 export function setFocusMode(val: boolean): void {
-  if (val) setSingingZenLaunch(null)
+  if (val) {
+    setSingingZenLaunch(null)
+    setChallengeStageLaunch(null)
+  }
   _setFocusMode(val)
 }
 
@@ -172,6 +176,7 @@ export function openSingingZen(
       },
 ): void {
   _setFocusMode(false)
+  setChallengeStageLaunch(null)
   removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
   setSingingZenLaunch({
     ...input,
@@ -184,6 +189,38 @@ export function closeSingingZen(): void {
 }
 
 exposeForE2E('__exitSingingZen', closeSingingZen)
+
+// ── Challenge performance stage (weekly Legend) ─────────────────
+// The "Sing it" surface: the armed weekly challenge performs on the zen
+// canvas instead of the plain exercises engine. Exactly one full-screen
+// stage may be open — opening this closes focus mode and the zen stage,
+// and vice versa.
+
+export interface ChallengeStageLaunch {
+  launchId: number
+  challengeId: string
+  title: string
+  targetScore: number
+  targetItems: MelodyItem[]
+}
+
+export const [challengeStageLaunch, setChallengeStageLaunch] =
+  createSignal<ChallengeStageLaunch | null>(null)
+
+export function openChallengeStage(
+  input: Omit<ChallengeStageLaunch, 'launchId'>,
+): void {
+  _setFocusMode(false)
+  setSingingZenLaunch(null)
+  removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
+  setChallengeStageLaunch({ ...input, launchId: Date.now() })
+}
+
+export function closeChallengeStage(): void {
+  setChallengeStageLaunch(null)
+}
+
+exposeForE2E('__exitChallengeStage', closeChallengeStage)
 
 // ── Karaoke Focus Mode (StemMixer fullscreen) ────────────────────
 

@@ -62,6 +62,11 @@ const ZenPitchStage = lazy(async () =>
     default: m.ZenPitchStage,
   })),
 )
+const ChallengeStage = lazy(async () =>
+  import('@/features/challenges/ChallengeStage').then((m) => ({
+    default: m.ChallengeStage,
+  })),
+)
 // First Light onboarding — lazy so a returning visitor pays nothing for a
 // flow they have already walked.
 const FirstLight = lazy(async () =>
@@ -161,7 +166,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { authModalMode, closeSingingZen, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
+import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
 import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -957,6 +962,14 @@ const AppShell: Component<AppProps> = (props) => {
     }),
   )
 
+  // The challenge stage is the same kind of overlay — quiet the transport
+  // before its one-take run starts.
+  createEffect(
+    on(challengeStageLaunch, (launch) => {
+      if (launch !== null) void resetPlaybackState()
+    }),
+  )
+
   // ── Compose live recording preview (Phase 2) ───────────────
   // Notes captured so far this take, plus the currently-held note growing with
   // the playhead. Kept out of melodyStore until the take is finalized.
@@ -1218,7 +1231,8 @@ const AppShell: Component<AppProps> = (props) => {
     playMode,
     setPlayMode,
     activeTab,
-    isSuspended: () => singingZenLaunch() !== null,
+    isSuspended: () =>
+      singingZenLaunch() !== null || challengeStageLaunch() !== null,
     piano: {
       isPlaying: pianoIsPlaying,
       isPaused: pianoIsPaused,
@@ -1302,6 +1316,7 @@ const AppShell: Component<AppProps> = (props) => {
   // flips and cannot miss a transition.
   onTabTransition((prevTab, newTab) => {
     closeSingingZen()
+    closeChallengeStage()
 
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
@@ -2390,7 +2405,13 @@ const AppShell: Component<AppProps> = (props) => {
           <div class="sidebar-backdrop" onClick={closeSidebar} />
         </Show>
 
-        <Show when={!focusMode() && singingZenLaunch() === null}>
+        <Show
+          when={
+            !focusMode() &&
+            singingZenLaunch() === null &&
+            challengeStageLaunch() === null
+          }
+        >
           <header>
             <div class="header-left">
               <button
@@ -3235,7 +3256,13 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={focusMode() && singingZenLaunch() === null}>
+        <Show
+          when={
+            focusMode() &&
+            singingZenLaunch() === null &&
+            challengeStageLaunch() === null
+          }
+        >
           <FocusMode
             melody={activePlaybackItems}
             isPlaying={isPlaying}
@@ -3274,6 +3301,21 @@ const AppShell: Component<AppProps> = (props) => {
                 stopMic={() => practiceEngine.stopMic()}
                 initialCenterMidi={zenInitialCenterMidi()}
                 onClose={closeSingingZen}
+              />
+            </Suspense>
+          )}
+        </Show>
+
+        <Show when={challengeStageLaunch()} keyed>
+          {(launch) => (
+            <Suspense>
+              <ChallengeStage
+                launch={launch}
+                subscribeFrames={practice.subscribeFrames}
+                micActive={micActive}
+                startMic={() => practiceEngine.startMic()}
+                stopMic={() => practiceEngine.stopMic()}
+                onClose={closeChallengeStage}
               />
             </Suspense>
           )}
