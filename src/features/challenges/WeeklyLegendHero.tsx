@@ -95,6 +95,10 @@ export const WeeklyLegendHero: Component = () => {
             </a>
           </Show>
         </div>
+        <p class={styles.attemptHint}>
+          One take counts — "Sing it" records your very next run. Anything after
+          is practice until you tap it again.
+        </p>
 
         {/* ── Board ──────────────────────────────────────── */}
         <Show when={board()}>

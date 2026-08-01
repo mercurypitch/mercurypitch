@@ -28,6 +28,15 @@ export interface WeeklyAttemptTarget {
 const [active, setActive] = createSignal<WeeklyAttemptTarget | null>(null)
 const [version, setVersion] = createSignal(0)
 
+/**
+ * The last consumed attempt, so the follow-up run can be told it was a
+ * practice round instead of silently not counting (owner decision D3:
+ * one tap = one attempt, but say so at the moment of confusion). One
+ * hint per consumed attempt — repeat runs stay quiet.
+ */
+let lastConsumed: { title: string; exercise: ExerciseType } | null = null
+let practiceHintShown = false
+
 export const activeWeeklyAttempt = active
 /** Bumped after every recorded attempt so the hero reloads the board. */
 export const weeklyAttemptVersion = version
@@ -70,7 +79,24 @@ export async function recordWeeklyAttempt(entry: {
   score: number
 }): Promise<boolean> {
   const a = active()
-  if (a === null) return false
+  if (a === null) {
+    // Nothing armed. If this run's type matches the attempt just
+    // consumed, the singer probably hit "try again" expecting it to
+    // count — tell them once. (Rarely this run was consumed by a
+    // personal challenge instead; the hint's claim still holds.)
+    if (
+      lastConsumed !== null &&
+      !practiceHintShown &&
+      entry.type === lastConsumed.exercise
+    ) {
+      practiceHintShown = true
+      showNotification(
+        `Practice round — your Legend attempt for "${lastConsumed.title}" is already in. Tap the Legend card for another attempt.`,
+        'info',
+      )
+    }
+    return false
+  }
   if (entry.type !== a.exercise) {
     setActive(null)
     return false
@@ -120,6 +146,8 @@ export async function recordWeeklyAttempt(entry: {
   // posting to the Legend board. Another go is one tap on the hero.
   // (challenge-attempt.ts deliberately differs: its board ranks best-of,
   // so repeat runs counting is the design there.)
+  lastConsumed = { title: a.title, exercise: a.exercise }
+  practiceHintShown = false
   setActive(null)
   setVersion((v) => v + 1)
   return true

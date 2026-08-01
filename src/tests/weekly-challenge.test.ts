@@ -5,6 +5,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
+import { showNotification } from '@/stores/notifications-store'
 
 vi.mock('@/db/services/session-service', () => ({
   saveSessionRecord: vi.fn(async () => ({})),
@@ -59,6 +60,27 @@ describe('recordWeeklyAttempt', () => {
     expect(
       await recordWeeklyAttempt({ type: 'sight-singing', score: 95 }),
     ).toBe(false)
+  })
+
+  it('tells the follow-up same-type run it was a practice round, once', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w3',
+      title: 'Vincero',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
+    vi.mocked(showNotification).mockClear()
+
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 90 })
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(showNotification).mock.calls[0][0]).toContain(
+      'Practice round',
+    )
+
+    // No nagging: further runs stay quiet until another attempt is armed.
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 91 })
+    expect(showNotification).toHaveBeenCalledTimes(1)
   })
 
   it('a mismatched run disarms without being consumed', async () => {

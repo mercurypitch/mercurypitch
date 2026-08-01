@@ -162,3 +162,11 @@
   padding: 0;
   text-decoration: underline;
 }
+
+/* How attempts work, stated up front — one tap records one run (D3). */
+.attemptHint {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--text-muted, #8b949e);
+}
