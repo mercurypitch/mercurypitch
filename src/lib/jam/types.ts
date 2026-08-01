@@ -85,6 +85,17 @@ export interface JamPitchMessage {
   clarity: number
   midi: number
   timestamp: number
+  /**
+   * The sender's room beat when this pitch was detected -- the coordinate
+   * every peer scores in. Wall-clock timestamps cannot do this job: they
+   * come off the SENDER's Date.now(), so comparing them to the receiver's
+   * clock measures machine skew (seconds, easily) rather than musical time,
+   * and two people in one room end up with different scoreboards.
+   *
+   * Absent when nothing is playing, and optional so a peer on an older
+   * build still parses -- its samples fall back to the timestamp estimate.
+   */
+  beat?: number
 }
 
 export interface JamMelodyMessage {
@@ -98,6 +109,13 @@ export interface JamPlaybackMessage {
   action: 'play' | 'pause' | 'stop' | 'seek'
   currentBeat?: number
   timestamp: number
+  /**
+   * The host's tempo, stamped on every transport command. Peers adopt it,
+   * which makes each command a resync point: a peer that missed a tempo
+   * change is corrected by the next play, pause or seek rather than
+   * running its playhead at the wrong speed for the rest of the session.
+   */
+  bpm?: number
 }
 
 export interface JamVideoStateMessage {
@@ -122,6 +140,8 @@ export interface TimeStampedPitchSample {
   clarity: number
   midi: number
   timestamp: number
+  /** Room beat at detection -- see JamPitchMessage.beat. */
+  beat?: number
 }
 
 // ── Service callbacks ────────────────────────────────────────────────
@@ -146,6 +166,7 @@ export interface JamCallbacks {
   // DataChannel events
   onPitchMessage?: (msg: JamPitchMessage) => void
   onMelodyMessage?: (msg: JamMelodyMessage) => void
-  onPlaybackMessage?: (msg: JamPlaybackMessage) => void
+  /** fromPeerId lets the store charge the message its own flight time. */
+  onPlaybackMessage?: (msg: JamPlaybackMessage, fromPeerId: string) => void
   onVideoState?: (peerId: string, enabled: boolean) => void
 }

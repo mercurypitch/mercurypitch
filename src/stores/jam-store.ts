@@ -4,6 +4,8 @@
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
+import type { JamRunScore } from '@/lib/jam/jam-scoring'
+import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import { createJamService } from '@/lib/jam/service'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
 import type { MelodyData } from '@/types'
@@ -205,6 +207,45 @@ export function setJamRoomAlpha(value: number): void {
   }
 }
 
+// ── Own run score ────────────────────────────────────────────────────
+// What the last take was actually worth, scored the way the solo exercises
+// score theirs (see lib/jam/jam-scoring.ts) rather than by the canvas's
+// rolling hit-rate HUD. Computed from THIS device's own samples only --
+// the DataChannel is an unauthenticated relay, so a peer's stream may draw
+// their trail but must never become anyone's record.
+
+export const [jamOwnRunScore, setJamOwnRunScore] =
+  createSignal<JamRunScore | null>(null)
+
+/** Local receive time the current take began; 0 when none is running. */
+let runStartedAt = 0
+
+/**
+ * Settle the take that just ended. Called from every path that ends one --
+ * stop, natural finish, a loop wrapping round, and the same events arriving
+ * from the host -- and idempotent, because those paths overlap (the host
+ * both stops locally and broadcasts a stop it will not receive, while peers
+ * only ever see the broadcast).
+ */
+function settleOwnRun(): void {
+  if (runStartedAt === 0) return
+  const startedAt = runStartedAt
+  runStartedAt = 0
+  const result = scoreOwnJamRun(
+    jamExerciseMelody(),
+    jamPitchHistory(),
+    jamPeerId(),
+    startedAt,
+  )
+  // Nothing sung at all is not a run worth recording.
+  if (result.coverage > 0) setJamOwnRunScore(result)
+}
+
+/** Open a fresh take: later samples belong to it, earlier ones do not. */
+function beginOwnRun(): void {
+  runStartedAt = Date.now()
+}
+
 // ── Tab ──────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line solid/reactivity
@@ -245,6 +286,28 @@ function getAudioContext(): AudioContext {
     audioContext = new AudioContext()
   }
   return audioContext
+}
+
+/**
+ * How far the room moved on while a transport command was in the air.
+ *
+ * A `play` at beat 0 does not arrive at beat 0 -- it arrives one-way-latency
+ * later, and a peer that starts at the number in the message is permanently
+ * that far behind the sender. RTT is already measured per peer for the
+ * latency readout, so half of it is the flight time, and multiplying by
+ * beats-per-second turns it into the correction.
+ *
+ * Clamped: a stale or absurd RTT reading should nudge the playhead, never
+ * throw it into the middle of the melody.
+ */
+const MAX_FLIGHT_MS = 500
+
+function beatsInFlight(fromPeerId: string): number {
+  const peer = jamPeers().find((p) => p.id === fromPeerId)
+  const rtt = peer?.latency ?? 0
+  if (!Number.isFinite(rtt) || rtt <= 0) return 0
+  const oneWayMs = Math.min(rtt, MAX_FLIGHT_MS) / 2
+  return (jamExerciseBpm() / 60) * (oneWayMs / 1000)
 }
 
 export function initJam() {
@@ -331,7 +394,12 @@ export function initJam() {
           cents: msg.cents,
           clarity: msg.clarity,
           midi: msg.midi,
-          timestamp: msg.timestamp,
+          // Receive time, not msg.timestamp. The sender's clock is not
+          // comparable to ours, but "when did this device see it" is, and
+          // that is all timestamp is used for now that beat carries the
+          // musical position: telling this take's samples from the last.
+          timestamp: Date.now(),
+          ...(msg.beat === undefined ? {} : { beat: msg.beat }),
         })
         // Cap at 600 samples (~30s at 20Hz)
         if (arr.length > 600) arr.splice(0, arr.length - 600)
@@ -350,6 +418,10 @@ export function initJam() {
         stopPlaybackTimer()
       } else if (msg.melody) {
         setJamExerciseMelody(msg.melody)
+        // Adopt the melody's tempo exactly as selectJamExercise does on the
+        // host. Without this a peer kept whatever bpm it last had (120 by
+        // default) and ran its playhead at a different speed from the room.
+        setJamExerciseBpm(msg.melody.bpm)
         const total = msg.melody.items.reduce(
           (max, item) => Math.max(max, item.startBeat + item.duration),
           0,
@@ -363,14 +435,19 @@ export function initJam() {
         setJamPitchTab('exercise')
       }
     },
-    onPlaybackMessage: (msg: JamPlaybackMessage) => {
+    onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {
+      // Every transport command is a tempo resync point (see
+      // JamPlaybackMessage.bpm), so adopt it before anything reads the bpm.
+      if (msg.bpm !== undefined && msg.bpm > 0) setJamExerciseBpm(msg.bpm)
+
       switch (msg.action) {
         case 'play':
           setJamExercisePlaying(true)
           setJamExercisePaused(false)
           if (msg.currentBeat !== undefined) {
-            setJamExerciseBeat(msg.currentBeat)
+            setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
           }
+          beginOwnRun()
           startPlaybackTimer()
           setJamPitchTab('exercise')
           break
@@ -384,10 +461,11 @@ export function initJam() {
           setJamExerciseBeat(0)
           setJamExerciseNoteIndex(-1)
           stopPlaybackTimer()
+          settleOwnRun()
           break
         case 'seek':
           if (msg.currentBeat !== undefined) {
-            setJamExerciseBeat(msg.currentBeat)
+            setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
           }
           break
       }
@@ -533,7 +611,14 @@ export function startJamPitchDetection(): void {
     const p = jamLocalPitch()
     const age = Date.now() - lastPitchTime
     if (p && p.frequency > 0 && age < 150) {
-      jamService?.sendPitch(p)
+      // Stamp the room beat, not just the wall clock: the beat is the only
+      // coordinate every peer agrees on. Omitted when nothing is playing,
+      // where there is no beat to speak of.
+      const beat =
+        jamExercisePlaying() && !jamExercisePaused()
+          ? jamExerciseBeat()
+          : undefined
+      jamService?.sendPitch(p, beat)
 
       const myId = jamPeerId()
       if (myId !== null && myId !== '') {
@@ -543,6 +628,7 @@ export function startJamPitchDetection(): void {
           arr.push({
             ...p,
             timestamp: Date.now(),
+            ...(beat === undefined ? {} : { beat }),
           })
           if (arr.length > 600) arr.splice(0, arr.length - 600)
           next[myId] = arr
@@ -600,22 +686,23 @@ export function jamPlaybackPlay(startBeat?: number): void {
   setJamExerciseBeat(actualStart)
   setJamExercisePlaying(true)
   setJamExercisePaused(false)
+  beginOwnRun()
   startPlaybackTimer()
-  jamService?.sendPlaybackCommand('play', actualStart)
+  jamService?.sendPlaybackCommand('play', actualStart, jamExerciseBpm())
   setJamPitchTab('exercise')
 }
 
 export function jamPlaybackPause(): void {
   setJamExercisePaused(true)
   stopPlaybackTimer()
-  jamService?.sendPlaybackCommand('pause', jamExerciseBeat())
+  jamService?.sendPlaybackCommand('pause', jamExerciseBeat(), jamExerciseBpm())
 }
 
 export function jamPlaybackResume(): void {
   if (!jamExercisePlaying() || !jamExercisePaused()) return
   setJamExercisePaused(false)
   startPlaybackTimer()
-  jamService?.sendPlaybackCommand('play', jamExerciseBeat())
+  jamService?.sendPlaybackCommand('play', jamExerciseBeat(), jamExerciseBpm())
 }
 
 export function jamPlaybackStop(): void {
@@ -624,12 +711,13 @@ export function jamPlaybackStop(): void {
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
   stopPlaybackTimer()
-  jamService?.sendPlaybackCommand('stop', 0)
+  settleOwnRun()
+  jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
 }
 
 export function jamPlaybackSeek(beat: number): void {
   setJamExerciseBeat(beat)
-  jamService?.sendPlaybackCommand('seek', beat)
+  jamService?.sendPlaybackCommand('seek', beat, jamExerciseBpm())
 }
 
 // ── Playback timer ───────────────────────────────────────────────────
@@ -661,7 +749,9 @@ function startPlaybackTimer(): void {
         setJamExerciseBeat(0)
         setJamExerciseNoteIndex(-1)
         playbackLastTick = now
-        jamService?.sendPlaybackCommand('seek', 0)
+        settleOwnRun()
+        beginOwnRun()
+        jamService?.sendPlaybackCommand('seek', 0, jamExerciseBpm())
         playbackTimerId = requestAnimationFrame(tick)
       } else {
         // Finished — reset to start and broadcast
@@ -670,7 +760,8 @@ function startPlaybackTimer(): void {
         setJamExerciseBeat(0)
         setJamExerciseNoteIndex(-1)
         stopPlaybackTimer()
-        jamService?.sendPlaybackCommand('stop', 0)
+        settleOwnRun()
+        jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
       }
       return
     }
@@ -723,6 +814,10 @@ function cleanupJam(): void {
   setJamExerciseNoteIndex(-1)
   setJamExerciseTotalBeats(0)
   setJamUnreadChatCount(0)
+  // Leaving mid-take abandons it rather than settling it: the samples are
+  // gone with the history above, so there is nothing honest left to score.
+  runStartedAt = 0
+  setJamOwnRunScore(null)
 }
 
 function waitForRoomId(): Promise<string> {
