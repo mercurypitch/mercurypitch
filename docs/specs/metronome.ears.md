@@ -3,15 +3,10 @@
 Requirements for the metronome: its toggle, sound types, independent volume,
 timing accuracy, visual beat indicator, and count-in behaviour.
 
-Source:
-
-- `src/stores/app-store.ts` — metronome enable/sound/volume state
-- `src/stores/transport-store.ts` — `bpm` (clamped 40-280) and `countIn`
-- `src/contexts/EngineContext.tsx` — schedules clicks on the audio clock
-
-Tests:
-
-- `src/e2e/metronome.spec.ts` (`REQ-MET-001..019`)
+**Source:** `src/stores/app-store.ts` — metronome enable/sound/volume state;
+`src/stores/transport-store.ts` — `bpm` (clamped 40-280) and `countIn`;
+`src/contexts/EngineContext.tsx` — schedules clicks on the audio clock
+**Tests:** `src/e2e/metronome.spec.ts` (`REQ-MET-001..019`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

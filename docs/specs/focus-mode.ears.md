@@ -3,14 +3,9 @@
 Requirements for Focus Mode: the distraction-free practice view that hides app
 chrome and expands the practice surface.
 
-Source:
-
-- `src/stores/ui-store.ts` — `focusMode` signal, `enterFocusMode` / `exitFocusMode`
-- `src/App.tsx` — applies the focus layout and hides chrome
-
-Tests:
-
-- `src/e2e/focus-mode.spec.ts` (`REQ-FOCUS-001..015`)
+**Source:** `src/stores/ui-store.ts` — `focusMode` signal, `enterFocusMode` /
+`exitFocusMode`; `src/App.tsx` — applies the focus layout and hides chrome
+**Tests:** `src/e2e/focus-mode.spec.ts` (`REQ-FOCUS-001..015`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

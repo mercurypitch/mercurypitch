@@ -3,18 +3,13 @@
 Requirements for melody CRUD, favourites, search, sharing, and the session
 library surface.
 
-Source:
-
-- `src/stores/melody-store.ts` — melody CRUD and favourites
-- `src/stores/session-store.ts` — session records and metadata
-- `src/components/LibraryModal.tsx` — the library UI
-- `src/lib/share-url.ts`, `src/lib/share-codec.ts` — share encode/decode
-- `src/components/ConfirmDialog.tsx` — destructive-action confirmation
-
-Tests:
-
-- `src/e2e/melody-library.spec.ts`, `src/e2e/sessions.spec.ts`
-  (`REQ-MEL-001..028`)
+**Source:** `src/stores/melody-store.ts` — melody CRUD and favourites;
+`src/stores/session-store.ts` — session records and metadata;
+`src/components/LibraryModal.tsx` — the library UI; `src/lib/share-url.ts`,
+`src/lib/share-codec.ts` — share encode/decode;
+`src/components/ConfirmDialog.tsx` — destructive-action confirmation
+**Tests:** `src/e2e/melody-library.spec.ts`, `src/e2e/sessions.spec.ts`
+(`REQ-MEL-001..028`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

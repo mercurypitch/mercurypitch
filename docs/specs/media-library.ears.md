@@ -3,16 +3,11 @@
 Requirements for the session/melody hierarchy: which session is active, which
 melody is loaded into the editor, and how new melodies attach to a session.
 
-Source:
-
-- `src/stores/session-store.ts` — active session and recent-session list
-- `src/stores/melody-store.ts` — melody CRUD and the selected melody
-- `src/components/LibraryModal.tsx` — the sidebar library surface
-
-Tests:
-
-- `src/e2e/sessions.spec.ts`, `src/e2e/melody-library.spec.ts`
-  (`REQ-MEDIA-001..014`)
+**Source:** `src/stores/session-store.ts` — active session and recent-session
+list; `src/stores/melody-store.ts` — melody CRUD and the selected melody;
+`src/components/LibraryModal.tsx` — the sidebar library surface
+**Tests:** `src/e2e/sessions.spec.ts`, `src/e2e/melody-library.spec.ts`
+(`REQ-MEDIA-001..014`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

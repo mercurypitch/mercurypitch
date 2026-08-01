@@ -4,19 +4,13 @@ Requirements for the shared pointer-drag and slider interaction primitive
 (`src/components/shared/drag-gesture.ts`), written in EARS (Easy Approach to
 Requirements Syntax).
 
-Source:
-
-- `src/components/shared/drag-gesture.ts` — pointer lifecycle, touch behavior,
-  keyboard support, and slider semantics
-- Migrated consumers: `AppNavTabs.tsx`,
-  `StemMixerPitchAnalysisPanel.tsx`, `FallingNotesCanvas.tsx`,
-  `jam/JamCameraWidget.tsx`, `MascotDock.tsx`, `shared/LoopSeekRail.tsx`,
-  `mobile/Scrubber.tsx`, and `mobile/PillControl.tsx`
-
-Tests:
-
-- `src/tests/drag-gesture.test.tsx` (`REQ-DRAG-001..004`)
-- `src/e2e/shared-drag-gesture.spec.ts` (`REQ-DRAG-005`)
+**Source:** `src/components/shared/drag-gesture.ts` — pointer lifecycle, touch
+behavior, keyboard support, and slider semantics; migrated consumers:
+`AppNavTabs.tsx`, `StemMixerPitchAnalysisPanel.tsx`, `FallingNotesCanvas.tsx`,
+`jam/JamCameraWidget.tsx`, `MascotDock.tsx`, `shared/LoopSeekRail.tsx`,
+`mobile/Scrubber.tsx`, and `mobile/PillControl.tsx`
+**Tests:** `src/tests/drag-gesture.test.tsx` (`REQ-DRAG-001..004`);
+`src/e2e/shared-drag-gesture.spec.ts` (`REQ-DRAG-005`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
