@@ -6,6 +6,109 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Compose drum kit mode**: per-melody `kind: 'melody' | 'drums'`
+  (`MelodyData`, absent = melody, legacy-safe) with a header segmented
+  control (`data-tour="compose.kind"`). Drum lanes are plain `ScaleDegree`
+  rows built from the GM map (`src/lib/drum-lanes.ts`: 12 lanes, descending
+  midi 51→36, labels + Path2D-compatible icon paths), so placement, drag
+  remap, share codec, `melodyEquals` and sheet music work unchanged; toggling
+  never touches `this.melody`. Guitar's 8 drum-machine factories extracted
+  verbatim to `src/lib/drum-voices.ts` with a `destination` param
+  (+ new sidestick/clap/pedal-hat/ride recipes); `drum-machine.ts` keeps
+  byte-identical behavior via thin adapters. `audioEngine` gained a
+  `drumGain → mainGain` bus (volume slider + note-bus limiter apply),
+  `playDrum(voice)`, and a drums branch in `renderMelodyToWAV` /
+  `downloadMelodyAsWAV`; `noteStart` routing, ruler scrub, and MIDI export
+  (channel 10) all follow the kind; record button disabled in drum mode.
+  Share links carry `dk?: 1` (tolerant decoder, old links unaffected).
+- **Playable left keyboard** in the piano roll: black/white key lanes
+  (falling-notes palette) drawn on `pianoCanvas`, Pointer Events with
+  capture — press auditions (`previewNote` / `playDrum`), drag retriggers
+  across lanes, pressed-lane accent, `touch-action: none`; status-bar hint
+  names the hovered lane.
+- **Hover hints**: `pitchperfect_compose_hints` persisted setting, View-group
+  toggle (`#roll-hint-toggle`), cursor-anchored tip in the grid layer showing
+  note name / drum icon + name; drum mode auditions once per note-enter
+  while stopped.
+- Walkthrough steps for the preset toggle, playable keys, and hints; new
+  vitest suites (`compose-drum-mode`, `drum-voices`, share `dk` round-trip)
+  and a real-mouse Playwright spec (`src/e2e/compose-drums.spec.ts`, @smoke).
+- **Sheet Edit/Scrub toggle**: persisted `pitchperfect_sheet_mode` setting +
+  header segmented control; scrub mode routes clicks/drags through a shared
+  `seekAt` (note start, else nearest bar beat — the read-only path), hides
+  the ghost, disables right-click delete, and drag-scrubs via mousedown
+  tracking. e2e: scrub click seeks without placing.
+- **Playback**: rAF loop back-fills notes that start inside a frame gap
+  (≤1-beat cap; seeks/stop/resume reset the tick cursor) so high-tempo
+  sixteenths survive slow frames; `start()` on a paused runtime resumes
+  instead of no-op (the "stuck skipping" state). Regression suite in
+  playback-runtime.test.ts.
+- **Space transport**: global hook stands down on TAB_EXERCISES,
+  ExerciseShell accepts button-focused Space (single-fire via
+  preventDefault), and the zen stage binds Space itself (start/pause/
+  resume). exercise-stop-flow.spec's stop-button selector was stale
+  (`.exercise-btn-secondary` — the suite passed vacuously) and now drives
+  `.exercise-btn-stop`; new fake-mic `zen-space.spec.ts`.
+- **Sheet ghost preview**: hover in the score's edit mode renders a dashed
+  note (duration-shaped glyph + name label) at the exact snap position a
+  click would place. One `placementAt` routine feeds both the hover ghost
+  and `handleClick`, so preview and placement cannot diverge; new
+  `midiToStaffY` inverse in `sheet-music-renderer.ts` (round-trip tested
+  against `staffYToMidi`).
+- **Scale-state sync**: the roll toolbar's mode select now routes through
+  `melodyStore.refreshScale` (the canonical `_scaleKey/_scaleType` write),
+  so Rows±/octave rebuilds keep the chosen type instead of reverting to C
+  major; the editor adopts store scale-type changes via `syncScaleType`
+  (select stays honest, optimistic rebuilds match the store); row changes
+  that leave notes off-grid announce the count in the status bar
+  (notes themselves are never mutated by view changes — only Shift±
+  transposes, as a single undoable step). Regression coverage:
+  `compose-scale-sync.test.ts` + an e2e that flips harmonic minor and
+  clicks Rows +.
+
+### Fixed
+
+- Piano-roll bug sweep (`src/lib/piano-roll.ts`): zoom applied twice to the
+  canvas width (and `fitToView` both double-zoomed and subtracted the piano
+  column from a viewport that never contained it); `destroy()` leaked every
+  document/window listener — editors stacked per tab switch (now one
+  `AbortController` severs all, with a regression test); `Ctrl+A/Z/±`
+  intercepted before the `isTyping` guard, hijacking text inputs app-wide;
+  left column mis-sized on HiDPI (`style.width` never pinned); ball playhead
+  dead after the first Stop; multi-note resize collapsed every selected note
+  onto one end beat (now anchor-delta per note); resize/placement/drag snap
+  now follows note length down to 0.25 so 1/16 notes are usable; stopped-state
+  click at x<10 seeked instead of placing; `_rebuildScale` read the never-set
+  `window.pitchPerfectApp.key` (rebuilds silently reverted to C) — key/octave
+  now sync from every store scale push; pitch-track `ctx.scale(dpr)`
+  compounded across resizes; grid-toggle button and settings signal could
+  disagree (toolbar now round-trips the persisted setting); status-bar note
+  count refreshed only on Bars±; library saves debounced (was a full-library
+  `JSON.stringify` + localStorage write per drag mousemove) with flush on
+  hide/unload; "Melody saved!" toast spam removed.
+- `roll-toolbar-disabled` finally has CSS — browse-mode "disabled" toolbar
+  groups were fully interactive.
+
+### Removed
+
+- Dead code: unreachable internal playback animation loop (+ its
+  `playStartTime`/`editorBeat`/`startedNoteIds` machinery), `#roll-octave-value`
+  queries, `#roll-delete-selected-btn` handler, `'='` scale-name check,
+  `_trackIndex`, never-dispatched `presetSaved`/`presetLoaded` and
+  `pitchperfect:gridToggle` subscriptions, `MelodyEngine` (unused wrapper,
+  all-stub BPM/speed API) and the inert Speed select on the Compose bar.
+
+### Changed
+
+- Piano-roll canvases draw from a CSS-variable palette (`--roll-*` in
+  `PianoRollEditor.css`, dark values as fallbacks) instead of hardcoded hex;
+  toolbar a11y: labeled selects, `aria-pressed` on toggles, duration
+  radiogroup, `aria-live` status hint.
+
 ## [0.7.23] - 2026-07-31
 
 ### Added

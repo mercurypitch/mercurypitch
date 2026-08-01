@@ -309,6 +309,28 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const target = event.target
+
+    // Space toggles the session like the transport button — the global
+    // shortcut hook is suspended while the stage is open, so the stage
+    // owns its own play/pause key. Text controls keep the key; a focused
+    // button doesn't (preventDefault suppresses its native activation,
+    // so the toggle fires exactly once).
+    if (event.code === 'Space' && !event.repeat && !event.defaultPrevented) {
+      if (
+        target instanceof Element &&
+        (target.closest('input,textarea,select,[contenteditable]') !== null ||
+          target.closest('[role="dialog"]') !== null)
+      ) {
+        return
+      }
+      event.preventDefault()
+      const current = session.status()
+      if (current === 'running') session.pause()
+      else if (current === 'paused') session.resume()
+      else void begin()
+      return
+    }
+
     if (
       event.key !== 'Escape' ||
       event.defaultPrevented ||

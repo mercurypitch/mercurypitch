@@ -121,9 +121,11 @@ export const TaskDemo: Component<TaskDemoProps> = (props) => {
   // HowItWorks renders one demo per reference-keyed step, and MirrorApp mounts
   // this inside a <Show when={subPhase === 'intro'}> that leaves 'intro'
   // between tasks — a new task is a fresh mount, never a prop morph.
+  /* eslint-disable solid/reactivity */
   const kind = props.kind
   const dims = SIZES[props.size ?? 'stage']
   const isCard = (props.size ?? 'stage') === 'card'
+  /* eslint-enable solid/reactivity */
   const isActive = () => props.active?.() ?? true
   const tl = buildDemoTimeline(kind)
   // The guide cue (siren/hold) that plays alongside the animation — Glass's

@@ -879,6 +879,28 @@ export function staffYToMidi(system: SheetSystemBox, y: number): number {
   return (octave + 1) * 12 + LETTER_SEMITONE[letter]
 }
 
+/** Inverse of staffYToMidi, for hover previews: the SVG-space y of a midi
+ *  note's staff position. Accidentals sit on their base letter's line/space
+ *  (the accidental glyph, not the position, carries the sharp). */
+export function midiToStaffY(system: SheetSystemBox, midi: number): number {
+  const halfSpace = system.lineSpacing / 2
+  const topLetter = system.clef === 'treble' ? 3 : 5
+  const topOctave = system.clef === 'treble' ? 5 : 3
+  const topAbs = topOctave * 7 + topLetter
+  const octave = Math.floor(midi / 12) - 1
+  const semitone = ((midi % 12) + 12) % 12
+  // Highest natural letter at or below this semitone (C C# -> C, F F# -> F).
+  let letter = 0
+  for (let i = 6; i >= 0; i--) {
+    if (LETTER_SEMITONE[i] <= semitone) {
+      letter = i
+      break
+    }
+  }
+  const abs = octave * 7 + letter
+  return system.lineTopY + (topAbs - abs) * halfSpace
+}
+
 /** Which system row contains an SVG-space y (for click placement). */
 export function systemAtY(
   layout: SheetLayout,

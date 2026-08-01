@@ -271,3 +271,47 @@ describe('generateShareHashUrl / generateShareFullUrl', () => {
     expect(url).toContain('#/share/abc123')
   })
 })
+
+describe('drum kit share flag (dk)', () => {
+  const items: MelodyItem[] = [
+    {
+      id: 1,
+      note: { midi: 36, name: 'C', octave: 2, freq: 65.41 },
+      startBeat: 0,
+      duration: 1,
+    },
+  ]
+
+  it('round-trips kind=drums as dk: 1', () => {
+    const encoded = encodeMelodyForShare(
+      items,
+      120,
+      'C',
+      'major',
+      16,
+      'Beat',
+      'drums',
+    )
+    const decoded = decodeSharePayload(encoded)
+    expect(decoded?.t).toBe('melody')
+    expect((decoded?.d as MelodyShareData).dk).toBe(1)
+  })
+
+  it('omits dk for pitched melodies and for the legacy no-kind call', () => {
+    const withKind = decodeSharePayload(
+      encodeMelodyForShare(items, 120, 'C', 'major', 16, 'Tune', 'melody'),
+    )
+    expect((withKind?.d as MelodyShareData).dk).toBeUndefined()
+
+    const legacy = decodeSharePayload(
+      encodeMelodyForShare(items, 120, 'C', 'major', 16, 'Tune'),
+    )
+    expect((legacy?.d as MelodyShareData).dk).toBeUndefined()
+    // Legacy payloads still decode into items
+    const parsed = generateMelodyItemsFromCompact(
+      (legacy?.d as MelodyShareData).i,
+    )
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].note.midi).toBe(36)
+  })
+})

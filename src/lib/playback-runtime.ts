@@ -72,6 +72,11 @@ export class PlaybackRuntime {
   private _durationBeats = 0
   private countInCompleteEmitted = false
   private _lastBpm = 120
+  // Beat sampled by the previous animation tick (-1 = no previous tick).
+  // Lets the loop back-fill notes that started AND ended inside a frame
+  // gap — at high BPM a sixteenth is shorter than a heavy frame, and
+  // sampling only "active right now" silently skipped such notes.
+  private _lastTickBeat = -1
   // Open-ended mode: while true, playback never auto-stops at the end of the
   // arrangement — used for free-form recording where the take length is
   // whatever the user sings until they stop. Always cleared on stop().
@@ -159,6 +164,11 @@ export class PlaybackRuntime {
 
   start(countInBeats: number = 0): void {
     if (this.isPlaying) {
+      // A paused runtime still reports isPlaying=true. Treating a Play
+      // request as a silent no-op left a dead state: the UI flipped to
+      // "playing" while the loop stayed frozen and every note "skipped"
+      // until a full stop. Resume instead.
+      if (this.isPaused) this.resume()
       return
     }
 
@@ -182,6 +192,7 @@ export class PlaybackRuntime {
       // Fresh start - initialize count-in from top
       this.currentBeat = 0
       this.currentNoteIndices.clear()
+      this._lastTickBeat = -1
       this._countInBeats = countInBeats
       this.countInBeat = countInBeats
       this.countInCompleteEmitted = false
@@ -242,6 +253,8 @@ export class PlaybackRuntime {
     // pause. Without this, notes active before the pause stay silent
     // because the set-diff sees them as "already playing".
     this.currentNoteIndices.clear()
+    // No back-fill across the pause boundary either.
+    this._lastTickBeat = -1
 
     this._emit({ type: 'state', state: 'playing' })
     this._startAnimationLoop()
@@ -264,6 +277,7 @@ export class PlaybackRuntime {
     this.isPaused = false
     this._openEnded = false
     this.pendingStartBeat = 0
+    this._lastTickBeat = -1
 
     // Reset pause tracking so a fresh start() after stop isn't poisoned
     this.pauseStartTime = 0
@@ -314,6 +328,8 @@ export class PlaybackRuntime {
       this.audioEngine.stopAllNotes()
       this.currentBeat = target
       this.currentNoteIndices.clear()
+      // A seek is a discontinuity — never back-fill across it.
+      this._lastTickBeat = target
       // Pretend playback started in the past so `now - playStartTime
       // - pauseOffset === target*beatDuration + countInMs`.
       this.playStartTime =
@@ -334,6 +350,7 @@ export class PlaybackRuntime {
       // on resume — exact bug the user reported.
       this.currentBeat = target
       this.currentNoteIndices.clear()
+      this._lastTickBeat = target
       const now = performance.now()
       // Effective elapsed when paused = pauseStartTime - playStartTime
       //                                  - pauseOffset
@@ -539,6 +556,29 @@ export class PlaybackRuntime {
 
         const melody = this._melody ?? []
         const newIndices = new Set(melodyIndicesAtBeat(melody, beat))
+
+        // Back-fill notes whose entire lifetime fell between this tick and
+        // the previous one, so short notes survive dropped/slow frames at
+        // high tempo. They join this tick's active set (firing noteStart
+        // now — the audio layer plays their real duration) and leave it on
+        // the next tick, producing a normal noteEnd. The gap is capped at
+        // one beat so discontinuities (tab throttling, loop wraps, seeks)
+        // never burst-fire a backlog of stale notes.
+        const prevBeat = this._lastTickBeat
+        this._lastTickBeat = beat
+        if (prevBeat >= 0 && beat > prevBeat && beat - prevBeat <= 1) {
+          for (let i = 0; i < melody.length; i++) {
+            const item = melody[i]
+            if (item == null || item.isRest === true) continue
+            if (
+              item.startBeat > prevBeat &&
+              item.startBeat <= beat &&
+              !newIndices.has(i)
+            ) {
+              newIndices.add(i)
+            }
+          }
+        }
 
         // Emit noteEnd for notes that are no longer active
         for (const idx of this.currentNoteIndices) {

@@ -7,6 +7,61 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Drum kit mode in Compose.** A new Melody / Drums switch in the Compose
+  header turns the piano roll into a 12-lane drum machine — kick, snare,
+  sidestick, clap, three hats, three toms, crash and ride, each mapped to its
+  General MIDI note and played by synthesized drum voices (the same kit the
+  Guitar beat maker uses, now with clap, sidestick, pedal hat and ride added).
+  Beats save, share, and export like any melody — MIDI files even come out on
+  the drum channel so other apps read them as drum tracks.
+- **The piano keys are playable.** The left edge of the piano roll is now a
+  real black-and-white keyboard: press a key to hear its note, drag up and
+  down for a glissando. In drum mode every key shows its kit piece's icon and
+  auditions the hit.
+- **Hover hints.** Hovering a placed note names it right at the cursor — the
+  note name, or the drum piece (with a preview hit). Toggle them in the
+  toolbar's View group.
+- **Sheet music shows what you're about to add.** In the score's click-to-add
+  mode, a dashed ghost note now follows the cursor — at the exact staff
+  position and beat where the note will land, shaped by the selected length
+  (whole to sixteenth, dots included) and labelled with its name.
+- **Edit / Scrub toggle on the score.** The sheet header now switches the
+  staff between adding notes and acting as a transport: in Scrub, click a
+  bar to jump there or drag across the staff to scrub playback,
+  Guitar-Pro-style. The choice is remembered.
+
+### Fixed
+
+- **Fast, dense melodies play every note.** At high tempo, notes shorter than
+  one animation frame could fall between two scheduler samples and never
+  sound; playback now back-fills anything that started inside the gap. Also
+  cured a stuck state where pressing Play on a paused session silently did
+  nothing until a full stop — the transport now resumes.
+- **Spacebar works in Zen and the Exercises.** The Zen stage now
+  starts/pauses/resumes with Space, and exercise Space no longer goes dead
+  after clicking any button — it starts, stops and re-runs the exercise no
+  matter where focus sits. (Playback everywhere ignores what scale a note is
+  in — off-scale notes always sounded and still do.)
+- **The Split view's score gets the whole screen.** The notation strip under
+  the piano roll was capped at a 240px sliver with dead space below; it now
+  stretches to the bottom of the panel.
+- **Changing the scale and adding rows no longer fight each other.** Picking
+  a scale in the roll toolbar then clicking Rows + used to silently rebuild
+  the grid in C major (the select still claiming your scale) and hatch every
+  note outside it. Scale choices now stick everywhere, and when a view change
+  does leave notes outside the visible rows, the status bar says so — and
+  that your notes are untouched.
+- **A big Compose polish pass.** Zoom no longer inflates the canvas twice
+  (and Fit finally fits), 1/16 notes can be placed, moved and resized on
+  their own grid, resizing several notes together keeps their lengths,
+  clicking the very start of the grid places a note instead of grabbing an
+  invisible playhead, the bouncing-ball playhead survives Stop, editor
+  shortcuts stop hijacking Ctrl+A/Ctrl+Z while you type anywhere else in the
+  app, the key you chose is respected when the editor rebuilds its rows, the
+  left column renders crisply on HiDPI displays, and long note drags no
+  longer freeze on constant saving (with the "Melody saved!" toast spam
+  gone for good).
+
 - **Weekly Leagues.** Compete on a seven-rung ladder of hand-crafted trophies
   — Mercling, Sparkwing, Skyvox, Highnova, Starcrest, Mercapex, and a locked
   seventh league still to be revealed. Finishing exercises and challenges

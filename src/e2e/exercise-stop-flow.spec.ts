@@ -57,9 +57,7 @@ test.describe('Exercise Stop & Score Flow', () => {
       }
 
       // Click Stop & Score
-      const stopBtn = page.locator(
-        '.exercise-btn-secondary:has-text("Stop & Score")',
-      )
+      const stopBtn = page.locator('.exercise-btn-stop')
       if (await stopBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
         await stopBtn.click()
         await page.waitForTimeout(800)
@@ -93,9 +91,7 @@ test.describe('Exercise Stop & Score Flow', () => {
     }
 
     // Stop & Score (first time)
-    const stopBtn = page.locator(
-      '.exercise-btn-secondary:has-text("Stop & Score")',
-    )
+    const stopBtn = page.locator('.exercise-btn-stop')
     if (await stopBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stopBtn.click()
       await page.waitForTimeout(500)
@@ -111,9 +107,7 @@ test.describe('Exercise Stop & Score Flow', () => {
     }
 
     // Stop & Score (second time)
-    const stopBtn2 = page.locator(
-      '.exercise-btn-secondary:has-text("Stop & Score")',
-    )
+    const stopBtn2 = page.locator('.exercise-btn-stop')
     if (await stopBtn2.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stopBtn2.click()
       await page.waitForTimeout(500)
@@ -144,9 +138,7 @@ test.describe('Exercise Stop & Score Flow', () => {
       await page.waitForTimeout(500)
     }
 
-    const stopBtn = page.locator(
-      '.exercise-btn-secondary:has-text("Stop & Score")',
-    )
+    const stopBtn = page.locator('.exercise-btn-stop')
     if (await stopBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stopBtn.click()
       await page.waitForTimeout(500)
@@ -170,9 +162,7 @@ test.describe('Exercise Stop & Score Flow', () => {
     }
 
     // Stop again
-    const stopBtn2 = page.locator(
-      '.exercise-btn-secondary:has-text("Stop & Score")',
-    )
+    const stopBtn2 = page.locator('.exercise-btn-stop')
     if (await stopBtn2.isVisible({ timeout: 2000 }).catch(() => false)) {
       await stopBtn2.click()
       await page.waitForTimeout(500)

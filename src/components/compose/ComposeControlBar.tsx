@@ -8,13 +8,12 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { MicButton } from '@/components'
 import styles from '@/components/shared/control-bar/control-bar.module.css'
-import { IconClock, IconMetronome, IconPause, IconPlay, IconRecord, IconShare, IconSpeed, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
+import { IconClock, IconMetronome, IconPause, IconPlay, IconRecord, IconShare, IconStop, IconVolume, IconWave, } from '@/components/shared/control-bar/icons'
 import { LoopControls } from '@/components/shared/control-bar/LoopControls'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
-import { SafeSelect } from '@/components/shared/SafeSelect'
 import { bpm, micActive, micWaveVisible, setBpm, toggleMicWaveVisible, } from '@/stores'
 import { SlidersHorizontal } from '../icons'
 
@@ -27,12 +26,13 @@ interface ComposeControlBarProps {
   onStop: () => void
   volume: () => number
   onVolumeChange: (vol: number) => void
-  speed: () => number
-  onSpeedChange: (speed: number) => void
   metronomeEnabled: () => boolean
   onMetronomeToggle: () => void
   isRecording: () => boolean
   onRecordToggle: () => void
+  /** Disable the record button (e.g. drum preset — mic pitch capture only
+   *  makes sense for pitched melodies). */
+  recordDisabled?: () => boolean
   onShareMelody: () => void
   onMicToggle: () => void
   // A-B Loop
@@ -44,8 +44,6 @@ interface ComposeControlBarProps {
   onToggleLoop: () => void
   onClearLoop: () => void
 }
-
-const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
 export const ComposeControlBar: Component<ComposeControlBarProps> = (props) => {
   const [pinned, setPinned] = createSignal(false)
@@ -116,13 +114,21 @@ export const ComposeControlBar: Component<ComposeControlBarProps> = (props) => {
         type="button"
         id="record-btn"
         class={`${styles.btn} ${styles.stop}`}
-        classList={{ [styles.active]: props.isRecording() }}
+        classList={{
+          [styles.active]: props.isRecording(),
+          [styles.btnDisabled]: props.recordDisabled?.() === true,
+        }}
         data-testid="record-btn"
         title={
-          props.isRecording() ? 'Stop recording' : 'Record audio to melody'
+          props.recordDisabled?.() === true
+            ? 'Recording captures pitch — switch to the Melody preset to record'
+            : props.isRecording()
+              ? 'Stop recording'
+              : 'Record audio to melody'
         }
         aria-label="Record"
         aria-pressed={props.isRecording()}
+        disabled={props.recordDisabled?.() === true}
         onClick={() => props.onRecordToggle()}
       >
         <IconRecord />
@@ -241,24 +247,6 @@ export const ComposeControlBar: Component<ComposeControlBarProps> = (props) => {
                 props.onVolumeChange(Number(e.currentTarget.value))
               }
             />
-          </div>
-
-          {/* Speed */}
-          <div class={styles.field}>
-            <IconSpeed />
-            <SafeSelect
-              id="speed-select"
-              class={styles.select}
-              value={props.speed().toString()}
-              aria-label="Playback speed"
-              onChange={(e) =>
-                props.onSpeedChange(parseFloat(e.currentTarget.value))
-              }
-            >
-              <For each={SPEEDS}>
-                {(s) => <option value={s.toString()}>{s}x</option>}
-              </For>
-            </SafeSelect>
           </div>
         </div>
       </div>

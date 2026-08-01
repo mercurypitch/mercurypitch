@@ -188,8 +188,12 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   onCleanup(clearTimer)
 
   // Spacebar starts/stops the exercise (and restarts from the result screen),
-  // ignoring presses while a form control or button is focused so it doesn't
-  // hijack note pickers, selects, or typing.
+  // ignoring presses while a text/form control is focused so it doesn't
+  // hijack note pickers, selects, or typing. Buttons deliberately DON'T
+  // opt out: after clicking Start (or any control) focus rests on that
+  // button, and users expect Space to keep toggling the exercise — the
+  // preventDefault below suppresses the native button re-activation, so
+  // there's no double-trigger.
   onMount(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== ' ' && e.code !== 'Space') return
@@ -202,7 +206,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         tag === 'INPUT' ||
         tag === 'TEXTAREA' ||
         tag === 'SELECT' ||
-        tag === 'BUTTON' ||
         el?.isContentEditable === true
       ) {
         return

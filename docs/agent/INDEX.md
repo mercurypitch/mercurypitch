@@ -75,7 +75,7 @@ These are the rules that break things when ignored.
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 4.3k | _(no header comment)_ |
-| `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 3.4k | _(no header comment)_ |
+| `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 3.5k | _(no header comment)_ |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.3k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
@@ -90,7 +90,7 @@ These are the rules that break things when ignored.
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 607 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 507 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 436 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
-| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 324 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
+| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 328 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 272 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `mic-feedback` | [useMicInsights.ts](../../src/features/mic-feedback/useMicInsights.ts) | 267 | A single, debounced "what's happening with the mic" state, shared by every tab that listens to the mic (Singing, Karaoke, Piano, Guitar,... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 266 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
@@ -98,7 +98,7 @@ These are the rules that break things when ignored.
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 83 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
-| `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 82 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
+| `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
 
@@ -107,7 +107,7 @@ These are the rules that break things when ignored.
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.8k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 1.8k | Voice Mirror — pure metrics over F0 frame streams. |
-| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 1.4k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
+| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 1.3k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
 | `jam` | [jam-pitch-detector.ts](../../src/lib/jam/jam-pitch-detector.ts) | 1.2k | ── JamPitchDetector Lightweight pitch detector for P2P jam sessions. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
@@ -120,15 +120,15 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [piano-roll.ts](../../src/lib/piano-roll.ts) | 5.1k | Piano Roll Editor — Canvas-based note editor |
+| [piano-roll.ts](../../src/lib/piano-roll.ts) | 5.6k | Piano Roll Editor — Canvas-based note editor |
 | [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
-| [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 934 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
+| [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 956 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 834 | UVR API Client - Frontend Integration |
 | [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 757 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
+| [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 690 | Lyrics Service — fetch, parse, and sync lyrics |
 | [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
-| [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 659 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 555 | Practice Engine — Mic, pitch detection, accuracy scoring |
@@ -136,6 +136,7 @@ These are the rules that break things when ignored.
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 506 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 464 | Scale Data — Music theory utilities for MercuryPitch |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 428 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
+| [share-codec.ts](../../src/lib/share-codec.ts) | 402 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 400 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 
 #### Stores (`src/stores/`) — global reactive state
@@ -146,7 +147,7 @@ These are the rules that break things when ignored.
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.6k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [jam-store.ts](../../src/stores/jam-store.ts) | 716 | ── Jam store Reactive state management for P2P jam sessions. |
-| [settings-store.ts](../../src/stores/settings-store.ts) | 633 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [settings-store.ts](../../src/stores/settings-store.ts) | 647 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 469 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 396 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
@@ -275,8 +276,8 @@ Grep for the symbol and read the surrounding range instead.
 | File | LOC |
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.4k |
-| [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 5.1k |
-| [src/App.tsx](../../src/App.tsx) | 3.5k |
+| [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 5.6k |
+| [src/App.tsx](../../src/App.tsx) | 3.6k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
@@ -288,9 +289,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
+| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
-| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |

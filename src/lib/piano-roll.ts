@@ -6,12 +6,13 @@ import type { BallPhysicsConfig, BallPhysicsState, NoteBounds, } from '@/feature
 import { createBallPhysics, getBallPhysics, } from '@/features/playback/yousician-ball-physics'
 import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
+import { DRUM_LANE_BY_MIDI, DRUM_LANE_SCALE } from '@/lib/drum-lanes'
 import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlideProgress, drawStaccatoShape, drawTrillProgress, SLIDE_FILL, SLIDE_STROKE, slideShapePath, STACCATO_FILL, STACCATO_STROKE, TREMOLO_FILL, TREMOLO_STROKE, TRILL_FILL, TRILL_STROKE, trillShapePath, VIBRATO_FILL, VIBRATO_STROKE, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { showNotification } from '@/stores/notifications-store'
-import type { ChordType, MelodyItem, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
+import type { ChordType, MelodyItem, MelodyKind, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
 
 const PIANO_ROLL_CONFIG: PianoRollConfig = {
@@ -27,6 +28,26 @@ const PIANO_ROLL_CONFIG: PianoRollConfig = {
     active: 'rgba(63, 185, 80, 0.85)',
     ghost: 'rgba(88, 166, 255, 0.35)',
   },
+}
+
+/** Canvas colors/fonts, resolved from CSS custom properties on the editor's
+ *  container (with the historical dark values as fallbacks) so the canvases
+ *  follow the app theme instead of hardcoding hex values in draw calls. */
+interface RollPalette {
+  bg: string
+  surface: string
+  gridLine: string
+  border: string
+  tickStrong: string
+  text: string
+  accent: string
+  accentGlow: string
+  active: string
+  activeGlow: string
+  blackRow: string
+  fontSmall: string
+  fontLabel: string
+  fontMono: string
 }
 
 // ============================================================
@@ -46,15 +67,16 @@ const PIANO_ROLL_CONFIG: PianoRollConfig = {
  * `docs/specs/compose-note-placement.ears.md`, PLACE-*).
  *
  * The slot width (snap unit) is one whole beat for notes at least one beat long
- * (so bar-length notes line up cleanly with the bar ruler) and one half-beat
- * for shorter notes.
+ * (so bar-length notes line up cleanly with the bar ruler), one half-beat for
+ * eighth notes, and one quarter-beat for sixteenths — without the last step a
+ * 1/16 note could only ever land on the 1/8 grid.
  *
  * @param beat     Raw beat position of the click (`x / beatWidth`).
  * @param duration Duration of the note being placed, in beats.
  * @returns The floored start beat for the new note.
  */
 export function snapPlacementBeat(beat: number, duration: number): number {
-  const snapUnit = duration >= 1 ? 1 : 0.5
+  const snapUnit = duration >= 1 ? 1 : duration >= 0.5 ? 0.5 : 0.25
   return Math.floor(beat / snapUnit) * snapUnit
 }
 
@@ -62,10 +84,13 @@ export function snapPlacementBeat(beat: number, duration: number): number {
 // MIDI Export
 // ============================================================
 
-/** Encode a melody as a Standard MIDI File (Format 1). */
+/** Encode a melody as a Standard MIDI File (Format 1).
+ *  `channel` is the zero-based MIDI channel for all note events —
+ *  pass 9 (channel 10) for percussion so DAWs load the file as a drum track. */
 export function exportMelodyToMIDI(
   melody: MelodyItem[],
   bpm: number,
+  channel: number = 0,
 ): Uint8Array | null {
   if (melody == null || melody.length === 0) return null
 
@@ -126,14 +151,14 @@ export function exportMelodyToMIDI(
     absEvents.push({
       tick: tickOn,
       delta: 0,
-      type: 0x90,
+      type: 0x90 | (channel & 0x0f),
       note: midi,
       velocity: 80,
     })
     absEvents.push({
       tick: tickOff,
       delta: 0,
-      type: 0x80,
+      type: 0x80 | (channel & 0x0f),
       note: midi,
       velocity: 0,
     })
@@ -213,8 +238,9 @@ export function downloadMIDI(
   melody: MelodyItem[],
   bpm: number,
   filename?: string,
+  channel: number = 0,
 ): boolean {
-  const data = exportMelodyToMIDI(melody, bpm)
+  const data = exportMelodyToMIDI(melody, bpm, channel)
   if (!data) {
     showNotification('No melody to export. Add some notes first.', 'warning')
     return false
@@ -269,7 +295,6 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
     const allEvents: MidiNoteEvent[] = []
 
     // Read tracks
-    let _trackIndex = 0
     while (offset < data.length) {
       if (offset + 8 > data.length) break
       if (
@@ -382,7 +407,6 @@ export function importMelodyFromMIDI(data: Uint8Array): MelodyItem[] | null {
       // the inner loop exited early (e.g. end-of-track event consumed fewer bytes
       // than the declared length, or data ran out mid-track).
       offset = Math.max(offset, trackEnd)
-      _trackIndex++
     }
 
     // Build note-on map: for each (channel, note), track start tick
@@ -467,6 +491,13 @@ export interface PianoRollOptions {
   onMoveLoopA?: (beat: number) => void
   onMoveLoopB?: (beat: number) => void
   onConfirm?: (message: string, onAccept: () => void) => void
+  /** Toolbar grid button pressed. The host owns grid visibility (persisted
+   *  setting) and round-trips it back via setShowGrid, so the toolbar and the
+   *  settings panel can never disagree. Absent → editor toggles locally. */
+  onGridToggle?: () => void
+  /** Toolbar hints button pressed. Same host-owned round-trip contract as
+   *  onGridToggle, but for the hover-hint tooltip (setHoverHints). */
+  onHoverHintsToggle?: () => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -517,19 +548,11 @@ export class PianoRollEditor {
 
   // Playback
   private playbackState: PlaybackState = 'stopped'
-  private playbackAnimationId: number | null = null
-  private playStartTime: number = 0
   private isCountingIn = false
   private _countInBeats = 0
-  // Remote beat comes from PlaybackRuntime events (external playback)
-  // For internal editor playback, beat is calculated locally
+  // Playhead beat. Fed by PlaybackRuntime events during playback and by
+  // ruler scrubbing while stopped/paused — the single playhead source.
   private remoteBeat = 0
-  // Editor tab current beat (propagated from App.tsx for continuous animation)
-  // This is used for Editor tab internal playback and to track position
-  private editorBeat = 0
-  // Whether the editor was playing before switching to external playback
-  private wasPlayingBeforeExternal = false
-  private startedNoteIds = new Set<number>()
   // Ball physics state for Yousician-like ball jumping through notes
   private ballCanvas: HTMLCanvasElement | null = null
   private ballCtx: CanvasRenderingContext2D | null = null
@@ -557,8 +580,6 @@ export class PianoRollEditor {
   private isSeeking = false
   private _lastScrubNoteId = -1
   private _activeScrubNoteId: number | null = null
-  // Track currently playing notes (for audio stacking prevention)
-  private currentPlayingNoteIds = new Set<number>()
   // Waveform props for recording visualization
   private isRecording: (() => boolean) | null = null
   private getWaveform: (() => Float32Array | null) | null = null
@@ -590,8 +611,20 @@ export class PianoRollEditor {
   private boxEndX = 0
   private boxEndY = 0
   private dragStartRow = 0
+  /** Original start/duration per selected note at resize start — resize
+   *  applies the anchor's delta to each, so multi-note resize preserves
+   *  the notes' individual lengths instead of collapsing to a shared end. */
+  private resizeOrigins: { startBeat: number; duration: number }[] = []
+  private resizeAnchorId = -1
+  /** Aborts every document/window listener registered by this instance —
+   *  destroy() must sever them or editors stack up across tab switches. */
+  private readonly listenerAbort = new AbortController()
 
-  // Scale/Octave state (matches old app)
+  // Scale/Octave state. Key + octave re-sync from every setScale call (the
+  // scale's lowest row is the key root), so toolbar-driven rebuilds
+  // (_rebuildScale) can never silently fall back to C at octave 3 while the
+  // store holds the user's actual key/vocal range.
+  private key = 'C'
   private octave = 3
   // Default to 2 to match the store default (`melodyStore._numOctaves = 2`).
   // Previously this was 1, which caused the on-screen counter ("Rows: 1") to
@@ -604,6 +637,26 @@ export class PianoRollEditor {
 
   // Grid visibility
   private showGrid = true
+
+  // Theme palette for canvas drawing (see _readPalette)
+  private palette!: RollPalette
+
+  // Editor preset: pitched rows ('melody') or GM drum lanes ('drums').
+  // Never mutates this.melody — toggling is non-destructive both ways.
+  private kind: MelodyKind = 'melody'
+  // Left keyboard interaction state
+  private pressedKeyRow = -1
+  private _activeKeyNoteId: number | null = null
+  /** Monotonic id per key press, so an async voice id can tell whether its
+   *  press is still the current one (see _pressKeyRow). */
+  private _keyPressSeq = 0
+  private _lastKeyHoverRow = -1
+  // Hover hints (tooltip near the cursor over placed notes)
+  private hoverHintsEnabled = true
+  private hoverTipEl: HTMLElement | null = null
+  private _lastHoverNoteId = -1
+  // Lazily-built Path2D per GM midi for drawing lane icons on canvas
+  private drumIconCache: Map<number, Path2D> | null = null
 
   // Scrollable mode — when true, render all octaves (C1–C7) with vertical scroll
   private scrollableMode = false
@@ -631,6 +684,8 @@ export class PianoRollEditor {
   private onNoteSelect?: (note: MelodyItem | null) => void
   private onInstrumentChange?: (instrument: InstrumentType) => void
   private onPlaybackStateChange?: (state: PlaybackState) => void
+  private onGridToggle?: () => void
+  private onHoverHintsToggle?: () => void
 
   constructor(options: PianoRollOptions) {
     this.container = options.container
@@ -644,6 +699,8 @@ export class PianoRollEditor {
     this.onMoveLoopA = options.onMoveLoopA
     this.onMoveLoopB = options.onMoveLoopB
     this.onConfirm = options.onConfirm
+    this.onGridToggle = options.onGridToggle
+    this.onHoverHintsToggle = options.onHoverHintsToggle
 
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
@@ -651,12 +708,51 @@ export class PianoRollEditor {
     this.pianoWidth = this.config.pianoWidth
     this.rulerHeight = this.config.rulerHeight
     this.totalRows = this.scale.length
+    this._syncKeyFromScale()
 
+    this._readPalette()
     this.buildDOM()
     this.attachEventListeners()
     this._updateSelectionControls()
     this.updateUndoRedoButtons()
     this.draw()
+  }
+
+  /** Resolve the drawing palette from CSS custom properties (themeable),
+   *  falling back to the long-standing dark values. Re-read on resize so a
+   *  theme change is picked up on the next layout pass. */
+  private _readPalette(): void {
+    const cs = window.getComputedStyle(this.container)
+    const v = (name: string, fallback: string): string => {
+      const val = cs.getPropertyValue(name).trim()
+      return val !== '' ? val : fallback
+    }
+    this.palette = {
+      bg: v('--roll-bg', '#0d1117'),
+      surface: v('--roll-surface', '#161b22'),
+      gridLine: v('--roll-grid-line', '#21262d'),
+      border: v('--roll-border', '#30363d'),
+      tickStrong: v('--roll-tick-strong', '#484f58'),
+      text: v('--roll-text', '#8b949e'),
+      accent: v('--roll-accent', '#58a6ff'),
+      accentGlow: v('--roll-accent-glow', 'rgba(88, 166, 255, 0.5)'),
+      active: v('--roll-active', '#3fb950'),
+      activeGlow: v('--roll-active-glow', 'rgba(63, 185, 80, 0.9)'),
+      blackRow: v('--roll-black-row', 'rgba(26, 31, 39, 0.5)'),
+      fontSmall: v('--roll-font-small', '9px sans-serif'),
+      fontLabel: v('--roll-font-label', '10px sans-serif'),
+      fontMono: v('--roll-font-mono', '11px monospace'),
+    }
+  }
+
+  /** Derive key root + start octave from the scale's lowest row (the scale is
+   *  ordered high→low, so the last entry is the key root at the start octave).
+   *  Keeps toolbar-driven rebuilds aligned with the store-provided scale. */
+  private _syncKeyFromScale(): void {
+    const root = this.scale[this.scale.length - 1]
+    if (root == null) return
+    this.key = root.name
+    this.octave = root.octave
   }
 
   // ============================================================
@@ -713,7 +809,8 @@ export class PianoRollEditor {
 
     this.initializeBallPhysics()
 
-    if (melody.length > 0) {
+    // Drum mode has a fixed 12-lane grid — never auto-grow octave rows.
+    if (melody.length > 0 && this.kind !== 'drums') {
       let minMidi = Infinity
       let maxMidi = -Infinity
       for (const item of melody) {
@@ -730,6 +827,7 @@ export class PianoRollEditor {
         }
       }
     }
+    this.updateBeatInfo()
   }
 
   /**
@@ -882,11 +980,31 @@ export class PianoRollEditor {
 
   setScale(scale: ScaleDegree[]): void {
     if (this.scrollableMode) return
+    // Drum lanes are fixed — a store-scale change (key/vocal-range edits)
+    // must not clobber them. this.key/octave stay as last synced; toggling
+    // back to melody re-pulls the store scale via the wrapper.
+    if (this.kind === 'drums') return
     this.scale = scale
+    this._syncKeyFromScale()
     // Ensure minimum 2 rows (one octave) to prevent 0-height canvas
     this.totalRows = Math.max(scale.length, 2)
     this.buildCanvases()
     this.draw()
+    this._announceOffScaleNotes()
+  }
+
+  /** Row changes (scale type, rows, octave) never move notes — but they can
+   *  push notes off the visible grid, where they render hatched at their
+   *  interpolated pitch. Say so, so the change never reads as data loss. */
+  private _announceOffScaleNotes(): void {
+    if (!this.hintEl || this.melody.length === 0) return
+    let off = 0
+    for (const n of this.melody) {
+      if (this.midiToRow(n.note.midi) < 0) off++
+    }
+    if (off > 0) {
+      this.hintEl.textContent = `${off} note${off === 1 ? ' is' : 's are'} outside the visible rows (shown hatched at true pitch) — notes are unchanged; adjust Scale or Rows to bring them back`
+    }
   }
 
   setBPM(bpm: number): void {
@@ -902,6 +1020,7 @@ export class PianoRollEditor {
     this.totalBeats = beats
     this.buildCanvases()
     this.draw()
+    this.updateBeatInfo()
   }
 
   zoomIn(): void {
@@ -932,7 +1051,10 @@ export class PianoRollEditor {
 
   fitToView(): void {
     if (!this.gridContainer) return
-    const containerWidth = this.gridContainer.clientWidth - this.pianoWidth
+    // The grid container sits NEXT to the piano column (they're siblings in
+    // .roll-grid-body), so its clientWidth is already the available grid
+    // viewport — subtracting pianoWidth again undershot the fit.
+    const containerWidth = this.gridContainer.clientWidth
     const minWidth = this.totalBeats * this.config.beatWidth
     if (containerWidth > 0 && minWidth > 0) {
       this.setZoom(containerWidth / minWidth)
@@ -992,10 +1114,6 @@ export class PianoRollEditor {
   /** Called by App when external playback starts - indicates we should use event-based updates */
   setExternalPlayback(active: boolean): void {
     this.isExternalPlayback = active
-    if (active && this.playbackAnimationId !== null) {
-      cancelAnimationFrame(this.playbackAnimationId)
-      this.playbackAnimationId = null
-    }
   }
 
   /** Set count-in beats for precount visualization.
@@ -1070,39 +1188,20 @@ export class PianoRollEditor {
     this.playbackState = state
 
     if (state === 'playing') {
-      // Don't start animation during count-in - wait for count-in to complete first
       if (this.isCountingIn) {
         this.isCountingIn = false
       }
-
-      // If we're transitioning from external back to internal playback
-      if (this.isExternalPlayback && this.wasPlayingBeforeExternal) {
-        this.wasPlayingBeforeExternal = false
-        this.isExternalPlayback = false
-        this.startedNoteIds.clear()
-        // Resume from current editorBeat
-        const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
-        this.playStartTime = startTime
-        this.startPlaybackAnimation()
-      } else if (
-        !this.isExternalPlayback &&
-        this.playbackAnimationId === null
-      ) {
-        // Fresh start - use editorBeat as starting point for animation
-        // Don't clear startedNoteIds during fresh start to avoid duplicate note triggers
-        // The notes will start naturally as playhead moves
-        const startTime = Date.now() - (this.editorBeat / this.bpm) * 60000
-        this.playStartTime = startTime
-        this.startPlaybackAnimation()
+      // Re-seed the ball for this run — stopPlayback tears it down, and
+      // without this the ball only ever existed for the first play.
+      if (this.ballState === null && this.melody.length > 0) {
+        void this.initializeBallPhysics()
       }
     } else if (state === 'paused') {
       this.stopPlayback()
     } else if (state === 'stopped') {
       this.stopPlayback()
       this.remoteBeat = 0
-      this.editorBeat = 0
       this._countInBeats = 0
-      this.startedNoteIds.clear()
       this.playbackState = 'stopped'
       // Also reset external playback mode to ensure clean slate on tab switch
       this.isExternalPlayback = false
@@ -1195,8 +1294,13 @@ export class PianoRollEditor {
         const id = [...this.selectedNoteIds][0]
         const note = this.melody.find((n) => n.id === id)
         if (note) {
+          const lane =
+            this.kind === 'drums'
+              ? DRUM_LANE_BY_MIDI.get(note.note.midi)
+              : undefined
           const info = this.scale.find((s) => s.midi === note.note.midi)
-          const name = info ? `${info.name}${info.octave}` : '?'
+          const name =
+            lane?.label ?? (info ? `${info.name}${info.octave}` : '?')
           const startBar =
             Math.floor(note.startBeat / PIANO_ROLL_CONFIG.beatsPerBar) + 1
           const startBeat =
@@ -1307,6 +1411,7 @@ export class PianoRollEditor {
     const btn = this.container.querySelector('#roll-pitch-track-btn')
     if (btn) {
       btn.classList.toggle('active', this.pitchTrackVisible)
+      btn.setAttribute('aria-pressed', String(this.pitchTrackVisible))
     }
     if (this.pitchTrackCanvas) {
       this.pitchTrackCanvas.style.display = this.pitchTrackVisible
@@ -1378,11 +1483,13 @@ export class PianoRollEditor {
     // Draw empty state
     const ctx = this.pitchTrackCanvas.getContext('2d')
     if (ctx) {
-      ctx.scale(dpr, dpr)
-      ctx.fillStyle = '#0d1117'
+      // setTransform, not scale(): scale() compounds across repeated
+      // resizes on the same context and blows the transform up.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.fillStyle = this.palette.bg
       ctx.fillRect(0, 0, w, h)
       ctx.fillStyle = 'rgba(88, 166, 255, 0.3)'
-      ctx.font = '11px monospace'
+      ctx.font = this.palette.fontMono
       ctx.textAlign = 'center'
       ctx.fillText('Pitch Track — press Play to start', w / 2, h / 2 + 4)
     }
@@ -1459,7 +1566,7 @@ export class PianoRollEditor {
       }
 
       // Draw frequency label
-      ctx.fillStyle = '#58a6ff'
+      ctx.fillStyle = this.palette.accent
       ctx.font = '10px monospace'
       ctx.textAlign = 'right'
       ctx.fillText(`${Math.round(result.frequency)} Hz`, w - 4, 12)
@@ -1469,14 +1576,261 @@ export class PianoRollEditor {
   public setShowGrid(visible: boolean): void {
     if (this.showGrid !== visible) {
       this.showGrid = visible
+      const btn = this.container.querySelector('#roll-grid-toggle')
+      if (btn) {
+        btn.classList.toggle('active', visible)
+        btn.setAttribute('aria-pressed', String(visible))
+      }
       this.draw()
     }
   }
 
-  destroy(): void {
-    if (this.playbackAnimationId !== null) {
-      cancelAnimationFrame(this.playbackAnimationId)
+  public setHoverHints(visible: boolean): void {
+    if (this.hoverHintsEnabled === visible) return
+    this.hoverHintsEnabled = visible
+    const btn = this.container.querySelector('#roll-hint-toggle')
+    if (btn) {
+      btn.classList.toggle('active', visible)
+      btn.setAttribute('aria-pressed', String(visible))
     }
+    if (!visible) this._hideHoverTip()
+  }
+
+  getKind(): MelodyKind {
+    return this.kind
+  }
+
+  /** The rows currently rendered (drum lanes in drum mode). */
+  getScale(): ScaleDegree[] {
+    return [...this.scale]
+  }
+
+  /** Switch the editor preset. Non-destructive: this.melody is never touched,
+   *  so pitched notes survive a round-trip through drum mode (they render via
+   *  the off-scale interpolation path while the lanes don't contain them). */
+  setKind(kind: MelodyKind): void {
+    if (kind === this.kind) return
+    this.kind = kind
+    this.pressedKeyRow = -1
+    this._releaseKeyNote()
+    this._hideHoverTip()
+    if (kind === 'drums') {
+      // Fixed 12-lane GM kit: scrollable mode makes no sense here.
+      if (this.scrollableMode) this._setScrollableMode(false)
+      this.scale = DRUM_LANE_SCALE.slice()
+      this.totalRows = this.scale.length
+    } else {
+      // Rebuild pitched rows from the synced key/octave/mode; the wrapper
+      // follows up with setScale(store scale), which wins if they differ.
+      this._rebuildScale()
+    }
+    this._updateKindUI()
+    this.buildCanvases()
+    this.draw()
+    this._updateHint()
+  }
+
+  /** Enable/disable scrollable (all-octaves) mode — shared by the toolbar
+   *  toggle and setKind (drum mode force-exits it). */
+  private _setScrollableMode(enabled: boolean): void {
+    if (this.scrollableMode === enabled) return
+    this.scrollableMode = enabled
+    const scrollToggle = this.container.querySelector('#roll-scroll-toggle')
+    if (scrollToggle) {
+      scrollToggle.classList.toggle('active', enabled)
+      scrollToggle.setAttribute('aria-pressed', String(enabled))
+    }
+    const rowsGroup = this.container.querySelector('.roll-octaves-group')
+    const gridContainer = this.container.querySelector('.roll-grid-container')
+    if (enabled) {
+      // Prevent wrapper scroll — only grid canvas scrolls
+      this.container.classList.add('piano-roll-scrollable-container')
+      // Disable rows controls — all octaves are always visible
+      if (rowsGroup) rowsGroup.classList.add('disabled')
+      if (gridContainer) gridContainer.classList.add('piano-roll-scrollable')
+    } else {
+      this.container.classList.remove('piano-roll-scrollable-container')
+      if (rowsGroup) rowsGroup.classList.remove('disabled')
+      if (gridContainer) {
+        gridContainer.classList.remove('piano-roll-scrollable')
+      }
+    }
+  }
+
+  /** Gray out the toolbar controls that only make sense for pitched rows
+   *  while the drum kit is active (scale/instrument/effects/rows/shift/
+   *  scroll/pitch-track). Same disabled treatment browse mode uses. */
+  private _updateKindUI(): void {
+    const drums = this.kind === 'drums'
+    const selectors = [
+      '.roll-group[data-name="Effects"]',
+      '.roll-group[data-name="Instrument"]',
+      '.roll-mode-group',
+      '.roll-octaves-group',
+      '.roll-octave-group',
+      '#roll-scroll-toggle',
+      '#roll-pitch-track-btn',
+    ]
+    for (const sel of selectors) {
+      const el = this.container.querySelector(sel)
+      if (el) el.classList.toggle('roll-toolbar-disabled', drums)
+    }
+  }
+
+  private _engine(): AudioEngine | undefined {
+    return (window as Window & { pianoRollAudioEngine?: AudioEngine })
+      .pianoRollAudioEngine
+  }
+
+  // ── Left keyboard interaction ──────────────────────────────
+
+  private _pianoRowFromEvent(e: PointerEvent): number {
+    if (!this.pianoCanvas) return -1
+    const rect = this.pianoCanvas.getBoundingClientRect()
+    const row = Math.floor((e.clientY - rect.top) / this.rowHeight)
+    return row >= 0 && row < this.scale.length ? row : -1
+  }
+
+  private onPianoPointerDown(e: PointerEvent): void {
+    const row = this._pianoRowFromEvent(e)
+    if (row < 0) return
+    e.preventDefault()
+    try {
+      this.pianoCanvas?.setPointerCapture(e.pointerId)
+    } catch {
+      // Pointer capture is unavailable in some test environments.
+    }
+    this._pressKeyRow(row)
+  }
+
+  /** Sound + highlight a key lane. Called on press and, while held, on every
+   *  lane change (glissando: melodic preview retargets, drums retrigger). */
+  private _pressKeyRow(row: number): void {
+    if (row === this.pressedKeyRow) return
+    this._releaseKeyNote()
+    this.pressedKeyRow = row
+    // Identify THIS press, not just its row: re-pressing the same key
+    // before the previous voice id resolved would otherwise let the stale
+    // promise claim _activeKeyNoteId, orphaning a voice until it timed out.
+    const press = ++this._keyPressSeq
+    const scaleNote = this.scale[row]
+    const engine = this._engine()
+    if (scaleNote != null && engine !== undefined) {
+      if (this.kind === 'drums') {
+        const lane = DRUM_LANE_BY_MIDI.get(scaleNote.midi)
+        if (lane) void engine.playDrum(lane.voice)
+      } else {
+        void engine.previewNote(scaleNote.freq, 2000, 0.45).then((id) => {
+          if (id === undefined) return
+          if (this._keyPressSeq === press && this.pressedKeyRow === row) {
+            this._activeKeyNoteId = id
+          } else {
+            // Released (or moved on) before the async voice id arrived.
+            engine.stopNote(id)
+          }
+        })
+      }
+    }
+    this._updateKeyHint(row)
+    this.drawPiano()
+  }
+
+  private _releaseKeyNote(): void {
+    if (this._activeKeyNoteId !== null) {
+      this._engine()?.stopNote(this._activeKeyNoteId)
+      this._activeKeyNoteId = null
+    }
+  }
+
+  private onPianoPointerMove(e: PointerEvent): void {
+    const row = this._pianoRowFromEvent(e)
+    if (this.pressedKeyRow >= 0) {
+      if (row >= 0 && row !== this.pressedKeyRow) this._pressKeyRow(row)
+      return
+    }
+    if (row !== this._lastKeyHoverRow) {
+      this._lastKeyHoverRow = row
+      if (row >= 0) this._updateKeyHint(row)
+      else this._updateHint()
+    }
+  }
+
+  private onPianoPointerUp(): void {
+    this._releaseKeyNote()
+    if (this.pressedKeyRow >= 0) {
+      this.pressedKeyRow = -1
+      this.drawPiano()
+    }
+  }
+
+  /** Status-bar hint for the hovered/pressed key lane (the 62px column has
+   *  no room for full names — "Closed Hat" etc. live here and in the tip). */
+  private _updateKeyHint(row: number): void {
+    if (!this.hintEl) return
+    const scaleNote = this.scale[row]
+    if (scaleNote == null) return
+    if (this.kind === 'drums') {
+      const lane = DRUM_LANE_BY_MIDI.get(scaleNote.midi)
+      if (lane) {
+        this.hintEl.textContent = `${lane.label} — press to audition, drag across lanes to try the kit`
+        return
+      }
+    }
+    this.hintEl.textContent = `${scaleNote.name}${scaleNote.octave} — hold to audition, drag for glissando`
+  }
+
+  // ── Hover hints (tooltip near the cursor over placed notes) ─
+
+  private _hideHoverTip(): void {
+    if (this.hoverTipEl) this.hoverTipEl.style.display = 'none'
+    this._lastHoverNoteId = -1
+  }
+
+  /** Show the floating hint for the hovered note (name in melody mode, icon +
+   *  drum name in drum mode; drum mode also auditions the hit once per
+   *  note-enter while stopped). x/y are grid-canvas coordinates — the tip
+   *  lives in the same positioned layer. */
+  private _updateHoverTip(note: MelodyItem | null, x: number, y: number): void {
+    if (!this.hoverTipEl) return
+    if (
+      !this.hoverHintsEnabled ||
+      note == null ||
+      this.isDragging ||
+      this.isResizing ||
+      this.isBoxSelecting
+    ) {
+      this._hideHoverTip()
+      return
+    }
+    const tip = this.hoverTipEl
+    if (note.id !== this._lastHoverNoteId) {
+      this._lastHoverNoteId = note.id
+      if (this.kind === 'drums') {
+        const lane = DRUM_LANE_BY_MIDI.get(note.note.midi)
+        if (lane) {
+          tip.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${lane.iconPath}"/></svg><span>${lane.label}</span>`
+          // Audition once per note-enter — never during playback.
+          if (this.playbackState === 'stopped') {
+            void this._engine()?.playDrum(lane.voice)
+          }
+        } else {
+          tip.textContent = `${note.note.name}${note.note.octave}`
+        }
+      } else {
+        tip.textContent = `${note.note.name}${note.note.octave} · ${note.duration}b`
+      }
+    }
+    tip.style.display = 'flex'
+    const maxLeft = Math.max(0, this.stretchedWidth - 110)
+    tip.style.left = `${Math.min(Math.max(0, x + 14), maxLeft)}px`
+    tip.style.top = `${Math.max(0, y - 32)}px`
+  }
+
+  destroy(): void {
+    // Sever every document/window listener this instance registered —
+    // without this, each Compose visit stacked another live editor whose
+    // keyboard/mouse handlers kept firing against the dead instance.
+    this.listenerAbort.abort()
     this.container.innerHTML = ''
   }
 
@@ -1493,13 +1847,13 @@ export class PianoRollEditor {
 
   <!-- TOOLS -->
   <div class="roll-group" data-name="Edit">
-              <button class="roll-tool-btn active" data-tool="place" title="Place notes" aria-label="Place notes">
+              <button class="roll-tool-btn active" data-tool="place" title="Place notes" aria-label="Place notes" aria-pressed="true">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               </button>
-              <button class="roll-tool-btn" data-tool="erase" title="Erase notes" aria-label="Erase notes">
+              <button class="roll-tool-btn" data-tool="erase" title="Erase notes" aria-label="Erase notes" aria-pressed="false">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
               </button>
-              <button class="roll-tool-btn" data-tool="select" title="Select notes" aria-label="Select notes">
+              <button class="roll-tool-btn" data-tool="select" title="Select notes" aria-label="Select notes" aria-pressed="false">
                 <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
               </button>
   <!-- EDIT -->
@@ -1519,13 +1873,17 @@ export class PianoRollEditor {
 
   <!-- VIEW -->
   <div class="roll-group" data-name="View">
-     <button id="roll-grid-toggle" class="roll-grid-toggle-btn" title="Toggle grid lines">
+     <button id="roll-grid-toggle" class="roll-grid-toggle-btn active" title="Toggle grid lines" aria-label="Toggle grid lines" aria-pressed="true">
        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM8 20H4v-4h4v4zm0-6H4v-4h4v4zm0-6H4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4zm6 12h-4v-4h4v4zm0-6h-4v-4h4v4zm0-6h-4V4h4v4z"/></svg>
        <span>Grid</span>
               </button>
-    <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track">
+    <button id="roll-pitch-track-btn" class="roll-pitch-track-btn" title="Toggle pitch track" aria-label="Toggle pitch track" aria-pressed="false">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
       <span>Pitch Track</span>
+              </button>
+    <button id="roll-hint-toggle" class="roll-hint-btn active" title="Toggle hover hints (note / drum name at the cursor)" aria-label="Toggle hover hints" aria-pressed="true">
+      <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M4 3h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2h-6l-4 4v-4H4c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm7 3v2h2V6h-2zm0 4v5h2v-5h-2z"/></svg>
+      <span>Hints</span>
               </button>
     
     <div class="roll-zoom-inline">
@@ -1544,11 +1902,11 @@ export class PianoRollEditor {
         <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>
         <span>Fit</span>
       </button>
-      <button id="roll-scroll-toggle" class="roll-scroll-btn" title="Toggle scrollable view" aria-label="Toggle scrollable view">
+      <button id="roll-scroll-toggle" class="roll-scroll-btn" title="Toggle scrollable view" aria-label="Toggle scrollable view" aria-pressed="false">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z"/></svg>
         <span>Scroll</span>
       </button>
-      <button id="roll-browse-toggle" class="roll-browse-btn" title="Browse mode (read-only, touch-scroll friendly)" aria-label="Browse mode">
+      <button id="roll-browse-toggle" class="roll-browse-btn" title="Browse mode (read-only, touch-scroll friendly)" aria-label="Browse mode" aria-pressed="false">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         <span>Browse</span>
       </button>
@@ -1559,13 +1917,13 @@ export class PianoRollEditor {
   <div class="roll-group roll-group-2col" data-name="Notes">
 
     <!-- Duration -->
-    <div class="roll-durations">
-            <button class="dur-btn" data-dur="0.25">1/16</button>
-            <button class="dur-btn" data-dur="0.5">1/8</button>
-            <button class="dur-btn active" data-dur="1">1/4</button>
-            <button class="dur-btn" data-dur="2">1/2</button>
-            <button class="dur-btn" data-dur="3">3/4</button>
-            <button class="dur-btn" data-dur="4">1</button>
+    <div class="roll-durations" role="radiogroup" aria-label="Note duration">
+            <button class="dur-btn" data-dur="0.25" role="radio" aria-checked="false">1/16</button>
+            <button class="dur-btn" data-dur="0.5" role="radio" aria-checked="false">1/8</button>
+            <button class="dur-btn active" data-dur="1" role="radio" aria-checked="true">1/4</button>
+            <button class="dur-btn" data-dur="2" role="radio" aria-checked="false">1/2</button>
+            <button class="dur-btn" data-dur="3" role="radio" aria-checked="false">3/4</button>
+            <button class="dur-btn" data-dur="4" role="radio" aria-checked="false">1</button>
           </div>
 
     <!-- Rows -->
@@ -1607,7 +1965,7 @@ export class PianoRollEditor {
         <label class="mode-label">
       <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
     </label>
-            <select id="roll-mode-select" class="roll-mode-select">
+            <select id="roll-mode-select" class="roll-mode-select" aria-label="Scale mode">
               <option value="major">Major</option>
               <option value="natural-minor">Natural Minor</option>
               <option value="harmonic-minor">Harmonic Minor</option>
@@ -1631,7 +1989,7 @@ export class PianoRollEditor {
         <label class="instrument-label">
           <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M20 3H4c-1.1 0-1.99.9-1.99 2L2 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zm-1-7h-2V7h-2v5h-2V7h-2v5H9V7H7v5H5V7h14v5z"/></svg>
         </label>
-        <select id="roll-instrument-select" class="roll-instrument-select">
+        <select id="roll-instrument-select" class="roll-instrument-select" aria-label="Instrument">
         <option value="sine">Sine</option>
         <option value="piano">Piano</option>
         <option value="organ">Organ</option>
@@ -1755,17 +2113,18 @@ export class PianoRollEditor {
             <canvas class="roll-ruler"></canvas>
           </div>
           <div class="roll-grid-body">
-            <canvas class="roll-piano"></canvas>
+            <canvas class="roll-piano" aria-label="Piano keys"></canvas>
             <div class="roll-grid-container">
               <div class="roll-grid-layer" style="position:relative">
-                <canvas class="roll-grid"></canvas>
+                <canvas class="roll-grid" role="img" aria-label="Piano roll note grid"></canvas>
                 <canvas id="roll-ball-canvas" class="roll-ball" style="display:none;position:absolute;top:0;left:0;pointer-events:none;z-index:3"></canvas>
+                <div id="roll-hover-tip" class="roll-hover-tip" style="display:none" aria-hidden="true"></div>
               </div>
             </div>
           </div>
           <canvas id="roll-pitch-track-canvas" class="roll-pitch-track" style="display:none"></canvas>
           <div class="roll-status">
-            <span id="roll-note-info">Click on the grid to place notes</span>
+            <span id="roll-note-info" aria-live="polite">Click on the grid to place notes</span>
             <span id="roll-timeline-info">Bar 1/${Math.ceil(this.totalBeats / PIANO_ROLL_CONFIG.beatsPerBar)} | Beat 1</span>
             <span id="roll-beat-info">${this.totalBeats} beats</span>
           </div>
@@ -1803,15 +2162,22 @@ export class PianoRollEditor {
     const dpr = window.devicePixelRatio || 1
     const totalHeight = this.totalRows * this.rowHeight
 
-    const minWidth = this.totalBeats * this.beatWidth * this.zoomLevel
+    // beatWidth already carries the zoom factor (setZoom/zoomIn/zoomOut all
+    // assign config.beatWidth * zoomLevel) — multiplying by zoomLevel again
+    // here inflated the canvas quadratically, leaving a dead scroll region
+    // to the right of the content and breaking Fit.
+    const minWidth = this.totalBeats * this.beatWidth
     const containerWidth = this.gridContainer?.clientWidth ?? 0
     this.stretchedWidth =
       containerWidth > 0 ? Math.max(minWidth, containerWidth) : minWidth
 
-    // Piano canvas
+    // Piano canvas — style.width must be pinned like every other canvas or
+    // HiDPI displays lay the column out at width*dpr CSS px (labels at half
+    // scale, column twice as wide).
     if (this.pianoCanvas) {
       this.pianoCanvas.width = this.pianoWidth * dpr
       this.pianoCanvas.height = totalHeight * dpr
+      this.pianoCanvas.style.width = `${this.pianoWidth}px`
       this.pianoCanvas.style.height = `${totalHeight}px`
       this.pianoCtx = this.pianoCanvas.getContext('2d')
       if (this.pianoCtx) this.pianoCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -1853,6 +2219,7 @@ export class PianoRollEditor {
     this.hintEl = this.container.querySelector('#roll-note-info')
     this.timelineInfoEl = this.container.querySelector('#roll-timeline-info')
     this.beatInfoEl = this.container.querySelector('#roll-beat-info')
+    this.hoverTipEl = this.container.querySelector('#roll-hover-tip')
 
     // In normal mode, pin the grid body to the exact canvas height so
     // .roll-status sits immediately below the last row with no gap.
@@ -1890,8 +2257,10 @@ export class PianoRollEditor {
         this.activeTool = tool
         container.querySelectorAll('.roll-tool-btn').forEach((b) => {
           b.classList.remove('active')
+          b.setAttribute('aria-pressed', 'false')
         })
         btn.classList.add('active')
+        btn.setAttribute('aria-pressed', 'true')
         this.selectedNoteIds.clear()
         this._updateSelectionControls()
         this.draw()
@@ -1907,8 +2276,10 @@ export class PianoRollEditor {
         )
         container.querySelectorAll('.dur-btn').forEach((b) => {
           b.classList.remove('active')
+          b.setAttribute('aria-checked', 'false')
         })
         btn.classList.add('active')
+        btn.setAttribute('aria-checked', 'true')
         this._updateHint()
       })
     })
@@ -2089,13 +2460,26 @@ export class PianoRollEditor {
         popover.style.left = `${groupRect.left - containerRect.left}px`
       }
     }
-    container.addEventListener('scroll', repositionPopover, { passive: true })
+    // All document/window/container listeners register against listenerAbort
+    // so destroy() can sever them in one shot (the container element outlives
+    // the editor, and document/window obviously do).
+    const signal = this.listenerAbort.signal
+    container.addEventListener('scroll', repositionPopover, {
+      passive: true,
+      signal,
+    })
     // Toolbar has overflow-x: auto — listen on it too
     const toolbarEl = container.querySelector('.roll-toolbar')
     toolbarEl?.addEventListener('scroll', repositionPopover, { passive: true })
-    window.addEventListener('scroll', repositionPopover, { passive: true })
+    window.addEventListener('scroll', repositionPopover, {
+      passive: true,
+      signal,
+    })
     // Also reposition on resize
-    window.addEventListener('resize', repositionPopover, { passive: true })
+    window.addEventListener('resize', repositionPopover, {
+      passive: true,
+      signal,
+    })
 
     // Clear
     container
@@ -2113,9 +2497,34 @@ export class PianoRollEditor {
         this.setInstrument(target.value as InstrumentType)
       })
 
-    // Grid toggle from app header/sidebar
-    eventBus.on<{ visible: boolean }>('pitchperfect:gridToggle', (detail) => {
-      this.setShowGrid(detail.visible)
+    // Hover-hints toggle. Host-owned like the grid toggle: the callback flips
+    // the persisted setting, which round-trips back via setHoverHints.
+    container
+      .querySelector('#roll-hint-toggle')
+      ?.addEventListener('click', () => {
+        if (this.onHoverHintsToggle) {
+          this.onHoverHintsToggle()
+        } else {
+          this.setHoverHints(!this.hoverHintsEnabled)
+        }
+      })
+
+    // Left keyboard — press a key to audition its lane, drag for glissando.
+    this.pianoCanvas?.addEventListener('pointerdown', (e) => {
+      this.onPianoPointerDown(e)
+    })
+    this.pianoCanvas?.addEventListener('pointermove', (e) => {
+      this.onPianoPointerMove(e)
+    })
+    this.pianoCanvas?.addEventListener('pointerup', () => {
+      this.onPianoPointerUp()
+    })
+    this.pianoCanvas?.addEventListener('pointercancel', () => {
+      this.onPianoPointerUp()
+    })
+    this.pianoCanvas?.addEventListener('pointerleave', () => {
+      this._lastKeyHoverRow = -1
+      if (this.pressedKeyRow < 0) this._updateHint()
     })
 
     // Grid mouse events
@@ -2188,17 +2597,21 @@ export class PianoRollEditor {
       this.seekToRulerPosition(e)
     })
 
-    document.addEventListener('mousemove', (e) => {
-      if (this.loopDragTarget !== null) {
-        const beat = this.rulerBeatFromClientX(e.clientX)
-        if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
-        else this.onMoveLoopB?.(beat)
-        return
-      }
-      if (this.isSeeking) {
-        this.seekToRulerPosition(e)
-      }
-    })
+    document.addEventListener(
+      'mousemove',
+      (e) => {
+        if (this.loopDragTarget !== null) {
+          const beat = this.rulerBeatFromClientX(e.clientX)
+          if (this.loopDragTarget === 'A') this.onMoveLoopA?.(beat)
+          else this.onMoveLoopB?.(beat)
+          return
+        }
+        if (this.isSeeking) {
+          this.seekToRulerPosition(e)
+        }
+      },
+      { signal },
+    )
 
     // Touch support for seeking - track touch move outside canvas
     document.addEventListener(
@@ -2209,70 +2622,82 @@ export class PianoRollEditor {
           this.seekToRulerPosition({ clientX: touch.clientX } as MouseEvent)
         }
       },
-      { passive: false },
+      { passive: false, signal },
     )
 
-    document.addEventListener('mouseup', () => {
-      this.loopDragTarget = null
-      this.isSeeking = false
-      this._lastScrubNoteId = -1
-      if (this._activeScrubNoteId !== null) {
-        ;(
-          window as Window & {
-            pianoRollAudioEngine?: { stopNote: (id: number) => void }
-          }
-        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
-        this._activeScrubNoteId = null
-      }
-      // Always finalize box selection regardless of where mouse was released
-      if (this.isBoxSelecting) {
-        const boxX1 = Math.min(this.boxStartX, this.boxEndX)
-        const boxY1 = Math.min(this.boxStartY, this.boxEndY)
-        const boxX2 = Math.max(this.boxStartX, this.boxEndX)
-        const boxY2 = Math.max(this.boxStartY, this.boxEndY)
-        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
-          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+    document.addEventListener(
+      'mouseup',
+      () => {
+        this.loopDragTarget = null
+        this.isSeeking = false
+        this._lastScrubNoteId = -1
+        if (this._activeScrubNoteId !== null) {
+          ;(
+            window as Window & {
+              pianoRollAudioEngine?: { stopNote: (id: number) => void }
+            }
+          ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+          this._activeScrubNoteId = null
         }
-        this.isBoxSelecting = false
+        // Always finalize box selection regardless of where mouse was released
+        if (this.isBoxSelecting) {
+          const boxX1 = Math.min(this.boxStartX, this.boxEndX)
+          const boxY1 = Math.min(this.boxStartY, this.boxEndY)
+          const boxX2 = Math.max(this.boxStartX, this.boxEndX)
+          const boxY2 = Math.max(this.boxStartY, this.boxEndY)
+          if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+            this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+          }
+          this.isBoxSelecting = false
+          this.isDragging = false
+          this.selectedNotesCache = []
+        }
+        // Also handle dragging/resizing that started on the canvas
         this.isDragging = false
+        this.isResizing = false
         this.selectedNotesCache = []
-      }
-      // Also handle dragging/resizing that started on the canvas
-      this.isDragging = false
-      this.isResizing = false
-      this.selectedNotesCache = []
-      this.resizeHandle = null
-    })
+        this.resizeHandle = null
+        this.resizeOrigins = []
+        this.resizeAnchorId = -1
+      },
+      { signal },
+    )
 
     // Touch support - finalize dragging/resizing when touch ends outside canvas
-    document.addEventListener('touchend', () => {
-      this.isSeeking = false
-      this._lastScrubNoteId = -1
-      if (this._activeScrubNoteId !== null) {
-        ;(
-          window as Window & {
-            pianoRollAudioEngine?: { stopNote: (id: number) => void }
-          }
-        ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
-        this._activeScrubNoteId = null
-      }
-      if (this.isBoxSelecting) {
-        const boxX1 = Math.min(this.boxStartX, this.boxEndX)
-        const boxY1 = Math.min(this.boxStartY, this.boxEndY)
-        const boxX2 = Math.max(this.boxStartX, this.boxEndX)
-        const boxY2 = Math.max(this.boxStartY, this.boxEndY)
-        if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
-          this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+    document.addEventListener(
+      'touchend',
+      () => {
+        this.isSeeking = false
+        this._lastScrubNoteId = -1
+        if (this._activeScrubNoteId !== null) {
+          ;(
+            window as Window & {
+              pianoRollAudioEngine?: { stopNote: (id: number) => void }
+            }
+          ).pianoRollAudioEngine?.stopNote(this._activeScrubNoteId)
+          this._activeScrubNoteId = null
         }
-        this.isBoxSelecting = false
+        if (this.isBoxSelecting) {
+          const boxX1 = Math.min(this.boxStartX, this.boxEndX)
+          const boxY1 = Math.min(this.boxStartY, this.boxEndY)
+          const boxX2 = Math.max(this.boxStartX, this.boxEndX)
+          const boxY2 = Math.max(this.boxStartY, this.boxEndY)
+          if (boxX2 - boxX1 > 3 && boxY2 - boxY1 > 3) {
+            this.selectNotesInBox(boxX1, boxY1, boxX2, boxY2)
+          }
+          this.isBoxSelecting = false
+          this.isDragging = false
+          this.selectedNotesCache = []
+        }
         this.isDragging = false
+        this.isResizing = false
         this.selectedNotesCache = []
-      }
-      this.isDragging = false
-      this.isResizing = false
-      this.selectedNotesCache = []
-      this.resizeHandle = null
-    })
+        this.resizeHandle = null
+        this.resizeOrigins = []
+        this.resizeAnchorId = -1
+      },
+      { signal },
+    )
 
     // Scroll sync ruler
     this.gridContainer?.addEventListener('scroll', () => {
@@ -2282,18 +2707,27 @@ export class PianoRollEditor {
     })
 
     // Keyboard
-    document.addEventListener('keydown', (e) => {
-      this.onKeyDown(e)
-    })
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        this.onKeyDown(e)
+      },
+      { signal },
+    )
 
     // Window resize
-    window.addEventListener('resize', () => {
-      this.buildCanvases()
-      this.draw()
-      if (this.pitchTrackVisible) {
-        this._resizePitchTrackCanvas()
-      }
-    })
+    window.addEventListener(
+      'resize',
+      () => {
+        this._readPalette()
+        this.buildCanvases()
+        this.draw()
+        if (this.pitchTrackVisible) {
+          this._resizePitchTrackCanvas()
+        }
+      },
+      { signal },
+    )
 
     // Octave controls
     container
@@ -2314,10 +2748,6 @@ export class PianoRollEditor {
         if (this.numOctaves >= MAX_OCTAVE_ROWS) return
         if (this.octave > 1) this.octave -= 1
         this.setNumOctaves(this.numOctaves + 1)
-        const octDisplay = container.querySelector('#roll-octave-value')
-        if (octDisplay) octDisplay.textContent = String(this.octave)
-        const rowsDisplay = container.querySelector('#roll-octaves-value')
-        if (rowsDisplay) rowsDisplay.textContent = String(this.numOctaves)
       })
     container
       .querySelector('#roll-octaves-minus')
@@ -2355,37 +2785,13 @@ export class PianoRollEditor {
         }
 
         this.setNumOctaves(newCount)
-        const octDisplay = container.querySelector('#roll-octave-value')
-        if (octDisplay) octDisplay.textContent = String(this.octave)
-        const rowsDisplay = container.querySelector('#roll-octaves-value')
-        if (rowsDisplay) rowsDisplay.textContent = String(this.numOctaves)
       })
 
     // Scroll toggle
     const scrollToggle = container.querySelector('#roll-scroll-toggle')
     scrollToggle?.addEventListener('click', () => {
-      this.scrollableMode = !this.scrollableMode
-      scrollToggle.classList.toggle('active', this.scrollableMode)
-      if (this.scrollableMode) {
-        // Prevent wrapper scroll — only grid canvas scrolls
-        this.container.classList.add('piano-roll-scrollable-container')
-        // Disable rows controls — all octaves are always visible
-        const rowsGroup = this.container.querySelector('.roll-octaves-group')
-        if (rowsGroup) rowsGroup.classList.add('disabled')
-        const gridContainer = this.container.querySelector(
-          '.roll-grid-container',
-        )
-        if (gridContainer) gridContainer.classList.add('piano-roll-scrollable')
-      } else {
-        this.container.classList.remove('piano-roll-scrollable-container')
-        const rowsGroup = this.container.querySelector('.roll-octaves-group')
-        if (rowsGroup) rowsGroup.classList.remove('disabled')
-        const gridContainer = this.container.querySelector(
-          '.roll-grid-container',
-        )
-        if (gridContainer)
-          gridContainer.classList.remove('piano-roll-scrollable')
-      }
+      if (this.kind === 'drums') return
+      this._setScrollableMode(!this.scrollableMode)
       this._rebuildScale()
       this.buildCanvases()
       this.draw()
@@ -2396,6 +2802,7 @@ export class PianoRollEditor {
     browseToggle?.addEventListener('click', () => {
       this.previewMode = !this.previewMode
       browseToggle.classList.toggle('active', this.previewMode)
+      browseToggle.setAttribute('aria-pressed', String(this.previewMode))
       this._updatePreviewModeUI()
       this._updateHint()
     })
@@ -2454,7 +2861,13 @@ export class PianoRollEditor {
           .toISOString()
           .replace(/[:.]/g, '-')
           .slice(0, 19)
-        void downloadMIDI(melody, this.bpm, `pitchperfect-${timestamp}.mid`)
+        // Drums export on MIDI channel 10 (index 9) so DAWs read a drum track
+        void downloadMIDI(
+          melody,
+          this.bpm,
+          `pitchperfect-${timestamp}.mid`,
+          this.kind === 'drums' ? 9 : 0,
+        )
       })
 
     // Export WAV button
@@ -2489,6 +2902,7 @@ export class PianoRollEditor {
           this.bpm,
           `pitchperfect-${timestamp}.wav`,
           instrument,
+          this.kind,
         )
       })
 
@@ -2526,14 +2940,18 @@ export class PianoRollEditor {
       this.updateZoomDisplay()
     })
 
-    // Grid toggle button
+    // Grid toggle button. When the host provides onGridToggle it owns the
+    // persisted setting and round-trips the new value back via setShowGrid
+    // (which also updates this button's state) — mutating this.showGrid
+    // locally here left the toolbar and the settings panel disagreeing.
     container
       .querySelector('#roll-grid-toggle')
-      ?.addEventListener('click', (e) => {
-        const btn = e.currentTarget as HTMLButtonElement
-        this.showGrid = !this.showGrid
-        btn.classList.toggle('active', this.showGrid)
-        this.draw()
+      ?.addEventListener('click', () => {
+        if (this.onGridToggle) {
+          this.onGridToggle()
+        } else {
+          this.setShowGrid(!this.showGrid)
+        }
       })
 
     // Undo/redo buttons
@@ -2544,23 +2962,6 @@ export class PianoRollEditor {
     container.querySelector('#roll-redo-btn')?.addEventListener('click', () => {
       this.redo()
     })
-
-    // Delete selected button
-    container
-      .querySelector('#roll-delete-selected-btn')
-      ?.addEventListener('click', () => {
-        if (this.selectedNoteIds.size > 0) {
-          this.pushHistory()
-          for (const noteId of this.selectedNoteIds) {
-            const note = this.melody.find((n) => n.id === noteId)
-            if (note) this.eraseNoteInternal(note)
-          }
-          this.selectedNoteIds.clear()
-          this.emitMelodyChange()
-          this.draw()
-          this._updateHint()
-        }
-      })
 
     // Initialize zoom display
     this.updateZoomDisplay()
@@ -2575,9 +2976,18 @@ export class PianoRollEditor {
     const row = Math.floor(y / this.rowHeight)
 
     // Playhead seeking: if the click is near the blue playhead line, enter
-    // seeking mode so the user can drag the playhead to scrub audio.
-    const playheadX = this.getCurrentBeat() * this.beatWidth
-    if (Math.abs(x - playheadX) < 10) {
+    // seeking mode so the user can drag the playhead to scrub audio. Only
+    // when the playhead is actually meaningful — while stopped at beat 0 it
+    // sits on x=0 and would swallow every click in the first 10px of the
+    // grid (turning "place a note on the first row/beat" into a seek).
+    const currentBeat = this.getCurrentBeat()
+    const countInOffset =
+      this._countInBeats > 0 && currentBeat <= 0
+        ? this._countInBeats * this.beatWidth
+        : 0
+    const playheadX = countInOffset + currentBeat * this.beatWidth
+    const playheadActive = this.playbackState !== 'stopped' || currentBeat > 0
+    if (playheadActive && Math.abs(x - playheadX) < 10) {
       this.isSeeking = true
       this.seekToRulerPosition(e)
       return
@@ -2653,15 +3063,25 @@ export class PianoRollEditor {
           beat: n.startBeat - this.dragStartBeat,
           row: this.midiToRow(n.note.midi) - this.dragStartRow,
         }))
+        // Resize applies the grabbed note's delta to every selected note, so
+        // each note's original geometry has to be captured up front.
+        this.resizeAnchorId = noteId
+        this.resizeOrigins = this.selectedNotesCache.map((n) => ({
+          startBeat: n.startBeat,
+          duration: n.duration,
+        }))
         this._updateEffectBtnStates()
       } else {
-        // Empty space — start box selection for area-select, or place note on click
+        // Empty space — start box selection for area-select, or place note on
+        // click. Snap with the same duration-aware unit placeNote uses so a
+        // 1/16 note can land on the quarter-beat grid (the old hardcoded
+        // half-beat floor made 1/16 placement impossible).
         this.isBoxSelecting = true
         this.boxStartX = x
         this.boxStartY = y
         this.boxEndX = x
         this.boxEndY = y
-        this.dragStartBeat = Math.floor(beat) + (beat % 1 >= 0.5 ? 0.5 : 0)
+        this.dragStartBeat = snapPlacementBeat(beat, this.selectedDuration)
         this.dragStartRow = row
       }
     } else if (this.activeTool === 'erase') {
@@ -2711,6 +3131,13 @@ export class PianoRollEditor {
         this.dragOffsets = this.selectedNotesCache.map((n) => ({
           beat: n.startBeat - this.dragStartBeat,
           row: this.midiToRow(n.note.midi) - this.dragStartRow,
+        }))
+        // Resize applies the grabbed note's delta to every selected note, so
+        // each note's original geometry has to be captured up front.
+        this.resizeAnchorId = noteId
+        this.resizeOrigins = this.selectedNotesCache.map((n) => ({
+          startBeat: n.startBeat,
+          duration: n.duration,
         }))
         const first = this.melody.find((n) => this.selectedNoteIds.has(n.id))
         this.onNoteSelect?.(first ?? null)
@@ -2772,6 +3199,7 @@ export class PianoRollEditor {
       const beat = x / this.beatWidth
       const row = Math.floor(y / this.rowHeight)
       const note = this.findNoteAtExtended(beat, row, x)
+      this._updateHoverTip(note, x, y)
       if (note && this.selectedNoteIds.has(note.id)) {
         const noteX = note.startBeat * this.beatWidth
         const noteW = note.duration * this.beatWidth
@@ -2794,11 +3222,16 @@ export class PianoRollEditor {
       }
     }
 
+    if (this.isDragging || this.isResizing) {
+      this._hideHoverTip()
+    }
+
     if (this.isDragging && this.selectedNotesCache.length > 0) {
-      // Drag snap: full beat for notes ≥ 1 beat, otherwise half-beat.
-      const draggedNote = this.selectedNotesCache[0]
+      // Drag snap follows the note length: whole beat for notes ≥ 1 beat,
+      // half-beat for eighths, quarter-beat for sixteenths.
+      const draggedDuration = this.selectedNotesCache[0]?.duration ?? 1
       const dragSnapUnit =
-        draggedNote !== undefined && draggedNote.duration >= 1 ? 1 : 0.5
+        draggedDuration >= 1 ? 1 : draggedDuration >= 0.5 ? 0.5 : 0.25
       const deltaBeat =
         Math.round((x - this.dragStartX) / (this.beatWidth * dragSnapUnit)) *
         dragSnapUnit
@@ -2839,12 +3272,29 @@ export class PianoRollEditor {
         this.pushHistory()
         this.dragDidPushHistory = true
       }
-      for (const note of this.selectedNotesCache) {
-        if (this.resizeHandle === 'right') {
-          const endBeat = Math.round(x / this.beatWidth)
+      // Edges snap to the minimum duration grid (0.25) so 1/16 and 1/8 notes
+      // are resizable at all — whole-beat rounding froze anything shorter
+      // than a beat at its placed length.
+      const snap = this.config.minDuration
+      const snappedEdge = Math.round(x / this.beatWidth / snap) * snap
+      // The grabbed note is the anchor; its edge delta is applied to every
+      // selected note's ORIGINAL geometry, so a multi-select resize shifts
+      // each note's edge by the same amount instead of collapsing them all
+      // onto one shared end beat.
+      const anchorIdx = this.selectedNotesCache.findIndex(
+        (n) => n.id === this.resizeAnchorId,
+      )
+      const anchorOrig = this.resizeOrigins[anchorIdx >= 0 ? anchorIdx : 0]
+      if (anchorOrig == null) return
+      if (this.resizeHandle === 'right') {
+        const delta = snappedEdge - (anchorOrig.startBeat + anchorOrig.duration)
+        for (let i = 0; i < this.selectedNotesCache.length; i++) {
+          const note = this.selectedNotesCache[i]
+          const orig = this.resizeOrigins[i]
+          if (orig == null) continue
           note.duration = Math.max(
             this.config.minDuration,
-            endBeat - note.startBeat,
+            orig.duration + delta,
           )
           // Vertical drag on slide note right handle → change slideInterval
           if (
@@ -2859,14 +3309,19 @@ export class PianoRollEditor {
             const clamped = Math.max(0, Math.min(this.scale.length - 1, row))
             note.slideInterval = this.scale[clamped].midi - note.note.midi
           }
-        } else if (this.resizeHandle === 'left') {
-          const newStart = Math.round(x / this.beatWidth)
-          const oldEnd = note.startBeat + note.duration
+        }
+      } else if (this.resizeHandle === 'left') {
+        const delta = snappedEdge - anchorOrig.startBeat
+        for (let i = 0; i < this.selectedNotesCache.length; i++) {
+          const note = this.selectedNotesCache[i]
+          const orig = this.resizeOrigins[i]
+          if (orig == null) continue
+          const origEnd = orig.startBeat + orig.duration
           note.startBeat = Math.max(
             0,
-            Math.min(newStart, oldEnd - this.config.minDuration),
+            Math.min(orig.startBeat + delta, origEnd - this.config.minDuration),
           )
-          note.duration = oldEnd - note.startBeat
+          note.duration = origEnd - note.startBeat
         }
       }
       this.emitMelodyChange()
@@ -2898,6 +3353,8 @@ export class PianoRollEditor {
     this.selectedNotesCache = []
     this.resizeHandle = null
     this.dragDidPushHistory = false
+    this.resizeOrigins = []
+    this.resizeAnchorId = -1
   }
 
   private onGridMouseLeave(_e: MouseEvent): void {
@@ -2906,6 +3363,9 @@ export class PianoRollEditor {
     this.selectedNotesCache = []
     this.resizeHandle = null
     this.dragDidPushHistory = false
+    this.resizeOrigins = []
+    this.resizeAnchorId = -1
+    this._hideHoverTip()
     // Do NOT clear isBoxSelecting here — the document-level mouseup
     // handler finalizes box selection when the mouse is released
     // outside the canvas.
@@ -2958,6 +3418,19 @@ export class PianoRollEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Never intercept keys while the user types in ANY form control — this
+    // guard must run before every shortcut branch. It used to sit below the
+    // zoom/undo/select-all handlers, so Ctrl+A in an unrelated text input
+    // selected piano-roll notes instead of the input's text, app-wide.
+    // e.target can be the Document itself (events dispatched on document,
+    // e.g. from tests), which has no closest() — only Elements can be typed
+    // into, so anything else counts as not typing.
+    const target = e.target
+    const isTyping =
+      target instanceof Element &&
+      target.closest('input,textarea,select,[contenteditable]') !== null
+    if (isTyping) return
+
     // Zoom: Ctrl++ / Ctrl+- (or Ctrl+scroll)
     if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
       e.preventDefault()
@@ -2998,11 +3471,6 @@ export class PianoRollEditor {
       this._updateHint()
       return
     }
-
-    const isTyping = !!(e.target as Element | null)?.closest(
-      'input,textarea,select,[contenteditable]',
-    )
-    if (isTyping) return
 
     // Copy: Ctrl+C — store selected notes in clipboard
     if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
@@ -3171,12 +3639,7 @@ export class PianoRollEditor {
 
   private placeNote(beat: number, row: number, duration: number): void {
     const scaleNote = this.scale[row]
-    if (
-      scaleNote === null ||
-      scaleNote === undefined ||
-      scaleNote.name.includes('=')
-    )
-      return
+    if (scaleNote == null) return
 
     this.pushHistory()
     this.updateUndoRedoButtons()
@@ -3357,92 +3820,19 @@ export class PianoRollEditor {
   }
 
   private emitMelodyChange(): void {
+    // Every melody mutation funnels through here — keep the status-bar
+    // note count honest (it used to refresh only on the Bars ± buttons).
+    this.updateBeatInfo()
     this.onMelodyChange?.([...this.melody])
   }
 
   // ============================================================
   // Playback
   // ============================================================
-
-  /**
-   * Internal playback animation loop — used for local Editor playback
-   * Not used for external playback (Practice tab) which uses remote beat from events
-   */
-  private startPlaybackAnimation(): void {
-    if (this.playbackAnimationId !== null) return
-
-    // Calculate start time so animation continues from current editorBeat
-    const elapsed = (this.editorBeat / this.bpm) * 60000
-    this.playStartTime = Date.now() - elapsed
-
-    const animate = () => {
-      if (this.playbackState !== 'playing' || this.isExternalPlayback) {
-        this.playbackAnimationId = null
-        return
-      }
-
-      const elapsed = Date.now() - this.playStartTime
-      const currentBeat = (elapsed / 60000) * this.bpm
-
-      this.updatePlaybackPosition(currentBeat)
-
-      // Show ball canvas during playback
-      if (this.ballCanvas) {
-        this.ballCanvas.style.display = 'block'
-      }
-
-      // Update ball physics position
-      if (this.useBallPhysics && this.ballState && this.ballCtx) {
-        const ballCtx = this.ballCtx!
-        const ballCanvas = this.ballCanvas!
-        const ballConfig: BallPhysicsConfig = {
-          notes: this.ballNotes,
-          rowHeight: this.rowHeight,
-          radius: this.ballRadius,
-          padding: this.ballPadding,
-          bpm: this.bpm,
-        }
-
-        const result = getBallPhysics(this.ballState, ballConfig)
-        this.ballState.x = result.x
-        this.ballState.y = result.y
-        this.ballState.lastEndBeat = result.note
-          ? result.note.endBeat
-          : this.ballState.lastEndBeat
-        this.ballState.lastNote = result.note
-        this.ballState.progress = result.progress
-
-        // Convert to pixel coordinates for drawing
-        const pixelY =
-          this.ballState.y * this.rowHeight +
-          this.rowHeight / 2 +
-          this.rowHeight / 2
-        const pixelX = this.ballState.x * this.beatWidth
-
-        // Draw ball with glowing effect
-        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
-
-        // Glow effect
-        ballCtx.save()
-        ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
-        ballCtx.shadowBlur = 12
-        ballCtx.fillStyle = '#3fb950'
-        ballCtx.beginPath()
-        ballCtx.arc(pixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
-        ballCtx.fill()
-        // White core for extra glow
-        ballCtx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-        ballCtx.beginPath()
-        ballCtx.arc(pixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
-        ballCtx.fill()
-        ballCtx.restore()
-      }
-
-      this.playbackAnimationId = requestAnimationFrame(animate)
-    }
-
-    this.playbackAnimationId = requestAnimationFrame(animate)
-  }
+  // The editor has no internal playback clock: PlaybackRuntime (via the
+  // wrapper's setExternalPlayback + updatePlaybackPosition) is the only
+  // driver. The old local rAF animation loop was unreachable in production
+  // and has been removed.
 
   /**
    * Called when a beat update event arrives from PlaybackRuntime
@@ -3497,9 +3887,9 @@ export class PianoRollEditor {
 
       // Glow effect
       ballCtx.save()
-      ballCtx.shadowColor = 'rgba(63, 185, 80, 0.9)'
+      ballCtx.shadowColor = this.palette.activeGlow
       ballCtx.shadowBlur = 12
-      ballCtx.fillStyle = '#3fb950'
+      ballCtx.fillStyle = this.palette.active
       ballCtx.beginPath()
       ballCtx.arc(ballPixelX, pixelY, this.ballRadius, 0, Math.PI * 2)
       ballCtx.fill()
@@ -3511,10 +3901,11 @@ export class PianoRollEditor {
       ballCtx.restore()
 
       // Scroll grid to keep ball within view
-      const containerWidth = this.gridContainer?.clientWidth ?? 0
-      const targetScroll = playheadX - containerWidth * 0.3
-      if (targetScroll > 0) {
-        this.gridContainer!.scrollLeft = targetScroll
+      if (this.gridContainer) {
+        const targetScroll = playheadX - this.gridContainer.clientWidth * 0.3
+        if (targetScroll > 0) {
+          this.gridContainer.scrollLeft = targetScroll
+        }
       }
     }
 
@@ -3546,8 +3937,6 @@ export class PianoRollEditor {
       if (beat >= melodyEnd) {
         this.stopPlayback()
         this.remoteBeat = melodyEnd
-        this.editorBeat = melodyEnd
-        this.startedNoteIds.clear()
         this.playbackState = 'stopped'
         this.onPlaybackStateChange?.('stopped')
         this.draw()
@@ -3557,10 +3946,6 @@ export class PianoRollEditor {
   }
 
   private stopPlayback(): void {
-    if (this.playbackAnimationId !== null) {
-      cancelAnimationFrame(this.playbackAnimationId)
-      this.playbackAnimationId = null
-    }
     // GH #130: Stop all active audio notes
     const win = window as Window & {
       pianoRollAudioEngine?: {
@@ -3576,11 +3961,7 @@ export class PianoRollEditor {
     win.pianoRollAudioEngine?.stopAllNotes()
     if (!this.isExternalPlayback) {
       this.remoteBeat = 0
-      this.editorBeat = 0
     }
-    // Clear tracking sets
-    this.startedNoteIds.clear()
-    this.currentPlayingNoteIds.clear()
     // Reset ball state
     this.useBallPhysics = false
     this.ballState = null
@@ -3658,20 +4039,6 @@ export class PianoRollEditor {
     // position so the user can hear what they're scrubbing over.
     this._scrubPreview(beat)
 
-    if (this.playbackState === 'stopped') {
-      // Rebase so a fresh start (setPlaybackState 'playing') picks up
-      // the seeked position instead of starting from beat 0.
-      // editorBeat drives the playStartTime calculation in the fresh-start
-      // branch. Without this, dragging the playhead while stopped then
-      // hitting play would jump back to beat 0.
-      this.editorBeat = beat
-      this.playStartTime = performance.now() - (beat / this.bpm) * 60000
-    } else if (this.playbackState === 'paused') {
-      // Local clock rebase (legacy field used by piano-roll's own playback
-      // path; harmless when external playback owns the timer).
-      this.playStartTime = performance.now() - (beat / this.bpm) * 60000
-    }
-
     // Notify the global PlaybackRuntime so its currentBeat / playStartTime
     // get rebased too. Without this, clicking the editor ruler while
     // paused would visually move the playhead but Resume would jump
@@ -3715,6 +4082,15 @@ export class PianoRollEditor {
       this._activeScrubNoteId = null
     }
 
+    // Drum kit: scrubbing auditions the hit itself (one-shot, no note to hold)
+    if (this.kind === 'drums') {
+      if (note) {
+        const lane = DRUM_LANE_BY_MIDI.get(note.note.midi)
+        if (lane) void this._engine()?.playDrum(lane.voice)
+      }
+      return
+    }
+
     if (note && note.note?.freq) {
       let targetFreq: number | undefined
       if (note.slideInterval !== undefined) {
@@ -3754,37 +4130,13 @@ export class PianoRollEditor {
   }
 
   /**
-   * Get current beat for drawing/playhead based on playback state.
-   *
-   * BUGFIX: previously this had two branches:
-   *   - external playback: return remoteBeat
-   *   - else: compute from `playStartTime`, which is initialized to 0.
-   *
-   * On a fresh page load with no playback ever started, `playStartTime`
-   * is still 0, so `elapsed = performance.now() - 0` is a huge number
-   * and `currentBeat = (huge / 60000) * bpm` lands somewhere in the
-   * middle of the grid → users saw a stray vertical playhead line at a
-   * non-zero position the moment they opened the editor tab.
-   *
-   * `drawWithPlayhead()` is called from setMelody/setScale/setBPM/etc.
-   * during normal initialization, so the playhead WAS being drawn even
-   * though playback was 'stopped'. We now short-circuit to 0 whenever
-   * playback isn't active and we're not driven by an external clock.
+   * Current beat for drawing/playhead. remoteBeat is the single source:
+   * PlaybackRuntime events feed it during (external) playback, ruler
+   * scrubbing parks it while stopped/paused, and stop() resets it to 0 —
+   * there is no internal playback clock anymore.
    */
   private getCurrentBeat(): number {
-    if (this.isExternalPlayback) {
-      return this.remoteBeat
-    }
-    if (this.playbackState === 'stopped') {
-      // Return remoteBeat so ruler scrubbing (which sets remoteBeat then
-      // calls drawGridWithPlayhead) actually shows the playhead at the
-      // scrubbed position. remoteBeat is reset to 0 in stop(), so the
-      // initial-state playhead stays at beat 0.
-      return this.remoteBeat
-    }
-    // Local editor playback - calculate from playStartTime
-    const elapsed = performance.now() - this.playStartTime
-    return (elapsed / 60000) * this.bpm
+    return this.remoteBeat
   }
 
   // ============================================================
@@ -3809,50 +4161,150 @@ export class PianoRollEditor {
     const totalHeight = this.totalRows * this.rowHeight
 
     ctx.clearRect(0, 0, this.pianoWidth, totalHeight)
-    ctx.fillStyle = '#161b22'
+    ctx.fillStyle = this.palette.surface
     ctx.fillRect(0, 0, this.pianoWidth, totalHeight)
 
-    // Draw keys (highest note at top)
-    for (let i = 0; i < this.totalRows; i++) {
-      const y = i * this.rowHeight
-      const scaleNote = this.scale[i]
-      if (scaleNote == null) continue
-
-      const isBlack = scaleNote.name.includes('#')
-
-      // White key background for black keys
-      if (isBlack) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'
-        ctx.fillRect(0, y, this.pianoWidth, this.rowHeight)
-      }
-
-      // Key label with octave number (e.g. "C4", "F#3")
-      ctx.fillStyle = isBlack ? '#484f58' : '#8b949e'
-      ctx.font = '9px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(
-        `${scaleNote.name}${scaleNote.octave}`,
-        this.pianoWidth / 2,
-        y + this.rowHeight / 2,
-      )
-
-      // Bottom border
-      ctx.strokeStyle = '#21262d'
-      ctx.lineWidth = 0.5
-      ctx.beginPath()
-      ctx.moveTo(0, y + this.rowHeight)
-      ctx.lineTo(this.pianoWidth, y + this.rowHeight)
-      ctx.stroke()
+    if (this.kind === 'drums') {
+      this._drawDrumKeys(ctx)
+    } else {
+      this._drawPianoKeys(ctx)
     }
 
     // Right border
-    ctx.strokeStyle = '#30363d'
+    ctx.strokeStyle = this.palette.border
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(this.pianoWidth - 1, 0)
     ctx.lineTo(this.pianoWidth - 1, totalHeight)
     ctx.stroke()
+  }
+
+  /** Melody mode: real black/white piano-key lanes (highest note at top).
+   *  Gradient palette lifted from the falling-notes keyboard so the two
+   *  keyboards match. The pressed lane gets an accent wash. */
+  private _drawPianoKeys(ctx: CanvasRenderingContext2D): void {
+    const w = this.pianoWidth
+    for (let i = 0; i < this.totalRows; i++) {
+      const y = i * this.rowHeight
+      const scaleNote = this.scale[i]
+      if (scaleNote == null) continue
+      const isBlack = scaleNote.name.includes('#')
+      const pressed = i === this.pressedKeyRow
+
+      if (isBlack) {
+        // Dark backing strip with a black-key stub over the left ~62%.
+        ctx.fillStyle = '#20242c'
+        ctx.fillRect(0, y, w, this.rowHeight)
+        const stubW = w * 0.62
+        const grad = ctx.createLinearGradient(0, y, stubW, y)
+        grad.addColorStop(0, '#3a3e45')
+        grad.addColorStop(0.55, '#1a1c22')
+        grad.addColorStop(1, '#0d0e14')
+        ctx.fillStyle = grad
+        ctx.fillRect(0, y + 1, stubW, this.rowHeight - 2)
+      } else {
+        const grad = ctx.createLinearGradient(0, y, w, y)
+        grad.addColorStop(0, '#fafbfc')
+        grad.addColorStop(0.5, '#d4d8de')
+        grad.addColorStop(1, '#b0b5bd')
+        ctx.fillStyle = grad
+        ctx.fillRect(0, y, w, this.rowHeight)
+      }
+      if (pressed) {
+        ctx.fillStyle = this.palette.accentGlow
+        ctx.fillRect(0, y, w, this.rowHeight)
+      }
+
+      // Label at the right edge (clear of the black-key stub). C rows are
+      // bold — the octave anchors, like a real keyboard's middle-C dot.
+      ctx.fillStyle = isBlack ? '#c9d1d9' : '#30363d'
+      ctx.font =
+        scaleNote.name === 'C'
+          ? `bold ${this.palette.fontSmall}`
+          : this.palette.fontSmall
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(
+        `${scaleNote.name}${scaleNote.octave}`,
+        w - 5,
+        y + this.rowHeight / 2,
+      )
+
+      // Row separator
+      ctx.strokeStyle = this.palette.gridLine
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.moveTo(0, y + this.rowHeight)
+      ctx.lineTo(w, y + this.rowHeight)
+      ctx.stroke()
+    }
+  }
+
+  /** Drum mode: one chip per GM kit piece — icon + short label; the full
+   *  name lives in the status-bar hint and the hover tip. */
+  private _drawDrumKeys(ctx: CanvasRenderingContext2D): void {
+    const w = this.pianoWidth
+    // Path2D is absent in some test DOMs — icons just don't render there.
+    if (this.drumIconCache === null && typeof Path2D !== 'undefined') {
+      const cache = new Map<number, Path2D>()
+      for (const [midi, lane] of DRUM_LANE_BY_MIDI) {
+        cache.set(midi, new Path2D(lane.iconPath))
+      }
+      this.drumIconCache = cache
+    }
+    for (let i = 0; i < this.totalRows; i++) {
+      const y = i * this.rowHeight
+      const scaleNote = this.scale[i]
+      if (scaleNote == null) continue
+      const lane = DRUM_LANE_BY_MIDI.get(scaleNote.midi)
+      const pressed = i === this.pressedKeyRow
+
+      // Alternate lane tint for scanability
+      if (i % 2 === 1) {
+        ctx.fillStyle = this.palette.blackRow
+        ctx.fillRect(0, y, w, this.rowHeight)
+      }
+      if (pressed) {
+        ctx.fillStyle = this.palette.accentGlow
+        ctx.fillRect(0, y, w, this.rowHeight)
+      }
+
+      if (lane) {
+        const icon = this.drumIconCache?.get(scaleNote.midi)
+        if (icon) {
+          const size = 14
+          ctx.save()
+          ctx.translate(5, y + (this.rowHeight - size) / 2)
+          ctx.scale(size / 24, size / 24)
+          ctx.fillStyle = pressed ? '#ffffff' : this.palette.text
+          ctx.fill(icon)
+          ctx.restore()
+        }
+        ctx.fillStyle = pressed ? '#ffffff' : '#c9d1d9'
+        ctx.font = this.palette.fontSmall
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(lane.shortLabel, 24, y + this.rowHeight / 2)
+      } else {
+        ctx.fillStyle = this.palette.text
+        ctx.font = this.palette.fontSmall
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(
+          `${scaleNote.name}${scaleNote.octave}`,
+          w / 2,
+          y + this.rowHeight / 2,
+        )
+      }
+
+      // Row separator
+      ctx.strokeStyle = this.palette.gridLine
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.moveTo(0, y + this.rowHeight)
+      ctx.lineTo(w, y + this.rowHeight)
+      ctx.stroke()
+    }
   }
 
   private drawRuler(): void {
@@ -3861,7 +4313,7 @@ export class PianoRollEditor {
     const rulerWidth = this.pianoWidth + this.stretchedWidth
 
     ctx.clearRect(0, 0, rulerWidth, this.rulerHeight)
-    ctx.fillStyle = '#161b22'
+    ctx.fillStyle = this.palette.surface
     ctx.fillRect(0, 0, rulerWidth, this.rulerHeight)
 
     // Beat markers (offset by piano width)
@@ -3869,7 +4321,7 @@ export class PianoRollEditor {
       const x = this.pianoWidth + b * this.beatWidth
       const isBar = b % this.config.beatsPerBar === 0
 
-      ctx.strokeStyle = isBar ? '#484f58' : '#30363d'
+      ctx.strokeStyle = isBar ? this.palette.tickStrong : this.palette.border
       ctx.lineWidth = isBar ? 1 : 0.5
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -3878,8 +4330,8 @@ export class PianoRollEditor {
 
       if (isBar) {
         const barNum = Math.floor(b / this.config.beatsPerBar) + 1
-        ctx.fillStyle = '#8b949e'
-        ctx.font = '10px sans-serif'
+        ctx.fillStyle = this.palette.text
+        ctx.font = this.palette.fontLabel
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(
@@ -3892,7 +4344,7 @@ export class PianoRollEditor {
     }
 
     // Bottom border
-    ctx.strokeStyle = '#30363d'
+    ctx.strokeStyle = this.palette.border
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, this.rulerHeight - 1)
@@ -3909,7 +4361,7 @@ export class PianoRollEditor {
     const rulerWidth = this.pianoWidth + this.stretchedWidth
 
     ctx.clearRect(0, 0, rulerWidth, this.rulerHeight)
-    ctx.fillStyle = '#161b22'
+    ctx.fillStyle = this.palette.surface
     ctx.fillRect(0, 0, rulerWidth, this.rulerHeight)
 
     // GH #198 / #31: Count-in offset for ruler beat lines and playhead
@@ -3923,7 +4375,7 @@ export class PianoRollEditor {
       const x = this.pianoWidth + countInOffset + b * this.beatWidth
       const isBar = b % this.config.beatsPerBar === 0
 
-      ctx.strokeStyle = isBar ? '#484f58' : '#30363d'
+      ctx.strokeStyle = isBar ? this.palette.tickStrong : this.palette.border
       ctx.lineWidth = isBar ? 1 : 0.5
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -3932,8 +4384,8 @@ export class PianoRollEditor {
 
       if (isBar) {
         const barNum = Math.floor(b / this.config.beatsPerBar) + 1
-        ctx.fillStyle = '#8b949e'
-        ctx.font = '10px sans-serif'
+        ctx.fillStyle = this.palette.text
+        ctx.font = this.palette.fontLabel
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(
@@ -3945,7 +4397,7 @@ export class PianoRollEditor {
       }
     }
 
-    ctx.strokeStyle = '#30363d'
+    ctx.strokeStyle = this.palette.border
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(0, this.rulerHeight - 1)
@@ -3959,8 +4411,8 @@ export class PianoRollEditor {
     const playheadX =
       this.pianoWidth + countInOffset + currentBeat * this.beatWidth
     ctx.save()
-    ctx.fillStyle = '#58a6ff'
-    ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
+    ctx.fillStyle = this.palette.accent
+    ctx.shadowColor = this.palette.accentGlow
     ctx.shadowBlur = 4
     const triSize = 6
     ctx.beginPath()
@@ -3978,7 +4430,7 @@ export class PianoRollEditor {
     const totalHeight = this.totalRows * this.rowHeight
 
     ctx.clearRect(0, 0, this.stretchedWidth, totalHeight)
-    ctx.fillStyle = '#0d1117'
+    ctx.fillStyle = this.palette.bg
     ctx.fillRect(0, 0, this.stretchedWidth, totalHeight)
 
     // Horizontal lines
@@ -3988,12 +4440,12 @@ export class PianoRollEditor {
       const isBlack = note != null && note.name.includes('#')
 
       if (isBlack != null && isBlack) {
-        ctx.fillStyle = 'rgba(26, 31, 39, 0.5)'
+        ctx.fillStyle = this.palette.blackRow
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
 
       if (this.showGrid) {
-        ctx.strokeStyle = '#21262d'
+        ctx.strokeStyle = this.palette.gridLine
         ctx.lineWidth = 0.5
         ctx.beginPath()
         ctx.moveTo(0, y)
@@ -4007,7 +4459,7 @@ export class PianoRollEditor {
       for (let b = 0; b <= this.totalBeats; b++) {
         const x = b * this.beatWidth
         const isBar = b % this.config.beatsPerBar === 0
-        ctx.strokeStyle = isBar ? '#30363d' : '#21262d'
+        ctx.strokeStyle = isBar ? this.palette.border : this.palette.gridLine
         ctx.lineWidth = isBar ? 1 : 0.5
         ctx.beginPath()
         ctx.moveTo(x, 0)
@@ -4048,7 +4500,7 @@ export class PianoRollEditor {
     const totalHeight = this.totalRows * this.rowHeight
 
     ctx.clearRect(0, 0, this.stretchedWidth, totalHeight)
-    ctx.fillStyle = '#0d1117'
+    ctx.fillStyle = this.palette.bg
     ctx.fillRect(0, 0, this.stretchedWidth, totalHeight)
 
     // GH #122: Waveform background during mic recording
@@ -4061,12 +4513,12 @@ export class PianoRollEditor {
       const isBlack = note != null && note.name.includes('#')
 
       if (isBlack != null && isBlack) {
-        ctx.fillStyle = 'rgba(26, 31, 39, 0.5)'
+        ctx.fillStyle = this.palette.blackRow
         ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
       }
 
       if (this.showGrid) {
-        ctx.strokeStyle = '#21262d'
+        ctx.strokeStyle = this.palette.gridLine
         ctx.lineWidth = 0.5
         ctx.beginPath()
         ctx.moveTo(0, y)
@@ -4088,7 +4540,7 @@ export class PianoRollEditor {
       for (let b = 0; b <= this.totalBeats; b++) {
         const x = countInOffset + b * this.beatWidth
         const isBar = b % this.config.beatsPerBar === 0
-        ctx.strokeStyle = isBar ? '#30363d' : '#21262d'
+        ctx.strokeStyle = isBar ? this.palette.border : this.palette.gridLine
         ctx.lineWidth = isBar ? 1 : 0.5
         ctx.beginPath()
         ctx.moveTo(x, 0)
@@ -4110,9 +4562,9 @@ export class PianoRollEditor {
 
     // Playhead line — always drawn during playback (including count-in)
     ctx.save()
-    ctx.strokeStyle = '#58a6ff'
+    ctx.strokeStyle = this.palette.accent
     ctx.lineWidth = 2
-    ctx.shadowColor = 'rgba(88, 166, 255, 0.5)'
+    ctx.shadowColor = this.palette.accentGlow
     ctx.shadowBlur = 4
     ctx.beginPath()
     ctx.moveTo(playheadX, 0)
@@ -4176,7 +4628,7 @@ export class PianoRollEditor {
     if (this.liveMidi === null) return
     const y = this.midiToY(this.liveMidi)
     ctx.save()
-    ctx.fillStyle = '#3fb950'
+    ctx.fillStyle = this.palette.active
     ctx.shadowColor = 'rgba(63,185,80,0.7)'
     ctx.shadowBlur = 6
     ctx.beginPath()
@@ -4542,11 +4994,16 @@ export class PianoRollEditor {
         ctx.fillText(tgtName, x + w - 10, tgtCY)
         ctx.textBaseline = 'alphabetic'
       } else if (!drawSlide && !drawTrill && w > 18) {
+        const blockLabel =
+          this.kind === 'drums'
+            ? (DRUM_LANE_BY_MIDI.get(note.note.midi)?.shortLabel ??
+              note.note.name)
+            : note.note.name
         ctx.fillStyle = 'rgba(255,255,255,0.85)'
         ctx.font = 'bold 9px sans-serif'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(note.note.name, x + w / 2, ry + h / 2)
+        ctx.fillText(blockLabel, x + w / 2, ry + h / 2)
         ctx.textBaseline = 'alphabetic'
       }
 
@@ -4611,6 +5068,7 @@ export class PianoRollEditor {
     this._rebuildScale()
     this.buildCanvases()
     this.draw()
+    this._announceOffScaleNotes()
 
     eventBus.dispatch('pitchperfect:octaveChange', {
       octave: this.octave,
@@ -4618,13 +5076,19 @@ export class PianoRollEditor {
     })
   }
 
-  /** Rebuild this.scale / this.totalRows from current octave/numOctaves/mode/key. */
+  /** Rebuild this.scale / this.totalRows from current octave/numOctaves/mode/key.
+   *  this.key is synced from the store-provided scale in setScale — the old
+   *  code read `window.pitchPerfectApp?.key`, which nothing ever assigned, so
+   *  every toolbar-driven rebuild silently reverted the user's key to C. */
   private _rebuildScale(): void {
-    const appWindow = window as Window & { pitchPerfectApp?: { key: string } }
-    const key = appWindow.pitchPerfectApp?.key ?? 'C'
     const startOctave = this.scrollableMode ? 1 : this.octave
     const octaves = this.scrollableMode ? 7 : this.numOctaves
-    const newScale = buildMultiOctaveScale(key, startOctave, octaves, this.mode)
+    const newScale = buildMultiOctaveScale(
+      this.key,
+      startOctave,
+      octaves,
+      this.mode,
+    )
     this.scale = newScale
     this.totalRows = newScale.length
   }
@@ -4640,6 +5104,22 @@ export class PianoRollEditor {
     this.draw()
 
     eventBus.dispatch('pitchperfect:modeChange', { mode })
+  }
+
+  /**
+   * Adopt the store's scale type WITHOUT dispatching or rebuilding — the
+   * accompanying setScale push carries the actual rows. Keeps the editor's
+   * optimistic local rebuilds (Rows +/-, scroll toggle) building the same
+   * scale the store would, and keeps the toolbar select honest when the
+   * type was chosen elsewhere (sidebar, scale builder, loaded melody).
+   */
+  syncScaleType(mode: string): void {
+    if (mode === this.mode) return
+    this.mode = mode
+    const select = this.container.querySelector(
+      '#roll-mode-select',
+    ) as HTMLSelectElement | null
+    if (select && select.value !== mode) select.value = mode
   }
 
   // ============================================================
@@ -5068,7 +5548,8 @@ export class PianoRollEditor {
 
   /** Apply an effect via keyboard shortcut. Mirrors button-click logic. */
   private _keyboardEffect(effect: EffectType): void {
-    if (this.previewMode) return
+    // Pitch effects (slides, vibrato, chords...) are meaningless on drums.
+    if (this.previewMode || this.kind === 'drums') return
     if (this.selectedNoteIds.size === 0) {
       if (this.selectedEffect === effect) {
         this.selectedEffect = null

@@ -479,6 +479,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_COMPOSE,
   },
   {
+    title: 'Play the keys',
+    targetSelector: '.roll-piano',
+    description:
+      'The left keyboard is playable — press a key to hear its lane, or drag across keys for a glissando. In the Drums preset every key auditions its kit piece.',
+    placement: 'right',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
     title: 'Edit tools',
     targetSelector: '.roll-group[data-name="Edit"]',
     description:
@@ -558,6 +567,24 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="compose.share"]',
     description:
       'Copy a shareable link to your melody — anyone who opens it can listen and load it straight into their own editor.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Melody or Drums',
+    targetSelector: '[data-tour="compose.kind"]',
+    description:
+      'Switch the editor preset: Melody gives you pitched note rows, while Drums swaps in a 12-lane General MIDI kit — kick, snare, hats, toms and cymbals — with synthesized drum sounds.',
+    placement: 'bottom',
+    section: 'editor',
+    requiredTab: TAB_COMPOSE,
+  },
+  {
+    title: 'Hover hints',
+    targetSelector: '#roll-hint-toggle',
+    description:
+      'With Hints on, hovering a placed note names it right at the cursor — the note, or the drum piece (with a preview hit while stopped). Toggle them here in the View group.',
     placement: 'bottom',
     section: 'editor',
     requiredTab: TAB_COMPOSE,

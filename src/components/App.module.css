@@ -70,12 +70,30 @@
   padding: 6px 12px;
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border);
+  /* Everything here is a control — a sloppy click-drag should not start
+     selecting button labels (view tabs, preset toggle, transport). */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Text fields inside the header (BPM input) keep normal text selection. */
+.composeToolbar input {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .editorTabs {
   display: flex;
   gap: 4px;
   justify-self: start;
+  min-width: 0;
+}
+
+/* Melody / Drums preset toggle — right-hand grid column of the toolbar. */
+.kindToggle {
+  display: flex;
+  gap: 4px;
+  justify-self: end;
   min-width: 0;
 }
 
@@ -88,6 +106,10 @@
   }
 
   .editorTabs {
+    justify-self: center;
+  }
+
+  .kindToggle {
     justify-self: center;
   }
 }
@@ -177,9 +199,27 @@
 }
 
 /* Compact live sheet strip shown beneath the piano roll in split view. */
+/* Piano roll (+ optional score strip below it) inside the editor panel. */
+.rollStack {
+  position: relative;
+}
+
+/* Split view: the roll keeps its natural height and the score strip flexes
+   into ALL remaining panel height instead of the old fixed 240px sliver. */
+.rollStackSplit {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .sheetSplitStrip {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
   width: 100%;
-  --sheet-max-h: 240px;
+  min-height: 0;
+  --sheet-max-h: none;
   margin-top: 8px;
   border-top: 1px solid var(--border, #30363d);
   padding-top: 8px;

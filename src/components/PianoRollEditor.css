@@ -1165,3 +1165,97 @@ Keeps your existing styles, only adjusts layout
   background: transparent;
   border: 1px dashed rgba(139, 148, 158, 0.65);
 }
+
+/* The left keyboard is interactive: presses audition lanes, drags glissando.
+   touch-action: none keeps presses from scrolling the page on touch. */
+.roll-piano {
+  touch-action: none;
+  cursor: pointer;
+}
+
+/* The roll toolbar (Edit / View / Notes / Instrument / Effects / I/O) and
+   its collapse toggle are pure controls — never let a drag select the
+   button labels. Range sliders in the effect popover are inside the
+   toolbar too; they carry no selectable text, so the blanket rule is safe. */
+.roll-toolbar,
+.roll-toolbar-toggle {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Hints toggle — mirrors the grid-toggle button treatment */
+.roll-hint-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.roll-hint-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.roll-hint-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Floating hover hint near the cursor (note name / drum piece). Lives inside
+   .roll-grid-layer (position: relative), so grid-canvas coordinates map 1:1. */
+.roll-hover-tip {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  pointer-events: none;
+  background: var(--bg-tertiary, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 5px;
+  color: var(--text-primary, #c9d1d9);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.roll-hover-tip svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* Toolbar groups/controls that don't apply in the current editor state
+   (browse mode, drum kit). The class was toggled long before this rule
+   existed — browse mode's "disabled" groups were still fully clickable. */
+.roll-toolbar-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Canvas palette for the piano-roll editor. piano-roll.ts resolves these at
+   init/resize (with these exact values as fallbacks), so a future light theme
+   only needs to override the variables — no canvas code changes. */
+:root {
+  --roll-bg: #0d1117;
+  --roll-surface: #161b22;
+  --roll-grid-line: #21262d;
+  --roll-border: #30363d;
+  --roll-tick-strong: #484f58;
+  --roll-text: #8b949e;
+  --roll-accent: #58a6ff;
+  --roll-accent-glow: rgba(88, 166, 255, 0.5);
+  --roll-active: #3fb950;
+  --roll-active-glow: rgba(63, 185, 80, 0.9);
+  --roll-black-row: rgba(26, 31, 39, 0.5);
+  --roll-font-small: 9px sans-serif;
+  --roll-font-label: 10px sans-serif;
+  --roll-font-mono: 11px monospace;
+}
