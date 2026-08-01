@@ -672,8 +672,8 @@ export const DestinationGallery: Component = () => {
           <h2 id="destination-heading">Choose your next room</h2>
         </div>
         <p class={styles.headingCopy}>
-          Move from daily practice into performance, focused drills, or a
-          deeper look at your voice.
+          Move from daily practice into performance, focused drills, or a deeper
+          look at your voice.
         </p>
       </div>
 
