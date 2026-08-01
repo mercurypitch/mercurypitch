@@ -90,9 +90,27 @@ export function refreshHostedRooms(): void {
   setRooms(read())
 }
 
-/** The secret for one room, or null if this device never hosted it. */
+/**
+ * The secret for one room, or null if this device never hosted it.
+ *
+ * Reads the signal, not storage. The two can disagree -- a write updates
+ * the signal before attempting storage, so where storage is denied (private
+ * mode, quota) the room exists in memory only. Reading storage here meant
+ * the lobby offered "rejoin as host" for a room whose token it would then
+ * fail to find. A room you cannot persist is still a room you can rejoin
+ * this session, so both answers now come from the same place.
+ */
 export function ownerTokenFor(roomId: string): string | null {
-  return read().find((r) => r.roomId === roomId)?.ownerToken ?? null
+  return rooms().find((r) => r.roomId === roomId)?.ownerToken ?? null
+}
+
+// Another tab writing, or storage cleared from outside, leaves this tab's
+// signal stale -- it is a cache, and this is its invalidation. The event
+// fires only in OTHER tabs, so there is no echo from our own writes.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === LS_KEY || e.key === null) refreshHostedRooms()
+  })
 }
 
 /** Remember a room this device created (or refresh one it re-entered). */

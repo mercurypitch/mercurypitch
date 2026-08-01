@@ -37,6 +37,8 @@ export const JamPanel: Component = () => {
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   const [showAbout, setShowAbout] = createSignal(false)
+  const [roomMenuOpen, setRoomMenuOpen] = createSignal(false)
+  let roomActionsRef: HTMLDivElement | undefined
   let aboutRef: HTMLDivElement | undefined
 
   // Tap-outside and Escape close the "?" panel. A tap has no hover to fall
@@ -45,12 +47,18 @@ export const JamPanel: Component = () => {
   // behind made it look like the panel was closing on a timer.
   onMount(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (!showAbout()) return
-      if (aboutRef?.contains(e.target as Node) === true) return
-      setShowAbout(false)
+      const target = e.target as Node
+      if (showAbout() && aboutRef?.contains(target) !== true) {
+        setShowAbout(false)
+      }
+      if (roomMenuOpen() && roomActionsRef?.contains(target) !== true) {
+        setRoomMenuOpen(false)
+      }
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowAbout(false)
+      if (e.key !== 'Escape') return
+      setShowAbout(false)
+      setRoomMenuOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
@@ -441,11 +449,41 @@ export const JamPanel: Component = () => {
       {/* ── Active session ───────────────────────────────────────── */}
       <Show when={jamState() === 'active'}>
         <div class={panelStyles.sessionLayout}>
+          {/* Dismisses the drawer on a phone; inert on a desktop, where the
+              sidebar takes a column of its own rather than overlaying. */}
+          <Show when={sidebarOpen()}>
+            <div
+              class={panelStyles.sidebarScrim}
+              onClick={() => setSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          </Show>
           {/* ── Collapsible sidebar ────────────────────────────── */}
           <div
             class={`${panelStyles.sidebar} ${sidebarOpen() ? panelStyles.sidebarOpen : ''}`}
           >
             <div class={panelStyles.sidebarInner}>
+              {/* On a phone the sidebar covers the room and the header
+                  toggle goes with it, so it needs its own way out. */}
+              <button
+                class={panelStyles.sidebarClose}
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close peers panel"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                <span>Peers</span>
+              </button>
               <div class={jamStyles.status}>
                 <span
                   class={`${jamStyles.statusDot} ${jamStyles.statusDotActive}`}
@@ -525,7 +563,34 @@ export const JamPanel: Component = () => {
                   </button>
                 </div>
               </div>
-              <div class={jamStyles.roomActions}>
+              <div
+                class={jamStyles.roomActions}
+                classList={{ [panelStyles.actionsOpen]: roomMenuOpen() }}
+                ref={roomActionsRef}
+              >
+                {/* Phone: everything but mic and leave folds in here. Mic
+                    stays out because it is the control you reach for mid
+                    take, and leave because it is the way out. */}
+                <button
+                  class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral} ${panelStyles.roomMenuBtn}`}
+                  onClick={() => setRoomMenuOpen((v) => !v)}
+                  aria-expanded={roomMenuOpen()}
+                  aria-label="Room controls"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <line x1="4" y1="7" x2="20" y2="7" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="17" x2="20" y2="17" />
+                  </svg>
+                </button>
                 {/* Room glass — how much of the rehearsal room shows through */}
                 <label
                   class={panelStyles.glassControl}
@@ -555,31 +620,6 @@ export const JamPanel: Component = () => {
                     }
                   />
                 </label>
-
-                {/* Sidebar toggle */}
-                <button
-                  class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}
-                  onClick={() => setSidebarOpen((v) => !v)}
-                  title={
-                    sidebarOpen() ? 'Hide peers panel' : 'Show peers panel'
-                  }
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </button>
 
                 {/* Microphone toggle */}
                 <button
@@ -626,30 +666,13 @@ export const JamPanel: Component = () => {
                   </Show>
                 </button>
 
-                {/* Camera toggle */}
-                <button
-                  class={`${jamStyles.iconBtn} ${jamVideoEnabled() ? jamStyles.iconBtnOn : jamStyles.iconBtnOff}`}
-                  onClick={() => void toggleJamVideo()}
-                  title={
-                    jamVideoEnabled() ? 'Turn camera off' : 'Turn camera on'
-                  }
-                >
-                  <Show
-                    when={jamVideoEnabled()}
-                    fallback={
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                        <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06A4 4 0 1 1 7.72 7.72" />
-                      </svg>
+                <div class={panelStyles.roomMenuItems}>
+                  {/* Sidebar toggle */}
+                  <button
+                    class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}
+                    onClick={() => setSidebarOpen((v) => !v)}
+                    title={
+                      sidebarOpen() ? 'Hide peers panel' : 'Show peers panel'
                     }
                   >
                     <svg
@@ -662,34 +685,85 @@ export const JamPanel: Component = () => {
                       stroke-linecap="round"
                       stroke-linejoin="round"
                     >
-                      <polygon points="23 7 16 12 23 17 23 7" />
-                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
-                  </Show>
-                </button>
+                  </button>
 
-                {/* Invite */}
-                <button
-                  class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral}`}
-                  onClick={() => setShowInvite(true)}
-                  title="Invite people"
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                  {/* Camera toggle */}
+                  <button
+                    class={`${jamStyles.iconBtn} ${jamVideoEnabled() ? jamStyles.iconBtnOn : jamStyles.iconBtnOff}`}
+                    onClick={() => void toggleJamVideo()}
+                    title={
+                      jamVideoEnabled() ? 'Turn camera off' : 'Turn camera on'
+                    }
                   >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="19" y1="8" x2="19" y2="14" />
-                    <line x1="22" y1="11" x2="16" y2="11" />
-                  </svg>
-                </button>
+                    <Show
+                      when={jamVideoEnabled()}
+                      fallback={
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                          <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06A4 4 0 1 1 7.72 7.72" />
+                        </svg>
+                      }
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polygon points="23 7 16 12 23 17 23 7" />
+                        <rect
+                          x="1"
+                          y="5"
+                          width="15"
+                          height="14"
+                          rx="2"
+                          ry="2"
+                        />
+                      </svg>
+                    </Show>
+                  </button>
+
+                  {/* Invite */}
+                  <button
+                    class={`${jamStyles.iconBtn} ${jamStyles.iconBtnNeutral}`}
+                    onClick={() => setShowInvite(true)}
+                    title="Invite people"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <line x1="19" y1="8" x2="19" y2="14" />
+                      <line x1="22" y1="11" x2="16" y2="11" />
+                    </svg>
+                  </button>
+                </div>
 
                 {/* Leave */}
                 <button
