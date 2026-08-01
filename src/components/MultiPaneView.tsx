@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import type { VibratoResult } from '@/lib/vocal-analyzer'
 import { addPane, paneLayout, removePane, setPaneHeights, togglePaneCollapse, toggleSyncTime, } from '@/stores/pane-layout-store'
 import type { PaneConfig, PaneLayerType } from '@/types'
 import { CentsDeviationPane } from './panes/CentsDeviationPane'
@@ -12,6 +13,7 @@ import { PitchTracePane } from './panes/PitchTracePane'
 import { SpectrogramPane } from './panes/SpectrogramPane'
 import { SpectrumPane } from './panes/SpectrumPane'
 import { WaveformPane } from './panes/WaveformPane'
+import { VibratoWaveformCanvas } from './VibratoWaveformCanvas'
 
 // ============================================================
 // Types
@@ -220,6 +222,34 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  /**
+   * The vibrato pane draws the animated wave, so rate/depth get dressed
+   * back up as the VibratoResult the canvas was built around. Thresholds
+   * mirror vocal-analyzer's classifier; the canvas itself only reads
+   * detected/rateHz/depthCents.
+   */
+  const vibratoResult = (): VibratoResult | null => {
+    const rate = props.vibratoRate ?? null
+    const depth = props.vibratoDepth ?? null
+    if (rate === null || depth === null || rate <= 0) return null
+    const detected = depth >= 10
+    return {
+      rateHz: rate,
+      depthCents: depth,
+      detected,
+      classification: !detected
+        ? 'none'
+        : rate < 4.5
+          ? 'slow-operatic'
+          : rate <= 7
+            ? 'natural'
+            : depth > 80
+              ? 'wide'
+              : 'nervous',
+      confidence: detected ? 75 : 0,
+    }
+  }
+
   // ── Render a single pane ───────────────────────────────────
   const renderPaneContent = (pane: PaneConfig) => {
     const [t0, t1] = timeRange()
@@ -267,15 +297,11 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
         )
       case 'vibrato':
         return (
-          <div
-            style={{
-              padding: '8px',
-              color: 'rgba(255,255,255,0.6)',
-              'font-size': '0.75rem',
-            }}
-          >
-            Vibrato: rate={props.vibratoRate ?? '--'} Hz, depth=
-            {props.vibratoDepth ?? '--'} ¢
+          <div style={{ height: `${Math.max(80, h - 32)}px`, padding: '4px' }}>
+            <VibratoWaveformCanvas
+              vibrato={vibratoResult()}
+              isActive={props.isPlaying ?? true}
+            />
           </div>
         )
       case 'spectrum':
