@@ -153,6 +153,21 @@ global.OfflineAudioContext = vi.fn().mockImplementation(function (
       getChannelData: vi.fn().mockReturnValue(new Float32Array(44100)),
       length: 44100,
     })),
+    createBufferSource: vi.fn().mockImplementation(() => ({
+      buffer: null,
+      start: vi.fn(),
+      stop: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
+    createBiquadFilter: vi.fn().mockImplementation(() => ({
+      type: 'lowpass' as const,
+      frequency: { value: 1000 },
+      Q: { value: 0.5 },
+      gain: { value: 0 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    })),
     createConvolver: vi.fn().mockImplementation(() => ({
       buffer: null,
       connect: vi.fn(),
@@ -990,6 +1005,128 @@ describe('AudioEngine', () => {
       const blob = await engine.renderMelodyToWAV(melody, 0)
 
       expect(blob).toBeInstanceOf(Blob)
+    })
+  })
+
+  describe('drum playback', () => {
+    it('routes drumGain through mainGain so the volume slider and limiter apply', () => {
+      const internals = engine as unknown as {
+        drumGain: { connectedTo: unknown[] } | null
+        mainGain: unknown
+      }
+      expect(internals.drumGain).not.toBeNull()
+      expect(internals.drumGain!.connectedTo).toContain(internals.mainGain)
+    })
+
+    it('playDrum triggers a voice into drumGain', async () => {
+      await engine.playDrum('kick')
+
+      const ctx = engine.getAudioContext()
+      expect(ctx).not.toBeNull()
+      expect(ctx!.createOscillator).toHaveBeenCalled()
+
+      // The kick's terminal gain must feed the drum bus, not the destination
+      const internals = engine as unknown as { drumGain: unknown }
+      const gainNodes = vi.mocked(ctx!.createGain).mock.results
+      const connectTargets = gainNodes.flatMap(
+        (result) => (result.value as { connectedTo: unknown[] }).connectedTo,
+      )
+      expect(connectTargets).toContain(internals.drumGain)
+    })
+
+    it('renderMelodyToWAV with kind drums renders percussion, not melodic voices', async () => {
+      const renderNoteSpy = vi.spyOn(
+        engine as unknown as {
+          _renderNoteToContext: (...args: unknown[]) => Promise<void>
+        },
+        '_renderNoteToContext',
+      )
+      const melody: MelodyItem[] = [
+        {
+          id: 1,
+          note: { name: 'C', octave: 2, midi: 36, freq: 65.41 },
+          startBeat: 0,
+          duration: 1,
+        },
+        {
+          id: 2,
+          note: { name: 'D', octave: 2, midi: 38, freq: 73.42 },
+          startBeat: 1,
+          duration: 1,
+        },
+        {
+          id: 3,
+          note: { name: 'D', octave: 2, midi: 38, freq: 73.42 },
+          startBeat: 2,
+          duration: 1,
+          isRest: true,
+        },
+        {
+          // MIDI 40 has no lane — falls back to the snare voice
+          id: 4,
+          note: { name: 'E', octave: 2, midi: 40, freq: 82.41 },
+          startBeat: 3,
+          duration: 1,
+        },
+      ]
+
+      const blob = await engine.renderMelodyToWAV(
+        melody,
+        120,
+        undefined,
+        'drums',
+      )
+
+      expect(blob).toBeInstanceOf(Blob)
+      expect(renderNoteSpy).not.toHaveBeenCalled()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const instances = (global.OfflineAudioContext as any).mock.instances
+      const offlineCtx = instances[instances.length - 1]
+      // kick osc + two snare tone oscs (the rest item is skipped)
+      expect(offlineCtx.createOscillator).toHaveBeenCalledTimes(3)
+      // two snare noise bursts
+      expect(offlineCtx.createBufferSource).toHaveBeenCalledTimes(2)
+    })
+
+    it('renderMelodyToWAV with kind drums returns null when every item is a rest', async () => {
+      const melody: MelodyItem[] = [
+        {
+          id: 1,
+          note: { name: 'C', octave: 2, midi: 36, freq: 65.41 },
+          startBeat: 0,
+          duration: 1,
+          isRest: true,
+        },
+      ]
+
+      const blob = await engine.renderMelodyToWAV(
+        melody,
+        120,
+        undefined,
+        'drums',
+      )
+      expect(blob).toBeNull()
+    })
+
+    it('downloadMelodyAsWAV threads the drums kind through', async () => {
+      const melody: MelodyItem[] = [
+        {
+          id: 1,
+          note: { name: 'C', octave: 2, midi: 36, freq: 65.41 },
+          startBeat: 0,
+          duration: 1,
+        },
+      ]
+
+      const result = await engine.downloadMelodyAsWAV(
+        melody,
+        120,
+        'beat.wav',
+        undefined,
+        'drums',
+      )
+      expect(result).toBe(true)
     })
   })
 

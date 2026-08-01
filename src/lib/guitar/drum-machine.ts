@@ -2,6 +2,8 @@
 // Drum Machine — synthesized drum sounds + pattern sequencer
 // ============================================================
 
+import { DRUM_VOICES } from '@/lib/drum-voices'
+
 export type DrumSound =
   | 'kick'
   | 'snare'
@@ -103,159 +105,26 @@ function makePattern(
 }
 
 // ── Drum sound synthesis ─────────────────────────────────────
-
-function createKick(ctx: BaseAudioContext, now: number, volume: number): void {
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(150, now)
-  osc.frequency.exponentialRampToValueAtTime(40, now + 0.08)
-  gain.gain.setValueAtTime(volume * 0.9, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start(now)
-  osc.stop(now + 0.35)
-}
-
-function createSnare(ctx: BaseAudioContext, now: number, volume: number): void {
-  // Noise burst
-  const noiseLen = Math.floor(ctx.sampleRate * 0.12)
-  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
-  const data = noiseBuf.getChannelData(0)
-  for (let i = 0; i < noiseLen; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen)
-  }
-  const noise = ctx.createBufferSource()
-  noise.buffer = noiseBuf
-  const noiseGain = ctx.createGain()
-  noiseGain.gain.setValueAtTime(volume * 0.5, now)
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12)
-  noise.connect(noiseGain)
-  noiseGain.connect(ctx.destination)
-  noise.start(now)
-  noise.stop(now + 0.15)
-
-  // Tonal body
-  const tone = ctx.createOscillator()
-  const toneGain = ctx.createGain()
-  tone.type = 'triangle'
-  tone.frequency.setValueAtTime(200, now)
-  tone.frequency.exponentialRampToValueAtTime(120, now + 0.05)
-  toneGain.gain.setValueAtTime(volume * 0.35, now)
-  toneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1)
-  tone.connect(toneGain)
-  toneGain.connect(ctx.destination)
-  tone.start(now)
-  tone.stop(now + 0.12)
-}
-
-function createHihatClosed(
-  ctx: BaseAudioContext,
-  now: number,
-  volume: number,
-): void {
-  const noiseLen = Math.floor(ctx.sampleRate * 0.04)
-  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
-  const data = noiseBuf.getChannelData(0)
-  for (let i = 0; i < noiseLen; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen)
-  }
-  const noise = ctx.createBufferSource()
-  noise.buffer = noiseBuf
-  const hp = ctx.createBiquadFilter()
-  hp.type = 'highpass'
-  hp.frequency.value = 8000
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(volume * 0.2, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
-  noise.connect(hp)
-  hp.connect(gain)
-  gain.connect(ctx.destination)
-  noise.start(now)
-  noise.stop(now + 0.05)
-}
-
-function createHihatOpen(
-  ctx: BaseAudioContext,
-  now: number,
-  volume: number,
-): void {
-  const noiseLen = Math.floor(ctx.sampleRate * 0.25)
-  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
-  const data = noiseBuf.getChannelData(0)
-  for (let i = 0; i < noiseLen; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen)
-  }
-  const noise = ctx.createBufferSource()
-  noise.buffer = noiseBuf
-  const hp = ctx.createBiquadFilter()
-  hp.type = 'highpass'
-  hp.frequency.value = 7000
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(volume * 0.25, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
-  noise.connect(hp)
-  hp.connect(gain)
-  gain.connect(ctx.destination)
-  noise.start(now)
-  noise.stop(now + 0.2)
-}
-
-function createTom(
-  ctx: BaseAudioContext,
-  now: number,
-  startFreq: number,
-  volume: number,
-): void {
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.type = 'triangle'
-  osc.frequency.setValueAtTime(startFreq, now)
-  osc.frequency.exponentialRampToValueAtTime(startFreq * 0.5, now + 0.06)
-  gain.gain.setValueAtTime(volume * 0.5, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.start(now)
-  osc.stop(now + 0.22)
-}
-
-function createCrash(ctx: BaseAudioContext, now: number, volume: number): void {
-  const noiseLen = Math.floor(ctx.sampleRate * 0.9)
-  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
-  const data = noiseBuf.getChannelData(0)
-  for (let i = 0; i < noiseLen; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen)
-  }
-  const noise = ctx.createBufferSource()
-  noise.buffer = noiseBuf
-  const bp = ctx.createBiquadFilter()
-  bp.type = 'bandpass'
-  bp.frequency.value = 4000
-  bp.Q.value = 1.2
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(volume * 0.4, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
-  noise.connect(bp)
-  bp.connect(gain)
-  gain.connect(ctx.destination)
-  noise.start(now)
-  noise.stop(now + 0.8)
-}
+// The voice recipes live in the shared module (src/lib/drum-voices.ts);
+// the drum machine plays them straight into its own context's destination.
 
 const SOUND_FACTORIES: Record<
   DrumSound,
   (ctx: BaseAudioContext, now: number, volume: number) => void
 > = {
-  kick: createKick,
-  snare: createSnare,
-  'hh-closed': createHihatClosed,
-  'hh-open': createHihatOpen,
-  'tom-high': (ctx, now, vol) => createTom(ctx, now, 350, vol),
-  'tom-mid': (ctx, now, vol) => createTom(ctx, now, 240, vol),
-  'tom-low': (ctx, now, vol) => createTom(ctx, now, 150, vol),
-  crash: createCrash,
+  kick: (ctx, now, vol) => DRUM_VOICES.kick(ctx, now, vol, ctx.destination),
+  snare: (ctx, now, vol) => DRUM_VOICES.snare(ctx, now, vol, ctx.destination),
+  'hh-closed': (ctx, now, vol) =>
+    DRUM_VOICES['hh-closed'](ctx, now, vol, ctx.destination),
+  'hh-open': (ctx, now, vol) =>
+    DRUM_VOICES['hh-open'](ctx, now, vol, ctx.destination),
+  'tom-high': (ctx, now, vol) =>
+    DRUM_VOICES['tom-high'](ctx, now, vol, ctx.destination),
+  'tom-mid': (ctx, now, vol) =>
+    DRUM_VOICES['tom-mid'](ctx, now, vol, ctx.destination),
+  'tom-low': (ctx, now, vol) =>
+    DRUM_VOICES['tom-low'](ctx, now, vol, ctx.destination),
+  crash: (ctx, now, vol) => DRUM_VOICES.crash(ctx, now, vol, ctx.destination),
 }
 
 // ── DrumMachine class ────────────────────────────────────────

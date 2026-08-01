@@ -6,6 +6,9 @@ import { showNotification } from '@/stores/notifications-store'
 import type { CharacterName } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
+import { drumVoiceForMidi } from './drum-lanes'
+import type { DrumVoiceId } from './drum-voices'
+import { triggerDrumVoice } from './drum-voices'
 import { createBassVoice, createGuitarVoice } from './guitar/guitar-synth'
 import { micManager } from './mic-manager'
 import { UvrProcessor } from './uvr-processor'
@@ -95,6 +98,7 @@ export class AudioEngine {
   audioCtx: AudioContext | null = null
   private mainGain: GainNode | null = null
   private metronomeGain: GainNode | null = null
+  private drumGain: GainNode | null = null
   private uvrOutput: GainNode | null = null
   // Microphone
   private micStream: MediaStream | null = null
@@ -197,6 +201,14 @@ export class AudioEngine {
     // click volume stays audible regardless of the note volume slider.
     this.metronomeGain = this.audioCtx.createGain()
     this.metronomeGain.gain.value = 0.8
+
+    // Percussion bus for the compose drum kit — feeds the note bus so the
+    // volume slider and the note-bus limiter apply to drums too.
+    this.drumGain = this.audioCtx.createGain()
+    this.drumGain.gain.value = 1.0
+    if (typeof this.drumGain.connect === 'function') {
+      this.drumGain.connect(this.mainGain)
+    }
 
     // Reverb send/return gain nodes for dry/wet mix
     this.reverbSendGain = this.audioCtx.createGain()
@@ -1351,6 +1363,36 @@ export class AudioEngine {
     )
   }
 
+  /**
+   * Trigger a one-shot synthesized percussion voice on the drum bus.
+   * Routed through mainGain so the compose volume slider and the note-bus
+   * limiter apply, like melodic voices.
+   */
+  async playDrum(voice: DrumVoiceId, opts?: { gain?: number }): Promise<void> {
+    const generation = this.playNoteGeneration
+    await this.init()
+    try {
+      await this.resume()
+    } catch (err) {
+      console.warn('AudioContext resume failed:', err)
+      if (!this._resumeFailedNotified) {
+        this._resumeFailedNotified = true
+        showNotification(
+          'Audio playback blocked — tap or click anywhere to enable sound',
+          'warning',
+        )
+      }
+    }
+    if (generation !== this.playNoteGeneration || !this.audioCtx) return
+    triggerDrumVoice(
+      voice,
+      this.audioCtx,
+      this.audioCtx.currentTime,
+      opts?.gain ?? 0.8,
+      this.drumGain ?? this.audioCtx.destination,
+    )
+  }
+
   /** Whether the current instrument is a plucked-string voice with its own natural decay */
   private _isPluckedInstrument(): boolean {
     return (
@@ -2015,6 +2057,7 @@ export class AudioEngine {
       this.audioCtx = null
     }
     this.metronomeGain = null
+    this.drumGain = null
     this.mainGain = null
     this.noteBusLimiter = null
     this.reverbNode = null
@@ -2038,11 +2081,14 @@ export class AudioEngine {
    * @param melody - Array of melody items to render
    * @param bpm - Beats per minute for timing
    * @param instrument - Instrument type to use (defaults to current)
+   * @param kind - 'melody' renders pitched voices; 'drums' renders each
+   *   item's MIDI lane as a percussion one-shot
    */
   async renderMelodyToWAV(
     melody: MelodyItem[],
     bpm: number,
     instrument?: InstrumentType,
+    kind: 'melody' | 'drums' = 'melody',
   ): Promise<Blob | null> {
     if (melody == null || melody.length === 0) return null
 
@@ -2056,7 +2102,10 @@ export class AudioEngine {
       const end = item.startBeat + item.duration
       if (end > totalBeats) totalBeats = end
     }
-    const totalDuration = totalBeats * beatDuration + 0.5 // +0.5s tail for release
+    // Tail past the last beat: melodic voices need release time, drum voices
+    // ring out on their own (crash decays ~0.9s) and get a full second.
+    const tail = kind === 'drums' ? 1.0 : 0.5
+    const totalDuration = totalBeats * beatDuration + tail
     const totalSamples = Math.ceil(totalDuration * sampleRate)
 
     // Create offline context
@@ -2064,6 +2113,24 @@ export class AudioEngine {
     const offlineGain = offlineCtx.createGain()
     offlineGain.gain.value = this.volume
     offlineGain.connect(offlineCtx.destination)
+
+    if (kind === 'drums') {
+      const hits = melody.filter(
+        (item) => item.note != null && item.isRest !== true,
+      )
+      if (hits.length === 0) return null
+      for (const item of hits) {
+        triggerDrumVoice(
+          drumVoiceForMidi(item.note.midi) ?? 'snare',
+          offlineCtx,
+          item.startBeat * beatDuration,
+          0.8,
+          offlineGain,
+        )
+      }
+      const renderedDrums = await offlineCtx.startRendering()
+      return this._bufferToWAV(renderedDrums)
+    }
 
     // Save current instrument and temporarily switch if needed
     const prevInstrument = this.currentInstrument
@@ -2138,8 +2205,9 @@ export class AudioEngine {
     bpm: number,
     filename = 'melody.wav',
     instrument?: InstrumentType,
+    kind: 'melody' | 'drums' = 'melody',
   ): Promise<boolean> {
-    const blob = await this.renderMelodyToWAV(melody, bpm, instrument)
+    const blob = await this.renderMelodyToWAV(melody, bpm, instrument, kind)
     if (!blob) return false
 
     const url = URL.createObjectURL(blob)
