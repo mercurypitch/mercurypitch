@@ -1011,6 +1011,11 @@ const AppShell: Component<AppProps> = (props) => {
   // During recording the grid grows to follow the playhead so the take is not
   // capped at the default arrangement length (the old 16-beat stop); during
   // review it stays large enough to show the whole take.
+  /** Name of the melody currently open, for every surface that identifies it
+   *  (singing status bar, the score header, the compose header). */
+  const currentMelodyName = (): string | null =>
+    melodyStore.currentMelody()?.name ?? null
+
   const composeTotalBeats = createMemo(() => {
     const base = totalBeats()
     const BEATS_PER_BAR = 4
@@ -2626,9 +2631,7 @@ const AppShell: Component<AppProps> = (props) => {
                         <SingingStatusBar
                           keyName={keyNameSignal}
                           scaleType={scaleTypeSignal}
-                          melodyName={() =>
-                            melodyStore.currentMelody()?.name ?? null
-                          }
+                          melodyName={currentMelodyName}
                           bpm={bpm}
                           currentBeat={currentBeat}
                           isPlaying={isPlaying}
@@ -2688,9 +2691,7 @@ const AppShell: Component<AppProps> = (props) => {
                                 >
                                   <SheetMusicView
                                     melody={activePlaybackItems}
-                                    melodyName={() =>
-                                      melodyStore.currentMelody()?.name ?? null
-                                    }
+                                    melodyName={currentMelodyName}
                                     musicKey={keyNameSignal}
                                     scaleType={scaleTypeSignal}
                                     currentBeat={currentBeat}
@@ -2818,16 +2819,13 @@ const AppShell: Component<AppProps> = (props) => {
                         <div
                           class={styles.composeIdentity}
                           data-testid="compose-melody-name"
-                          title={
-                            melodyStore.currentMelody()?.name ??
-                            'No melody loaded'
-                          }
+                          title={currentMelodyName() ?? 'No melody loaded'}
                         >
                           <span class={styles.composeIdentityIcon}>
                             <MusicNote />
                           </span>
                           <span class={styles.composeIdentityName}>
-                            {melodyStore.currentMelody()?.name ?? 'Untitled'}
+                            {currentMelodyName() ?? 'Untitled'}
                           </span>
                         </div>
                         <div
@@ -3005,9 +3003,7 @@ const AppShell: Component<AppProps> = (props) => {
                       >
                         <SheetMusicView
                           melody={() => melodyStore.items()}
-                          melodyName={() =>
-                            melodyStore.currentMelody()?.name ?? null
-                          }
+                          melodyName={currentMelodyName}
                           musicKey={keyNameSignal}
                           scaleType={scaleTypeSignal}
                           currentBeat={currentBeat}
@@ -3116,9 +3112,7 @@ const AppShell: Component<AppProps> = (props) => {
                           >
                             <SheetMusicView
                               melody={() => melodyStore.items()}
-                              melodyName={() =>
-                                melodyStore.currentMelody()?.name ?? null
-                              }
+                              melodyName={currentMelodyName}
                               musicKey={keyNameSignal}
                               scaleType={scaleTypeSignal}
                               currentBeat={currentBeat}
