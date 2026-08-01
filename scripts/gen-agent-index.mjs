@@ -125,7 +125,12 @@ function entryOf(files, dirName) {
     if (/^use[A-Z].*Controller\.tsx?$/.test(b)) return 2
     return 1
   }
-  return [...files].sort((a, b) => score(b) - score(a) || loc(b) - loc(a))[0]
+  // Name breaks the final tie: readdirSync order differs between machines,
+  // so without it a score-and-LOC tie picks a different entry point here
+  // than on CI, and docs:index:check fails on a tree that is locally clean.
+  return [...files].sort(
+    (a, b) => score(b) - score(a) || loc(b) - loc(a) || a.localeCompare(b),
+  )[0]
 }
 
 /** Repo-root-relative path -- what we *show*, because it is what you grep for. */
@@ -157,7 +162,7 @@ function dirTable(base, label) {
       return { name, entry: rel(entry), loc: total, blurb: blurb(entry) }
     })
     .filter(Boolean)
-    .sort((a, b) => b.loc - a.loc)
+    .sort((a, b) => b.loc - a.loc || a.name.localeCompare(b.name))
 
   if (!rows.length) return ''
   const body = rows
@@ -177,7 +182,7 @@ function fileTable(base, label, { min = 0, limit = Infinity } = {}) {
       return { name: n, path: rel(full), loc: loc(full), blurb: blurb(full) }
     })
     .filter((r) => r.loc >= min)
-    .sort((a, b) => b.loc - a.loc)
+    .sort((a, b) => b.loc - a.loc || a.name.localeCompare(b.name))
     .slice(0, limit)
 
   if (!rows.length) return ''
@@ -192,7 +197,7 @@ function heavyFiles(threshold = 1200) {
   const files = [...walk(join(ROOT, 'src')), ...walk(join(ROOT, 'workers'))]
     .map((f) => ({ path: rel(f), loc: loc(f) }))
     .filter((r) => r.loc >= threshold)
-    .sort((a, b) => b.loc - a.loc)
+    .sort((a, b) => b.loc - a.loc || a.path.localeCompare(b.path))
   if (!files.length) return ''
   const body = files.map((r) => `| ${link(r.path, r.path)} | ${fmtLoc(r.loc)} |`).join('\n')
   return [
