@@ -24,6 +24,10 @@ interface SheetMusicViewProps {
   melody: () => MelodyItem[]
   musicKey: () => string
   scaleType: () => string
+  /** Name of the melody/song being shown, so the score says what it is
+   *  rather than just its key — Split view otherwise reads as two
+   *  unrelated pieces. */
+  melodyName?: () => string | null
   beatsPerBar?: number
   /** playback position (beats); enables the cursor + highlight when provided */
   currentBeat?: () => number
@@ -423,9 +427,20 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
             <Music />
           </span>
           <span>
-            <span class={styles.kicker}>Live score</span>
-            <strong class={styles.scoreTitle}>
-              {props.musicKey()} {props.scaleType().replaceAll('-', ' ')}
+            <span class={styles.kicker}>
+              Live score · {props.musicKey()}{' '}
+              {props.scaleType().replaceAll('-', ' ')}
+            </span>
+            <strong
+              class={styles.scoreTitle}
+              classList={{
+                [styles.scoreTitleName]: (props.melodyName?.() ?? '') !== '',
+              }}
+              title={props.melodyName?.() ?? undefined}
+              data-testid="sheet-melody-name"
+            >
+              {props.melodyName?.() ??
+                `${props.musicKey()} ${props.scaleType().replaceAll('-', ' ')}`}
             </strong>
           </span>
         </div>

@@ -63,9 +63,12 @@ export function useEditorController(_deps: Deps): EditorController {
         const data = new Uint8Array(buffer)
         const melody = importMelodyFromMIDI(data)
         if (melody !== null && melody.length > 0) {
-          melodyStore.setMelody(melody)
+          // Name the melody after the file instead of dropping its notes into
+          // whichever melody happened to be open under that melody's name.
+          const name = file.name.replace(/\.(mid|midi)$/i, '')
+          melodyStore.loadImportedMelody(melody, name)
           showNotification(
-            `Imported ${melody.length} note(s) from MIDI`,
+            `Imported ${melody.length} note(s) from ${name}`,
             'success',
           )
         } else {

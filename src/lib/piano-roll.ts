@@ -10,7 +10,7 @@ import { DRUM_LANE_BY_MIDI, DRUM_LANE_SCALE } from '@/lib/drum-lanes'
 import { CHORD_FILL, CHORD_STROKE, drawChordShape, drawEffectBadge, drawSlideProgress, drawStaccatoShape, drawTrillProgress, SLIDE_FILL, SLIDE_STROKE, slideShapePath, STACCATO_FILL, STACCATO_STROKE, TREMOLO_FILL, TREMOLO_STROKE, TRILL_FILL, TRILL_STROKE, trillShapePath, VIBRATO_FILL, VIBRATO_STROKE, vibratoShapePath, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { PitchDetector } from '@/lib/pitch-detector'
-import { buildMultiOctaveScale, midiToFreq, midiToNote } from '@/lib/scale-data'
+import { buildMultiOctaveScale, melodyMidiRange, midiToFreq, midiToNote, } from '@/lib/scale-data'
 import { showNotification } from '@/stores/notifications-store'
 import type { ChordType, MelodyItem, MelodyKind, NoteName, PianoRollConfig, ScaleDegree, } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
@@ -29,6 +29,11 @@ const PIANO_ROLL_CONFIG: PianoRollConfig = {
     ghost: 'rgba(88, 166, 255, 0.35)',
   },
 }
+
+/** Hard ceiling for a canvas's backing store in device px. Browsers cap canvas
+ *  dimensions (Chrome 65,535; Safari lower) and silently fail to allocate past
+ *  it. The grid is viewport-sized so this is only a safety net. */
+const MAX_CANVAS_PX = 16384
 
 /** Canvas colors/fonts, resolved from CSS custom properties on the editor's
  *  container (with the historical dark values as fallbacks) so the canvases
@@ -498,6 +503,10 @@ export interface PianoRollOptions {
   /** Toolbar hints button pressed. Same host-owned round-trip contract as
    *  onGridToggle, but for the hover-hint tooltip (setHoverHints). */
   onHoverHintsToggle?: () => void
+  /** A MIDI file was imported from the roll's own toolbar. The host stores it
+   *  as a melody NAMED after the file rather than overwriting whatever melody
+   *  was current under its old name. */
+  onMelodyImport?: (melody: MelodyItem[], name: string) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -544,7 +553,15 @@ export class PianoRollEditor {
   private pianoWidth: number
   private rulerHeight: number
   private totalRows = 0
+  /** Full content width in CSS px (totalBeats * beatWidth, at least a viewport). */
   private stretchedWidth = 0
+  /** Visible width of the grid viewport in CSS px — the canvas is sized to THIS,
+   *  never to the content, so a long song can't exceed the browser's canvas
+   *  dimension limit (a 267-bar song is ~51k CSS px = ~102k device px at DPR 2,
+   *  well past Chrome's 65,535 cap, which silently yields a blank canvas). */
+  private viewportWidth = 0
+  /** Horizontal scroll offset in content px. Content x = canvas x + scrollX. */
+  private scrollX = 0
 
   // Playback
   private playbackState: PlaybackState = 'stopped'
@@ -686,6 +703,7 @@ export class PianoRollEditor {
   private onPlaybackStateChange?: (state: PlaybackState) => void
   private onGridToggle?: () => void
   private onHoverHintsToggle?: () => void
+  private onMelodyImport?: (melody: MelodyItem[], name: string) => void
 
   constructor(options: PianoRollOptions) {
     this.container = options.container
@@ -701,6 +719,7 @@ export class PianoRollEditor {
     this.onConfirm = options.onConfirm
     this.onGridToggle = options.onGridToggle
     this.onHoverHintsToggle = options.onHoverHintsToggle
+    this.onMelodyImport = options.onMelodyImport
 
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
@@ -809,25 +828,64 @@ export class PianoRollEditor {
 
     this.initializeBallPhysics()
 
-    // Drum mode has a fixed 12-lane grid — never auto-grow octave rows.
+    // Drum mode has a fixed 12-lane grid — never auto-fit octave rows.
     if (melody.length > 0 && this.kind !== 'drums') {
-      let minMidi = Infinity
-      let maxMidi = -Infinity
-      for (const item of melody) {
-        const midi = item.note?.midi
-        if (typeof midi !== 'number') continue
-        if (midi < minMidi) minMidi = midi
-        if (midi > maxMidi) maxMidi = midi
-      }
-      if (Number.isFinite(minMidi) && Number.isFinite(maxMidi)) {
-        const span = Math.ceil((maxMidi - minMidi + 1) / 12)
-        const needed = Math.min(MAX_OCTAVE_ROWS, Math.max(2, span))
-        if (needed > this.numOctaves) {
-          this.setNumOctaves(needed)
-        }
-      }
+      this._fitRowsToMelody(melody)
     }
     this.updateBeatInfo()
+  }
+
+  /**
+   * Size AND position the visible rows to cover a melody's pitch range.
+   *
+   * The old version only ever grew the octave COUNT, never moved the window's
+   * bottom octave, so importing a song reaching below the current start
+   * octave left its low notes rendered hatched off-grid (the "N notes are
+   * outside the visible rows" case) with a mostly-empty grid above them.
+   * Both ends have to move.
+   */
+  private _fitRowsToMelody(melody: MelodyItem[]): void {
+    const range = melodyMidiRange(melody)
+
+    // Only re-frame when something would actually be off-grid. Melodies that
+    // already fit keep the user's chosen window — loading a one-note sketch
+    // should not yank the rows around, and the manual Rows +/- controls stay
+    // in charge of everything else.
+    const top = this.scale[0]
+    const bottom = this.scale[this.scale.length - 1]
+    if (
+      top !== undefined &&
+      bottom !== undefined &&
+      range.min >= bottom.midi &&
+      range.max <= top.midi
+    ) {
+      return
+    }
+
+    // C4 = MIDI 60 → octave 4, matching midiToNote's numbering.
+    const lowOct = Math.floor(range.min / 12) - 1
+    const highOct = Math.floor(range.max / 12) - 1
+    const needed = Math.min(MAX_OCTAVE_ROWS, Math.max(2, highOct - lowOct + 1))
+    // Anchor the window on the lowest note, then pull it back down if the
+    // clamped count would push the top above the highest note.
+    let start = Math.max(1, lowOct)
+    if (highOct - start + 1 > needed) start = Math.max(1, highOct - needed + 1)
+
+    if (start === this.octave && needed === this.numOctaves) return
+    this.octave = start
+    // setNumOctaves early-returns when the count is unchanged, so rebuild
+    // explicitly for the octave-only move.
+    if (needed !== this.numOctaves) {
+      this.setNumOctaves(needed)
+    } else {
+      this._rebuildScale()
+      this.buildCanvases()
+      this.draw()
+      eventBus.dispatch('pitchperfect:octaveChange', {
+        octave: this.octave,
+        numOctaves: this.numOctaves,
+      })
+    }
   }
 
   /**
@@ -1906,6 +1964,17 @@ export class PianoRollEditor {
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z"/></svg>
         <span>Scroll</span>
       </button>
+      <button id="roll-bar-prev" class="roll-zoom-btn" title="Previous page" aria-label="Previous page">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <label class="roll-bar-jump" title="Go to bar">
+        <span class="roll-bar-label">Bar</span>
+        <input id="roll-bar-input" class="roll-bar-input" type="number" min="1" value="1" aria-label="Go to bar" />
+        <span id="roll-bar-total" class="roll-bar-total">/ 1</span>
+      </label>
+      <button id="roll-bar-next" class="roll-zoom-btn" title="Next page" aria-label="Next page">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+      </button>
       <button id="roll-browse-toggle" class="roll-browse-btn" title="Browse mode (read-only, touch-scroll friendly)" aria-label="Browse mode" aria-pressed="false">
         <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         <span>Browse</span>
@@ -2158,6 +2227,89 @@ export class PianoRollEditor {
     this.buildCanvases()
   }
 
+  /** Keep scrollX inside the scrollable range (content minus one viewport). */
+  private _clampScroll(): void {
+    const max = Math.max(0, this.stretchedWidth - this.viewportWidth)
+    this.scrollX = Math.max(0, Math.min(this.scrollX, max))
+  }
+
+  /** Park the viewport-sized canvases at the current scroll offset inside the
+   *  full-width spacer, so they always cover exactly what the user can see. */
+  private _positionViewportCanvases(): void {
+    const left = `${this.scrollX}px`
+    if (this.gridCanvas) this.gridCanvas.style.left = left
+    if (this.ballCanvas) this.ballCanvas.style.left = left
+  }
+
+  /** Move the viewport without repainting. Safe to call from inside a draw
+   *  pass (the follow-the-playhead path does) — the next frame paints at the
+   *  new offset, so there is no re-entrant draw. */
+  private _setScroll(x: number): void {
+    this.scrollX = x
+    this._clampScroll()
+    if (this.gridContainer && this.gridContainer.scrollLeft !== this.scrollX) {
+      this.gridContainer.scrollLeft = this.scrollX
+    }
+    this._positionViewportCanvases()
+  }
+
+  /** Scroll so a content-x is visible, then redraw. For user-driven jumps
+   *  (bar navigator, seek) — never call from inside a draw pass. */
+  scrollToContentX(x: number, align: 'start' | 'center' = 'center'): void {
+    this._setScroll(
+      align === 'center'
+        ? x - this.viewportWidth / 2
+        : x - this.viewportWidth * 0.1,
+    )
+    if (this.isExternalPlayback) this.drawWithPlayhead()
+    else this.draw()
+  }
+
+  /** Jump to a bar (1-based), as used by the toolbar's bar navigator. */
+  goToBar(bar: number): void {
+    const beatsPerBar = this.config.beatsPerBar
+    const totalBars = Math.max(1, Math.ceil(this.totalBeats / beatsPerBar))
+    const clamped = Math.max(1, Math.min(Math.round(bar), totalBars))
+    this.scrollToContentX((clamped - 1) * beatsPerBar * this.beatWidth, 'start')
+    this._updateBarNavigator()
+  }
+
+  /** Page the view by whole viewports. */
+  pageView(direction: -1 | 1): void {
+    this.scrollToContentX(
+      this.scrollX +
+        this.viewportWidth * 0.9 * direction +
+        this.viewportWidth * 0.1,
+      'start',
+    )
+    this._updateBarNavigator()
+  }
+
+  /** Sync the bar navigator input + total to the current scroll position. */
+  private _updateBarNavigator(): void {
+    const beatsPerBar = this.config.beatsPerBar
+    const totalBars = Math.max(1, Math.ceil(this.totalBeats / beatsPerBar))
+    const input = this.container.querySelector(
+      '#roll-bar-input',
+    ) as HTMLInputElement | null
+    const totalEl = this.container.querySelector('#roll-bar-total')
+    if (input) {
+      input.max = String(totalBars)
+      if (document.activeElement !== input) {
+        const bar = Math.floor(this.scrollX / this.beatWidth / beatsPerBar) + 1
+        input.value = String(Math.min(bar, totalBars))
+      }
+    }
+    if (totalEl) totalEl.textContent = `/ ${totalBars}`
+  }
+
+  /** Device-pixel ratio, clamped so a canvas can never exceed MAX_CANVAS_PX. */
+  private _safeDpr(cssWidth: number, cssHeight: number): number {
+    const dpr = window.devicePixelRatio || 1
+    const longest = Math.max(cssWidth, cssHeight, 1)
+    return Math.min(dpr, Math.max(1, MAX_CANVAS_PX / longest))
+  }
+
   private buildCanvases(): void {
     const dpr = window.devicePixelRatio || 1
     const totalHeight = this.totalRows * this.rowHeight
@@ -2168,8 +2320,25 @@ export class PianoRollEditor {
     // to the right of the content and breaking Fit.
     const minWidth = this.totalBeats * this.beatWidth
     const containerWidth = this.gridContainer?.clientWidth ?? 0
+    // Content width (what you can scroll through) vs viewport width (what the
+    // canvas actually rasterises). Keeping these separate is what lets an
+    // arbitrarily long song render at all.
     this.stretchedWidth =
       containerWidth > 0 ? Math.max(minWidth, containerWidth) : minWidth
+    this.viewportWidth =
+      containerWidth > 0 ? containerWidth : this.stretchedWidth
+
+    // The layer is the scroll spacer: it carries the full content width so the
+    // container shows a native horizontal scrollbar, while the canvases stay
+    // viewport-sized and are repositioned to the scroll offset on every scroll.
+    const gridLayer = this.container.querySelector(
+      '.roll-grid-layer',
+    ) as HTMLElement | null
+    if (gridLayer) {
+      gridLayer.style.width = `${this.stretchedWidth}px`
+      gridLayer.style.height = `${totalHeight}px`
+    }
+    this._clampScroll()
 
     // Piano canvas — style.width must be pinned like every other canvas or
     // HiDPI displays lay the column out at width*dpr CSS px (labels at half
@@ -2183,37 +2352,42 @@ export class PianoRollEditor {
       if (this.pianoCtx) this.pianoCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
-    // Ruler canvas spans full width (piano + grid)
-    const rulerWidth = this.pianoWidth + this.stretchedWidth
+    // Ruler canvas spans the piano column plus ONE viewport of grid; the beat
+    // marks inside it are drawn at the scroll offset (see drawRuler).
+    const rulerWidth = this.pianoWidth + this.viewportWidth
     if (this.rulerCanvas) {
-      this.rulerCanvas.width = rulerWidth * dpr
-      this.rulerCanvas.height = this.rulerHeight * dpr
+      const rDpr = this._safeDpr(rulerWidth, this.rulerHeight)
+      this.rulerCanvas.width = rulerWidth * rDpr
+      this.rulerCanvas.height = this.rulerHeight * rDpr
       this.rulerCanvas.style.width = `${rulerWidth}px`
       this.rulerCanvas.style.height = `${this.rulerHeight}px`
       this.rulerCtx = this.rulerCanvas.getContext('2d')
-      if (this.rulerCtx) this.rulerCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.rulerCtx) this.rulerCtx.setTransform(rDpr, 0, 0, rDpr, 0, 0)
     }
 
-    // Grid canvas
+    // Grid canvas — viewport-sized, parked at the current scroll offset.
     if (this.gridCanvas) {
-      this.gridCanvas.width = this.stretchedWidth * dpr
-      this.gridCanvas.height = totalHeight * dpr
-      this.gridCanvas.style.width = `${this.stretchedWidth}px`
+      const gDpr = this._safeDpr(this.viewportWidth, totalHeight)
+      this.gridCanvas.width = this.viewportWidth * gDpr
+      this.gridCanvas.height = totalHeight * gDpr
+      this.gridCanvas.style.width = `${this.viewportWidth}px`
       this.gridCanvas.style.height = `${totalHeight}px`
       this.gridCtx = this.gridCanvas.getContext('2d')
-      if (this.gridCtx) this.gridCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.gridCtx) this.gridCtx.setTransform(gDpr, 0, 0, gDpr, 0, 0)
     }
 
     // Ball canvas (for Yousician-style ball jumping through notes)
     if (this.ballCanvas) {
-      const containerWidth = this.gridContainer?.clientWidth ?? 0
-      this.ballCanvas.width = containerWidth * dpr
-      this.ballCanvas.height = totalHeight * dpr
-      this.ballCanvas.style.width = `${containerWidth}px`
+      const bDpr = this._safeDpr(this.viewportWidth, totalHeight)
+      this.ballCanvas.width = this.viewportWidth * bDpr
+      this.ballCanvas.height = totalHeight * bDpr
+      this.ballCanvas.style.width = `${this.viewportWidth}px`
       this.ballCanvas.style.height = `${totalHeight}px`
       this.ballCtx = this.ballCanvas.getContext('2d') ?? null
-      if (this.ballCtx) this.ballCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      if (this.ballCtx) this.ballCtx.setTransform(bDpr, 0, 0, bDpr, 0, 0)
     }
+
+    this._positionViewportCanvases()
 
     // Cache status bar elements
     this.hintEl = this.container.querySelector('#roll-note-info')
@@ -2699,12 +2873,24 @@ export class PianoRollEditor {
       { signal },
     )
 
-    // Scroll sync ruler
-    this.gridContainer?.addEventListener('scroll', () => {
-      if (this.rulerCanvas && this.gridContainer) {
-        this.rulerCanvas.style.transform = `translateX(${-this.gridContainer.scrollLeft}px)`
-      }
-    })
+    // Horizontal scroll: move the viewport canvases to the new offset and
+    // repaint. The ruler is redrawn at the same offset rather than being
+    // transform-shifted (it is viewport-sized now, not content-sized).
+    this.gridContainer?.addEventListener(
+      'scroll',
+      () => {
+        if (!this.gridContainer) return
+        const next = this.gridContainer.scrollLeft
+        if (next === this.scrollX) return
+        this.scrollX = next
+        this._clampScroll()
+        this._positionViewportCanvases()
+        this._updateBarNavigator()
+        if (this.isExternalPlayback) this.drawWithPlayhead()
+        else this.draw()
+      },
+      { passive: true },
+    )
 
     // Keyboard
     document.addEventListener(
@@ -2797,6 +2983,28 @@ export class PianoRollEditor {
       this.draw()
     })
 
+    // Bar navigation — paging and jump-to-bar for long imported songs.
+    container.querySelector('#roll-bar-prev')?.addEventListener('click', () => {
+      this.pageView(-1)
+    })
+    container.querySelector('#roll-bar-next')?.addEventListener('click', () => {
+      this.pageView(1)
+    })
+    const barInput = container.querySelector(
+      '#roll-bar-input',
+    ) as HTMLInputElement | null
+    barInput?.addEventListener('change', () => {
+      this.goToBar(parseInt(barInput.value, 10) || 1)
+    })
+    barInput?.addEventListener('keydown', (e) => {
+      // Enter commits without waiting for blur; the editor's global shortcuts
+      // already stand down while a form control has focus.
+      if ((e as KeyboardEvent).key === 'Enter') {
+        this.goToBar(parseInt(barInput.value, 10) || 1)
+        barInput.blur()
+      }
+    })
+
     // Browse / preview mode toggle
     const browseToggle = container.querySelector('#roll-browse-toggle')
     browseToggle?.addEventListener('click', () => {
@@ -2837,10 +3045,14 @@ export class PianoRollEditor {
           const data = new Uint8Array(buffer)
           const melody = importMelodyFromMIDI(data)
           if (melody && melody.length > 0) {
+            const name = file.name.replace(/\.(mid|midi)$/i, '')
             this.setMelody(melody)
-            this.onMelodyChange?.(melody)
+            // Prefer the naming import so the library records what was loaded;
+            // fall back to a plain change when the host doesn't handle it.
+            if (this.onMelodyImport) this.onMelodyImport(melody, name)
+            else this.onMelodyChange?.(melody)
             if (this.hintEl)
-              this.hintEl.textContent = `Imported ${melody.length} note(s) from MIDI`
+              this.hintEl.textContent = `Imported ${melody.length} note(s) from ${name}`
           } else {
             if (this.hintEl)
               this.hintEl.textContent = 'Could not parse MIDI file'
@@ -2970,7 +3182,7 @@ export class PianoRollEditor {
   private onGridMouseDown(e: MouseEvent): void {
     if (!this.gridCanvas) return
     const rect = this.gridCanvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
+    const x = e.clientX - rect.left + this.scrollX
     const y = e.clientY - rect.top
     const beat = x / this.beatWidth
     const row = Math.floor(y / this.rowHeight)
@@ -3184,7 +3396,7 @@ export class PianoRollEditor {
   private onGridMouseMove(e: MouseEvent): void {
     if (!this.gridCanvas) return
     const rect = this.gridCanvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
+    const x = e.clientX - rect.left + this.scrollX
     const y = e.clientY - rect.top
 
     if (this.isBoxSelecting) {
@@ -3407,7 +3619,7 @@ export class PianoRollEditor {
   private onRightClick(e: MouseEvent): void {
     if (!this.gridCanvas) return
     const rect = this.gridCanvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
+    const x = e.clientX - rect.left + this.scrollX
     const y = e.clientY - rect.top
     const beat = x / this.beatWidth
     const row = Math.floor(y / this.rowHeight)
@@ -3849,12 +4061,11 @@ export class PianoRollEditor {
     // Ball physics update for external playback
     if (this.useBallPhysics && this.ballState && this.ballCtx) {
       const ballCtx = this.ballCtx
-      const ballCanvas = this.ballCanvas
+      const totalHeightForBall = this.totalRows * this.rowHeight
       const countInOffset =
         this._countInBeats > 0 && beat <= 0
           ? this._countInBeats * this.beatWidth
           : 0
-      const playheadX = countInOffset + beat * this.beatWidth
 
       const ballConfig: BallPhysicsConfig = {
         notes: this.ballNotes,
@@ -3880,13 +4091,14 @@ export class PianoRollEditor {
         this.rowHeight / 2
       const ballPixelX = countInOffset + this.ballState.x * this.beatWidth
 
-      // Draw ball with glowing effect
-      if (ballCanvas) {
-        ballCtx.clearRect(0, 0, ballCanvas.width, ballCanvas.height)
-      }
-
-      // Glow effect
+      // Draw ball with glowing effect. The ball canvas is viewport-sized but
+      // the ball's x is in song space, so it needs the same content-space
+      // shift as the grid — without it the ball vanished past the first
+      // viewport of a long song. (clearRect uses CSS px: the context carries
+      // a DPR transform, so backing-store dimensions would clear 2x too much.)
+      ballCtx.clearRect(0, 0, this.viewportWidth, totalHeightForBall)
       ballCtx.save()
+      ballCtx.translate(-this.scrollX, 0)
       ballCtx.shadowColor = this.palette.activeGlow
       ballCtx.shadowBlur = 12
       ballCtx.fillStyle = this.palette.active
@@ -3899,14 +4111,6 @@ export class PianoRollEditor {
       ballCtx.arc(ballPixelX, pixelY, this.ballRadius * 0.5, 0, Math.PI * 2)
       ballCtx.fill()
       ballCtx.restore()
-
-      // Scroll grid to keep ball within view
-      if (this.gridContainer) {
-        const targetScroll = playheadX - this.gridContainer.clientWidth * 0.3
-        if (targetScroll > 0) {
-          this.gridContainer.scrollLeft = targetScroll
-        }
-      }
     }
 
     // GH #129: Track the current note row for vertical glow dot (deprecated)
@@ -3991,7 +4195,10 @@ export class PianoRollEditor {
     if (!this.rulerCanvas || (this.loopA <= 0 && this.loopB <= 0)) return null
     const rect = this.rulerCanvas.getBoundingClientRect()
     return hitTestAbLoopMarker(
-      clientX - rect.left,
+      // The ruler is viewport-sized and drawn shifted by scrollX, so a screen
+      // x has to be moved back into content space before it can be compared
+      // with rulerXOfBeat's content-space marker positions.
+      clientX - rect.left + this.scrollX,
       this.loopA,
       this.loopB,
       (b) => this.rulerXOfBeat(b),
@@ -4002,17 +4209,20 @@ export class PianoRollEditor {
   private rulerBeatFromClientX(clientX: number): number {
     if (!this.rulerCanvas) return 0
     const rect = this.rulerCanvas.getBoundingClientRect()
-    return Math.max(0, (clientX - rect.left - this.pianoWidth) / this.beatWidth)
+    return Math.max(
+      0,
+      (clientX - rect.left - this.pianoWidth + this.scrollX) / this.beatWidth,
+    )
   }
 
   private seekToRulerPosition(e: MouseEvent): void {
     const rect = this.rulerCanvas?.getBoundingClientRect()
     if (!rect || !this.gridContainer) return
 
-    // BUGFIX: the ruler canvas spans `pianoWidth + stretchedWidth`, with
-    // beat markers drawn at `pianoWidth + b * beatWidth`. Without
-    // subtracting pianoWidth we'd have a constant rightward offset.
-    const x = e.clientX - rect.left - this.pianoWidth
+    // BUGFIX: the ruler canvas starts with the piano column, and its beat
+    // markers are drawn at `pianoWidth + b * beatWidth` shifted by scrollX —
+    // so undo both to get a content-space x.
+    const x = e.clientX - rect.left - this.pianoWidth + this.scrollX
 
     // Clamp upper bound to the LAST NOTE END rather than the full grid
     // width. The grid often extends past the end of the melody (empty
@@ -4028,11 +4238,13 @@ export class PianoRollEditor {
     const upperBound = melodyEnd > 0 ? melodyEnd : this.totalBeats
     const beat = Math.max(0, Math.min(upperBound, x / this.beatWidth))
 
-    const targetScroll = beat * this.beatWidth - rect.width / 2
-    this.gridContainer.scrollLeft = Math.max(0, targetScroll)
-
-    // Update local playhead immediately for visual feedback.
+    // Update local playhead immediately for visual feedback, keeping the
+    // seeked position on screen.
     this.remoteBeat = beat
+    const playheadX = beat * this.beatWidth
+    if (playheadX < this._viewLeft || playheadX > this._viewRight) {
+      this._setScroll(playheadX - this.viewportWidth / 2)
+    }
     this.drawGridWithPlayhead()
 
     // Audio scrubbing: play a short preview of the note at the seeked
@@ -4151,7 +4363,8 @@ export class PianoRollEditor {
 
   private drawWithPlayhead(): void {
     this.drawPiano()
-    this.drawRulerWithPlayhead()
+    // drawGridWithPlayhead draws the ruler itself — calling it here too made
+    // the most expensive routine in the file run twice per frame.
     this.drawGridWithPlayhead()
   }
 
@@ -4307,17 +4520,29 @@ export class PianoRollEditor {
     }
   }
 
+  /** Clip the ruler to its grid region and shift into content space, so beat
+   *  marks scroll with the grid and never bleed over the piano column. */
+  private _beginRulerContentSpace(ctx: CanvasRenderingContext2D): void {
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(this.pianoWidth, 0, this.viewportWidth, this.rulerHeight)
+    ctx.clip()
+    ctx.translate(-this.scrollX, 0)
+  }
+
   private drawRuler(): void {
     if (!this.rulerCtx) return
     const ctx = this.rulerCtx
-    const rulerWidth = this.pianoWidth + this.stretchedWidth
+    const rulerWidth = this.pianoWidth + this.viewportWidth
 
     ctx.clearRect(0, 0, rulerWidth, this.rulerHeight)
     ctx.fillStyle = this.palette.surface
     ctx.fillRect(0, 0, rulerWidth, this.rulerHeight)
 
-    // Beat markers (offset by piano width)
-    for (let b = 0; b <= this.totalBeats; b++) {
+    // Beat markers (offset by piano width), visible range only
+    this._beginRulerContentSpace(ctx)
+    const { from, to } = this._visibleBeats(this.pianoWidth)
+    for (let b = from; b <= to; b++) {
       const x = this.pianoWidth + b * this.beatWidth
       const isBar = b % this.config.beatsPerBar === 0
 
@@ -4342,6 +4567,7 @@ export class PianoRollEditor {
         ctx.textBaseline = 'alphabetic'
       }
     }
+    ctx.restore()
 
     // Bottom border
     ctx.strokeStyle = this.palette.border
@@ -4358,7 +4584,7 @@ export class PianoRollEditor {
   private drawRulerWithPlayhead(): void {
     if (!this.rulerCtx) return
     const ctx = this.rulerCtx
-    const rulerWidth = this.pianoWidth + this.stretchedWidth
+    const rulerWidth = this.pianoWidth + this.viewportWidth
 
     ctx.clearRect(0, 0, rulerWidth, this.rulerHeight)
     ctx.fillStyle = this.palette.surface
@@ -4371,7 +4597,9 @@ export class PianoRollEditor {
         ? this._countInBeats * this.beatWidth
         : 0
 
-    for (let b = 0; b <= this.totalBeats; b++) {
+    this._beginRulerContentSpace(ctx)
+    const { from, to } = this._visibleBeats(this.pianoWidth + countInOffset)
+    for (let b = from; b <= to; b++) {
       const x = this.pianoWidth + countInOffset + b * this.beatWidth
       const isBar = b % this.config.beatsPerBar === 0
 
@@ -4396,6 +4624,7 @@ export class PianoRollEditor {
         ctx.textBaseline = 'alphabetic'
       }
     }
+    ctx.restore()
 
     ctx.strokeStyle = this.palette.border
     ctx.lineWidth = 1
@@ -4404,7 +4633,8 @@ export class PianoRollEditor {
     ctx.lineTo(rulerWidth, this.rulerHeight - 1)
     ctx.stroke()
 
-    // A-B loop markers (below the playhead triangle, drawn next)
+    // A-B loop markers + playhead live in content space too.
+    this._beginRulerContentSpace(ctx)
     this.drawRulerLoop(ctx, countInOffset)
 
     // Playhead triangle — offset during count-in so it's visible
@@ -4422,6 +4652,62 @@ export class PianoRollEditor {
     ctx.closePath()
     ctx.fill()
     ctx.restore()
+    // close _beginRulerContentSpace
+    ctx.restore()
+  }
+
+  /** Left/right edges of the visible content window, in content px. */
+  private get _viewLeft(): number {
+    return this.scrollX
+  }
+
+  private get _viewRight(): number {
+    return this.scrollX + this.viewportWidth
+  }
+
+  /** Whether a note's span intersects the viewport. Note drawing is by far the
+   *  most expensive per-item work (shadows, rounded paths, effect shapes, plus
+   *  two linear scale scans), so off-screen notes must not pay it — this is
+   *  what keeps a 500-note import at full frame rate. */
+  private _noteVisible(
+    startBeat: number,
+    duration: number,
+    offset = 0,
+  ): boolean {
+    const x1 = offset + startBeat * this.beatWidth
+    const x2 = x1 + duration * this.beatWidth
+    // Generous margin so slide/trill shapes and badges that overhang their
+    // note box are never clipped at the edges.
+    return x2 >= this._viewLeft - 80 && x1 <= this._viewRight + 80
+  }
+
+  /** Inclusive beat indices intersecting the viewport, so grid loops cost the
+   *  same on a 4-bar sketch and a 267-bar import. `offset` is the count-in
+   *  shift applied to content x. */
+  private _visibleBeats(offset = 0): { from: number; to: number } {
+    const from = Math.max(
+      0,
+      Math.floor((this._viewLeft - offset) / this.beatWidth) - 1,
+    )
+    const to = Math.min(
+      this.totalBeats,
+      Math.ceil((this._viewRight - offset) / this.beatWidth) + 1,
+    )
+    return { from, to }
+  }
+
+  /** Prepare a viewport canvas: clear, paint the background, then shift into
+   *  content space so every existing `beat * beatWidth` calculation is
+   *  unchanged. Callers must ctx.restore() when done. */
+  private _beginContentSpace(
+    ctx: CanvasRenderingContext2D,
+    height: number,
+  ): void {
+    ctx.clearRect(0, 0, this.viewportWidth, height)
+    ctx.fillStyle = this.palette.bg
+    ctx.fillRect(0, 0, this.viewportWidth, height)
+    ctx.save()
+    ctx.translate(-this.scrollX, 0)
   }
 
   private drawGrid(): void {
@@ -4429,11 +4715,11 @@ export class PianoRollEditor {
     const ctx = this.gridCtx
     const totalHeight = this.totalRows * this.rowHeight
 
-    ctx.clearRect(0, 0, this.stretchedWidth, totalHeight)
-    ctx.fillStyle = this.palette.bg
-    ctx.fillRect(0, 0, this.stretchedWidth, totalHeight)
+    this._beginContentSpace(ctx, totalHeight)
 
-    // Horizontal lines
+    // Horizontal lines — only across the visible window.
+    const left = this._viewLeft
+    const right = this._viewRight
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight
       const note = i < this.totalRows ? this.scale[i] : null
@@ -4441,22 +4727,23 @@ export class PianoRollEditor {
 
       if (isBlack != null && isBlack) {
         ctx.fillStyle = this.palette.blackRow
-        ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
+        ctx.fillRect(left, y, this.viewportWidth, this.rowHeight)
       }
 
       if (this.showGrid) {
         ctx.strokeStyle = this.palette.gridLine
         ctx.lineWidth = 0.5
         ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(this.stretchedWidth, y)
+        ctx.moveTo(left, y)
+        ctx.lineTo(right, y)
         ctx.stroke()
       }
     }
 
     // Vertical lines (only when grid is visible)
     if (this.showGrid) {
-      for (let b = 0; b <= this.totalBeats; b++) {
+      const { from, to } = this._visibleBeats()
+      for (let b = from; b <= to; b++) {
         const x = b * this.beatWidth
         const isBar = b % this.config.beatsPerBar === 0
         ctx.strokeStyle = isBar ? this.palette.border : this.palette.gridLine
@@ -4477,13 +4764,16 @@ export class PianoRollEditor {
     // A-B loop span (stopped state; no count-in offset)
     this.drawGridLoop(ctx, 0, totalHeight)
 
-    // Box selection rectangle
+    ctx.restore()
+
+    // Box selection rectangle — its corners are stored in content space.
     if (this.isBoxSelecting) {
       const bx = Math.min(this.boxStartX, this.boxEndX)
       const by = Math.min(this.boxStartY, this.boxEndY)
       const bw = Math.abs(this.boxEndX - this.boxStartX)
       const bh = Math.abs(this.boxEndY - this.boxStartY)
       ctx.save()
+      ctx.translate(-this.scrollX, 0)
       ctx.fillStyle = 'rgba(88, 166, 255, 0.15)'
       ctx.fillRect(bx, by, bw, bh)
       ctx.strokeStyle = 'rgba(88, 166, 255, 0.7)'
@@ -4499,14 +4789,14 @@ export class PianoRollEditor {
     const ctx = this.gridCtx
     const totalHeight = this.totalRows * this.rowHeight
 
-    ctx.clearRect(0, 0, this.stretchedWidth, totalHeight)
-    ctx.fillStyle = this.palette.bg
-    ctx.fillRect(0, 0, this.stretchedWidth, totalHeight)
+    this._beginContentSpace(ctx, totalHeight)
 
     // GH #122: Waveform background during mic recording
-    this.drawWaveformBackground(ctx, this.stretchedWidth, totalHeight)
+    this.drawWaveformBackground(ctx, this.viewportWidth, totalHeight)
 
-    // Horizontal lines
+    // Horizontal lines — only across the visible window.
+    const left = this._viewLeft
+    const right = this._viewRight
     for (let i = 0; i <= this.totalRows; i++) {
       const y = i * this.rowHeight
       const note = i < this.totalRows ? this.scale[i] : null
@@ -4514,15 +4804,15 @@ export class PianoRollEditor {
 
       if (isBlack != null && isBlack) {
         ctx.fillStyle = this.palette.blackRow
-        ctx.fillRect(0, y, this.stretchedWidth, this.rowHeight)
+        ctx.fillRect(left, y, this.viewportWidth, this.rowHeight)
       }
 
       if (this.showGrid) {
         ctx.strokeStyle = this.palette.gridLine
         ctx.lineWidth = 0.5
         ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(this.stretchedWidth, y)
+        ctx.moveTo(left, y)
+        ctx.lineTo(right, y)
         ctx.stroke()
       }
     }
@@ -4537,7 +4827,8 @@ export class PianoRollEditor {
 
     // Vertical lines (only when grid is visible) — offset during count-in
     if (this.showGrid) {
-      for (let b = 0; b <= this.totalBeats; b++) {
+      const { from, to } = this._visibleBeats(countInOffset)
+      for (let b = from; b <= to; b++) {
         const x = countInOffset + b * this.beatWidth
         const isBar = b % this.config.beatsPerBar === 0
         ctx.strokeStyle = isBar ? this.palette.border : this.palette.gridLine
@@ -4575,9 +4866,11 @@ export class PianoRollEditor {
     // Live pitch needle — where the singer is right now.
     this.drawLiveNeedle(ctx, playheadX)
 
-    // During recording, scroll to keep the advancing playhead in view so long
-    // free-form takes don't run off the right edge.
-    this.followPlayheadWhileRecording(playheadX)
+    ctx.restore()
+
+    // Keep the advancing playhead in view (recording, and long songs where the
+    // playhead would otherwise run off the right edge).
+    this.followPlayhead(playheadX)
 
     // Draw ruler with playhead triangle (always show during playback)
     this.drawRulerWithPlayhead()
@@ -4600,6 +4893,9 @@ export class PianoRollEditor {
     ctx.setLineDash([4, 3])
     ctx.lineWidth = 1.5
     for (const note of this.previewNotes) {
+      if (!this._noteVisible(note.startBeat, note.duration, countInOffset)) {
+        continue
+      }
       const rowIdx = this.midiToRow(note.note.midi)
       const h = this.rowHeight - 2
       const x = countInOffset + note.startBeat * this.beatWidth
@@ -4637,15 +4933,28 @@ export class PianoRollEditor {
     ctx.restore()
   }
 
-  /** While recording, keep the advancing playhead within view by scrolling
-   *  the grid forward (never backward) so long takes stay visible. */
-  private followPlayheadWhileRecording(playheadX: number): void {
-    if (this.isRecording?.() !== true) return
+  /** Keep the advancing playhead within view. While recording the view only
+   *  moves forward (a take shouldn't jump backwards); during normal playback
+   *  it re-centres whenever the playhead leaves the comfortable middle band,
+   *  which is what makes a long imported song watchable. */
+  private followPlayhead(playheadX: number): void {
     if (!this.gridContainer) return
-    const containerWidth = this.gridContainer.clientWidth
-    const target = playheadX - containerWidth * 0.5
-    if (target > this.gridContainer.scrollLeft) {
-      this.gridContainer.scrollLeft = target
+    if (this.stretchedWidth <= this.viewportWidth) return
+    const recording = this.isRecording?.() === true
+    const playing = this.playbackState === 'playing'
+    if (!recording && !playing) return
+
+    if (recording) {
+      const target = playheadX - this.viewportWidth * 0.5
+      if (target > this.scrollX) this._setScroll(target)
+      return
+    }
+    const margin = this.viewportWidth * 0.15
+    if (
+      playheadX < this._viewLeft + margin ||
+      playheadX > this._viewRight - margin
+    ) {
+      this._setScroll(playheadX - this.viewportWidth / 2)
     }
   }
 
@@ -4705,6 +5014,10 @@ export class PianoRollEditor {
         ? this._countInBeats * this.beatWidth
         : 0
     for (const note of this.melody) {
+      // Off-screen cull first — before the two linear scale scans below.
+      if (!this._noteVisible(note.startBeat, note.duration, countInOffset)) {
+        continue
+      }
       const rowIdx = this.midiToRow(note.note.midi)
       const offScale = rowIdx < 0
 

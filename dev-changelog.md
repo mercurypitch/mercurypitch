@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Piano-roll viewport** (`piano-roll.ts`, `PianoRollEditor.css`): grid/ruler
+  canvases were sized to the whole song — a 267-bar import is 51,240 CSS px =
+  ~102,480 device px at DPR 2, past Chrome's 65,535 dimension cap, so the
+  canvas silently failed to allocate (blank grid). `.roll-grid-container` also
+  had **no CSS rule anywhere**, so it was never a scroll container: every
+  `scrollLeft` write was a no-op and the ruler's `translateX` sync never fired.
+  Canvases are now viewport-sized and positioned at the scroll offset inside a
+  full-width spacer layer; draws shift into content space via one
+  `ctx.translate(-scrollX)` (so existing `beat * beatWidth` math is unchanged)
+  and pointer handlers add the offset back. Grid lines, note blocks and preview
+  notes cull to the visible window; the ruler no longer draws twice per frame;
+  the ball playhead (viewport-sized but drawn in song space, hence invisible
+  past one viewport) takes the same shift and clears in CSS px. New
+  `MAX_CANVAS_PX` DPR clamp makes over-allocation impossible to reintroduce.
+  Navigation: `goToBar`/`pageView` + a bar box in the View group, and
+  `followPlayhead` (recording forward-only, playback re-centres).
+- **Row auto-fit** (`_fitRowsToMelody`): the old auto-grow raised the octave
+  COUNT but never moved the window's bottom octave, so imports reaching below
+  the start octave rendered hatched off-grid. Now derives start + count from
+  `melodyMidiRange`, and only fires when notes would actually be off-grid so
+  melodies that already fit keep the user's rows. (Note: this brings effect
+  notes on-scale that previously drew as off-scale blocks, which is why the
+  playback test's canvas mock needed `bezierCurveTo`.)
+- **Melody identity**: `SheetMusicView` gains a `melodyName` prop (key/scale
+  demoted to the kicker; `.scoreTitleName` opts out of `text-transform:
+  capitalize`), passed at all three call sites; Compose header gains an
+  identity row inside a new `.editorLeft` column-1 wrapper so `.composeToolbar`
+  keeps exactly three grid children and `data-tour="compose.editor"` stays on
+  the tablist.
+- **Import naming**: new `melodyStore.loadImportedMelody(items, name, extra)`
+  reuses a same-named melody or creates one, replacing `setMelody` in the
+  Compose MIDI import (`useEditorController`), the roll toolbar's import (new
+  `onMelodyImport` option → `PianoRollCanvas` → App) and shared-link import,
+  all of which previously kept the *current* melody's name.
+
 ### Added
 
 - **Compose drum kit mode**: per-melody `kind: 'melody' | 'drums'`

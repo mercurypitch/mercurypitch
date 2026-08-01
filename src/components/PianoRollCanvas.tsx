@@ -31,6 +31,9 @@ interface PianoRollCanvasProps {
   currentBeat: () => number
   countInBeats?: () => number
   onMelodyChange: (melody: MelodyItem[]) => void
+  /** A MIDI file was imported from the roll toolbar — store it under the
+   *  file's name instead of the currently-open melody's. */
+  onMelodyImport?: (melody: MelodyItem[], name: string) => void
   onInstrumentChange?: (instrument: string) => void
   /** Called when the editor's internal playback state changes */
   onPlaybackStateChange?: (state: PlaybackState) => void
@@ -103,6 +106,7 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
       onGridToggle: () => setGridLinesVisible(!gridLinesVisible()),
       // Same round-trip contract for the hover-hints toggle.
       onHoverHintsToggle: () => setComposeHintsVisible(!composeHintsVisible()),
+      onMelodyImport: (melody, name) => props.onMelodyImport?.(melody, name),
     })
     editor.setMelody(props.melody())
     editor.setScale(props.scale())
