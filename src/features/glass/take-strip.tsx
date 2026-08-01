@@ -16,6 +16,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, For, onCleanup, Show } from 'solid-js'
+import { computeVoicePeaks } from '@/lib/voice-capture'
 import { IconShatter } from './icons'
 
 export interface GlassTake {
@@ -40,32 +41,7 @@ export interface GlassTake {
 
 const PEAK_BUCKETS = 72
 
-/** Max-|sample| buckets over the first channel — the waveform's bars. */
-export function computePeaks(
-  buffer: AudioBuffer,
-  buckets: number = PEAK_BUCKETS,
-): Float32Array {
-  const data = buffer.getChannelData(0)
-  const peaks = new Float32Array(buckets)
-  const per = Math.max(1, Math.floor(data.length / buckets))
-  let max = 0
-  for (let b = 0; b < buckets; b++) {
-    let peak = 0
-    const start = b * per
-    const end = Math.min(data.length, start + per)
-    for (let i = start; i < end; i++) {
-      const v = Math.abs(data[i])
-      if (v > peak) peak = v
-    }
-    peaks[b] = peak
-    if (peak > max) max = peak
-  }
-  // Normalize so a quiet take still reads as a waveform, not a flatline.
-  if (max > 0.001) {
-    for (let b = 0; b < buckets; b++) peaks[b] = peaks[b] / max
-  }
-  return peaks
-}
+export const computePeaks = computeVoicePeaks
 
 const IconPlay: Component = () => (
   <svg

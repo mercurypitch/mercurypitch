@@ -1,8 +1,8 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **first local vertical slice implemented on draft PR #364**, updated
-2026-08-01. Glass is the initial capture adapter; Exercise and Legend adapters
-remain follow-on work on the same neutral vault contract.
+Status: **local vault, Glass, and repeatable Exercise capture implemented on
+draft PR #364**, updated 2026-08-01. Weekly Legend remains the next adapter on
+the same neutral vault contract.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -422,15 +422,23 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - This product, UX, data, rollout, and verification plan.
 - Dexie v6 entities, local-only routing, and atomic durable voice-take writes.
 - Glass **Keep** adapter with explicit consent and retry/storage feedback.
+- Shared dry mic capture for all 18 repeatable exercise runners, capped at five
+  minutes and discarded unless the singer explicitly keeps the result.
+- Stable exercise/configuration fingerprints so different targets and variants
+  never enter the same comparison thread accidentally.
+- Exercise result states for preparing, keeping, retrying, unsupported capture,
+  and explicit discard without changing the saved score.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
 - Count-only vault events and focused service/component coverage.
 
-### Follow-on — capture expansion
+### Follow-on — Weekly Legend integration
 
-- Repeatable exercise capture and comparison keys.
-- Legend metadata and capture through the exercise path.
+- Attach the weekly challenge ID, title snapshot, score, and tier to the
+  existing exercise take before it is kept.
+- Keep same-week takes directly comparable while leaving cross-week attempts
+  browseable in separate threads.
 - Accessibility, mobile behavior, funnel events, and end-to-end tests.
 - Open the beta only after two-take comparison passes on Chromium and Safari.
 

@@ -148,7 +148,11 @@ const SightSingingExercise: Component<Props> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'sight-singing' },
+    config: () => ({
+      type: 'sight-singing',
+      targetNotes: currentScale().map((note) => `${note.name}${note.octave}`),
+      pattern: `${keyName()}:${scaleType()}`,
+    }),
   })
 
   const controller = useSightSingingController(base)
@@ -214,6 +218,7 @@ const SightSingingExercise: Component<Props> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

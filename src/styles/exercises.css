@@ -551,6 +551,15 @@
   width: 100%;
 }
 
+.exercise-capture-note {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* Start sits on its own row beneath the settings/description. */
 .exercise-idle-start {
   min-width: 200px;
@@ -1840,6 +1849,7 @@
 
 .exercise-result-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 14px 20px;
@@ -1915,6 +1925,88 @@
 .exercise-result-summary {
   font-size: 0.82rem;
   color: var(--text-secondary);
+}
+
+.exercise-result-voice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.exercise-result-voice-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.exercise-result-voice-copy strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.exercise-result-voice-copy span {
+  max-width: 54ch;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.exercise-result-voice-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-result-voice-actions .exercise-btn {
+  min-height: 44px;
+  padding: 9px 16px;
+}
+
+.exercise-keep-voice {
+  background: var(--accent-color, #6366f1);
+  color: #fff;
+}
+
+.exercise-keep-voice:hover:not(:disabled) {
+  background: var(--accent-hover, #4f46e5);
+}
+
+.exercise-keep-voice:disabled {
+  cursor: default;
+  opacity: 0.68;
+}
+
+.exercise-discard-voice {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.exercise-discard-voice:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .exercise-result-voice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exercise-result-voice-actions {
+    width: 100%;
+  }
+
+  .exercise-result-voice-actions .exercise-btn {
+    flex: 1;
+  }
 }
 
 /* ── Adaptive level chip (header) ── */
