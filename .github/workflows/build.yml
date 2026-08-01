@@ -299,8 +299,10 @@ jobs:
 
             const url = '${{ steps.deploy-preview.outputs.deployment-url }}';
             const commit = context.sha.substring(0, 7);
-            const commitUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
-            const logsUrl = `${context.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            // Context uses camelCase; `server_url` is undefined and rendered
+            // literal "undefined/..." links in the PR comment.
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
+            const logsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const updated = new Date().toUTCString();
 
             body = body

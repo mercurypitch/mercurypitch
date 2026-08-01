@@ -29,7 +29,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Syntax check (Node.js --check)
-        run: pnpm run check:syntax
+        run: pnpm run check:ci
 
   cleanup:
     runs-on: ubuntu-latest

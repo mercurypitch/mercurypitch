@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 3.4k | _(no header comment)_ |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
-| `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.2k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
+| `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.3k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 1.9k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.8k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `challenges` | [AdminWeeklyPage.tsx](../../src/features/challenges/AdminWeeklyPage.tsx) | 1.5k | AdminWeeklyPage — owner-only weekly-challenge authoring (#/admin/weekly) Unlocks with the X-Admin-Key (stored locally), lists every row,... |
@@ -153,7 +153,7 @@ These are the rules that break things when ignored.
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
-| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 171 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
+| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 179 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 155 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 125 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 114 | Pane Layout Store — Multi-pane layout persistence |
@@ -363,7 +363,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm lines` | `cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'` |
 | `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
 | `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |
-| `pnpm check:syntax` | `run-s typecheck lint fmt docs:index:check` |
+| `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
+| `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
 | `pnpm deploy:dev` | `pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |

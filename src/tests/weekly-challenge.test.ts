@@ -50,11 +50,15 @@ describe('recordWeeklyAttempt', () => {
       targetScore: 70,
     })
 
-    expect(await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })).toBe(true)
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 80 }),
+    ).toBe(true)
     // The next same-type run is ordinary practice — staying armed used to
     // post every later sight-singing run to the Legend board.
     expect(activeWeeklyAttempt()).toBe(null)
-    expect(await recordWeeklyAttempt({ type: 'sight-singing', score: 95 })).toBe(false)
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 95 }),
+    ).toBe(false)
   })
 
   it('a mismatched run disarms without being consumed', async () => {
@@ -64,7 +68,9 @@ describe('recordWeeklyAttempt', () => {
       exercise: 'sight-singing',
       targetScore: 70,
     })
-    expect(await recordWeeklyAttempt({ type: 'vibrato', score: 50 })).toBe(false)
+    expect(await recordWeeklyAttempt({ type: 'vibrato', score: 50 })).toBe(
+      false,
+    )
     expect(activeWeeklyAttempt()).toBe(null)
   })
 })

@@ -5,7 +5,7 @@
 What survived the 2026-07-28 docs audit. `docs/plans/feature-proposals.md`
 listed 15 features; 12 shipped. These three did not, and are kept here so the
 30 KB proposal document does not have to be. The archived original is in
-`~/.dotfiles/personal/mercurypitch/archive-2026-07/plans/feature-proposals.md`.
+`<user-dotfiles>/mercurypitch/archive-2026-07/plans/feature-proposals.md`.
 
 ## Microphone latency calibration wizard
 

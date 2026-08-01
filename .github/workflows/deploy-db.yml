@@ -60,8 +60,11 @@ jobs:
     env:
       # `inputs` is populated by workflow_dispatch AND workflow_call; a plain
       # push (main -> dev) has neither and falls through to dev.
+      # Expression precedence: `==` binds before `&&` before `||`, so DB_NAME
+      # is `(cond && A) || B` — the Actions ternary idiom. Safe here because
+      # the middle operand is a non-empty string (never falsy).
       DEPLOY_ENV: ${{ inputs.environment || 'dev' }}
-      DB_NAME: ${{ inputs.environment == 'prod' && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
+      DB_NAME: ${{ (inputs.environment == 'prod') && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
 
     steps:
       - name: Checkout code

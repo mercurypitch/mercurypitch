@@ -14,7 +14,7 @@ pnpm run lint            # ESLint check
 pnpm run lint:fix        # ESLint auto-fix
 pnpm run fmt             # Prettier check
 pnpm run fmt:write       # Prettier auto-format
-pnpm run check:syntax    # All three checks (read-only, no auto-fix)
+pnpm run check:ci        # Full gate (read-only, no auto-fix; check:syntax = alias)
 ```
 
 ### Testing

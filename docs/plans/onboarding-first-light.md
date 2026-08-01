@@ -292,7 +292,7 @@ What the rounds taught, in order:
 4. **Thin filaments.** The silver should read as drifting strands of light, not
    a poured ribbon. This is the line quality to hold.
 
-Reference images live in `~/.dotfiles/personal/mercurypitch/assets/covers/`
+Reference images live in `<user-dotfiles>/mercurypitch/assets/covers/`
 (outside the repo). Feed the chosen one to Higgsfield as an image reference
 rather than describing it — prose does not carry line weight, and the
 reference-driven round was the first to land.

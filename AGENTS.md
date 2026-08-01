@@ -39,13 +39,14 @@ worker — cheaper than grepping, and it will not be stale (CI checks it).
 
 Use `gh` for issues and PRs, not WebFetch. Merge with `--rebase`, never squash,
 unless told otherwise. Each task gets its own PR targeting
-`mercurypitch/mercurypitch:main`, with `Komediruzecki` as the reviewer.
+`mercurypitch/mercurypitch:main`; leave reviewer assignment to the owner.
 
 ## Build and verify
 
 ```bash
 pnpm check          # typecheck + eslint --fix + prettier --write
-pnpm check:syntax   # same, non-mutating (what CI runs)
+pnpm check:ci       # the full gate, non-mutating (exactly what CI runs;
+                    # check:syntax remains as a legacy alias)
 pnpm test:run       # vitest
 pnpm test:e2e       # playwright
 ```

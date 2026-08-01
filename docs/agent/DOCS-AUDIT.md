@@ -2,8 +2,8 @@
 
 **Executed.** The reorganisation proposed below was carried out on
 2026-07-28; see §8 for exactly what moved. Everything removed from this repo
-lives in `~/.dotfiles/personal/mercurypitch/`, plus a full pre-change zip at
-`~/mercurypitch-docs-backup-2026-07-28.zip` (28 MB, 356 files).
+lives in `<user-dotfiles>/mercurypitch/`, plus a private pre-change backup
+zip (28 MB, 356 files).
 
 Cross-check of every spec and plan against the code, using the module map in
 [INDEX.md](INDEX.md). Method: extract each doc's code references and test them
@@ -115,14 +115,19 @@ Stale claims caught during conversion and corrected rather than carried over:
 All 13 original `docs/specs` files were already clean — 0 missing code
 references across 41 references checked.
 
-## 6. Correction to the new agent docs
+## 6. Correction to the new agent docs — since superseded
 
-The guardrail I wrote on 2026-07-28 claiming schema changes are numbered
-migrations in `workers/db-worker/migrations/` was **wrong**. No such directory
-exists on this branch or `origin/main`. Reality: six ad-hoc
-`scripts/migrate-*.sql` files plus `workers/db-worker/schema.sql`. Corrected in
-[INDEX.md](INDEX.md) §2, the how-to table, and [MISTAKES.md](MISTAKES.md).
-Whether to adopt real migrations is [QUESTIONNAIRE.md](QUESTIONNAIRE.md) Q8.
+The guardrail written on 2026-07-28 claiming schema changes are numbered
+migrations in `workers/db-worker/migrations/` was wrong **at the time**: no
+such directory existed, only six ad-hoc `scripts/migrate-*.sql` files plus
+`workers/db-worker/schema.sql`.
+
+**2026-08-01: the tracked chain is now real.** The 2026-07 integration train
+(#374) introduced `workers/db-worker/migrations/0001…` applied via
+`wrangler d1 migrations apply`; the legacy scripts survive only as the
+pre-adoption record (`scripts/README-legacy-migrations.md`).
+[QUESTIONNAIRE.md](QUESTIONNAIRE.md) Q8 is settled; the remaining doc
+touch-ups are tracked in issue #380.
 
 ---
 
@@ -195,7 +200,7 @@ tree moved with the material it consumes.
 `public/favicon.svg` and `public/og-image.png` are byte-identical to
 `logo/meniscus2/` — that is why this set stays.
 
-**Moved** to `~/.dotfiles/personal/mercurypitch/branding/`:
+**Moved** to `<user-dotfiles>/mercurypitch/branding/`:
 `mascot/` (22 MB look-dev), `logo/soundglobe/` and `favicon/soundglobe/` (the
 rejected direction), `logo/explorations/`, `favicon/{v1,v2,v6}/`, `imagery/`,
 `review/`, the four HTML boards, `CRITIQUE.md`, `HANDOFF.md`, and all 11
@@ -206,7 +211,7 @@ Two source comments updated to point at the new location:
 
 ### Plans: 34 files to 18
 
-Archived to `~/.dotfiles/personal/mercurypitch/archive-2026-07/plans/`:
+Archived to `<user-dotfiles>/mercurypitch/archive-2026-07/plans/`:
 `va/` (all five phases shipped), `key-detection.md`, `db-migration-plan.md`,
 `db-integration-next-plan.md`, `users-auth-plan.md`, `karaoke-night.md`,
 `karaoke-playlist-mode.md`, `premium.md`, `voice-mirror-phase2.md`,
@@ -227,7 +232,7 @@ open. Its status line says so.
 ### Archive and reports
 
 `docs/archive/` (88 files), `docs/reports/` (2), `docs/postmortems/` (1) moved
-to `~/.dotfiles/personal/mercurypitch/archive-2026-07/`. Moved rather than
+to `<user-dotfiles>/mercurypitch/archive-2026-07/`. Moved rather than
 deleted so they stay browsable without `git log`. The one rule worth keeping
 from `postmortems/mic-state-desync.md` was already in
 [MISTAKES.md](MISTAKES.md).

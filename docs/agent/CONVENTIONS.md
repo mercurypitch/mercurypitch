@@ -165,7 +165,7 @@ start accumulating, that is the signal to do a pass, not to add a CI rule.
 ## 8. Formatting
 
 `pnpm check` is the authority — typecheck, ESLint `--fix`, Prettier `--write`.
-CI runs `pnpm check:syntax`, which is the same set non-mutating **plus the
+CI runs `pnpm check:ci` (formerly `check:syntax`, kept as an alias), the same set non-mutating **plus the
 index freshness check**. Moving or renaming a module without running
 `pnpm docs:index` fails CI. Do not hand-format; do not argue with the
 formatter.
@@ -175,16 +175,26 @@ component from `src/components/icons`.
 
 ---
 
+## Private paths in public docs
+
+This repo is public. When a doc references the owner's private material
+(archived plans, ops notes, backups), write the location as
+`<user-dotfiles>/…` — e.g. `<user-dotfiles>/mercurypitch/archive-2026-07/`.
+The token stands for the private notes root the owner (and agents, via
+private instructions) can resolve; never write a real home-directory path.
+
 ## Open questions
 
 Settled 2026-07-28: exports (§1a), where new code goes (§1b), test placement
 (§6), CI enforcement (§8), header comments as convention not gate (§7), spec
 location (§6 — `docs/specs/*.ears.md`, `tests/ears/` retired).
+Settled 2026-08-01: real D1 migrations (Q8) — the tracked chain in
+`workers/db-worker/migrations/` landed with the 2026-07 integration train
+(#374); applied files are never edited, new DDL gets a new numbered file.
 
 Still open — see [QUESTIONNAIRE.md](QUESTIONNAIRE.md):
 
 | # | Question | Current state |
 |---|---|---|
-| 4 | File size ceiling | 25 files over 1.2k LOC, no stated limit |
-| 5 | Global CSS growth | `uvr.css` 88 KB, `vocal-analysis.css` 79 KB |
-| 8 | Real D1 migrations | ad-hoc `scripts/migrate-*.sql` + `schema.sql`, no ordering or applied-state tracking |
+| 4 | File size ceiling | 24 files over 1.2k LOC (recounted 2026-08-01); refactor pass tracked in #379 |
+| 5 | Global CSS growth | `uvr.css` 88 KB, `vocal-analysis.css` 79 KB; split tracked in #379 |

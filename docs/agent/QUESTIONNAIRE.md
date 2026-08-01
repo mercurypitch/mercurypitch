@@ -167,7 +167,7 @@ Cost: one migration to bootstrap existing tables, plus a deploy-workflow change.
 
 Two things worth deciding separately, since they change tooling rather than style:
 
-- **Wire `gen-agent-index.mjs --check` into CI?** Done — `check:syntax` now
+- **Wire `gen-agent-index.mjs --check` into CI?** Done — `check:ci` (formerly `check:syntax`, kept as an alias) now
   runs `docs:index:check`, so a stale index fails CI.
 - **Port this setup to your other repos?** The portable version is installed at
   `~/.claude/skills/repo-index/`. Invoke `/repo-index` in any project.

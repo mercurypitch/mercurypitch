@@ -1,7 +1,7 @@
 # Exercise Controller Refactor Plan
 
 Status: **proposed** (not started). Tracks backlog item **R1** from
-`~/.dotfiles/personal/mercurypitch/archive-2026-07/reports/code-review-2026-07.md` (archived 2026-07-28).
+`<user-dotfiles>/mercurypitch/archive-2026-07/reports/code-review-2026-07.md` (archived 2026-07-28).
 
 ## Why
 
