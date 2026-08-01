@@ -171,6 +171,59 @@
   user-select: none;
 }
 
+/* ── Room mode ────────────────────────────────────────────────────── */
+
+.modePicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(8px);
+}
+
+.modeBtn {
+  padding: 3px 9px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.modeBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.modeBtnActive {
+  color: var(--accent);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.12));
+}
+
+/* Your part, in your own peer colour — the same colour your trail draws
+   in on the canvas, so the badge and the line read as one thing. */
+.roleBadge {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid;
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
 /* ── Last take ────────────────────────────────────────────────────── */
 
 .takeChip {

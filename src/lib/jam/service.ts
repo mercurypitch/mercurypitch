@@ -503,8 +503,8 @@ export function createJamService(callbacks: JamCallbacks) {
     })
   }
 
-  function sendMelody(melody: MelodyData): void {
-    broadcastData({ type: 'melody' as const, action: 'set', melody })
+  function sendMelody(melody: MelodyData, mode?: string): void {
+    broadcastData({ type: 'melody' as const, action: 'set', melody, mode })
   }
 
   function sendClearMelody(): void {

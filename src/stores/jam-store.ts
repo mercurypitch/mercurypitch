@@ -4,6 +4,8 @@
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
+import type { JamRoomMode } from '@/lib/jam/jam-modes'
+import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
@@ -209,6 +211,64 @@ export function setJamRoomAlpha(value: number): void {
   }
 }
 
+// ── Room mode ────────────────────────────────────────────────────────
+// What the room does with the shared melody (see lib/jam/jam-modes.ts).
+// The host owns it, exactly as it owns the melody and the tempo.
+
+export const [jamRoomMode, setJamRoomMode] = createSignal<JamRoomMode>('unison')
+
+/** Host-only: switch mode and re-broadcast the melody it reshapes. */
+export function selectJamRoomMode(mode: JamRoomMode): void {
+  setJamRoomMode(mode)
+  const melody = jamExerciseMelody()
+  if (melody !== null) jamService?.sendMelody(melody, mode)
+}
+
+/**
+ * How the room is split right now, and where I sit in it.
+ *
+ * Everyone computes this from the same sorted peer list, so no part
+ * assignment is ever sent -- see jam-modes.ts. Counting myself among the
+ * peers matters: jamPeers() holds the OTHERS, so a duet is two.
+ */
+export const jamMyRole = createRoot(() => {
+  const memo = createMemo(() => {
+    const mode = jamRoomMode()
+    const ids = jamPeers().map((p) => p.id)
+    const myId = jamPeerId()
+    if (myId !== null && myId !== '') ids.push(myId)
+    const roleCount = roleCountFor(mode, ids.length)
+    const index = roleIndexOf(myId, ids)
+    return {
+      mode,
+      index,
+      roleCount,
+      name: roleNameFor(mode, index, roleCount),
+      /** True when the mode is doing nothing yet -- alone, or in unison. */
+      isUnison: roleCount <= 1,
+    }
+  })
+  return memo
+})
+
+/**
+ * My part, as notes. The canvas draws this and the scorer scores it, so a
+ * mode only has to answer "what are MY notes" and the piano roll, the MIDI
+ * range, the per-note scoring and the take chip all follow.
+ */
+export const jamMyTarget = createRoot(() => {
+  const memo = createMemo(() => {
+    const role = jamMyRole()
+    return targetForRole(
+      jamExerciseMelody(),
+      role.mode,
+      role.index,
+      role.roleCount,
+    )
+  })
+  return memo
+})
+
 // ── Own run score ────────────────────────────────────────────────────
 // What the last take was actually worth, scored the way the solo exercises
 // score theirs (see lib/jam/jam-scoring.ts) rather than by the canvas's
@@ -238,7 +298,7 @@ function settleOwnRun(): void {
   const startedAt = passStartedAt
   passStartedAt = 0
   const result = scoreOwnJamRun(
-    jamExerciseMelody(),
+    jamMyTarget(),
     jamPitchHistory(),
     jamPeerId(),
     startedAt,
@@ -494,6 +554,7 @@ export function initJam() {
         setJamExerciseNoteIndex(-1)
         stopPlaybackTimer()
       } else if (msg.melody) {
+        if (msg.mode !== undefined) setJamRoomMode(msg.mode)
         setJamExerciseMelody(msg.melody)
         // Adopt the melody's tempo exactly as selectJamExercise does on the
         // host. Without this a peer kept whatever bpm it last had (120 by
@@ -743,7 +804,7 @@ export function selectJamExercise(melody: MelodyData): void {
   setJamExercisePlaying(false)
   setJamExercisePaused(false)
   stopPlaybackTimer()
-  jamService?.sendMelody(melody)
+  jamService?.sendMelody(melody, jamRoomMode())
   setJamPitchTab('exercise')
 }
 
@@ -899,6 +960,7 @@ function cleanupJam(): void {
   sessionStartedAt = 0
   sessionBest = null
   setJamOwnRunScore(null)
+  setJamRoomMode('unison')
 }
 
 function waitForRoomId(): Promise<string> {

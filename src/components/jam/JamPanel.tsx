@@ -9,8 +9,9 @@ import { getActiveWeekly } from '@/features/challenges/weekly-service'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import jamStyles from './Jam.module.css'
@@ -682,6 +683,39 @@ export const JamPanel: Component = () => {
                     </svg>
                   </button>
                   <span class={panelStyles.bpmLabel}>bpm</span>
+                </div>
+              </Show>
+
+              {/* Room mode — host picks, everyone follows. Roles are derived
+                  from the sorted peer list, so nothing is sent but this. */}
+              <Show when={jamIsHost()}>
+                <div class={panelStyles.modePicker}>
+                  <For each={JAM_MODES}>
+                    {(m) => (
+                      <button
+                        class={panelStyles.modeBtn}
+                        classList={{
+                          [panelStyles.modeBtnActive]: jamRoomMode() === m.id,
+                        }}
+                        title={m.blurb}
+                        aria-pressed={jamRoomMode() === m.id}
+                        onClick={() => selectJamRoomMode(m.id)}
+                      >
+                        {m.label}
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
+
+              {/* Which part is mine, once the room is actually split. */}
+              <Show when={!jamMyRole().isUnison}>
+                <div
+                  class={panelStyles.roleBadge}
+                  style={{ 'border-color': myColor(), color: myColor() }}
+                  title={jamModeInfo(jamMyRole().mode).blurb}
+                >
+                  You sing: {jamMyRole().name}
                 </div>
               </Show>
 
