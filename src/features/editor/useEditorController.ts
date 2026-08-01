@@ -7,10 +7,10 @@
 // itself lives in @/lib/piano-roll.ts.
 
 import type { AudioEngine } from '@/lib/audio-engine'
-import { downloadMIDI, importMelodyFromMIDI } from '@/lib/piano-roll'
+import { downloadMIDI, importMelodyFromMIDI, readMidiTempoBpm, } from '@/lib/piano-roll'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { generateShareURL } from '@/lib/share-url'
-import { bpm, keyName, scaleType, showNotification } from '@/stores'
+import { bpm, keyName, scaleType, setBpm, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 
 interface Deps {
@@ -64,9 +64,16 @@ export function useEditorController(_deps: Deps): EditorController {
         const melody = importMelodyFromMIDI(data)
         if (melody !== null && melody.length > 0) {
           // Name the melody after the file instead of dropping its notes into
-          // whichever melody happened to be open under that melody's name.
+          // whichever melody happened to be open under that melody's name,
+          // and adopt the file's own tempo so it plays as written.
           const name = file.name.replace(/\.(mid|midi)$/i, '')
-          melodyStore.loadImportedMelody(melody, name)
+          const tempo = readMidiTempoBpm(data)
+          melodyStore.loadImportedMelody(
+            melody,
+            name,
+            tempo === null ? undefined : { bpm: tempo },
+          )
+          if (tempo !== null) setBpm(tempo)
           showNotification(
             `Imported ${melody.length} note(s) from ${name}`,
             'success',

@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   identity row inside a new `.editorLeft` column-1 wrapper so `.composeToolbar`
   keeps exactly three grid children and `data-tour="compose.editor"` stays on
   the tablist.
+- **Tempo on load** (pre-existing, not a regression — `git log -S setBpm`
+  confirms the loader never had it): `handleSingingSongLoaded` wrote
+  `bpm: songBpm` onto the MelodyData but never called `setBpm`, so the
+  transport kept its previous/default BPM while the notes came from a song
+  written at another tempo. (The sidebar's `loadAndPlayMelodyForSession` and
+  `useSessionSequencer` both *do* apply it — only the Songs picker / import
+  path didn't.) Both branches now apply it. Additionally
+  `importMelodyFromMIDI` skips all meta events, so Compose's own import
+  discarded the file's tempo entirely: new `readMidiTempoBpm(data)` scans for
+  the Set Tempo meta (0xFF 0x51, µs/quarter) with a 20-400 BPM sanity gate,
+  wired through a new `onTempoImport` editor option and the file-menu import.
 - **Import naming**: new `melodyStore.loadImportedMelody(items, name, extra)`
   reuses a same-named melody or creates one, replacing `setMelody` in the
   Compose MIDI import (`useEditorController`), the roll toolbar's import (new
