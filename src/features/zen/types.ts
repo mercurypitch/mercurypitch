@@ -71,6 +71,20 @@ export interface ResolvedZenTarget extends ZenExerciseTarget {
   endMidi: number
 }
 
+/**
+ * Per-target live emphasis, keyed by target id in the render model. Hosts
+ * that score note-by-note (the weekly challenge stage) light targets up as
+ * the singer hits them; plain zen practice passes none and renders as before.
+ */
+export interface ZenTargetHighlight {
+  /** 0..1 live glow strength while the singer is on (or near) the note. */
+  glow: number
+  /** The note's window has passed and it was sung well — keep it shining. */
+  cleared: boolean
+  /** The note's window has passed without being hit — recede. */
+  missed: boolean
+}
+
 export interface ZenPitchPoint {
   timeSec: number
   /** Fractional MIDI retains cents-level pitch detail; null marks a gap. */

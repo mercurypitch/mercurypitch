@@ -1,5 +1,5 @@
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
-import type { ResolvedZenTarget, ZenPitchPoint, ZenTargetVisibility, ZenViewport, } from './types'
+import type { ResolvedZenTarget, ZenPitchPoint, ZenTargetHighlight, ZenTargetVisibility, ZenViewport, } from './types'
 
 export interface ZenCanvasRenderModel {
   durationSec: number
@@ -10,6 +10,11 @@ export interface ZenCanvasRenderModel {
   showPlayhead: boolean
   points: readonly ZenPitchPoint[]
   previousPoints?: readonly ZenPitchPoint[]
+  /**
+   * Optional per-target emphasis keyed by target id (challenge stage: notes
+   * shine while sung and stay lit once cleared). Absent = plain zen look.
+   */
+  targetHighlights?: ReadonlyMap<string, ZenTargetHighlight>
 }
 
 export interface ZenCanvasLayout {
@@ -175,11 +180,14 @@ function drawTargets(
     Math.max(1, model.viewport.maxMidi - model.viewport.minMidi)
 
   ctx.save()
-  ctx.globalAlpha = alpha
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
   for (const target of model.targets) {
+    const highlight = model.targetHighlights?.get(target.id)
+    // Missed notes recede so the shining ones read as the story of the run;
+    // they stay visible enough to show what was asked.
+    ctx.globalAlpha = highlight?.missed === true ? alpha * 0.42 : alpha
     const x1 = layout.timeToX(target.startSec)
     const x2 = layout.timeToX(target.endSec)
     const y1 = layout.midiToY(target.startMidi)
@@ -205,13 +213,17 @@ function drawTargets(
       ctx.strokeStyle = PITCH_VISUAL_COLORS.referenceBright
       ctx.lineWidth = 1
       ctx.stroke()
+
+      if (highlight !== undefined) {
+        drawTargetShine(ctx, highlight, x1, y1, width, height)
+      }
     }
 
     if (target.showCue !== false && target.cue.trim() !== '') {
       const labelX = Math.min(x1 + 7, layout.gutter + layout.plotWidth - 28)
       const labelY = isGlide ? y1 - 10 : y1
       ctx.shadowBlur = 0
-      ctx.fillStyle = '#fff1d2'
+      ctx.fillStyle = highlight?.cleared === true ? '#fffaf0' : '#fff1d2'
       ctx.font = '700 10px Inter, system-ui, sans-serif'
       ctx.textAlign = 'left'
       ctx.textBaseline = isGlide ? 'bottom' : 'middle'
@@ -219,6 +231,56 @@ function drawTargets(
     }
   }
   ctx.restore()
+}
+
+/**
+ * The challenge stage's "note lights up" pass, layered over the plain pill.
+ * Live glow tracks how close the singer is right now; a cleared note keeps a
+ * steady shine so the run reads as a trail of lit notes.
+ */
+function drawTargetShine(
+  ctx: CanvasRenderingContext2D,
+  highlight: ZenTargetHighlight,
+  x: number,
+  centreY: number,
+  width: number,
+  height: number,
+): void {
+  const glow = clamp(highlight.glow, 0, 1)
+  if (glow <= 0.01 && !highlight.cleared) return
+
+  const previousAlpha = ctx.globalAlpha
+
+  // Hot core: the pill itself brightens with the glow.
+  roundedRect(ctx, x, centreY - height / 2, width, height, height / 2)
+  ctx.globalAlpha = Math.min(1, 0.28 + glow * 0.62)
+  ctx.shadowColor = PITCH_VISUAL_COLORS.referenceBright
+  ctx.shadowBlur = 8 + glow * 16
+  ctx.fillStyle = PITCH_VISUAL_COLORS.referenceBright
+  ctx.fill()
+  ctx.shadowBlur = 0
+
+  if (highlight.cleared) {
+    // A settled halo ring marks the note as won.
+    const inset = 2.5
+    roundedRect(
+      ctx,
+      x - inset,
+      centreY - height / 2 - inset,
+      width + inset * 2,
+      height + inset * 2,
+      (height + inset * 2) / 2,
+    )
+    ctx.globalAlpha = 0.5 + glow * 0.3
+    ctx.strokeStyle = '#fff4df'
+    ctx.lineWidth = 1.4
+    ctx.shadowColor = PITCH_VISUAL_COLORS.reference
+    ctx.shadowBlur = 12
+    ctx.stroke()
+    ctx.shadowBlur = 0
+  }
+
+  ctx.globalAlpha = previousAlpha
 }
 
 function drawTrace(

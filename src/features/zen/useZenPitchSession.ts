@@ -13,6 +13,13 @@ const MIN_VOICED_POINTS = 3
 export interface UseZenPitchSessionOptions {
   initialExerciseId?: string
   initialExerciseVersion?: number
+  /**
+   * Load this definition directly instead of resolving initialExerciseId
+   * from the catalog. Synthetic exercises (the weekly challenge stage builds
+   * one from a challenge's melody) are never in the catalog, so id lookup
+   * cannot find them. Takes precedence over initialExerciseId.
+   */
+  initialExerciseDefinition?: ZenExerciseDefinition
   initialCenterMidi?: number
   subscribeFrames: (listener: (frame: PracticeFrame) => void) => () => void
   micActive: Accessor<boolean>
@@ -89,10 +96,9 @@ function percentileRange(points: readonly ZenPitchPoint[]): number[] {
 export function useZenPitchSession(
   options: UseZenPitchSessionOptions,
 ): ZenPitchSession {
-  const initialExercise = getZenExercise(
-    options.initialExerciseId,
-    options.initialExerciseVersion,
-  )
+  const initialExercise =
+    options.initialExerciseDefinition ??
+    getZenExercise(options.initialExerciseId, options.initialExerciseVersion)
   const initialRoot = initialExercise?.defaultRootMidi ?? 60
   const initialTargets =
     initialExercise === null
