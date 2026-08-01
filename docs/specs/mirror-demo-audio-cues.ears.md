@@ -4,14 +4,13 @@ Requirements for the audible glide/hold guide cues the Voice Mirror plays
 alongside its onboarding task-demo animations, ported from the Glass feature's
 "hearable, not just animated" instruction demos.
 
-Reuses the shared synthesizers in `src/lib/demo-audio.ts` (`playSirenSweep`,
-`playHoldTone`). Cue selection is pure and lives in
-`src/features/mirror/demo-cue.ts` (`planDemoCue`, `playDemoCue`); the animation
-component `src/features/mirror/TaskDemo.tsx` triggers the cue.
-
-Each requirement has an ID referenced by the unit tests in:
-
-- `src/tests/mirror-demo-cue.test.ts` (cue planning + direction — `MDA-*`)
+**Source:** `src/lib/demo-audio.ts` — the reused shared synthesizers
+(`playSirenSweep`, `playHoldTone`); `src/features/mirror/demo-cue.ts` — pure
+cue selection (`planDemoCue`, `playDemoCue`);
+`src/features/mirror/TaskDemo.tsx` — the animation component that triggers the
+cue
+**Tests:** `src/tests/mirror-demo-cue.test.ts` (cue planning + direction —
+`MDA-*`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

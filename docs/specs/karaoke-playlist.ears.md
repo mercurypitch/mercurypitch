@@ -1,11 +1,12 @@
 # Karaoke Playlist — EARS Requirements
 
-Requirements for the karaoke playlist store (`src/stores/karaoke-playlist-store.ts`),
-written in EARS (Easy Approach to Requirements Syntax). Each requirement has an
-ID referenced by the unit tests in:
+Requirements for the karaoke playlist store, written in EARS (Easy Approach to
+Requirements Syntax). Each requirement has an ID referenced by the unit tests.
 
-- `src/tests/karaoke-playlist-store.test.ts` (queue building — `QUEUE-*`)
-- `src/tests/karaoke-playlist-store.transport.test.ts` (CRUD + transport)
+**Source:** `src/stores/karaoke-playlist-store.ts`
+**Tests:** `src/tests/karaoke-playlist-store.test.ts` (queue building —
+`QUEUE-*`); `src/tests/karaoke-playlist-store.transport.test.ts` (CRUD +
+transport)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

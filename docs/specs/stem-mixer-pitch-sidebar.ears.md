@@ -1,7 +1,9 @@
 # Stem Mixer Pitch Settings Sidebar — EARS Requirements
 
-Requirements for the Stem Mixer Pitch & Denoising settings sidebar (`src/components/StemMixerPitchAnalysisPanel.tsx`),
+Requirements for the Stem Mixer Pitch & Denoising settings sidebar,
 written in EARS (Easy Approach to Requirements Syntax).
+
+**Source:** `src/components/StemMixerPitchAnalysisPanel.tsx`
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
