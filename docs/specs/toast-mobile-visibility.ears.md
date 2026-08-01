@@ -4,15 +4,10 @@ Requirements for ensuring toast notifications and the verify-email banner
 remain fully visible and interactive on mobile viewports, above the bottom
 tab bar.
 
-Source:
-
-- `src/styles/Notifications.module.css` -- notification container layout
-- `src/components/account/VerifyEmailBanner.module.css` -- email banner
-  positioning
-
-Tests:
-
-- `src/tests/toast-mobile-visibility.test.ts` (`REQ-TMV-001..003`)
+**Source:** `src/styles/Notifications.module.css` -- notification container
+layout; `src/components/account/VerifyEmailBanner.module.css` -- email banner
+positioning
+**Tests:** `src/tests/toast-mobile-visibility.test.ts` (`REQ-TMV-001..003`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

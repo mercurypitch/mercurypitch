@@ -3,15 +3,10 @@
 Requirements for classifying account creation consistently across fresh user
 rows and upgrades of existing anonymous device rows.
 
-Source:
-
-- `workers/db-worker/src/auth.ts` -- account creation and session responses
-- `src/db/services/auth-service.ts` -- client signup event emission
-
-Tests:
-
-- `workers/db-worker/src/auth.test.ts` (`REQ-SFA-001..002`)
-- `src/tests/auth-service.test.ts` (`REQ-SFA-003..004`)
+**Source:** `workers/db-worker/src/auth.ts` -- account creation and session
+responses; `src/db/services/auth-service.ts` -- client signup event emission
+**Tests:** `workers/db-worker/src/auth.test.ts` (`REQ-SFA-001..002`);
+`src/tests/auth-service.test.ts` (`REQ-SFA-003..004`)
 
 EARS keywords: **WHEN** (event), **IF/THEN** (conditional behaviour),
 otherwise ubiquitous ("shall").
