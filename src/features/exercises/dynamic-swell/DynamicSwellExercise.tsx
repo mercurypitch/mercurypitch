@@ -41,7 +41,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'dynamic-swell', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'dynamic-swell', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -135,6 +135,7 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconExpand size={20} />}

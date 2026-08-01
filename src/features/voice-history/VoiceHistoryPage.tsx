@@ -56,7 +56,13 @@ function formatBytes(bytes: number): string {
 
 function threadTitle(take: VoiceTakeRecord): string {
   try {
-    const context = JSON.parse(take.contextJson) as { targetLabel?: unknown }
+    const context = JSON.parse(take.contextJson) as {
+      targetLabel?: unknown
+      threadTitle?: unknown
+    }
+    if (typeof context.threadTitle === 'string' && context.threadTitle !== '') {
+      return context.threadTitle
+    }
     if (typeof context.targetLabel === 'string' && context.targetLabel !== '') {
       return `Glass at ${context.targetLabel}`
     }
