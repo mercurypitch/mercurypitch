@@ -10,7 +10,7 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import jamStyles from './Jam.module.css'
@@ -683,6 +683,27 @@ export const JamPanel: Component = () => {
                   </button>
                   <span class={panelStyles.bpmLabel}>bpm</span>
                 </div>
+              </Show>
+
+              {/* Your last take, scored over the whole run the way the solo
+                  exercises score theirs -- the canvas scoreboard beside it
+                  is a live rolling hit rate, which is a different number on
+                  purpose. Yours only: peer streams are untrusted. */}
+              <Show when={jamOwnRunScore()}>
+                {(run) => (
+                  <div
+                    class={panelStyles.takeChip}
+                    title={`Your last take, scored across all ${run().notes.length} notes. Coverage ${Math.round(run().coverage * 100)}% — notes you did not sing count as zero.`}
+                  >
+                    <span class={panelStyles.takeLabel}>Your take</span>
+                    <span class={panelStyles.takeScore}>{run().score}</span>
+                    <Show when={run().coverage < 1}>
+                      <span class={panelStyles.takeCoverage}>
+                        {Math.round(run().coverage * 100)}% sung
+                      </span>
+                    </Show>
+                  </div>
+                )}
               </Show>
             </div>
 

@@ -171,6 +171,42 @@
   user-select: none;
 }
 
+/* ── Last take ────────────────────────────────────────────────────── */
+
+.takeChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
+.takeLabel {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+}
+
+.takeScore {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only shown on a partial run, where the score is mostly explained by how
+   much went unsung rather than by how well it was sung. */
+.takeCoverage {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
 /* ── Room glass slider ────────────────────────────────────────────── */
 
 .glassControl {

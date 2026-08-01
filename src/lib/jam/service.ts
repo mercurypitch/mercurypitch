@@ -452,7 +452,7 @@ export function createJamService(callbacks: JamCallbacks) {
             callbacks.onMelodyMessage?.(data)
             break
           case 'playback':
-            callbacks.onPlaybackMessage?.(data)
+            callbacks.onPlaybackMessage?.(data, peerId)
             break
           case 'video-state':
             callbacks.onVideoState?.(peerId, data.enabled)
@@ -481,13 +481,17 @@ export function createJamService(callbacks: JamCallbacks) {
     broadcastData(msg)
   }
 
-  function sendPitch(pitch: {
-    frequency: number
-    noteName: string
-    cents: number
-    clarity: number
-    midi: number
-  }): void {
+  /** `beat` is the sender's room beat, omitted when nothing is playing. */
+  function sendPitch(
+    pitch: {
+      frequency: number
+      noteName: string
+      cents: number
+      clarity: number
+      midi: number
+    },
+    beat?: number,
+  ): void {
     const peerId = signaling.getPeerId()
     if (peerId === null || peerId === '') return
     broadcastData({
@@ -495,6 +499,7 @@ export function createJamService(callbacks: JamCallbacks) {
       peerId,
       ...pitch,
       timestamp: Date.now(),
+      ...(beat === undefined ? {} : { beat }),
     })
   }
 
@@ -509,12 +514,14 @@ export function createJamService(callbacks: JamCallbacks) {
   function sendPlaybackCommand(
     action: 'play' | 'pause' | 'stop' | 'seek',
     currentBeat?: number,
+    bpm?: number,
   ): void {
     broadcastData({
       type: 'playback' as const,
       action,
       currentBeat,
       timestamp: Date.now(),
+      ...(bpm === undefined ? {} : { bpm }),
     })
   }
 
