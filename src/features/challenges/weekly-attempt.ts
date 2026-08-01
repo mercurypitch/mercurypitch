@@ -14,6 +14,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { getUserId } from '@/db/services/user-service'
 import { fingerprintOf } from '@/features/community/share-identity'
 import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
@@ -118,6 +119,7 @@ export async function recordWeeklyAttempt(entry: {
   type: ExerciseType
   score: number
   durationMs?: number
+  voiceCapture?: ExerciseVoiceCaptureOutcome
 }): Promise<boolean> {
   const a = active()
   if (a === null) {
@@ -209,6 +211,7 @@ export async function recordWeeklyAttempt(entry: {
         tier,
         badgeGranted,
         targetItems: a.targetItems,
+        voiceCapture: entry.voiceCapture,
       })
     })
   } catch {
