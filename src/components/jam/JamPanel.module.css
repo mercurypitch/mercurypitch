@@ -39,13 +39,92 @@
 
 /* ── Lobby ────────────────────────────────────────────────────────── */
 
-/* The second line of the pitch: what there is to actually do in here. */
-.lobbyRunnable {
-  margin: -6px 0 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  text-align: center;
+.lobbyTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* The "what is this" affordance. Hover reveals it on a mouse, tap toggles
+   it on a phone -- a touch device fires neither hover nor focus reliably,
+   so the click handler is the real control and hover is the shortcut. */
+.about {
+  position: relative;
+  display: inline-flex;
+}
+
+.aboutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.aboutBtn:hover,
+.aboutOpen .aboutBtn {
   color: var(--accent);
+  border-color: var(--accent);
+}
+
+.aboutPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--text-secondary);
+  background: rgba(13, 17, 23, 0.97);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  z-index: 5;
+}
+
+.aboutPanel p {
+  margin: 0;
+}
+
+.aboutPanel p + p {
+  margin-top: 8px;
+}
+
+.about:hover .aboutPanel,
+.aboutOpen .aboutPanel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Tapping opens it, so it must be interactive; hover-only can stay inert. */
+.aboutOpen .aboutPanel {
+  pointer-events: auto;
 }
 
 /* ── Session layout — fills parent jam-panel fully ────────────────── */

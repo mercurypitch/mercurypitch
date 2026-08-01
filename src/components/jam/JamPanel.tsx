@@ -34,6 +34,7 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
+  const [showAbout, setShowAbout] = createSignal(false)
   const [linkCopied, setLinkCopied] = createSignal(false)
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
@@ -228,14 +229,39 @@ export const JamPanel: Component = () => {
       {/* ── Idle: connect screen ─────────────────────────────────── */}
       <Show when={jamState() === 'idle'}>
         <div class={jamStyles.connect}>
-          <h2 class={jamStyles.title}>Jam Session</h2>
-          <p class={jamStyles.desc}>
-            A practice room for up to 12. Everyone sings the same line and every
-            voice draws its own trail on one shared piano roll, scored live.
-          </p>
-          <p class={panelStyles.lobbyRunnable}>
-            Run this week's challenge, your Ascent week, any drill, or one of
-            your own melodies.
+          <div class={panelStyles.lobbyTitleRow}>
+            <h2 class={jamStyles.title}>Jam Session</h2>
+            {/* What the room is, kept out of the way. The line below is the
+                reason to press the button; this is only for the visitor who
+                wants to know what happens after they do. */}
+            <div
+              class={panelStyles.about}
+              classList={{ [panelStyles.aboutOpen]: showAbout() }}
+            >
+              <button
+                class={panelStyles.aboutBtn}
+                onClick={() => setShowAbout((v) => !v)}
+                aria-expanded={showAbout()}
+                aria-label="What is a jam session?"
+              >
+                ?
+              </button>
+              <div class={panelStyles.aboutPanel} role="note">
+                <p>
+                  A practice room for up to 12. Everyone sings together and
+                  every voice draws its own trail on one shared piano roll,
+                  scored live.
+                </p>
+                <p>
+                  Run this week's challenge, your Ascent week, any drill or one
+                  of your own melodies -- or split the room into harmony parts
+                  and take a phrase each.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p class={jamStyles.desc} style={{ 'font-style': 'italic' }}>
+            "Where words fail, music speaks."
           </p>
 
           <div class={jamStyles.field}>
