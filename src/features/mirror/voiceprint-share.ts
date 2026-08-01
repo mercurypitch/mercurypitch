@@ -25,30 +25,31 @@ function loadPortrait(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Share a stored voiceprint as a PNG card. `'face'` is the plain twin
- * portrait card; `'stats'` overlays the record's range/accuracy/steadiness.
- * Returns how it left the device, or `'unavailable'` when the record has no
- * twin portrait to build a card from.
+ * Rebuild a stored voiceprint's card as a canvas. `'face'` is the plain
+ * twin portrait card; `'stats'` overlays the record's range/accuracy/
+ * steadiness. Null when the record has no twin portrait to build from.
+ * Shared by the share paths below and the flip side of the settings
+ * card, so what you flip to is exactly what you'd export.
  */
-export async function shareVoiceprintRecord(
+export async function renderVoiceprintCard(
   record: VoiceprintRecord,
   variant: 'face' | 'stats',
-): Promise<'shared' | 'downloaded' | 'unavailable'> {
+): Promise<HTMLCanvasElement | null> {
   const twin = record.twin
-  if (twin == null || twin === '') return 'unavailable'
+  if (twin == null || twin === '') return null
   const art = legendArt(twin)
-  if (art.imageSrc == null || art.imageSrc === '') return 'unavailable'
+  if (art.imageSrc == null || art.imageSrc === '') return null
 
   let portrait: HTMLImageElement
   try {
     portrait = await loadPortrait(art.imageSrc)
   } catch {
-    return 'unavailable'
+    return null
   }
 
   const s = record.summary
   const hasRange = s.lowMidi != null && s.highMidi != null
-  const canvas = renderTwinFaceCard({
+  return renderTwinFaceCard({
     legend: twin,
     epithet: art.epithet,
     voiceType: null,
@@ -72,10 +73,22 @@ export async function shareVoiceprintRecord(
           }
         : undefined,
   })
+}
+
+/**
+ * Share a stored voiceprint as a PNG card. Returns how it left the
+ * device, or `'unavailable'` when no card could be built.
+ */
+export async function shareVoiceprintRecord(
+  record: VoiceprintRecord,
+  variant: 'face' | 'stats',
+): Promise<'shared' | 'downloaded' | 'unavailable'> {
+  const canvas = await renderVoiceprintCard(record, variant)
+  if (canvas === null) return 'unavailable'
 
   const blob = await cardToPngBlob(canvas)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
-    text: `${twin} is my voice twin — mercurypitch.com/mirror`,
+    text: `${record.twin ?? 'My twin'} is my voice twin — mercurypitch.com/mirror`,
   })
 }

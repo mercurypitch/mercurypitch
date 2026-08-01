@@ -20,7 +20,7 @@ import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
-import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
+import { renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { showNotification } from '@/stores/notifications-store'
@@ -76,6 +76,13 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
     return legendArt(twin).imageSrc
   }
 
+  /** Small twin portrait for a history chip, when that take has one. */
+  const historyThumbSrc = (print: VoiceprintRecord): string | undefined => {
+    if (print.twin == null || print.twin === '') return undefined
+    const src = legendArt(print.twin).imageSrc
+    return src == null || src === '' ? undefined : src
+  }
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') setZoomed(false)
   }
@@ -83,6 +90,17 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   onCleanup(() => window.removeEventListener('keydown', onKeyDown))
 
   const latest = (): VoiceprintRecord | null => prints()?.[0] ?? null
+
+  // The flip side is the real stats card — the same art the Share
+  // button exports — rendered on first flip and cached per record.
+  // While it renders, the plain-text back stands in.
+  const [statsCard] = createResource(
+    () => (flipped() ? (latest() ?? undefined) : undefined),
+    async (record) => {
+      const canvas = await renderVoiceprintCard(record, 'stats')
+      return canvas?.toDataURL('image/png') ?? null
+    },
+  )
   const first = (): VoiceprintRecord | null => {
     const all = prints()
     return all !== undefined && all.length > 1 ? all[all.length - 1] : null
@@ -211,13 +229,26 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             <For each={prints()?.slice(0, 8)}>
               {(print) => (
                 <li class={styles.historyRow}>
-                  <span class={styles.historyDate}>
-                    {formatDate(print.takenAt)}
-                  </span>
-                  <span class={styles.historyMeta}>
-                    <Show when={print.summary.semitones != null}>
-                      {print.summary.semitones} semitones
-                    </Show>
+                  <Show when={historyThumbSrc(print) !== undefined}>
+                    <img
+                      class={styles.historyThumb}
+                      src={historyThumbSrc(print)}
+                      width="928"
+                      height="1152"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </Show>
+                  <span class={styles.historyBody}>
+                    <span class={styles.historyDate}>
+                      {formatDate(print.takenAt)}
+                    </span>
+                    <span class={styles.historyMeta}>
+                      <Show when={print.summary.semitones != null}>
+                        {print.summary.semitones} semitones
+                      </Show>
+                    </span>
                   </span>
                 </li>
               )}
@@ -267,21 +298,35 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             <Show
               when={!flipped()}
               fallback={
-                <div class={styles.zoomBack}>
-                  <p class={styles.zoomBackTwin}>{latest()?.twin}</p>
-                  <p class={styles.zoomBackRange}>
-                    {midiToNoteNameOctave(latest()?.summary.lowMidi ?? 0)}–
-                    {midiToNoteNameOctave(latest()?.summary.highMidi ?? 0)}
-                  </p>
-                  <p class={styles.zoomBackMeta}>
-                    {latest()?.summary.semitones ?? 0} semitones ·{' '}
-                    {latest()?.summary.steadiness ?? 0} steadiness ·{' '}
-                    {Math.round(latest()?.summary.accuracy ?? 0)} accuracy
-                  </p>
-                  <p class={styles.zoomBackDate}>
-                    {new Date(latest()?.takenAt ?? '').toLocaleDateString()}
-                  </p>
-                </div>
+                <Show
+                  when={statsCard() != null}
+                  fallback={
+                    <div class={styles.zoomBack}>
+                      <p class={styles.zoomBackTwin}>{latest()?.twin}</p>
+                      <p class={styles.zoomBackRange}>
+                        {midiToNoteNameOctave(latest()?.summary.lowMidi ?? 0)}–
+                        {midiToNoteNameOctave(latest()?.summary.highMidi ?? 0)}
+                      </p>
+                      <p class={styles.zoomBackMeta}>
+                        {latest()?.summary.semitones ?? 0} semitones ·{' '}
+                        {latest()?.summary.steadiness ?? 0} steadiness ·{' '}
+                        {Math.round(latest()?.summary.accuracy ?? 0)} accuracy
+                      </p>
+                      <p class={styles.zoomBackDate}>
+                        {new Date(latest()?.takenAt ?? '').toLocaleDateString()}
+                      </p>
+                    </div>
+                  }
+                >
+                  {/* The data side is the actual stats card — twin plus
+                      the record's numbers — so flipping previews exactly
+                      what Share exports. */}
+                  <img
+                    class={styles.zoomImg}
+                    src={statsCard() ?? ''}
+                    alt={`${latest()?.twin ?? ''} — your voiceprint card`}
+                  />
+                </Show>
               }
             >
               <img
@@ -295,13 +340,20 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             <figcaption class={styles.zoomCaption}>
               {latest()?.twin}
               <span class={styles.zoomHint}> — click card to flip</span>
+              {/* Shares the side being looked at: portrait card on the
+                  front, the data card on the back. */}
               <button
                 type="button"
                 class={styles.shareBtn}
                 disabled={sharing()}
+                title={
+                  flipped()
+                    ? 'Share this card (twin + your numbers)'
+                    : 'Share your twin portrait card'
+                }
                 onClick={(event) => {
                   event.stopPropagation()
-                  void shareLatest('stats')
+                  void shareLatest(flipped() ? 'stats' : 'face')
                 }}
               >
                 Share
