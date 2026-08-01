@@ -40,11 +40,7 @@ export function clampOverviewWindow(
 }
 
 /** Time -> x. Linear in the window; callers guard visibility themselves. */
-export function timeToX(
-  t: number,
-  win: OverviewWindow,
-  width: number,
-): number {
+export function timeToX(t: number, win: OverviewWindow, width: number): number {
   return ((t - win.start) / Math.max(1e-9, win.duration)) * width
 }
 
