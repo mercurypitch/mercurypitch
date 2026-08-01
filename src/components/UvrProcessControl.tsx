@@ -68,6 +68,12 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
     if (props.phase === 'queued') {
       return "Warming up the studio — the first song can take a minute. You can switch away; we'll fetch your stems automatically when it's done."
     }
+    // The last percent is the server writing + uploading the finished
+    // stems, which reports no granular progress — without this note a bar
+    // parked at ~95% reads as hung when it is actually the home stretch.
+    if (props.progress >= 90) {
+      return 'Final stretch — writing and uploading your stems. Long songs can sit here a while; it is still working.'
+    }
     return 'Taking a little longer than estimated — still separating'
   }
 

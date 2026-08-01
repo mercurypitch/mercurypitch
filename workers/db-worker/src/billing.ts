@@ -12,7 +12,11 @@
 //
 // Design (see docs/plans/premium.md):
 //  • Prices live in the DB (pricingPlans), never in the repo. `amount` NULL
-//    renders as "Soon" and is not purchasable.
+//    renders as "Soon" and is not purchasable — except a donation row with
+//    customAmount = 1, whose Stripe price uses custom_unit_amount so the donor
+//    names the amount on Stripe's page.
+//  • Donations (kind = 'donation') are one-time payments that grant a
+//    time-boxed `supporter` entitlement. They never gate a feature.
 //  • Stripe-hosted UI only; the webhook is the sole writer of credits/
 //    entitlements. Credits are an append-only ledger; balance = SUM(delta).
 //  • Inert until configured: with STRIPE_SECRET_KEY unset, checkout/portal
@@ -27,10 +31,15 @@ import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
 import {
   UVR_TIER_PLAN_IDS,
+  bestSupporterLevel,
   creditBalance,
+  donationDays,
+  extendSupporterExpiry,
   isUvrTier,
   isValidJobRef,
   mapPricingPlans,
+  sourcePlanId,
+  supporterLevel,
   timingSafeEqualStr,
   uvrDebitKey,
   uvrJobCost,
@@ -153,11 +162,22 @@ async function handleMe(
   )
     .bind(auth.userId)
     .all<{ delta: number }>()
+  // sourceLabel resolves `donation:<planId>` to that tier's display name, so
+  // the badge can say "Voice supporter" from this one call. It stays editable
+  // in the DB — the client never hardcodes a tier name.
   const { results: entitlements } = await env.DB.prepare(
-    'SELECT feature, source, expiresAt FROM entitlements WHERE userId = ?',
+    `SELECT e.feature, e.source, e.expiresAt, p.label AS sourceLabel
+       FROM entitlements e
+       LEFT JOIN pricingPlans p ON p.id = REPLACE(e.source, 'donation:', '')
+      WHERE e.userId = ?`,
   )
     .bind(auth.userId)
-    .all<{ feature: string; source: string | null; expiresAt: string | null }>()
+    .all<{
+      feature: string
+      source: string | null
+      expiresAt: string | null
+      sourceLabel: string | null
+    }>()
 
   return respond({
     creditBalance: creditBalance(ledger.results),
@@ -184,7 +204,7 @@ async function handleCheckout(
   // first so receipts and the customer record have a real identity.
   if (auth.provider === 'anonymous') {
     return respond(
-      { error: 'Upgrade your account to buy credits' },
+      { error: 'Create an account first so we can send you a receipt' },
       { status: 403 },
     )
   }
@@ -205,7 +225,11 @@ async function handleCheckout(
     .bind(body.planId)
     .first<PricingRow>()
   if (!plan) return respond({ error: 'Unknown plan' }, { status: 404 })
-  if (plan.amount == null || (plan.stripePriceId ?? '') === '') {
+  const isDonation = plan.kind === 'donation'
+  // A custom_unit_amount price genuinely has no fixed amount — the donor names
+  // it on Stripe's page — so only a missing Stripe price makes it unavailable.
+  const priceless = plan.customAmount === 1 ? false : plan.amount == null
+  if (priceless || (plan.stripePriceId ?? '') === '') {
     // Price not wired yet — the page shows it as "Soon".
     return respond({ error: 'This plan is not available yet' }, { status: 409 })
   }
@@ -228,12 +252,22 @@ async function handleCheckout(
     customer: customerId,
     'line_items[0][price]': plan.stripePriceId as string,
     'line_items[0][quantity]': '1',
-    success_url: `${origin}/#/billing/success`,
-    cancel_url: `${origin}/#/pricing`,
+    success_url: `${origin}/#/${isDonation ? 'donate/thanks' : 'billing/success'}`,
+    cancel_url: `${origin}/#/${isDonation ? 'settings/credits' : 'pricing'}`,
     client_reference_id: auth.userId,
     'metadata[userId]': auth.userId,
     'metadata[planId]': plan.id,
     'metadata[credits]': String(plan.credits ?? 0),
+  }
+  if (isDonation) {
+    // `kind` is what the webhook branches on; the rest is enough to grant the
+    // entitlement without re-reading the plan row (which could have been
+    // edited between checkout and the webhook landing).
+    params['metadata[kind]'] = 'donation'
+    params['metadata[entitlementDays]'] = String(plan.entitlementDays ?? 0)
+    params['metadata[customAmount]'] = plan.customAmount === 1 ? '1' : '0'
+    // Stripe's button reads "Donate" instead of "Pay".
+    params.submit_type = 'donate'
   }
   const session = await stripeRequest(env, '/checkout/sessions', params)
   if (!session.ok || typeof session.data.url !== 'string') {
@@ -280,10 +314,144 @@ async function handlePortal(
 /** Outcome of processing one checkout event — lets the reconciliation job
  *  report exactly what happened without re-deriving it from the ledger. */
 interface GrantOutcome {
-  /** Credits written by THIS call (0 for duplicates and unusable metadata). */
+  /** Credits (or supporter days) written by THIS call — 0 for duplicates and
+   *  unusable metadata. `unit` says which. */
   granted: number
   userId: string | null
   duplicate: boolean
+  /** What `granted` counts, for logs and the reconciliation alert. */
+  unit: 'credits' | 'supporter days'
+}
+
+/** Process one completed checkout. Credits and donations both arrive as
+ *  `checkout.session.completed`; the session metadata says which. Routing both
+ *  through here means the reconciliation sweep (which calls this same function)
+ *  recovers missed donations for free — do NOT add a second recovery path. */
+async function grantForCheckout(
+  env: Env,
+  eventId: string,
+  session: Record<string, unknown>,
+): Promise<GrantOutcome> {
+  const metadata =
+    (session.metadata as Record<string, unknown> | undefined) ?? {}
+  return metadata.kind === 'donation'
+    ? grantSupporterEntitlement(env, eventId, session)
+    : grantCheckoutCredits(env, eventId, session)
+}
+
+/** Grant a time-boxed `supporter` entitlement for a completed donation.
+ *
+ *  Idempotency reuses the credit ledger: a delta-0 row keyed `evt:<eventId>`
+ *  wins or loses the UNIQUE(idempotencyKey) race exactly once, so a redelivered
+ *  webhook — or a reconciliation sweep running alongside it — can never extend
+ *  the entitlement twice. It also leaves a donation audit trail without moving
+ *  anyone's balance. */
+async function grantSupporterEntitlement(
+  env: Env,
+  eventId: string,
+  session: Record<string, unknown>,
+): Promise<GrantOutcome> {
+  const metadata =
+    (session.metadata as Record<string, unknown> | undefined) ?? {}
+  const userId = typeof metadata.userId === 'string' ? metadata.userId : ''
+  const planId = typeof metadata.planId === 'string' ? metadata.planId : null
+  const amountTotal =
+    typeof session.amount_total === 'number' ? session.amount_total : null
+  const days = donationDays(
+    {
+      entitlementDays: Number(metadata.entitlementDays ?? 0),
+      customAmount: metadata.customAmount === '1' ? 1 : 0,
+    },
+    amountTotal,
+  )
+
+  if (userId === '' || days <= 0) {
+    // A paid donation we cannot attribute is a wiring bug — never drop it
+    // silently; the reconciliation alert surfaces it for manual granting.
+    console.error(
+      `[billing] donation ${eventId}: no grant (userId=${userId || 'missing'}, days=${days})`,
+    )
+    return { granted: 0, userId: null, duplicate: false, unit: 'supporter days' }
+  }
+
+  const now = new Date().toISOString()
+  const claimed = await env.DB.prepare(
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+     VALUES (?, ?, ?, 0, 'donation', ?, ?)`,
+  )
+    .bind(crypto.randomUUID(), now, userId, planId, `evt:${eventId}`)
+    .run()
+  if (claimed.meta.changes === 0) {
+    console.log(`[billing] donation ${eventId}: [duplicate, skipped]`)
+    return { granted: 0, userId, duplicate: true, unit: 'supporter days' }
+  }
+
+  // From here the claim row exists but the entitlement does not, so ANY failure
+  // below must release the claim — otherwise Stripe's retry (and the
+  // reconciliation sweep) would both see "duplicate" and skip, leaving a paid
+  // donation with no perks and no way to notice. The credits path needs no such
+  // care: there the ledger row IS the grant, one atomic statement.
+  try {
+    // Read-then-write is safe because the claim above admits exactly one caller
+    // per event, and D1 serializes writes. Two DIFFERENT donations from the
+    // same user in the same instant could still interleave — at donation volume
+    // that is a manual fix, not worth a compare-and-swap loop.
+    const existing = await env.DB.prepare(
+      "SELECT expiresAt, source FROM entitlements WHERE userId = ? AND feature = 'supporter'",
+    )
+      .bind(userId)
+      .first<{ expiresAt: string | null; source: string | null }>()
+    const expiresAt = extendSupporterExpiry(existing?.expiresAt, now, days)
+
+    // Name the level from what was PAID, not from which card was clicked — that
+    // is what lets a custom EUR 59 wear the Anthem badge instead of a nameless
+    // "Other amount" one. Stacking keeps the high-water mark.
+    const { results: tiers } = await env.DB.prepare(
+      "SELECT id, amount FROM pricingPlans WHERE kind = 'donation' AND customAmount = 0 AND active = 1",
+    ).all<{ id: string; amount: number | null }>()
+    const level =
+      bestSupporterLevel(
+        tiers,
+        sourcePlanId(existing?.source),
+        supporterLevel(tiers, amountTotal),
+      ) ?? planId
+
+    await env.DB.prepare(
+      `INSERT INTO entitlements (id, createdAt, updatedAt, userId, feature, source, expiresAt)
+       VALUES (?, ?, ?, ?, 'supporter', ?, ?)
+       ON CONFLICT(userId, feature) DO UPDATE SET
+         updatedAt = excluded.updatedAt,
+         source    = excluded.source,
+         expiresAt = excluded.expiresAt`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        now,
+        userId,
+        `donation:${level ?? 'unknown'}`,
+        expiresAt,
+      )
+      .run()
+
+    console.log(
+      `[billing] donation ${eventId}: +${days}d supporter user=${userId} level=${level ?? 'unknown'} until=${expiresAt}`,
+    )
+    return { granted: days, userId, duplicate: false, unit: 'supporter days' }
+  } catch (err) {
+    await env.DB.prepare('DELETE FROM creditLedger WHERE idempotencyKey = ?')
+      .bind(`evt:${eventId}`)
+      .run()
+      .catch(() => {
+        // Releasing the claim is itself best-effort. If even this fails the
+        // event stays claimed-but-ungranted, which the thrown error below
+        // surfaces as a 500 → Stripe retry → the reconciliation alert.
+        console.error(
+          `[billing] donation ${eventId}: claim release FAILED — grant may need manual repair`,
+        )
+      })
+    throw err
+  }
 }
 
 /** Grant credits for a completed checkout, idempotent on the event id. */
@@ -302,7 +470,7 @@ async function grantCheckoutCredits(
     console.error(
       `[billing] checkout ${eventId}: no grant (userId=${userId || 'missing'}, credits=${String(metadata.credits)})`,
     )
-    return { granted: 0, userId: null, duplicate: false }
+    return { granted: 0, userId: null, duplicate: false, unit: 'credits' }
   }
 
   const planId = typeof metadata.planId === 'string' ? metadata.planId : null
@@ -376,6 +544,7 @@ async function grantCheckoutCredits(
     granted: res.meta.changes > 0 ? credits : 0,
     userId,
     duplicate: res.meta.changes === 0,
+    unit: 'credits',
   }
 }
 
@@ -400,22 +569,32 @@ interface DebitBody {
   /** Registry model name (e.g. "roformer") — scales the tier's base cost
    *  by the model's credit multiplier. Absent = base cost. */
   model?: string
+  /** Client-declared song length — adds the long-song surcharge blocks
+   *  (uvrLengthFactor). The RunPod handler probes the REAL duration and
+   *  rejects a job whose actual factor exceeds the declared one, so this
+   *  can only over-pay, never under-pay. Absent = base factor. */
+  durationSeconds?: number
 }
 
 const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
+
+/** Sane declared-duration bounds: positive, finite, under a day. */
+const isValidDuration = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 && value < 86_400
 
 async function getUvrQuote(
   env: Env,
   userId: string,
   tier: 'gpu' | 'cpu',
   model?: string,
+  durationSeconds?: number,
 ): Promise<{ cost: number; balance: number }> {
   const plan = await env.DB.prepare(
     'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
   )
     .bind(UVR_TIER_PLAN_IDS[tier])
     .first<{ credits: number | null }>()
-  const cost = uvrJobCost(plan?.credits ?? 0, model)
+  const cost = uvrJobCost(plan?.credits ?? 0, model, durationSeconds)
   const ledger = await env.DB.prepare(
     'SELECT delta FROM creditLedger WHERE userId = ?',
   )
@@ -438,9 +617,11 @@ async function handleUvrAdmission(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: Pick<DebitBody, 'tier' | 'model'>
+  let body: Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
   try {
-    body = await request.json<Pick<DebitBody, 'tier' | 'model'>>()
+    body = await request.json<
+      Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
+    >()
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
   }
@@ -449,6 +630,9 @@ async function handleUvrAdmission(
   }
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
+  }
+  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+    return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
   }
 
   const rateKey = `user:${auth.userId}`
@@ -468,7 +652,13 @@ async function handleUvrAdmission(
     }
   }
 
-  const quote = await getUvrQuote(env, auth.userId, body.tier, body.model)
+  const quote = await getUvrQuote(
+    env,
+    auth.userId,
+    body.tier,
+    body.model,
+    body.durationSeconds,
+  )
   if (quote.cost <= 0) {
     return respond(
       { error: 'Server processing metering is unavailable' },
@@ -517,12 +707,16 @@ async function handleDebit(
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
   }
+  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+    return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
+  }
 
   const { cost, balance } = await getUvrQuote(
     env,
     auth.userId,
     body.tier,
     body.model,
+    body.durationSeconds,
   )
 
   if (cost <= 0) {
@@ -683,7 +877,13 @@ async function handleWebhook(
   if (seen) return respond({ received: true, duplicate: true })
 
   if (event.type === 'checkout.session.completed') {
-    await grantCheckoutCredits(env, event.id, event.data?.object ?? {})
+    const outcome = await grantForCheckout(env, event.id, event.data?.object ?? {})
+    // Only the claim winner may mark the event processed. A duplicate here
+    // means another delivery (or the sweep) holds the claim RIGHT NOW - if
+    // that winner fails and releases it, recording the event on the loser's
+    // behalf would make every retry and sweep skip it forever: paid, no
+    // grant, no trace. The winner records it below on its own success.
+    if (outcome.duplicate) return respond({ received: true, duplicate: true })
   }
   // Other event types are acknowledged (200) without action for now.
   await recordBillingEvent(env, event.id, event.type ?? null)
@@ -750,15 +950,22 @@ export async function reconcileBilling(env: Env): Promise<void> {
         .bind(ev.id)
         .first<{ id: string }>()
       if (seen) continue
-      const outcome = await grantCheckoutCredits(
-        env,
-        ev.id,
-        ev.data?.object ?? {},
-      )
-      await recordBillingEvent(env, ev.id, ev.type ?? null)
-      recovered.push(
-        `${ev.id}: +${outcome.granted} credits, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
-      )
+      // One poisoned event must not abort the sweep - it is the safety net
+      // for every OTHER missed grant. The failed event stays unrecorded, so
+      // the next sweep retries it.
+      try {
+        const outcome = await grantForCheckout(env, ev.id, ev.data?.object ?? {})
+        // A duplicate = the webhook (or a parallel sweep) holds the claim;
+        // recording it here would strand the grant if that winner fails.
+        // It also is not a recovery, so it does not belong in the alert.
+        if (outcome.duplicate) continue
+        await recordBillingEvent(env, ev.id, ev.type ?? null)
+        recovered.push(
+          `${ev.id}: +${outcome.granted} ${outcome.unit}, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
+        )
+      } catch (err) {
+        console.error(`[billing] reconcile: grant for ${ev.id} failed:`, err)
+      }
     }
     if (res.data.has_more !== true || events.length === 0) break
     if (page === RECONCILE_MAX_PAGES - 1) {
@@ -779,10 +986,11 @@ export async function reconcileBilling(env: Env): Promise<void> {
     await sendBillingAlert(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       env.BILLING_ALERT_EMAIL ?? '',
-      `Recovered ${recovered.length} missed credit grant(s)`,
+      `Recovered ${recovered.length} missed grant(s)`,
       [
-        'The billing reconciliation sweep found paid checkouts whose webhook',
-        'event was never processed, and granted the credits now. This means',
+        'The billing reconciliation sweep found paid checkouts (credits or',
+        'donations) whose webhook event was never processed, and granted them',
+        'now. This means',
         'Stripe webhook delivery is BROKEN — check the endpoint URL and its',
         'recent deliveries in the Stripe dashboard.',
         '',

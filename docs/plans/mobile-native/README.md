@@ -1,5 +1,7 @@
 # Mobile Native v2 — app-wide mobile-first redesign
 
+**Status:** in progress — index for the mobile program. `karaoke-night-polish.md` shipped and has been archived to dotfiles.
+
 **Date**: 2026-07-18 · **Status**: planned (decisions locked with user)
 **Why now**: Google Ads shows most users arrive on phones. Karaoke Night's
 mobile stage proved the formula; this plan generalizes it to the core app —
@@ -7,7 +9,7 @@ starting with **Singing**, **Piano**, and **Exercises** — and prepares the
 codebase for a Capacitor-packaged native app.
 
 This replaces the archived squeeze-the-desktop approach
-(`docs/archive/plans/mobile-ux-v1.md`). We no longer shrink desktop chrome
+(`<user-dotfiles>/mercurypitch/archive-2026-07/docs-archive/plans/mobile-ux-v1.md`). We no longer shrink desktop chrome
 onto phones; each core surface gets a **purpose-built mobile stage** while
 desktop keeps its full power. Mobile is the clean daily loop; desktop is the
 studio users graduate to.
@@ -70,8 +72,9 @@ rule: tours cover ≥80% of user-visible features).
   non-redesigned pages — it's just navigation).
 - **Phase 1 — Singing mobile stage.** The flagship surface and the default
   tab. Includes extracting the inline `#practice-panel` JSX out of `App.tsx`
-  into `src/features/practice/SingingPanel.tsx` (mechanical move, no visual
-  change) so the `<Show>` swap has a seam.
+  into a dedicated practice-panel component (the plan's original
+  `SingingPanel.tsx` name was never created — see `page-singing.md`'s status
+  note) so the `<Show>` swap has a seam.
 - **Phase S — Capacitor spike (parallel with Phase 1).** Throwaway branch,
   results recorded in `capacitor-readiness.md`. Gate: nothing in the spike
   findings invalidates the stage architecture before Phase 2 starts.

@@ -121,7 +121,7 @@ when configured. To make it user-facing later:
 2. Send `X-UVR-Provider: runpod` (GPU, the default) — or `runpod-cpu` for the
    cheaper tier — from `src/lib/uvr-api.ts processAudio` when a server mode is
    selected. (`?provider=…` works too.)
-3. **Credit metering** (implemented; see [`docs/plans/premium.md`](../plans/premium.md)
+3. **Credit metering** (implemented; see `<user-dotfiles>/mercurypitch/archive-2026-07/plans/premium.md` (archived 2026-07-28)
    "Metering paid jobs"): the worker debits the tier's per-song credit cost via
    the db-worker when a job is accepted and refunds it on failure/cancel
    (`src/lib/uvr-metering.ts`; ledger endpoints in
@@ -195,7 +195,7 @@ one day's traffic (~50 MB per song-pair) instead of growing forever.
 - `process` and `DELETE /session` stay behind the existing app-JWT edge gate in
   `src/worker.ts` (signature + expiry), same as the container path — anonymous
   users can't spend GPU/CPU time or cancel jobs. (Credit/entitlement gating is
-  a separate billing-layer concern — see [`docs/plans/premium.md`](../plans/premium.md).)
+  a separate billing-layer concern — see `<user-dotfiles>/mercurypitch/archive-2026-07/plans/premium.md` (archived 2026-07-28).)
 - `RUNPOD_API_KEY` is a worker **secret**, never shipped to the browser; the
   client only ever talks to `/api/uvr/*`.
 - Inline base64 input is capped (`RUNPOD_MAX_INLINE_BYTES`, 7 MB) to stay under

@@ -1,3 +1,11 @@
+// ============================================================
+// Transport Store — persisted tempo, count-in and playback speed
+// ============================================================
+//
+// Every setter clamps to a musically valid range (bpm 40-280, speed
+// 0.25-2.0x). Always go through `setBpm` / `setPlaybackSpeed`; the underscore
+// -prefixed raw setters bypass clamping and exist only for them.
+
 import { createPersistedSignal } from '@/lib/storage'
 
 export type CountInOption = 0 | 1 | 2 | 4

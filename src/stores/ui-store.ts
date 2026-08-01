@@ -1,10 +1,22 @@
+// ============================================================
+// UI Store — active tab, modal/library visibility, focus mode, first-run flags
+// ============================================================
+//
+// `setActiveTab` is the app's navigation primitive; `onTabTransition` lets
+// features clean up (release the mic, stop playback) when the user leaves.
+// Register listeners rather than polling the tab signal.
+//
+// Also owns the first-run gates -- welcome and survey dismissal, keyed by
+// APP_VERSION. Headless preview runs must set those localStorage keys and
+// reload, or the welcome overlay covers the page under test.
+
 import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
-import { APP_VERSION } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
+import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
 
 export type { ActiveTab } from '@/features/tabs/constants'
 
@@ -121,6 +133,7 @@ export function hideSessionPresetsLibrary(): void {
 export const [focusMode, _setFocusMode] = createSignal<boolean>(false)
 
 export function setFocusMode(val: boolean): void {
+  if (val) setSingingZenLaunch(null)
   _setFocusMode(val)
 }
 
@@ -132,6 +145,45 @@ export function exitFocusMode(): void {
   setFocusMode(false)
 }
 exposeForE2E('__exitFocusMode', exitFocusMode)
+
+// ── Singing Zen pitch stage ─────────────────────────────────────
+
+export type SingingZenSource = 'singing' | 'exercises' | 'path'
+
+export interface SingingZenLaunch {
+  launchId: number
+  mode: 'monitor' | 'exercise'
+  exerciseId?: string
+  exerciseVersion?: number
+  source: SingingZenSource
+}
+
+export const [singingZenLaunch, setSingingZenLaunch] =
+  createSignal<SingingZenLaunch | null>(null)
+
+export function openSingingZen(
+  input:
+    | { mode: 'monitor'; source: SingingZenSource }
+    | {
+        mode: 'exercise'
+        exerciseId: string
+        exerciseVersion?: number
+        source: SingingZenSource
+      },
+): void {
+  _setFocusMode(false)
+  removeNotificationsByChannel(TOUR_OFFER_CHANNEL)
+  setSingingZenLaunch({
+    ...input,
+    launchId: Date.now(),
+  })
+}
+
+export function closeSingingZen(): void {
+  setSingingZenLaunch(null)
+}
+
+exposeForE2E('__exitSingingZen', closeSingingZen)
 
 // ── Karaoke Focus Mode (StemMixer fullscreen) ────────────────────
 
@@ -148,24 +200,95 @@ exposeForE2E('__exitKaraokeZen', () => setKaraokeZen(false))
 // ── Welcome Screen (GH #131) ────────────────────────────────────
 const PITCH_PERFECT_WELCOME_VERSION_KEY = 'pitchperfect_welcome_version'
 
-// The value stored is the version string. We want to show welcome if the stored string doesn't match APP_VERSION.
-// A simpler way: store a boolean 'true' if they have seen this specific version.
+// A seen flag is a seen flag. This used to store APP_VERSION and show the
+// welcome whenever the stored string didn't match — which meant every
+// release re-imposed the first-run overlay on people who had been using
+// the app for months. Version news belongs in the changelog modal.
+//
+// The key and its type are unchanged so existing installs still read as
+// "seen": anything non-empty (a stored version string, or the '1' we
+// write now) suppresses it.
 export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   PITCH_PERFECT_WELCOME_VERSION_KEY,
   '',
 )
 
-export const [showWelcome, setShowWelcome] = createSignal(
-  welcomeSeen() !== APP_VERSION,
-)
+export const [showWelcome, setShowWelcome] = createSignal(welcomeSeen() === '')
 
 export function dismissWelcome(): void {
   setShowWelcome(false)
-  setWelcomeSeen(APP_VERSION)
+  setWelcomeSeen('1')
 }
 
-// ── Admin authoring overlay (#/admin/weekly) ────────────────────
-export const [showAdminWeekly, setShowAdminWeekly] = createSignal(false)
+// ── Owner-only Content Studio (#/admin/*) ───────────────────────
+export type AdminSection = 'exercises' | 'ascent' | 'weekly'
+
+export const [adminContentSection, setAdminContentSection] =
+  createSignal<AdminSection>('exercises')
+export const [showAdminContentStudio, setShowAdminContentStudio] =
+  createSignal(false)
+
+let adminContentCloseGuard: (() => boolean) | null = null
+
+/**
+ * Registers the currently mounted Content Studio's synchronous leave guard.
+ * The store owns routing state, so browser history, the close button, and
+ * section navigation all consult the same guard before discarding an editor.
+ */
+export function registerAdminContentCloseGuard(
+  guard: () => boolean,
+): () => void {
+  adminContentCloseGuard = guard
+  return () => {
+    if (adminContentCloseGuard === guard) adminContentCloseGuard = null
+  }
+}
+
+export function requestAdminContentSection(section: AdminSection): boolean {
+  if (
+    showAdminContentStudio() &&
+    section !== adminContentSection() &&
+    adminContentCloseGuard?.() === false
+  ) {
+    return false
+  }
+  setAdminContentSection(section)
+  setShowAdminContentStudio(true)
+  return true
+}
+
+export function requestCloseAdminContentStudio(): boolean {
+  if (showAdminContentStudio() && adminContentCloseGuard?.() === false) {
+    return false
+  }
+  setShowAdminContentStudio(false)
+  return true
+}
+
+// ── Auth modal (sign in / create account / forgot password) ─────
+// One shared dialog, opened from the header pill, the Settings account
+// section, or anywhere else that wants a sign-in. The value picks the
+// pane it opens on; null = closed.
+export type AuthModalMode = 'login' | 'register'
+
+export const [authModalMode, setAuthModalMode] =
+  createSignal<AuthModalMode | null>(null)
+
+export function openAuthModal(mode: AuthModalMode = 'login'): void {
+  setAuthModalMode(mode)
+}
+
+export function closeAuthModal(): void {
+  setAuthModalMode(null)
+}
+
+// ── Password-reset page (#/reset-password[?token=…]) ────────────
+// Full-screen overlay reached from the emailed reset link. token = the
+// link's token, null for the bare request-a-link form; the object is
+// null while the page is closed.
+export const [resetPasswordView, setResetPasswordView] = createSignal<{
+  token: string | null
+} | null>(null)
 
 // ── Onboarding survey (GH #97) ──────────────────────────────────
 // Shown once on real deployments after the welcome screen. A non-empty
@@ -180,6 +303,24 @@ export const [surveySeen, setSurveySeen] = createPersistedSignal<string>(
 
 export function dismissSurvey(): void {
   setSurveySeen('1')
+}
+
+/**
+ * User-initiated feedback survey (Settings → Account).
+ *
+ * Deliberately NOT gated on surveySeen: the automatic prompt fires once, but
+ * this is the standing "I have an idea" channel, so it can be reopened and
+ * submitted as often as someone has something to say. It stays anonymous —
+ * no account or email is revealed by sending one.
+ */
+export const [feedbackSurveyOpen, setFeedbackSurveyOpen] = createSignal(false)
+
+export function openFeedbackSurvey(): void {
+  setFeedbackSurveyOpen(true)
+}
+
+export function closeFeedbackSurvey(): void {
+  setFeedbackSurveyOpen(false)
 }
 
 // ── User Profile ────────────────────

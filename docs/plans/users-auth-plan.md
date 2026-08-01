@@ -20,7 +20,7 @@ Goal: **full user accounts** for the cloud database — Google login + email/pas
 | Google Cloud OAuth client id created + set as `GOOGLE_CLIENT_ID` | ✅ done (var in wrangler.jsonc + defaults.ts) |
 | Prod secrets: `wrangler secret put JWT_SECRET / ADMIN_KEY` | ⬜ user action (after first deploy) |
 | HybridAdapter (route cloud entities → ServerAdapter with `getAuthHeaders()`) | ✅ done, unit-tested |
-| Auth client (`src/db/services/auth-service.ts`: ensureAuth/register/login/google/me) | ✅ done |
+| Auth client (`src/db/services/auth-service.ts`: restoreAuth+requireAuth (ensureAuth until #361)/register/login/google/me) | ✅ done |
 | Auth UI (`src/components/account/AccountSection.tsx` in settings: register/login forms, Google sign-in button, sign-out; component-tested) | ✅ done |
 | Google redirect flow (`/api/auth/google/start` + `/callback`, COOP-safe — replaced the GIS button; see db-integration-next-plan §5b) | ✅ done |
 | Cloud seeding of challenge/badge/achievement definitions (admin key) | ✅ done (dev seeded 2026-06-12) |

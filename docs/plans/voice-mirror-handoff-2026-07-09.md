@@ -1,5 +1,7 @@
 # Voice Mirror — Session Handoff & Agreements Log (2026-07-09)
 
+**Status:** in progress — Voice Mirror shipped (`src/features/mirror/`); 10 open items remain, most awaiting user judgement on generated portraits.
+
 Continuation document for the Voice Mirror results-page redesign + legend
 "voice twin" reveal. Written so work can resume in **any** environment (local
 PC, fresh cloud session) with zero prior chat context: read this file, and you

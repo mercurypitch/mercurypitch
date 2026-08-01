@@ -1,5 +1,7 @@
 # Piano (falling notes) — mobile stage spec (Phase 2)
 
+**Status:** proposed — Phase 2 of the mobile program.
+
 The easiest of the three conversions: `PianoPage.tsx` is already a standalone
 page, the canvas already handles touch (single-finger key press, two-finger
 pinch zoom → `visibleBeatWindow`), and the run loop is self-contained in

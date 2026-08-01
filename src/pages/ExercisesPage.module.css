@@ -1,0 +1,65 @@
+.zenEntry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1120px;
+  margin: 20px auto 4px;
+  padding: 18px 20px;
+  border: 1px solid rgba(245, 158, 11, 0.26);
+  border-radius: 14px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(
+      circle at 12% -80%,
+      rgba(245, 158, 11, 0.18),
+      transparent 52%
+    ),
+    color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+}
+
+.zenEntry span {
+  color: #e9a93c;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.zenEntry h2 {
+  margin: 4px 0 3px;
+  font-size: 1.05rem;
+}
+
+.zenEntry p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.zenEntry button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid rgba(255, 193, 90, 0.66);
+  border-radius: 9px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, #f59e0b);
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .zenEntry {
+    align-items: stretch;
+    margin: 12px;
+    flex-direction: column;
+  }
+
+  .zenEntry button {
+    width: 100%;
+  }
+}

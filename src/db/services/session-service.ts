@@ -3,7 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
-import type { SessionRecord } from '@/db/entities'
+import type { SessionRecord, SessionSource } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { trackEvent } from '@/lib/analytics'
@@ -18,6 +18,13 @@ export async function saveSessionRecord(data: {
   durationMs?: number
   /** Tags the attempt to a weekly "Sing the Legend" challenge (board ranking). */
   weeklyChallengeId?: string
+  /**
+   * What kind of attempt this was. Only fixed tasks are publicly ranked
+   * (see leaderboardConfig.eligibleSources) — free practice is personal,
+   * because scores across self-chosen melodies aren't comparable.
+   * Defaults to 'practice' so an un-tagged caller is never published.
+   */
+  source?: SessionSource
 }): Promise<SessionRecord | null> {
   try {
     const db = await getDb()
@@ -39,6 +46,7 @@ export async function saveSessionRecord(data: {
       notesHit: data.notesHit,
       notesTotal: data.notesTotal,
       streak,
+      source: data.source ?? 'practice',
       ...(data.weeklyChallengeId !== undefined
         ? { weeklyChallengeId: data.weeklyChallengeId }
         : {}),

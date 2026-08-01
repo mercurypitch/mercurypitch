@@ -229,7 +229,7 @@ async function processLocal(
 
 /** Song duration via an off-DOM audio element — cheap metadata-only load.
  *  null when the browser can't parse the container (fall back to defaults). */
-function audioDurationSecs(file: File): Promise<number | null> {
+export function audioDurationSecs(file: File): Promise<number | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
     const audio = new Audio()
@@ -441,6 +441,10 @@ async function processServer(
       ...DEFAULT_PROCESS_REQUEST,
       model: requestedModel,
       provider: 'runpod',
+      // Long songs are priced by declared length (handler-verified);
+      // a failed duration probe just omits it and songs past the base
+      // window are rejected server-side as before.
+      ...(durationSecs !== null ? { duration_seconds: durationSecs } : {}),
     },
     signal,
   )

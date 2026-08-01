@@ -2,10 +2,11 @@
 // Hash Router — Client-side hash-based routing
 // ============================================================
 
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { stashPendingFriendCode } from '@/lib/pending-friend-code'
 import { decodeSharePayload } from '@/lib/share-codec'
 import type { ActiveTab } from '@/stores'
-import type { SettingsSection } from '@/stores/ui-store'
+import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
@@ -24,12 +25,26 @@ export type HashRoute =
   | { type: 'learn-chapter'; chapterId: string }
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
+  /** Replay the First Light Map — "what can I do here", on demand.
+   *  Distinct from `guide`, which opens the spotlight-tour picker. Phase 3
+   *  folds the tour catalog into the Map, at which point the two should be
+   *  consolidated onto one route. */
+  | { type: 'onboarding-map' }
   /** Return from Stripe checkout (success_url / cancel_url in the
-   *  db-worker's billing.ts) — lands on Settings → Credits. */
-  | { type: 'billing-return'; outcome: 'success' | 'cancel' }
+   *  db-worker's billing.ts) — lands on Settings → Credits. `kind` separates a
+   *  donation return (grants a supporter entitlement) from a credit purchase;
+   *  they need different confirmation copy and different follow-up. */
+  | {
+      type: 'billing-return'
+      outcome: 'success' | 'cancel'
+      kind?: 'credits' | 'donation'
+    }
   /** A specific Settings sub-tab, e.g. #/settings/credits. */
   | { type: 'settings-section'; section: SettingsSection }
-  | { type: 'admin-weekly' }
+  | { type: 'admin'; section: AdminSection }
+  /** The password-reset form: emailed link landing (#/reset-password?token=…)
+   *  or the bare request-a-link form (#/reset-password). */
+  | { type: 'reset-password'; token: string | null }
   | { type: 'unknown' }
 
 const VALID_TABS: Set<string> = new Set([
@@ -49,6 +64,7 @@ const VALID_TABS: Set<string> = new Set([
   TAB_GUITAR,
   TAB_PITCH_TEST,
   TAB_PITCH_ALGO,
+  TAB_LAB,
 ])
 
 // Keep in sync with GUIDE_SECTIONS ids in app-store.ts.
@@ -78,8 +94,18 @@ const SETTINGS_SECTION_TO_SLUG: Record<SettingsSection, string> = {
   credits: 'credits',
 }
 
+const VALID_ADMIN_SECTIONS: Set<string> = new Set([
+  'exercises',
+  'ascent',
+  'weekly',
+])
+
 function isValidTab(tab: string): tab is ActiveTab {
   return VALID_TABS.has(tab)
+}
+
+function isAdminSection(section: string): section is AdminSection {
+  return VALID_ADMIN_SECTIONS.has(section)
 }
 
 /**
@@ -188,14 +214,22 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'guide' }
   }
 
+  // Match: /map (replay the First Light Map)
+  if (hash === '/map') {
+    return { type: 'onboarding-map' }
+  }
+
   // Stripe checkout return URLs (see workers/db-worker/src/billing.ts):
   // success lands on Settings → Account with a confirmation; the cancel URL
   // is /pricing, which is where the pricing panel lives too.
   if (hash === '/billing/success') {
-    return { type: 'billing-return', outcome: 'success' }
+    return { type: 'billing-return', outcome: 'success', kind: 'credits' }
   }
   if (hash === '/pricing') {
-    return { type: 'billing-return', outcome: 'cancel' }
+    return { type: 'billing-return', outcome: 'cancel', kind: 'credits' }
+  }
+  if (hash === '/donate/thanks') {
+    return { type: 'billing-return', outcome: 'success', kind: 'donation' }
   }
 
   // Match: /settings/<section> — deep link to a Settings sub-tab. The
@@ -208,14 +242,37 @@ export function parseHash(rawHash: string): HashRoute {
     }
   }
 
-  // Match: /admin/weekly (owner-only weekly-challenge authoring)
-  if (hash === '/admin/weekly' || hash === '/admin') {
-    return { type: 'admin-weekly' }
+  // Match: /admin/<section> (owner-only content authoring). Bare /admin opens
+  // the exercise catalogue, which is the Content Studio's primary surface.
+  if (hash === '/admin') {
+    return { type: 'admin', section: 'exercises' }
+  }
+  const adminMatch = hash.match(/^\/admin\/([a-z-]+)$/)
+  if (adminMatch && isAdminSection(adminMatch[1])) {
+    return { type: 'admin', section: adminMatch[1] }
   }
 
-  // Match: /tab-name
-  const tabMatch = hash.match(/^\/([a-z-]+)$/)
+  // Match: /reset-password[?token=…] — the emailed reset-link landing, or
+  // the bare request-a-link form when no token rides along. Parsed before
+  // the generic tab match so the token query never hits the tab stasher.
+  const resetMatch = hash.match(/^\/reset-password(?:\?token=([^&]+))?$/)
+  if (resetMatch) {
+    return {
+      type: 'reset-password',
+      token: resetMatch[1] != null ? decodeURIComponent(resetMatch[1]) : null,
+    }
+  }
+
+  // Match: /tab-name — optionally carrying a query. Invite links use
+  // `#/leaderboard?add=CODE`, and the router canonicalises the hash right
+  // after this parse (erasing the query), so the code must be stashed the
+  // one time we see it; the Friends panel picks it up from the stash.
+  const tabMatch = hash.match(/^\/([a-z-]+)(?:\?(.*))?$/)
   if (tabMatch && isValidTab(tabMatch[1])) {
+    if (tabMatch[2] !== undefined && tabMatch[2] !== '') {
+      const add = new URLSearchParams(tabMatch[2]).get('add')
+      if (add !== null && add !== '') stashPendingFriendCode(add)
+    }
     return { type: 'tab', tab: tabMatch[1] }
   }
 
@@ -253,12 +310,21 @@ export function buildHash(route: HashRoute): string {
       return route.sectionId === 'all'
         ? '/guide/all'
         : `/guide/${route.sectionId}`
+    case 'onboarding-map':
+      return '/map'
     case 'billing-return':
-      return route.outcome === 'success' ? '/billing/success' : '/pricing'
+      // Only the SUCCESS return has a donation-specific hash; a cancelled
+      // donation goes back to the credits tab, same as a cancelled purchase.
+      if (route.outcome === 'cancel') return '/pricing'
+      return route.kind === 'donation' ? '/donate/thanks' : '/billing/success'
     case 'settings-section':
       return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
-    case 'admin-weekly':
-      return '/admin/weekly'
+    case 'admin':
+      return `/admin/${route.section}`
+    case 'reset-password':
+      return route.token != null && route.token !== ''
+        ? `/reset-password?token=${encodeURIComponent(route.token)}`
+        : '/reset-password'
     case 'unknown':
       return '/'
   }

@@ -6,6 +6,7 @@
 // an optional `base` (defaults to API_BASE_URL) so the fetch paths are
 // unit-testable even though tests run with VITE_API_BASE_URL unset.
 
+import { requireAuth } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -25,12 +26,20 @@ export interface PricingPlan {
   credits: number | null
   badge: string | null
   purchasable: boolean
+  /** Donations: the donor names the amount on Stripe's hosted page. */
+  customAmount?: boolean
+  /** Donations: days of `supporter` entitlement granted. */
+  entitlementDays?: number | null
+  /** Donations: perk bullet list. */
+  perks?: string[]
 }
 
 export interface Pricing {
   currency: string
   tiers: PricingPlan[]
   packs: PricingPlan[]
+  /** Supporter donation tiers. Absent on an older db-worker. */
+  donations?: PricingPlan[]
   /** Per-song credit cost by server model (registry names: roformer, mdx,
    *  karaoke, ensemble) — tier base cost × the model's multiplier. Absent
    *  on an older db-worker. */
@@ -44,6 +53,9 @@ export interface BillingMe {
     feature: string
     source: string | null
     expiresAt: string | null
+    /** Display name of the tier in `source` (e.g. "Voice"). Absent on an
+     *  older db-worker, or when the source is not a donation. */
+    sourceLabel?: string | null
   }>
   stripeConfigured: boolean
 }
@@ -76,6 +88,55 @@ export function withModelCredits(pricing: Pricing): Pricing {
     uvrModelCredits[model] = gpuBase * mult
   }
   return { ...pricing, uvrModelCredits }
+}
+
+/** The live `supporter` grant, or null when absent or lapsed.
+ *
+ *  A row with `expiresAt` in the past is a donation that ran out — the worker
+ *  leaves it in place as history, so the expiry check belongs here. A null
+ *  `expiresAt` means "no expiry" (a manual grant). */
+export function supporterEntitlement(
+  me: BillingMe | null,
+  now: number = Date.now(),
+): BillingMe['entitlements'][number] | null {
+  const grant = me?.entitlements.find((e) => e.feature === 'supporter')
+  if (grant == null) return null
+  if (grant.expiresAt == null || grant.expiresAt === '') return grant
+  const expires = Date.parse(grant.expiresAt)
+  return Number.isFinite(expires) && expires <= now ? null : grant
+}
+
+/** The donation tier id behind a grant (`donation:sup-voice` → `sup-voice`). */
+export function supporterPlanId(
+  grant: { source?: string | null } | null,
+): string | null {
+  const source = grant?.source
+  if (source == null || !source.startsWith('donation:')) return null
+  const id = source.slice('donation:'.length)
+  return id === '' ? null : id
+}
+
+/** Expiry date for a supporter grant.
+ *
+ *  The year is included whenever it differs from the current one — a bare
+ *  "23 Jul" on a grant that runs into next year reads as if it already
+ *  expired. Same-year dates stay short.
+ */
+export function formatSupporterExpiry(
+  iso: string | null,
+  now: Date = new Date(),
+): string {
+  if (iso == null || iso === '') return ''
+  const ms = Date.parse(iso)
+  if (!Number.isFinite(ms)) return ''
+  const date = new Date(ms)
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() !== now.getFullYear()
+      ? { year: 'numeric' }
+      : undefined),
+  })
 }
 
 /** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */
@@ -159,6 +220,9 @@ export async function startCheckout(
 ): Promise<string> {
   const b = apiBase(base)
   if (b === '') throw new Error('Billing is not available in this build')
+  // Buying credits needs somewhere to put them — provision on demand, since
+  // identities are no longer minted at startup.
+  await requireAuth()
   const res = await fetch(`${b}/api/billing/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -204,6 +268,17 @@ export function formatPrice(amount: number | null, currency: string): string {
   } catch {
     return `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`
   }
+}
+
+/** How long a donation's perks last, in the roundest words that fit.
+ *  Months once it divides evenly, so "90 days" reads as "3 months". */
+export function formatSupportDuration(days: number | null): string {
+  if (days == null || days <= 0) return ''
+  if (days % 30 === 0) {
+    const months = days / 30
+    return `${months} month${months === 1 ? '' : 's'} of perks`
+  }
+  return `${days} day${days === 1 ? '' : 's'} of perks`
 }
 
 /** Cost label for a separation tier. Tiers are priced in CREDITS per song,

@@ -1,0 +1,18 @@
+{
+  "_comment": [
+    "Second-pass job: split an already-separated INSTRUMENTAL into its parts.",
+    "Point audio_url at an instrumental stem a previous job produced (not the",
+    "full mix) — source_stem tells the handler to drop the near-silent vocal",
+    "output and reconcile `other` so the kept stems sum back to the input.",
+    "Swap model to 'demucs-ft' for best 4-stem quality without guitar/piano.",
+    "Run with: cp test_input_split.json test_input.json && python handler.py"
+  ],
+  "input": {
+    "audio_url": "https://.../replace-with-a-real-instrumental-stem.flac",
+    "filename": "sample_(Instrumental).flac",
+    "model": "demucs-6s",
+    "output_format": "FLAC",
+    "source_stem": "instrumental",
+    "stems": ["drums", "bass", "guitar", "piano", "other"]
+  }
+}

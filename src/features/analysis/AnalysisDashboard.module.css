@@ -1,0 +1,535 @@
+/* ============================================================
+   Analysis dashboard — mobile-first, one layout at every width.
+
+   Replaces the vocal-analysis sections of the global
+   src/styles/vocal-analysis.css. Everything here is scoped by CSS modules,
+   so nothing leaks into Challenges / Leaderboard / UVR the way the old
+   global sheet did. Tokens come from app.css and mobile-kit.css.
+   ============================================================ */
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+
+/* AppHeader.css styles the bare `header` element globally (app chrome:
+   tertiary background, centred items, 10px 24px padding). A page-level
+   <header> inherits all of it, so the properties we don't want have to be
+   named explicitly — the element selector wins wherever this class is silent. */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: transparent;
+  padding: 0;
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--text-muted);
+}
+
+/* ── Take picker ──────────────────────────────────────────── */
+
+.pickerLabel {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 0 0 var(--spacing-md);
+}
+
+/* Horizontal rail on phones, wrapping grid once there's room. */
+.takeRail {
+  display: flex;
+  gap: var(--spacing-lg);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--spacing-md);
+  -webkit-overflow-scrolling: touch;
+}
+
+.takeCard {
+  flex: 0 0 auto;
+  width: 190px;
+  min-height: var(--touch-target, 44px);
+  scroll-snap-align: start;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.takeCard:hover {
+  border-color: var(--accent);
+}
+
+.takeCard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.takeCardActive {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.takeTitle {
+  font-size: var(--text-md);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.takeMeta {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.takeBadgeRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: var(--text-xs);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.badgeAudio {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+  color: var(--success);
+}
+
+.badgeNotes {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.badgeSummary {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* ── Cards & sections ─────────────────────────────────────── */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.cardTitle {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.cardNote {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Auto-fitting stat grid — 2-up on phones, more as width allows. */
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.statValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.statLabel {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.statDetail {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.statGood .statValue {
+  color: var(--success);
+}
+
+.statWarn .statValue {
+  color: var(--warning);
+}
+
+/* ── Rating distribution ──────────────────────────────────── */
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.ratingName {
+  flex: 0 0 76px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+/* Both are spans, so they need an explicit block display — an inline element
+   ignores width/height and the fill would never show. */
+.ratingTrack {
+  display: block;
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.ratingFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.ratingCount {
+  flex: 0 0 40px;
+  text-align: right;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Collapsible cards ────────────────────────────────────── */
+
+.collapseHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* The title must shrink so the chevron always has room — a long note on a
+   narrow screen otherwise pushes the chevron past the card edge. */
+.collapseHeader > .cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.collapseHeader > svg {
+  flex: 0 0 auto;
+}
+
+.collapseHeader:hover .cardTitle {
+  color: var(--accent);
+}
+
+.collapseBody {
+  padding-top: var(--spacing-lg);
+}
+
+/* ── Take trace & spectrogram ─────────────────────────────── */
+
+.traceWrap,
+.spectrogramWrap {
+  display: flex;
+  gap: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+}
+
+/* Note-name / frequency ticks pinned to the top and bottom of the plot. */
+.traceAxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.traceChart {
+  flex: 1;
+  min-width: 0;
+  height: 150px;
+  display: block;
+  overflow: visible;
+}
+
+.traceLine {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Drawn at the worker's native grid size (up to 1200x256) and scaled by CSS.
+   That is almost always a DOWNscale — the card is ~860px wide at most — so
+   the browser's filtered scaling is what we want. `image-rendering: pixelated`
+   would drop roughly a quarter of the columns via nearest-neighbour and alias
+   the harmonic lines into moiré. */
+.spectrogramCanvas {
+  flex: 1;
+  min-width: 0;
+  height: 220px;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Trends ───────────────────────────────────────────────── */
+
+.trendChart {
+  width: 100%;
+  height: 140px;
+  display: block;
+  overflow: visible;
+}
+
+/* The viewBox is stretched non-uniformly (preserveAspectRatio: none) so the
+   chart fills its box at any width. Without non-scaling-stroke the line is
+   scaled with it and renders as a thick, distorted band. */
+.trendLine {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.trendArea {
+  fill: var(--accent-dim);
+  stroke: none;
+}
+
+.trendFoot {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--spacing-md);
+}
+
+/* ── Live capture ─────────────────────────────────────────── */
+
+.liveHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot {
+    animation: none;
+  }
+}
+
+.noteReadout {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.noteName {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.noteCents {
+  font-size: var(--text-md);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.canvasWrap {
+  position: relative;
+  height: 200px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+
+.primaryBtn,
+.ghostBtn {
+  min-height: var(--touch-target, 44px);
+  padding: 0 var(--spacing-2xl);
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: 650;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.primaryBtn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--bg-primary);
+}
+
+.primaryBtn:hover {
+  background: var(--accent-hover);
+}
+
+.ghostBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.ghostBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stopBtn {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--text-primary);
+}
+
+/* ── States ───────────────────────────────────────────────── */
+
+.empty {
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  color: var(--text-muted);
+  font-size: var(--text-md);
+}
+
+.error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  font-size: var(--text-md);
+}
+
+/* Why a section is unavailable — shown instead of fabricated numbers. */
+.unavailable {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+/* ── Wider screens ────────────────────────────────────────── */
+
+@media (min-width: 720px) {
+  .page {
+    padding: var(--spacing-2xl) var(--spacing-xl) var(--spacing-2xl);
+  }
+
+  .takeRail {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .takeCard {
+    width: 220px;
+  }
+
+  .canvasWrap {
+    height: 260px;
+  }
+}

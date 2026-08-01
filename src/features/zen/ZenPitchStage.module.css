@@ -1,0 +1,549 @@
+.root {
+  --zen-border: #2a3344;
+  --zen-panel: #111722;
+  --zen-raised: #171e2b;
+  --zen-ink: #edf3fc;
+  --zen-muted: #8e9aae;
+  --pitch-reference: #f59e0b;
+  --pitch-user: #a78bfa;
+  --sheet-bg: rgba(13, 18, 28, 0.985);
+  --sheet-border: #2a3344;
+  --sheet-backdrop: rgba(3, 5, 9, 0.76);
+  --sheet-max-h: 84dvh;
+}
+
+.stage {
+  z-index: var(--z-focus, 500);
+  background: #080b12;
+}
+
+.finishButton,
+.iconButton,
+.compactButton,
+.infoButton,
+.takeLabel,
+.transportButton,
+.beginButton,
+.exampleButton,
+.stepper button,
+.visibilityControl button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.finishButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 58%, #fff 8%);
+  border-radius: 9px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, var(--pitch-reference));
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.18);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.finishButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
+  color: var(--zen-ink);
+}
+
+.guideHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--zen-border);
+}
+
+.guideHeading p,
+.guideHeading h3,
+.summary,
+.guideSection p,
+.pronunciation p,
+.freeGuide p,
+.safety,
+.error {
+  margin: 0;
+}
+
+.guideHeading p,
+.fieldLabel,
+.guideSection span,
+.pronunciation span,
+.inlineControl span,
+.visibilityControl > span,
+.scoreCard span {
+  color: color-mix(in srgb, var(--pitch-reference) 74%, #d7deea);
+  font-size: 0.61rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.guideHeading h3 {
+  margin-top: 4px;
+  font-size: 0.94rem;
+  letter-spacing: -0.02em;
+}
+
+.fieldLabel {
+  margin-bottom: -8px;
+}
+
+.select,
+.loopSelect {
+  min-height: 38px;
+  border: 1px solid var(--zen-border);
+  border-radius: 9px;
+  color: var(--zen-ink);
+  background: #0b1019;
+  font-size: 0.72rem;
+}
+
+.select {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.summary {
+  color: #d5deeb;
+  font-size: 0.77rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.guideSection,
+.pronunciation,
+.freeGuide {
+  display: grid;
+  gap: 5px;
+}
+
+.guideSection p,
+.pronunciation p,
+.freeGuide p {
+  color: var(--zen-muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.pronunciation {
+  padding: 10px 11px;
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  border-radius: 9px;
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.pronunciation span {
+  color: #c4b5fd;
+}
+
+.safety {
+  padding-left: 10px;
+  border-left: 2px solid rgba(245, 158, 11, 0.62);
+  color: #d8c49d;
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.inlineControl,
+.visibilityControl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--zen-border);
+  border-radius: 10px;
+  background: rgba(8, 11, 18, 0.52);
+}
+
+.inlineControl > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.inlineControl strong {
+  color: #fff4df;
+  font:
+    700 0.9rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.stepper,
+.visibilityControl > div {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--zen-border);
+  border-radius: 8px;
+}
+
+.stepper button,
+.visibilityControl button {
+  min-width: 34px;
+  min-height: 30px;
+  border: 0;
+  border-right: 1px solid var(--zen-border);
+  color: #c8d2e1;
+  background: #0b1019;
+  font-size: 0.7rem;
+}
+
+.stepper button:last-child,
+.visibilityControl button:last-child {
+  border-right: 0;
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.activeChoice {
+  color: #171109 !important;
+  background: var(--pitch-reference) !important;
+}
+
+.exampleButton {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 9px;
+  color: #ded7ff;
+  background: rgba(167, 139, 250, 0.075);
+  font-size: 0.69rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.exampleButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.exampleButton small {
+  color: var(--zen-muted);
+  font:
+    0.58rem ui-monospace,
+    monospace;
+}
+
+.examplePlaying {
+  border-color: rgba(167, 139, 250, 0.62);
+  box-shadow: 0 0 18px rgba(167, 139, 250, 0.08);
+}
+
+.scoreCard {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 10px;
+  background: rgba(96, 165, 250, 0.055);
+}
+
+.scoreCard > div {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.scoreCard strong {
+  color: #dbeafe;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.scoreCard dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+}
+
+.scoreCard dl > div {
+  display: grid;
+  gap: 2px;
+}
+
+.scoreCard dt {
+  color: var(--zen-muted);
+  font-size: 0.57rem;
+}
+
+.scoreCard dd {
+  margin: 0;
+  color: #dbeafe;
+  font:
+    700 0.74rem ui-monospace,
+    monospace;
+}
+
+.error {
+  color: #fca5a5;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.beginButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  margin-top: auto;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 65%, #fff 8%);
+  border-radius: 9px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, var(--pitch-reference));
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.16);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.beginButton svg {
+  width: 15px;
+  height: 15px;
+}
+
+.beginButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.historyControls,
+.transportControls,
+.viewControls {
+  display: flex;
+  align-items: center;
+}
+
+.historyControls {
+  justify-content: flex-start;
+  gap: 7px;
+}
+
+.transportControls {
+  justify-content: center;
+  gap: 12px;
+}
+
+.viewControls {
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.iconButton,
+.compactButton,
+.infoButton,
+.takeLabel {
+  border: 1px solid var(--zen-border);
+  color: #b7c2d3;
+  background: #111722;
+}
+
+.iconButton,
+.infoButton {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  font-size: 1.05rem;
+}
+
+.iconButton svg,
+.infoButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.iconButton:disabled,
+.takeLabel:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.takeLabel {
+  display: grid;
+  min-width: 108px;
+  gap: 2px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  text-align: left;
+}
+
+.takeLabel strong {
+  color: #e3e9f2;
+  font-size: 0.68rem;
+}
+
+.takeLabel span {
+  color: var(--zen-muted);
+  font-size: 0.54rem;
+}
+
+.transportButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 104px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 62%, #fff 10%);
+  border-radius: 11px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, var(--pitch-reference));
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.18);
+  font-size: 0.73rem;
+  font-weight: 760;
+}
+
+.transportButton svg {
+  width: 17px;
+  height: 17px;
+}
+
+.timeReadout {
+  color: var(--zen-muted);
+  font:
+    0.63rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: nowrap;
+}
+
+.compactButton,
+.loopSelect {
+  min-height: 34px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 0.61rem;
+  text-transform: capitalize;
+}
+
+.compactActive {
+  border-color: rgba(96, 165, 250, 0.52);
+  color: #bfdbfe;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.infoButton {
+  color: #ffe0a6;
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+.mobileGuideSheet {
+  color: var(--zen-ink);
+}
+
+@media (max-width: 980px) {
+  .timeReadout {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .root {
+    --sheet-max-h: 86dvh;
+  }
+
+  .finishButton {
+    min-height: 44px;
+    padding: 0 10px;
+  }
+
+  .finishButton svg {
+    display: none;
+  }
+
+  .historyControls {
+    min-width: 0;
+  }
+
+  .takeLabel {
+    min-width: 0;
+    max-width: 112px;
+    min-height: 44px;
+  }
+
+  .transportControls {
+    justify-self: end;
+  }
+
+  .transportButton {
+    min-width: 92px;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+
+  .viewControls {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .compactButton,
+  .loopSelect {
+    flex: 1 1 0;
+    max-width: 150px;
+    min-height: 44px;
+  }
+
+  .historyControls .iconButton,
+  .guideHeading .iconButton,
+  .infoButton {
+    width: 44px;
+    height: 44px;
+  }
+
+  .select {
+    min-height: 44px;
+  }
+
+  .stepper button,
+  .visibilityControl button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .exampleButton,
+  .beginButton {
+    min-height: 44px;
+  }
+
+  .mobileGuideSheet .guide {
+    min-height: auto;
+    padding-bottom: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finishButton,
+  .transportButton,
+  .beginButton {
+    transition: none;
+  }
+}

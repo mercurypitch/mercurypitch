@@ -4,3 +4,5 @@
 - [GitHub CLI](reference_gh-cli.md) — Use gh CLI, not WebFetch
 - [SolidJS Best Practices](solidjs-best-practices.md) — Never destructure props; plain value props; Show/For
 - [SolidJS Component Pattern](solidjs-component-pattern.md) — Signals first, JSX last
+- [Pop-free audio playback](audio-pop-free-playback.md) — MANDATORY gain envelopes for every audible start/stop/seek (30/50/15 ms); use src/lib/preview-player.ts for element playback
+- [UVR local dev routing](uvr-local-dev-routing.md) — proxy 127.0.0.1 not localhost; JWT_SECRET synced across .dev.vars; db-worker same branch; CF-outage symptoms; splits need remote R2 or the container

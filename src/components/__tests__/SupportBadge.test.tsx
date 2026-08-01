@@ -13,11 +13,13 @@ describe('SupportBadge', () => {
     expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument()
   })
 
-  it('links the heart to the Ko-fi support page in a new tab', () => {
+  // The heart used to leave the app for Ko-fi. Every support option (tiers,
+  // Ko-fi, Sponsors) now lives in Settings → Credits, so it routes in-app and
+  // must NOT open a new tab.
+  it('points the heart at the in-app support surface', () => {
     render(() => <SupportBadge />)
     const link = screen.getByRole('link', { name: /support mercurypitch/i })
-    expect(link).toHaveAttribute('href', 'https://ko-fi.com/chaosmatters')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link.getAttribute('rel') ?? '').toContain('noopener')
+    expect(link).toHaveAttribute('href', '#/settings/credits')
+    expect(link).not.toHaveAttribute('target')
   })
 })

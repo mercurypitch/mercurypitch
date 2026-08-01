@@ -5,10 +5,22 @@ name: Deploy DB Worker
 # - Push to main touching workers/db-worker/** → dev
 #   (mercury-pitch-db-dev + mercurypitch-db-dev)
 # - Manual dispatch → dev or prod
+# - workflow_call from build.yml on a v* release tag → prod
+#   (migrations always run in this job BEFORE the worker deploys, so the
+#   erasure/award code never runs against a database missing its tables)
 #
-# The schema step is idempotent (CREATE IF NOT EXISTS) and doubles as
-# a migration runner: new tables/indexes added to schema.sql are
-# applied on the next deploy.
+# Schema changes ship as tracked migrations in workers/db-worker/migrations/,
+# applied here by `wrangler d1 migrations apply` (wrangler records applied
+# files in a d1_migrations table, so each runs exactly once per database).
+#
+# This replaced re-applying a whole schema.sql on every deploy. That was
+# idempotent for new TABLES but silently did nothing for new COLUMNS —
+# CREATE TABLE IF NOT EXISTS skips an existing table wholesale — so every
+# ALTER had to be remembered and run by hand, and an index over a
+# never-added column failed the deploy.
+#
+# Adding a change: drop a new NNNN_name.sql in migrations/ (next number).
+# Never edit an applied file; databases that already ran it won't re-run it.
 #
 # One-time prerequisites per environment (NOT done by CI):
 #   pnpm db:init:dev   (creates the DB and commits its id to wrangler.jsonc)
@@ -31,6 +43,12 @@ on:
         options:
           - dev
           - prod
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -40,8 +58,13 @@ jobs:
     name: Deploy DB Worker
     runs-on: ubuntu-latest
     env:
-      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}
-      DB_NAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod') && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
+      # `inputs` is populated by workflow_dispatch AND workflow_call; a plain
+      # push (main -> dev) has neither and falls through to dev.
+      # Expression precedence: `==` binds before `&&` before `||`, so DB_NAME
+      # is `(cond && A) || B` — the Actions ternary idiom. Safe here because
+      # the middle operand is a non-empty string (never falsy).
+      DEPLOY_ENV: ${{ inputs.environment || 'dev' }}
+      DB_NAME: ${{ (inputs.environment == 'prod') && 'mercurypitch-db' || 'mercurypitch-db-dev' }}
 
     steps:
       - name: Checkout code
@@ -63,13 +86,56 @@ jobs:
       - name: Typecheck worker
         run: pnpm typecheck:db
 
-      - name: Apply D1 schema (idempotent migrations)
+      # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is
+      # public, and workflow artifacts on a public repo are downloadable by
+      # any logged-in GitHub user — an exported database (emails, password
+      # hashes, billing ids) must never be uploaded as one. If a migration
+      # goes wrong, restore to the pre-deploy timestamp instead:
+      #   pnpm exec wrangler d1 time-travel restore <DB_NAME> --timestamp=<ISO>
+      # PROD ONLY: capture two independent restore paths BEFORE migrations
+      # touch the database.
+      #
+      # 1. The Time Travel bookmark - D1's built-in point-in-time restore
+      #    (30 days). Printed to the job log so a rollback is one command:
+      #      wrangler d1 time-travel restore mercurypitch-db --bookmark=<id>
+      # 2. A full copy into the dedicated mercurypitch-db-backup database -
+      #    a live duplicate usable for debugging or forward repair. The SQL
+      #    dump exists only on this ephemeral runner and is NEVER uploaded
+      #    as an artifact (public repo: an exported database with emails and
+      #    password hashes must not be downloadable). The backup database is
+      #    dropped and recreated each release; the hardcoded -backup name
+      #    can never collide with the real database.
+      - name: Back up prod database (bookmark + copy)
+        if: env.DEPLOY_ENV == 'prod'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: workers/db-worker
+        run: |
+          set -euo pipefail
+          echo "== Time Travel bookmark (restore point) =="
+          pnpm exec wrangler d1 time-travel info "${DB_NAME}" --env "${DEPLOY_ENV}"
+
+          echo "== Copying ${DB_NAME} into mercurypitch-db-backup =="
+          pnpm exec wrangler d1 export "${DB_NAME}" --remote --env "${DEPLOY_ENV}"             --output=/tmp/prod-backup.sql
+          pnpm exec wrangler d1 delete mercurypitch-db-backup --skip-confirmation || true
+          pnpm exec wrangler d1 create mercurypitch-db-backup --location eeur
+          backup_id=$(pnpm exec wrangler d1 list --json             | jq -r '.[] | select(.name == "mercurypitch-db-backup") | .uuid' | head -1)
+          if [ -z "$backup_id" ]; then
+            echo "Could not resolve the backup database id."
+            exit 1
+          fi
+          pnpm exec wrangler d1 execute mercurypitch-db-backup --remote             --file=/tmp/prod-backup.sql -y
+          rm -f /tmp/prod-backup.sql
+          echo "Backup complete: mercurypitch-db-backup ($backup_id)"
+
+      - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/db-worker
-          command: d1 execute ${{ env.DB_NAME }} --remote --file=schema.sql --env ${{ env.DEPLOY_ENV }} -y
+          command: d1 migrations apply ${{ env.DB_NAME }} --remote --env ${{ env.DEPLOY_ENV }}
           packageManager: 'pnpm'
 
       - name: Deploy worker

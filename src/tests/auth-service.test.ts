@@ -7,9 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'http://api.test',
 }))
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: vi.fn(),
+}))
 
-import { ensureAuth, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
+import { trackEvent } from '@/lib/analytics'
+
+const trackEventMock = vi.mocked(trackEvent)
 
 function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
   const payload = {
@@ -41,6 +47,9 @@ function mockFetchOnce(
 
 beforeEach(() => {
   localStorage.clear()
+  sessionStorage.clear()
+  trackEventMock.mockClear()
+  history.replaceState(null, '', '/')
 })
 
 afterEach(() => {
@@ -65,8 +74,85 @@ describe('token storage', () => {
   })
 })
 
-describe('ensureAuth', () => {
-  it('requests an anonymous token with the persisted device id', async () => {
+describe('restoreAuth', () => {
+  // The whole point of lazy provisioning: a visitor who only browses must
+  // never end up with a users row. Startup and the account UI call this.
+  it('never provisions an identity when no token is stored', async () => {
+    const fetchMock = mockFetchOnce(200, {
+      token: makeToken(3600),
+      userId: 'u',
+      isNew: true,
+      user: { authProvider: 'anonymous' },
+    })
+    expect(await restoreAuth()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(getAuthToken()).toBeNull()
+  })
+
+  it('reuses a stored session without re-authenticating', async () => {
+    setAuthToken(makeToken(3600))
+    const fetchMock = mockFetchOnce(200, {})
+    expect(await restoreAuth()).toBe(true)
+    // One /api/auth/me verification, never an /anonymous handshake.
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      'http://api.test/api/auth/anonymous',
+      expect.anything(),
+    )
+  })
+
+  it('reports signed-out for an expired token', async () => {
+    setAuthToken(makeToken(-100))
+    const fetchMock = mockFetchOnce(200, {})
+    expect(await restoreAuth()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('requireAuth', () => {
+  it('shares one anonymous bootstrap across concurrent callers', async () => {
+    const deviceId = getUserId()
+    let finishRequest: (() => void) | undefined
+    const requestStarted = new Promise<void>((resolve) => {
+      finishRequest = resolve
+    })
+    let releaseResponse: (() => void) | undefined
+    const responseReleased = new Promise<void>((resolve) => {
+      releaseResponse = resolve
+    })
+    const fetchMock = vi.fn(async () => {
+      finishRequest?.()
+      await responseReleased
+      return {
+        ok: true,
+        status: 200,
+        statusText: '200',
+        json: async () => ({
+          token: makeToken(3600),
+          userId: deviceId,
+          isNew: true,
+          user: { id: deviceId, authProvider: 'anonymous' },
+        }),
+        text: async () => '',
+      }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const first = requireAuth()
+    await requestStarted
+    const second = requireAuth()
+
+    // requireAuth is an async wrapper, so the outer promises differ; the
+    // invariant is that both ride one /api/auth/anonymous handshake.
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    releaseResponse?.()
+    await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  // REQ-SFA-003: anonymous provisioning is not account creation and must
+  // never emit the signup funnel event.
+  it('requests an anonymous token with the persisted device id, without tracking signup', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {
       token: makeToken(3600),
@@ -75,9 +161,10 @@ describe('ensureAuth', () => {
       user: { id: deviceId, authProvider: 'anonymous' },
     })
 
-    const ok = await ensureAuth()
+    const ok = await requireAuth()
     expect(ok).toBe(true)
     expect(getAuthToken()).not.toBeNull()
+    expect(trackEventMock).not.toHaveBeenCalled()
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [
       string,
@@ -90,7 +177,7 @@ describe('ensureAuth', () => {
   it('skips the network when a valid token exists', async () => {
     setAuthToken(makeToken(3600))
     const fetchMock = mockFetchOnce(200, {})
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -102,18 +189,18 @@ describe('ensureAuth', () => {
       }),
     )
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     warnSpy.mockRestore()
   })
 
   it('stops retrying anonymous auth after a 403 (upgraded account)', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     const fetchMock = mockFetchOnce(403, { error: 'Account requires login' })
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
 
     // The 403 is remembered — no further network attempts
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
     infoSpy.mockRestore()
   })
@@ -121,7 +208,7 @@ describe('ensureAuth', () => {
   it('resumes after an explicit login clears the signed-out state', async () => {
     const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
     mockFetchOnce(403, { error: 'Account requires login' })
-    await ensureAuth()
+    await requireAuth()
 
     mockFetchOnce(200, {
       token: makeToken(3600, 'password'),
@@ -130,8 +217,26 @@ describe('ensureAuth', () => {
       user: { authProvider: 'password' },
     })
     await loginWithPassword('a@b.com', 'secret123')
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     infoSpy.mockRestore()
+  })
+})
+
+describe('Google redirect signup tracking', () => {
+  it('REQ-SFA-004 fires signup exactly once when gauth_new=1 is present', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
+    )
+
+    consumeGoogleRedirect()
+    consumeGoogleRedirect()
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith('signup')
+    expect(window.location.hash).toBe('#/mirror')
   })
 })
 
@@ -141,9 +246,9 @@ describe('logout', () => {
     logout()
     expect(getAuthToken()).toBeNull()
 
-    // ensureAuth must not attempt (and fail) an anonymous handshake
+    // requireAuth must not attempt (and fail) an anonymous handshake
     const fetchMock = mockFetchOnce(200, {})
-    expect(await ensureAuth()).toBe(false)
+    expect(await requireAuth()).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -157,7 +262,7 @@ describe('logout', () => {
       isNew: false,
       user: { authProvider: 'anonymous' },
     })
-    expect(await ensureAuth()).toBe(true)
+    expect(await requireAuth()).toBe(true)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 })

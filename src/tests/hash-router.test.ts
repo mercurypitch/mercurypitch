@@ -248,10 +248,44 @@ describe('parseHash', () => {
     expect(parseHash('#/billing/success')).toEqual({
       type: 'billing-return',
       outcome: 'success',
+      kind: 'credits',
     })
     expect(parseHash('#/pricing')).toEqual({
       type: 'billing-return',
       outcome: 'cancel',
+      kind: 'credits',
+    })
+  })
+
+  // Donations return to their own hash: the app must confirm a donation
+  // without polling for credits that are never coming.
+  it('parses the donation thank-you return', () => {
+    expect(parseHash('#/donate/thanks')).toEqual({
+      type: 'billing-return',
+      outcome: 'success',
+      kind: 'donation',
+    })
+  })
+
+  // Password reset (emailed link landing + bare request form)
+  it('parses reset-password with a token', () => {
+    expect(parseHash('#/reset-password?token=abc_DEF-123')).toEqual({
+      type: 'reset-password',
+      token: 'abc_DEF-123',
+    })
+  })
+
+  it('parses bare reset-password as the request form', () => {
+    expect(parseHash('#/reset-password')).toEqual({
+      type: 'reset-password',
+      token: null,
+    })
+  })
+
+  it('url-decodes the reset token', () => {
+    expect(parseHash('#/reset-password?token=a%2Bb')).toEqual({
+      type: 'reset-password',
+      token: 'a+b',
     })
   })
 
@@ -394,6 +428,15 @@ describe('buildHash', () => {
       '/pricing',
     )
   })
+
+  it('builds reset-password hashes (with and without token)', () => {
+    expect(buildHash({ type: 'reset-password', token: 'abc123' })).toBe(
+      '/reset-password?token=abc123',
+    )
+    expect(buildHash({ type: 'reset-password', token: null })).toBe(
+      '/reset-password',
+    )
+  })
 })
 
 // ── Round-trip ─────────────────────────────────────────────────
@@ -413,6 +456,8 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/guide/practice',
     '#/guide/editor',
     '#/s/abc123XYZ0',
+    '#/reset-password',
+    '#/reset-password?token=tok_abc-123',
   ]
 
   for (const hash of routes) {

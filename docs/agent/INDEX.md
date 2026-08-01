@@ -1,0 +1,396 @@
+# Agent index — MercuryPitch
+
+Map of a ~245k-LOC SolidJS codebase, written for coding agents. **Read this
+before grepping.** It exists so you can jump straight to the right file instead
+of rediscovering the architecture every session.
+
+- **Tables below are generated** by `node scripts/gen-agent-index.mjs` from the
+  filesystem and from each file's leading comment block. Never hand-edit inside
+  `BEGIN:GENERATED` markers — your edit will be overwritten.
+- **Prose outside the markers is hand-written** and is the valuable part:
+  invariants, gotchas, and the mistakes that have actually cost us time.
+- If a module's blurb reads `(no header comment)`, the fix is to add a header
+  comment to that file, not to describe it here.
+
+---
+
+## 1. Orientation
+
+| Layer | Lives in | Rule of thumb |
+|---|---|---|
+| Route shells | `src/pages/` | Thin. Composition only, no logic. |
+| Feature surfaces | `src/features/<name>/` | Self-contained. Owns its UI + controller. |
+| Shared components | `src/components/` | Cross-feature UI. Large and legacy-heavy. |
+| Algorithms / engines | `src/lib/` | Pure-ish, testable, no JSX. |
+| Global state | `src/stores/` | SolidJS stores. See §4 before adding one. |
+| Backend | `workers/db-worker`, `workers/jam-worker` | Cloudflare Workers + D1. |
+| Persistence (client) | `src/db/` | Dexie / IndexedDB. |
+
+Routing is hash-based: [`src/lib/hash-router.ts`](../../src/lib/hash-router.ts) →
+[`src/features/routing/useHashRouter.ts`](../../src/features/routing/useHashRouter.ts).
+There is no file-system router; a new page must be registered in both.
+
+**Newer code lives in `src/features/`; older code lives in `src/components/`.**
+When extending an existing surface, follow the neighbours. When building
+something new, prefer a `src/features/` module.
+
+---
+
+## 2. Guardrails — non-negotiable
+
+These are the rules that break things when ignored.
+
+1. **Never touch production.** Testing uses local or dev only (`api-dev`,
+   localhost workers). Prod deploys go through the `/prod-upd` release flow.
+2. **Never push to `main`; never force-push.** Feature branches prefixed
+   `feat/`, PRs target `main`. `--force-with-lease` is acceptable for rebases;
+   plain `--force` is not.
+3. **No Claude attribution anywhere** — no `Co-Authored-By`, no "Generated with"
+   trailers, in commits, PR bodies, or any artifact.
+4. **No emojis** in code, UI, logs, commits, or PR text. Use an SVG icon
+   component instead.
+5. **Run `pnpm check` after every code change.** It is typecheck + lint --fix +
+   format. CI runs `pnpm check:syntax` (non-mutating).
+6. **Schema changes ship as a `scripts/migrate-*.sql` file** applied with
+   `wrangler d1 execute`, plus the matching edit to
+   `workers/db-worker/schema.sql` (which is the current full schema, not a
+   historical log). There is no `wrangler d1 migrations` directory. Never edit
+   a `migrate-*.sql` that has already been applied to dev or prod — add a new
+   one. See [QUESTIONNAIRE.md](QUESTIONNAIRE.md) Q8: this is worth moving to
+   real numbered migrations.
+7. **Never use `rg -r`** — it means `--replace`, not "recursive", and silently
+   garbles output.
+
+---
+
+## 3. Module map
+
+<!-- BEGIN:GENERATED module-map -->
+#### Features (`src/features/`) — self-contained user-facing surfaces
+
+| Module | Entry point | LOC | What it is |
+|---|---|---|---|
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 11.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.6k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
+| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
+| `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 4.3k | _(no header comment)_ |
+| `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 3.4k | _(no header comment)_ |
+| `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
+| `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
+| `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.3k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
+| `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 1.9k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
+| `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.8k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
+| `challenges` | [AdminWeeklyPage.tsx](../../src/features/challenges/AdminWeeklyPage.tsx) | 1.5k | AdminWeeklyPage — owner-only weekly-challenge authoring (#/admin/weekly) Unlocks with the X-Admin-Key (stored locally), lists every row,... |
+| `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.5k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
+| `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.3k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
+| `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
+| `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 927 | useFallingNotesController — Game logic for Synthesia-style piano practice |
+| `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 833 | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
+| `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 607 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
+| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 507 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
+| `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 436 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 324 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
+| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 272 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
+| `mic-feedback` | [useMicInsights.ts](../../src/features/mic-feedback/useMicInsights.ts) | 267 | A single, debounced "what's happening with the mic" state, shared by every tab that listens to the mic (Singing, Karaoke, Piano, Guitar,... |
+| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 266 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
+| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
+| `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
+| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
+| `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 83 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
+| `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 82 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
+
+#### Library subsystems (`src/lib/<dir>/`) — algorithm packages
+
+| Module | Entry point | LOC | What it is |
+|---|---|---|---|
+| `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
+| `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.8k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
+| `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 1.8k | Voice Mirror — pure metrics over F0 frame streams. |
+| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 1.4k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
+| `jam` | [jam-pitch-detector.ts](../../src/lib/jam/jam-pitch-detector.ts) | 1.2k | ── JamPitchDetector Lightweight pitch detector for P2P jam sessions. |
+| `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
+| `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
+| `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 262 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
+| `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 151 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
+| `platform` | [index.ts](../../src/lib/platform/index.ts) | 127 | Platform services — web implementations. |
+| `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 66 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |
+
+#### Core library files (`src/lib/*.ts`, 400+ LOC)
+
+| File | LOC | What it is |
+|---|---|---|
+| [piano-roll.ts](../../src/lib/piano-roll.ts) | 5.1k | Piano Roll Editor — Canvas-based note editor |
+| [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k | Audio Engine — Web Audio API playback and microphone input |
+| [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
+| [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 934 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
+| [uvr-api.ts](../../src/lib/uvr-api.ts) | 834 | UVR API Client - Frontend Integration |
+| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 757 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
+| [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 690 | Lyrics Service — fetch, parse, and sync lyrics |
+| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
+| [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 659 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
+| [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
+| [practice-engine.ts](../../src/lib/practice-engine.ts) | 555 | Practice Engine — Mic, pitch detection, accuracy scoring |
+| [runpod.ts](../../src/lib/runpod.ts) | 518 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
+| [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 506 | Pitch Algorithm Tester — Compare pitch detection algorithms |
+| [scale-data.ts](../../src/lib/scale-data.ts) | 464 | Scale Data — Music theory utilities for MercuryPitch |
+| [midi-generator.ts](../../src/lib/midi-generator.ts) | 428 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
+| [midi-song.ts](../../src/lib/midi-song.ts) | 400 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
+
+#### Stores (`src/stores/`) — global reactive state
+
+| File | LOC | What it is |
+|---|---|---|
+| [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
+| [melody-store.ts](../../src/stores/melody-store.ts) | 1.6k | Melody Store — Melody items and scale data (in-memory) |
+| [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 716 | ── Jam store Reactive state management for P2P jam sessions. |
+| [settings-store.ts](../../src/stores/settings-store.ts) | 633 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
+| [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 469 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 396 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
+| [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
+| [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
+| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 179 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
+| [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 155 | Falling Notes Store — Game state for Synthesia-style piano practice |
+| [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 125 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
+| [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 114 | Pane Layout Store — Multi-pane layout persistence |
+| [theme-store.ts](../../src/stores/theme-store.ts) | 114 | Theme Store — the nine colour presets Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a `THEME_INFO` entry, and... |
+| [notifications-store.ts](../../src/stores/notifications-store.ts) | 101 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
+| [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 100 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
+| [console-store.ts](../../src/stores/console-store.ts) | 96 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
+| [index.ts](../../src/stores/index.ts) | 94 | Stores barrel export |
+| [playback-store.ts](../../src/stores/playback-store.ts) | 67 | Playback Store — Transport and playback state |
+| [usage-store.ts](../../src/stores/usage-store.ts) | 64 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
+| [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |
+| [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 39 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
+| [transport-store.ts](../../src/stores/transport-store.ts) | 37 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
+| [mic-store.ts](../../src/stores/mic-store.ts) | 25 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
+| [uvr-upload-queue-store.ts](../../src/stores/uvr-upload-queue-store.ts) | 22 | UVR Upload Queue Store — app-lifetime holder for the stem-upload queue |
+
+#### Pages (`src/pages/`) — route-level shells
+
+| File | LOC | What it is |
+|---|---|---|
+| [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.2k | Original tab fingering (Guitar Pro imports) is preserved through load. |
+| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 449 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
+| [HomePage.tsx](../../src/pages/HomePage.tsx) | 381 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
+| [PathPage.tsx](../../src/pages/PathPage.tsx) | 310 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
+| [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 217 | Exercise selection state lives in AppShell (also set by share/deep-link and pending-drill flows), so it is threaded in rather than owned... |
+| [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
+| [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
+| [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 20 | Challenges tab (TAB_CHALLENGES). |
+| [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 20 | Community tab (TAB_COMMUNITY). |
+| [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 19 | One dashboard at every width. |
+| [LabPage.tsx](../../src/pages/LabPage.tsx) | 17 | Hidden research surface. |
+| [JamPage.tsx](../../src/pages/JamPage.tsx) | 11 | Jam tab (TAB_JAM). |
+| [SettingsPage.tsx](../../src/pages/SettingsPage.tsx) | 11 | Settings tab (TAB_SETTINGS). |
+
+#### Cloudflare Workers (`workers/`) — backend
+
+| Module | Entry point | LOC | What it is |
+|---|---|---|---|
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.1k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 455 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
+
+<!-- END:GENERATED module-map -->
+
+---
+
+## 4. Invariants worth knowing before you edit
+
+### Microphone
+`src/lib/mic-manager.ts` is the **only** capture path — a single
+reference-counted owner shared by every analysis feature. Any new surface that
+uses the mic must `registerMicIndicator` and release **unconditionally** on
+unmount, or the mic leaks across pages. Never call `setPreferredDevice` from
+page-local UI. `src/lib/mic-sentinel.ts` is the watchdog; ask bug reporters for
+`window.__micSentinel.dump()`.
+
+### SolidJS reactivity
+Props are **not** destructured — that breaks reactivity. Reactive accessors must
+be read **synchronously**, never inside an async callback:
+
+```tsx
+// wrong -- "computations created outside a `createRoot`" warning
+onClick={() => { void (async () => { await del(activeTrack().id) })() }}
+// right -- read the signal first, then go async
+onClick={() => { const t = activeTrack(); void (async () => { await del(t.id) })() }}
+```
+
+`<For>` recreates rows when the underlying store commits, which will cancel a
+pointer gesture mid-drag. Resetting a value-bound signal clobbers
+`currentTarget.value` if you read it afterwards.
+
+### Canvas performance
+Never iterate a full audio buffer per-pixel inside `requestAnimationFrame`.
+Precompute a min/max peak mipmap in `Float32Array` blocks at load time and draw
+from that — `O(1)` per frame, and it avoids the moiré banding that
+sample-skipping produces. Cache static backgrounds to an `OffscreenCanvas`.
+Never pin an inline canvas `width`; use `src/lib/canvas-size-sync.ts`.
+
+### Playback
+`PlaybackRuntime.on('state')` hands the handler the **whole event object**, not
+a bare state string. Use the `isPlaying` signal to detect pause/stop.
+
+---
+
+## 5. How-to — common tasks
+
+| Task | Start here |
+|---|---|
+| Add a route/page | `src/lib/hash-router.ts` + `src/features/routing/useHashRouter.ts` + `src/pages/` |
+| Add a global setting | `src/stores/settings-store.ts` → `src/components/SettingsPanel.tsx` |
+| Add a guided-tour step | `WALKTHROUGH_STEPS` / `PAGE_TOURS` in `src/stores/app-store.ts` + `Walkthrough.tsx` |
+| Add an exercise | `src/features/exercises/<name>/` — copy the nearest sibling's shape |
+| Change stem separation | `src/lib/uvr-processing-pipeline.ts`, `src/lib/uvr-api.ts`, `src/stores/uvr-store.ts` |
+| Change lyrics timing | `src/lib/canonical-lrc.ts`, `src/lib/lyrics-service.ts`, `src/features/stem-mixer/lrc-gen-engine.ts` |
+| Touch pitch detection | `src/lib/pitch-pipeline/` (live) and `src/lib/pitch-algorithms/` (detectors) |
+| Add an API endpoint | `workers/db-worker/src/index.ts` — **and** add the route to `assets.run_worker_first` in `wrangler.toml` |
+| Add a DB column | new `scripts/migrate-<what>.sql` + update `workers/db-worker/schema.sql` |
+
+### Verification gates
+
+| Change touches | Required check |
+|---|---|
+| Any code | `pnpm check` |
+| Tour steps or tour-targeted DOM | Verify the affected `targetSelector`s resolve. **Not** the full walk. |
+| Exercise chrome / mobile layout | `pnpm audit:mobile` |
+| Pointer-driven controls (drag, scrub, swipe) | A real-mouse Playwright spec, red→green, tagged `@smoke` |
+| Release | `/prod-upd`, which includes the full `pnpm test:tours` walk |
+
+`pnpm test:tours` is a **release gate, not a per-PR gate** — it takes 20+
+minutes. Do not run it per change, even when editing tour steps.
+
+---
+
+## 6. Context-budget hazards
+
+<!-- BEGIN:GENERATED heavy-files -->
+Reading any of these end-to-end costs roughly 1.2k+ lines of context.
+Grep for the symbol and read the surrounding range instead.
+
+| File | LOC |
+|---|---|
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.4k |
+| [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 5.1k |
+| [src/App.tsx](../../src/App.tsx) | 3.5k |
+| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
+| [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
+| [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
+| [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k |
+| [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
+| [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
+| [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
+| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 1.8k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
+| [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
+| [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
+| [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
+| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.6k |
+| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
+| [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
+| [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
+| [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
+| [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
+| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.3k |
+<!-- END:GENERATED heavy-files -->
+
+CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,
+`guitar-practice.css`, `exercises.css`, and `app.css` are each 35–90 KB. Grep
+for the selector; never read them whole.
+
+---
+
+## 7. Browser-preview gotchas
+
+The headless preview lies in specific, repeatable ways:
+
+- **First-run overlays block the page.** Set `localStorage` key
+  `pitchperfect_welcome_version` to the app version (and the survey key), then
+  reload, before testing anything.
+- **`requestAnimationFrame` is paused headless** — canvases freeze and
+  screenshots time out. Verify canvas output via `getImageData`/`toDataURL` and
+  assert on the DOM for HUD state.
+- **The dev server is HTTPS-only.** `VITE_NO_SSL=1` plus the `app-http` launch
+  config gets you plain HTTP; revert before committing.
+- **The mic needs a shim** — stub `getUserMedia` with an oscillator, and fix the
+  0×0 viewport. Prefer `element.click()` over synthetic pointer clicks.
+- **The piano falling-notes game is audio-gated** and will not advance headless
+  (`startGame` awaits an `AudioContext` resume). Verify it by unit test instead.
+- `backdrop-filter: none` in headless output is an artifact, not a regression.
+
+---
+
+## 8. Commands
+
+<!-- BEGIN:GENERATED scripts -->
+| Script | Runs |
+|---|---|
+| `pnpm dev` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite` |
+| `pnpm dev:host` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite --host` |
+| `pnpm dev:jam` | `cd workers/jam-worker && npx wrangler dev --port 8787 --live-reload` |
+| `pnpm dev:db` | `cd workers/db-worker && npx wrangler dev --port 8788 --live-reload` |
+| `pnpm dev:db:cron` | `cd workers/db-worker && npx wrangler dev --port 8788 --live-reload --test-scheduled` |
+| `pnpm dev:seed` | `node scripts/seed-dev-league.mjs` |
+| `pnpm dev:seed:reset` | `node scripts/seed-dev-league.mjs --reset` |
+| `pnpm dev:uvr-worker` | `npx wrangler dev -c wrangler.uvr-dev.jsonc --port 8790 --var DB_API_URL:http://localhost:8788` |
+| `pnpm dev:runpod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= VITE_UVR_WORKER=1 VITE_UVR_PROXY_PORT=8790 vite` |
+| `pnpm build` | `vite build` |
+| `pnpm build:tours` | `cross-env VITE_API_BASE_URL= VITE_OVERRIDE_ONNX_MODEL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
+| `pnpm build:e2e` | `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= vite build` |
+| `pnpm build:dev` | `vite build --mode development` |
+| `pnpm preview` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite preview` |
+| `pnpm prod` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite build && vite preview` |
+| `pnpm test` | `vitest` |
+| `pnpm test:ui` | `vitest --ui` |
+| `pnpm test:run` | `vitest run` |
+| `pnpm test:coverage` | `vitest run --coverage` |
+| `pnpm test:e2e` | `playwright test` |
+| `pnpm lyrics:compare` | `node scripts/compare-lrc-timing.mjs` |
+| `pnpm test:tours` | `node scripts/walk-tours.mjs` |
+| `pnpm audit:mobile` | `node scripts/audit-exercises-mobile.mjs` |
+| `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
+| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm fmt` | `prettier src --check` |
+| `pnpm fmt:write` | `prettier src --write --log-level warn` |
+| `pnpm lint` | `eslint src` |
+| `pnpm lint:fix` | `eslint src --fix` |
+| `pnpm lint:audit` | `eslint -c eslint.audit.config.js src workers` |
+| `pnpm lines` | `cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'` |
+| `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
+| `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |
+| `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
+| `pnpm check:syntax` | `pnpm run check:ci` |
+| `pnpm check` | `run-s typecheck lint:fix fmt:write` |
+| `pnpm deploy:dev` | `pnpm exec wrangler deploy --env dev` |
+| `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |
+| `pnpm deploy:jam:dev` | `cd workers/jam-worker && pnpm exec wrangler deploy --env dev` |
+| `pnpm deploy:jam:prod` | `cd workers/jam-worker && pnpm exec wrangler deploy --env prod` |
+| `pnpm deploy:all:dev` | `run-s deploy:dev deploy:jam:dev` |
+| `pnpm deploy:all:prod` | `run-s deploy:prod deploy:jam:prod` |
+| `pnpm db:init` | `./scripts/init-cloudflare-db.sh all prod` |
+| `pnpm db:init:dev` | `./scripts/init-cloudflare-db.sh all dev` |
+| `pnpm db:init:local` | `./scripts/init-cloudflare-db.sh --local` |
+| `pnpm db:seed` | `node scripts/seed-remote-db.mjs` |
+| `pnpm deploy:db:dev` | `cd workers/db-worker && pnpm exec wrangler deploy --env dev` |
+| `pnpm deploy:db:prod` | `cd workers/db-worker && pnpm exec wrangler deploy --env prod` |
+| `pnpm typecheck:db` | `tsc -p workers/db-worker` |
+| `pnpm size` | `vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh` |
+<!-- END:GENERATED scripts -->
+
+---
+
+## Keeping this file honest
+
+```bash
+node scripts/gen-agent-index.mjs
+```
+
+Run it when modules are added, moved, or renamed. `--check` fails if stale —
+wire it into CI so an out-of-date map breaks the build instead of quietly
+misleading the next agent. A stale index is worse than no index: it sends agents
+hunting for things that do not exist.

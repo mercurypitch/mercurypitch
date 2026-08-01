@@ -2,15 +2,23 @@
 // Auth Service — client for the db-worker /api/auth endpoints
 // ============================================================
 //
-// Anonymous-first: ensureAuth() silently exchanges the persisted
-// device id for a JWT at startup. Register/login/Google upgrade the
-// same userId server-side (deviceId is passed along), so local
-// attribution stays valid. See docs/plans/users-auth-plan.md.
+// Lazy-anonymous: the device id lives in localStorage from the first
+// page load, but it is only exchanged for a server identity once the
+// visitor does something worth saving. restoreAuth() reuses an existing
+// session and never creates one; requireAuth() provisions on demand and
+// is called from write paths. Register/login/Google upgrade the same
+// userId server-side (deviceId is passed along), so local attribution
+// stays valid. See docs/plans/users-auth-plan.md.
+//
+// Provisioning eagerly at startup used to mint a users + userProfiles row
+// for every page load — 93% of them bounces that never practiced — which
+// buried the real signal and wrote personal data before the consent
+// banner was answered.
 
 import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
-import { getAuthToken, getUserId, setAuthToken } from './user-service'
+import { getAuthToken, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
 // so account-aware UI (e.g. the verify-email banner) can re-check /me
@@ -70,6 +78,19 @@ export function hasValidToken(): boolean {
   const payload = decodeToken(token)
   if (payload == null) return false
   return payload.exp > Date.now() / 1000 + 60
+}
+
+/**
+ * True when the held token belongs to a REAL account (password/Google).
+ * Lazily provisioned anonymous identities hold valid tokens too, so
+ * hasValidToken() alone cannot answer "do they still need to create an
+ * account?" — asking it that quietly removed the account offer for
+ * exactly the users it targets.
+ */
+export function hasUpgradedAccount(): boolean {
+  if (!hasValidToken()) return false
+  const payload = decodeToken(getAuthToken() ?? '')
+  return payload != null && payload.provider !== 'anonymous'
 }
 
 // ── HTTP helpers ────────────────────────────────────────────────
@@ -181,28 +202,61 @@ async function verifyTokenWithServer(): Promise<boolean> {
 }
 
 /**
- * Make sure a JWT is available, requesting an anonymous one when
- * needed. Returns false when no API is configured, the network is
- * down, or the account was upgraded and requires an explicit login.
- * Never throws — callers must stay usable offline.
+ * Reuse an existing session, and never create one. Returns false when no
+ * API is configured, no valid token is stored, or the server rejected it.
+ * This is what startup and account UI call: a visitor who only browses
+ * never gets a server-side identity. Never throws — callers must stay
+ * usable offline.
  */
-export async function ensureAuth(): Promise<boolean> {
+export async function restoreAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
-  if (hasValidToken() && (await verifyTokenWithServer())) return true
+  return hasValidToken() && (await verifyTokenWithServer())
+}
+
+// Concurrent first writes (a session save racing a settings push) must not
+// each POST /api/auth/anonymous. The server is idempotent on deviceId, so
+// this only avoids redundant round-trips and token churn.
+let provisioning: Promise<boolean> | null = null
+
+// Between account erasure and the page reload that follows it, nothing may
+// re-provision an identity: a queued settings write hitting requireAuth in
+// that window would mint a junk anonymous user seconds after the erasure.
+// In-memory only — the reload clears it, and a later fresh visit should
+// provision normally.
+let tearingDown = false
+
+/**
+ * Make sure a cloud identity exists, provisioning an anonymous one on
+ * demand. Call this from paths that are about to persist something —
+ * the ServerAdapter write hook covers the generic CRUD surface; direct
+ * fetch callers (billing, weekly attempts) call it themselves.
+ *
+ * Returns false when no API is configured, the network is down, or the
+ * account was upgraded and requires an explicit login. Never throws.
+ */
+export async function requireAuth(): Promise<boolean> {
+  if (API_BASE_URL == null || API_BASE_URL === '') return false
+  if (tearingDown) return false
+  if (await restoreAuth()) return true
   if (requiresLogin()) return false
-  try {
-    await postAuth('anonymous', { deviceId: getUserId() })
-    return true
-  } catch (err) {
-    if (err instanceof AuthHttpError && err.status === 403) {
-      // Upgraded account signed out — needs an explicit login.
-      setRequiresLogin(true)
-      console.info('[auth] signed out — log in to sync personal data')
-    } else {
-      console.warn('[auth] anonymous auth failed:', err)
+  provisioning ??= (async () => {
+    try {
+      await postAuth('anonymous', { deviceId: getUserId() })
+      return true
+    } catch (err) {
+      if (err instanceof AuthHttpError && err.status === 403) {
+        // Upgraded account signed out — needs an explicit login.
+        setRequiresLogin(true)
+        console.info('[auth] signed out — log in to sync personal data')
+      } else {
+        console.warn('[auth] anonymous auth failed:', err)
+      }
+      return false
+    } finally {
+      provisioning = null
     }
-    return false
-  }
+  })()
+  return provisioning
 }
 
 export async function registerWithPassword(
@@ -367,13 +421,73 @@ export async function resendVerificationEmail(): Promise<void> {
   }
 }
 
+// ── Password reset (forgot / choose-new) ─────────────────────────────
+//
+// Forgot-password emails a single-use link to the app's #/reset-password
+// form; completing it revokes every existing session server-side, so the
+// user signs in fresh with the password they just chose (no auto-login).
+
+/** Pull the server's {"error": …} message out of a failed response. */
+async function extractError(res: Response, fallback: string): Promise<string> {
+  const detail = await res.text().catch(() => '')
+  try {
+    const message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    if (message !== '') return message
+  } catch {
+    /* not JSON */
+  }
+  return `${fallback} (${res.status})`
+}
+
+/** Ask the server to email a password-reset link. The response never
+ *  reveals whether the address has an account. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(`${requireBaseUrl()}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not send the reset email'))
+  }
+}
+
+/** Non-consuming validity probe for an emailed reset token, so the form can
+ *  show "link expired" before the user types anything. Throws on network /
+ *  server failure — callers decide whether to fall through to the form. */
+export async function checkResetToken(token: string): Promise<boolean> {
+  const res = await fetch(
+    `${requireBaseUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`,
+  )
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not check the reset link'))
+  }
+  const data = (await res.json()) as { valid?: boolean }
+  return data.valid === true
+}
+
+/** Complete the reset: consume the token and set the new password. */
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<void> {
+  const res = await fetch(`${requireBaseUrl()}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  })
+  if (!res.ok) {
+    throw new Error(await extractError(res, 'Could not reset the password'))
+  }
+}
+
 export function logout(): void {
   const token = getAuthToken()
   const payload = token != null ? decodeToken(token) : null
 
   // Clear token immediately so the UI reflects signed-out state.
   // An upgraded device can't fall back to anonymous auth — remember
-  // that so ensureAuth() doesn't retry a doomed handshake at startup.
+  // that so requireAuth() doesn't retry a doomed handshake on the next write.
   if (payload != null && payload.provider !== 'anonymous') {
     setRequiresLogin(true)
   }
@@ -396,6 +510,46 @@ export function logout(): void {
       // Network failure is non-fatal
     })
   }
+}
+
+/**
+ * Permanently delete the signed-in account and everything the server holds
+ * for it, then drop the local session. Irreversible; the caller confirms
+ * first. Throws with the server's message so the UI can surface a failure
+ * rather than pretending the data is gone.
+ */
+export async function deleteAccount(): Promise<void> {
+  const token = getAuthToken()
+  if (token == null || token === '') throw new Error('Not signed in')
+  const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    let message = ''
+    try {
+      message = (JSON.parse(detail) as { error?: string }).error ?? ''
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(
+      message !== '' ? message : `Could not delete account (${res.status})`,
+    )
+  }
+  // The account is gone, so there is nothing to sign back into and no
+  // upgraded identity to remember — clear the signed-out flag too, letting
+  // this device start fresh as a new visitor. Rotate the device id as well:
+  // /api/auth/anonymous keys on it, so keeping it would resurrect the very
+  // user id the erasure just removed. Block re-provisioning until the
+  // caller's reload lands: a queued write in that window must not recreate
+  // an identity the user just erased.
+  tearingDown = true
+  setRequiresLogin(false)
+  setAuthToken(null)
+  resetUserId()
+  tokenServerVerified = false
+  authChanged()
 }
 
 /** Current user + profile, or null when not authenticated / unreachable. */

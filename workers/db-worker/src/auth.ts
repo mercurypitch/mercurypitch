@@ -10,17 +10,27 @@
 //   GET  /api/auth/google/callback?code=&state=       (Google redirect URI)
 //   GET  /api/auth/verify-email?token=&returnTo=      (email confirm link)
 //   POST /api/auth/resend-verification                (Bearer token)
+//   POST /api/auth/forgot-password { email }          (emails a reset link)
+//   GET  /api/auth/reset-password?token=              (link validity probe)
+//   POST /api/auth/reset-password { token, password } (sets the new password)
 //   GET  /api/auth/me        (Bearer token)
 //
 // `deviceId` is the client's persisted anonymous UUID. Passing it to
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { sendEmailVerification, sendSignupWelcome } from './email'
+import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './email'
 import { shouldTouchLastActive } from './last-active'
 
 export interface Env {
+  /** Where emailed links land when the request Origin is not a first-party
+   *  app origin (e.g. a PR preview on workers.dev). Set per environment in
+   *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
+  APP_FALLBACK_ORIGIN?: string
   DB: D1Database
+  /** Permanent short guided-exercise playback assets. Unlike UVR staging,
+   * this bucket must not have an automatic expiry lifecycle. */
+  GUIDED_MEDIA_BUCKET?: R2Bucket
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
@@ -103,7 +113,10 @@ const PASSWORD_MIN_LENGTH = 8
 // keep the two in sync.
 function isStrongPassword(password: string): { ok: boolean; reason?: string } {
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return { ok: false, reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` }
+    return {
+      ok: false,
+      reason: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    }
   }
   if (!/[A-Za-z]/.test(password)) {
     return { ok: false, reason: 'Password must contain at least one letter' }
@@ -152,14 +165,23 @@ interface JwtPayload {
 }
 
 async function signJwt(payload: JwtPayload, secret: string): Promise<string> {
-  const header = b64urlEncode(encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })))
+  const header = b64urlEncode(
+    encoder.encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
+  )
   const body = b64urlEncode(encoder.encode(JSON.stringify(payload)))
   const data = `${header}.${body}`
-  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(data))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    await hmacKey(secret),
+    encoder.encode(data),
+  )
   return `${data}.${b64urlEncode(sig)}`
 }
 
-async function verifyJwt(token: string, secret: string): Promise<JwtPayload | null> {
+async function verifyJwt(
+  token: string,
+  secret: string,
+): Promise<JwtPayload | null> {
   const parts = token.split('.')
   if (parts.length !== 3) return null
   const [header, body, sig] = parts
@@ -174,7 +196,8 @@ async function verifyJwt(token: string, secret: string): Promise<JwtPayload | nu
     const payload = JSON.parse(
       new TextDecoder().decode(b64urlDecode(body)),
     ) as JwtPayload
-    if (typeof payload.sub !== 'string' || typeof payload.exp !== 'number') return null
+    if (typeof payload.sub !== 'string' || typeof payload.exp !== 'number')
+      return null
     if (payload.exp < Math.floor(Date.now() / 1000)) return null
     return payload
   } catch {
@@ -183,7 +206,10 @@ async function verifyJwt(token: string, secret: string): Promise<JwtPayload | nu
 }
 
 /** Extract and verify the Bearer token. Returns null when absent/invalid. */
-export async function getAuth(request: Request, env: Env): Promise<AuthUser | null> {
+export async function getAuth(
+  request: Request,
+  env: Env,
+): Promise<AuthUser | null> {
   if (!env.JWT_SECRET) return null
   const header = request.headers.get('Authorization')
   if (!header?.startsWith('Bearer ')) return null
@@ -194,7 +220,9 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
   // the stored tokenVersion was revoked (logout, etc.). A missing `v` claim is
   // treated as version 0 so a single tokenVersion bump also revokes legacy
   // tokens.
-  const user = await env.DB.prepare('SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?')
+  const user = await env.DB.prepare(
+    'SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?',
+  )
     .bind(payload.sub)
     .first<{ tokenVersion: number; lastActiveAt: string | null }>()
   if (!user) return null
@@ -221,7 +249,11 @@ export async function getAuth(request: Request, env: Env): Promise<AuthUser | nu
 
 // ── Password hashing (PBKDF2-SHA256) ─────────────────────────────────
 
-async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<ArrayBuffer> {
+async function pbkdf2(
+  password: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<ArrayBuffer> {
   const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(password),
@@ -242,10 +274,15 @@ async function hashPassword(password: string): Promise<string> {
   return `pbkdf2$${PBKDF2_ITERATIONS}$${b64urlEncode(salt)}$${b64urlEncode(bits)}`
 }
 
-async function verifyPassword(password: string, stored: string): Promise<boolean> {
+async function verifyPassword(
+  password: string,
+  stored: string,
+): Promise<boolean> {
   const [scheme, iters, saltB64, hashB64] = stored.split('$')
   if (scheme !== 'pbkdf2') return false
-  const bits = new Uint8Array(await pbkdf2(password, b64urlDecode(saltB64), Number(iters)))
+  const bits = new Uint8Array(
+    await pbkdf2(password, b64urlDecode(saltB64), Number(iters)),
+  )
   const expected = b64urlDecode(hashB64)
   if (bits.length !== expected.length) return false
   let diff = 0
@@ -278,7 +315,10 @@ interface GoogleClaims {
   picture?: string
 }
 
-async function verifyGoogleIdToken(idToken: string, clientId: string): Promise<GoogleClaims | null> {
+async function verifyGoogleIdToken(
+  idToken: string,
+  clientId: string,
+): Promise<GoogleClaims | null> {
   // Use the v3 tokeninfo endpoint (POST body, not query param — avoids
   // token leakage in intermediate proxy/server logs).
   const res = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo', {
@@ -298,12 +338,24 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
-async function findUserById(db: D1Database, id: string): Promise<UserRow | null> {
-  return db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first<UserRow>()
+async function findUserById(
+  db: D1Database,
+  id: string,
+): Promise<UserRow | null> {
+  return db
+    .prepare('SELECT * FROM users WHERE id = ?')
+    .bind(id)
+    .first<UserRow>()
 }
 
-async function findUserByEmail(db: D1Database, email: string): Promise<UserRow | null> {
-  return db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<UserRow>()
+async function findUserByEmail(
+  db: D1Database,
+  email: string,
+): Promise<UserRow | null> {
+  return db
+    .prepare('SELECT * FROM users WHERE email = ?')
+    .bind(email)
+    .first<UserRow>()
 }
 
 async function createUser(
@@ -386,15 +438,25 @@ interface RateLimitBucket {
 }
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
-  anonymous: { max: 30, windowMs: 60_000 },   // 30/min
-  register: { max: 5, windowMs: 300_000 },     // 5/5min
-  login: { max: 10, windowMs: 300_000 },       // 10/5min
-  google: { max: 30, windowMs: 60_000 },       // 30/min
-  logout: { max: 30, windowMs: 60_000 },       // 30/min
+  anonymous: { max: 30, windowMs: 60_000 }, // 30/min
+  register: { max: 5, windowMs: 300_000 }, // 5/5min
+  login: { max: 10, windowMs: 300_000 }, // 10/5min
+  google: { max: 30, windowMs: 60_000 }, // 30/min
+  logout: { max: 30, windowMs: 60_000 }, // 30/min
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
-  'verify-email': { max: 30, windowMs: 60_000 },        // 30/min
+  'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
   'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
+  // Account erasure is irreversible and needs a valid token anyway; the cap
+  // just bounds a scripted sweep against harvested tokens.
+  'delete-account': { max: 5, windowMs: 600_000 },      // 5/10min
+  // Password reset: forgot-password sends mail (tight, like resend); the
+  // per-ADDRESS cap (keyed by email, not IP — see handleForgotPassword)
+  // stops inbox-bombing from rotating IPs. reset-password covers the cheap
+  // GET probe + the POST that consumes the token.
+  'forgot-password': { max: 3, windowMs: 600_000 },     // 3/10min per IP
+  'forgot-email': { max: 3, windowMs: 3_600_000 },      // 3/h per address
+  'reset-password': { max: 10, windowMs: 300_000 },     // 10/5min
   // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
   // index.ts. Generous for normal use (session saves, settings, follows) but
   // bounds scripted spam / unbounded row creation. Tunable.
@@ -406,6 +468,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // one minute leaves ample room for retries while stopping a loop or multiple
   // tabs from rapidly burning GPU spend. The sustained cap mirrors the
   // 15-song upload queue and bounds any one account to one full batch/hour.
+  // Friend-code redemption: generous for a human typing a code, tight enough
+  // that nobody scripts their way through the code space.
+  'friend-redeem': { max: 20, windowMs: 300_000 },
+  // Minting is one UPDATE the first time and a pure read after, but it IS a
+  // write behind a GET — cap it so a scripted loop can't spam profile writes.
+  'friend-code': { max: 10, windowMs: 300_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
 }
@@ -434,7 +502,9 @@ export async function checkRateLimit(
     .first<{ count: number; windowStart: number }>()
 
   if (row && row.count > limit.max) {
-    const retryAfter = Math.ceil((limit.windowMs - (now - row.windowStart)) / 1000)
+    const retryAfter = Math.ceil(
+      (limit.windowMs - (now - row.windowStart)) / 1000,
+    )
     return { allowed: false, retryAfter }
   }
   return { allowed: true }
@@ -460,7 +530,12 @@ async function createSession(env: Env, row: UserRow): Promise<string> {
   return token
 }
 
-async function issueSession(env: Env, row: UserRow, respond: Respond, isNew = false): Promise<Response> {
+async function issueSession(
+  env: Env,
+  row: UserRow,
+  respond: Respond,
+  isNew = false,
+): Promise<Response> {
   const token = await createSession(env, row)
   return respond({ token, userId: row.id, isNew, user: publicUser(row) })
 }
@@ -471,6 +546,8 @@ interface AuthBody {
   password?: string
   displayName?: string
   idToken?: string
+  /** Password-reset token from the emailed link (reset-password). */
+  token?: string
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -526,7 +603,10 @@ async function createEmailVerification(
 ): Promise<string> {
   const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
   const tokenHash = await sha256b64url(token)
-  await db.prepare('DELETE FROM emailVerifications WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare('DELETE FROM emailVerifications WHERE userId = ?')
+    .bind(userId)
+    .run()
   await db
     .prepare(
       'INSERT INTO emailVerifications (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
@@ -559,7 +639,7 @@ async function sendVerificationEmail(
     const requestOrigin = request.headers.get('Origin') ?? ''
     const returnTo = isAllowedReturnTo(requestOrigin, env)
       ? requestOrigin
-      : 'https://mercurypitch.com'
+      : fallbackAppOrigin(env)
     const verifyUrl =
       `${new URL(request.url).origin}/api/auth/verify-email` +
       `?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(returnTo)}`
@@ -569,8 +649,191 @@ async function sendVerificationEmail(
       { displayName, verifyUrl },
     )
   } catch (err) {
-    console.error(`[auth] verification email failed (non-fatal): ${String(err)}`)
+    console.error(
+      `[auth] verification email failed (non-fatal): ${String(err)}`,
+    )
   }
+}
+
+// ── Password reset (forgot-password flow) ────────────────────────────
+//
+// Mirrors the email-verification token lifecycle: 256-bit token, only its
+// SHA-256 stored, one outstanding link per user, single-use, expiry checked
+// at consume time. The link opens the app's #/reset-password form (unlike
+// verify-email there's nothing to confirm by GET alone — the user must type
+// a new password), and completing it revokes every existing session.
+
+const RESET_TOKEN_TTL_MS = 2 * 60 * 60 * 1000 // 2 hours
+
+// One message for every dead-token case (unknown, already used, expired,
+// email since changed) — distinguishing them would let an attacker probe
+// token state.
+const RESET_LINK_DEAD = 'This reset link is invalid or has expired'
+
+/** Mint a single-use reset token (superseding any older ones for the user)
+ *  and store only its SHA-256. Returns the raw token for the link. */
+async function createPasswordReset(
+  db: D1Database,
+  userId: string,
+  email: string,
+): Promise<string> {
+  const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
+  const tokenHash = await sha256b64url(token)
+  await db.prepare('DELETE FROM passwordResets WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare(
+      'INSERT INTO passwordResets (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
+    )
+    .bind(
+      tokenHash,
+      userId,
+      email,
+      nowIso(),
+      new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString(),
+    )
+    .run()
+  return token
+}
+
+// Mint a token and email the reset link — best-effort, callers never let a
+// mail failure change the (deliberately uniform) forgot-password response.
+// The link points at the app origin the request came from (validated, prod
+// fallback), so dev resets stay on dev. With Resend unconfigured (local
+// wrangler) the link is logged instead so the flow stays testable.
+async function sendPasswordResetEmail(
+  request: Request,
+  env: Env,
+  user: UserRow,
+): Promise<void> {
+  if (!user.email) return
+  try {
+    const token = await createPasswordReset(env.DB, user.id, user.email)
+    const requestOrigin = request.headers.get('Origin') ?? ''
+    const returnTo = isAllowedReturnTo(requestOrigin, env)
+      ? requestOrigin
+      : fallbackAppOrigin(env)
+    const resetUrl = `${returnTo}/#/reset-password?token=${encodeURIComponent(token)}`
+    if (!env.RESEND_API_KEY) {
+      console.log(`[auth] reset link (email skipped, no RESEND_API_KEY): ${resetUrl}`)
+      return
+    }
+    const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+      .bind(user.id)
+      .first<{ displayName: string | null }>()
+    await sendPasswordReset(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      user.email,
+      {
+        displayName: profile?.displayName,
+        resetUrl,
+        ttlHours: RESET_TOKEN_TTL_MS / 3_600_000,
+      },
+    )
+  } catch (err) {
+    console.error(`[auth] password-reset email failed (non-fatal): ${String(err)}`)
+  }
+}
+
+/** POST /api/auth/forgot-password { email } — always { ok: true } (except
+ *  malformed input), so the response never reveals whether the address has
+ *  an account. */
+async function handleForgotPassword(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+  ctx?: ExecutionContext,
+): Promise<Response> {
+  const email = body.email?.trim().toLowerCase()
+  if (!email || !EMAIL_RE.test(email)) {
+    return respond({ error: 'Valid email required' }, { status: 400 })
+  }
+  // Per-address cap on top of the per-IP one (rotating IPs must not be able
+  // to bomb one inbox). Applied silently — a visible 429 here would reveal
+  // that the address exists.
+  const emailRl = await checkRateLimit(env.DB, email, 'forgot-email')
+  if (emailRl.allowed) {
+    const user = await findUserByEmail(env.DB, email)
+    if (user) {
+      // Mint + send AFTER the response: run inline, the Resend round-trip
+      // makes a known address answer hundreds of ms slower than an unknown
+      // one — a timing oracle that defeats the uniform { ok: true } body.
+      const work = sendPasswordResetEmail(request, env, user)
+      if (ctx !== undefined) ctx.waitUntil(work)
+      else await work // tests / non-CF runtimes
+    }
+  }
+  return respond({ ok: true })
+}
+
+/** GET /api/auth/reset-password?token= — non-consuming validity probe, so
+ *  the reset form can show "link expired" before the user types anything. */
+async function handleResetPasswordCheck(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const token = new URL(request.url).searchParams.get('token') ?? ''
+  if (token === '') return respond({ valid: false })
+  const tokenHash = await sha256b64url(token)
+  const row = await env.DB.prepare(
+    'SELECT userId, email, expiresAt FROM passwordResets WHERE tokenHash = ?',
+  )
+    .bind(tokenHash)
+    .first<{ userId: string; email: string; expiresAt: string }>()
+  if (!row || Date.parse(row.expiresAt) < Date.now()) {
+    return respond({ valid: false })
+  }
+  const user = await findUserById(env.DB, row.userId)
+  const valid = user != null && user.email?.toLowerCase() === row.email.toLowerCase()
+  return respond({ valid })
+}
+
+/** POST /api/auth/reset-password { token, password } — consume the token and
+ *  set the new password. No auto-login: the tokenVersion bump revokes every
+ *  session, and the user signs in fresh with the password they just chose. */
+async function handleResetPassword(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  if (!body.token || !body.password) {
+    return respond({ error: 'Token and password required' }, { status: 400 })
+  }
+  const pwdCheck = isStrongPassword(body.password)
+  if (!pwdCheck.ok) {
+    return respond({ error: pwdCheck.reason }, { status: 400 })
+  }
+  const tokenHash = await sha256b64url(body.token)
+  // Consume atomically: the DELETE both fetches and burns the row, so two
+  // concurrent requests bearing the same token cannot both pass a separate
+  // SELECT before either deletes. Input validation above never touches the
+  // row, so a weak password does not cost the user their link.
+  const row = await env.DB.prepare(
+    'DELETE FROM passwordResets WHERE tokenHash = ? RETURNING userId, email, expiresAt',
+  )
+    .bind(tokenHash)
+    .first<{ userId: string; email: string; expiresAt: string }>()
+  if (!row) return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  if (Date.parse(row.expiresAt) < Date.now()) {
+    return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  }
+  const user = await findUserById(env.DB, row.userId)
+  // The address must still be the one the token was minted for.
+  if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
+    return respond({ error: RESET_LINK_DEAD }, { status: 400 })
+  }
+  const passwordHash = await hashPassword(body.password)
+  // Set the password, mark the address verified (they just proved control of
+  // it), and bump tokenVersion so every previously issued session is revoked.
+  // For a Google-linked account this adds email+password as a login method —
+  // same trust as the verified-email auto-link in resolveGoogleUser.
+  await env.DB.prepare(
+    'UPDATE users SET passwordHash = ?, emailVerified = 1, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?',
+  )
+    .bind(passwordHash, nowIso(), user.id)
+    .run()
+  return respond({ ok: true })
 }
 
 async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
@@ -635,20 +898,41 @@ async function handleRegister(
           .run()
       }
       const row = (await findUserById(env.DB, anon.id)) as UserRow
-      await sendVerificationEmail(request, env, anon.id, email, body.displayName?.trim())
-      return issueSession(env, row, respond)
+      await sendVerificationEmail(
+        request,
+        env,
+        anon.id,
+        email,
+        body.displayName?.trim(),
+      )
+      // Upgrading an anonymous device to a password account creates a real
+      // account: report isNew so the client's signup funnel event fires.
+      return issueSession(env, row, respond, true)
     }
   }
 
   const id = crypto.randomUUID()
-  await createUser(env.DB, { id, authProvider: 'password', email, passwordHash })
-  await ensureProfile(env.DB, id, body.displayName?.trim() || defaultDisplayName(id))
+  await createUser(env.DB, {
+    id,
+    authProvider: 'password',
+    email,
+    passwordHash,
+  })
+  await ensureProfile(
+    env.DB,
+    id,
+    body.displayName?.trim() || defaultDisplayName(id),
+  )
   const row = (await findUserById(env.DB, id)) as UserRow
   await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
   return issueSession(env, row, respond, true)
 }
 
-async function handleLogin(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+async function handleLogin(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const email = body.email?.trim().toLowerCase()
   if (!email || !body.password) {
     return respond({ error: 'Email and password required' }, { status: 400 })
@@ -674,7 +958,9 @@ async function resolveGoogleUser(
   env: Env,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   // 1. Returning Google user
-  const linked = await env.DB.prepare('SELECT * FROM users WHERE providerId = ?')
+  const linked = await env.DB.prepare(
+    'SELECT * FROM users WHERE providerId = ?',
+  )
     .bind(claims.sub)
     .first<UserRow>()
   if (linked) return { row: linked, isNew: false }
@@ -691,7 +977,10 @@ async function resolveGoogleUser(
       )
         .bind(claims.sub, nowIso(), byEmail.id)
         .run()
-      return { row: (await findUserById(env.DB, byEmail.id)) as UserRow, isNew: false }
+      return {
+        row: (await findUserById(env.DB, byEmail.id)) as UserRow,
+        isNew: false,
+      }
     }
   }
 
@@ -702,10 +991,20 @@ async function resolveGoogleUser(
       await env.DB.prepare(
         `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?`,
       )
-        .bind(claims.sub, email ?? null, emailVerified ? 1 : 0, nowIso(), anon.id)
+        .bind(
+          claims.sub,
+          email ?? null,
+          emailVerified ? 1 : 0,
+          nowIso(),
+          anon.id,
+        )
         .run()
       await sendWelcomeEmail(env, email, claims.name)
-      return { row: (await findUserById(env.DB, anon.id)) as UserRow, isNew: false }
+      return {
+        row: (await findUserById(env.DB, anon.id)) as UserRow,
+        // First-time Google over an anonymous device is account creation.
+        isNew: true,
+      }
     }
   }
 
@@ -718,12 +1017,21 @@ async function resolveGoogleUser(
     email,
     emailVerified,
   })
-  await ensureProfile(env.DB, id, claims.name || defaultDisplayName(id), claims.picture)
+  await ensureProfile(
+    env.DB,
+    id,
+    claims.name || defaultDisplayName(id),
+    claims.picture,
+  )
   await sendWelcomeEmail(env, email, claims.name)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
 
-async function handleGoogle(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogle(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   if (!env.GOOGLE_CLIENT_ID) {
     return respond({ error: 'Google login not configured' }, { status: 501 })
   }
@@ -761,6 +1069,16 @@ const DEFAULT_APP_ORIGINS = [
   'http://localhost:3000',
 ]
 
+/** The environment's own app origin, for links minted without a usable
+ *  request Origin. Reflecting arbitrary origins (say, *.workers.dev) into
+ *  emailed links would hand tokens to whoever controls that origin, so
+ *  anything off the allowlist falls back HERE - and on the dev worker that
+ *  is the dev domain, never production. */
+function fallbackAppOrigin(env: Env): string {
+  const configured = (env.APP_FALLBACK_ORIGIN ?? '').trim()
+  return configured !== '' ? configured : 'https://mercurypitch.com'
+}
+
 function isAllowedReturnTo(returnTo: string, env: Env): boolean {
   let origin: string
   try {
@@ -783,11 +1101,18 @@ interface OAuthState {
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
   const body = b64urlEncode(encoder.encode(JSON.stringify(state)))
-  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(body))
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    await hmacKey(secret),
+    encoder.encode(body),
+  )
   return `${body}.${b64urlEncode(sig)}`
 }
 
-async function verifyState(raw: string, secret: string): Promise<OAuthState | null> {
+async function verifyState(
+  raw: string,
+  secret: string,
+): Promise<OAuthState | null> {
   const [body, sig] = raw.split('.')
   if (!body || !sig) return null
   const valid = await crypto.subtle.verify(
@@ -798,8 +1123,11 @@ async function verifyState(raw: string, secret: string): Promise<OAuthState | nu
   )
   if (!valid) return null
   try {
-    const state = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as OAuthState
-    if (typeof state.returnTo !== 'string' || typeof state.ts !== 'number') return null
+    const state = JSON.parse(
+      new TextDecoder().decode(b64urlDecode(body)),
+    ) as OAuthState
+    if (typeof state.returnTo !== 'string' || typeof state.ts !== 'number')
+      return null
     if (Date.now() - state.ts > STATE_TTL_MS) return null
     return state
   } catch {
@@ -815,9 +1143,16 @@ function redirectWithError(returnTo: string, message: string): Response {
   return redirect(`${returnTo}#gauth_error=${encodeURIComponent(message)}`)
 }
 
-async function handleGoogleStart(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogleStart(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
-    return respond({ error: 'Google login not configured (client id/secret missing)' }, { status: 501 })
+    return respond(
+      { error: 'Google login not configured (client id/secret missing)' },
+      { status: 501 },
+    )
   }
   const url = new URL(request.url)
   const returnTo = url.searchParams.get('returnTo') ?? ''
@@ -825,7 +1160,8 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
     return respond({ error: 'returnTo origin not allowed' }, { status: 400 })
   }
   const deviceIdRaw = url.searchParams.get('deviceId') ?? undefined
-  const deviceId = deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
+  const deviceId =
+    deviceIdRaw && UUID_RE.test(deviceIdRaw) ? deviceIdRaw : undefined
 
   const state = await signState(
     { deviceId, returnTo, ts: Date.now() },
@@ -834,7 +1170,10 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
 
   const auth = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   auth.searchParams.set('client_id', env.GOOGLE_CLIENT_ID)
-  auth.searchParams.set('redirect_uri', `${url.origin}/api/auth/google/callback`)
+  auth.searchParams.set(
+    'redirect_uri',
+    `${url.origin}/api/auth/google/callback`,
+  )
   auth.searchParams.set('response_type', 'code')
   auth.searchParams.set('scope', 'openid email profile')
   auth.searchParams.set('state', state)
@@ -842,7 +1181,11 @@ async function handleGoogleStart(request: Request, env: Env, respond: Respond): 
   return redirect(auth.toString())
 }
 
-async function handleGoogleCallback(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleGoogleCallback(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const url = new URL(request.url)
   const state = await verifyState(
     url.searchParams.get('state') ?? '',
@@ -878,7 +1221,11 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     // misconfiguration (bad secret, redirect_uri mismatch, …) — log it
     // and surface the code so the failure is diagnosable from the UI.
     const detail = await tokenRes.text().catch(() => '')
-    console.error('[google-callback] code exchange failed:', tokenRes.status, detail)
+    console.error(
+      '[google-callback] code exchange failed:',
+      tokenRes.status,
+      detail,
+    )
     let code = ''
     try {
       code = (JSON.parse(detail) as { error?: string }).error ?? ''
@@ -895,7 +1242,10 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
     return redirectWithError(state.returnTo, 'No id_token from Google')
   }
 
-  const claims = await verifyGoogleIdToken(tokenData.id_token, env.GOOGLE_CLIENT_ID as string)
+  const claims = await verifyGoogleIdToken(
+    tokenData.id_token,
+    env.GOOGLE_CLIENT_ID as string,
+  )
   if (!claims) {
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
@@ -912,12 +1262,15 @@ async function handleGoogleCallback(request: Request, env: Env, respond: Respond
 /** GET /api/auth/verify-email?token=&returnTo= — the emailed confirm link.
  *  A top-level navigation, so success/failure land back in the app as a
  *  fragment (#everified=1 / #everified_error=…), mirroring the Google flow. */
-async function handleVerifyEmail(request: Request, env: Env): Promise<Response> {
+async function handleVerifyEmail(
+  request: Request,
+  env: Env,
+): Promise<Response> {
   const url = new URL(request.url)
   const returnToRaw = url.searchParams.get('returnTo') ?? ''
   const returnTo = isAllowedReturnTo(returnToRaw, env)
     ? returnToRaw
-    : 'https://mercurypitch.com'
+    : fallbackAppOrigin(env)
   const fail = (reason: string): Response =>
     redirect(`${returnTo}/#everified_error=${encodeURIComponent(reason)}`)
 
@@ -940,7 +1293,9 @@ async function handleVerifyEmail(request: Request, env: Env): Promise<Response> 
   if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
     return fail('invalid_or_used')
   }
-  await env.DB.prepare('UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?')
+  await env.DB.prepare(
+    'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
+  )
     .bind(nowIso(), row.userId)
     .run()
   return redirect(`${returnTo}/#everified=1`)
@@ -963,27 +1318,57 @@ async function handleResendVerification(
     return respond({ ok: true, alreadyVerified: true })
   }
   if (!env.RESEND_API_KEY) {
-    return respond({ error: 'Email sending is not configured' }, { status: 501 })
+    return respond(
+      { error: 'Email sending is not configured' },
+      { status: 501 },
+    )
   }
-  const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+  const profile = await env.DB.prepare(
+    'SELECT displayName FROM userProfiles WHERE id = ?',
+  )
     .bind(row.id)
     .first<{ displayName: string | null }>()
-  await sendVerificationEmail(request, env, row.id, row.email, profile?.displayName)
+  await sendVerificationEmail(
+    request,
+    env,
+    row.id,
+    row.email,
+    profile?.displayName,
+  )
   return respond({ ok: true })
 }
 
-async function handleMe(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleMe(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const row = await findUserById(env.DB, auth.userId)
   if (!row) return respond({ error: 'User not found' }, { status: 404 })
-  const profile = await env.DB.prepare('SELECT * FROM userProfiles WHERE id = ?')
+  const profile = await env.DB.prepare(
+    'SELECT * FROM userProfiles WHERE id = ?',
+  )
     .bind(auth.userId)
-    .first()
-  return respond({ user: publicUser(row), profile })
+    .first<Record<string, unknown>>()
+  // Raw D1 rows carry SQLite's 0/1 for booleans. The generic CRUD layer
+  // converts via tables.ts boolCols, but this endpoint bypasses it - and the
+  // account UI checks `leaderboardOptIn === true`, so an unconverted 1 read
+  // as "not opted in", the checkbox always rendered unchecked, and clicking
+  // it could only ever re-opt-in: opting OUT from the UI was impossible.
+  const normalized =
+    profile == null
+      ? profile
+      : { ...profile, leaderboardOptIn: profile.leaderboardOptIn === 1 || profile.leaderboardOptIn === true }
+  return respond({ user: publicUser(row), profile: normalized })
 }
 
-async function handleLogout(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleLogout(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   // Increment token version — all previously issued JWTs become invalid
@@ -995,12 +1380,92 @@ async function handleLogout(request: Request, env: Env, respond: Respond): Promi
   return respond({ ok: true })
 }
 
+/**
+ * Every table holding rows owned by a user, in deletion order (children
+ * before the users row). `follows` is matched on BOTH sides so a deleted
+ * account doesn't linger in other people's follow lists.
+ *
+ * Deliberately absent:
+ *   - billingEvents — Stripe event ids for webhook idempotency, no personal
+ *     data and no userId column.
+ *   - mirrorEvents — keyed by an unrelated random clientId that is never
+ *     linked to an account, so it isn't reachable from here (it has its own
+ *     retention story).
+ */
+const USER_OWNED_TABLES: { table: string; column: string }[] = [
+  { table: 'sessionRecords', column: 'userId' },
+  // Reset tokens carry the account's email; they die with the account.
+  { table: 'passwordResets', column: 'userId' },
+  { table: 'challengeProgress', column: 'userId' },
+  { table: 'userBadges', column: 'userId' },
+  { table: 'userAchievements', column: 'userId' },
+  { table: 'leaderboardEntries', column: 'userId' },
+  { table: 'sharedMelodies', column: 'userId' },
+  { table: 'sharedSessions', column: 'userId' },
+  { table: 'userSettings', column: 'userId' },
+  { table: 'userSurveyResponses', column: 'userId' },
+  // Voiceprints are the account's measured voice history - personal data
+  // that must not outlive the account.
+  { table: 'voiceprints', column: 'userId' },
+  { table: 'emailVerifications', column: 'userId' },
+  // League rows are per-user too: leaving them would keep a ghost entry in
+  // this week's standings (rendered as Singer-<id>) and a point history for
+  // an account that asked to be erased. Safe to reference unconditionally:
+  // deploy-db.yml applies migrations before deploying the worker, so this
+  // code never runs against a database missing migration 0005's tables.
+  { table: 'leagueMembership', column: 'userId' },
+  { table: 'leaguePointEvents', column: 'userId' },
+  // Credits and entitlements go with the account. Stripe remains the
+  // authoritative financial record (and keeps its own retention), so this
+  // erases our copy without destroying the accounting trail.
+  { table: 'creditLedger', column: 'userId' },
+  { table: 'entitlements', column: 'userId' },
+]
+
+/**
+ * Hard-delete the caller's account and everything owned by it (GDPR Art. 17).
+ * Irreversible, and deliberately so: a soft delete would leave exactly the
+ * personal data the request is asking us to remove.
+ *
+ * Unspent credits are forfeited — the client confirms that before calling.
+ *
+ * Safe to run without touching Stripe: checkout is `mode: 'payment'` (one-off
+ * credit packs, see billing.ts), so there is no subscription left billing a
+ * deleted account. The Stripe customer object survives at Stripe under its own
+ * financial-records retention; dropping `users.stripeCustomerId` with the row
+ * severs our link to it.
+ *
+ * A second call with the same token 401s — `getAuth` can no longer resolve the
+ * user — so this is naturally idempotent from the client's point of view.
+ */
+async function handleDeleteMe(request: Request, env: Env, respond: Respond): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const { userId } = auth
+
+  const statements = [
+    ...USER_OWNED_TABLES.map(({ table, column }) =>
+      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(userId),
+    ),
+    env.DB.prepare('DELETE FROM follows WHERE userId = ? OR followedUserId = ?').bind(userId, userId),
+    env.DB.prepare('DELETE FROM userProfiles WHERE id = ?').bind(userId),
+    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
+  ]
+
+  // One batch so a mid-way failure can't strand a user row without its data
+  // (or, worse, orphaned data without its user).
+  await env.DB.batch(statements)
+
+  return respond({ ok: true, deleted: userId })
+}
+
 /** Route /api/auth/* requests. Returns null when the path doesn't match. */
 export async function handleAuth(
   request: Request,
   env: Env,
   pathname: string,
   respond: Respond,
+  ctx?: ExecutionContext,
 ): Promise<Response | null> {
   if (!pathname.startsWith('/api/auth/')) return null
   if (!env.JWT_SECRET) {
@@ -1011,6 +1476,17 @@ export async function handleAuth(
 
   if (route === 'me' && request.method === 'GET') {
     return handleMe(request, env, respond)
+  }
+  if (route === 'me' && request.method === 'DELETE') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'delete-account')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleDeleteMe(request, env, respond)
   }
   if (route === 'logout' && request.method === 'POST') {
     return handleLogout(request, env, respond)
@@ -1026,11 +1502,27 @@ export async function handleAuth(
     const rl = await checkRateLimit(env.DB, ip, 'verify-email')
     if (!rl.allowed) {
       return respond(
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
+      )
+    }
+    return handleVerifyEmail(request, env)
+  }
+  if (route === 'reset-password' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'reset-password')
+    if (!rl.allowed) {
+      return respond(
         { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
         { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
       )
     }
-    return handleVerifyEmail(request, env)
+    return handleResetPasswordCheck(request, env, respond)
   }
   if (request.method !== 'POST') {
     return respond({ error: 'Method not allowed' }, { status: 405 })
@@ -1041,7 +1533,9 @@ export async function handleAuth(
   const rl = await checkRateLimit(env.DB, ip, route)
   if (!rl.allowed) {
     return respond(
-      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      {
+        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+      },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
     )
   }
@@ -1066,6 +1560,10 @@ export async function handleAuth(
       return handleLogin(body, env, respond)
     case 'google':
       return handleGoogle(body, env, respond)
+    case 'forgot-password':
+      return handleForgotPassword(request, body, env, respond, ctx)
+    case 'reset-password':
+      return handleResetPassword(body, env, respond)
     default:
       return respond({ error: 'Not found' }, { status: 404 })
   }

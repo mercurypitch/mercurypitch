@@ -236,7 +236,10 @@ export function notesToMelodyItems(input: string): MelodyItem[] {
       id: i + 1,
       note: {
         midi,
-        name: midiToNoteName(midi) as NoteName,
+        // midiToNoteName includes the octave ("G4"); NoteName is the bare
+        // letter and renderers append `octave` themselves — storing "G4"
+        // here displayed as "G44".
+        name: midiToNoteName(midi).replace(/-?\d+$/, '') as NoteName,
         octave: Math.floor(midi / 12) - 1,
         freq: midiToFrequency(midi),
       },

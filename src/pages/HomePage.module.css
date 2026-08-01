@@ -2,6 +2,9 @@
   max-width: 920px;
   margin: 0 auto;
   padding: 20px 16px 48px;
+  /* .main-content is a flex column; without this the page clips instead
+     of scrolling (same rule every page follows — see PathPage). */
+  flex-shrink: 0;
 }
 
 .head {
@@ -339,4 +342,61 @@
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Account nudge (earned moment) ───────────────────────────────
+   Shown in the streak card once a streak is worth protecting. Sized
+   and coloured to read as a note, not an interstitial — it must never
+   look like it is blocking the card it sits in. */
+
+.accountNudge {
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.accountNudgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accountNudgeCta {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.accountNudgeCta:hover {
+  background: var(--accent-hover);
+}
+
+.accountNudgeSkip {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.accountNudgeSkip:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
 }

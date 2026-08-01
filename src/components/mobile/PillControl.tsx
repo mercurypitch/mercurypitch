@@ -15,6 +15,8 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import styles from './PillControl.module.css'
 
 interface PillControlProps {
@@ -51,56 +53,29 @@ export const PillControl: Component<PillControlProps> = (props) => {
     if (collapseTimer) clearTimeout(collapseTimer)
   })
 
-  let rootRef: HTMLButtonElement | undefined
-  let pointerId: number | null = null
   let startY = 0
   let startLevel = 0
   let dragged = false
 
-  const onPointerDown = (e: PointerEvent): void => {
-    pointerId = e.pointerId
-    startY = e.clientY
-    startLevel = props.level
-    dragged = false
-    setExpanded(true)
-    if (collapseTimer) clearTimeout(collapseTimer)
-    try {
-      rootRef?.setPointerCapture(e.pointerId)
-    } catch {
-      /* pointer already gone — the move/up guards still match by id */
-    }
-  }
-
-  const onPointerMove = (e: PointerEvent): void => {
-    if (pointerId !== e.pointerId) return
-    const dy = startY - e.clientY
-    if (!dragged && Math.abs(dy) < DRAG_THRESHOLD_PX) return
-    dragged = true
-    const range = props.dragRange ?? 70
-    props.onLevel(Math.max(0, Math.min(1, startLevel + dy / range)))
-  }
-
-  const onPointerUp = (e: PointerEvent): void => {
-    if (pointerId !== e.pointerId) return
-    pointerId = null
-    try {
-      rootRef?.releasePointerCapture(e.pointerId)
-    } catch {
-      /* capture never took */
-    }
-    if (!dragged) props.onTap()
-    scheduleCollapse()
-  }
-
-  const onPointerCancel = (e: PointerEvent): void => {
-    if (pointerId !== e.pointerId) return
-    pointerId = null
-    try {
-      rootRef?.releasePointerCapture(e.pointerId)
-    } catch {
-      /* capture never took */
-    }
-    scheduleCollapse()
+  const pillDrag: DragGestureOptions = {
+    onStart: (event) => {
+      startY = event.clientY
+      startLevel = props.level
+      dragged = false
+      setExpanded(true)
+      if (collapseTimer) clearTimeout(collapseTimer)
+    },
+    onMove: (event) => {
+      const dy = startY - event.clientY
+      if (!dragged && Math.abs(dy) < DRAG_THRESHOLD_PX) return
+      dragged = true
+      const range = props.dragRange ?? 70
+      props.onLevel(Math.max(0, Math.min(1, startLevel + dy / range)))
+    },
+    onEnd: (_event, reason) => {
+      if (reason === 'pointerup' && !dragged) props.onTap()
+      scheduleCollapse()
+    },
   }
 
   const onClick = (e: MouseEvent): void => {
@@ -109,17 +84,13 @@ export const PillControl: Component<PillControlProps> = (props) => {
 
   return (
     <button
-      ref={rootRef}
+      ref={(element) => dragGesture(element, () => pillDrag)}
       classList={{
         [styles.pill]: true,
         [styles.off]: props.off,
         [styles.expanded]: expanded(),
         [props.class ?? '']: props.class !== undefined,
       }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
       onClick={onClick}
       title={props.title}
       aria-label={props.ariaLabel}

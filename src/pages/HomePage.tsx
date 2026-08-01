@@ -7,12 +7,13 @@
 // new launch or scoring infra.
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createResource, For, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { getStreakState, repairStreak } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
+import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
 import { AscentCard } from '@/features/path/AscentCard'
 import type { SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
@@ -86,9 +87,21 @@ const HomePage: Component = () => {
     void refetchStreak()
   }
 
+  // The account nudge, gated on an earned moment: a streak of two or
+  // more, and only while the ask is due. Dismissing it locally as well
+  // as persistently means it disappears immediately rather than on the
+  // next mount.
+  const [streakNudgeOpen, setStreakNudgeOpen] = createSignal(true)
+  const showStreakNudge = (): boolean =>
+    streakNudgeOpen() &&
+    (streak()?.currentStreak ?? 0) >= 2 &&
+    shouldShowNudge('streak-day-2')
+
   return (
     <div class={styles.page}>
-      <header class={styles.head}>
+      {/* A <div>, not <header>: the global app-bar CSS targets header and
+          adds padding plus a doubled safe-area inset on phones. */}
+      <div class={styles.head}>
         <h1 class={styles.greeting}>{greeting()}</h1>
         <p class={styles.date}>
           {new Date().toLocaleDateString(undefined, {
@@ -97,7 +110,7 @@ const HomePage: Component = () => {
             day: 'numeric',
           })}
         </p>
-      </header>
+      </div>
 
       <div class={styles.grid}>
         {/* ── Streak ─────────────────────────────────────────── */}
@@ -113,11 +126,9 @@ const HomePage: Component = () => {
               <div class={styles.streakNumber}>
                 {streak()?.currentStreak ?? 0}
               </div>
-              <div class={styles.streakLabel}>
-                {(streak()?.currentStreak ?? 0) === 1
-                  ? 'day streak'
-                  : 'day streak'}
-              </div>
+              {/* Invariant on purpose — "5 day streak" reads as a compound,
+                  so there is nothing to pluralise. */}
+              <div class={styles.streakLabel}>day streak</div>
             </div>
             <div
               class={styles.freezes}
@@ -162,6 +173,39 @@ const HomePage: Component = () => {
             <button class={styles.repairBtn} onClick={() => void onRepair()}>
               Repair streak — restore {streak()!.repairableStreak} days (free)
             </button>
+          </Show>
+
+          {/* Earned moment: two days in a row is the point a streak
+              starts being worth protecting. Asked once, then quiet for a
+              week; never blocks anything. */}
+          <Show when={showStreakNudge()}>
+            <div class={styles.accountNudge}>
+              <span>
+                {streak()?.currentStreak} days in a row. Keep the streak on an
+                account so a new device doesn't reset it.
+              </span>
+              <div class={styles.accountNudgeRow}>
+                <button
+                  class={styles.accountNudgeCta}
+                  onClick={() => {
+                    satisfyNudge('streak-day-2')
+                    setStreakNudgeOpen(false)
+                    window.location.hash = '#/settings/account'
+                  }}
+                >
+                  Create a free account
+                </button>
+                <button
+                  class={styles.accountNudgeSkip}
+                  onClick={() => {
+                    dismissNudge('streak-day-2')
+                    setStreakNudgeOpen(false)
+                  }}
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
           </Show>
         </section>
 

@@ -27,6 +27,15 @@ export interface UserProfile extends DbEntity {
   /** When the streak last reset to 1 (drives the 72h repair window). */
   streakResetDate?: string | null // YYYY-MM-DD
   lastRepairDate?: string | null // YYYY-MM-DD (repair allowed once per 30 days)
+  /**
+   * Consent to appear on the public leaderboard. Off unless explicitly set:
+   * qualifying on activity is necessary but not sufficient — nobody is
+   * published without saying yes.
+   */
+  leaderboardOptIn?: boolean
+  leaderboardOptInAt?: string | null
+  /** Shareable friend code (registered accounts only; server-minted). */
+  friendCode?: string | null
 }
 
 // ── Sessions & Practice Results ─────────────────────────────────
@@ -54,6 +63,13 @@ export interface PracticeResultRecord {
   noteResult: NoteResultRecord[]
 }
 
+/**
+ * What kind of attempt produced a SessionRecord. Only fixed tasks are
+ * publicly ranked — 'practice' is free singing over a self-chosen melody,
+ * which is not comparable between people (see leaderboardConfig).
+ */
+export type SessionSource = 'practice' | 'challenge' | 'weekly' | 'exercise'
+
 export interface SessionRecord extends DbEntity {
   userId: string
   melodyId?: string
@@ -69,7 +85,64 @@ export interface SessionRecord extends DbEntity {
   rating?: string
   /** Set when this attempt was a weekly "Sing the Legend" challenge take. */
   weeklyChallengeId?: string
+  /** Drives leaderboard eligibility. Older rows predate it — treat as 'practice'. */
+  source?: SessionSource
   results: PracticeResultRecord[]
+}
+
+// ── Zen Singing Takes ───────────────────────────────────────────
+
+/**
+ * Local-only snapshot of one completed Zen canvas pass. The pitch contour is
+ * stored as compact positional tuples in traceJson; it is never routed through
+ * the cloud adapter.
+ */
+export interface ZenTakeRecord extends DbEntity {
+  mode: 'monitor' | 'exercise'
+  takeNumber: number
+  exerciseId?: string
+  exerciseVersion?: number
+  rootMidi?: number
+  completedAt: number
+  durationSec: number
+  traceVersion: 1
+  traceJson: string
+  viewportMinMidi: number
+  viewportMaxMidi: number
+  scoreTotal?: number
+  scorePitch?: number
+  scoreCoverage?: number
+  scoreSteadiness?: number
+  scoreAverageCents?: number
+}
+
+// ── Voiceprints ─────────────────────────────────────────────────
+
+/** Where a voiceprint was measured. */
+export type VoiceprintSource = 'onboarding' | 'mirror'
+
+/**
+ * A singer's measured voice at one moment: range, accuracy, steadiness,
+ * and the legend their range overlaps with.
+ *
+ * Derived numbers only — no audio and no pitch frames. `takenAt` is when
+ * they actually sang, which may predate `createdAt` for a take made
+ * anonymously and uploaded on sign-in.
+ */
+export interface Voiceprint extends DbEntity {
+  userId: string
+  /** JSON-encoded MirrorSummary (src/lib/mirror/metrics.ts). */
+  summary: {
+    lowMidi: number | null
+    highMidi: number | null
+    semitones: number | null
+    accuracy: number | null
+    steadiness: number | null
+  }
+  /** e.g. 'Freddie Mercury'; absent when no range was measured. */
+  twin?: string
+  source: VoiceprintSource
+  takenAt: string
 }
 
 // ── Challenges ──────────────────────────────────────────────────
@@ -174,6 +247,69 @@ export interface LeaderboardEntry extends DbEntity {
   accuracy: number
 }
 
+// ── Leagues (weekly promotion ladder) ───────────────────────────
+// Foundation data model for the Duolingo-style weekly league (see
+// docs — league-system-plan). League config lives in `leagues` rows
+// (admin-editable); cohorts/membership/point-events are server-written
+// only. Leagues are a REGISTERED-users-only surface (enforced on the
+// award/cut request path, not in these types).
+
+/** One of the seven ascending league rungs (l1..l7); l7 is the mystery. */
+export interface League extends DbEntity {
+  rank: number // 1..7, ascending
+  name: string // branded rung name; '???' while a mystery
+  /** Hero sculpture for the rung card ('/leagues/lN.webp' or R2 key). */
+  trophyAsset: string | null
+  /** Flat enamel badge for small sizes; null falls back to trophyAsset. */
+  badgeAsset: string | null
+  /** True for a locked "coming soon" rung (l7) until it is revealed. */
+  isMystery: boolean
+  promoteCount: number // top N of a cohort promote up a rung
+  relegateCount: number // bottom M relegate down a rung (0 = safe rung)
+}
+
+/**
+ * A league instance for one ISO week (one global cohort per league/week at
+ * launch). Immutable once minted, so it carries `createdAt` but no
+ * `updatedAt` — hence it does not extend {@link DbEntity}.
+ */
+export interface LeagueCohort {
+  id: string
+  createdAt: string // ISO 8601
+  leagueId: string
+  weekStart: string // ISO Monday 00:00 UTC
+}
+
+/**
+ * A user's standing in the current ISO week. Created then mutated in place as
+ * points accrue, so it carries `updatedAt` but no `createdAt` — hence it does
+ * not extend {@link DbEntity}. `points` resets to 0 each Monday.
+ */
+export interface LeagueMembership {
+  id: string
+  updatedAt: string // ISO 8601
+  userId: string
+  cohortId: string
+  weekStart: string // ISO Monday 00:00 UTC
+  points: number
+}
+
+/**
+ * The single-row (id='default') tunable point weights. Mirrors the pure
+ * calculator's config in workers/db-worker/src/league-points.ts (which omits
+ * these DbEntity bookkeeping fields).
+ */
+export interface LeaguePointsConfig extends DbEntity {
+  exerciseBase: number
+  challengeBase: number
+  weeklyBase: number
+  scoreDivisor: number
+  dailyVarietyBonus: number
+  goalMetBonus: number
+  streakMilestoneBonus: number
+  milestoneEvery: number
+}
+
 // ── Shared Content ──────────────────────────────────────────────
 
 export interface SharedMelody extends DbEntity {
@@ -275,6 +411,13 @@ export interface UvrSessionRecord extends DbEntity {
   provider?: string
   numChunks?: number
   processingTime?: number
+  /** Wall-clock ms of the instrumental-split second pass (drums/bass/…). */
+  splitTime?: number
+  /** RunPod session id of an IN-FLIGHT instrumental split — persisted
+   *  before polling (like apiSessionId for the main separation) so a
+   *  reload re-attaches instead of orphaning the paid job. Cleared when
+   *  the split settles. */
+  splitApiSessionId?: string
   error?: string
   vocalStemId?: string // FK -> uvrStemBlobs.id
   instrumentalStemId?: string
@@ -287,9 +430,28 @@ export interface UvrSessionRecord extends DbEntity {
   groupId?: string
 }
 
+/** Every stem a blob row can hold. 'original' is the uploaded source file;
+ *  the part stems (drums/bass/guitar/piano/other) come from splitting the
+ *  instrumental. Dexie indexes stemType as a plain index, so widening this
+ *  union needs no schema migration. */
+export type UvrStemType =
+  | 'vocal'
+  | 'instrumental'
+  | 'original'
+  | 'drums'
+  | 'bass'
+  | 'guitar'
+  | 'piano'
+  | 'other'
+
 export interface UvrStemBlob extends DbEntity {
   sessionId: string // matches UvrSession.sessionId from app-store
-  stemType: 'vocal' | 'instrumental' | 'original'
+  stemType: UvrStemType
+  /** Stem this one was derived from — 'instrumental' for the part stems
+   *  produced by splitting it into drums/bass/guitar/other. */
+  derivedFrom?: UvrStemType
+  /** Server registry model that produced it (e.g. 'demucs-6s'). */
+  producedBy?: string
   mimeType: string // 'audio/wav' | 'audio/mpeg'
   data: ArrayBuffer // binary audio data
   size: number // byte size

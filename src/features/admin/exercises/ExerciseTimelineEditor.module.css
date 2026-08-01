@@ -1,0 +1,374 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  container: timeline-editor / inline-size;
+  color: var(--studio-ink, #edf3fc);
+}
+
+.header,
+.eventListHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.header {
+  margin-bottom: 12px;
+}
+
+.header h3,
+.eventListHeading h4 {
+  margin: 0;
+  color: #edf3fc;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.header h3 {
+  font-size: 1rem;
+}
+
+.eventListHeading h4 {
+  font-size: 0.88rem;
+}
+
+.header p,
+.eventListHeading p {
+  max-width: 70ch;
+  margin: 4px 0 0;
+  color: #a7b3c7;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.tools {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.tools button,
+.rowActions button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 6px 11px;
+  border: 1px solid #364156;
+  border-radius: 9px;
+  color: #e9eff9;
+  background: #171e2b;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.tools button:hover:not(:disabled),
+.rowActions button:hover:not(:disabled) {
+  border-color: #60708b;
+  background: #1d2635;
+}
+
+.tools button:focus-visible,
+.rowActions button:focus-visible,
+.eventRow input:focus-visible,
+.eventRow select:focus-visible,
+.timelineSurface:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.tools button:disabled,
+.rowActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.tools kbd {
+  min-width: 20px;
+  padding: 2px 5px;
+  border: 1px solid #45516a;
+  border-radius: 5px;
+  color: #bac6d8;
+  background: #0d121b;
+  font:
+    0.62rem/1.15 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.timelineSurface {
+  position: relative;
+  overflow: hidden;
+  min-height: 310px;
+  border: 1px solid #2a3344;
+  border-radius: 14px;
+  background: #070a10;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 350px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.keyboardHelp {
+  margin: 9px 2px 0;
+  color: #91a0b7;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.srStatus {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.eventListHeading {
+  margin: 24px 0 10px;
+}
+
+.eventListHeading > span {
+  flex: 0 0 auto;
+  color: #92a0b6;
+  font:
+    0.68rem/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.eventRow {
+  display: grid;
+  grid-template-columns:
+    minmax(76px, 0.72fr) minmax(118px, 1.35fr)
+    repeat(4, minmax(80px, 0.82fr)) minmax(86px, 0.7fr) auto;
+  align-items: end;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #283247;
+  border-radius: 11px;
+  background: #111722;
+  transition:
+    border-color 140ms ease-out,
+    background 140ms ease-out;
+}
+
+.eventRow:hover {
+  border-color: #3c4b63;
+}
+
+.eventRow.selected {
+  border-color: color-mix(in srgb, #f59e0b 62%, #2a3344);
+  background: color-mix(in srgb, #f59e0b 6%, #111722);
+}
+
+.eventRow label,
+.endPitchPlaceholder {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eventRow label > span,
+.endPitchPlaceholder > span {
+  color: #9daac0;
+  font-size: 0.62rem;
+  font-weight: 620;
+}
+
+.eventRow input,
+.eventRow select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #344057;
+  border-radius: 7px;
+  color: #edf3fc;
+  background: #0b1019;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.eventRow input:disabled,
+.eventRow select:disabled {
+  color: #8794a8;
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.eventRow small,
+.endPitchPlaceholder small {
+  overflow: hidden;
+  color: #8796ac;
+  font:
+    0.58rem/1.2 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cueField {
+  min-width: 108px;
+}
+
+.showCueField {
+  min-height: 34px;
+  flex-direction: row !important;
+  align-items: center;
+  align-self: end;
+  gap: 7px !important;
+  padding: 0 4px 5px;
+}
+
+.showCueField input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: #f59e0b;
+}
+
+.showCueField span {
+  color: #c4cede !important;
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  align-self: end;
+  gap: 6px;
+}
+
+.rowActions button {
+  min-height: 34px;
+  padding-inline: 9px;
+}
+
+.rowActions .remove {
+  border-color: color-mix(in srgb, #ef6b73 34%, #364156);
+  color: #ffadb2;
+}
+
+.empty {
+  display: flex;
+  min-height: 112px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 20px;
+  border: 1px dashed #39465d;
+  border-radius: 12px;
+  color: #9ba8bc;
+  text-align: center;
+}
+
+.empty strong {
+  color: #e2e9f4;
+  font-size: 0.84rem;
+}
+
+.empty span {
+  max-width: 55ch;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+@container timeline-editor (max-width: 900px) {
+  .eventRow {
+    grid-template-columns:
+      minmax(80px, 0.7fr) minmax(130px, 1.4fr)
+      repeat(3, minmax(84px, 0.8fr));
+  }
+
+  .showCueField,
+  .rowActions,
+  .endPitchPlaceholder {
+    align-self: stretch;
+  }
+
+  .rowActions {
+    align-items: end;
+    justify-content: flex-end;
+  }
+}
+
+@container timeline-editor (max-width: 680px) {
+  .header,
+  .eventListHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tools {
+    width: 100%;
+  }
+
+  .tools button {
+    min-height: 44px;
+    flex: 1;
+  }
+
+  .timelineSurface {
+    min-height: 280px;
+  }
+
+  .canvas {
+    height: 310px;
+  }
+
+  .eventRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .cueField,
+  .rowActions {
+    grid-column: 1 / -1;
+  }
+
+  .eventRow input,
+  .eventRow select,
+  .rowActions button {
+    min-height: 44px;
+  }
+
+  .showCueField {
+    min-height: 44px;
+  }
+
+  .rowActions button {
+    flex: 1;
+  }
+}
+
+@container timeline-editor (max-width: 380px) {
+  .eventRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

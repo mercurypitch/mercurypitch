@@ -7,7 +7,7 @@ import { DexieAdapter } from './adapters/dexie-adapter'
 import { HybridAdapter } from './adapters/hybrid-adapter'
 import { ServerAdapter } from './adapters/server-adapter'
 import { seedAll } from './seed'
-import { ensureAuth } from './services/auth-service'
+import { requireAuth, restoreAuth } from './services/auth-service'
 import { getAuthHeaders } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
@@ -24,7 +24,14 @@ function resolveAdapter(): DatabaseAdapter {
   if (API_BASE_URL != null && API_BASE_URL !== '') {
     console.info('[db] using HybridAdapter →', API_BASE_URL)
     return new HybridAdapter(
-      new ServerAdapter({ baseUrl: API_BASE_URL, headers: getAuthHeaders }),
+      new ServerAdapter({
+        baseUrl: API_BASE_URL,
+        headers: getAuthHeaders,
+        // Cloud writes are what make a visitor a user: provision the
+        // anonymous identity here rather than at startup, so a browse-only
+        // visit leaves no server-side rows.
+        beforeWrite: requireAuth,
+      }),
       new DexieAdapter(),
     )
   }
@@ -56,10 +63,11 @@ export async function createDatabase(): Promise<DatabaseAdapter> {
   const adapter = resolveAdapter()
 
   if (adapter instanceof HybridAdapter) {
-    // Get an anonymous JWT before the first repository call. Cloud
-    // tables are seeded server-side; the local side only holds
-    // unseeded UVR data. Failure is non-fatal (offline-tolerant).
-    await ensureAuth()
+    // Restore an existing session only — never mint one here. A returning
+    // user is authenticated before the first repository call; a first-time
+    // visitor stays anonymous-local until they write something (see the
+    // adapter's beforeWrite hook). Failure is non-fatal (offline-tolerant).
+    await restoreAuth()
   }
 
   // Seed sample data on first run (local adapter only — server seeds itself)
@@ -124,4 +132,5 @@ export type {
   UvrSessionLyrics,
   WhisperTranscriptionRecord,
   UserSurveyResponse,
+  ZenTakeRecord,
 } from './entities'

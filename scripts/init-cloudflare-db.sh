@@ -3,8 +3,8 @@
 # init-cloudflare-db.sh — create & initialize the MercuryPitch D1 DB
 #
 # Creates the D1 database (if missing), writes its database_id into
-# workers/db-worker/wrangler.jsonc, and applies schema.sql locally
-# and remotely.
+# workers/db-worker/wrangler.jsonc, and applies the tracked migrations
+# (workers/db-worker/migrations/) locally and remotely.
 #
 # The cloud DB holds ONLY user/social data (users, profiles, session
 # scores, challenges, badges, leaderboard, settings, shared content).
@@ -30,7 +30,6 @@ MODE="${1:-all}"
 DEPLOY_ENV="${2:-prod}"
 
 CONFIG="workers/db-worker/wrangler.jsonc"
-SCHEMA="workers/db-worker/schema.sql"
 WRANGLER="pnpm exec wrangler"
 
 if [ "$DEPLOY_ENV" = "dev" ]; then
@@ -47,7 +46,7 @@ apply_local() {
   # Local D1 state is shared via the top-level binding (no --env), so
   # `pnpm dev:db` always finds it.
   echo "→ Applying schema to LOCAL D1 (.wrangler/state)..."
-  $WRANGLER d1 execute mercurypitch-db --local --file="$SCHEMA" --config "$CONFIG"
+  $WRANGLER d1 migrations apply mercurypitch-db --local --config "$CONFIG"
 }
 
 apply_remote() {
@@ -80,7 +79,7 @@ apply_remote() {
 
   # 3. Apply the schema remotely (idempotent: CREATE IF NOT EXISTS)
   echo "→ Applying schema to REMOTE D1 ($DB_NAME)..."
-  $WRANGLER d1 execute "$DB_NAME" --remote --file="$SCHEMA" --config "$CONFIG" "${ENV_FLAG[@]}"
+  $WRANGLER d1 migrations apply "$DB_NAME" --remote --config "$CONFIG" "${ENV_FLAG[@]}"
 }
 
 case "$MODE" in

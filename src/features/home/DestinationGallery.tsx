@@ -1,3 +1,13 @@
+// ============================================================
+// DestinationGallery — the Home page's card grid
+// ============================================================
+//
+// `HOME_DESTINATIONS` is the content; the component is the renderer. Adding a
+// card means adding an entry there and, if it needs new artwork, a
+// `DestinationVisual` variant with matching CSS. Each card targets a tab via
+// `setActiveTab`, so a card pointing at a tab that is hidden in the current
+// practice scope will render but lead nowhere -- check TAB_SCOPES.
+
 import type { Component, JSX } from 'solid-js'
 import { For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
@@ -6,7 +16,11 @@ import { TAB_ANALYSIS, TAB_EXERCISES, TAB_SINGING, } from '@/features/tabs/const
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
 
-type DestinationVisual = 'practice' | 'karaoke' | 'exercises' | 'analysis'
+export type DestinationVisual =
+  | 'practice'
+  | 'karaoke'
+  | 'exercises'
+  | 'analysis'
 
 type DestinationTarget =
   | { kind: 'tab'; tab: ActiveTab }
@@ -466,22 +480,41 @@ function AnalysisVisual(): JSX.Element {
   )
 }
 
-function DestinationArtwork(props: { visual: DestinationVisual }): JSX.Element {
+/**
+ * The cover artwork on its own, so surfaces other than this gallery can
+ * show the same rooms without a second set of drawings. The onboarding
+ * Map reveals it behind its compact cards.
+ *
+ * The hover animations live on `.cover:hover` in this module, so a
+ * caller outside a `.cover` gets the artwork at rest and drives its own
+ * motion — which is what the Map wants.
+ */
+export function DestinationArtwork(props: {
+  visual: DestinationVisual
+  /**
+   * Strip the artwork's own captions and mascot. They are sized for a
+   * full-width cover; at card scale they are unreadable and collide
+   * with the card's real copy, which reads as a rendering bug.
+   */
+  compact?: boolean
+}): JSX.Element {
   return (
-    <Switch>
-      <Match when={props.visual === 'practice'}>
-        <PracticeVisual />
-      </Match>
-      <Match when={props.visual === 'karaoke'}>
-        <KaraokeVisual />
-      </Match>
-      <Match when={props.visual === 'exercises'}>
-        <ExercisesVisual />
-      </Match>
-      <Match when={props.visual === 'analysis'}>
-        <AnalysisVisual />
-      </Match>
-    </Switch>
+    <div class={props.compact === true ? styles.artCompact : undefined}>
+      <Switch>
+        <Match when={props.visual === 'practice'}>
+          <PracticeVisual />
+        </Match>
+        <Match when={props.visual === 'karaoke'}>
+          <KaraokeVisual />
+        </Match>
+        <Match when={props.visual === 'exercises'}>
+          <ExercisesVisual />
+        </Match>
+        <Match when={props.visual === 'analysis'}>
+          <AnalysisVisual />
+        </Match>
+      </Switch>
+    </div>
   )
 }
 

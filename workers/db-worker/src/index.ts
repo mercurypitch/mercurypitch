@@ -17,15 +17,22 @@
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
+import { handleGuidedExerciseRequest } from './guided-exercises'
+import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import type { TableDef } from './tables'
-import { TABLES } from './tables'
+import { maskPublicRow, TABLES } from './tables'
+import { validateWrite } from './validation'
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods':
+    'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
   // Spec quirk: a `*` wildcard does NOT cover the Authorization header
   // (Firefox already warns it will block it) — list everything we use.
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Key',
+  'Access-Control-Allow-Headers':
+    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key',
+  'Access-Control-Expose-Headers':
+    'Accept-Ranges, Content-Length, Content-Range, ETag',
 }
 
 /**
@@ -198,7 +205,11 @@ function scopeRead(
       return {}
     }
     case 'shared': {
-      if (auth) return { clause: '("isPublic" = 1 OR "userId" = ?)', binds: [auth.userId] }
+      if (auth)
+        return {
+          clause: '("isPublic" = 1 OR "userId" = ?)',
+          binds: [auth.userId],
+        }
       return { clause: '"isPublic" = 1', binds: [] }
     }
     default:
@@ -207,7 +218,12 @@ function scopeRead(
 }
 
 /** Check whether an existing row may be written by this requester. */
-function canWriteRow(def: TableDef, row: Row, auth: AuthUser | null, admin: boolean): boolean {
+function canWriteRow(
+  def: TableDef,
+  row: Row,
+  auth: AuthUser | null,
+  admin: boolean,
+): boolean {
   switch (def.access) {
     case 'admin':
       return admin
@@ -227,6 +243,7 @@ async function handleList(
   auth: AuthUser | null,
   env: Env,
   countOnly: boolean,
+  admin = false,
 ): Promise<Response> {
   const q = parseListQuery(url)
   if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
@@ -251,7 +268,9 @@ async function handleList(
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
   if (countOnly) {
-    const result = await env.DB.prepare(`SELECT COUNT(*) AS count FROM "${entity}"${where}`)
+    const result = await env.DB.prepare(
+      `SELECT COUNT(*) AS count FROM "${entity}"${where}`,
+    )
       .bind(...binds)
       .first<{ count: number }>()
     return respond({ count: result?.count ?? 0 })
@@ -266,12 +285,24 @@ async function handleList(
     binds.push(q.offset)
   }
 
-  const { results } = await env.DB.prepare(sql).bind(...binds).all<Row>()
-  return respond(results.map((r) => fromSql(def, r)) as unknown as object)
+  const { results } = await env.DB.prepare(sql)
+    .bind(...binds)
+    .all<Row>()
+  return respond(
+    results.map((r) =>
+      maskPublicRow(def, fromSql(def, r), auth?.userId ?? null, admin),
+    ) as unknown as object,
+  )
 }
 
-async function fetchRow(entity: string, id: string, env: Env): Promise<Row | null> {
-  return env.DB.prepare(`SELECT * FROM "${entity}" WHERE id = ?`).bind(id).first<Row>()
+async function fetchRow(
+  entity: string,
+  id: string,
+  env: Env,
+): Promise<Row | null> {
+  return env.DB.prepare(`SELECT * FROM "${entity}" WHERE id = ?`)
+    .bind(id)
+    .first<Row>()
 }
 
 async function handleGetById(
@@ -280,6 +311,7 @@ async function handleGetById(
   id: string,
   auth: AuthUser | null,
   env: Env,
+  admin = false,
 ): Promise<Response> {
   const row = await fetchRow(entity, id, env)
   if (!row) return respond({ error: 'Not found' }, { status: 404 })
@@ -287,37 +319,16 @@ async function handleGetById(
   if (def.access === 'user' && (!auth || row.userId !== auth.userId)) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
-  if (def.access === 'shared' && !row.isPublic && (!auth || row.userId !== auth.userId)) {
+  if (
+    def.access === 'shared' &&
+    !row.isPublic &&
+    (!auth || row.userId !== auth.userId)
+  ) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
-  return respond(fromSql(def, row))
+  return respond(maskPublicRow(def, fromSql(def, row), auth?.userId ?? null, admin))
 }
 
-/**
- * Per-entity value validation for writes. Keeps the (server-derived)
- * leaderboard honest — a forged sessionRecords row can't carry impossible
- * numbers. Returns an error message, or null when the body is acceptable.
- */
-function validateWrite(entity: string, body: Row): string | null {
-  if (entity === 'sessionRecords') {
-    const inRange = (v: unknown, lo: number, hi: number): boolean =>
-      v === undefined || (typeof v === 'number' && v >= lo && v <= hi)
-    if (!inRange(body.score, 0, 100)) return 'score must be between 0 and 100'
-    if (!inRange(body.accuracy, 0, 100)) {
-      return 'accuracy must be between 0 and 100'
-    }
-    const nh = body.notesHit
-    const nt = body.notesTotal
-    if (
-      typeof nh === 'number' &&
-      typeof nt === 'number' &&
-      (nh < 0 || nt < 0 || nh > nt)
-    ) {
-      return 'notesHit must be between 0 and notesTotal'
-    }
-  }
-  return null
-}
 
 async function handleCreate(
   entity: string,
@@ -327,7 +338,8 @@ async function handleCreate(
   env: Env,
 ): Promise<Response> {
   if (def.access === 'admin') {
-    if (!isAdmin(request, env)) return respond({ error: 'Admin key required' }, { status: 403 })
+    if (!isAdmin(request, env))
+      return respond({ error: 'Admin key required' }, { status: 403 })
   } else if (!auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -346,12 +358,14 @@ async function handleCreate(
   delete body.id
   delete body.createdAt
   delete body.updatedAt
+  for (const col of def.serverCols ?? []) delete body[col]
   if (auth && def.access !== 'admin' && def.access !== 'owner') {
     body.userId = auth.userId
   }
 
   // userProfiles: the row id IS the user id
-  const id = def.access === 'owner' ? (auth as AuthUser).userId : crypto.randomUUID()
+  const id =
+    def.access === 'owner' ? (auth as AuthUser).userId : crypto.randomUUID()
   if (def.access === 'owner' && (await fetchRow(entity, id, env))) {
     return respond({ error: 'Profile already exists' }, { status: 409 })
   }
@@ -360,7 +374,8 @@ async function handleCreate(
   const binds: SqlValue[] = [id, now, now]
   for (const [col, val] of Object.entries(body)) {
     if (val === undefined) continue
-    if (!IDENT.test(col)) return respond({ error: `Invalid column: ${col}` }, { status: 400 })
+    if (!IDENT.test(col))
+      return respond({ error: `Invalid column: ${col}` }, { status: 400 })
     cols.push(col)
     binds.push(toSql(val))
   }
@@ -368,7 +383,9 @@ async function handleCreate(
   const placeholders = cols.map(() => '?').join(', ')
   const quoted = cols.map((c) => `"${c}"`).join(', ')
   try {
-    await env.DB.prepare(`INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})`)
+    await env.DB.prepare(
+      `INSERT INTO "${entity}" (${quoted}) VALUES (${placeholders})`,
+    )
       .bind(...binds)
       .run()
   } catch (err) {
@@ -377,6 +394,18 @@ async function handleCreate(
   }
 
   const row = (await fetchRow(entity, id, env)) as Row
+
+  // A saved practice attempt is the league's points source (server-side, so
+  // the award can't be called directly by a client). Never blocks the save.
+  if (entity === 'sessionRecords' && auth) {
+    await awardForSessionRecord(env, auth.userId, {
+      id,
+      source: row.source as string | null,
+      score: row.score as number | null,
+      melodyName: row.melodyName as string | null,
+    })
+  }
+
   return respond(fromSql(def, row), { status: 201 })
 }
 
@@ -408,19 +437,23 @@ async function handleUpdate(
   delete body.createdAt
   delete body.updatedAt
   delete body.userId // ownership is immutable
+  for (const col of def.serverCols ?? []) delete body[col]
 
   const sets: string[] = ['"updatedAt" = ?']
   const binds: SqlValue[] = [new Date().toISOString()]
   for (const [col, val] of Object.entries(body)) {
     if (val === undefined) continue
-    if (!IDENT.test(col)) return respond({ error: `Invalid column: ${col}` }, { status: 400 })
+    if (!IDENT.test(col))
+      return respond({ error: `Invalid column: ${col}` }, { status: 400 })
     sets.push(`"${col}" = ?`)
     binds.push(toSql(val))
   }
   binds.push(id)
 
   try {
-    await env.DB.prepare(`UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?`)
+    await env.DB.prepare(
+      `UPDATE "${entity}" SET ${sets.join(', ')} WHERE id = ?`,
+    )
       .bind(...binds)
       .run()
   } catch (err) {
@@ -429,6 +462,16 @@ async function handleUpdate(
   }
 
   const updated = (await fetchRow(entity, id, env)) as Row
+
+  // The streak lives on the profile; a raise is the league's "showed up
+  // today" signal. Both bonuses are deduped server-side to once per UTC day
+  // (see awardStreakBonuses), which bounds a scripted client.
+  if (entity === 'userProfiles' && auth) {
+    const prev = Number(row.currentStreak ?? 0)
+    const next = Number(updated.currentStreak ?? 0)
+    if (next > prev) await awardStreakBonuses(env, auth.userId, prev, next)
+  }
+
   return respond(fromSql(def, updated))
 }
 
@@ -480,29 +523,12 @@ function weekStartIso(): string {
   return monday.toISOString()
 }
 
-/** UTC YYYY-MM-DD, `offsetDays` from today. */
-function utcDay(offsetDays: number): string {
-  return new Date(Date.now() + offsetDays * 86_400_000)
-    .toISOString()
-    .slice(0, 10)
-}
-
-/** Current consecutive-day streak (ending today or yesterday) from a set of
- *  practice days — mirrors the client's streak semantics. */
-function streakFromDays(days: Set<string>): number {
-  let cursor = utcDay(0)
-  if (!days.has(cursor)) {
-    cursor = utcDay(-1)
-    if (!days.has(cursor)) return 0
-  }
-  let streak = 0
-  let t = new Date(`${cursor}T00:00:00.000Z`).getTime()
-  while (days.has(new Date(t).toISOString().slice(0, 10))) {
-    streak++
-    t -= 86_400_000
-  }
-  return streak
-}
+// The streak shown here is userProfiles.currentStreak — the same number the
+// app shows its owner. It used to be re-derived from distinct sessionRecords
+// days, which already disagreed with the profile (the real streak counts days
+// that met the ~5-minute practice goal, and forgives gaps via freezes), and
+// restricting the board to eligible sources would have widened the gap: a
+// friend's board entry could read "3 day streak" while their own app said 11.
 
 interface AggRow {
   userId: string
@@ -512,6 +538,201 @@ interface AggRow {
   bestScore: number
   accuracy: number
   totalSessions: number
+  /** Profile's live streak — the same number its owner sees on Home. */
+  streak: number
+  /** Profile's best-ever streak — the sticky half of the publication gate. */
+  longestStreak: number
+}
+
+// ── Leaderboard configuration ────────────────────────────────────────
+//
+// Read from the DB so sources and thresholds are tunable against real numbers
+// without a deploy (same reasoning as pricingPlans). The defaults below are
+// what a fresh/absent row means, and they are the conservative choice: fixed
+// tasks only, opt-in required.
+
+interface LeaderboardConfig {
+  eligibleSources: string[]
+  minStreakDays: number
+  minSessions: number
+  requireOptIn: boolean
+}
+
+const DEFAULT_LEADERBOARD_CONFIG: LeaderboardConfig = {
+  eligibleSources: ['challenge', 'weekly', 'exercise'],
+  minStreakDays: 3,
+  minSessions: 1,
+  requireOptIn: true,
+}
+
+async function loadLeaderboardConfig(env: Env): Promise<LeaderboardConfig> {
+  try {
+    const row = await env.DB.prepare(
+      'SELECT eligibleSources, minStreakDays, minSessions, requireOptIn FROM leaderboardConfig WHERE id = ?',
+    )
+      .bind('default')
+      .first<{
+        eligibleSources: string
+        minStreakDays: number
+        minSessions: number
+        requireOptIn: number
+      }>()
+    if (!row) return DEFAULT_LEADERBOARD_CONFIG
+
+    // A malformed or empty source list would silently rank everything or
+    // nothing; fall back rather than let bad config change who is published.
+    let sources: unknown = null
+    try {
+      sources = JSON.parse(row.eligibleSources)
+    } catch {
+      sources = null
+    }
+    const eligibleSources =
+      Array.isArray(sources) && sources.every((s) => typeof s === 'string') && sources.length > 0
+        ? (sources as string[])
+        : DEFAULT_LEADERBOARD_CONFIG.eligibleSources
+
+    return {
+      eligibleSources,
+      minStreakDays: Number(row.minStreakDays) || 0,
+      minSessions: Number(row.minSessions) || 0,
+      requireOptIn: !!row.requireOptIn,
+    }
+  } catch {
+    // Table missing (pre-migration) — the defaults are the intended policy.
+    return DEFAULT_LEADERBOARD_CONFIG
+  }
+}
+
+// ── Friend codes ─────────────────────────────────────────────────────
+//
+// Following someone used to require finding them on the public leaderboard.
+// Once the board is opt-in and threshold-gated that stops being a discovery
+// surface at all, so friends need their own path in: a short code you can
+// read out loud, paste into a chat, or carry in a link.
+//
+// Crockford base32 minus the ambiguous glyphs (I, L, O, U) — no confusing 0/O
+// or 1/I when someone reads a code aloud, and no accidental English words.
+
+const FRIEND_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+const FRIEND_CODE_LENGTH = 8
+
+function generateFriendCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(FRIEND_CODE_LENGTH))
+  let out = ''
+  for (const b of bytes) out += FRIEND_CODE_ALPHABET[b % FRIEND_CODE_ALPHABET.length]
+  return out
+}
+
+/** Accept the pretty form (`K7QM-2X4B`), lower case, and stray spaces. */
+export function normalizeFriendCode(raw: string): string {
+  return raw.replace(/[\s-]/g, '').toUpperCase()
+}
+
+/**
+ * The caller's friend code, minted on first request. Registered accounts
+ * only: an anonymous identity disappears with a cleared browser, and a dead
+ * entry in someone else's friend list is worse than no entry.
+ */
+async function handleFriendCode(request: Request, env: Env): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  const user = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
+    .bind(auth.userId)
+    .first<{ authProvider: string }>()
+  if (!user || user.authProvider === 'anonymous') {
+    return respond(
+      { error: 'Create an account to add friends' },
+      { status: 403 },
+    )
+  }
+
+  const existing = await env.DB.prepare(
+    'SELECT friendCode FROM userProfiles WHERE id = ?',
+  )
+    .bind(auth.userId)
+    .first<{ friendCode: string | null }>()
+  if (existing?.friendCode) return respond({ code: existing.friendCode })
+
+  // Retry on the (vanishingly unlikely) collision rather than trusting one draw.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateFriendCode()
+    try {
+      const res = await env.DB.prepare(
+        'UPDATE userProfiles SET friendCode = ?, updatedAt = ? WHERE id = ? AND friendCode IS NULL',
+      )
+        .bind(code, new Date().toISOString(), auth.userId)
+        .run()
+      if (res.meta.changes > 0) return respond({ code })
+      // Someone else minted ours concurrently — re-read and return that.
+      const now = await env.DB.prepare(
+        'SELECT friendCode FROM userProfiles WHERE id = ?',
+      )
+        .bind(auth.userId)
+        .first<{ friendCode: string | null }>()
+      if (now?.friendCode) return respond({ code: now.friendCode })
+    } catch {
+      // UNIQUE violation — the code was taken, draw another.
+    }
+  }
+  return respond({ error: 'Could not allocate a code, try again' }, { status: 503 })
+}
+
+/**
+ * Redeem someone's code. Sharing a code IS the consent, so this links both
+ * directions immediately — a pending-request queue would be machinery with
+ * nothing to decide. Both parties must be registered.
+ */
+async function handleFriendRedeem(request: Request, env: Env): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  let body: { code?: string }
+  try {
+    body = await request.json<{ code?: string }>()
+  } catch {
+    return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const code = normalizeFriendCode(body.code ?? '')
+  if (code.length !== FRIEND_CODE_LENGTH) {
+    return respond({ error: 'That code doesn’t look right' }, { status: 400 })
+  }
+
+  const me = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
+    .bind(auth.userId)
+    .first<{ authProvider: string }>()
+  if (!me || me.authProvider === 'anonymous') {
+    return respond({ error: 'Create an account to add friends' }, { status: 403 })
+  }
+
+  const target = await env.DB.prepare(
+    'SELECT id, displayName FROM userProfiles WHERE friendCode = ?',
+  )
+    .bind(code)
+    .first<{ id: string; displayName: string }>()
+  // Same message for "no such code" and "that's you" would be confusing; but
+  // an unknown code must not reveal whether it merely belongs to nobody yet.
+  if (!target) return respond({ error: 'No one found for that code' }, { status: 404 })
+  if (target.id === auth.userId) {
+    return respond({ error: 'That’s your own code' }, { status: 400 })
+  }
+
+  const now = new Date().toISOString()
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
+       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
+         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
+    ).bind(crypto.randomUUID(), now, now, auth.userId, target.id, auth.userId, target.id),
+    env.DB.prepare(
+      `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
+       SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
+         (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
+    ).bind(crypto.randomUUID(), now, now, target.id, auth.userId, target.id, auth.userId),
+  ])
+
+  return respond({ ok: true, userId: target.id, displayName: target.displayName })
 }
 
 async function handleLeaderboard(
@@ -534,6 +755,17 @@ async function handleLeaderboard(
   if (view === 'friends' && !auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
   }
+  // Streak measures showing up, not skill, and it is derived from every
+  // practice day. Among friends that's a fine thing to compare; on a public
+  // board it publishes a behavioural record nobody asked to share.
+  if (category === 'streak' && view !== 'friends') {
+    return respond(
+      { error: 'Streaks rank among friends only' },
+      { status: 400 },
+    )
+  }
+
+  const config = await loadLeaderboardConfig(env)
   const limitRaw = Number(url.searchParams.get('limit'))
   const limit =
     Number.isFinite(limitRaw) && limitRaw > 0
@@ -545,6 +777,13 @@ async function handleLeaderboard(
   // Shared filters on sessionRecords.
   const clauses: string[] = []
   const binds: SqlValue[] = []
+  // Only fixed tasks rank. Averaging scores over self-chosen melodies of
+  // self-chosen difficulty compares nothing — someone repeating one easy
+  // melody would outrank someone working through hard material.
+  clauses.push(
+    `s."source" IN (${config.eligibleSources.map(() => '?').join(', ')})`,
+  )
+  binds.push(...config.eligibleSources)
   if (period === 'weekly') {
     clauses.push('s."endedAt" >= ?')
     binds.push(weekStartIso())
@@ -554,6 +793,13 @@ async function handleLeaderboard(
       '(s."userId" = ? OR s."userId" IN (SELECT "followedUserId" FROM "follows" WHERE "userId" = ?))',
     )
     binds.push((auth as AuthUser).userId, (auth as AuthUser).userId)
+  } else if (config.requireOptIn) {
+    // The public board carries only people who qualified AND said yes. Your
+    // own row is exempt so you can always see where you'd stand.
+    clauses.push(
+      '(s."userId" = ? OR s."userId" IN (SELECT "id" FROM "userProfiles" WHERE "leaderboardOptIn" = 1))',
+    )
+    binds.push(auth?.userId ?? '')
   }
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
@@ -565,29 +811,15 @@ async function handleLeaderboard(
             AVG(s."score") AS score,
             MAX(s."score") AS bestScore,
             AVG(s."accuracy") AS accuracy,
-            COUNT(*) AS totalSessions
+            COUNT(*) AS totalSessions,
+            COALESCE(p."currentStreak", 0) AS streak,
+            COALESCE(p."longestStreak", 0) AS longestStreak
      FROM "sessionRecords" s
      LEFT JOIN "userProfiles" p ON p."id" = s."userId"${where}
      GROUP BY s."userId"`,
   )
     .bind(...binds)
     .all<AggRow>()
-
-  // Distinct practice days per user → consecutive-day streak (computed in JS).
-  const { results: dayRows } = await env.DB.prepare(
-    `SELECT s."userId" AS userId, substr(s."endedAt", 1, 10) AS day
-     FROM "sessionRecords" s${where}
-     GROUP BY s."userId", day`,
-  )
-    .bind(...binds)
-    .all<{ userId: string; day: string }>()
-
-  const daysByUser = new Map<string, Set<string>>()
-  for (const r of dayRows) {
-    const set = daysByUser.get(r.userId) ?? new Set<string>()
-    set.add(r.day)
-    daysByUser.set(r.userId, set)
-  }
 
   const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; streak: number }): number => {
     switch (category) {
@@ -606,7 +838,24 @@ async function handleLeaderboard(
 
   // Load all users' aggregates, then rank + paginate in memory. Fine at the
   // current scale; revisit with a materialized table if the user base grows.
+  const selfId = auth?.userId ?? ''
   const ranked = aggRows
+    // Thresholds apply to the public board only: among friends you asked to
+    // see each other, and a brand-new friend showing 0 is the point. Your own
+    // row always survives so you can see your standing before you qualify.
+    //
+    // The streak gate reads longestStreak, not the current one: qualifying is
+    // something you earn once. Gating on the current streak would drop a
+    // strong player off the board the week they take a break, and re-publish
+    // them without asking when they came back. It runs on the raw aggregate,
+    // before the payload projection below hides streaks from strangers.
+    .filter(
+      (r) =>
+        view === 'friends' ||
+        r.userId === selfId ||
+        (r.totalSessions >= config.minSessions &&
+          r.longestStreak >= config.minStreakDays),
+    )
     .map((r) => ({
       userId: r.userId,
       displayName: r.displayName,
@@ -615,7 +864,13 @@ async function handleLeaderboard(
       bestScore: Math.round(r.bestScore),
       accuracy: Math.round(r.accuracy),
       totalSessions: r.totalSessions,
-      streak: streakFromDays(daysByUser.get(r.userId) ?? new Set<string>()),
+      // Streaks are a behavioural record. The handler already refuses to
+      // RANK on them outside the friends view; the payload must follow the
+      // same rule, or the public board publishes what the sort key hides.
+      // Your own row keeps them so your standing card can show your streak.
+      ...(view === 'friends' || r.userId === selfId
+        ? { streak: r.streak, longestStreak: r.longestStreak }
+        : { streak: 0, longestStreak: 0 }),
     }))
     .sort((a, b) => rankValue(b) - rankValue(a))
 
@@ -685,6 +940,25 @@ const FUNNEL_EVENTS = new Set([
   'glass_card_generated',
   'glass_card_shared',
   'glass_cta_app_click',
+  // First Light onboarding funnel (src/features/onboarding/funnel.ts).
+  // Registered ahead of the client rollout so later phases need no worker
+  // redeploy — same reason as the reserved names below.
+  'onboarding_sky',
+  'onboarding_first_light',
+  'onboarding_fork',
+  'onboarding_voiceprint',
+  'onboarding_twin',
+  'onboarding_map',
+  'onboarding_keep',
+  'onboarding_track_short',
+  'onboarding_track_full',
+  'onboarding_mic_granted',
+  'onboarding_mic_denied',
+  'onboarding_map_room',
+  'onboarding_skipped',
+  'onboarding_done',
+  'onboarding_account_created',
+  'onboarding_account_dismissed',
   // Reserved for the weekly-challenge/email releases, so those client
   // rollouts need no worker redeploy.
   'weekly_join',
@@ -709,7 +983,9 @@ async function handleMirrorEvent(
   const rl = await checkRateLimit(env.DB, ip, 'mirror-event')
   if (!rl.allowed) {
     return respond(
-      { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+      {
+        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+      },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
     )
   }
@@ -754,10 +1030,19 @@ async function handleMirrorEvent(
 
   // Metrics ride along only on results_view, filtered to known numeric keys.
   let metricsJson: string | null = null
-  if (event === 'results_view' && typeof metrics === 'object' && metrics !== null) {
+  if (
+    event === 'results_view' &&
+    typeof metrics === 'object' &&
+    metrics !== null
+  ) {
     const clean: Record<string, number | null> = {}
-    for (const [key, value] of Object.entries(metrics as Record<string, unknown>)) {
-      if (MIRROR_METRIC_KEYS.has(key) && (typeof value === 'number' || value === null)) {
+    for (const [key, value] of Object.entries(
+      metrics as Record<string, unknown>,
+    )) {
+      if (
+        MIRROR_METRIC_KEYS.has(key) &&
+        (typeof value === 'number' || value === null)
+      ) {
         clean[key] = value
       }
     }
@@ -941,8 +1226,7 @@ async function handleWeeklyBoard(
         rank,
         percentile:
           attemptedCount > 0 ? Math.round((100 * rank) / attemptedCount) : 100,
-        beatFounder:
-          row.founderScore !== null && mine.best > row.founderScore,
+        beatFounder: row.founderScore !== null && mine.best > row.founderScore,
         completed: mine.best >= row.targetScore,
       }
     }
@@ -1023,7 +1307,15 @@ async function encoreWeekly(
       ev.evergreen,
     )
     .run()
-  return { ...ev, id, slug, startsAt, endsAt, status: 'active', resultsJson: null }
+  return {
+    ...ev,
+    id,
+    slug,
+    startsAt,
+    endsAt,
+    status: 'active',
+    resultsJson: null,
+  }
 }
 
 /** Resolve the current challenge; lazily activate/close/encore (no cron). */
@@ -1201,7 +1493,12 @@ async function handleWeekly(
       return respond({ error: 'Admin key required' }, { status: 403 })
     return createWeekly(request, env)
   }
-  if (method === 'PATCH' && sub !== '' && sub !== 'board' && sub !== 'archive') {
+  if (
+    method === 'PATCH' &&
+    sub !== '' &&
+    sub !== 'board' &&
+    sub !== 'archive'
+  ) {
     if (!isAdmin(request, env))
       return respond({ error: 'Admin key required' }, { status: 403 })
     return updateWeekly(sub, request, env)
@@ -1249,7 +1546,11 @@ async function handleWeekly(
 // ── Router ───────────────────────────────────────────────────────────
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     if (!originAllowed(request, env)) {
       return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
@@ -1257,7 +1558,7 @@ export default {
       return new Response(null, { headers: CORS })
     }
     try {
-      return await handleRequest(request, env)
+      return await handleRequest(request, env, ctx)
     } catch (err) {
       // Without this boundary an unhandled throw returns Cloudflare's error
       // page with no CORS headers, which the browser surfaces to the app as
@@ -1268,26 +1569,79 @@ export default {
     }
   },
 
-  // Cron (wrangler.jsonc "triggers"): billing reconciliation — the safety
-  // net for lost Stripe webhook deliveries (see reconcileBilling). Runs in
-  // every deployed env; a no-op wherever Stripe isn't configured.
+  // Cron (wrangler.jsonc "triggers"), every 6 hours:
+  //  - billing reconciliation — the safety net for lost Stripe webhook
+  //    deliveries (see reconcileBilling); a no-op wherever Stripe isn't
+  //    configured.
+  //  - the weekly league cut — applies promotions/relegations exactly once
+  //    per ISO week (leagueMeta.lastCutWeekStart is the idempotency marker;
+  //    the other ~27 ticks a week no-op). Each swallows its own errors so
+  //    one can never starve the other.
   async scheduled(
     _controller: ScheduledController,
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
     await reconcileBilling(env)
+    await runWeeklyLeagueCut(env)
   },
 }
 
-async function handleRequest(request: Request, env: Env): Promise<Response> {
+async function handleRequest(
+  request: Request,
+  env: Env,
+  ctx?: ExecutionContext,
+): Promise<Response> {
   const url = new URL(request.url)
 
-  const authResponse = await handleAuth(request, env, url.pathname, respond)
+  const authResponse = await handleAuth(request, env, url.pathname, respond, ctx)
   if (authResponse) return authResponse
 
-  const billingResponse = await handleBilling(request, env, url.pathname, respond)
+  const billingResponse = await handleBilling(
+    request,
+    env,
+    url.pathname,
+    respond,
+  )
   if (billingResponse) return billingResponse
+
+  const isGuidedRoute =
+    url.pathname.startsWith('/api/guided-exercises') ||
+    url.pathname.startsWith('/api/guided-media') ||
+    url.pathname.startsWith('/api/guided-paths') ||
+    url.pathname.startsWith('/api/admin/guided-')
+  if (isGuidedRoute) {
+    if (
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.method !== 'OPTIONS'
+    ) {
+      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
+      if (!rl.allowed) {
+        return respond(
+          {
+            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+          },
+        )
+      }
+    }
+    const guidedResponse = await handleGuidedExerciseRequest(
+      request,
+      env,
+      url,
+      {
+        admin: isAdmin(request, env),
+        corsHeaders: CORS,
+        respond,
+      },
+    )
+    if (guidedResponse !== null) return guidedResponse
+  }
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
     return handleLeaderboard(url, await getAuth(request, env), env)
@@ -1295,6 +1649,38 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
     return handleMirrorEvent(request, env)
+  }
+
+  if (url.pathname === '/api/league/me' && request.method === 'GET') {
+    const auth = await getAuth(request, env)
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    return respond(await getLeagueMe(env, auth.userId))
+  }
+
+  if (url.pathname === '/api/friends/code' && request.method === 'GET') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'friend-code')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleFriendCode(request, env)
+  }
+
+  if (url.pathname === '/api/friends/redeem' && request.method === 'POST') {
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    // Codes are 8 chars from a 32-symbol alphabet, so guessing is hopeless —
+    // but a cap stops anyone trying, and stops a redeem loop spamming follows.
+    const rl = await checkRateLimit(env.DB, ip, 'friend-redeem')
+    if (!rl.allowed) {
+      return respond(
+        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      )
+    }
+    return handleFriendRedeem(request, env)
   }
 
   if (
@@ -1325,7 +1711,8 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 
   const entity = match[1]
   const def = TABLES[entity]
-  if (!def) return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
+  if (!def)
+    return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
 
   const sub = match[2] ? decodeURIComponent(match[2]) : undefined
   const auth = await getAuth(request, env)
@@ -1344,23 +1731,31 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         {
           error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
         },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
   }
 
   if (sub === 'count' && request.method === 'GET') {
-    return handleList(entity, def, url, auth, env, true)
+    return handleList(entity, def, url, auth, env, true, isAdmin(request, env))
   }
 
   if (sub === undefined) {
-    if (request.method === 'GET') return handleList(entity, def, url, auth, env, false)
-    if (request.method === 'POST') return handleCreate(entity, def, request, auth, env)
+    if (request.method === 'GET')
+      return handleList(entity, def, url, auth, env, false, isAdmin(request, env))
+    if (request.method === 'POST')
+      return handleCreate(entity, def, request, auth, env)
     return respond({ error: 'Method not allowed' }, { status: 405 })
   }
 
-  if (request.method === 'GET') return handleGetById(entity, def, sub, auth, env)
-  if (request.method === 'PATCH') return handleUpdate(entity, def, sub, request, auth, env)
-  if (request.method === 'DELETE') return handleDelete(entity, def, sub, request, auth, env)
+  if (request.method === 'GET')
+    return handleGetById(entity, def, sub, auth, env, isAdmin(request, env))
+  if (request.method === 'PATCH')
+    return handleUpdate(entity, def, sub, request, auth, env)
+  if (request.method === 'DELETE')
+    return handleDelete(entity, def, sub, request, auth, env)
   return respond({ error: 'Method not allowed' }, { status: 405 })
 }

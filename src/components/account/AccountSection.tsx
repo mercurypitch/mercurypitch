@@ -2,41 +2,47 @@
 // AccountSection — cloud account management (settings)
 // ============================================================
 //
-// Anonymous-first: everyone gets a silent anonymous identity; this
-// section lets them upgrade to email/password or Google so progress,
-// challenges and leaderboard entries follow them across devices.
-// Karaoke/UVR data stays on-device regardless of login state.
+// An identity is created lazily — the first thing worth saving provisions
+// it — and this section lets it be upgraded to email/password or Google so
+// progress, challenges and leaderboard entries follow the user across
+// devices. Karaoke/UVR data stays on-device regardless of login state.
+// Sign-in / registration itself lives in the shared AuthModal (opened
+// from here and from the header pill); this section shows the state,
+// manages the signed-in profile, and can erase an account outright.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
-import { Eye, EyeOff } from '@/components/icons'
+import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
+import { SupporterBadge } from '@/components/billing/SupporterBadge'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { ensureAuth, fetchMe, googleSignInUrl, loginWithPassword, logout, registerWithPassword, } from '@/db/services/auth-service'
-import { getUserId } from '@/db/services/user-service'
+import { deleteAccount, fetchMe, googleSignInUrl, logout, restoreAuth, } from '@/db/services/auth-service'
+import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
+import { authVersion, getUserId } from '@/db/services/user-service'
+import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
-import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
-import { PasswordRequirements } from './PasswordRequirements'
+import { GoogleMark } from './GoogleMark'
+import { VoiceSection } from './VoiceSection'
 
 // ── Component ───────────────────────────────────────────────────
 
-type FormMode = 'none' | 'login' | 'register'
+type SupporterGrant = NonNullable<ReturnType<typeof supporterEntitlement>>
 
 export const AccountSection: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
 
   const [me, setMe] = createSignal<MeResponse | null>(null)
-  const [mode, setMode] = createSignal<FormMode>('none')
-  const [email, setEmail] = createSignal('')
-  const [password, setPassword] = createSignal('')
-  const [showPassword, setShowPassword] = createSignal(false)
-  const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
+  const [confirmDelete, setConfirmDelete] = createSignal(false)
+  // Supporter status rides along with the account fetch — it is the same
+  // round trip the header already makes, and drives the badge below.
+  const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -83,12 +89,56 @@ export const AccountSection: Component = () => {
 
   async function refreshMe(): Promise<void> {
     setMe(await fetchMe())
+    setSupporter(supporterEntitlement(await fetchBillingMe()))
   }
 
-  onMount(() => {
+  const optIn = (): boolean => me()?.profile?.leaderboardOptIn === true
+
+  /** Persist public-board consent. Writes straight to the owned profile row. */
+  async function setLeaderboardOptIn(next: boolean): Promise<void> {
+    setError('')
+    setBusy(true)
+    try {
+      const db = await getDb()
+      const profiles = db.getRepository<UserProfile>('userProfiles')
+      await profiles.update(getUserId(), {
+        leaderboardOptIn: next,
+        leaderboardOptInAt: next ? new Date().toISOString() : null,
+      })
+      await refreshMe()
+      showNotification(
+        next
+          ? 'You’re on the public leaderboard'
+          : 'Removed from the public leaderboard',
+        'info',
+      )
+    } catch (err) {
+      // Re-read the profile so the checkbox snaps back to the stored value —
+      // checked={optIn()} does not re-render on a failed write by itself,
+      // and a checkbox lying about consent is the one state this section
+      // must never show.
+      await refreshMe().catch(() => undefined)
+      const raw = err instanceof Error ? err.message : String(err)
+      setError(
+        raw.includes('no cloud identity')
+          ? 'Sign in to change your leaderboard listing.'
+          : raw,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Re-fetch on every auth transition — sign-in now happens in the shared
+  // AuthModal, so this section must notice it from the outside (same
+  // pattern as HeaderAccount).
+  createEffect(() => {
+    authVersion()
     if (!cloudConfigured) return
     void (async () => {
-      await ensureAuth()
+      // Restore only: opening Settings → Account is not an action worth
+      // an account. With no session this shows the signed-out state.
+      await restoreAuth()
       await refreshMe()
     })()
   })
@@ -99,59 +149,38 @@ export const AccountSection: Component = () => {
     window.location.assign(googleSignInUrl())
   }
 
-  async function handleAuthAction(action: () => Promise<void>): Promise<void> {
-    setError('')
-    setBusy(true)
-    try {
-      await action()
-      setMode('none')
-      setPassword('')
-      await refreshMe()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Live password validity (register only) — drives the red border and the
-  // checklist so nobody discovers the rules one server rejection at a time.
-  const pwdInvalid = (): boolean =>
-    mode() === 'register' && password() !== '' && !isPasswordValid(password())
-
-  function handleSubmit(e: Event): void {
-    e.preventDefault()
-    // Snapshot the form inside the event handler — the async closures
-    // below run outside the tracked scope (and the form could change
-    // mid-request).
-    const credentials = { email: email(), password: password() }
-    if (mode() === 'register' && !isPasswordValid(credentials.password)) {
-      setError("Password doesn't meet the requirements yet.")
-      return
-    }
-    if (mode() === 'register') {
-      const name = displayName()
-      void handleAuthAction(async () => {
-        await registerWithPassword(
-          credentials.email,
-          credentials.password,
-          name,
-        )
-        showNotification('Account created — progress is now synced', 'info')
-      })
-    } else {
-      void handleAuthAction(async () => {
-        await loginWithPassword(credentials.email, credentials.password)
-        showNotification('Signed in', 'info')
-      })
-    }
-  }
-
   function handleLogout(): void {
     logout()
     setMe(null)
-    setMode('none')
+    setSupporter(null)
     showNotification('Signed out', 'info')
+  }
+
+  async function handleDeleteAccount(): Promise<void> {
+    setBusy(true)
+    setError('')
+    try {
+      await deleteAccount()
+      setMe(null)
+      setConfirmDelete(false)
+      showNotification('Account deleted', 'info')
+      // Reload rather than carry on in a page still holding the deleted
+      // account's state: stores keep its streak/profile in memory, and a
+      // debounced settings push landing after the delete would provision a
+      // fresh account seconds later. Same full reset as "clear storage".
+      // The delay lets the confirmation land before the page goes.
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 900)
+    } catch (err) {
+      // Close the dialog but surface the failure loudly in the section —
+      // silently "succeeding" would tell someone their data is gone when it
+      // is still there.
+      setError(err instanceof Error ? err.message : 'Could not delete account')
+      setConfirmDelete(false)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
@@ -183,6 +212,17 @@ export const AccountSection: Component = () => {
                 >
                   {profileName() !== '' ? profileName() : 'Signed in'}
                 </span>
+                <Show when={supporter()}>
+                  {(grant) => (
+                    <span data-testid="account-supporter-pill">
+                      <SupporterBadge
+                        planId={supporterPlanId(grant())}
+                        label={grant().sourceLabel}
+                        expiresAt={grant().expiresAt}
+                      />
+                    </span>
+                  )}
+                </Show>
                 <div class={styles.identityRight}>
                   <span class={styles.emailValue} data-testid="account-email">
                     {me()?.user.email ?? ''}
@@ -258,173 +298,177 @@ export const AccountSection: Component = () => {
             </Show>
           </Match>
 
-          {/* Anonymous (or signed out) */}
-          <Match when={mode() === 'none'}>
-            <p class={styles.mutedNote}>
-              {me() != null
-                ? 'You are using an anonymous account. Create an account to keep your progress across devices.'
-                : 'Sign in to sync your progress across devices.'}
-            </p>
-            <div class={styles.buttonRow}>
-              <button
-                class={styles.authButtonPrimary}
-                onClick={() => setMode('register')}
-                data-testid="show-register"
-              >
-                Create account
-              </button>
-              <button
-                class={styles.authButton}
-                onClick={() => setMode('login')}
-                data-testid="show-login"
-              >
-                Sign in
-              </button>
-            </div>
-            <button
-              class={styles.googleButton}
-              onClick={startGoogleSignIn}
-              data-testid="google-signin"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 48 48"
-                aria-hidden="true"
-              >
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                />
-              </svg>
-              Sign in with Google
-            </button>
-            <Show when={error() !== ''}>
-              <p class={styles.errorNote} data-testid="auth-error">
-                {error()}
+          {/* Anonymous (or signed out) — the actual form lives in AuthModal */}
+          <Match when={true}>
+            <div class={styles.signedOutCard}>
+              <p class={styles.signedOutLead}>
+                {me() != null
+                  ? 'You are practicing on an anonymous account.'
+                  : 'You are signed out.'}
               </p>
-            </Show>
-          </Match>
-
-          {/* Login / register form */}
-          <Match when={mode() !== 'none'}>
-            <form class={styles.authForm} onSubmit={handleSubmit}>
-              <Show when={mode() === 'register'}>
-                <input
-                  class={styles.authInput}
-                  type="text"
-                  placeholder="Display name (optional)"
-                  aria-label="Display name"
-                  autocomplete="nickname"
-                  value={displayName()}
-                  onInput={(e) => setDisplayName(e.currentTarget.value)}
-                  data-testid="auth-display-name"
-                />
-              </Show>
-              <input
-                class={styles.authInput}
-                type="email"
-                name="email"
-                id="auth-email"
-                placeholder="Email"
-                aria-label="Email"
-                autocomplete="username"
-                required
-                value={email()}
-                onInput={(e) => setEmail(e.currentTarget.value)}
-                aria-invalid={error() !== '' ? 'true' : undefined}
-                aria-describedby={error() !== '' ? 'auth-error' : undefined}
-                data-testid="auth-email"
-              />
-              <div class={styles.passwordField}>
-                <input
-                  class={styles.authInput}
-                  type={showPassword() ? 'text' : 'password'}
-                  name="password"
-                  id="auth-password"
-                  placeholder="Password"
-                  aria-label="Password"
-                  autocomplete={
-                    mode() === 'register' ? 'new-password' : 'current-password'
-                  }
-                  required
-                  value={password()}
-                  onInput={(e) => setPassword(e.currentTarget.value)}
-                  aria-invalid={
-                    pwdInvalid() || error() !== '' ? 'true' : undefined
-                  }
-                  aria-describedby={error() !== '' ? 'auth-error' : undefined}
-                  data-testid="auth-password"
-                />
-                <button
-                  class={styles.revealButton}
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={
-                    showPassword() ? 'Hide password' : 'Show password'
-                  }
-                  aria-pressed={showPassword()}
-                  title={showPassword() ? 'Hide password' : 'Show password'}
-                  data-testid="auth-password-toggle"
-                >
-                  <Show when={showPassword()} fallback={<Eye />}>
-                    <EyeOff />
-                  </Show>
-                </button>
-              </div>
-              <Show when={mode() === 'register'}>
-                <PasswordRequirements
-                  password={password()}
-                  showInvalid={password() !== ''}
-                />
-              </Show>
-              <Show when={error() !== ''}>
-                <p
-                  class={styles.errorNote}
-                  id="auth-error"
-                  role="alert"
-                  data-testid="auth-error"
-                >
-                  {error()}
-                </p>
-              </Show>
+              <p class={styles.mutedNote}>
+                Create a free account to keep your progress, scores and credits
+                across devices.
+              </p>
               <div class={styles.buttonRow}>
                 <button
                   class={styles.authButtonPrimary}
-                  type="submit"
-                  disabled={busy()}
-                  data-testid="auth-submit"
+                  onClick={() => openAuthModal('register')}
+                  data-testid="show-register"
                 >
-                  {mode() === 'register' ? 'Create account' : 'Sign in'}
+                  Create account
                 </button>
                 <button
                   class={styles.authButton}
-                  type="button"
-                  onClick={() => {
-                    setMode('none')
-                    setError('')
-                    setShowPassword(false)
-                  }}
+                  onClick={() => openAuthModal('login')}
+                  data-testid="show-login"
                 >
-                  Cancel
+                  Sign in
+                </button>
+                <button
+                  class={styles.googleButton}
+                  onClick={startGoogleSignIn}
+                  data-testid="google-signin"
+                >
+                  <GoogleMark />
+                  Sign in with Google
                 </button>
               </div>
-            </form>
+            </div>
           </Match>
         </Switch>
+
+        {/* Public-board consent. Qualifying on activity is necessary but not
+            sufficient — nothing is published until this is on. */}
+        <Show when={me() != null}>
+          <div class={styles.accountField}>
+            <label class={styles.optInRow}>
+              <input
+                type="checkbox"
+                checked={optIn()}
+                disabled={busy()}
+                data-testid="leaderboard-optin"
+                onChange={(e) =>
+                  void setLeaderboardOptIn(e.currentTarget.checked)
+                }
+              />
+              <span>Show me on the public leaderboard</span>
+            </label>
+            <p class={styles.fieldHint}>
+              Off by default. Exercise and challenge results rank once you've
+              practised a few days running; free practice and your streak are
+              never published. Friends you add see more.
+            </p>
+          </div>
+        </Show>
+
+        {/* Erasure is offered whenever a server identity exists — anonymous
+            accounts hold streaks, scores and settings too, and GDPR doesn't
+            care whether you ever typed an email. */}
+        <Show when={me() != null}>
+          <div class={styles.dangerZone}>
+            <button
+              class={styles.dangerButton}
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy()}
+              data-testid="delete-account"
+            >
+              Delete account
+            </button>
+            <p class={styles.mutedNote}>
+              Permanently erases your profile, scores, streaks, badges and
+              settings from our servers. Unspent credits are lost. Files on this
+              device are not affected.
+            </p>
+          </div>
+        </Show>
       </Show>
+
+      {/* The other half of onboarding's promise: what an account keeps. */}
+      <VoiceSection signedIn={isUpgraded()} />
+      {/* Say hello — outside the cloud-configured gate on purpose: reaching a
+          human never depended on having an account. */}
+      <div class={styles.helloBlock} data-testid="say-hello">
+        <span class={styles.helloTitle}>Say hello</span>
+        <p class={styles.helloText}>
+          Questions, ideas, or something broken? We read everything.
+        </p>
+        <div class={styles.helloLinks}>
+          {/* First, because it is the only one that costs nothing to use:
+              anonymous, no account, no email address revealed. */}
+          <button
+            class={styles.helloLink}
+            type="button"
+            onClick={openFeedbackSurvey}
+            data-testid="say-hello-feedback"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 5H7v-2h6v2zm4-6H7V6h10v2z"
+              />
+            </svg>
+            Share feedback
+          </button>
+          <a
+            class={styles.helloLink}
+            href={`mailto:${CONTACT_EMAIL}`}
+            data-testid="say-hello-email"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+              />
+            </svg>
+            Email us
+          </a>
+          <a
+            class={styles.helloLink}
+            href={GITHUB_NEW_ISSUE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="say-hello-issue"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+              />
+            </svg>
+            Report a bug
+          </a>
+          <a
+            class={styles.helloLink}
+            href="#/settings/credits"
+            data-testid="say-hello-support"
+          >
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+            Support the project
+          </a>
+        </div>
+      </div>
+      <ConfirmDialog
+        open={confirmDelete()}
+        title="Delete account"
+        message={
+          <>
+            This permanently erases your profile, scores, streaks, badges,
+            settings and any unspent credits from our servers.{' '}
+            <strong>It cannot be undone.</strong>
+          </>
+        }
+        confirmLabel="Delete forever"
+        confirmPhrase="delete"
+        busy={busy()}
+        onConfirm={() => void handleDeleteAccount()}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

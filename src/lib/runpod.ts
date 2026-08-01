@@ -32,6 +32,11 @@ export const RUNPOD_ALLOWED_MODELS = [
   'mdx',
   'karaoke',
   'ensemble',
+  // Demucs v4 multi-stem tiers — these are what split an instrumental
+  // into drums/bass/guitar/piano/other.
+  'demucs',
+  'demucs-ft',
+  'demucs-6s',
   'UVR-MDX-NET-Inst_HQ_3',
 ] as const
 
@@ -172,6 +177,20 @@ export function runpodHeaders(cfg: RunpodConfig): Record<string, string> {
 
 // ── Job input ───────────────────────────────────────────────────
 
+/** Stem names the handler's registry can emit — the allowlist for the
+ *  second-pass fields below. Mirror of KNOWN_STEMS in runpod/handler.py
+ *  (kept local: the client-side uvr-api module must not be pulled into
+ *  the worker bundle). */
+export const RUNPOD_STEM_NAMES = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+] as const
+
 export interface RunpodJobInput {
   filename: string
   model: string
@@ -182,6 +201,18 @@ export interface RunpodJobInput {
   /** R2 object key for inputs too big to inline (>7 MB). The handler
    *  downloads it from S3_BUCKET with its own credentials — no public URL. */
   audio_s3_key?: string
+  /** Second pass: what the submitted audio IS ('instrumental' = re-split
+   *  of a stem an earlier job produced; drops the near-silent vocal and
+   *  reconciles the residual server-side). */
+  source_stem?: string
+  drop_stems?: string[]
+  reconcile_residual?: boolean
+  residual_stem?: string
+  /** Client-declared song length the job was BILLED for. The handler
+   *  probes the real duration and rejects (cheap, auto-refunded) when the
+   *  actual billing factor exceeds the declared one — see
+   *  _billing_blocks in runpod/handler.py. */
+  declared_duration_seconds?: number
 }
 
 export interface BuildJobInputParams {
@@ -192,6 +223,13 @@ export interface BuildJobInputParams {
   audioBase64?: string
   audioUrl?: string
   audioS3Key?: string
+  /** Second-pass fields — forwarded verbatim; the handler applies its own
+   *  defaults when absent (see runpod/handler.py). */
+  sourceStem?: string
+  dropStems?: string[]
+  reconcileResidual?: boolean
+  residualStem?: string
+  declaredDurationSeconds?: number
 }
 
 export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
@@ -211,6 +249,17 @@ export function buildJobInput(p: BuildJobInputParams): RunpodJobInput {
     input.audio_url = p.audioUrl
   } else if (p.audioBase64 !== undefined && p.audioBase64 !== '') {
     input.audio_base64 = p.audioBase64
+  }
+  // Second-pass fields ride along only when set — an ordinary full-mix
+  // job's payload is unchanged, and older handlers ignore unknown keys.
+  if (p.sourceStem !== undefined) input.source_stem = p.sourceStem
+  if (p.dropStems !== undefined) input.drop_stems = p.dropStems
+  if (p.reconcileResidual !== undefined) {
+    input.reconcile_residual = p.reconcileResidual
+  }
+  if (p.residualStem !== undefined) input.residual_stem = p.residualStem
+  if (p.declaredDurationSeconds !== undefined) {
+    input.declared_duration_seconds = p.declaredDurationSeconds
   }
   return input
 }
@@ -395,15 +444,42 @@ export function bytesToBase64(bytes: Uint8Array): string {
 
 // ── Fetch wrappers ──────────────────────────────────────────────
 
+/** Per-job execution budget in ms: RunPod kills the job past this. Scaled
+ *  to the declared song length so a 5-minute endpoint default can't kill a
+ *  legitimate 18-minute split mid-upload (2026-07-31: `executionTimeout
+ *  exceeded` after the stems were already separated). 10 min base covers
+ *  cold image pulls; one realtime-second per song-second covers the
+ *  heaviest model (demucs-6s, shifts) plus stem uploads; capped at 30 min. */
+export function jobExecutionTimeoutMs(
+  declaredDurationSeconds?: number,
+): number | undefined {
+  if (
+    declaredDurationSeconds === undefined ||
+    !Number.isFinite(declaredDurationSeconds) ||
+    declaredDurationSeconds <= 0
+  ) {
+    return undefined
+  }
+  return Math.min(1800, 600 + Math.round(declaredDurationSeconds)) * 1000
+}
+
 export async function submitJob(
   cfg: RunpodConfig,
   endpointId: string,
   input: RunpodJobInput,
 ): Promise<RunpodRunResponse> {
+  const executionTimeout = jobExecutionTimeoutMs(
+    input.declared_duration_seconds,
+  )
   const resp = await fetch(runpodEndpointUrl(cfg, endpointId, '/run'), {
     method: 'POST',
     headers: runpodHeaders(cfg),
-    body: JSON.stringify({ input }),
+    body: JSON.stringify({
+      input,
+      ...(executionTimeout !== undefined
+        ? { policy: { executionTimeout } }
+        : {}),
+    }),
   })
   if (!resp.ok) {
     throw new Error(`RunPod submit failed: ${resp.status} ${resp.statusText}`)

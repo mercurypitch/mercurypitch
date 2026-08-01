@@ -2,6 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
+import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
 
@@ -141,6 +142,9 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     return audioCtx
   }
 
+  // Shared pop-free envelopes (see src/lib/preview-player.ts) — the old
+  // 30/50 ms LINEAR fades here still read as a squeezed pop at the
+  // silence↔music boundary; the exponential shapes do not.
   const fadeInPlay = () => {
     if (!audio) return
     const ctx = ensureAudioCtx()
@@ -148,11 +152,8 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       mediaSource = ctx.createMediaElementSource(audio)
       mediaSource.connect(gainNode)
     }
-    const now = ctx.currentTime
-    gainNode!.gain.cancelScheduledValues(now)
-    gainNode!.gain.setValueAtTime(0, now)
-    gainNode!.gain.linearRampToValueAtTime(1, now + 0.03)
-    audio.play()
+    void audio.play()
+    openEnvelope(gainNode!, ctx, ENVELOPE_DEFAULTS.attackMs / 1000)
   }
 
   const fadeOutPause = () => {
@@ -160,13 +161,10 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       audio?.pause()
       return
     }
-    const now = audioCtx.currentTime
-    gainNode.gain.cancelScheduledValues(now)
-    gainNode.gain.setValueAtTime(gainNode.gain.value, now)
-    gainNode.gain.linearRampToValueAtTime(0, now + 0.05)
+    closeEnvelope(gainNode, audioCtx, ENVELOPE_DEFAULTS.releaseMs / 1000)
     setTimeout(() => {
       if (audio) audio.pause()
-    }, 60)
+    }, ENVELOPE_DEFAULTS.releaseMs + 60)
   }
 
   createEffect(() => {
@@ -306,7 +304,19 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       const x = e.clientX - rect.left
       const vw = canvasRef.clientWidth * zoom()
       const time = ((x + scrollX()) / vw) * props.durationSec
-      audio.currentTime = Math.max(0, Math.min(time, props.durationSec))
+      const target = Math.max(0, Math.min(time, props.durationSec))
+      // Seeking while signal flows needs the dip — a bare currentTime
+      // jump is a waveform discontinuity (pop).
+      if (isPlaying() && gainNode && audioCtx) {
+        const dipS = ENVELOPE_DEFAULTS.seekFadeMs / 1000
+        dipEnvelope(gainNode, audioCtx, dipS, 0)
+        setTimeout(() => {
+          if (audio) audio.currentTime = target
+          if (gainNode && audioCtx) dipEnvelope(gainNode, audioCtx, dipS, 1)
+        }, ENVELOPE_DEFAULTS.seekFadeMs + 5)
+      } else {
+        audio.currentTime = target
+      }
     }
   }
 

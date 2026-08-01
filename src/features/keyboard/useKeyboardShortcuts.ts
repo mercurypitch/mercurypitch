@@ -1,3 +1,17 @@
+// ============================================================
+// useKeyboardShortcuts — global hotkeys, mounted once by App
+// ============================================================
+//
+// One document-level keydown listener for the whole app. Two guards matter and
+// both are easy to forget when adding a shortcut:
+//
+//   isTyping -- true when the event target sits inside an input, textarea,
+//               select or [contenteditable]. Check it before any bare-letter
+//               or Space binding, or typing a lyric line triggers playback.
+//   tab      -- most shortcuts are tab-scoped. The Karaoke tab (StemMixer)
+//               drives its own audio graph, so global transport keys are
+//               explicitly excluded there rather than merely unhandled.
+
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -21,6 +35,9 @@ interface KeyboardShortcutHandlers {
 
   /** Active tab accessor so Space/Esc can be context-aware. */
   activeTab?: Accessor<ActiveTab>
+
+  /** Temporarily yield all global shortcuts to an immersive child surface. */
+  isSuspended?: Accessor<boolean>
 
   /** Piano tab game handlers — used when activeTab === 'piano'. */
   piano?: {
@@ -70,6 +87,8 @@ interface KeyboardShortcutHandlers {
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
   const onKeyDown = (e: KeyboardEvent) => {
+    if (handlers.isSuspended?.() === true) return
+
     // Skip if typing in input/select/textarea
     const isTyping = !!(e.target as Element | null)?.closest(
       'input,textarea,select,[contenteditable]',

@@ -37,9 +37,14 @@ const SessionBrowser = lazy(async () =>
     default: m.SessionBrowser,
   })),
 )
-const AdminWeeklyPage = lazy(async () =>
-  import('@/features/challenges/AdminWeeklyPage').then((m) => ({
-    default: m.AdminWeeklyPage,
+const AdminContentStudio = lazy(async () =>
+  import('@/features/admin/AdminContentStudio').then((m) => ({
+    default: m.AdminContentStudio,
+  })),
+)
+const ResetPasswordPage = lazy(async () =>
+  import('@/components/account/ResetPasswordPage').then((m) => ({
+    default: m.ResetPasswordPage,
   })),
 )
 const SessionEditor = lazy(async () =>
@@ -52,8 +57,21 @@ const SheetMusicView = lazy(async () =>
     default: m.SheetMusicView,
   })),
 )
+const ZenPitchStage = lazy(async () =>
+  import('@/features/zen/ZenPitchStage').then((m) => ({
+    default: m.ZenPitchStage,
+  })),
+)
+// First Light onboarding — lazy so a returning visitor pays nothing for a
+// flow they have already walked.
+const FirstLight = lazy(async () =>
+  import('@/features/onboarding/FirstLight').then((m) => ({
+    default: m.FirstLight,
+  })),
+)
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
+import { AuthModal } from '@/components/account/AuthModal'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
@@ -67,6 +85,8 @@ import { PlaybackProvider } from '@/contexts/PlaybackContext'
 import { hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { takeExpectedCredits } from '@/db/services/billing-service'
 import { initSettingsSync } from '@/db/services/settings-service'
+import { authVersion } from '@/db/services/user-service'
+import { syncLocalVoiceprints } from '@/db/services/voiceprint-service'
 import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
@@ -74,6 +94,7 @@ import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-m
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
+import type { LabTab } from '@/features/lab/LabSurface'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
@@ -90,7 +111,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -98,7 +119,9 @@ import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
 import { debounce } from '@/lib/debounce'
+import { IS_DEV } from '@/lib/defaults'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
+import { navigateTo } from '@/lib/hash-router'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -109,6 +132,7 @@ import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPaylo
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
+import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
@@ -119,11 +143,12 @@ import { GuitarPage } from '@/pages/GuitarPage'
 import HomePage from '@/pages/HomePage'
 import { JamPage } from '@/pages/JamPage'
 import { KaraokePage } from '@/pages/KaraokePage'
+import { LabPage } from '@/pages/LabPage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { celebrationData, dismissCelebration, dismissSurvey, dismissWelcome, openWalkthroughChapter, pendingDrill, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setScaleType, setShowAdminWeekly, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminWeekly, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -131,12 +156,13 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
+import { flowOpen, openBeat, startOnboarding } from '@/stores/onboarding-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { openSettingsSection, setSingingSheetView, settingsSection, singingSheetView, triggerTargetFocus, } from '@/stores/ui-store'
-import { activityCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
+import { authModalMode, closeSingingZen, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
+import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
 import type { ActiveTab, MelodyItem, PlaybackMode, PracticeSubMode, SpacedRestMode, } from '@/types'
@@ -488,6 +514,21 @@ const AppShell: Component<AppProps> = (props) => {
       setShowWelcome(true)
     }
   }
+  // ── First Light onboarding ──────────────────────────────────
+  // A replay (#/map) reopens the Map without re-running the first-run
+  // bookkeeping, so closing it can't rewind anyone's seen-flag.
+  const [onboardingReplay, setOnboardingReplay] = createSignal(false)
+
+  const startFirstLight = () => {
+    setOnboardingReplay(false)
+    startOnboarding()
+  }
+
+  const openOnboardingMap = () => {
+    setOnboardingReplay(true)
+    openBeat('map')
+  }
+
   const startGuideTour = (sectionIds: string[]) => {
     // Start before closing the dialog so a tour surface stays open across the
     // hand-off (the deferred survey checks for one — see tourSurfaceOpen).
@@ -696,7 +737,28 @@ const AppShell: Component<AppProps> = (props) => {
   // until the stashed expected balance shows up, and SAY SO if it doesn't
   // (a silent webhook failure once left buyers with a success toast over an
   // unchanged balance).
-  const handleBillingReturn = (outcome: 'success' | 'cancel'): void => {
+  const handleBillingReturn = (
+    outcome: 'success' | 'cancel',
+    kind: 'credits' | 'donation' = 'credits',
+  ): void => {
+    if (kind === 'donation') {
+      // Donations buy no credits, so there is nothing to poll for and no
+      // credits_purchase ads conversion to fire (a custom amount has no
+      // client-known value anyway). The supporter entitlement lands via the
+      // same webhook; refreshing the balance re-fetches /billing/me with it.
+      if (outcome === 'success') {
+        showNotification(
+          'Thank you for supporting MercuryPitch. Your supporter perks are being applied.',
+          'success',
+          { channel: 'billing-return' },
+        )
+        refreshBalance()
+        window.setTimeout(refreshBalance, 3000)
+      } else {
+        showNotification('Donation cancelled.', 'info')
+      }
+      return
+    }
     if (outcome === 'success') {
       showNotification(
         'Payment received — credits are being added to your account.',
@@ -752,8 +814,13 @@ const AppShell: Component<AppProps> = (props) => {
     handleBillingReturn,
     openSettingsSection,
     settingsSection,
-    openAdminWeekly: () => setShowAdminWeekly(true),
-    showAdminWeekly,
+    openAdminContent: requestAdminContentSection,
+    closeAdminContent: requestCloseAdminContentStudio,
+    showAdminContentStudio,
+    adminContentSection,
+    openResetPassword: (token) => setResetPasswordView({ token }),
+    showResetPassword: () => resetPasswordView() != null,
+    openOnboardingMap,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -873,6 +940,15 @@ const AppShell: Component<AppProps> = (props) => {
     countInBeat,
     isCountingIn,
   } = practice
+
+  // Zen is an immersive overlay with its own seconds-based loop. Stop the
+  // song transport before it mounts so the underlying Singing canvas and
+  // legacy exercise controllers cannot keep playing or polling behind it.
+  createEffect(
+    on(singingZenLaunch, (launch) => {
+      if (launch !== null) void resetPlaybackState()
+    }),
+  )
 
   // ── Compose live recording preview (Phase 2) ───────────────
   // Notes captured so far this take, plus the currently-held note growing with
@@ -1130,6 +1206,7 @@ const AppShell: Component<AppProps> = (props) => {
     playMode,
     setPlayMode,
     activeTab,
+    isSuspended: () => singingZenLaunch() !== null,
     piano: {
       isPlaying: pianoIsPlaying,
       isPaused: pianoIsPaused,
@@ -1212,6 +1289,8 @@ const AppShell: Component<AppProps> = (props) => {
   // sounding under the piano tab). The listener runs before the signal
   // flips and cannot miss a transition.
   onTabTransition((prevTab, newTab) => {
+    closeSingingZen()
+
     // 1. Stop singing/compose playback + mic. resetPlaybackState ends the
     // practice session but leaves the mic running, so without this the mic
     // lingers after leaving and micActive stays stuck on — making the mic
@@ -1293,6 +1372,19 @@ const AppShell: Component<AppProps> = (props) => {
   // While a tour runs the guard stands down entirely: tour steps re-assert
   // their requiredTab, and redirecting against that is an unbounded loop.
   // walkthroughActive is tracked, so the guard re-evaluates when it ends.
+
+  // Which Lab tool the current route points at, or null when the Lab isn't
+  // showing. The Lab is never in the tab bar — it is reached by hash route,
+  // and only with advanced features on (or in dev).
+  const labTab = createMemo<LabTab | null>(() => {
+    if (!advancedFeaturesEnabled() && !IS_DEV) return null
+    const tab = activeTab()
+    if (tab === TAB_LAB) return 'workbench'
+    if (tab === TAB_PITCH_TEST) return 'detection'
+    if (tab === TAB_PITCH_ALGO) return 'algorithms'
+    return null
+  })
+
   const appMountedAt = performance.now()
   createEffect(() => {
     const scope = practiceScope()
@@ -1571,6 +1663,17 @@ const AppShell: Component<AppProps> = (props) => {
   // the analytics module.
   onMount(() => trackEvent('app_open'))
 
+  // Sync own voiceprints on every auth transition. Uploads only the takes
+  // made under the signed-in identity (deduped by takenAt; no-op when
+  // empty). Takes made signed-out are deliberately NOT swept up here:
+  // registering a new account adopts them explicitly (AuthModal), and
+  // signing in to an existing account offers them via the Settings notice
+  // instead — owner decision D2, docs/specs/voiceprints.ears.md section 4.
+  createEffect(() => {
+    authVersion()
+    void syncLocalVoiceprints()
+  })
+
   // Restore the imported song behind the current melody on reload. Melodies
   // persist (melody store), but singingSong is a fresh signal each load, so
   // the Track button vanished after a refresh. Imports are stored as a saved
@@ -1597,15 +1700,11 @@ const AppShell: Component<AppProps> = (props) => {
     }
   }
 
-  // Welcome overlay "Enable Mic": enable-only (never toggles an active mic
-  // off), and surface denial — startMic() swallows getUserMedia errors and
-  // returns false, so without this check the welcome screen would show its
-  // "Mic enabled" chip even when permission was refused.
-  const handleWelcomeEnableMic = async () => {
-    if (micActive()) return
-    const ok = await practiceEngine.startMic()
-    if (!ok) throw new Error('Microphone permission denied')
-  }
+  // (The welcome screen's "Enable Mic" pill is gone — First Light beat 2 asks
+  // for the mic at the moment of intent instead. Phase 2 wires it there, and
+  // must re-add the enable-only + surface-denial handling that lived here:
+  // startMic() swallows getUserMedia errors and returns false, so a caller
+  // that ignores the result reports success on a refused permission.)
 
   // Nudge once if singing playback starts while the mic is off.
   usePlaybackMicNudge({
@@ -2086,36 +2185,76 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Don't ask for feedback the moment a first-time visitor closes the welcome
   // screen: wait until they have genuinely used the app — enough cumulative
-  // foreground time AND at least one real action (playback run, exercise or
-  // practice session finished) — so they have something to say.
-  const SURVEY_MIN_USAGE_MS = 12 * 60_000
-  const surveyUsageGateMet = () => {
+  // foreground time AND enough FINISHED runs — so they have something to say.
+  // Thresholds and the rules live in lib/survey-timing.ts so they're testable.
+  const surveyForced = (): boolean => {
     try {
-      // The dev force flag skips the usage gate along with the host gate.
-      if (localStorage.getItem('pitchperfect_survey_force') === '1') return true
+      return localStorage.getItem('pitchperfect_survey_force') === '1'
     } catch {
-      /* localStorage unavailable — fall through to the usage signals */
+      return false
     }
-    return usageMs() >= SURVEY_MIN_USAGE_MS && activityCount() > 0
   }
+  const surveyUsageGateMet = () =>
+    surveyUsageEarned({
+      usageMs: usageMs(),
+      completions: completionCount(),
+      forced: surveyForced(),
+    })
+
+  // Never interrupt someone mid-run. Singing at a modal you can't read is how
+  // a survey gets dismissed by reflex — and it's once per browser, so that
+  // answer is final. Every signal here is reactive, so the effect re-runs and
+  // the prompt lands the moment they stop rather than being lost.
+  const practiceInProgress = () =>
+    isPlaying() || micActive() || sessionMode() || countIn() > 0
+
+  // Result, summary and celebration modals own the screen after a run — which
+  // is exactly when the usage gate tends to open. Queue behind them too.
+  const resultSurfaceOpen = () =>
+    (showPracticeResultPopup() && practiceResult() !== null) ||
+    (showPracticeResultPopup() && sessionSummary() !== null) ||
+    celebrationData() !== null ||
+    showSessionBrowser() ||
+    showShortcutHelp() ||
+    showAdminContentStudio() ||
+    // Never pop the survey over the sign-in modal, an already-open feedback
+    // modal, or the First Light onboarding flow - all surfaces the user is
+    // mid-thought in.
+    authModalMode() !== null ||
+    feedbackSurveyOpen() ||
+    flowOpen()
 
   // Show optional survey after welcome screen is dismissed (once per browser,
   // tracked via the persisted surveySeen flag — same as the welcome screen).
   createEffect(() => {
     if (showWelcome() || surveyChecked()) return
-    // Defer while a tour surface is open — the effect re-runs when it closes,
-    // so the survey is postponed until after the tour, not lost.
-    if (tourSurfaceOpen()) return
+    // Defer while a tour surface is open, a run is in progress, or a result
+    // modal owns the screen — the effect re-runs when each clears, so the
+    // survey is postponed, never lost.
+    if (
+      !surveyMomentOk({
+        practicing: practiceInProgress(),
+        tourOpen: tourSurfaceOpen(),
+        modalOpen: resultSurfaceOpen(),
+      })
+    ) {
+      return
+    }
     // Defer until real usage: both signals are reactive, so the effect
-    // re-runs as time accrues / activity lands and the survey shows then.
+    // re-runs as time accrues / completions land and the survey shows then.
     if (!surveyUsageGateMet()) return
     setSurveyChecked(true)
     if (!surveyEnabledHere() || surveySeen()) return
-    // The survey persists to the cloud, so only prompt signed-in users —
-    // a signed-out submit hits the user-scoped write guard and fails. (On
-    // deployed builds where the survey shows, a fresh visitor is signed in
-    // anonymously at startup; an upgraded-then-signed-out device is not.)
-    if (!hasValidToken()) return
+    // The survey persists to the cloud, so only prompt once a cloud identity
+    // exists. Under lazy provisioning (identities mint on the first WRITE,
+    // not at startup) a tokenless visitor here is NORMAL - their finishing
+    // run provisions moments later. Re-arm instead of retiring the check so
+    // the effect re-tests on the next signal change; without this the
+    // session that crossed the usage gate would never be asked at all.
+    if (!hasValidToken()) {
+      setSurveyChecked(false)
+      return
+    }
     void import('@/db/services/survey-service').then(({ hasSubmittedSurvey }) =>
       // Show-time snapshot reads by design: the re-arm below re-runs the
       // effect when the tour surfaces close, so tracking isn't needed here.
@@ -2125,8 +2264,16 @@ const AppShell: Component<AppProps> = (props) => {
         // Re-check at show time: effects run synchronously on signal writes,
         // so "Take a Tour" dismisses the welcome (running this effect) a tick
         // before the guide dialog opens — and the async check above widens
-        // the window further. Re-arm instead of showing over a tour.
-        if (tourSurfaceOpen()) {
+        // the window further. The same gap lets someone start a run between
+        // the gate passing and the modal mounting, so re-test the whole
+        // moment, not just tours. Re-arm instead of showing over anything.
+        if (
+          !surveyMomentOk({
+            practicing: practiceInProgress(),
+            tourOpen: tourSurfaceOpen(),
+            modalOpen: resultSurfaceOpen(),
+          })
+        ) {
           setSurveyChecked(false)
           return
         }
@@ -2170,6 +2317,13 @@ const AppShell: Component<AppProps> = (props) => {
     />
   )
 
+  const zenInitialCenterMidi = (): number => {
+    const range = VOCAL_RANGES[vocalRangePreset()]
+    const lowC = 12 * (range.minOctave + 1)
+    const highC = 12 * (range.maxOctave + 1)
+    return (lowC + highC) / 2
+  }
+
   // ============================================================
   // Render
   // ============================================================
@@ -2183,12 +2337,20 @@ const AppShell: Component<AppProps> = (props) => {
         <a class="skip-link" href="#main-content">
           Skip to main content
         </a>
-        {/* Welcome Screen (shown on first visit) */}
-        <Show when={showWelcome()}>
-          <WelcomeScreen
-            onTakeTour={openGuideSelection}
-            onEnableMic={handleWelcomeEnableMic}
-          />
+        {/* Welcome Screen (first visit, and on demand from Settings) */}
+        {/* Gated only on its own flag and on the flow not being open.
+            `finishOnboarding` now spends `welcomeSeen` itself, so the door
+            no longer comes back over the Map once the flow ends — which is
+            what an extra `isFirstRun()` condition here used to paper over,
+            at the cost of making Settings → "Show welcome screen" dead for
+            anyone who had finished onboarding. */}
+        <Show when={showWelcome() && !flowOpen()}>
+          <WelcomeScreen onStart={startFirstLight} />
+        </Show>
+
+        {/* First Light — the guided onboarding the door opens into. */}
+        <Show when={flowOpen()}>
+          <FirstLight replay={onboardingReplay()} />
         </Show>
 
         {/* Guide Selection dialog */}
@@ -2205,7 +2367,7 @@ const AppShell: Component<AppProps> = (props) => {
           <div class="sidebar-backdrop" onClick={closeSidebar} />
         </Show>
 
-        <Show when={!focusMode()}>
+        <Show when={!focusMode() && singingZenLaunch() === null}>
           <header>
             <div class="header-left">
               <button
@@ -2401,6 +2563,12 @@ const AppShell: Component<AppProps> = (props) => {
                         onMicToggle={() => {
                           void handleMicToggle()
                         }}
+                        onOpenZen={() =>
+                          openSingingZen({
+                            mode: 'monitor',
+                            source: 'singing',
+                          })
+                        }
                         isPlaying={isPlaying}
                         isPaused={isPaused}
                         onPlay={handlePracticePlay}
@@ -2556,6 +2724,12 @@ const AppShell: Component<AppProps> = (props) => {
                               onMicToggle={() => {
                                 void handleMicToggle()
                               }}
+                              onOpenZen={() =>
+                                openSingingZen({
+                                  mode: 'monitor',
+                                  source: 'singing',
+                                })
+                              }
                               loopEnabled={loopEnabled}
                               loopA={loopA}
                               loopB={loopB}
@@ -2865,6 +3039,14 @@ const AppShell: Component<AppProps> = (props) => {
                 </TabErrorBoundary>
               </Show>
 
+              {/* Hidden Lab surface — hash route only (#lab / #pitch-test /
+                  #pitch-algo), and only with advanced features or in dev. */}
+              <Show when={labTab() !== null}>
+                <TabErrorBoundary tabName={tabLabel(TAB_LAB)}>
+                  <LabPage initialTab={labTab()!} />
+                </TabErrorBoundary>
+              </Show>
+
               <Show when={activeTab() === TAB_JAM}>
                 <TabErrorBoundary tabName={tabLabel(TAB_JAM)}>
                   <JamPage />
@@ -2897,6 +3079,13 @@ const AppShell: Component<AppProps> = (props) => {
                     onSelect={setSelectedExercise}
                     onQuickStart={handleQuickStart}
                     onBack={clearExercise}
+                    onOpenZen={() =>
+                      openSingingZen({
+                        mode: 'exercise',
+                        exerciseId: 'major-scale-ascending',
+                        source: 'exercises',
+                      })
+                    }
                   />
                 </TabErrorBoundary>
               </Show>
@@ -2950,7 +3139,7 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={focusMode()}>
+        <Show when={focusMode() && singingZenLaunch() === null}>
           <FocusMode
             melody={activePlaybackItems}
             isPlaying={isPlaying}
@@ -2969,6 +3158,29 @@ const AppShell: Component<AppProps> = (props) => {
             onResume={handleResume}
             onStop={handleReset}
           />
+        </Show>
+
+        <Show when={singingZenLaunch()} keyed>
+          {(launch) => (
+            <Suspense>
+              <ZenPitchStage
+                {...(launch.mode === 'exercise'
+                  ? {
+                      initialExerciseId: launch.exerciseId,
+                      ...(launch.exerciseVersion === undefined
+                        ? {}
+                        : { initialExerciseVersion: launch.exerciseVersion }),
+                    }
+                  : {})}
+                subscribeFrames={practice.subscribeFrames}
+                micActive={micActive}
+                startMic={() => practiceEngine.startMic()}
+                stopMic={() => practiceEngine.stopMic()}
+                initialCenterMidi={zenInitialCenterMidi()}
+                onClose={closeSingingZen}
+              />
+            </Suspense>
+          )}
         </Show>
 
         {/* Score overlay */}
@@ -3211,11 +3423,34 @@ const AppShell: Component<AppProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={showAdminWeekly()}>
+        <Show when={showAdminContentStudio()}>
           <Suspense>
-            <AdminWeeklyPage onClose={() => setShowAdminWeekly(false)} />
+            <AdminContentStudio
+              section={adminContentSection()}
+              onNavigate={(section) => {
+                if (requestAdminContentSection(section)) {
+                  navigateTo({ type: 'admin', section })
+                }
+              }}
+              onClose={requestCloseAdminContentStudio}
+            />
           </Suspense>
         </Show>
+
+        {/* keyed: a new reset link while the page is open restarts its
+            state machine with the fresh token */}
+        <Show when={resetPasswordView()} keyed>
+          {(view) => (
+            <Suspense>
+              <ResetPasswordPage
+                token={view.token}
+                onClose={() => setResetPasswordView(null)}
+              />
+            </Suspense>
+          )}
+        </Show>
+
+        <AuthModal />
 
         <Notifications />
         <VerifyEmailBanner />
@@ -3261,11 +3496,19 @@ const AppShell: Component<AppProps> = (props) => {
 
         <Show when={showSurvey()}>
           <UserSurveyModal
+            mode="onboarding"
             onClose={() => {
               dismissSurvey()
               setShowSurvey(false)
             }}
           />
+        </Show>
+
+        {/* User-opened feedback. Separate from the one-shot prompt above: it
+            must not mark the survey "seen", or opening it once would cancel
+            an onboarding prompt the user never actually saw. */}
+        <Show when={feedbackSurveyOpen()}>
+          <UserSurveyModal mode="feedback" onClose={closeFeedbackSurvey} />
         </Show>
       </div>
     </PlaybackProvider>

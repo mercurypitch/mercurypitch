@@ -3,13 +3,20 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onMount, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { submitSurvey } from '@/db/services/survey-service'
+import { skipArmSecondsLeft, SURVEY_SKIP_ARM_MS, surveyHasContent, } from '@/lib/survey-timing'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './UserSurveyModal.module.css'
 
 interface Props {
   onClose: () => void
+  /**
+   * 'onboarding' is the automatic first-run prompt; 'feedback' is the user
+   * opening it themselves from Settings, where "Welcome to MercuryPitch" and
+   * a dismissal delay would both be wrong.
+   */
+  mode?: 'onboarding' | 'feedback'
 }
 
 const BACKGROUNDS = [
@@ -34,10 +41,39 @@ const UserSurveyModal: Component<Props> = (props) => {
   const [featureRequest, setFeatureRequest] = createSignal('')
   const [submitting, setSubmitting] = createSignal(false)
   const [visible, setVisible] = createSignal(false)
+  const [armMsLeft, setArmMsLeft] = createSignal(0)
+
+  // The user opened this themselves — no arming delay, they are looking at it.
+  const selfOpened = (): boolean => props.mode === 'feedback'
+  /** Skip / click-outside are inert until this passes. */
+  const dismissable = (): boolean => selfOpened() || armMsLeft() <= 0
 
   onMount(() => {
     requestAnimationFrame(() => setVisible(true))
+    if (selfOpened()) return
+    // Count down rather than a single timeout, so the button can SAY why it
+    // is disabled. A greyed-out control with no explanation reads as broken.
+    const startedAt = Date.now()
+    setArmMsLeft(SURVEY_SKIP_ARM_MS)
+    const id = window.setInterval(() => {
+      const left = SURVEY_SKIP_ARM_MS - (Date.now() - startedAt)
+      setArmMsLeft(left > 0 ? left : 0)
+      if (left <= 0) window.clearInterval(id)
+    }, 200)
+    onCleanup(() => window.clearInterval(id))
   })
+
+  const hasContent = () =>
+    surveyHasContent({
+      background: background(),
+      usage: usage(),
+      featureRequest: featureRequest(),
+    })
+
+  /** Overlay clicks only count once armed — see dismissable(). */
+  const handleOverlayClick = () => {
+    if (dismissable()) props.onClose()
+  }
 
   const toggleItem = (
     list: string[],
@@ -52,6 +88,9 @@ const UserSurveyModal: Component<Props> = (props) => {
   }
 
   const handleSubmit = async () => {
+    // Guard as well as disable: an empty response is indistinguishable from
+    // a mis-click, and storing it would quietly poison the results.
+    if (!hasContent() || submitting()) return
     setSubmitting(true)
     const saved = await submitSurvey({
       background: background(),
@@ -59,9 +98,18 @@ const UserSurveyModal: Component<Props> = (props) => {
       featureRequest: featureRequest().trim() || undefined,
     })
     setSubmitting(false)
-    // Only thank the user if the response was actually persisted; otherwise
-    // close quietly rather than claim a success that did not happen.
-    if (saved) showNotification('Thank you for sharing!', 'success')
+    // Only thank the user if the response was actually persisted. On a
+    // failure, keep the modal open with their text intact and say so -
+    // closing "quietly" would discard typed feedback, and in survey mode
+    // onClose marks the prompt seen forever.
+    if (!saved) {
+      showNotification(
+        'Could not send right now - your answers are still here, try again.',
+        'error',
+      )
+      return
+    }
+    showNotification('Thank you for sharing!', 'success')
     props.onClose()
   }
 
@@ -71,15 +119,19 @@ const UserSurveyModal: Component<Props> = (props) => {
       classList={{ [styles.visible]: visible() }}
       role="dialog"
       aria-modal="true"
-      aria-label="Quick survey"
+      aria-label={selfOpened() ? 'Share feedback' : 'Quick survey'}
       data-testid="user-survey-modal"
-      onClick={() => props.onClose()}
+      onClick={handleOverlayClick}
     >
       <div class={styles.card} onClick={(e) => e.stopPropagation()}>
         <div class={styles.header}>
-          <h2 class={styles.title}>Welcome to MercuryPitch</h2>
+          <h2 class={styles.title}>
+            {selfOpened() ? 'Share your feedback' : 'Welcome to MercuryPitch'}
+          </h2>
           <p class={styles.subtitle}>
-            Help us improve — 3 quick questions (optional)
+            {selfOpened()
+              ? 'Tell us what would make MercuryPitch better — anonymous, no account needed'
+              : 'Help us improve — 3 quick questions (optional)'}
           </p>
         </div>
 
@@ -181,15 +233,35 @@ const UserSurveyModal: Component<Props> = (props) => {
         <div class={styles.actions}>
           <button
             class={styles.skipBtn}
-            onClick={() => props.onClose()}
+            onClick={() => {
+              if (dismissable()) props.onClose()
+            }}
+            disabled={!dismissable()}
+            title={
+              dismissable()
+                ? undefined
+                : 'Just a moment — so this is not dismissed by accident'
+            }
+            data-testid="survey-skip"
             type="button"
           >
-            Skip
+            <Show
+              when={dismissable()}
+              fallback={`Skip (${skipArmSecondsLeft(armMsLeft())})`}
+            >
+              {selfOpened() ? 'Close' : 'Skip'}
+            </Show>
           </button>
           <button
             class={styles.submitBtn}
             onClick={() => void handleSubmit()}
-            disabled={submitting()}
+            disabled={submitting() || !hasContent()}
+            title={
+              hasContent()
+                ? undefined
+                : 'Pick an option or write something first'
+            }
+            data-testid="survey-submit"
             type="button"
           >
             {submitting() ? 'Sending...' : 'Submit'}

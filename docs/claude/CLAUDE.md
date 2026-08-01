@@ -1,22 +1,11 @@
-# MercuryPitch -- Claude Code Instructions
+# MercuryPitch — git hooks
 
-## Git Workflow
+Agent instructions are in [AGENTS.md](../../AGENTS.md); build and deploy
+commands are in [DEPLOY.md](DEPLOY.md). This file covers only the local git
+hooks, which are not documented elsewhere.
 
-### Commit & Push Rule
-**After completing any task that changes code**, always:
-1. Run all checks: `pnpm run check`
-2. `git add -A && git commit -m "<message>"`
-3. `git push origin <current-branch>`
+## Installing the hooks
 
-Never leave uncommitted changes sitting in the working tree. Push immediately after commit. Include tests and linting in the same PR/commit.
-
-### Branch Protection
-- **Never push to `main`** -- use feature branches and open PRs targeting `main`
-- **Never force push** -- always use `git push` without `--force`
-- **Never use `git reset --hard` to rebase** -- always use `git rebase origin <branch>`
-
-### Git Hooks
-Repository hooks live in `.githooks/`. To install:
 ```bash
 git config core.hooksPath .githooks
 ```
@@ -24,20 +13,12 @@ git config core.hooksPath .githooks
 | Hook | Purpose |
 |------|---------|
 | `pre-receive` | Blocks direct pushes to `main` |
-| `post-merge` | Auto-deploys via `deploy.sh --check-only` after `git pull` |
+| `post-merge` | Runs `deploy.sh --check-only` after `git pull` |
 
-## Build & Verify
-```bash
-pnpm run check          # Typecheck + auto-fix lint + auto-format (primary command)
-pnpm run typecheck      # TypeScript: tsc --noEmit
-pnpm run build          # Vite production build
-```
+## Rebasing
 
-## Deploy
-```bash
-./deploy.sh              # Full deploy (pull + build + verify)
-pnpm run deploy:prod     # Deploy to Cloudflare Workers (production)
-pnpm run deploy:dev      # Deploy to Cloudflare Workers (dev)
-```
+Use `git rebase origin/<branch>`. Never `git reset --hard` to reach the same
+result — it discards local work with no recovery path.
 
-Live URL: https://mercurypitch.com
+`--force-with-lease` is acceptable when pushing a rebased branch. Plain
+`--force` is not.

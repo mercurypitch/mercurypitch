@@ -2,9 +2,20 @@
 // Weekly Legend — pure client logic tests
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
-import { weeklyTier } from '@/features/challenges/weekly-attempt'
+import { describe, expect, it, vi } from 'vitest'
+import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
+import { showNotification } from '@/stores/notifications-store'
+
+vi.mock('@/db/services/session-service', () => ({
+  saveSessionRecord: vi.fn(async () => ({})),
+}))
+vi.mock('@/db/services/badge-grant-engine', () => ({
+  checkAndGrantBadges: vi.fn(async () => undefined),
+  grantBadgeByRef: vi.fn(async () => undefined),
+}))
+vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
 
 describe('weeklyTier', () => {
   it('grades below target as attempted', () => {
@@ -31,6 +42,61 @@ describe('weeklyTier', () => {
   })
 })
 
+describe('recordWeeklyAttempt', () => {
+  it('consumes exactly one matching run, then disarms', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w1',
+      title: 'The Impossible Note',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 80 }),
+    ).toBe(true)
+    // The next same-type run is ordinary practice — staying armed used to
+    // post every later sight-singing run to the Legend board.
+    expect(activeWeeklyAttempt()).toBe(null)
+    expect(
+      await recordWeeklyAttempt({ type: 'sight-singing', score: 95 }),
+    ).toBe(false)
+  })
+
+  it('tells the follow-up same-type run it was a practice round, once', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w3',
+      title: 'Vincero',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
+    vi.mocked(showNotification).mockClear()
+
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 90 })
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(showNotification).mock.calls[0][0]).toContain(
+      'Practice round',
+    )
+
+    // No nagging: further runs stay quiet until another attempt is armed.
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 91 })
+    expect(showNotification).toHaveBeenCalledTimes(1)
+  })
+
+  it('a mismatched run disarms without being consumed', async () => {
+    beginWeeklyAttempt({
+      challengeId: 'w2',
+      title: 'T',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+    expect(await recordWeeklyAttempt({ type: 'vibrato', score: 50 })).toBe(
+      false,
+    )
+    expect(activeWeeklyAttempt()).toBe(null)
+  })
+})
+
 describe('hoursUntil', () => {
   it('floors at zero for a past deadline', () => {
     expect(hoursUntil('2000-01-01T00:00:00Z')).toBe(0)
@@ -48,6 +114,16 @@ describe('target-note (de)serialization', () => {
     const rendered = melodyItemsToNotes(items)
     expect(rendered).toBe('G3 C4 E4 D4')
     expect(rendered).not.toMatch(/\d\d/) // guards against the "G33" bug
+  })
+
+  it('stores the bare letter in note.name (renderers append the octave)', () => {
+    // Pin the field itself: midiToNoteName returns "G3", but NoteName is
+    // letter-only and canvases render name + octave — "G33" otherwise.
+    const items = notesToMelodyItems('G3 C#4')
+    expect(items[0].note.name).toBe('G')
+    expect(items[1].note.name).toBe('C#')
+    // Negative octaves must strip too (midi 0 is "C-1").
+    expect(notesToMelodyItems('C-1')[0].note.name).toBe('C')
   })
 
   it('round-trips cleanly (parse -> render -> parse is stable)', () => {

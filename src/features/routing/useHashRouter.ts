@@ -1,3 +1,15 @@
+// ============================================================
+// useHashRouter — binds the URL hash to app state, both directions
+// ============================================================
+//
+// The app has no file-system router. Adding a route is two edits: the shape
+// and parser in @/lib/hash-router.ts, then a handler pair here. This hook owns
+// the sync loop -- hash changes drive state, and state changes rewrite the
+// hash via `replaceHash` so back/forward and deep links both work.
+//
+// Deep links carry sub-state too (settings section, karaoke view, jam room),
+// which is why the deps object is wider than "which tab".
+
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
@@ -5,7 +17,7 @@ import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
-import type { SettingsSection } from '@/stores/ui-store'
+import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
@@ -28,15 +40,29 @@ export interface UseHashRouterDeps {
   handleShareShort: (shortId: string) => void
   /** Return from Stripe checkout — toast + balance refresh happen here;
    *  the route itself lands on Settings -> Credits. */
-  handleBillingReturn: (outcome: 'success' | 'cancel') => void
+  handleBillingReturn: (
+    outcome: 'success' | 'cancel',
+    kind: 'credits' | 'donation',
+  ) => void
   /** Open Settings with a specific sub-tab (deep links + billing return). */
   openSettingsSection: (section: SettingsSection) => void
   /** Current Settings sub-tab — synced into #/settings/<slug>. */
   settingsSection: Accessor<SettingsSection>
-  /** Open the owner-only weekly-challenge authoring overlay. */
-  openAdminWeekly: () => void
-  /** Whether that overlay is open (keeps the tab→hash sync off it). */
-  showAdminWeekly: Accessor<boolean>
+  /** Open the owner-only Content Studio at a specific authoring section. */
+  openAdminContent: (section: AdminSection) => boolean
+  /** Close the Content Studio when browser navigation leaves /admin. */
+  closeAdminContent: () => boolean
+  /** Whether the studio is open (keeps tab→hash sync off its route). */
+  showAdminContentStudio: Accessor<boolean>
+  /** Current studio section, used to restore a cancelled history navigation. */
+  adminContentSection: Accessor<AdminSection>
+  /** Open the password-reset page (token from the emailed link, or null
+   *  for the bare request-a-link form). */
+  openResetPassword: (token: string | null) => void
+  /** Whether that page is open (keeps the tab→hash sync off it). */
+  showResetPassword: Accessor<boolean>
+  /** Replay the First Light Map (#/map). */
+  openOnboardingMap: () => void
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -58,6 +84,26 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   const dispatchRoute = (route: HashRoute) => {
     hashSyncing = true
+    if (
+      route.type !== 'admin' &&
+      deps.showAdminContentStudio() &&
+      !deps.closeAdminContent()
+    ) {
+      replaceHash({
+        type: 'admin',
+        section: deps.adminContentSection(),
+      })
+      hashSyncing = false
+      return
+    }
+    if (route.type === 'admin' && !deps.openAdminContent(route.section)) {
+      replaceHash({
+        type: 'admin',
+        section: deps.adminContentSection(),
+      })
+      hashSyncing = false
+      return
+    }
     if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
       deps.setActiveUvrSessionId(null)
@@ -91,6 +137,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.openWalkthroughChapter(route.chapterId)
     } else if (route.type === 'guide') {
       deps.setShowGuideSelection(true)
+    } else if (route.type === 'onboarding-map') {
+      deps.dismissWelcome()
+      deps.openOnboardingMap()
     } else if (route.type === 'jam-room') {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_JAM)
@@ -102,14 +151,17 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'settings-section') {
       deps.openSettingsSection(route.section)
       deps.setActiveUvrSessionId(null)
-    } else if (route.type === 'admin-weekly') {
+    } else if (route.type === 'admin') {
       deps.dismissWelcome()
-      deps.openAdminWeekly()
+    } else if (route.type === 'reset-password') {
+      // Emailed link landing — the welcome overlay must not cover the form.
+      deps.dismissWelcome()
+      deps.openResetPassword(route.token)
     } else if (route.type === 'billing-return') {
       deps.dismissWelcome()
       deps.openSettingsSection('credits')
       deps.setActiveUvrSessionId(null)
-      deps.handleBillingReturn(route.outcome)
+      deps.handleBillingReturn(route.outcome, route.kind ?? 'credits')
       // Clean the one-shot return hash so a reload can't re-fire the toast
       // (the tab-sync effect is muted by hashSyncing here). replaceState
       // fires no hashchange, so this can't loop.
@@ -147,7 +199,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.showSelection() ||
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection() ||
-      deps.showAdminWeekly()
+      deps.showAdminContentStudio() ||
+      deps.showResetPassword()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {

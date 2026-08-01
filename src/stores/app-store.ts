@@ -1,3 +1,23 @@
+// ============================================================
+// App Store — audio-engine singleton, key/scale, and ALL guided-tour content
+// ============================================================
+//
+// Two unrelated things share this file for historical reasons:
+//
+//   1. Global musical context (key, scale, instrument) and the lazily
+//      constructed AudioEngine singleton -- `initAudioEngine()` is the only
+//      sanctioned way to get it.
+//   2. Every guided tour in the app: WALKTHROUGH_STEPS, PAGE_TOURS,
+//      PAGE_TOUR_CATALOG, GUIDE_SECTIONS.
+//
+// Tour steps address the DOM by `targetSelector`, so renaming a `data-tour`
+// hook or restructuring a control bar breaks a tour with no type error. After
+// editing tours, verify the affected selectors still resolve; the full
+// `pnpm test:tours` walk is a release gate, not a per-change gate (20+ min).
+//
+// This file re-exports all of ./uvr-store, so importing from '@/stores' pulls
+// that in too. Prefer importing the specific store module directly.
+
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
@@ -1281,73 +1301,49 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
 
 const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
   {
-    title: 'Three analysis tools',
+    title: 'Pick a take',
     description:
-      'Switch between Vocal Analysis, Pitch Detection, and Pitch Algorithms — the tour will visit each.',
-    targetSelector: '[data-tour="analysis.subtabs"]',
+      'Everything analysable in one place — your mic right now, songs you separated in Karaoke, and past practice sessions. Each card says what depth of analysis its data supports.',
+    targetSelector: '[data-tour="analysis.takes"]',
     placement: 'bottom',
     requiredTab: TAB_ANALYSIS,
-    viewport: 'desktop',
   },
   {
-    title: 'Vocal Analysis',
+    title: 'Sing and watch',
     description:
-      'Deep-dive a recording or your session history: pitch accuracy, range, vibrato and trends over time.',
-    targetSelector: '[data-tour="analysis.vocal"]',
+      'Start listening and your note, tuning and spectrogram update live as you sing. Stop whenever — the reading stays on screen.',
+    targetSelector: '[data-tour="analysis.live"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
+    // The live panel only renders while the live take is selected; if the
+    // tour starts with a session or song take open, select live first.
+    navigate: ['[data-testid="take-live"]'],
   },
   {
-    title: 'History or live mic',
+    title: 'What your voice is doing',
     description:
-      'Analyze your saved practice sessions, or switch to Live and watch intensity, breathiness, vibrato, resonance and a full spectrogram react as you sing.',
-    targetSelector: '[data-testid="analysis-mode-toggle"]',
-    placement: 'bottom',
-    requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
-  },
-  {
-    title: 'Technique drills',
-    description:
-      'Focused vocal-technique exercises — belting, falsetto, crescendo, riffs and runs — each analyzed with targeted feedback.',
-    targetSelector: '.vocal-techniques',
+      'Once a few seconds are captured: intensity, breathiness, resonance, harmonics, vibrato and pitch steadiness — measured from the real spectrum, not estimated.',
+    targetSelector: '[data-testid="live-start"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Vocal Analysis"]'],
-    viewport: 'desktop',
+    navigate: ['[data-testid="take-live"]'],
   },
   {
-    title: 'Pitch Detection',
+    title: 'Your pitch, plotted',
     description:
-      'Test the real-time detector against audio files, your mic, or generated tones to see how it tracks pitch.',
-    targetSelector: '[data-tour="analysis.detection"]',
+      'Every take gets a pitch plot — your live contour here, the detected notes of a separated song, or a practice run coloured by how close each note landed. On a phone the deeper sections start folded; tap a heading to open one.',
+    targetSelector: '[data-tour="analysis.trace"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Detection"]'],
-    viewport: 'desktop',
+    reveal: '[data-collapsible="analysis_open_trace"]',
   },
   {
-    title: 'Pick a signal source',
+    title: 'Progress over time',
     description:
-      'Feed the detector a generated tone, an audio file (with optional vocal separation first), or your live mic — then compare algorithms and thresholds on it.',
-    targetSelector: '#detection-mode-select',
-    placement: 'right',
-    requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Detection"]'],
-    viewport: 'desktop',
-  },
-  {
-    title: 'Pitch Algorithms',
-    description:
-      'Benchmark the detection algorithms head-to-head on the same test samples — run one or all, and compare accuracy per sample in the results table.',
-    targetSelector: '[data-tour="analysis.algorithms"]',
+      'Your streak and score trend across practice sessions. Pick a past session or a separated song above and this page fills in with its accuracy, tuning bias, range — and for a real vocal, a full spectrogram.',
+    targetSelector: '[data-tour="analysis.trends"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
-    navigate: ['[aria-label="Pitch Algorithms"]'],
-    viewport: 'desktop',
   },
 ]
 
@@ -1466,9 +1462,17 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_LEADERBOARD,
   },
   {
+    title: 'Weekly leagues',
+    description:
+      'Climb a seven-league ladder: exercises and challenges earn weekly points, and every Monday the top of each league advances while the bottom drops down.',
+    targetSelector: '[data-testid="league-tab"]',
+    placement: 'bottom',
+    requiredTab: TAB_LEADERBOARD,
+  },
+  {
     title: 'Rank by metric',
     description:
-      'Sort the board by overall score, best score, accuracy, streak or sessions.',
+      'Sort the board by overall score, best score, accuracy or sessions — and by streak when you are viewing friends.',
     targetSelector: '.category-tabs',
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
@@ -1571,6 +1575,10 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Tap any orb to open its guidebook: what to focus on, the goals, and the drills this week leans into. Completed weeks stay open — replay them any time.',
     targetSelector: '.path-week-card',
+    // The guide only mounts once an orb is expanded. The class sits on the
+    // orb's wrapper; the CLICKABLE toggle is the inner button, and its
+    // aria-expanded is what makes the reveal click idempotent.
+    reveal: '.path-orb-current button[aria-expanded]',
     placement: 'top',
     requiredTab: TAB_PATH,
   },
@@ -1579,6 +1587,7 @@ const PATH_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'One tap starts today’s session, themed to the active week. Any practice that meets your daily goal counts — freeform singing included.',
     targetSelector: '.path-cta',
+    reveal: '.path-orb-current button[aria-expanded]',
     placement: 'top',
     requiredTab: TAB_PATH,
   },
@@ -1676,7 +1685,8 @@ export const PAGE_TOUR_CATALOG: {
   {
     tab: TAB_ANALYSIS,
     title: 'Analysis',
-    description: 'Vocal analysis, pitch detection, and algorithm benchmarking',
+    description:
+      'Analyse a take — live mic, a separated song, or a past practice session',
   },
   {
     tab: TAB_EXERCISES,

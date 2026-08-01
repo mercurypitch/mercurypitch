@@ -10,6 +10,7 @@
 import { createSignal } from 'solid-js'
 import type { UserProfile } from '@/db/entities'
 import type { Repository } from '@/db/types'
+import { API_BASE_URL } from '@/lib/defaults'
 
 const USER_ID_KEY = 'mp:userId'
 const AUTH_TOKEN_KEY = 'mp:authToken'
@@ -65,6 +66,18 @@ export function getUserId(): string {
   return id
 }
 
+/**
+ * Forget this browser's identity and mint a fresh one. Used after account
+ * deletion: the device id is what /api/auth/anonymous keys on, so reusing it
+ * would resurrect the same user id the erasure request just removed.
+ */
+export function resetUserId(): string {
+  const id = window.crypto.randomUUID()
+  localStorage.setItem(USER_ID_KEY, id)
+  cachedUserId = id
+  return id
+}
+
 /** JWT issued by the db-worker, or null when not authenticated. */
 export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY)
@@ -80,16 +93,22 @@ export function setAuthToken(token: string | null): void {
 }
 
 /**
- * The current user's profile. In cloud mode the row id IS the user id
- * (and profiles are publicly readable, so an unfiltered findAll would
- * return other users' rows); locally the single seeded profile has a
- * generated id, hence the fallback.
+ * The current user's profile, or undefined when there isn't one yet.
+ *
+ * In cloud mode the row id IS the user id, and there is deliberately no
+ * fallback: profiles are publicly readable, so an unfiltered findAll would
+ * hand back a stranger's row. That was masked while every page load
+ * provisioned a profile; with lazy provisioning a browse-only visitor
+ * genuinely has none, and "no profile" must read as undefined.
+ *
+ * Locally the single seeded profile has a generated id, hence the fallback.
  */
 export async function findOwnProfile(
   repo: Repository<UserProfile>,
 ): Promise<UserProfile | undefined> {
   const byId = await repo.findById(getUserId())
   if (byId !== null) return byId
+  if (API_BASE_URL != null && API_BASE_URL !== '') return undefined
   const profiles = await repo.findAll({ limit: 1 })
   return profiles[0]
 }

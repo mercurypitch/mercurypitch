@@ -26,10 +26,65 @@ export interface TableDef {
   boolCols?: string[]
   /** Columns stored as JSON text that must round-trip as objects. */
   jsonCols?: string[]
+  /**
+   * Columns only the server may set. Silently stripped from client create
+   * and update payloads (stripped, not rejected, so a client echoing back a
+   * whole row it previously read never starts failing). The server writes
+   * them through its own prepared statements, which bypass the CRUD layer.
+   */
+  serverCols?: string[]
+  /**
+   * For publicly readable per-user tables ('owner'): the only columns a
+   * requester other than the row's owner (or an admin) may see. Everything
+   * else — friend codes, opt-in state, league placement, streak/practice
+   * telemetry — is the owner's business. Absent means the whole row is
+   * public, which is only acceptable for non-personal tables.
+   */
+  publicCols?: string[]
+}
+
+/**
+ * Project a row down to its public columns for a non-owner, non-admin
+ * reader. Tables without a publicCols list pass through untouched.
+ */
+export function maskPublicRow<T extends Record<string, unknown>>(
+  def: TableDef,
+  row: T,
+  requesterId: string | null,
+  admin: boolean,
+): Partial<T> {
+  if (def.publicCols === undefined) return row
+  if (admin || (requesterId !== null && row.id === requesterId)) return row
+  const masked: Partial<T> = {}
+  for (const col of def.publicCols) {
+    if (col in row) masked[col as keyof T] = row[col as keyof T]
+  }
+  return masked
 }
 
 export const TABLES: Record<string, TableDef> = {
-  userProfiles: { access: 'owner' },
+  // currentLeagueId is placement — only the weekly cut moves players between
+  // rungs. friendCode is minted by GET /api/friends/code (registered accounts
+  // only); accepting it here would let anyone forge or vanity-pick codes.
+  userProfiles: {
+    access: 'owner',
+    boolCols: ['leaderboardOptIn'],
+    serverCols: ['currentLeagueId', 'friendCode'],
+    // Public identity only. friendCode is a linking credential, opt-in and
+    // league placement are consent/derived state, and the streak/practice
+    // columns are activity telemetry — none of it belongs in an
+    // unauthenticated profile read. Leaderboards expose streaks only for
+    // opted-in users through their own aggregated endpoint.
+    publicCols: [
+      'id',
+      'createdAt',
+      'updatedAt',
+      'displayName',
+      'avatarUrl',
+      'bio',
+      'joinDate',
+    ],
+  },
   sessionRecords: { access: 'user', jsonCols: ['results'] },
   challengeDefinitions: { access: 'admin', boolCols: ['isActive'] },
   challengeProgress: { access: 'user', boolCols: ['completed'] },
@@ -46,9 +101,24 @@ export const TABLES: Record<string, TableDef> = {
   userSettings: { access: 'user' },
   follows: { access: 'user' },
   userSurveyResponses: { access: 'user', jsonCols: ['answersJson'] },
+  // A singer's measured voice over time. Private per-user: the twin and the
+  // numbers are yours, and nothing here is a leaderboard.
+  voiceprints: { access: 'user', jsonCols: ['summary'] },
   // Pricing config: public reads (the pricing page), writes require the
   // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
   // ledger, entitlements, and billing events are deliberately NOT here: only
   // the server (billing webhook) may write them. See src/billing.ts.
   pricingPlans: { access: 'admin', boolCols: ['active'] },
+  // Leaderboard rules: public reads so the client can show the same
+  // thresholds it will be judged by; writes require the X-Admin-Key, so
+  // sources and thresholds are tunable without a deploy.
+  leaderboardConfig: { access: 'admin', boolCols: ['requireOptIn'] },
+  // League rung config + tunable point weights: public reads (client renders
+  // the ladder + trophies), writes require the X-Admin-Key — so names,
+  // promote/relegate counts, trophy art, and point weights are editable
+  // without a deploy. leagueCohorts / leagueMembership / leaguePointEvents are
+  // deliberately NOT here: only the server (points award + weekly cut) writes
+  // them, exactly like leaderboardEntries. See migrations/0005_leagues.sql.
+  leagues: { access: 'admin', boolCols: ['isMystery'] },
+  leaguePointsConfig: { access: 'admin' },
 }

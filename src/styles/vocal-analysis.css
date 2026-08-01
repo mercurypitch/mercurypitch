@@ -1,403 +1,16 @@
 /* ============================================================
-   Vocal Analysis Tab Styles
+   Shared global styles for Community Share, Leaderboard, Challenges
+   and UVR.
+
+   MISNAMED, deliberately left in place: this file is still called
+   vocal-analysis.css because renaming it would touch every entry point,
+   but the vocal-analysis rules are gone. The Analysis dashboard now uses
+   a scoped CSS module (src/features/analysis/AnalysisDashboard.module.css)
+   instead of leaking ~1,350 lines of global selectors that other pages
+   had to work around — see the notes in uvr.css and mobile-polish.css.
+
+   Do not add analysis rules here. New page styles belong in a module.
    ============================================================ */
-
-.vocal-analysis-tab {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.vocal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.vocal-header-content h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--text-primary);
-}
-
-.vocal-subtitle {
-  margin: 8px 0 0 0;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-.analyze-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 22px;
-  background: linear-gradient(135deg, var(--accent, #58a6ff), #82b9f7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow:
-    0 4px 12px rgba(88, 166, 255, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.analyze-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 16px rgba(88, 166, 255, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  opacity: 1;
-}
-
-.analyze-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow:
-    0 2px 6px rgba(88, 166, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.analyze-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.vocal-grid {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 24px;
-  min-height: calc(100% - 80px);
-}
-
-.vocal-column-left {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.vocal-column-right {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.live-dashboard,
-.vocal-techniques,
-.spectrogram-display,
-.pitch-history {
-  flex-shrink: 0;
-}
-
-.stat-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.stat-card h3 {
-  margin: 0 0 12px 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-
-/* Streak Card */
-.streak-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.streak-icon {
-  font-size: 2rem;
-}
-
-.streak-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.streak-number {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.streak-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.streak-divider {
-  width: 1px;
-  height: 48px;
-  background: var(--border);
-}
-
-/* Weekly Chart */
-.chart-bar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chart-bar-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.chart-bar {
-  flex: 1;
-  min-height: 24px;
-  min-width: 4px;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.chart-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  min-width: 40px;
-}
-
-.chart-score {
-  font-size: 0.75rem;
-  font-weight: 600;
-  min-width: 30px;
-}
-
-.chart-legend {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 8px;
-}
-
-/* Session List */
-.session-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.session-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-}
-
-.session-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.session-item .session-name {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.session-date {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.session-score {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 100px;
-}
-
-.score-value {
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.score-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--bg-primary);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.score-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.no-sessions {
-  padding: 24px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  font-style: italic;
-}
-
-/* Horizontal Layout for Techniques and Results */
-.analysis-blocks-row {
-  display: flex;
-  gap: 24px;
-  align-items: stretch;
-}
-
-.analysis-blocks-row > * {
-  flex: 1;
-  min-width: 0;
-}
-
-@media (max-width: 1024px) {
-  .analysis-blocks-row {
-    flex-direction: column;
-  }
-}
-
-.analysis-blocks-row .technique-grid,
-.analysis-blocks-row .live-cards-grid {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-/* Vocal Techniques */
-.vocal-techniques {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.technique-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.technique-card {
-  padding: 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border, #30363d);
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  border-left: 3px solid var(--exercise-color, var(--border));
-}
-
-.technique-card .exercise-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  color: var(--exercise-color, var(--text-primary));
-}
-
-.technique-card .exercise-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.technique-card:hover {
-  background: color-mix(
-    in srgb,
-    var(--exercise-color, var(--accent)) 5%,
-    var(--bg-secondary, rgba(255, 255, 255, 0.03))
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--exercise-color, var(--border)) 50%,
-    var(--border)
-  );
-}
-
-.technique-card.active {
-  border-color: var(--exercise-color, var(--accent));
-  background: color-mix(
-    in srgb,
-    var(--exercise-color, var(--accent)) 10%,
-    var(--bg-secondary, rgba(255, 255, 255, 0.03))
-  );
-  box-shadow: 0 0 12px
-    color-mix(in srgb, var(--exercise-color, var(--accent)) 20%, transparent);
-}
-
-.technique-card.active .exercise-name {
-  color: var(--exercise-color, var(--accent));
-}
-
-.exercise-icon {
-  font-size: 1.5rem;
-}
-
-.exercise-name {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.analyzing-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  gap: 16px;
-}
-
-.analyzing-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--accent-dim);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes live-pulse {
-  0% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.4);
-  }
-  50% {
-    opacity: 0.6;
-    box-shadow: 0 0 0 6px rgba(248, 81, 73, 0);
-  }
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.4);
-  }
-}
 
 /* ============================================================
    Community Share Tab Styles
@@ -1805,6 +1418,13 @@
 /* ============================================================
    Community Leaderboard Styles
    ============================================================ */
+
+/* Moved down from the old vocal-analysis block, which CommunityLeaderboard
+   had been borrowing this from. It belongs to the leaderboard row. */
+.score-value {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
 
 .leaderboard-panel {
   width: 100%;
@@ -3714,955 +3334,285 @@
   padding-left: 14px;
 }
 
-/* ============================================================
-   Live Mic Mode & Demo Data
-   ============================================================ */
+/* ── League view (weekly promotion ladder) ─────────────────────────── */
 
-/* Mode Toggle */
-.mode-toggle {
+.league-view {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0 16px;
 }
 
-.mode-toggle-btn {
+/* 1 · The trophy rail. One horizontal line of all seven rungs, your rung
+   spotlit and auto-centered, the rest dimmed to supporting cast. On narrow
+   screens it scrolls sideways (Duolingo-style) instead of shrinking the
+   art — the renders are the best thing in this feature and they stay big. */
+.league-strip {
   display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 28px 20px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(88, 166, 255, 0.09),
+      transparent 62%
+    ),
+    var(--bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.league-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.league-strip-rung {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted, #8b949e);
-  cursor: pointer;
-  font-size: 0.875rem;
+  gap: 8px;
+  scroll-snap-align: center;
   transition:
-    background 0.15s,
-    color 0.15s;
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
 }
 
-.mode-toggle-btn:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+.league-strip-trophy {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.league-strip-name {
+  font-size: 11px;
+  color: var(--text-secondary, #9aa4b2);
+  white-space: nowrap;
+}
+
+/* Your rung is the protagonist; everything else steps back. Only once a
+   current rung exists — signed-out visitors see all seven at full volume. */
+.league-strip.has-current .league-strip-rung:not(.current) {
+  opacity: 0.45;
+  filter: saturate(0.75);
+}
+
+.league-strip.has-current .league-strip-rung:not(.current):hover {
+  opacity: 0.85;
+  filter: saturate(1);
+}
+
+.league-strip-rung.mystery {
+  opacity: 0.55;
+}
+
+.league-strip.has-current .league-strip-rung.mystery {
+  opacity: 0.3;
+}
+
+.league-strip-rung.current {
+  transform: translateY(-6px);
+}
+
+.league-strip-rung.current .league-strip-trophy {
+  width: 124px;
+  height: 124px;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 2px var(--accent, #58a6ff),
+    0 14px 40px rgba(88, 166, 255, 0.35);
+}
+
+.league-strip-rung.current .league-strip-name {
   color: var(--text-primary, #e6edf3);
-}
-
-.mode-toggle-btn.active {
-  background: var(--accent, #58a6ff);
-  color: #fff;
-}
-
-.mode-toggle-btn .icon-svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Header actions row */
-.vocal-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Live Error */
-.live-error {
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 8px;
-  color: #f85149;
-  font-size: 0.875rem;
-}
-
-/* Demo Data Hint */
-.demo-hint {
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  background: rgba(210, 153, 34, 0.08);
-  border: 1px solid rgba(210, 153, 34, 0.25);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
-.demo-hint p {
-  margin: 0 0 12px 0;
-}
-
-.demo-hint-link {
-  background: none;
-  border: none;
-  color: var(--accent, #58a6ff);
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: inherit;
-  padding: 0;
-}
-
-.demo-hint-link:hover {
-  color: var(--accent-hover, #79c0ff);
-}
-
-.demo-hint-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.demo-load-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: 1px solid rgba(88, 166, 255, 0.4);
-  border-radius: 8px;
-  background: rgba(88, 166, 255, 0.1);
-  color: var(--accent, #58a6ff);
   font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.demo-load-btn:hover {
-  background: rgba(88, 166, 255, 0.2);
-  border-color: rgba(88, 166, 255, 0.6);
-  transform: translateY(-1px);
-}
-
-.demo-load-btn:active {
-  transform: translateY(0);
-}
-
-.dev-hint {
-  background: rgba(139, 148, 158, 0.08);
-  border-color: rgba(139, 148, 158, 0.2);
-  font-size: 0.75rem;
-}
-
-/* Live Dashboard */
-.live-dashboard {
-  margin-bottom: 20px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(88, 166, 255, 0.03) 0%,
-    rgba(188, 140, 255, 0.02) 50%,
-    rgba(45, 212, 191, 0.03) 100%
-  );
-  overflow: hidden;
-}
-
-.live-dashboard-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border, #30363d);
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-}
-
-.live-dashboard-header .live-dot {
-  margin-right: 2px;
-}
-
-.live-dashboard-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-right: auto;
-}
-
-.live-dashboard-body {
-  padding: 16px 18px;
-}
-
-.live-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.live-metric-card {
-  padding: 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border, #30363d);
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
-  border-left: 3px solid var(--metric-color, var(--border, #30363d));
-}
-
-.live-metric-card.highlight {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--metric-color, #3fb950) 8%, transparent),
-    var(--bg-secondary, rgba(255, 255, 255, 0.03))
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--metric-color, #3fb950) 40%,
-    var(--border, #30363d)
-  );
-  box-shadow: 0 0 12px
-    color-mix(in srgb, var(--metric-color, #3fb950) 8%, transparent);
-}
-
-.live-metric-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--metric-color, #58a6ff) 15%, transparent);
-}
-
-.live-metric-icon .icon-svg {
-  width: 16px;
-  height: 16px;
-}
-
-.live-metric-body {
+/* 2 · Your league, written large under the rail. The trophy lives in the
+   rail, so this block is pure typography — no second image. */
+.league-hero {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 2px 16px 0;
 }
 
-.live-metric-label {
-  font-size: 0.6875rem;
+.league-locked {
+  text-align: center;
+  padding: 2px 16px 0;
+}
+
+.league-hero-eyebrow {
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  color: var(--text-secondary, #9aa4b2);
 }
 
-.live-metric-value {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
+.league-hero-name {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #eee);
 }
 
-.live-metric-detail {
-  font-size: 0.75rem;
-  color: var(--text-muted);
+.league-hero-stats {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--text-primary, #ddd);
 }
 
-/* Live Start/Stop Buttons */
-.analyze-btn.live-start {
-  background: linear-gradient(135deg, #3fb950, #2ea043);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 4px 12px rgba(63, 185, 80, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.analyze-btn.live-start:hover:not(:disabled) {
-  background: linear-gradient(135deg, #46c458, #3fb950);
-  box-shadow:
-    0 6px 16px rgba(63, 185, 80, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.analyze-btn.live-stop {
-  background: linear-gradient(135deg, #f85149, #d73a49);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 4px 12px rgba(248, 81, 73, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.analyze-btn.live-stop:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff6a6a, #f85149);
-  box-shadow:
-    0 6px 16px rgba(248, 81, 73, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* Live Listening Indicator */
-.live-listening-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+.league-hero-stats strong {
   color: var(--accent, #58a6ff);
-  font-size: 0.8125rem;
 }
 
-/* Live Status Bar */
-.live-status-bar {
+.league-hero-zones {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #9aa4b2);
+  max-width: 52ch;
+}
+
+.league-cut-countdown {
+  margin-top: 6px;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+/* 3 · Standings, cut into promotion / safe / relegation zones. */
+.league-standings {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.league-standing-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 10px 14px;
-  border-radius: 8px;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border, #30363d);
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.live-status-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--accent, #58a6ff);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.live-status-chip {
-  font-size: 0.75rem;
-  color: var(--text-primary);
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.05));
-  padding: 2px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border, #30363d);
-}
-
-/* Live Dot (pulsing) */
-.live-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #3fb950;
-  animation: live-pulse 1.5s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-/* Mic Spectrum Display */
-.mic-spectrum-display {
-  margin-top: 16px;
-  padding: 14px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
-}
-
-.mic-spectrum-display h3 {
-  margin: 0 0 12px 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-
-.mic-spectrum-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 72px;
-  padding: 0 2px;
-}
-
-.mic-spectrum-bar {
-  flex: 1;
-  min-height: 2px;
-  border-radius: 3px 3px 0 0;
-  background: var(--accent, #58a6ff);
-  opacity: 0.35;
-  transition:
-    height 0.08s ease-out,
-    opacity 0.08s ease-out;
-}
-
-.mic-spectrum-bar.active {
-  opacity: 0.85;
-  background: linear-gradient(
-    to top,
-    var(--accent, #58a6ff),
-    color-mix(in srgb, var(--accent, #58a6ff) 70%, white)
-  );
-  box-shadow: 0 0 6px
-    color-mix(in srgb, var(--accent, #58a6ff) 30%, transparent);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .vocal-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .vocal-header-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .mode-toggle {
-    width: 100%;
-  }
-
-  .mode-toggle-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .live-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .live-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ============================================================
-   Phase 1: Vocal Analysis Cards (Intensity, Breathiness, Slides)
-   ============================================================ */
-
-.phase1-card {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-}
-
-.phase1-card h3 {
-  margin: 0 0 12px 0;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.phase1-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.phase1-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.phase1-label {
-  font-size: 0.7rem;
-  color: var(--text-muted, #8b949e);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.phase1-value {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.phase1-value--good {
-  color: #3fb950;
-}
-
-.phase1-value--warn {
-  color: #d29922;
-}
-
-.phase1-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
+  font-size: 14px;
+  color: var(--text-primary, #ddd);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
 }
 
-.phase1-badge--resonant {
-  background: rgba(63, 185, 80, 0.15);
-  color: #3fb950;
-}
-
-.phase1-badge--normal {
-  background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
-}
-
-.phase1-badge--pressed {
-  background: rgba(210, 153, 34, 0.15);
-  color: #d29922;
-}
-
-.phase1-badge--breathy {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
-}
-
-.phase1-bar-container {
-  height: 6px;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.phase1-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.phase1-bar-intensity {
-  background: linear-gradient(90deg, #58a6ff, #bc8cff);
-}
-
-.phase1-bar-breathiness {
-  background: linear-gradient(90deg, #f85149, #3fb950);
-}
-
-.phase1-bar-slides {
-  background: linear-gradient(90deg, #d29922, #3fb950);
-}
-
-.phase1-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted, #8b949e);
-  line-height: 1.4;
-}
-
-.phase1-slide-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.phase1-slide-item {
-  display: grid;
-  grid-template-columns: 20px 40px 70px 1fr;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.78rem;
-  background: var(--bg-tertiary, #21262d);
-}
-
-.phase1-slide-dir {
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.phase1-slide-span {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-
-.phase1-slide-type {
-  text-transform: capitalize;
-  font-weight: 500;
-}
-
-.phase1-slide--clean .phase1-slide-type {
-  color: #3fb950;
-}
-.phase1-slide--scoop .phase1-slide-type,
-.phase1-slide--fall .phase1-slide-type {
-  color: #d29922;
-}
-.phase1-slide--overshoot .phase1-slide-type,
-.phase1-slide--wobble .phase1-slide-type {
-  color: #f85149;
-}
-
-.phase1-slide-score {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-/* ============================================================
-   Phase 2: Vocal Analysis Cards (Vibrato, Harmonics, Resonance, Fatigue)
-   ============================================================ */
-
-.phase2-card {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-}
-
-.phase2-card h3 {
-  margin: 0 0 12px 0;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.phase2-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.phase2-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.phase2-label {
-  font-size: 0.7rem;
-  color: var(--text-muted, #8b949e);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.phase2-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.phase2-value--warn {
-  color: #d29922;
-}
-
-.phase2-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.phase2-badge--none,
-.phase2-badge--thin {
-  background: rgba(139, 148, 158, 0.15);
-  color: #8b949e;
-}
-
-.phase2-badge--natural,
-.phase2-badge--normal {
-  background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
-}
-
-.phase2-badge--slow-operatic,
-.phase2-badge--rich {
-  background: rgba(188, 140, 255, 0.15);
-  color: #bc8cff;
-}
-
-.phase2-badge--nervous,
-.phase2-badge--wide {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
-}
-
-.phase2-badge--very-rich {
-  background: rgba(63, 185, 80, 0.15);
-  color: #3fb950;
-}
-
-.phase2-badge--chest {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
-}
-
-.phase2-badge--mask {
-  background: rgba(88, 166, 255, 0.15);
-  color: #58a6ff;
-}
-
-.phase2-badge--head {
-  background: rgba(188, 140, 255, 0.15);
-  color: #bc8cff;
-}
-
-.phase2-badge--mixed {
-  background: rgba(63, 185, 80, 0.15);
-  color: #3fb950;
-}
-
-.phase2-bar-container {
-  height: 6px;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.phase2-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.phase2-bar-vibrato {
-  background: linear-gradient(90deg, #58a6ff, #bc8cff);
-}
-
-.phase2-bar-harmonics {
-  background: linear-gradient(90deg, #d29922, #3fb950);
-}
-
-.phase2-hint {
-  font-size: 0.75rem;
-  color: var(--text-muted, #8b949e);
-  line-height: 1.4;
-}
-
-.phase2-alert {
-  padding: 10px 12px;
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 6px;
-  color: #f85149;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  margin-top: 8px;
-}
-
-/* Resonance body map */
-.phase2-resonance-map {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.phase2-zone {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  transition: all 0.3s ease;
-}
-
-.phase2-zone--active {
+.league-standing-row.me {
   border-color: var(--accent, #58a6ff);
-  box-shadow: 0 0 8px rgba(88, 166, 255, 0.15);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
 }
 
-.phase2-zone-head {
-  border-left: 3px solid #bc8cff;
-}
-
-.phase2-zone-mask {
-  border-left: 3px solid #58a6ff;
-}
-
-.phase2-zone-chest {
-  border-left: 3px solid #f85149;
-}
-
-.phase2-zone-label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.phase2-zone-pct {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ============================================================
-   Vocal Analysis — Mode Toggle, Live Mic & Demo Hint
-   ============================================================ */
-
-.vocal-header-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.mode-toggle {
-  display: flex;
-  gap: 8px;
-}
-
-.mode-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mode-toggle-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-}
-
-.mode-toggle-btn.active {
-  background: var(--accent);
-  color: white;
-}
-
-/* Demo hint card */
-.demo-hint {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.demo-hint-icon {
-  font-size: 2rem;
+.league-standing-rank {
+  width: 30px;
   flex-shrink: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #9aa4b2);
 }
 
-.demo-hint-text {
+.league-standing-row.promote .league-standing-rank {
+  color: #3fb950;
+}
+
+.league-standing-row.demote .league-standing-rank {
+  color: #f85149;
+}
+
+/* Name cell: the TEXT ellipsizes, but the cell itself must not clip — the
+   "you" chip lives beside the name, and an overflow:hidden on the cell was
+   shaving the chip's bottom border. */
+.league-standing-name {
   flex: 1;
   min-width: 0;
-}
-
-.demo-hint-text strong {
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.demo-hint-text p {
-  margin: 4px 0 0 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.demo-hint-dev {
-  color: var(--accent) !important;
-  font-size: 0.8rem !important;
-  margin-top: 6px !important;
-}
-
-.demo-hint-actions {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
+}
+
+.league-standing-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-standing-you {
   flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
 }
 
-.demo-btn {
-  padding: 8px 16px;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--accent);
-  font-weight: 500;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+.league-standing-points {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent, #58a6ff);
 }
 
-.demo-btn:hover {
-  background: var(--accent);
-  color: white;
-}
-
-.demo-btn--live {
-  border-color: var(--border);
-  color: var(--text-muted);
-}
-
-.demo-btn--live:hover {
-  border-color: var(--accent);
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* Live mic controls */
-.live-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.live-start-btn {
-  background: #3fb950;
-}
-
-.live-start-btn:hover:not(:disabled) {
-  background: #3fb950;
-  opacity: 0.85;
-}
-
-.live-stop-btn {
-  background: #f85149;
-}
-
-.live-stop-btn:hover:not(:disabled) {
-  background: #f85149;
-  opacity: 0.85;
-}
-
-.live-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #3fb950;
-  animation: live-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes live-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* Live mic error */
-.live-error {
+.league-zone-divider {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  margin-bottom: 16px;
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid rgba(248, 81, 73, 0.3);
-  border-radius: 8px;
+  padding: 4px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.league-zone-divider::before,
+.league-zone-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.league-zone-divider.promote {
+  color: #3fb950;
+}
+
+.league-zone-divider.demote {
   color: #f85149;
-  font-size: 0.85rem;
 }
 
-.live-error-icon {
-  flex-shrink: 0;
-  font-size: 1.1rem;
+/* Phones: the rail scrolls; the art stays big. */
+@media (max-width: 640px) {
+  .league-strip {
+    gap: 14px;
+    padding: 22px 14px 12px;
+  }
+
+  .league-strip-trophy {
+    width: 72px;
+    height: 72px;
+  }
+
+  .league-strip-rung.current .league-strip-trophy {
+    width: 104px;
+    height: 104px;
+  }
+
+  .league-hero-name {
+    font-size: 26px;
+  }
 }

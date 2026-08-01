@@ -1,0 +1,7 @@
+.autoSaveHint {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  color: var(--fg-secondary, #8b949e);
+}

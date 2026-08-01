@@ -17,6 +17,7 @@ import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
+import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
@@ -213,9 +214,9 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Getting started</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              Revisit the welcome screen (voice-range setup, the tour and more),
-              or open the Voice Mirror — a free 60-second voiceprint of your
-              range.
+              Replay the guided intro — or make another voiceprint any time in
+              the Voice Mirror (a free 60-second run; no need to redo the
+              intro). Every voiceprint stacks in your history above.
             </p>
             <div class={styles.settingsActionRow}>
               <button
@@ -223,10 +224,10 @@ export const SettingsPanel: Component = () => {
                 class={styles.settingsActionBtn}
                 onClick={() => setShowWelcome(true)}
               >
-                Show welcome screen
+                Replay the intro
               </button>
               <a href="/mirror" class={styles.settingsActionBtn}>
-                Open Voice Mirror
+                Create another voiceprint
               </a>
               <a href="/glass" class={styles.settingsActionBtn}>
                 Open Glass
@@ -1641,7 +1642,7 @@ export const SettingsPanel: Component = () => {
                   Website
                 </a>
                 <a
-                  href="https://github.com/mercurypitch/mercurypitch"
+                  href={GITHUB_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   class={styles.aboutLink}

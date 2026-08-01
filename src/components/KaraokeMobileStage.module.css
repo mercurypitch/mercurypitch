@@ -509,6 +509,51 @@
   transform: none;
 }
 
+/* Mirrored side slots keep play dead centre; the left one holds the mic. */
+.transportSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transportMain {
+  display: flex;
+  align-items: center;
+  gap: 38px;
+}
+
+/* Your mic — the same glass circle as the header toggles, transport-sized.
+   On: filled with the stage's purple accent, matching .autoplayBtnOn. */
+.micBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.micBtn:active {
+  transform: scale(0.92);
+}
+
+.micBtnOn {
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+  box-shadow: 0 0 14px rgba(201, 162, 255, 0.45);
+}
+
 .playBtn {
   display: inline-flex;
   align-items: center;

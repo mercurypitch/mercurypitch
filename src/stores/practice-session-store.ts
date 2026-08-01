@@ -1,10 +1,21 @@
+// ============================================================
+// Practice Session Store — the multi-item guided practice run
+// ============================================================
+//
+// A session is an ordered list of SessionItems, each repeated N times.
+// `advanceSessionItem` walks that structure; `endPracticeSession` is the
+// commit point that persists the record, records activity, and triggers badge
+// evaluation. Ending a session twice grants badges twice.
+//
+// Distinct from a single exercise run -- that path is exercise-history-store.
+
 import { createSignal } from 'solid-js'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
 import { STORAGE_KEY_SESSION_HIST } from './melody-store'
-import { recordActivity } from './usage-store'
+import { recordCompletion } from './usage-store'
 
 export const [practiceSession, setPracticeSession] =
   createSignal<PlaybackSession | null>(null)
@@ -130,12 +141,16 @@ export function endPracticeSession(): SessionResult | null {
 
   // Persist the record, then check for newly-earned badges/achievements
   // (grant check reads the just-saved record, so chain it after the save).
+  // Free practice over a self-chosen melody: kept for personal history, the
+  // badge engine and streaks, but never publicly ranked — the difficulty is
+  // whatever the singer picked, so the scores compare nothing.
   void saveSessionRecord({
     melodyName: session.name,
     score: avgScore,
     accuracy: avgScore,
     notesHit: results.length,
     notesTotal: session.items.length,
+    source: 'practice',
   })
     .then(() => checkAndGrantBadges())
     .catch(() => {})
@@ -146,7 +161,7 @@ export function endPracticeSession(): SessionResult | null {
   setSessionItemRepeat(0)
   setSessionMode(false)
 
-  recordActivity()
+  recordCompletion()
 
   return result
 }

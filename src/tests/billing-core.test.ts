@@ -6,7 +6,18 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PricingRow } from '../../workers/db-worker/src/billing-core'
-import { creditBalance, isUvrTier, isValidJobRef, mapPricingPlans, timingSafeEqualStr, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+import { bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, UVR_BASE_MINUTES, UVR_MODEL_CREDIT_MULTIPLIERS, UVR_TIER_PLAN_IDS, uvrDebitKey, uvrJobCost, uvrLengthFactor, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from '../../workers/db-worker/src/billing-core'
+
+/** Expected uvrModelCredits output for a given tier base, derived from the
+ *  multiplier map so adding a registry model doesn't break these tests —
+ *  the point under test is the arithmetic, not the model list. */
+const creditsFor = (base: number): Record<string, number> =>
+  Object.fromEntries(
+    Object.entries(UVR_MODEL_CREDIT_MULTIPLIERS).map(([m, mult]) => [
+      m,
+      base * mult,
+    ]),
+  )
 
 const row = (over: Partial<PricingRow>): PricingRow => ({
   id: 'x',
@@ -64,6 +75,200 @@ describe('mapPricingPlans', () => {
   it('defaults currency to eur when empty', () => {
     expect(mapPricingPlans([]).currency).toBe('eur')
   })
+
+  it('buckets donations separately from tiers and packs', () => {
+    const res = mapPricingPlans([
+      row({ id: 'd1', kind: 'donation', sortOrder: 1 }),
+      row({ id: 'p1', kind: 'pack', sortOrder: 0 }),
+      row({ id: 't1', kind: 'tier', sortOrder: 2 }),
+    ])
+    expect(res.donations.map((d) => d.id)).toEqual(['d1'])
+    expect(res.packs.map((p) => p.id)).toEqual(['p1'])
+    expect(res.tiers.map((t) => t.id)).toEqual(['t1'])
+  })
+
+  // The whole point of the "Other amount" row: Stripe holds the amount, so
+  // requiring one here would leave it permanently showing "Soon".
+  it('a custom-amount row is purchasable with a NULL amount', () => {
+    const res = mapPricingPlans([
+      row({
+        kind: 'donation',
+        amount: null,
+        customAmount: 1,
+        stripePriceId: 'price_custom',
+      }),
+    ])
+    expect(res.donations[0].amount).toBeNull()
+    expect(res.donations[0].customAmount).toBe(true)
+    expect(res.donations[0].purchasable).toBe(true)
+  })
+
+  it('a custom-amount row still needs a Stripe price', () => {
+    const res = mapPricingPlans([
+      row({ kind: 'donation', customAmount: 1, stripePriceId: null }),
+    ])
+    expect(res.donations[0].purchasable).toBe(false)
+  })
+
+  it('parses perks, and degrades malformed JSON to no bullets', () => {
+    const res = mapPricingPlans([
+      row({ id: 'ok', kind: 'donation', perks: '["Badge","Costumes"]' }),
+      row({ id: 'bad', kind: 'donation', perks: '{not json' }),
+      row({ id: 'mixed', kind: 'donation', perks: '["Badge",42,null]' }),
+      row({ id: 'none', kind: 'donation', perks: null }),
+    ])
+    const byId = (id: string) => res.donations.find((d) => d.id === id)
+    expect(byId('ok')?.perks).toEqual(['Badge', 'Costumes'])
+    expect(byId('bad')?.perks).toEqual([])
+    expect(byId('mixed')?.perks).toEqual(['Badge'])
+    expect(byId('none')?.perks).toEqual([])
+  })
+})
+
+describe('donationDays', () => {
+  it('treats a non-numeric entitlementDays as granting nothing', () => {
+    // Metadata from a session created outside handleCheckout can carry a
+    // non-numeric value; NaN passes every <= 0 guard and used to throw in
+    // toISOString - inside the reconciliation sweep that poisoned one
+    // event's grant on every run.
+    expect(
+      donationDays(
+        { entitlementDays: Number('not-a-number'), customAmount: 0 },
+        1000,
+      ),
+    ).toBe(0)
+    expect(
+      donationDays({ entitlementDays: Number.NaN, customAmount: 1 }, null),
+    ).toBe(0)
+  })
+
+  it('gives a fixed tier exactly its configured days', () => {
+    expect(donationDays({ entitlementDays: 90, customAmount: 0 }, 1000)).toBe(
+      90,
+    )
+    // …regardless of what was actually paid.
+    expect(donationDays({ entitlementDays: 90, customAmount: 0 }, 99999)).toBe(
+      90,
+    )
+  })
+
+  it('scales a custom amount by EUR 5 per 30 days', () => {
+    const plan = { entitlementDays: 30, customAmount: 1 }
+    expect(donationDays(plan, 500)).toBe(30)
+    expect(donationDays(plan, 1500)).toBe(90)
+    expect(donationDays(plan, 1700)).toBe(90) // partial block rounds down
+  })
+
+  it('floors a small custom donation at the row default', () => {
+    expect(donationDays({ entitlementDays: 30, customAmount: 1 }, 200)).toBe(30)
+  })
+
+  it('caps a very large custom donation at a year', () => {
+    expect(
+      donationDays({ entitlementDays: 30, customAmount: 1 }, 500_000),
+    ).toBe(365)
+  })
+
+  it('survives a missing amount_total', () => {
+    expect(donationDays({ entitlementDays: 30, customAmount: 1 }, null)).toBe(
+      30,
+    )
+    expect(donationDays({ entitlementDays: null, customAmount: 0 }, 500)).toBe(
+      0,
+    )
+  })
+})
+
+describe('supporterLevel / bestSupporterLevel', () => {
+  const TIERS = [
+    { id: 'sup-fund', amount: 500 },
+    { id: 'sup-extras', amount: 1000 },
+    { id: 'sup-voice', amount: 2500 },
+  ]
+
+  it('resolves a fixed tier to itself', () => {
+    expect(supporterLevel(TIERS, 500)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, 1000)).toBe('sup-extras')
+    expect(supporterLevel(TIERS, 2500)).toBe('sup-voice')
+  })
+
+  // The whole point: a generous custom amount should earn a real badge name.
+  it('lifts a custom amount to the highest tier it covers', () => {
+    expect(supporterLevel(TIERS, 5900)).toBe('sup-voice')
+    expect(supporterLevel(TIERS, 1500)).toBe('sup-extras')
+    expect(supporterLevel(TIERS, 999)).toBe('sup-fund')
+  })
+
+  it('floors below the cheapest tier rather than resolving to nothing', () => {
+    expect(supporterLevel(TIERS, 200)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, 0)).toBe('sup-fund')
+    expect(supporterLevel(TIERS, null)).toBe('sup-fund')
+  })
+
+  it('ignores unpriced tiers, and gives up only when none are priced', () => {
+    expect(supporterLevel([{ id: 'x', amount: null }, ...TIERS], 5900)).toBe(
+      'sup-voice',
+    )
+    expect(supporterLevel([{ id: 'x', amount: null }], 5900)).toBeNull()
+    expect(supporterLevel([], 5900)).toBeNull()
+  })
+
+  // Donating EUR 5 after EUR 59 must not demote a Voice supporter.
+  it('keeps the high-water mark when donations stack', () => {
+    expect(bestSupporterLevel(TIERS, 'sup-voice', 'sup-fund')).toBe('sup-voice')
+    expect(bestSupporterLevel(TIERS, 'sup-fund', 'sup-voice')).toBe('sup-voice')
+    expect(bestSupporterLevel(TIERS, null, 'sup-extras')).toBe('sup-extras')
+    expect(bestSupporterLevel(TIERS, 'sup-extras', null)).toBe('sup-extras')
+    expect(bestSupporterLevel(TIERS, null, null)).toBeNull()
+  })
+
+  it('treats an unknown stored level as the lowest rank', () => {
+    expect(bestSupporterLevel(TIERS, 'sup-custom', 'sup-fund')).toBe('sup-fund')
+  })
+})
+
+describe('sourcePlanId', () => {
+  it('extracts the planId from a donation source', () => {
+    expect(sourcePlanId('donation:sup-voice')).toBe('sup-voice')
+  })
+
+  it('returns null for anything else', () => {
+    expect(sourcePlanId(null)).toBeNull()
+    expect(sourcePlanId('')).toBeNull()
+    expect(sourcePlanId('donation:')).toBeNull()
+    expect(sourcePlanId('subscription:pro')).toBeNull()
+  })
+})
+
+describe('extendSupporterExpiry', () => {
+  const now = '2026-07-28T00:00:00.000Z'
+
+  it('starts from now when there is no existing grant', () => {
+    expect(extendSupporterExpiry(null, now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
+  })
+
+  // Donating again mid-term must ADD time, not reset the clock to 30 days out.
+  it('stacks on top of a live grant', () => {
+    const live = '2026-09-01T00:00:00.000Z'
+    expect(extendSupporterExpiry(live, now, 30)).toBe(
+      '2026-10-01T00:00:00.000Z',
+    )
+  })
+
+  it('restarts from now when the previous grant already lapsed', () => {
+    const lapsed = '2026-01-01T00:00:00.000Z'
+    expect(extendSupporterExpiry(lapsed, now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
+  })
+
+  it('treats an unparseable stored expiry as absent', () => {
+    expect(extendSupporterExpiry('not-a-date', now, 30)).toBe(
+      '2026-08-27T00:00:00.000Z',
+    )
+  })
 })
 
 describe('creditBalance', () => {
@@ -99,21 +304,58 @@ describe('uvrJobCost / uvrModelCredits', () => {
 
   it('is zero across the board while the tier is unmetered', () => {
     expect(uvrJobCost(0, 'roformer')).toBe(0)
-    expect(uvrModelCredits(0)).toEqual({
-      mdx: 0,
-      roformer: 0,
-      karaoke: 0,
-      ensemble: 0,
-    })
+    expect(uvrModelCredits(0)).toEqual(creditsFor(0))
+    expect(Object.values(uvrModelCredits(0)).every((c) => c === 0)).toBe(true)
   })
 
   it('exposes absolute per-model costs for the pricing endpoint', () => {
-    expect(uvrModelCredits(1)).toEqual({
-      mdx: 1,
-      roformer: 1,
-      karaoke: 1,
-      ensemble: 2,
-    })
+    expect(uvrModelCredits(1)).toEqual(creditsFor(1))
+    // Spot-check the two ends of the scale so the derivation can't quietly
+    // collapse to a constant.
+    expect(uvrModelCredits(1).roformer).toBe(1)
+    expect(uvrModelCredits(1).ensemble).toBe(2)
+  })
+})
+
+describe('uvrLengthFactor — long-song surcharge blocks', () => {
+  const min = (m: number) => m * 60
+
+  it('charges the base within the included window', () => {
+    expect(uvrLengthFactor(undefined)).toBe(1)
+    expect(uvrLengthFactor(0)).toBe(1)
+    expect(uvrLengthFactor(min(3.5))).toBe(1)
+    expect(uvrLengthFactor(min(UVR_BASE_MINUTES))).toBe(1)
+  })
+
+  it('adds one multiple per STARTED block past the base', () => {
+    expect(uvrLengthFactor(min(UVR_BASE_MINUTES) + 1)).toBe(2)
+    expect(uvrLengthFactor(min(18))).toBe(2)
+    expect(uvrLengthFactor(min(18) + 1)).toBe(3)
+    expect(uvrLengthFactor(min(24))).toBe(3)
+    expect(uvrLengthFactor(min(30))).toBe(4)
+  })
+
+  it('treats garbage durations as the base factor', () => {
+    expect(uvrLengthFactor(Number.NaN)).toBe(1)
+    expect(uvrLengthFactor(-30)).toBe(1)
+    expect(uvrLengthFactor(Number.POSITIVE_INFINITY)).toBe(1)
+  })
+
+  it('multiplies into the job cost together with the model', () => {
+    // An 18-minute Full-band-quality job: base 1 × demucs-6s 2 × length 2.
+    expect(uvrJobCost(1, 'demucs-6s', min(18))).toBe(4)
+    expect(uvrJobCost(1, 'roformer', min(18))).toBe(2)
+    expect(uvrJobCost(1, 'roformer', min(5))).toBe(1)
+    expect(uvrJobCost(1, undefined, min(18))).toBe(2)
+  })
+
+  it('prices the multi-stem Demucs tiers above the RoFormer base', () => {
+    // demucs-ft bags four checkpoints, so it must cost more than the
+    // single-model multi-stem tiers.
+    const credits = uvrModelCredits(1)
+    expect(credits.demucs).toBeGreaterThan(credits.roformer)
+    expect(credits['demucs-ft']).toBeGreaterThan(credits.demucs)
+    expect(uvrJobCost(1, 'demucs-6s')).toBe(credits['demucs-6s'])
   })
 })
 

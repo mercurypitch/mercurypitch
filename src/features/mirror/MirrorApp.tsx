@@ -12,6 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { attemptByTake, parseTakeHash, saveAttempt, takeHash, } from '@/lib/mirror/attempts'
@@ -701,6 +702,16 @@ export const MirrorApp: Component = () => {
     const line = previous ? formatDeltaLine(previous.delta, previous.since) : ''
     setDeltaLine(line !== '' ? line : null)
     saveBaseline(localStorage, summary)
+
+    // Every completed Mirror run is a voiceprint, exactly like the
+    // onboarding one: stored on this device (capped), pushed to the account
+    // when signed in. Before this, only onboarding ever saved - making
+    // another voiceprint meant redoing the whole first run.
+    void saveVoiceprint({
+      summary,
+      twin: singerForRange(result.range),
+      source: 'mirror',
+    })
 
     // Flip is the one shipped reveal (the lenticular look lives on as the
     // "Share with twin" export; the animation stays reachable via ?mode=).

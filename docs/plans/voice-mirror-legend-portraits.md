@@ -1,5 +1,7 @@
 # Voice Mirror — Legend "Voice Twin" Portraits
 
+**Status:** in progress — supports the open items in [voice-mirror-handoff-2026-07-09.md](voice-mirror-handoff-2026-07-09.md).
+
 > **STATUS 2026-07-09: DONE — all 14 legends ship with raster portraits** in
 > `public/legends/` (Style A "mercury accents" caricatures generated via the
 > Higgsfield MCP; see `voice-mirror-handoff-2026-07-09.md` §8 for the master

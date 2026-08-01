@@ -1,5 +1,7 @@
 # Glass — Campaign Handoff & Decisions Log (2026-07-17)
 
+**Status:** in progress — Glass shipped (`src/features/glass/`); 5 open items remain, mostly ad-spend and tuning decisions (see the checklist at the end).
+
 Planning handoff for **Glass** (`mercurypitch.com/glass`): a cinematic,
 standalone campaign experience where the visitor's voice dances as a living
 waveform inside a quicksilver mirror pane — and, by landing and holding a note
@@ -19,7 +21,7 @@ mechanics, the architecture, the campaign wiring, and the open items.
   force-push, **no Claude/AI attribution anywhere**, run `pnpm check` after
   code changes.
 - **Interactive look-dev prototype (open in a browser):**
-  [`docs/plans/prototypes/glass-shatter-prototype.html`](./prototypes/glass-shatter-prototype.html)
+  `<user-dotfiles>/mercurypitch/archive-2026-07/prototypes/glass-shatter-prototype.html` (archived 2026-07-28)
   — see §15 for what it validates and the tuned constants it contributed.
   Also published as a private Claude artifact (same file, reusable later):
   <https://claude.ai/code/artifact/f899e8b5-b271-42c6-8323-a2d856fd0e6a>
@@ -526,7 +528,7 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 
 ## 15. The look-dev prototype (this session's second deliverable)
 
-**File:** `docs/plans/prototypes/glass-shatter-prototype.html` — a single
+**File:** `<user-dotfiles>/mercurypitch/archive-2026-07/prototypes/glass-shatter-prototype.html` — a single
 self-contained page (Canvas 2D + WebAudio, zero dependencies). Open it in
 any browser. **It validates choreography, palette, physics feel, scoring
 and copy — NOT the rendering stack** (production is TypeGPU, per decision
@@ -556,7 +558,7 @@ What's real in it (and transfers 1:1):
 ```bash
 git fetch origin
 git checkout claude/voice-mirror-visualization-d7h0q7   # this doc + prototype
-# open docs/plans/prototypes/glass-shatter-prototype.html in a browser
+# open <user-dotfiles>/mercurypitch/archive-2026-07/prototypes/glass-shatter-prototype.html in a browser
 # implementation: branch off main as feat/glass-campaign (CLAUDE.md rules)
 pnpm install && pnpm dev
 ```
@@ -779,8 +781,8 @@ see an animation."
   back to Canvas2D and completed the full flow. E2E now uses
   `scripts/verify-glass.mjs` — a getUserMedia-level injected synthetic
   singer (OS fake-audio devices proved flaky on desktops). The living
-  implementation log / operating manual lives in maff's dotfiles:
-  `~/.dotfiles/personal/mercurypitch/glass-implementation-log.md`
+  implementation log / operating manual lives privately:
+  `<user-dotfiles>/mercurypitch/glass-implementation-log.md`
   (moved out of the repo by request — update it every phase).
 - **P4 — DONE (branch `feat/glass-campaign`).** The shatter:
   `src/lib/glass/fracture.ts` (deterministic recursive biased convex

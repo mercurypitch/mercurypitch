@@ -1,3 +1,12 @@
+// ============================================================
+// Playback State Store — transport position, shared app-wide
+// ============================================================
+//
+// Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading
+// the raw state. Note that PlaybackRuntime's `.on('state')` handler receives
+// the whole event object rather than a bare state string, so detecting a
+// pause by comparing the handler argument silently never matches.
+
 import { createSignal } from 'solid-js'
 import type { MelodyItem } from '@/types'
 

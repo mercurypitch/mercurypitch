@@ -2059,6 +2059,17 @@
   white-space: nowrap;
 }
 
+/* Long-song surcharge marker on a queued item ("18 min · 2x credits") —
+   priced per started block past the included length, quoted before
+   Process is pressed. */
+.uvr-queue-long-song {
+  flex-shrink: 0;
+  color: var(--warning, #f59e0b);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .uvr-queue-message::before {
   content: '·';
   margin-right: 0.55rem;
@@ -3812,6 +3823,114 @@
 }
 
 /* Full Mix Card */
+/* ── Stem card waveform + inline preview ──────────────────────── */
+/* The card is a layered pill: translucent waveform + progress fill
+   behind, content above. While its stem is loaded in the preview
+   player, the card surface doubles as a click-to-scrub strip. */
+.rv-stem-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.rv-stem-card > .rv-stem-card-top,
+.rv-stem-card > .rv-stem-card-actions {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hidden until its stem plays — the fade-in doubles as the "card is a
+   scrubber now" signal; on stop the card returns to a plain select
+   toggle. */
+.rv-stem-wave-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.rv-stem-wave-layer.rv-stem-wave-visible {
+  opacity: 1;
+}
+
+.rv-stem-wave-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+}
+
+.rv-stem-wave-progress {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  opacity: 0.2;
+}
+
+.rv-stem-card-playing {
+  cursor: col-resize;
+}
+
+/* ── Instrument parts (split of the instrumental) ─────────────── */
+.rv-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border, #30363d);
+}
+
+.rv-parts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rv-parts-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rv-parts-split-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rv-split-cost {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.5rem;
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent, #8b5cf6);
+  font-variant-numeric: tabular-nums;
+}
+
+.rv-parts-progress {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #8b949e);
+  font-variant-numeric: tabular-nums;
+}
+
+.rv-parts-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #8b949e);
+}
+
+.rv-parts-grid {
+  margin-top: 0.25rem;
+}
+
 .rv-full-mix-card {
   display: flex;
   align-items: center;
@@ -4724,4 +4843,45 @@ button.server-cost-hint {
 button.server-cost-hint:hover {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+/* Liveness pulse for the session-list progress ring: the last percent of a
+   separation reports no granular progress, and a static ring at ~95% reads
+   as hung. */
+.status-ring-live {
+  animation: uvr-ring-pulse 2s ease-in-out infinite;
+}
+
+@keyframes uvr-ring-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ── Parts split gating (cloud-only annotation + credit/sign-in CTA) ── */
+.rv-parts-cloud-note {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #30363d);
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.rv-parts-cta {
+  margin-left: 6px;
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+.rv-parts-cta:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent, #58a6ff) 15%, transparent);
 }

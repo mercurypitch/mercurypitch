@@ -22,6 +22,8 @@ image, not part of the Vite/Cloudflare build.
 | `Dockerfile` | CUDA image; pre-bakes the default model to cut cold-starts |
 | `requirements.txt` | Python deps (torch/onnxruntime come from CUDA wheels in the Dockerfile) |
 | `test_input.json` | Sample job for the local test loop |
+| `test_input_split.json` | Sample second-pass job (split an instrumental into its parts) |
+| `test_stem_contract.py` | Stem-contract tests — classification, registry, residual reconciliation, and handler/api parity. No GPU or weights needed: `python -m pytest runpod/test_stem_contract.py` |
 
 ## Job contract
 
@@ -36,7 +38,13 @@ The handler receives RunPod's `input` object:
     "filename":      "song.mp3",
     "model":         "roformer",              // optional registry name (see below)
     "output_format": "FLAC",                  // WAV | MP3 | FLAC (FLAC keeps payloads small)
-    "stems":         ["vocal", "instrumental"]
+    "stems":         ["vocal", "instrumental"],
+
+    // ── Second pass (splitting a stem into its parts) ──
+    "source_stem":         "original",        // or "instrumental"
+    "drop_stems":          ["vocal"],         // default ["vocal"] when source_stem != "original"
+    "reconcile_residual":  true,              // default: on for a second pass
+    "residual_stem":       "other"
   }
 }
 ```
@@ -44,14 +52,44 @@ The handler receives RunPod's `input` object:
 ### Models
 
 `model` is a registry name resolved (and allowlisted) by the handler —
-never a raw weights filename. All weights are baked into the image.
+never a raw weights filename. All weights are baked into the image. Every
+registry entry declares the stems it produces (`MODEL_REGISTRY[...].stems`),
+returned as `model_stems` — so nothing downstream hard-codes a two-stem world.
 
-| Name | Weights | What it is |
-|---|---|---|
-| `roformer` (default) | BS-RoFormer viperx 1297 | Highest single-model quality (vocals SDR ~12.9 vs ~10 for MDX); ~2-4x slower than MDX |
-| `mdx` | UVR-MDX-NET Inst HQ_3 | The previous default; fastest tier |
-| `karaoke` | Mel-Band RoFormer karaoke | Removes only the LEAD vocal — backing vocals stay in the instrumental (its stem is labeled `(Karaoke)` and mapped to `instrumental`) |
-| `ensemble` | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | Max quality; ~2x the time of `roformer`, and ensemble members reload per job |
+| Name | Weights | Stems | What it is |
+|---|---|---|---|
+| `roformer` (default) | BS-RoFormer viperx 1297 | vocal, instrumental | Highest single-model quality (vocals SDR ~12.9 vs ~10 for MDX); ~2-4x slower than MDX |
+| `mdx` | UVR-MDX-NET Inst HQ_3 | vocal, instrumental | The previous default; fastest tier |
+| `karaoke` | Mel-Band RoFormer karaoke | vocal, instrumental | Removes only the LEAD vocal — backing vocals stay in the instrumental (its stem is labeled `(Karaoke)` and mapped to `instrumental`) |
+| `ensemble` | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | vocal, instrumental | Max quality; ~2x the time of `roformer`, and ensemble members reload per job |
+| `demucs` | htdemucs | vocal, drums, bass, other | Fast multi-stem tier; one model pass |
+| `demucs-ft` | htdemucs_ft | vocal, drums, bass, other | Best 4-stem quality — **four** fine-tuned models bagged, so ~4x `demucs` |
+| `demucs-6s` | htdemucs_6s | + guitar, piano | The only source of a guitar stem. Piano rides along on the same compute but **bleeds heavily**, so the app drops it by default (`defaultDropStems` in `src/lib/uvr-api.ts`) and the residual pass folds its audio into `other`. The server stays neutral and will return it on request. |
+
+`UVR_DEMUCS_SHIFTS` (default 2) is the main cost dial for the Demucs
+tiers: it runs N passes at different offsets and averages them, so
+runtime scales almost linearly with it. Set it to 1 to halve the bill.
+
+### Splitting an instrumental into its parts
+
+Breaking an already-separated instrumental into drums/bass/guitar/piano
+is the same endpoint with `source_stem: "instrumental"` and a Demucs
+model. That flips on two behaviours:
+
+- **`drop_stems`** defaults to `["vocal"]`. Separating an instrumental
+  still emits a near-silent vocal stem; keeping it hands the app a dead
+  track.
+- **`reconcile_residual`** defaults to on, rewriting `residual_stem`
+  (default `other`) as `input − Σ(the other kept stems)`. Without it the
+  kept stems don't sum back to the instrumental, so muting every part in
+  the mixer wouldn't silence it and any energy the model failed to place
+  would simply vanish.
+
+Reconciliation is only sound when the input really is the sum of the kept
+stems — i.e. already vocal-free. It stays **off** by default for
+`source_stem: "original"`, where dropping the vocal and reconciling would
+fold the *vocal* into the residual. The response echoes `source_stem`,
+`dropped_stems` and `reconciled_stem` so the app can tell what happened.
 
 The legacy value `UVR-MDX-NET-Inst_HQ_3` is still accepted (maps to
 `mdx`). Unknown names fail fast with the valid list — a job can't make
@@ -64,9 +102,14 @@ the credit multiplier in `workers/db-worker/src/billing-core.ts`.
 Credits: the app debits `tier base × model multiplier` per job
 (billing-core `UVR_MODEL_CREDIT_MULTIPLIERS`). Since the 2026-07-06
 measurements showed RoFormer is cheaper AND faster than MDX on the GPU,
-pricing collapsed to the base for every user-facing model (`mdx`,
-`roformer`, `karaoke` all 1x = **1 credit per song**); only the
-unexposed two-model `ensemble` carries a 2x multiplier.
+pricing collapsed to the base for every user-facing 2-stem model (`mdx`,
+`roformer`, `karaoke` all 1x = **1 credit per song**); the unexposed
+two-model `ensemble` carries a 2x multiplier.
+
+The Demucs tiers are priced off compute: `demucs` and `demucs-6s` at 2x,
+`demucs-ft` at 4x (it bags four checkpoints). **These are provisional** —
+run a real song through `python handler.py` and correct them from the
+measured `cost` block before launch.
 
 Precedence: `audio_s3_key` > `audio_url` > `audio_base64`. The web app's
 Cloudflare worker inlines base64 up to 7 MB (the RunPod `/run` payload

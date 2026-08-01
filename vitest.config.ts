@@ -17,7 +17,13 @@ export default defineConfig({
     // they would otherwise run the HybridAdapter against a live worker.
     env: { VITE_API_BASE_URL: '' },
     setupFiles: ['./src/tests/setup.ts'],
-    include: ['src/tests/**/*.test.ts', 'src/tests/**/*.test.tsx', 'src/lib/**/*.test.ts', 'src/components/__tests__/**/*.test.tsx'],
+    include: [
+      'src/tests/**/*.test.ts',
+      'src/tests/**/*.test.tsx',
+      'src/lib/**/*.test.ts',
+      'src/components/__tests__/**/*.test.tsx',
+      'workers/db-worker/src/**/*.test.ts',
+    ],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: [
@@ -30,4 +36,3 @@ export default defineConfig({
     },
   },
 })
-

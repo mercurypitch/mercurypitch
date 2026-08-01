@@ -8,7 +8,7 @@
 // the admin-gated /api/weekly endpoints.
 
 import type { Component } from 'solid-js'
-import { createResource, createSignal, For, Show } from 'solid-js'
+import { createEffect, createResource, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
 import styles from './AdminWeeklyPage.module.css'
@@ -104,11 +104,36 @@ function isLiveNow(row: WeeklyAdminRow): boolean {
   )
 }
 
-export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
-  const [key, setKey] = createSignal(getAdminKey())
-  const [keyInput, setKeyInput] = createSignal(getAdminKey())
+interface AdminWeeklyPageProps {
+  onClose?: () => void
+  /** The Content Studio owns authentication when this is supplied. */
+  adminKey?: string
+  /** Removes the modal frame so the existing authoring UI can fill the studio. */
+  embedded?: boolean
+  class?: string
+  onDirtyChange?: (dirty: boolean) => void
+}
+
+export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
+  // These frame/auth props are fixed for the lifetime of a mounted admin page.
+  const suppliedAdminKey = untrack(() => props.adminKey)
+  const embedded = untrack(() => props.embedded) === true
+  const embeddedClass = untrack(() => props.class)
+  const onClose = untrack(() => props.onClose)
+  const onDirtyChange = untrack(() => props.onDirtyChange)
+  const initialKey = suppliedAdminKey ?? getAdminKey()
+  const [key, setKey] = createSignal(initialKey)
+  const [keyInput, setKeyInput] = createSignal(initialKey)
   const [form, setForm] = createSignal<FormState | null>(null)
   const [saving, setSaving] = createSignal(false)
+
+  createEffect(() => {
+    onDirtyChange?.(form() !== null)
+  })
+
+  onCleanup(() => {
+    onDirtyChange?.(false)
+  })
 
   const [rows, { refetch }] = createResource(
     () => key(),
@@ -116,6 +141,7 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
   )
 
   const unlocked = () => key() !== '' && rows() !== null && rows() !== undefined
+  const studioOwnsAuth = suppliedAdminKey !== undefined
 
   function saveKey(): void {
     const k = keyInput().trim()
@@ -215,37 +241,64 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
   const liveCount = (): number => (rows() ?? []).filter(isLiveNow).length
 
   return (
-    <div class={styles.overlay}>
-      <div class={styles.panel}>
-        <header class={styles.head}>
-          <h2 class={styles.title}>Weekly Legend — Authoring</h2>
-          <button
-            class={styles.close}
-            onClick={() => props.onClose()}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
+    <div
+      class={embedded ? embeddedClass : styles.overlay}
+      role={embedded ? 'region' : 'dialog'}
+      aria-modal={embedded ? undefined : 'true'}
+      aria-label={embedded ? 'Weekly challenges authoring' : undefined}
+      aria-labelledby={embedded ? undefined : 'weekly-admin-title'}
+    >
+      <div class={embedded ? undefined : styles.panel}>
+        <Show when={!embedded}>
+          <header class={styles.head}>
+            <h2 id="weekly-admin-title" class={styles.title}>
+              Weekly Legend — Authoring
+            </h2>
+            <button
+              class={styles.close}
+              onClick={() => onClose?.()}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+        </Show>
 
         <Show
           when={unlocked()}
           fallback={
-            <div class={styles.unlock}>
-              <p>Enter the admin key to author weekly challenges.</p>
-              <Show when={key() !== '' && rows() === null}>
-                <p class={styles.err}>That key was rejected.</p>
-              </Show>
-              <div class={styles.unlockRow}>
-                <input
-                  type="password"
-                  placeholder="Admin key"
-                  value={keyInput()}
-                  onInput={(e) => setKeyInput(e.currentTarget.value)}
-                />
-                <button onClick={saveKey}>Unlock</button>
+            <Show
+              when={studioOwnsAuth}
+              fallback={
+                <div class={styles.unlock}>
+                  <p>Enter the admin key to author weekly challenges.</p>
+                  <Show when={key() !== '' && rows() === null}>
+                    <p class={styles.err}>That key was rejected.</p>
+                  </Show>
+                  <div class={styles.unlockRow}>
+                    <input
+                      type="password"
+                      placeholder="Admin key"
+                      value={keyInput()}
+                      onInput={(e) => setKeyInput(e.currentTarget.value)}
+                    />
+                    <button onClick={saveKey}>Unlock</button>
+                  </div>
+                </div>
+              }
+            >
+              <div
+                class={styles.unlock}
+                role={rows.loading ? 'status' : 'alert'}
+                aria-live="polite"
+              >
+                <p>
+                  {rows.loading
+                    ? 'Loading weekly challenges…'
+                    : 'Weekly challenges could not be loaded. Change the admin key or try again.'}
+                </p>
               </div>
-            </div>
+            </Show>
           }
         >
           <Show
@@ -341,7 +394,7 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
             }
           >
             {/* ── Editor form ─────────────────────────────── */}
-            <div class={styles.form}>
+            <fieldset class={styles.form} disabled={saving()}>
               <label>
                 Title
                 <input
@@ -481,7 +534,7 @@ export const AdminWeeklyPage: Component<{ onClose: () => void }> = (props) => {
                   Set dates to this week
                 </button>
               </div>
-            </div>
+            </fieldset>
           </Show>
         </Show>
       </div>

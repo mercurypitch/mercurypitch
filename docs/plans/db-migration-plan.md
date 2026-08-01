@@ -1,5 +1,9 @@
 # Cloudflare D1 Database Migration Plan
 
+> **Historical.** Executed as written; the `schema.sql` flow it describes was
+> retired in #361 for tracked migrations in `workers/db-worker/migrations/`
+> (`wrangler d1 migrations apply`, run by deploy-db.yml before each deploy).
+
 This plan outlines moving MercuryPitch's **cloud-relevant** data to a persistent Cloudflare D1 (SQLite) database, while keeping heavy karaoke/UVR data local on the user's device.
 
 ## 0. Architecture Decision (LOCKED IN)

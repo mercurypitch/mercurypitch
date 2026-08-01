@@ -241,3 +241,36 @@ describe('UVR upload queue', () => {
     expect(queue.isRunning()).toBe(false)
   })
 })
+
+describe('requeueFailed', () => {
+  it('puts error rows back in the queue and leaves the rest alone', async () => {
+    const queue = createUvrUploadQueue(15, deterministicIds())
+    queue.enqueue(songs(3))
+
+    await queue.run(async (item) => {
+      if (item.file.name === 'song-1.mp3') throw new Error('server died')
+      if (item.file.name === 'song-2.mp3') return { status: 'cancelled' }
+      return { status: 'completed' }
+    })
+
+    expect(queue.items().map((item) => item.status)).toEqual([
+      'error',
+      'cancelled',
+      'completed',
+    ])
+
+    queue.requeueFailed()
+
+    const after = queue.items()
+    // The failed row is queued again with clean progress/message so the next
+    // Process click - on whatever mode is selected then - reruns it. The
+    // deliberate cancel and the success are untouched.
+    expect(after.map((item) => item.status)).toEqual([
+      'queued',
+      'cancelled',
+      'completed',
+    ])
+    expect(after[0]!.progress).toBe(0)
+    expect(after[0]!.message).toBeUndefined()
+  })
+})

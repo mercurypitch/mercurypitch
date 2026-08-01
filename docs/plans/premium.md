@@ -120,10 +120,9 @@ This also keeps pricing out of the public repo (consistent with this doc).
 - Settings → Account grows a Billing block: credit balance, "Buy credits",
   "Manage subscription", donation link — all redirects to Stripe-hosted
   pages, driven by `GET /api/billing/me`.
-- A **pricing / support page** renders tiers + packs from
-  `GET /api/billing/pricing`, showing "Coming soon" where price is unset and
-  a Ko-fi support link in the meantime; the header support pill can deep-link
-  here.
+- A **pricing / support page** renders tiers, packs and donation tiers from
+  `GET /api/billing/pricing`, showing "Coming soon" where a price is unset;
+  the header support pill deep-links here rather than leaving for Ko-fi.
 - Gate visibility with the existing `featureFlags` table so billing UI can
   roll out per-environment without a deploy.
 - Server-processing options in the UVR flow show a credit estimate before
@@ -132,10 +131,16 @@ This also keeps pricing out of the public repo (consistent with this doc).
 
 ## Phases
 
-- **Phase 0 (now):** this plan. No billing tables, no Stripe code.
-- **Phase 1 — donations:** a Stripe Payment Link (or Ko-fi/GitHub Sponsors)
-  in the app footer/settings + supporter badge granted manually or via a
-  single webhook. No entitlements, no gating.
+- **Phase 0 (done):** this plan. No billing tables, no Stripe code.
+- **Phase 1 — donations (done):** one-time Stripe Checkout donations as
+  `kind = 'donation'` rows in `pricingPlans` — three fixed supporter tiers
+  plus a "choose your own amount" one backed by a `custom_unit_amount` price,
+  so Stripe hosts the amount input and bounds. Completing one grants a
+  time-boxed `supporter` entitlement (`entitlements.expiresAt`), stacking on
+  re-donation, with the tier resolved from the amount actually paid. It
+  gates nothing — the badge and the extras are a thank-you. Ko-fi and GitHub
+  Sponsors remain as secondary links that cannot grant the entitlement
+  automatically, since neither can tell the app who paid.
 - **Phase 2 — credits:** billing endpoints + ledger + metering for
   server-side stem separation (and transcription when it ships). Small free
   monthly allowance so everyone can try it.

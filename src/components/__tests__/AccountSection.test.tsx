@@ -1,23 +1,34 @@
 // ============================================================
 // AccountSection Component Tests — settings account flows
 // ============================================================
+// The sign-in/register form itself lives in AuthModal (see
+// AuthModal.test.tsx); this section shows the account state and opens
+// that modal from its CTAs.
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as Defaults from '@/lib/defaults'
 
-vi.mock('@/lib/defaults', () => ({
+// Spread the real module rather than replacing it: only API_BASE_URL needs
+// faking, and a bare object breaks the moment the component pulls in anything
+// else from defaults transitively (IS_TEST, via ui-store → test-utils).
+vi.mock('@/lib/defaults', async (importOriginal) => ({
+  ...(await importOriginal<typeof Defaults>()),
   API_BASE_URL: 'http://api.test',
 }))
 
 const mocks = vi.hoisted(() => ({
-  ensureAuth: vi.fn(async () => true),
+  restoreAuth: vi.fn(async () => true),
   fetchMe: vi.fn(),
-  loginWithPassword: vi.fn(),
-  registerWithPassword: vi.fn(),
-  loginWithGoogle: vi.fn(),
   logout: vi.fn(),
   googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
+  openAuthModal: vi.fn(),
   takeGoogleRedirectResult: vi.fn(() => null),
+  // Read by the nested VoiceSection (via voiceprint-service) to decide
+  // whether a cloud copy of the voiceprints exists. This mock replaces
+  // the whole module, so anything the panel reaches transitively has to
+  // be listed here or the call throws.
+  hasValidToken: vi.fn(() => false),
 }))
 
 const dbMocks = vi.hoisted(() => {
@@ -40,7 +51,17 @@ const dbMocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/db/services/auth-service', () => mocks)
+vi.mock('@/db/services/auth-service', () => ({
+  restoreAuth: mocks.restoreAuth,
+  deleteAccount: vi.fn(async () => undefined),
+  fetchMe: mocks.fetchMe,
+  logout: mocks.logout,
+  googleSignInUrl: mocks.googleSignInUrl,
+}))
+vi.mock('@/stores/ui-store', () => ({
+  openAuthModal: mocks.openAuthModal,
+  openFeedbackSurvey: vi.fn(),
+}))
 vi.mock('@/db', () => ({ getDb: dbMocks.getDb }))
 
 import { AccountSection } from '../account/AccountSection'
@@ -66,52 +87,25 @@ describe('AccountSection', () => {
 
     expect(await screen.findByTestId('show-register')).toBeTruthy()
     expect(screen.getByTestId('show-login')).toBeTruthy()
-    expect(mocks.ensureAuth).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('google-signin')).toBeTruthy()
+    // Opening the section restores an existing session and never provisions.
+    expect(mocks.restoreAuth).toHaveBeenCalledOnce()
   })
 
-  it('registers with email, password and display name', async () => {
+  it('opens the auth modal on the register pane', async () => {
     mocks.fetchMe.mockResolvedValue(anonymousMe)
-    mocks.registerWithPassword.mockResolvedValue({})
     render(() => <AccountSection />)
 
     fireEvent.click(await screen.findByTestId('show-register'))
-
-    fireEvent.input(screen.getByTestId('auth-display-name'), {
-      target: { value: 'Maff' },
-    })
-    fireEvent.input(screen.getByTestId('auth-email'), {
-      target: { value: 'maff@example.com' },
-    })
-    fireEvent.input(screen.getByTestId('auth-password'), {
-      target: { value: 'secret123' },
-    })
-    fireEvent.click(screen.getByTestId('auth-submit'))
-
-    expect(mocks.registerWithPassword).toHaveBeenCalledWith(
-      'maff@example.com',
-      'secret123',
-      'Maff',
-    )
+    expect(mocks.openAuthModal).toHaveBeenCalledWith('register')
   })
 
-  it('logs in with email and password', async () => {
+  it('opens the auth modal on the login pane', async () => {
     mocks.fetchMe.mockResolvedValue(anonymousMe)
-    mocks.loginWithPassword.mockResolvedValue({})
     render(() => <AccountSection />)
 
     fireEvent.click(await screen.findByTestId('show-login'))
-    fireEvent.input(screen.getByTestId('auth-email'), {
-      target: { value: 'maff@example.com' },
-    })
-    fireEvent.input(screen.getByTestId('auth-password'), {
-      target: { value: 'secret123' },
-    })
-    fireEvent.click(screen.getByTestId('auth-submit'))
-
-    expect(mocks.loginWithPassword).toHaveBeenCalledWith(
-      'maff@example.com',
-      'secret123',
-    )
+    expect(mocks.openAuthModal).toHaveBeenCalledWith('login')
   })
 
   it('shows the signed-in state and supports sign out', async () => {
@@ -170,25 +164,5 @@ describe('AccountSection', () => {
 
     fireEvent.input(input, { target: { value: 'New Name' } })
     expect(save.disabled).toBe(false)
-  })
-
-  it('surfaces auth errors in the form', async () => {
-    mocks.fetchMe.mockResolvedValue(anonymousMe)
-    mocks.loginWithPassword.mockRejectedValue(
-      new Error('auth login failed: 401'),
-    )
-    render(() => <AccountSection />)
-
-    fireEvent.click(await screen.findByTestId('show-login'))
-    fireEvent.input(screen.getByTestId('auth-email'), {
-      target: { value: 'maff@example.com' },
-    })
-    fireEvent.input(screen.getByTestId('auth-password'), {
-      target: { value: 'wrong-pass' },
-    })
-    fireEvent.click(screen.getByTestId('auth-submit'))
-
-    const error = await screen.findByTestId('auth-error')
-    expect(error.textContent).toContain('401')
   })
 })

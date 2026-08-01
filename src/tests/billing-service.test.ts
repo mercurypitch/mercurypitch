@@ -4,7 +4,18 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../workers/db-worker/src/billing-core'
+
+/** Derived from the multiplier map so adding a registry model doesn't break
+ *  these tests — what's under test is the derivation, not the model list. */
+const creditsFor = (base: number): Record<string, number> =>
+  Object.fromEntries(
+    Object.entries(UVR_MODEL_CREDIT_MULTIPLIERS).map(([m, mult]) => [
+      m,
+      base * mult,
+    ]),
+  )
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -45,24 +56,16 @@ describe('withModelCredits', () => {
 
   it('derives costs from the GPU tier base when the backend predates the field', () => {
     const legacy = basePricing({ tiers: [gpuTier(1)] })
-    expect(withModelCredits(legacy).uvrModelCredits).toEqual({
-      mdx: 1,
-      roformer: 1,
-      karaoke: 1,
-      ensemble: 2,
-    })
+    expect(withModelCredits(legacy).uvrModelCredits).toEqual(creditsFor(1))
   })
 
   it('yields zero costs when the GPU tier is unmetered or absent', () => {
-    expect(withModelCredits(basePricing({})).uvrModelCredits).toEqual({
-      mdx: 0,
-      roformer: 0,
-      karaoke: 0,
-      ensemble: 0,
-    })
+    expect(withModelCredits(basePricing({})).uvrModelCredits).toEqual(
+      creditsFor(0),
+    )
     expect(
       withModelCredits(basePricing({ tiers: [gpuTier(null)] })).uvrModelCredits,
-    ).toEqual({ mdx: 0, roformer: 0, karaoke: 0, ensemble: 0 })
+    ).toEqual(creditsFor(0))
   })
 })
 
@@ -126,7 +129,7 @@ describe('fetchPricing', () => {
     } as Response)
     expect(await fetchPricing('https://api.test')).toEqual({
       ...body,
-      uvrModelCredits: { mdx: 0, roformer: 0, karaoke: 0, ensemble: 0 },
+      uvrModelCredits: creditsFor(0),
     })
   })
 
@@ -209,5 +212,36 @@ describe('expected-credits stash (checkout round trip)', () => {
 
   it('returns null when nothing was stashed', () => {
     expect(takeExpectedCredits()).toBeNull()
+  })
+})
+
+describe('formatSupporterExpiry', () => {
+  const now = new Date('2026-07-28T00:00:00.000Z')
+
+  // A bare "23 Jul" on a grant running into next year reads as already expired.
+  it('includes the year when it differs from the current one', () => {
+    expect(formatSupporterExpiry('2027-07-23T00:00:00.000Z', now)).toContain(
+      '2027',
+    )
+  })
+
+  it('omits the year for a same-year expiry', () => {
+    expect(
+      formatSupporterExpiry('2026-10-12T00:00:00.000Z', now),
+    ).not.toContain('2026')
+  })
+
+  it('returns empty for missing or unparseable input', () => {
+    expect(formatSupporterExpiry(null, now)).toBe('')
+    expect(formatSupporterExpiry('', now)).toBe('')
+    expect(formatSupporterExpiry('not-a-date', now)).toBe('')
+  })
+})
+
+describe('supporterPlanId', () => {
+  it('reads the tier id out of the grant source', () => {
+    expect(supporterPlanId({ source: 'donation:sup-voice' })).toBe('sup-voice')
+    expect(supporterPlanId({ source: 'manual' })).toBeNull()
+    expect(supporterPlanId(null)).toBeNull()
   })
 })

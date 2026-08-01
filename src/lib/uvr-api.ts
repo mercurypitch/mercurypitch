@@ -3,6 +3,7 @@
 // ============================================================
 
 import { z } from 'zod/v4'
+import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 
 const API_BASE = '/api/uvr'
@@ -41,8 +42,9 @@ async function fetchWithTimeout(
 /**
  * Authorization header for state-changing UVR calls. The production worker
  * gates non-GET /api/uvr/* behind a valid app JWT (see src/worker.ts); GET
- * reads stay open. An anonymous token is available after startup (ensureAuth),
- * so this is populated for every user, signed-in or not.
+ * reads stay open. Identities are provisioned lazily, so callers that
+ * dispatch a job must await requireAuth() first — this only reads whatever
+ * token exists by then.
  */
 function authHeaders(): Record<string, string> {
   const token = getAuthToken()
@@ -52,16 +54,36 @@ function authHeaders(): Record<string, string> {
 }
 
 /**
- * Max upload size for SERVER (cloud GPU) processing. Files up to 7 MB are
- * inlined as base64 in the RunPod job; larger ones (up to this cap) are
- * streamed via R2 (`audio_s3_key`) by the worker. Mirror of the worker's
- * RUNPOD_MAX_UPLOAD_BYTES — keep the two in sync. Local (on-device)
- * processing has no transport limit and keeps the 100 MB default.
+ * Max upload size for SERVER (cloud GPU) processing of SOURCE songs. Files
+ * up to 7 MB are inlined as base64 in the RunPod job; larger ones are
+ * streamed via R2 (`audio_s3_key`) by the worker. The worker's own cap
+ * (RUNPOD_MAX_UPLOAD_BYTES) is deliberately higher, 95 MB: a stem split
+ * re-uploads the instrumental as uncompressed WAV, which blows past any
+ * sensible compressed-source limit. This 50 MB gate is UX for the upload
+ * queue only. Local (on-device) processing has no transport limit and
+ * keeps the 100 MB default.
  */
 export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 /** Local/on-device processing upload cap (in-browser model; no transport). */
 export const LOCAL_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
+/**
+ * Every stem the server registry can produce. Widen this (and the server
+ * MODEL_REGISTRY) rather than adding a parallel union somewhere — nothing
+ * in the app should assume a two-stem world.
+ */
+export const UVR_STEM_NAMES = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+] as const
+
+export type UvrStemName = (typeof UVR_STEM_NAMES)[number]
 
 /**
  * Processing request parameters
@@ -71,10 +93,57 @@ export interface ProcessRequest {
   output_format?: string
   stems?: string[]
   cpu_profile?: 'high' | 'mid' | 'low'
+  /** What the submitted audio IS. 'original' (a full mix) is the default;
+   *  'instrumental' marks a second pass over a stem an earlier job
+   *  produced, which makes the server drop the near-silent vocal output
+   *  and reconcile the residual so the stems sum back to the input. */
+  source_stem?: 'original' | UvrStemName
+  /** Stems to discard server-side. Defaults to ['vocal'] when
+   *  source_stem is 'instrumental', [] otherwise. */
+  drop_stems?: UvrStemName[]
+  /** Force residual reconciliation on/off. Defaults to on for a
+   *  second pass, off for a full mix (where it would fold the vocal
+   *  into the residual). */
+  reconcile_residual?: boolean
+  /** Stem that absorbs the residual. Defaults to 'other'. */
+  residual_stem?: UvrStemName
   /** Server-tier opt-in (X-UVR-Provider): 'runpod' = GPU (default server
    *  tier), 'runpod-cpu' = cheaper tier. The worker rejects unconfigured or
    *  headerless server processing instead of using unmetered compute. */
   provider?: 'runpod' | 'runpod-cpu'
+  /** Song length (X-UVR-Duration-Seconds) — prices the long-song
+   *  surcharge into the quote/debit. The RunPod handler verifies it
+   *  against the probed duration, so under-declaring gets the job
+   *  rejected (and refunded), never under-billed. */
+  duration_seconds?: number
+  /** Second-pass reuse: the `rp_<tier>_<jobId>` session whose R2 stems
+   *  should be split IN PLACE — the worker resolves the object key and no
+   *  audio is uploaded at all. 410 (`stem-expired`) means the ~24 h R2
+   *  window has passed and the caller must re-upload the stored blob. */
+  reuse_session?: string
+}
+
+// ── Long-song pricing (client mirror) ─────────────────────────────
+// MIRROR of billing-core.ts (UVR_BASE_MINUTES / UVR_SURCHARGE_BLOCK_MINUTES
+// / uvrLengthFactor) for cost display only — the db-worker computes the
+// authoritative amount, and the handler verifies the declared length.
+
+export const UVR_BASE_MINUTES = 12
+export const UVR_SURCHARGE_BLOCK_MINUTES = 6
+
+/** 1 within the included window, +1 per started block past it — an
+ *  18.0-min song pays 2× the model cost. */
+export function uvrLengthFactor(durationSeconds?: number): number {
+  if (
+    durationSeconds === undefined ||
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds <= 0
+  ) {
+    return 1
+  }
+  const overage = durationSeconds - UVR_BASE_MINUTES * 60
+  if (overage <= 0) return 1
+  return 1 + Math.ceil(overage / (UVR_SURCHARGE_BLOCK_MINUTES * 60))
 }
 
 // Default processing options. `model` is a server-side registry name
@@ -178,13 +247,38 @@ const HealthCheckSchema = z.object({
  * server — see runpod/handler.py MODEL_REGISTRY). Descriptions are the
  * user-facing story for a future quality selector.
  */
-export const UVR_MODELS = [
+export interface UvrModelInfo {
+  name: string
+  display: string
+  quality: string
+  speed: string
+  description: string
+  /** Stems this model produces — mirrors MODEL_REGISTRY[...].stems on the
+   *  server. UI reads this instead of assuming vocal + instrumental. */
+  stems: readonly UvrStemName[]
+  /** True for the multi-stem tiers that break a mix (or an instrumental)
+   *  into its parts, rather than splitting vocal from everything else. */
+  multiStem?: boolean
+  /** Stems that work but are visibly rougher than the rest — surfaced to
+   *  the user rather than quietly shipped as equals. A quality LABEL only;
+   *  whether a stem ships at all is `defaultDropStems`. */
+  experimentalStems?: readonly UvrStemName[]
+  /** Stems this model emits that we discard by default. Deliberately
+   *  separate from `experimentalStems`: turning a stem on later means
+   *  removing it here while it stays labelled rough, which is the whole
+   *  migration path. Only safe alongside residual reconciliation — a
+   *  dropped stem's audio is folded into the residual, not lost. */
+  defaultDropStems?: readonly UvrStemName[]
+}
+
+export const UVR_MODELS: readonly UvrModelInfo[] = [
   {
     name: 'roformer',
     display: 'Studio (BS-RoFormer)',
     quality: 'Highest',
     speed: 'Medium',
     description: 'Cleanest vocals and instrumental — the default.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'mdx',
@@ -192,6 +286,7 @@ export const UVR_MODELS = [
     quality: 'Good',
     speed: 'Fast',
     description: 'The previous default; quicker, slightly more bleed.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'karaoke',
@@ -199,6 +294,7 @@ export const UVR_MODELS = [
     quality: 'High',
     speed: 'Medium',
     description: 'Removes only the lead vocal; harmonies stay in the mix.',
+    stems: ['vocal', 'instrumental'],
   },
   {
     name: 'ensemble',
@@ -206,8 +302,148 @@ export const UVR_MODELS = [
     quality: 'Maximum',
     speed: 'Slow',
     description: 'Blends two top models per stem; roughly twice the time.',
+    stems: ['vocal', 'instrumental'],
+  },
+  {
+    name: 'demucs',
+    display: 'Parts — Fast (Demucs)',
+    quality: 'Good',
+    speed: 'Medium',
+    description: 'Splits the music into drums, bass and everything else.',
+    stems: ['vocal', 'drums', 'bass', 'other'],
+    multiStem: true,
+  },
+  {
+    name: 'demucs-ft',
+    display: 'Parts — Studio (Demucs fine-tuned)',
+    quality: 'Highest',
+    speed: 'Slow',
+    description:
+      'Best drums and bass separation; four models blended, so ~4x the time.',
+    stems: ['vocal', 'drums', 'bass', 'other'],
+    multiStem: true,
+  },
+  {
+    name: 'demucs-6s',
+    display: 'Parts — Drums, bass, guitar & piano',
+    quality: 'Good',
+    speed: 'Slow',
+    description:
+      'Splits the music into drums, bass, guitar, piano and everything else.',
+    stems: ['vocal', 'drums', 'bass', 'guitar', 'piano', 'other'],
+    multiStem: true,
+    // Piano ships (it rides on the same compute as guitar) but stays
+    // labelled rough — it bleeds noticeably more than the other parts.
+    // To pull it again, add `defaultDropStems: ['piano']`: the residual
+    // pass folds its audio back into `other`, nothing is lost.
+    experimentalStems: ['piano'],
   },
 ]
+
+/** The multi-stem tiers, for a "split this further" picker. */
+export const UVR_MULTI_STEM_MODELS = UVR_MODELS.filter(
+  (m) => m.multiStem === true,
+)
+
+/** Default model for splitting an instrumental into its parts. The 6-stem
+ *  model because guitar and piano are only available there. */
+export const UVR_DEFAULT_MULTI_STEM_MODEL = 'demucs-6s'
+
+export const getUvrModel = (name: string): UvrModelInfo | undefined =>
+  UVR_MODELS.find((m) => m.name === name)
+
+/**
+ * The stems a split with this model actually yields — what it produces,
+ * minus the source stem and anything dropped by default. This is what a
+ * "you'll get: …" UI should list, and it stays correct when a stem is
+ * later switched on.
+ */
+export function splitStemsFor(
+  modelName: string = UVR_DEFAULT_MULTI_STEM_MODEL,
+  sourceStem: UvrStemName = 'instrumental',
+): UvrStemName[] {
+  const model = getUvrModel(modelName)
+  if (!model) return []
+  const dropped = new Set<UvrStemName>([
+    'vocal',
+    sourceStem,
+    ...(model.defaultDropStems ?? []),
+  ])
+  return model.stems.filter((s) => !dropped.has(s))
+}
+
+export interface StemSplitOptions {
+  /** Registry model; defaults to UVR_DEFAULT_MULTI_STEM_MODEL. */
+  model?: string
+  /** The stem being split. Defaults to 'instrumental'. */
+  sourceStem?: UvrStemName
+  /** Override what to discard. Defaults to 'vocal' plus the model's
+   *  `defaultDropStems` — pass [] to keep everything the model emits. */
+  dropStems?: readonly UvrStemName[]
+  /** Stem that absorbs the residual. Defaults to 'other'. */
+  residualStem?: UvrStemName
+  outputFormat?: string
+  /** Server tier. Defaults to 'runpod' (GPU): a split is always a server
+   *  job, and the worker 400s any /process request that names no tier.
+   *  The local FastAPI container simply ignores the header. */
+  provider?: 'runpod' | 'runpod-cpu'
+  /** Length of the stem being split — bills the long-song surcharge on
+   *  the second pass too (the handler verifies it like any declared
+   *  duration). */
+  durationSeconds?: number
+}
+
+/**
+ * Build the request for a second pass that splits an existing stem into
+ * its parts. Reconciliation is always on here: dropped stems are folded
+ * into the residual rather than lost, and the kept stems sum back to the
+ * stem that was fed in, so muting every part silences the whole.
+ *
+ * Throws if the residual stem is itself dropped — that combination would
+ * silently discard everything the model failed to place.
+ */
+export function buildStemSplitRequest(
+  options: StemSplitOptions = {},
+): ProcessRequest {
+  const modelName = options.model ?? UVR_DEFAULT_MULTI_STEM_MODEL
+  const model = getUvrModel(modelName)
+  if (!model) throw new Error(`Unknown UVR model: ${modelName}`)
+  if (model.multiStem !== true) {
+    throw new Error(`${modelName} does not produce multiple stems`)
+  }
+
+  const sourceStem = options.sourceStem ?? 'instrumental'
+  const residualStem = options.residualStem ?? 'other'
+  const dropStems = [
+    ...new Set<UvrStemName>(
+      options.dropStems ?? ['vocal', ...(model.defaultDropStems ?? [])],
+    ),
+  ]
+
+  if (dropStems.includes(residualStem)) {
+    throw new Error(
+      `residual stem '${residualStem}' cannot also be dropped — it is what ` +
+        `absorbs the dropped stems' audio`,
+    )
+  }
+
+  // An explicit drop list must also shrink the request — asking the server
+  // for a stem it was told to drop would download a file that never exists.
+  const dropped = new Set<UvrStemName>(dropStems)
+  return {
+    model: modelName,
+    output_format: options.outputFormat ?? 'WAV',
+    stems: splitStemsFor(modelName, sourceStem).filter((s) => !dropped.has(s)),
+    source_stem: sourceStem,
+    drop_stems: dropStems,
+    reconcile_residual: true,
+    residual_stem: residualStem,
+    provider: options.provider ?? 'runpod',
+    ...(options.durationSeconds !== undefined && options.durationSeconds > 0
+      ? { duration_seconds: options.durationSeconds }
+      : {}),
+  }
+}
 
 /**
  * List available UVR models
@@ -225,12 +461,17 @@ export async function listModels(): Promise<string[]> {
  * Start processing an audio file
  */
 export async function processAudio(
-  file: File,
+  /** Null ONLY with `options.reuse_session` — the worker then splits the
+   *  stem it already holds in R2 instead of receiving an upload. */
+  file: File | null,
   options: ProcessRequest = DEFAULT_PROCESS_REQUEST,
   signal?: AbortSignal,
 ): Promise<ProcessResponse> {
   const formData = new FormData()
-  formData.append('file', file)
+  if (file !== null) formData.append('file', file)
+  if (options.reuse_session !== undefined) {
+    formData.append('reuse_session', options.reuse_session)
+  }
 
   if (options.model !== undefined) {
     formData.append('model', options.model)
@@ -244,10 +485,35 @@ export async function processAudio(
   if (options.cpu_profile) {
     formData.append('cpu_profile', options.cpu_profile)
   }
+  // Second-pass fields. Omitted entirely for a normal full-mix job so the
+  // server applies its own defaults (and older servers ignore them).
+  if (options.source_stem !== undefined) {
+    formData.append('source_stem', options.source_stem)
+  }
+  if (options.drop_stems !== undefined) {
+    formData.append('drop_stems', JSON.stringify(options.drop_stems))
+  }
+  if (options.reconcile_residual !== undefined) {
+    formData.append('reconcile_residual', String(options.reconcile_residual))
+  }
+  if (options.residual_stem !== undefined) {
+    formData.append('residual_stem', options.residual_stem)
+  }
+
+  // Dispatching a job spends credits and creates server-side state, so this
+  // is exactly the kind of action that earns an identity.
+  await requireAuth()
 
   const headers: Record<string, string> = { ...authHeaders() }
   if (options.provider !== undefined) {
     headers['X-UVR-Provider'] = options.provider
+  }
+  if (options.duration_seconds !== undefined && options.duration_seconds > 0) {
+    // Header, not form field: the worker admits/quotes (incl. the
+    // long-song surcharge) before buffering the multipart body.
+    headers['X-UVR-Duration-Seconds'] = String(
+      Math.round(options.duration_seconds),
+    )
   }
   if (options.model !== undefined) {
     // The worker admits/quotes the job before buffering the multipart body.
@@ -284,8 +550,13 @@ export async function processAudio(
       // Auth/metering refusals become something a singer can act on
       // (UvrPanel upgrades these to action toasts linking to Account).
       if (response.status === 401) {
-        message =
-          'Sign in to use cloud GPU processing — open Settings, under Account.'
+        // A 401 with a locally valid session is not a sign-in problem - it
+        // means THIS deployment could not verify the token (PR previews and
+        // half-configured environments do this). Telling a signed-in user
+        // to sign in reads as a bug; name the real situation instead.
+        message = hasValidToken()
+          ? 'The processing service could not verify your session in this environment. Try the dev or production site, or sign out and back in.'
+          : 'Sign in to use cloud GPU processing — open Settings, under Account.'
       }
       if (response.status === 402) {
         const need =
@@ -302,10 +573,14 @@ export async function processAudio(
     // HTTP/2 has no statusText and gateway-level failures can have an empty
     // body — always name the status code so the user (and our logs) see
     // something actionable instead of a bare "Failed to process audio:".
-    throw new Error(
+    const error = new Error(
       message ||
         `The processing server could not be reached (HTTP ${response.status}). Please try again in a moment.`,
-    )
+    ) as Error & { status?: number }
+    // Callers branch on specific refusals (410 stem-expired → fall back to
+    // uploading the stored blob) without parsing message strings.
+    error.status = response.status
+    throw error
   }
 
   return ProcessResponseSchema.parse(await response.json())

@@ -20,6 +20,13 @@ if (!adminKey) {
   process.exit(1)
 }
 
+// Sample content must never land on the production board by a pasted-URL
+// accident. api-dev.* stays fine; only the bare prod API host is gated.
+if (/(^|\/\/)api\.mercurypitch\.com/i.test(apiBase) && process.env.MP_ALLOW_PROD !== '1') {
+  console.error(`Refusing to seed sample content against production (${apiBase}). Set MP_ALLOW_PROD=1 if you truly mean it.`)
+  process.exit(1)
+}
+
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const item = (midi, i) => ({
   id: i + 1,

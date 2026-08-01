@@ -18,7 +18,7 @@ import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
 import { StemMixerMicMonitor } from './StemMixerMicMonitor'
 import type { StemMixerStemControlsProps } from './StemMixerStemControls'
-import { StemMixerStemControls } from './StemMixerStemControls'
+import { StemMixerStemControls, StemStripViewToggle, } from './StemMixerStemControls'
 
 interface StemMixerFixedWorkspaceProps {
   // Layout
@@ -702,7 +702,10 @@ export const StemMixerFixedWorkspace: Component<
               'flex-direction': 'column',
             }}
           >
-            <div class="sm-panel-header">Stem Controls</div>
+            <div class="sm-panel-header">
+              Stem Controls
+              <StemStripViewToggle />
+            </div>
             <StemMixerStemControls {...props.stemControls} direction="column" />
             <StemMixerMicMonitor {...props.micMonitor} />
           </div>

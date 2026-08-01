@@ -22,7 +22,18 @@
       "binding": "DB",
       "database_name": "mercurypitch-db",
       // Filled in by scripts/init-cloudflare-db.sh after `wrangler d1 create`
-      "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949"
+      "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949",
+      // Tracked schema history. `wrangler d1 migrations apply` records applied
+      // files in d1_migrations, so each runs exactly once per database.
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Create this permanent bucket before deployment. Do not attach the UVR
+  // input/output lifecycle rules: published exercise playback is immutable.
+  "r2_buckets": [
+    {
+      "binding": "GUIDED_MEDIA_BUCKET",
+      "bucket_name": "mercurypitch-guided-media"
     }
   ],
   "observability": {
@@ -63,6 +74,9 @@
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        // Emailed links (reset/verify) from non-first-party origins (PR
+        // previews) land on the dev app, never production.
+        "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -76,7 +90,14 @@
           "binding": "DB",
           "database_name": "mercurypitch-db-dev",
           // Filled in by scripts/init-cloudflare-db.sh (run: pnpm db:init:dev)
-          "database_id": "e00340be-93fd-44ee-b22e-cb1124a1aadc"
+          "database_id": "e00340be-93fd-44ee-b22e-cb1124a1aadc",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "GUIDED_MEDIA_BUCKET",
+          "bucket_name": "mercurypitch-guided-media-dev"
         }
       ]
     },
@@ -87,6 +108,7 @@
       "routes": [{ "pattern": "api.mercurypitch.com", "custom_domain": true }],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous
@@ -98,7 +120,14 @@
         {
           "binding": "DB",
           "database_name": "mercurypitch-db",
-          "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949"
+          "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "GUIDED_MEDIA_BUCKET",
+          "bucket_name": "mercurypitch-guided-media-prod"
         }
       ]
     }

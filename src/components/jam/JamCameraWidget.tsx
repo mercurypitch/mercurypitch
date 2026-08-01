@@ -6,6 +6,8 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Index, onCleanup, onMount, Show, } from 'solid-js'
+import type { DragGestureOptions } from '@/components/shared/drag-gesture'
+import { dragGesture } from '@/components/shared/drag-gesture'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamLocalStream, jamPeerId, jamPeers, jamPitchHistory, jamRemoteStreams, jamVideoEnabled, } from '@/stores/jam-store'
 import styles from './JamCameraWidget.module.css'
@@ -145,26 +147,28 @@ export const JamCameraWidget: Component = () => {
     return { x: cx, y: cy }
   }
 
-  const onPointerDown = (e: PointerEvent) => {
-    const target = e.target as HTMLElement
-    if (!target.closest(`.${styles.dragHandle}`)) return
-    dragging = true
-    dragStart = { x: e.clientX, y: e.clientY, px: pos().x, py: pos().y }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    e.preventDefault()
-  }
-
-  const onPointerMove = (e: PointerEvent) => {
-    if (!dragging) return
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
-    setPos(clamp(dragStart.px + dx, dragStart.py + dy))
-  }
-
-  const onPointerUp = () => {
-    dragging = false
-    // Re-clamp after drag ends in case tray grew during the drag
-    setPos((p) => clamp(p.x, p.y))
+  const trayDrag: DragGestureOptions = {
+    canStart: (event) =>
+      (event.target as HTMLElement).closest(`.${styles.dragHandle}`) !== null,
+    onStart: (event) => {
+      dragging = true
+      dragStart = {
+        x: event.clientX,
+        y: event.clientY,
+        px: pos().x,
+        py: pos().y,
+      }
+    },
+    onMove: (event) => {
+      const dx = event.clientX - dragStart.x
+      const dy = event.clientY - dragStart.y
+      setPos(clamp(dragStart.px + dx, dragStart.py + dy))
+    },
+    onEnd: () => {
+      dragging = false
+      // Re-clamp after drag ends in case tray grew during the drag.
+      setPos((p) => clamp(p.x, p.y))
+    },
   }
 
   onMount(() => {
@@ -185,7 +189,10 @@ export const JamCameraWidget: Component = () => {
 
   return (
     <div
-      ref={trayRef}
+      ref={(element) => {
+        trayRef = element
+        dragGesture(element, () => trayDrag)
+      }}
       class={styles.tray}
       style={{
         left: `${pos().x}px`,
@@ -193,9 +200,6 @@ export const JamCameraWidget: Component = () => {
         right: 'auto',
         bottom: 'auto',
       }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
     >
       {/* Drag handle */}
       <div class={styles.dragHandle} title="Drag to reposition">

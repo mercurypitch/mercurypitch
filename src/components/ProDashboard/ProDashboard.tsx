@@ -59,14 +59,21 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
     return Math.max(0, Math.round(100 - Math.abs(c) * 2)) // 0¢=100, 50¢=0
   }
   const tonalQuality = () =>
-    props.fftRichness?.richnessScore ?? props.liveSnapshot?.richness?.score ?? 0
+    props.fftRichness?.richnessScore ??
+    props.liveSnapshot?.richness?.richnessScore ??
+    0
   const pitchStab = () => props.pitchStability ?? 0
   const hnrScore = () =>
     props.fftBreathiness?.efficiency ??
-    props.liveSnapshot?.breathiness?.score ??
+    props.liveSnapshot?.breathiness?.efficiency ??
     0
-  const resonanceConfidence = () =>
-    props.liveSnapshot?.resonance?.confidence ?? 0
+  /** Zone confidence = how dominant the winning band is over the other two. */
+  const resonanceConfidence = () => {
+    const res = props.liveSnapshot?.resonance
+    if (res === undefined) return 0
+    const ratios = [res.chestRatio, res.maskRatio, res.headRatio]
+    return Math.round(Math.min(100, Math.max(...ratios) * 100))
+  }
 
   const tonalQualityScore = () =>
     computeTonalQuality(hnrScore(), tonalQuality(), pitchStab())
@@ -231,7 +238,7 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
           >
             {props.fftResonance?.dominantZone !== undefined
               ? `${props.fftResonance.dominantZone} dominant`
-              : (props.liveSnapshot?.resonance?.zone ?? '')}
+              : (props.liveSnapshot?.resonance?.dominantZone ?? '')}
           </div>
         </div>
 
