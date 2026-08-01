@@ -78,10 +78,10 @@ These are the rules that break things when ignored.
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 3.5k | _(no header comment)_ |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
+| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 2.4k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.3k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.8k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
-| `challenges` | [AdminWeeklyPage.tsx](../../src/features/challenges/AdminWeeklyPage.tsx) | 1.7k | AdminWeeklyPage — owner-only weekly-challenge authoring (#/admin/weekly) Unlocks with the X-Admin-Key (stored locally), lists every row,... |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.5k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.3k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
@@ -152,7 +152,7 @@ These are the rules that break things when ignored.
 | [settings-store.ts](../../src/stores/settings-store.ts) | 647 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 488 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 396 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 433 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
@@ -279,7 +279,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.6k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/App.tsx](../../src/App.tsx) | 3.6k |
+| [src/App.tsx](../../src/App.tsx) | 3.7k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
