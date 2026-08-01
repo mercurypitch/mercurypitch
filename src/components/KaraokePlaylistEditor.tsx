@@ -6,7 +6,7 @@
 // in the Stem Mixer left sidebar and inline in the Karaoke upload-view gallery.
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Index, Show } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { createPersistedSignal } from '@/lib/storage'
 import { addItem, getPlaylistsReactive, removeItem, reorderItems, setItemShuffleWithinGroup, setItemSinger, setItemVocalVolume, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -183,7 +183,7 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
             </div>
           </Show>
           <div class={styles.itemsList}>
-            <For
+            <Index
               each={pl().items}
               fallback={
                 <p class={styles.empty}>
@@ -192,24 +192,46 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
               }
             >
               {(item, i) => {
-                // The vocal slider must not commit to the store per input
-                // event: each commit maps this item to a new object, <For>
-                // recreates the row, and an in-progress thumb drag dies with
-                // the replaced element. Track the drag locally and persist
-                // once on release — same commit-on-done idea as the singer
-                // input's onChange.
+                // <Index>, not <For>: a store commit replaces item objects,
+                // and <For> (reference-keyed) then recreates EVERY row —
+                // which tore the DOM out from under a pointer mid-gesture
+                // (owner: touching a second singer's slider relaid the
+                // cards out and dropped the thumb). Index keeps rows
+                // position-stable and streams value changes through the
+                // `item()` accessor instead.
+                //
+                // The vocal slider still must not commit per input event —
+                // store churn per pixel is waste — so the drag is tracked
+                // locally and persisted once on release, same
+                // commit-on-done idea as the singer input's onChange.
                 const [vocalDrag, setVocalDrag] = createSignal<number | null>(
                   null,
                 )
+                // A position-stable row outlives its item: clear the local
+                // drag when another item slides under this row (reorder or
+                // removal), and once the committed value round-trips from
+                // the store — clearing at commit time would snap the thumb
+                // to the stale stored value for the async beat (#346).
+                createEffect(() => {
+                  void item().id
+                  setVocalDrag(null)
+                })
+                createEffect(() => {
+                  const stored = Math.round((item().vocalVolume ?? 0) * 100)
+                  if (vocalDrag() !== null && stored === vocalDrag()) {
+                    setVocalDrag(null)
+                  }
+                })
                 const vocalPct = (): number =>
-                  vocalDrag() ?? Math.round((item.vocalVolume ?? 0) * 100)
+                  vocalDrag() ?? Math.round((item().vocalVolume ?? 0) * 100)
                 return (
                   <div
                     class={styles.itemRow}
                     classList={{
                       [styles.itemRowCompact]: compactItems(),
                       [styles.itemRowTarget]:
-                        item.kind === 'group' && targetGroupId() === item.refId,
+                        item().kind === 'group' &&
+                        targetGroupId() === item().refId,
                     }}
                   >
                     <Show when={!compactItems()}>
@@ -217,20 +239,16 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                         <button
                           class={styles.iconBtn}
                           title="Move up"
-                          disabled={i() === 0}
-                          onClick={() =>
-                            void reorderItems(pl().id, i(), i() - 1)
-                          }
+                          disabled={i === 0}
+                          onClick={() => void reorderItems(pl().id, i, i - 1)}
                         >
                           <ChevronUp />
                         </button>
                         <button
                           class={styles.iconBtn}
                           title="Move down"
-                          disabled={i() === pl().items.length - 1}
-                          onClick={() =>
-                            void reorderItems(pl().id, i(), i() + 1)
-                          }
+                          disabled={i === pl().items.length - 1}
+                          onClick={() => void reorderItems(pl().id, i, i + 1)}
                         >
                           <ChevronDown size={16} />
                         </button>
@@ -239,11 +257,11 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
 
                     <div class={styles.itemMain}>
                       <Show
-                        when={item.kind === 'group'}
+                        when={item().kind === 'group'}
                         fallback={
                           <div class={styles.itemLabel}>
                             <span class={styles.itemKind}>SONG</span>
-                            {itemLabel(item)}
+                            {itemLabel(item())}
                           </div>
                         }
                       >
@@ -251,18 +269,18 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                           class={styles.itemLabelBtn}
                           classList={{
                             [styles.itemLabelBtnActive]:
-                              targetGroupId() === item.refId,
+                              targetGroupId() === item().refId,
                           }}
                           title={
-                            targetGroupId() === item.refId
+                            targetGroupId() === item().refId
                               ? 'Selected — clicking a song below adds it here. Click to deselect.'
                               : 'Select this group, then click songs below to add them into it'
                           }
                           onClick={() =>
                             setTargetGroupId(
-                              targetGroupId() === item.refId
+                              targetGroupId() === item().refId
                                 ? null
-                                : item.refId,
+                                : item().refId,
                             )
                           }
                         >
@@ -271,34 +289,34 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                           >
                             GROUP
                           </span>
-                          {itemLabel(item)}
+                          {itemLabel(item())}
                         </button>
                       </Show>
                       <input
                         class={styles.singerInput}
                         placeholder={
-                          item.kind === 'group'
+                          item().kind === 'group'
                             ? 'Singer for whole group…'
                             : 'Singer…'
                         }
-                        value={item.singerName ?? ''}
+                        value={item().singerName ?? ''}
                         onChange={(e) =>
                           void setItemSinger(
                             pl().id,
-                            item.id,
+                            item().id,
                             e.currentTarget.value,
                           )
                         }
                       />
-                      <Show when={item.kind === 'group' && !compactItems()}>
+                      <Show when={item().kind === 'group' && !compactItems()}>
                         <label class={styles.shuffleWithin}>
                           <input
                             type="checkbox"
-                            checked={item.shuffleWithinGroup ?? false}
+                            checked={item().shuffleWithinGroup ?? false}
                             onChange={(e) =>
                               void setItemShuffleWithinGroup(
                                 pl().id,
-                                item.id,
+                                item().id,
                                 e.currentTarget.checked,
                               )
                             }
@@ -332,31 +350,29 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                               setVocalDrag(pct)
                               void setItemVocalVolume(
                                 pl().id,
-                                item.id,
+                                item().id,
                                 pct / 100,
                               )
-                              // No drag reset here: the commit replaces the
-                              // item, <For> recreates the row, and the fresh
-                              // row reads the persisted value. Clearing now
-                              // would snap the thumb to the pre-commit value
-                              // for the async beat before that happens.
+                              // The drag clears itself once the committed
+                              // value round-trips (effect above) — clearing
+                              // now would snap the thumb for the async beat.
                             }}
                           />
                           <span class={styles.vocalPrefValue}>
                             {vocalDrag() !== null
                               ? `${vocalDrag()}%`
-                              : item.vocalVolume !== undefined
-                                ? `${Math.round(item.vocalVolume * 100)}%`
+                              : item().vocalVolume !== undefined
+                                ? `${Math.round((item().vocalVolume ?? 0) * 100)}%`
                                 : 'default'}
                           </span>
-                          <Show when={item.vocalVolume !== undefined}>
+                          <Show when={item().vocalVolume !== undefined}>
                             <button
                               class={styles.vocalPrefClear}
                               title="Use the stage's default vocal mix"
                               onClick={() =>
                                 void setItemVocalVolume(
                                   pl().id,
-                                  item.id,
+                                  item().id,
                                   undefined,
                                 )
                               }
@@ -371,14 +387,14 @@ export const KaraokePlaylistEditor: Component<KaraokePlaylistEditorProps> = (
                     <button
                       class={styles.iconBtn}
                       title="Remove"
-                      onClick={() => void removeItem(pl().id, item.id)}
+                      onClick={() => void removeItem(pl().id, item().id)}
                     >
                       <X />
                     </button>
                   </div>
                 )
               }}
-            </For>
+            </Index>
           </div>
 
           {/* Add controls */}

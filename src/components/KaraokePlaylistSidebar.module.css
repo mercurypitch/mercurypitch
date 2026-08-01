@@ -499,3 +499,18 @@
 .select:focus {
   border-color: var(--accent);
 }
+
+/* "Changes save automatically" existed in the markup, but this class was
+   never defined — it rendered as cramped unstyled text nobody noticed
+   (owner testing). Full-width muted line under the header row. */
+.autoSaveHint {
+  order: 3;
+  flex-basis: 100%;
+  font-size: 0.66rem;
+  font-style: italic;
+  color: var(--text-muted, #8b949e);
+}
+
+.itemsHeader {
+  flex-wrap: wrap;
+}
