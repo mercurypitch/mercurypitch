@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, octaveShiftForSinger, scoreChallengeNote, scoreChallengeNotes, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
+import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, scoreChallengeNote, scoreChallengeNotes, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
 import type { ResolvedZenTarget, ZenPitchPoint } from '@/features/zen/types'
 import { resolveZenTargets } from '@/features/zen/zen-model'
 import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
@@ -254,29 +254,19 @@ describe('review fixes: fairness and hold parity', () => {
       startBeat: i,
     }))
 
-  it('drops a tenor line into a bass singer octave, keeping every interval', () => {
-    // "Vincero" sits on B4 (71); a bass tops out far below it. Without
-    // this the board is unwinnable for that voice through no fault of
-    // their own — the drill this replaces always generated reachable notes.
+  it('keeps the authored pitch — the feat IS the pitch', () => {
+    // Nessun Dorma's B4 is a TENOR money note by design; the plan's
+    // answer to other voices is a per-voice-type split of the weekly
+    // slate, never a silent transposition that would give everyone a
+    // different feat on one shared board.
     const items = line([67, 69, 71])
-    const bass = { min: 40, max: 60 }
-    const shift = octaveShiftForSinger(items, bass)
-    expect(shift).toBe(-12)
-
-    const exercise = challengeToZenExercise(
-      { id: 'w', title: 'T', targetItems: items },
-      bass,
-    )
-    expect(exercise?.defaultRootMidi).toBe(55)
-    // Intervals are preserved exactly — only the octave moved.
+    const exercise = challengeToZenExercise({
+      id: 'w',
+      title: 'T',
+      targetItems: items,
+    })
+    expect(exercise?.defaultRootMidi).toBe(67)
     expect(exercise?.targets.map((t) => t.semitone)).toEqual([0, 2, 4])
-  })
-
-  it('leaves a line already in range exactly where it was authored', () => {
-    const items = line([60, 62, 64])
-    expect(octaveShiftForSinger(items, { min: 55, max: 72 })).toBe(0)
-    // And with no configured range, nothing is assumed.
-    expect(octaveShiftForSinger(items, undefined)).toBe(0)
   })
 
   it('sporadic blips no longer buy the matched floor', () => {

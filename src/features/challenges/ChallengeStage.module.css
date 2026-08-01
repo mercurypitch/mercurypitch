@@ -222,3 +222,16 @@
     min-height: 44px;
   }
 }
+
+/* "Written for another voice type" — said plainly before the take, since
+   the challenge is scored at its authored pitch (never transposed). */
+.cardRange {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  color: #f0c674;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
