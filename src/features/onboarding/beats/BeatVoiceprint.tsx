@@ -25,6 +25,7 @@ import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { TaskDemo } from '@/features/mirror/TaskDemo'
 import { playReferenceTone } from '@/features/mirror/tone-player'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
 import type { F0Frame, MatchTake, MirrorResult } from '@/lib/mirror/metrics'
 import { computeMirrorResult, computeRange, pickMatchTargets, } from '@/lib/mirror/metrics'
@@ -96,7 +97,20 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     readyResolve = null
   }
 
+  // Mic sentinel: the session stays open across all four tasks and this
+  // beat shows no persistent mic icon, so without an indicator the
+  // watchdog reported live-without-ui for the whole run.
+  const unregisterIndicator = registerMicIndicator(
+    'first-light-voiceprint',
+    () => session?.isOpen() ?? false,
+    () => {
+      session?.close()
+      session = null
+    },
+  )
+
   onCleanup(() => {
+    unregisterIndicator()
     cancelled = true
     clearInterval(timer)
     // Without this an unmount during an intro leaves run() parked on a

@@ -13,6 +13,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { hasValidToken } from '@/db/services/auth-service'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -63,8 +64,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // The account ask is a renderable beat only while it is due. A
     // visitor who declined last week walks the same flow without being
     // asked again — and the progress bar shortens to match, rather than
-    // promising a step that never arrives.
-    const beats = shouldShowNudge('onboarding-twin')
+    // promising a step that never arrives. Someone already signed in has
+    // nothing to create, so the ask disappears for them too (a replay
+    // used to offer "Create a free account" to its own account holder).
+    const accountAskDue =
+      !hasValidToken() && shouldShowNudge('onboarding-twin')
+    const beats = accountAskDue
       ? RENDERABLE
       : RENDERABLE.filter((beat) => beat !== 'keep')
     setBeatsAvailable(beats)
@@ -135,6 +140,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   const handleCreateAccount = () => {
+    if (hasValidToken()) {
+      // Signed in mid-flow (another tab, or a token that appeared after
+      // the mount check): there is no account to create. Just move on.
+      advanceBeat()
+      return
+    }
     trackOnboarding('onboarding_account_created')
     // The shared AuthModal on its register pane - no navigation hand-off.
     // The old '#/settings/account' hash-jump left the flow entirely, which
@@ -201,9 +212,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
 
       <div class={styles.rail}>
         <div class={styles.progress}>
+          {/* Floored at 10%: an empty bar on the first screen reads as
+              "nothing has happened yet", and endowed progress is the
+              cheapest honest encouragement we have. */}
           <div
             class={styles.progressFill}
-            style={{ width: `${Math.round(onboardingProgress() * 100)}%` }}
+            style={{
+              width: `${Math.max(10, Math.round(onboardingProgress() * 100))}%`,
+            }}
           />
         </div>
         <Show when={currentBeat() !== 'map'}>

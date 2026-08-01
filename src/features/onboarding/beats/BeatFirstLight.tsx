@@ -18,6 +18,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
@@ -49,7 +50,21 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
   let session: VoiceSession | null = null
   let meter = 0
 
+  // Mic sentinel: this beat holds the shared mic while its session is
+  // open, and has no persistent mic icon — without a registered
+  // indicator every take tripped the live-without-ui watchdog. The open
+  // session IS the honest "on" signal here.
+  const unregisterIndicator = registerMicIndicator(
+    'first-light',
+    () => session?.isOpen() ?? false,
+    () => {
+      session?.close()
+      session = null
+    },
+  )
+
   onCleanup(() => {
+    unregisterIndicator()
     cancelAnimationFrame(meter)
     session?.close()
     session = null

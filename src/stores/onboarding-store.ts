@@ -82,6 +82,14 @@ export function onboardingProgress(): number {
 
 /** Open the flow from the top. Used by the welcome door and replays. */
 export function startOnboarding(): void {
+  // A replay must genuinely restart: last run's transient verdicts — a
+  // refused mic, the chosen track, the heard note — would otherwise skip
+  // every beat that asks again. A session-old mic denial in particular
+  // routed replays straight to the Map with no way to re-allow the mic.
+  // The measured voiceprint is data, not flow state, and is kept.
+  setMicDenied(false)
+  setTrack(null)
+  setFirstNote(null)
   const first = firstBeat(flowState(), availableBeats())
   if (first === null) return
   setCurrentBeat(first)
