@@ -1315,6 +1315,9 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="analysis.live"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
+    // The live panel only renders while the live take is selected; if the
+    // tour starts with a session or song take open, select live first.
+    navigate: ['[data-testid="take-live"]'],
   },
   {
     title: 'What your voice is doing',
@@ -1323,6 +1326,7 @@ const ANALYSIS_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-testid="live-start"]',
     placement: 'top',
     requiredTab: TAB_ANALYSIS,
+    navigate: ['[data-testid="take-live"]'],
   },
   {
     title: 'Your pitch, plotted',
