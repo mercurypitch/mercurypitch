@@ -4,6 +4,7 @@
 // camera/mic capture, and track management.
 
 import type { MelodyData } from '@/types'
+import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { createSignalingClient } from './signaling'
 import type { JamCallbacks, JamPeer } from './types'
 
@@ -43,6 +44,9 @@ export function createJamService(callbacks: JamCallbacks) {
   const peerConnections = new Map<string, RTCPeerConnection>()
   const dataChannels = new Map<string, RTCDataChannel>()
   const pendingCandidates = new Map<string, string[]>()
+  /** ICE restart attempts per peer, reset once the pair connects. */
+  const iceRetries = new Map<string, number>()
+  const iceRecoveryTimers = new Map<string, ReturnType<typeof setTimeout>>()
   let disposed = false
   let videoEnabled = false
   let localDisplayName = ''
@@ -356,6 +360,27 @@ export function createJamService(callbacks: JamCallbacks) {
     }
   }
 
+  /**
+   * Wrap an event callback so a bug inside it cannot kill the session.
+   *
+   * These fire outside Solid's render, so the tab's ErrorBoundary never
+   * sees them: an exception here escapes to window.onerror and takes the
+   * app down. A jam that loses one handler is recoverable; a jam that
+   * takes the app with it is not.
+   */
+  function guarded<A extends unknown[]>(
+    label: string,
+    fn: (...args: A) => void,
+  ): (...args: A) => void {
+    return (...args: A) => {
+      try {
+        fn(...args)
+      } catch (err) {
+        console.error(`[jam:service] ${label} threw`, err)
+      }
+    }
+  }
+
   function setupPeerHandlers(pc: RTCPeerConnection, peerId: string): void {
     pc.ontrack = (event) => {
       console.info(
@@ -376,27 +401,59 @@ export function createJamService(callbacks: JamCallbacks) {
         setupDataChannel(dc, peerId)
       }
     }
-    pc.onconnectionstatechange = () => {
+    pc.onconnectionstatechange = guarded('onconnectionstatechange', () => {
       console.info('[jam:service] connection state', peerId, pc.connectionState)
       callbacks.onConnectionStateChange(
         peerId,
         mapConnectionState(pc.connectionState),
       )
-    }
-    pc.oniceconnectionstatechange = () => {
-      console.info('[jam:service] ICE state', peerId, pc.iceConnectionState)
-      if (pc.iceConnectionState === 'connected') {
-        measureLatency(peerId, pc)
-      }
-    }
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        signaling.sendIceCandidate(
-          peerId,
-          JSON.stringify(event.candidate.toJSON()),
-        )
-      }
-    }
+    })
+    pc.oniceconnectionstatechange = guarded(
+      'oniceconnectionstatechange',
+      () => {
+        console.info('[jam:service] ICE state', peerId, pc.iceConnectionState)
+        if (pc.iceConnectionState === 'connected') {
+          iceRetries.delete(peerId)
+          clearIceRecovery(peerId)
+          measureLatency(peerId, pc)
+          return
+        }
+        // A connection that fails stays failed. Switching WiFi to cellular,
+        // a NAT rebinding, a laptop waking up -- any of these drop the pair
+        // permanently unless ICE is restarted, which is why a jam could go
+        // quiet with both sides still believing they were in the room.
+        if (pc.iceConnectionState === 'failed') {
+          recoverIce(pc, peerId, 'failed')
+          return
+        }
+        // 'disconnected' often heals by itself within a few seconds. Give it
+        // that chance before spending a renegotiation on it, but do not wait
+        // for 'failed', which some browsers take 30s or more to declare.
+        if (pc.iceConnectionState === 'disconnected') {
+          clearIceRecovery(peerId)
+          iceRecoveryTimers.set(
+            peerId,
+            setTimeout(() => {
+              iceRecoveryTimers.delete(peerId)
+              if (pc.iceConnectionState === 'disconnected') {
+                recoverIce(pc, peerId, 'disconnected')
+              }
+            }, DISCONNECTED_GRACE_MS),
+          )
+        }
+      },
+    )
+    pc.onicecandidate = guarded(
+      'onicecandidate',
+      (event: RTCPeerConnectionIceEvent) => {
+        if (event.candidate) {
+          signaling.sendIceCandidate(
+            peerId,
+            JSON.stringify(event.candidate.toJSON()),
+          )
+        }
+      },
+    )
 
     // Handle renegotiation for dynamic tracks (e.g. enabling video)
     pc.onnegotiationneeded = async () => {
@@ -428,6 +485,10 @@ export function createJamService(callbacks: JamCallbacks) {
     }
     dc.onmessage = (event) => {
       try {
+        // Peer payloads are untrusted: a binary frame or a non-string body
+        // would throw out of JSON.parse into the catch below, but being
+        // explicit keeps the failure a parse error rather than a surprise.
+        if (typeof event.data !== 'string') return
         const data = JSON.parse(event.data)
         console.info(
           '[jam:service] DataChannel recv',
@@ -531,6 +592,60 @@ export function createJamService(callbacks: JamCallbacks) {
       if (dc.readyState === 'open') {
         dc.send(raw)
       }
+    }
+  }
+
+  // ── ICE recovery ────────────────────────────────────────────────
+
+  /**
+   * Restart ICE on a broken pair.
+   *
+   * Only the IMPOLITE peer restarts. Perfect negotiation can survive both
+   * sides restarting at once, but it costs a rollback and a second round
+   * trip every time, and on a mesh that multiplies by the number of pairs.
+   * The polite side simply waits for the offer -- the same role split the
+   * glare handling already uses, so there is one rule to reason about.
+   */
+  function recoverIce(
+    pc: RTCPeerConnection,
+    peerId: string,
+    reason: string,
+  ): void {
+    clearIceRecovery(peerId)
+    const tries = iceRetries.get(peerId) ?? 0
+    const decision = decideIceRestart(signaling.getPeerId(), peerId, tries)
+    if (!decision.restart) {
+      console.info(
+        '[jam:service] ICE',
+        reason,
+        peerId,
+        '- no restart:',
+        decision.why,
+      )
+      return
+    }
+    iceRetries.set(peerId, tries + 1)
+    console.info(
+      '[jam:service] ICE',
+      reason,
+      peerId,
+      '- restarting, attempt',
+      tries + 1,
+    )
+    try {
+      // Fires negotiationneeded, which the existing handler turns into a
+      // fresh offer -- so restart flows through one code path, not two.
+      pc.restartIce()
+    } catch (err) {
+      console.warn('[jam:service] ICE restart failed for', peerId, err)
+    }
+  }
+
+  function clearIceRecovery(peerId: string): void {
+    const timer = iceRecoveryTimers.get(peerId)
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      iceRecoveryTimers.delete(peerId)
     }
   }
 

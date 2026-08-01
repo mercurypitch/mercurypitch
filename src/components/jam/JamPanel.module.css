@@ -254,6 +254,29 @@
   padding: 12px;
 }
 
+/* Sits above the sidebar's own header content so it is the first thing
+   your thumb finds on a phone. Desktop keeps the header toggle. */
+.sidebarClose {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sidebarScrim {
+  display: none;
+}
+
 /* ── Main content area — flex column, full height ─────────────────── */
 
 .mainArea {
@@ -440,6 +463,27 @@
   color: var(--text-secondary);
 }
 
+/* The hamburger only exists on a phone; the desktop header has room for
+   every control and hiding them behind a menu would be a downgrade. */
+.roomMenuBtn {
+  display: none;
+}
+
+/* Inline on desktop, a drop-down on a phone (see the phone block). The
+   anchor has to be the actions row, which lives in Jam.module.css, so
+   position:relative goes on this wrapper and the row stays untouched. */
+.roomMenuItems {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Anchors the phone drop-down. Only applies while the menu is open, which
+   is the only time anything inside is positioned against it. */
+.actionsOpen {
+  position: relative;
+}
+
 /* ── Room glass slider ────────────────────────────────────────────── */
 
 .glassControl {
@@ -471,11 +515,101 @@
   cursor: pointer;
 }
 
-/* Phones lose the slider: the header is already tight, and the default
-   glass is tuned for the small stage. */
+/* ── Phone layout ─────────────────────────────────────────────────── */
+
 @media (max-width: 640px) {
+  /* The glass slider needs a pointer to be worth its width. */
   .glassControl {
     display: none;
+  }
+
+  /* The sidebar becomes a drawer over the room rather than a column
+     beside it: 240px of a 375px screen leaves nothing to jam on. */
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 20;
+    border-right: none;
+  }
+
+  .sidebarOpen {
+    width: min(280px, 82vw);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .sidebarInner {
+    width: min(280px, 82vw);
+    background: rgba(13, 17, 23, 0.97);
+    backdrop-filter: blur(12px);
+  }
+
+  .sidebarClose {
+    display: flex;
+  }
+
+  .sidebarScrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 19;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  /* Header: the hamburger replaces the row of icons. Mic and leave stay
+     out of it -- one is the control you reach for mid-take, the other is
+     the way out, and burying either behind a menu is hostile. */
+  .roomMenuBtn {
+    display: flex;
+  }
+
+  /* Everything except mic, leave and the hamburger folds away, and comes
+     back as a drop-down anchored to the header when the menu is open. */
+  .roomMenuItems {
+    display: none;
+  }
+
+  .actionsOpen .roomMenuItems {
+    display: flex;
+    gap: 6px;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    padding: 8px;
+    background: rgba(22, 27, 34, 0.97);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    z-index: 15;
+  }
+
+  .transportRow {
+    /* The transport can still outgrow a phone once BPM and the mode
+       picker are in it, so let it scroll sideways rather than wrap into
+       three rows and eat the canvas. */
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: none;
+  }
+
+  .transportRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .exerciseBar {
+    flex-wrap: nowrap;
+  }
+
+  .exercisePicker {
+    width: min(340px, calc(100vw - 24px));
+  }
+
+  /* The mode picker is host-only and the labels are long; shrink rather
+     than push the transport off screen. */
+  .modeBtn {
+    padding: 3px 7px;
+    font-size: 0.68rem;
   }
 }
 

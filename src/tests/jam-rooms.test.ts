@@ -114,11 +114,13 @@ describe('hosted rooms', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('denied')
     })
-    // The signal still updates -- that is deliberate, so the lobby works
-    // even where storage is denied. What must not happen is a throw.
+    // The room lives in memory only: the signal updates before the storage
+    // write is attempted, deliberately, so the lobby still works. What
+    // matters is that both answers AGREE -- listing a room whose token
+    // could not be found would offer a rejoin that cannot restore host.
     expect(() => rememberHostedRoom('ABCD', 'Edgy', 't')).not.toThrow()
-    expect(() => hostedRooms()).not.toThrow()
-    expect(ownerTokenFor('ABCD')).toBeNull()
+    expect(hostedRooms().map((r) => r.roomId)).toEqual(['ABCD'])
+    expect(ownerTokenFor('ABCD')).toBe('t')
   })
 
   it('refuses to store a room with no secret to store', () => {
