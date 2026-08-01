@@ -1,0 +1,96 @@
+/* Challenge result card — the after-run moment (see ChallengeResultCard.tsx) */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 6, 12, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.card {
+  width: min(460px, 94vw);
+  overflow: hidden;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 14px;
+  background: var(--bg-secondary, #10151d);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+
+.art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-bottom: 1px solid var(--border, #30363d);
+  background: #0d1117;
+}
+
+.body {
+  padding: 16px 18px 18px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b949e);
+}
+
+.eyebrowWin {
+  color: var(--ok-green, #3fb950);
+}
+
+.headline {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  color: var(--text-primary, #c9d1d9);
+}
+
+.line {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #8b949e);
+}
+
+.badgeLine {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #e3b341;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.primary {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent, #58a6ff);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary {
+  padding: 9px 14px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
