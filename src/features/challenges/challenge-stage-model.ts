@@ -46,43 +46,6 @@ const GLOW_RECENCY_SEC = 0.3
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value))
 
-/**
- * Whole-octave shift that best fits the challenge line into the singer's
- * comfortable range: the octave whose transposed notes leave the least
- * total distance outside [min, max]. Zero when no range is known, so an
- * unconfigured singer sings it exactly as authored.
- */
-export function octaveShiftForSinger(
-  items: readonly MelodyItem[],
-  singerRange?: { min: number; max: number },
-): number {
-  if (singerRange === undefined || items.length === 0) return 0
-  const midis = items.map((item) => item.note.midi)
-  let bestShift = 0
-  let bestCost = Number.POSITIVE_INFINITY
-  for (let octave = -3; octave <= 3; octave++) {
-    const shift = octave * 12
-    let cost = 0
-    for (const midi of midis) {
-      const moved = midi + shift
-      if (moved < singerRange.min) cost += singerRange.min - moved
-      else if (moved > singerRange.max) cost += moved - singerRange.max
-    }
-    // Ties favour the SMALLER move (compared explicitly — iteration order
-    // would otherwise hand a tie to the most extreme octave), so a line
-    // already in range stays exactly where it was authored.
-    const better =
-      cost < bestCost - 1e-9 ||
-      (Math.abs(cost - bestCost) <= 1e-9 &&
-        Math.abs(shift) < Math.abs(bestShift))
-    if (better) {
-      bestCost = cost
-      bestShift = shift
-    }
-  }
-  return bestShift
-}
-
 export interface ChallengeStageSource {
   id: string
   title: string
@@ -98,7 +61,6 @@ export interface ChallengeStageSource {
  */
 export function challengeToZenExercise(
   challenge: ChallengeStageSource,
-  singerRange?: { min: number; max: number },
 ): ZenExerciseDefinition | null {
   const items = challenge.targetItems
     .filter(
@@ -112,19 +74,16 @@ export function challengeToZenExercise(
   if (items.length === 0) return null
 
   const firstBeat = items[0]!.startBeat
-  // Sing it in YOUR octave. Challenges are authored at absolute pitch
-  // ("Vincero" lands on B4), and scoring is octave-sensitive — so an
-  // untransposed line is unwinnable for any voice outside the authored
-  // octave, which the drill this replaces never did to anyone (it
-  // generated notes inside the singer's comfortable range). Shifting by
-  // whole octaves preserves every interval and the shape of the feat,
-  // so the board stays comparable.
-  // Semitones stay relative to the line's OWN first note; only the root
-  // moves. (Measuring them against the shifted root would cancel the
-  // transposition exactly — rootMidi + semitone would land back on the
-  // authored pitch.)
+  // ABSOLUTE pitch, deliberately. The feat IS the pitch — "hold
+  // Puccini's B4 on Vincero" is a tenor money note, and transposing it
+  // into each singer's octave would quietly turn one shared feat into a
+  // different, easier one per person while they all share a board. The
+  // design's answer to inclusivity is a per-voice-type SPLIT (the
+  // authored weeks pair a tenor feat with a soprano one, and the
+  // catalogue carries low-voice entries) — see WeeklyChallenge's
+  // voiceTypeSplit column, not yet surfaced.
   const sourceRoot = items[0]!.note.midi
-  const rootMidi = sourceRoot + octaveShiftForSinger(items, singerRange)
+  const rootMidi = sourceRoot
   const targets = items.map((item, index) => ({
     id: `challenge-note-${index}`,
     startBeat: CHALLENGE_LEAD_IN_BEATS + (item.startBeat - firstBeat),

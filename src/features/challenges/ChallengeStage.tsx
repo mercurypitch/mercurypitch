@@ -64,16 +64,26 @@ export function ChallengeStage(props: ChallengeStageProps) {
   // The launch object is immutable for this mount (keyed <Show>), so the
   // synthetic exercise is built once.
   const launch = untrack(() => props.launch)
-  // Fitted to the singer's comfortable range by whole octaves — the
-  // drill this replaces always generated notes the singer could reach.
-  const definition = challengeToZenExercise(
-    {
-      id: launch.challengeId,
-      title: launch.title,
-      targetItems: launch.targetItems,
-    },
-    getComfortableMidiRange(vocalRangePreset()),
-  )
+  const definition = challengeToZenExercise({
+    id: launch.challengeId,
+    title: launch.title,
+    targetItems: launch.targetItems,
+  })
+
+  // The challenge is sung at its authored pitch (the feat is the pitch).
+  // When it sits outside the singer's configured range we SAY so before
+  // they start — inclusivity here is honesty plus a per-voice-type
+  // split of the weekly slate, never a silent transposition.
+  const outOfRange = (): string | null => {
+    const range = getComfortableMidiRange(vocalRangePreset())
+    const midis = launch.targetItems.map((item) => item.note.midi)
+    if (midis.length === 0) return null
+    const high = Math.max(...midis)
+    const low = Math.min(...midis)
+    if (high > range.max) return 'above'
+    if (low < range.min) return 'below'
+    return null
+  }
 
   const [outcome, setOutcome] = createSignal<ChallengeOutcome | null>(null)
   const [startError, setStartError] = createSignal<string | null>(null)
@@ -398,6 +408,15 @@ export function ChallengeStage(props: ChallengeStageProps) {
               The line travels the canvas once. Sing each note as the playhead
               reaches it — held, in-tune notes light up and stay shining.
             </p>
+            <Show when={outOfRange() !== null}>
+              <p class={styles.cardRange}>
+                This Legend is written{' '}
+                {outOfRange() === 'above' ? 'above' : 'below'} your{' '}
+                {vocalRangePreset()} range — it is a feat for another voice
+                type. Sing it anyway if you like; the pitch is the challenge, so
+                it is scored as written.
+              </p>
+            </Show>
             <Show when={startError()}>
               <p class={styles.error} role="alert">
                 {startError()}
