@@ -518,16 +518,16 @@ input:checked + .settingsSlider:before {
 .pillEditor svg {
   color: var(--purple);
 }
-.pillProgress svg {
+.pillJam svg {
   color: var(--green);
 }
-.pillMidi svg {
+.pillShazam svg {
   color: var(--orange);
 }
-.pillAdsr svg {
+.pillKaraoke svg {
   color: var(--teal);
 }
-.pillReverb svg {
+.pillVocal svg {
   color: var(--yellow);
 }
 

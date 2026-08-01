@@ -524,6 +524,17 @@
   color: var(--ob-ink-3);
 }
 
+/* What the map screen after this one is for — quieter than .sub so the
+   stats above keep the weight. */
+.mapExplainer {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+  max-width: 46ch;
+  text-wrap: balance;
+}
+
 /* ── Beat 7: keep ────────────────────────────────────────────── */
 
 /* Smaller than beat 5's: the twin is the reason here, not the subject —

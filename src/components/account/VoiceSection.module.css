@@ -260,6 +260,16 @@
   color: var(--text-muted);
 }
 
+/* The width of that take — the number is the point of the chip. */
+.historyMeta {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.historyMeta:empty {
+  display: none;
+}
+
 .note {
   margin: 14px 0 0;
   font-size: 0.72rem;

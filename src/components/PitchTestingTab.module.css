@@ -145,6 +145,18 @@
   margin-bottom: 6px;
 }
 
+/* Buttons that live in the right-hand panel (e.g. the ensemble-info Cancel)
+   share the base look but keep their natural width. */
+.pitchTestingVisualization :global(.btn) {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
 .btnSm {
   padding: 5px 8px;
   font-size: 0.72rem;
@@ -203,6 +215,21 @@
 .btnOutline:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.btnOutline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* "Using Vocal Stem" — once the stem is live this is a status chip, not an
+   action; read it like .micStatus.active rather than a greyed-out button. */
+.btnOutline.usingStem:disabled {
+  opacity: 1;
+  cursor: default;
+  background: var(--green-dim);
+  border-color: var(--green-dim);
+  color: var(--green);
 }
 
 /* Algorithm header row — label + ensemble toggle */
@@ -397,6 +424,12 @@
 
 .pitchTestingVisualization .waveformDisplay {
   margin-bottom: 12px;
+}
+
+/* File mode: breathing room between the session gallery and the waveform
+   preview that follows it. */
+.galleryContainer + .waveformDisplay {
+  margin-top: 10px;
 }
 
 .pitchTestingVisualization .waveformDisplayHeader {
