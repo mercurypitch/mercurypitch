@@ -15,115 +15,197 @@ export const CentsDeviationCanvas: Component<CentsDeviationCanvasProps> = (
   let offscreenCtx: CanvasRenderingContext2D | null = null
   let mainCtx: CanvasRenderingContext2D | null = null
 
-  const w = 800
-  const h = 100
-  const centerY = Math.floor(h / 2)
+  // CSS-pixel size of the element; backing stores are this times dpr so the
+  // wide Lab pane doesn't stretch a fixed bitmap into fuzzy text.
+  let cssW = 0
+  let cssH = 0
+  let dpr = 1
+
   const centsRange = 50 // ±50 cents scale
+
+  const drawReferenceLines = (
+    ctx: CanvasRenderingContext2D,
+    x0: number,
+    x1: number,
+  ) => {
+    const centerY = cssH / 2
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+    ctx.lineWidth = 1
+
+    // Center (0 cents)
+    ctx.beginPath()
+    ctx.moveTo(x0, centerY)
+    ctx.lineTo(x1, centerY)
+    ctx.stroke()
+
+    // +25 and -25 cents
+    ctx.setLineDash([4, 4])
+    const y25 = centerY - (25 / centsRange) * (cssH / 2)
+    ctx.beginPath()
+    ctx.moveTo(x0, y25)
+    ctx.lineTo(x1, y25)
+    ctx.stroke()
+
+    const yMinus25 = centerY - (-25 / centsRange) * (cssH / 2)
+    ctx.beginPath()
+    ctx.moveTo(x0, yMinus25)
+    ctx.lineTo(x1, yMinus25)
+    ctx.stroke()
+    ctx.setLineDash([])
+  }
+
+  /** Copy the scroll surface to the visible canvas and draw the fixed
+      annotations on top, all in CSS pixels so text stays its natural size
+      however wide the pane is. */
+  const renderFrame = (targetNote: string | null) => {
+    if (!mainCtx || !offscreenCanvas) return
+    const centerY = cssH / 2
+
+    // Device-to-device copy, no resampling.
+    mainCtx.setTransform(1, 0, 0, 1, 0, 0)
+    mainCtx.drawImage(offscreenCanvas, 0, 0)
+
+    // Fixed annotations (main canvas, never scrolled): what the axes and
+    // colors MEAN. Without them this read as mystery confetti - the dots
+    // are your distance from the nearest note, sharp above, flat below.
+    mainCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    mainCtx.font = '10px sans-serif'
+    mainCtx.textAlign = 'left'
+    mainCtx.textBaseline = 'middle'
+    mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+    mainCtx.fillText('+50¢ sharp', 4, centerY - cssH / 2 + 8)
+    mainCtx.fillText('0¢ on pitch', 4, centerY)
+    mainCtx.fillText('−50¢ flat', 4, centerY + cssH / 2 - 8)
+    const legend: [string, string][] = [
+      ['#22c55e', '≤15¢'],
+      ['#eab308', '≤30¢'],
+      ['#ef4444', '>30¢'],
+    ]
+    let lx = 4
+    const ly = centerY - cssH / 2 + 22
+    for (const [color, label] of legend) {
+      mainCtx.fillStyle = color
+      mainCtx.beginPath()
+      mainCtx.arc(lx + 3, ly, 3, 0, 2 * Math.PI)
+      mainCtx.fill()
+      mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+      mainCtx.fillText(label, lx + 9, ly)
+      lx += 9 + mainCtx.measureText(label).width + 10
+    }
+
+    // Draw target note overlay on main canvas (not offscreen so it stays fixed on the right)
+    if (targetNote !== null && targetNote !== '') {
+      mainCtx.font = '12px sans-serif'
+      const noteW = Math.ceil(mainCtx.measureText(targetNote).width) + 16
+      mainCtx.fillStyle = 'rgba(15, 23, 42, 0.8)' // dark bg for text
+      mainCtx.fillRect(cssW - noteW, centerY - 12, noteW, 24)
+      mainCtx.fillStyle = 'white'
+      mainCtx.textAlign = 'right'
+      mainCtx.textBaseline = 'middle'
+      mainCtx.fillText(targetNote, cssW - 8, centerY)
+    }
+  }
+
+  /** Match both backing stores to the element's layed-out size times dpr.
+      Clears the scroll history — resizes are rare (pane drag), and a fresh
+      surface beats a stretched one. */
+  const resize = () => {
+    if (!canvasRef || !offscreenCanvas || !offscreenCtx || !mainCtx) return
+    const w = canvasRef.clientWidth
+    const h = canvasRef.clientHeight
+    if (w === 0 || h === 0) return
+    cssW = w
+    cssH = h
+    dpr = window.devicePixelRatio || 1
+
+    canvasRef.width = Math.round(cssW * dpr)
+    canvasRef.height = Math.round(cssH * dpr)
+    offscreenCanvas.width = canvasRef.width
+    offscreenCanvas.height = canvasRef.height
+
+    // Draw in CSS pixels on the scroll surface.
+    offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    offscreenCtx.fillStyle = '#0f172a'
+    offscreenCtx.fillRect(0, 0, cssW, cssH)
+    drawReferenceLines(offscreenCtx, 0, cssW)
+
+    // Repaint immediately so a resize while paused doesn't show a bare pane.
+    renderFrame(props.targetNote)
+  }
 
   onMount(() => {
     if (!canvasRef) return
     mainCtx = canvasRef.getContext('2d', { alpha: false })
 
     offscreenCanvas = document.createElement('canvas')
-    offscreenCanvas.width = w
-    offscreenCanvas.height = h
     offscreenCtx = offscreenCanvas.getContext('2d', {
       alpha: false,
       willReadFrequently: true,
     })
 
-    if (offscreenCtx) {
-      offscreenCtx.fillStyle = '#0f172a'
-      offscreenCtx.fillRect(0, 0, w, h)
-      drawReferenceLines(offscreenCtx)
-    }
+    resize()
+
+    const resizeObs = new ResizeObserver(() => resize())
+    resizeObs.observe(canvasRef)
+    onCleanup(() => resizeObs.disconnect())
   })
 
-  const drawReferenceLines = (ctx: CanvasRenderingContext2D) => {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-    ctx.lineWidth = 1
-
-    // Center (0 cents)
-    ctx.beginPath()
-    ctx.moveTo(0, centerY)
-    ctx.lineTo(w, centerY)
-    ctx.stroke()
-
-    // +25 and -25 cents
-    ctx.setLineDash([4, 4])
-    const y25 = centerY - (25 / centsRange) * (h / 2)
-    ctx.beginPath()
-    ctx.moveTo(0, y25)
-    ctx.lineTo(w, y25)
-    ctx.stroke()
-
-    const yMinus25 = centerY - (-25 / centsRange) * (h / 2)
-    ctx.beginPath()
-    ctx.moveTo(0, yMinus25)
-    ctx.lineTo(w, yMinus25)
-    ctx.stroke()
-    ctx.setLineDash([])
-  }
-
   createEffect(() => {
+    // Read every prop up front so the effect stays subscribed to all of them
+    // even when an early return fires (e.g. a still-unsized pane).
+    const isActive = props.isActive
+    const centsOffset = props.centsOffset
+    const targetNote = props.targetNote
+
     if (
-      !props.isActive ||
+      !isActive ||
       !mainCtx ||
       !offscreenCtx ||
       !offscreenCanvas ||
-      !canvasRef
+      !canvasRef ||
+      cssW === 0 ||
+      cssH === 0
     )
       return
 
-    // Shift offscreen canvas left by 2px (faster scrolling than spectrogram)
-    const shift = 2
+    const centerY = cssH / 2
+
+    // Shift the scroll surface left (faster scrolling than spectrogram).
+    // The self-copy happens in device pixels so nothing resamples.
+    const shiftDev = Math.max(1, Math.round(2 * dpr))
+    const shift = shiftDev / dpr // CSS pixels actually shifted
+    const devW = offscreenCanvas.width
+    const devH = offscreenCanvas.height
+    if (devW <= shiftDev) return
+    offscreenCtx.setTransform(1, 0, 0, 1, 0, 0)
     offscreenCtx.drawImage(
       offscreenCanvas,
-      shift,
+      shiftDev,
       0,
-      w - shift,
-      h,
+      devW - shiftDev,
+      devH,
       0,
       0,
-      w - shift,
-      h,
+      devW - shiftDev,
+      devH,
     )
+    offscreenCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     // Clear new area on right
     offscreenCtx.fillStyle = '#0f172a'
-    offscreenCtx.fillRect(w - shift, 0, shift, h)
+    offscreenCtx.fillRect(cssW - shift, 0, shift, cssH)
 
     // Redraw reference lines in the cleared area
-    offscreenCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
-    offscreenCtx.lineWidth = 1
-
-    offscreenCtx.beginPath()
-    offscreenCtx.moveTo(w - shift, centerY)
-    offscreenCtx.lineTo(w, centerY)
-    offscreenCtx.stroke()
-
-    offscreenCtx.setLineDash([4, 4])
-    const y25 = centerY - (25 / centsRange) * (h / 2)
-    offscreenCtx.beginPath()
-    offscreenCtx.moveTo(w - shift, y25)
-    offscreenCtx.lineTo(w, y25)
-    offscreenCtx.stroke()
-
-    const yMinus25 = centerY - (-25 / centsRange) * (h / 2)
-    offscreenCtx.beginPath()
-    offscreenCtx.moveTo(w - shift, yMinus25)
-    offscreenCtx.lineTo(w, yMinus25)
-    offscreenCtx.stroke()
-    offscreenCtx.setLineDash([])
+    drawReferenceLines(offscreenCtx, cssW - shift, cssW)
 
     // Draw data point if available
-    if (props.centsOffset !== null) {
+    if (centsOffset !== null) {
       // Clamp between -50 and 50
       const clampedCents = Math.max(
         -centsRange,
-        Math.min(centsRange, props.centsOffset),
+        Math.min(centsRange, centsOffset),
       )
-      const y = centerY - (clampedCents / centsRange) * (h / 2)
+      const y = centerY - (clampedCents / centsRange) * (cssH / 2)
 
       // Color logic: green < 15, yellow < 30, red > 30
       const absCents = Math.abs(clampedCents)
@@ -136,50 +218,12 @@ export const CentsDeviationCanvas: Component<CentsDeviationCanvasProps> = (
       }
 
       offscreenCtx.beginPath()
-      offscreenCtx.arc(w - shift / 2, y, 2, 0, 2 * Math.PI)
+      offscreenCtx.arc(cssW - shift / 2, y, 2, 0, 2 * Math.PI)
       offscreenCtx.fill()
     }
 
-    // Render to main canvas
-    mainCtx.drawImage(offscreenCanvas, 0, 0)
-
-    // Fixed annotations (main canvas, never scrolled): what the axes and
-    // colors MEAN. Without them this read as mystery confetti - the dots
-    // are your distance from the nearest note, sharp above, flat below.
-    mainCtx.font = '10px sans-serif'
-    mainCtx.textAlign = 'left'
-    mainCtx.textBaseline = 'middle'
-    mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
-    mainCtx.fillText('+50\u00A2 sharp', 4, centerY - h / 2 + 8)
-    mainCtx.fillText('0\u00A2 on pitch', 4, centerY)
-    mainCtx.fillText('\u221250\u00A2 flat', 4, centerY + h / 2 - 8)
-    const legend: [string, string][] = [
-      ['#22c55e', '\u226415\u00A2'],
-      ['#eab308', '\u226430\u00A2'],
-      ['#ef4444', '>30\u00A2'],
-    ]
-    let lx = 4
-    const ly = centerY - h / 2 + 22
-    for (const [color, label] of legend) {
-      mainCtx.fillStyle = color
-      mainCtx.beginPath()
-      mainCtx.arc(lx + 3, ly, 3, 0, 2 * Math.PI)
-      mainCtx.fill()
-      mainCtx.fillStyle = 'rgba(255, 255, 255, 0.55)'
-      mainCtx.fillText(label, lx + 9, ly)
-      lx += 9 + mainCtx.measureText(label).width + 10
-    }
-
-    // Draw target note overlay on main canvas (not offscreen so it stays fixed on the right)
-    if (props.targetNote !== null && props.targetNote !== '') {
-      mainCtx.fillStyle = 'rgba(15, 23, 42, 0.8)' // dark bg for text
-      mainCtx.fillRect(w - 40, centerY - 12, 40, 24)
-      mainCtx.fillStyle = 'white'
-      mainCtx.font = '12px sans-serif'
-      mainCtx.textAlign = 'right'
-      mainCtx.textBaseline = 'middle'
-      mainCtx.fillText(props.targetNote, w - 8, centerY)
-    }
+    // Render to main canvas with the fixed annotations on top
+    renderFrame(targetNote)
   })
 
   onCleanup(() => {
@@ -191,8 +235,6 @@ export const CentsDeviationCanvas: Component<CentsDeviationCanvasProps> = (
   return (
     <canvas
       ref={canvasRef}
-      width={w}
-      height={h}
       style={{
         width: '100%',
         height: '100%',

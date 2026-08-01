@@ -81,6 +81,12 @@
   gap: 14px;
 }
 
+/* One label + options block; the parent gap keeps questions apart. */
+.question {
+  display: flex;
+  flex-direction: column;
+}
+
 .questionLabel {
   margin: 0 0 6px;
   font-size: 0.76rem;

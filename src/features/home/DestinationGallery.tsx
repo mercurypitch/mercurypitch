@@ -165,8 +165,8 @@ function PracticeVisual(): JSX.Element {
           stroke-linecap="round"
         />
 
+        {/* Guitar */}
         <g
-          class={styles.guitar}
           transform="translate(90 38) scale(.75) translate(66 12) rotate(-10 66 118)"
           filter="url(#practice-instrument-shadow)"
         >
@@ -255,8 +255,8 @@ function PracticeVisual(): JSX.Element {
           />
         </g>
 
+        {/* Microphone */}
         <g
-          class={styles.microphone}
           transform="translate(90 38) scale(.75) translate(302 10)"
           filter="url(#practice-instrument-shadow)"
         >
@@ -302,8 +302,8 @@ function PracticeVisual(): JSX.Element {
           <path d="M57 17v84" stroke="#f8fbff" stroke-width="2" opacity=".55" />
         </g>
 
+        {/* Piano */}
         <g
-          class={styles.piano}
           transform="translate(90 38) scale(.75) translate(445 100)"
           filter="url(#practice-instrument-shadow)"
         >

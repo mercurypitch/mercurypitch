@@ -185,6 +185,10 @@
   color: var(--red);
 }
 
+.moreBtn {
+  color: var(--text-secondary);
+}
+
 .stopGlyph {
   width: 14px;
   height: 14px;

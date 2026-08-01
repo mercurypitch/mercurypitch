@@ -756,7 +756,7 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                 onClick={() => props.onSelectedTargetIdChange(target.id)}
                 onFocusIn={() => props.onSelectedTargetIdChange(target.id)}
               >
-                <label class={styles.kindField}>
+                <label>
                   <span>Type</span>
                   <select
                     value={kind()}

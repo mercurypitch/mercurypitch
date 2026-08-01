@@ -114,7 +114,7 @@ const HomePage: Component = () => {
 
       <div class={styles.grid}>
         {/* ── Streak ─────────────────────────────────────────── */}
-        <section class={`${styles.card} ${styles.streakCard} home-streak-card`}>
+        <section class={`${styles.card} home-streak-card`}>
           <div class={styles.streakTop}>
             <span
               class={`${styles.flame} ${goalMet ? styles.flameLit : ''}`}

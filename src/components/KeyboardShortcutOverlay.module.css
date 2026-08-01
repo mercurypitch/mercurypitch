@@ -126,6 +126,12 @@
   gap: 20px;
 }
 
+/* One titled block of rows; the parent gap keeps the groups apart. */
+.ksGroup {
+  display: flex;
+  flex-direction: column;
+}
+
 .ksGroupTitle {
   margin: 0 0 10px;
   font-size: 0.68rem;

@@ -1416,8 +1416,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     return (
                       <button
                         classList={{
-                          'ensemble-pill': true,
-                          selected: ensembleAlgorithms().has(algo),
+                          [styles.ensemblePill]: true,
+                          [styles.selected]: ensembleAlgorithms().has(algo),
                         }}
                         disabled={isDetecting() || isRunningTest()}
                         onClick={() => toggleEnsembleAlgorithm(algo)}
@@ -1501,7 +1501,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             <div class={styles.presetButtons}>
               <button
                 class={`btn ${styles.btnPreset}`}
-                classList={{ active: centsThreshold() === 0 }}
+                classList={{ [styles.active]: centsThreshold() === 0 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(0)}
               >
@@ -1509,7 +1509,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </button>
               <button
                 class={`btn ${styles.btnPreset}`}
-                classList={{ active: centsThreshold() === 5 }}
+                classList={{ [styles.active]: centsThreshold() === 5 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(5)}
               >
@@ -1517,7 +1517,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </button>
               <button
                 class={`btn ${styles.btnPreset}`}
-                classList={{ active: centsThreshold() === 10 }}
+                classList={{ [styles.active]: centsThreshold() === 10 }}
                 disabled={isRunningTest()}
                 onClick={() => setCentsThreshold(10)}
               >
@@ -1581,7 +1581,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 </button>
               )}
               {audioContext() && (
-                <span class={`${styles.micStatus} active`}>
+                <span class={`${styles.micStatus} ${styles.active}`}>
                   Microphone Active
                 </span>
               )}
@@ -1664,7 +1664,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </button>
                   <button
                     class={`btn ${styles.btnOutline} ${styles.btnSm}`}
-                    style={{ transition: 'all 0.2s', cursor: 'pointer' }}
+                    classList={{
+                      [styles.usingStem]: activeTrack()?.isVocalStem === true,
+                    }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.filter = 'brightness(1.2)')
                     }
@@ -2256,20 +2258,20 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     {testResults().passed + testResults().failed}
                   </span>
                 </div>
-                <div class={`${styles.testSummaryItem} passed`}>
+                <div class={`${styles.testSummaryItem} ${styles.passed}`}>
                   <span class={styles.testSummaryLabel}>Passed</span>
                   <span class={styles.testSummaryValue}>
                     {testResults().passed}
                   </span>
                 </div>
-                <div class={`${styles.testSummaryItem} failed`}>
+                <div class={`${styles.testSummaryItem} ${styles.failed}`}>
                   <span class={styles.testSummaryLabel}>Failed</span>
                   <span class={styles.testSummaryValue}>
                     {testResults().failed}
                   </span>
                 </div>
                 <Show when={testResults().passed + testResults().failed > 0}>
-                  <div class={`${styles.testSummaryItem} rate`}>
+                  <div class={`${styles.testSummaryItem} ${styles.rate}`}>
                     <span class={styles.testSummaryLabel}>Rate</span>
                     <span class={styles.testSummaryValue}>
                       {(
@@ -2300,8 +2302,8 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         {(nr) => (
                           <tr
                             classList={{
-                              'row-pass': nr.passed,
-                              'row-fail': !nr.passed,
+                              [styles.rowPass]: nr.passed,
+                              [styles.rowFail]: !nr.passed,
                             }}
                           >
                             <td class={styles.testNoteName}>{nr.noteName}</td>
@@ -2320,12 +2322,16 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                             </td>
                             <td class={styles.testNoteStatus}>
                               <Show when={nr.passed}>
-                                <span class={`${styles.resultBadge} pass`}>
+                                <span
+                                  class={`${styles.resultBadge} ${styles.pass}`}
+                                >
                                   Pass
                                 </span>
                               </Show>
                               <Show when={!nr.passed}>
-                                <span class={`${styles.resultBadge} fail`}>
+                                <span
+                                  class={`${styles.resultBadge} ${styles.fail}`}
+                                >
                                   Fail
                                 </span>
                               </Show>
@@ -2348,7 +2354,6 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                 <div class={styles.infoPanel}>
                   <Show when={isSeparating()}>
                     <div
-                      class="processing-progress"
                       style={{
                         display: 'flex',
                         'align-items': 'center',
