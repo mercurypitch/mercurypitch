@@ -1,7 +1,7 @@
 # Jam room: polish + a reason to be there
 
-**Status:** phases 0 and 1 are implemented on
-`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 2-6 are unbuilt.
+**Status:** phases 0, 1 and 2 are implemented on
+`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 3-6 are unbuilt.
 
 The Jam tab has a working multiplayer spine and almost nothing to do with it.
 This plan is about the second half.
@@ -113,23 +113,50 @@ Covered by `src/tests/jam-catalog.test.ts` — transposition per range, beat
 layout, the `"G44"` bare-note-name trap, weekly pass-through, and the
 exclusion list.
 
-## 5. Phase 2 — one shared truth
+## 5. Phase 2 — one shared truth (implemented)
 
-The correctness phase, and a prerequisite for anything competitive.
+The correctness phase, and a prerequisite for anything competitive. Two
+people could each believe they won and both be reading the code correctly.
+Three causes, all fixed:
 
-- **Room beats, not wall clock.** `service.ts` already measures RTT per peer
-  for the latency display. Use it to estimate a clock offset and stamp each
-  pitch sample with a *room beat* instead of `Date.now()`. Every peer then
-  scores the same sample against the same target.
-- **Score with the real engine.** Keep the rolling +/-50-cent count as the live
-  HUD, but compute the run's final score with `exercise-scoring-utils`, the
-  same code the solo exercises use — so a jam score and a solo score mean the
-  same thing.
-- **Write only your own result.** The DO is an unauthenticated relay; peer
-  payloads are untrusted input. Each client persists its *own* score via
-  `recordExerciseResult` and never a peer's. Peer scores stay display-only.
+- **Room beats, not wall clock.** Scoring mapped samples onto the grid with
+  `Date.now() - sample.timestamp`, where the timestamp came off the *sender's*
+  clock — so the subtraction measured machine skew (seconds) rather than
+  musical time. `JamPitchMessage.beat` now carries the sender's room beat and
+  scoring works in beats throughout. `timestamp` is stamped on receipt
+  instead, which makes it locally comparable and gives it an honest job:
+  separating this take's samples from the last one's.
+- **Tempo actually shared.** `selectJamExercise` seeded the bpm from the
+  melody on the host and `onMelodyMessage` did not, so a peer kept whatever
+  it last had (120 by default) and ran its playhead at a different speed for
+  the whole session. Peers adopt the melody's bpm, and `JamPlaybackMessage`
+  carries the host's tempo so every transport command is a resync point.
+- **Latency-compensated start.** A `play` at beat 0 arrives one-way-latency
+  later. Half the measured RTT, converted to beats, now advances the
+  receiving peer's playhead — clamped at 500 ms so a stale reading nudges it
+  rather than throwing it into the middle of the melody.
 
-That last point is what makes phase 3 safe.
+**`src/lib/jam/jam-scoring.ts`** is the real score: one pass at the end of a
+take, over the whole run, through `scoreNoteInRange` — the same aligned
+scorer the solo exercises use, so 78 in a room and 78 alone mean the same
+thing and right-notes-wrong-order does not score. Unsung notes count zero
+rather than being dropped (the correction sight-singing needed: a partial
+run scores its coverage, not its cherry-picked average). The canvas keeps
+its rolling +/-50-cent hit rate, which is a good HUD and was never a good
+record; the two numbers differ on purpose.
+
+`scoreOwnJamRun` is the boundary that makes phase 3 safe: it reads this
+device's own samples only. The signaling DO forwards peer payloads without
+inspecting them, so a peer's stream may draw their trail and their line on
+the scoreboard, and must never become anyone's record.
+
+Covered by `src/tests/jam-scoring.test.ts`.
+
+**Deliberately not done here:** the `recordExerciseResult` call. That funnel
+also drives challenge attempts, weekly attempts, routine auto-advance and
+practice-minute credit, and its own header warns that calling it twice
+double-counts. Deciding which jam runs credit what is phase 3's job, not a
+line to slip in behind a scoring change.
 
 ## 6. Phase 3 — make it count
 
@@ -194,11 +221,12 @@ The largest lift; do it last.
 
 ## 10. Order, and why
 
-Phase 1 first — the room is empty and that is the whole problem. **Done.**
+Phase 1 first — the room was empty and that was the whole problem. **Done.**
 Phase 2 next, because a competitive room with a disagreeing scoreboard is
-worse than no competitive room. 3 and 4 can go in parallel once 2 lands. 5
-and 6 are real projects and should be re-scoped after 1-4 are in front of
-users.
+worse than no competitive room. **Done.** 3 and 4 can now go in parallel;
+phase 3 starts from `scoreOwnJamRun`, which already produces the number it
+needs to record. 5 and 6 are real projects and should be re-scoped after
+1-4 are in front of users.
 
 Risks worth naming up front: mesh cost at 12 peers is 66 connections and the
 pitch rate (20 Hz per peer) should be measured before the peer cap is raised;
