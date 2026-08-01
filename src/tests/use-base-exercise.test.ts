@@ -1,5 +1,5 @@
 import { createRoot } from 'solid-js'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useBaseExercise } from '@/features/exercises/use-base-exercise'
 import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -15,6 +15,8 @@ function createMockAudioEngine(): AudioEngine {
     getTimeData: vi.fn().mockReturnValue(new Float32Array(1024)),
     getSampleRate: vi.fn().mockReturnValue(44100),
     getBufferSize: vi.fn().mockReturnValue(2048),
+    getMicStream: vi.fn().mockReturnValue(null),
+    getAudioContext: vi.fn().mockReturnValue(null),
     stopTone: vi.fn(),
   } as unknown as AudioEngine
 }
@@ -41,6 +43,8 @@ function createMockPracticeEngine(
 }
 
 describe('useBaseExercise', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
   it('reset() stops the microphone', () => {
     createRoot((dispose) => {
       const audioEngine = createMockAudioEngine()
@@ -259,6 +263,64 @@ describe('useBaseExercise', () => {
       // just acquired (otherwise a ghost rAF loop runs and the mic sticks on).
       expect(base.state().status).toBe('idle')
       expect(micActive).toBe(false)
+
+      dispose()
+    })
+  })
+
+  it('captures a completed run in memory with the configuration from start', async () => {
+    class MockMediaRecorder {
+      static isTypeSupported = vi.fn().mockReturnValue(true)
+      state: RecordingState = 'inactive'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onstop: (() => void) | null = null
+
+      start(): void {
+        this.state = 'recording'
+      }
+
+      stop(): void {
+        this.state = 'inactive'
+        this.ondataavailable?.({
+          data: new Blob(['voice'], { type: 'audio/webm' }),
+        } as BlobEvent)
+        this.onstop?.()
+      }
+    }
+    vi.stubGlobal('MediaRecorder', MockMediaRecorder)
+
+    const audioEngine = createMockAudioEngine()
+    vi.mocked(audioEngine.getMicStream).mockReturnValue({} as MediaStream)
+    const practiceEngine = createMockPracticeEngine()
+    let targetNote = 'A3'
+
+    await createRoot(async (dispose) => {
+      const base = useBaseExercise({
+        audioEngine,
+        practiceEngine,
+        config: () => ({ type: 'long-note', targetNote }),
+      })
+
+      await expect(base.start()).resolves.toBe(true)
+      expect(base.voiceCapture.state()).toBe('recording')
+
+      // A setting changed after Start belongs to the next run, not this take.
+      targetNote = 'B3'
+      base._completeWithResult({
+        type: 'long-note',
+        score: 82,
+        metrics: { steadyZonePct: 76 },
+        completedAt: Date.UTC(2026, 7, 1, 12),
+      })
+
+      await vi.waitFor(() => expect(base.voiceCapture.state()).toBe('ready'))
+      expect(base.voiceCapture.take()?.config.targetNote).toBe('A3')
+      expect(base.voiceCapture.take()?.blob.size).toBeGreaterThan(0)
+      expect(base.voiceCapture.take()?.result.score).toBe(82)
+
+      base.voiceCapture.discard()
+      expect(base.voiceCapture.state()).toBe('idle')
+      expect(base.voiceCapture.take()).toBeNull()
 
       dispose()
     })

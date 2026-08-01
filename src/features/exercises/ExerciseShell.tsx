@@ -6,9 +6,10 @@
 // components: the header (back, "?" help toggle, title, score), the
 // collapsible beginner help panel, the idle area (settings + description +
 // Start beneath it), the active area (content + Stop + optional auto-timer),
-// and the complete overlay with a SINGLE primary action. Exercise-specific
-// JSX is passed in via slots so each component only supplies its canvas,
-// metrics, idle placeholder and result summary.
+// and the result card with a primary retry action plus explicit voice-take
+// persistence choices. Exercise-specific JSX is passed in via slots so each
+// component only supplies its canvas, metrics, idle placeholder and result
+// summary.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
@@ -22,10 +23,13 @@ import { getDifficulty } from '@/features/practice-intelligence/difficulty-store
 import { holdMicForRoutine, releaseRoutineMicHold, } from '@/features/routines/routine-mic-hold'
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { trackEvent } from '@/lib/analytics'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
+import { showNotification } from '@/stores/notifications-store'
 import { EXERCISE_HELP } from './exercise-help'
+import { keepExerciseVoiceTake } from './exercise-voice-take'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import { gradeForScore } from './feedback'
 import type { RunTrace } from './last-run-trace'
@@ -33,6 +37,7 @@ import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
 import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType } from './types'
+import type { ExerciseVoiceCaptureController } from './use-base-exercise'
 
 export interface AutoTimerConfig {
   /** Preset durations (seconds). Defaults to the shared ladder. */
@@ -75,6 +80,8 @@ export interface ExerciseShellProps {
   currentScore: () => number
   /** Final score 0-100 once complete (drives the result overlay color). */
   resultScore: () => number | null
+  /** Temporary local audio for this run; omitted in shell-only tests. */
+  voiceCapture?: ExerciseVoiceCaptureController
   error?: () => string | null
   onBack: () => void
 
@@ -117,6 +124,9 @@ const formatRunLength = (seconds: number): string => {
 
 export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [helpOpen, setHelpOpen] = createSignal(false)
+  const [voiceKeepState, setVoiceKeepState] = createSignal<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle')
   const [remainingMs, setRemainingMs] = createSignal(0)
   // Opens the slider. Sticky while Custom is the selected mode so the value
   // stays adjustable between runs, rather than collapsing after every pick.
@@ -135,6 +145,18 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const status = createMemo(() => props.status())
   const isActive = () => status() === 'active'
   const isComplete = () => status() === 'complete'
+  const voiceCaptureHeading = createMemo(() => {
+    if (voiceKeepState() === 'saving') return 'Keeping voice take'
+    if (voiceKeepState() === 'saved') return 'Voice take kept'
+    if (voiceKeepState() === 'error') return 'Could not keep voice take'
+    const captureState = props.voiceCapture?.state()
+    if (captureState === 'processing') return 'Preparing voice take'
+    if (captureState === 'ready') return 'Keep this voice take?'
+    if (captureState === 'unsupported' || captureState === 'error') {
+      return 'Replay unavailable'
+    }
+    return 'Replay discarded'
+  })
   // A finished run returns to the selector + Start screen, where a result
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
@@ -150,6 +172,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   createEffect(
     on(status, (s, previous) => {
       if (s === 'active' && previous !== 'active') {
+        setVoiceKeepState('idle')
         const stats = getExerciseStats(props.type)
         setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
         setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
@@ -180,6 +203,50 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     const last = prevLast()
     if (score === null || last === null) return null
     return score - last
+  }
+
+  function keepVoiceTake(): void {
+    const take = props.voiceCapture?.take()
+    const exerciseTitle = props.title
+    if (take === null || take === undefined) return
+    setVoiceKeepState('saving')
+    trackEvent('voice_keep_attempt')
+
+    void (async () => {
+      const result = await keepExerciseVoiceTake({ exerciseTitle, take })
+      if (result.ok) {
+        setVoiceKeepState('saved')
+        trackEvent('voice_keep_success')
+        showNotification(
+          'Exercise take kept in Hear Yourself on this device.',
+          'success',
+          { channel: 'voice-take-save' },
+        )
+        return
+      }
+
+      setVoiceKeepState('error')
+      trackEvent('voice_keep_failure')
+      if (result.quotaExceeded || !result.roomAvailable) {
+        trackEvent('voice_storage_warning')
+        showNotification(
+          'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+          'warning',
+          { channel: 'voice-take-save' },
+        )
+      } else {
+        showNotification(
+          'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
+          'error',
+          { channel: 'voice-take-save' },
+        )
+      }
+    })()
+  }
+
+  function discardVoiceTake(): void {
+    props.voiceCapture?.discard()
+    setVoiceKeepState('idle')
   }
 
   // ── Mic toggle (header) ──
@@ -479,6 +546,68 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     {(trace) => <RunTraceCanvas trace={trace()} />}
                   </Show>
                 </div>
+                <Show when={props.voiceCapture !== undefined}>
+                  <div class="exercise-result-voice">
+                    <div class="exercise-result-voice-copy">
+                      <strong>{voiceCaptureHeading()}</strong>
+                      <span role="status" aria-live="polite">
+                        {voiceKeepState() === 'saving'
+                          ? 'Saving locally…'
+                          : voiceKeepState() === 'saved'
+                            ? 'Available in Hear Yourself on this device.'
+                            : voiceKeepState() === 'error'
+                              ? 'Could not keep it. The temporary replay is still available.'
+                              : props.voiceCapture!.state() === 'processing'
+                                ? 'Preparing the temporary local replay…'
+                                : props.voiceCapture!.state() === 'ready'
+                                  ? 'It stays temporary unless you explicitly keep it on this device.'
+                                  : props.voiceCapture!.state() ===
+                                      'unsupported'
+                                    ? 'This browser can score the run but cannot record a replay.'
+                                    : props.voiceCapture!.state() === 'error'
+                                      ? 'No replay was captured. Your score is unchanged.'
+                                      : 'Replay discarded. Your score is unchanged.'}
+                      </span>
+                    </div>
+                    <Show
+                      when={
+                        props.voiceCapture!.state() === 'ready' ||
+                        voiceKeepState() === 'saving' ||
+                        voiceKeepState() === 'saved' ||
+                        voiceKeepState() === 'error'
+                      }
+                    >
+                      <div class="exercise-result-voice-actions">
+                        <button
+                          type="button"
+                          class="exercise-btn exercise-keep-voice"
+                          disabled={
+                            voiceKeepState() === 'saving' ||
+                            voiceKeepState() === 'saved'
+                          }
+                          onClick={keepVoiceTake}
+                        >
+                          {voiceKeepState() === 'saving'
+                            ? 'Saving'
+                            : voiceKeepState() === 'saved'
+                              ? 'Kept'
+                              : voiceKeepState() === 'error'
+                                ? 'Retry Keep'
+                                : 'Keep Take'}
+                        </button>
+                        <Show when={voiceKeepState() !== 'saved'}>
+                          <button
+                            type="button"
+                            class="exercise-btn exercise-discard-voice"
+                            onClick={discardVoiceTake}
+                          >
+                            Discard
+                          </button>
+                        </Show>
+                      </div>
+                    </Show>
+                  </div>
+                </Show>
               </div>
             </Show>
             <Show
@@ -518,6 +647,12 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               </Show>
               <Show when={props.error?.() != null}>
                 <div class="exercise-error">{props.error!()}</div>
+              </Show>
+              <Show when={!isComplete() && props.voiceCapture !== undefined}>
+                <p class="exercise-capture-note">
+                  Scores save without audio. After the run, choose whether to
+                  keep its temporary local replay.
+                </p>
               </Show>
               <button
                 class="exercise-btn exercise-btn-primary exercise-idle-start"

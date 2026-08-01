@@ -32,7 +32,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'mirror-melody', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'mirror-melody', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -96,6 +96,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

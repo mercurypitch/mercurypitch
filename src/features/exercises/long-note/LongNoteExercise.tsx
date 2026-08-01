@@ -41,10 +41,10 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: {
+    config: () => ({
       type: 'long-note',
-      targetNote: untrack(() => targetNote()),
-    },
+      targetNote: targetNote(),
+    }),
   })
 
   const controller = useLongNoteController(base)
@@ -97,6 +97,7 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={
