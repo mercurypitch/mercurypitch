@@ -2,7 +2,7 @@
 // Main jam session UI — tabless layout with collapsible sidebar.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
@@ -35,6 +35,28 @@ export const JamPanel: Component = () => {
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   const [showAbout, setShowAbout] = createSignal(false)
+  let aboutRef: HTMLDivElement | undefined
+
+  // Tap-outside and Escape close the "?" panel. A tap has no hover to fall
+  // back on, so without this the only way to dismiss it on a tablet is to
+  // find the small button again -- and the synthetic hover a tap leaves
+  // behind made it look like the panel was closing on a timer.
+  onMount(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (!showAbout()) return
+      if (aboutRef?.contains(e.target as Node) === true) return
+      setShowAbout(false)
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowAbout(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    onCleanup(() => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    })
+  })
   const [linkCopied, setLinkCopied] = createSignal(false)
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
@@ -235,6 +257,7 @@ export const JamPanel: Component = () => {
                 reason to press the button; this is only for the visitor who
                 wants to know what happens after they do. */}
             <div
+              ref={aboutRef}
               class={panelStyles.about}
               classList={{ [panelStyles.aboutOpen]: showAbout() }}
             >
@@ -624,183 +647,189 @@ export const JamPanel: Component = () => {
             </div>
 
             {/* ── Exercise controls + live pitch toggle ─────────── */}
-            <div class={panelStyles.exerciseBar}>
-              {/* Live pitch toggle — always reachable on the left */}
-              <button
-                class={panelStyles.pitchToggleBtn}
-                classList={{
-                  [panelStyles.pitchToggleBtnActive]: showLivePitch(),
-                }}
-                onClick={() => setShowLivePitch((v) => !v)}
-                title={
-                  showLivePitch()
-                    ? 'Hide live pitch monitor'
-                    : 'Show live pitch monitor'
-                }
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="13"
-                  height="13"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
+            {/* Positioned wrapper so the picker below can overlay the
+                canvas rather than push it down the flex column. */}
+            <div class={panelStyles.transportRow}>
+              <div class={panelStyles.exerciseBar}>
+                {/* Live pitch toggle — always reachable on the left */}
+                <button
+                  class={panelStyles.pitchToggleBtn}
+                  classList={{
+                    [panelStyles.pitchToggleBtnActive]: showLivePitch(),
+                  }}
+                  onClick={() => setShowLivePitch((v) => !v)}
+                  title={
+                    showLivePitch()
+                      ? 'Hide live pitch monitor'
+                      : 'Show live pitch monitor'
+                  }
                 >
-                  <path
-                    d="M2 8h2l2-4 2 8 2-5 2 3h2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <JamExerciseControls
-                onSelectExercise={() =>
-                  setShowExercisePicker(!showExercisePicker())
-                }
-                loopEnabled={jamExerciseLoop()}
-                onToggleLoop={() => setJamExerciseLoop((v) => !v)}
-              />
-              {/* BPM control — host only, shown when melody loaded */}
-              <Show when={jamIsHost() && jamExerciseMelody()}>
-                <div class={panelStyles.bpmControl}>
-                  <button
-                    class={panelStyles.bpmStep}
-                    onClick={() =>
-                      setJamExerciseBpm((v) => Math.max(40, v - 5))
-                    }
-                    title="Decrease BPM by 5"
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="13"
+                    height="13"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
                   >
-                    <svg
-                      viewBox="0 0 12 12"
-                      width="10"
-                      height="10"
-                      fill="currentColor"
+                    <path
+                      d="M2 8h2l2-4 2 8 2-5 2 3h2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <JamExerciseControls
+                  onSelectExercise={() =>
+                    setShowExercisePicker(!showExercisePicker())
+                  }
+                  loopEnabled={jamExerciseLoop()}
+                  onToggleLoop={() => setJamExerciseLoop((v) => !v)}
+                />
+                {/* BPM control — host only, shown when melody loaded */}
+                <Show when={jamIsHost() && jamExerciseMelody()}>
+                  <div class={panelStyles.bpmControl}>
+                    <button
+                      class={panelStyles.bpmStep}
+                      onClick={() =>
+                        setJamExerciseBpm((v) => Math.max(40, v - 5))
+                      }
+                      title="Decrease BPM by 5"
                     >
-                      <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
-                    </svg>
-                  </button>
-                  <input
-                    class={panelStyles.bpmInput}
-                    type="number"
-                    min="20"
-                    max="300"
-                    value={jamExerciseBpm()}
-                    onInput={(e) => {
-                      const v = parseInt(e.currentTarget.value, 10)
-                      if (!isNaN(v) && v >= 20 && v <= 300) setJamExerciseBpm(v)
-                    }}
-                    title="Playback BPM"
-                  />
-                  <button
-                    class={panelStyles.bpmStep}
-                    onClick={() =>
-                      setJamExerciseBpm((v) => Math.min(300, v + 5))
-                    }
-                    title="Increase BPM by 5"
-                  >
-                    <svg
-                      viewBox="0 0 12 12"
-                      width="10"
-                      height="10"
-                      fill="currentColor"
-                    >
-                      <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
-                      <rect x="5.25" y="2" width="1.5" height="8" rx="0.75" />
-                    </svg>
-                  </button>
-                  <span class={panelStyles.bpmLabel}>bpm</span>
-                </div>
-              </Show>
-
-              {/* Room mode — host picks, everyone follows. Roles are derived
-                  from the sorted peer list, so nothing is sent but this. */}
-              <Show when={jamIsHost()}>
-                <div class={panelStyles.modePicker}>
-                  <For each={JAM_MODES}>
-                    {(m) => (
-                      <button
-                        class={panelStyles.modeBtn}
-                        classList={{
-                          [panelStyles.modeBtnActive]: jamRoomMode() === m.id,
-                        }}
-                        title={m.blurb}
-                        aria-pressed={jamRoomMode() === m.id}
-                        onClick={() => selectJamRoomMode(m.id)}
+                      <svg
+                        viewBox="0 0 12 12"
+                        width="10"
+                        height="10"
+                        fill="currentColor"
                       >
-                        {m.label}
-                      </button>
+                        <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
+                      </svg>
+                    </button>
+                    <input
+                      class={panelStyles.bpmInput}
+                      type="number"
+                      min="20"
+                      max="300"
+                      value={jamExerciseBpm()}
+                      onInput={(e) => {
+                        const v = parseInt(e.currentTarget.value, 10)
+                        if (!isNaN(v) && v >= 20 && v <= 300)
+                          setJamExerciseBpm(v)
+                      }}
+                      title="Playback BPM"
+                    />
+                    <button
+                      class={panelStyles.bpmStep}
+                      onClick={() =>
+                        setJamExerciseBpm((v) => Math.min(300, v + 5))
+                      }
+                      title="Increase BPM by 5"
+                    >
+                      <svg
+                        viewBox="0 0 12 12"
+                        width="10"
+                        height="10"
+                        fill="currentColor"
+                      >
+                        <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
+                        <rect x="5.25" y="2" width="1.5" height="8" rx="0.75" />
+                      </svg>
+                    </button>
+                    <span class={panelStyles.bpmLabel}>bpm</span>
+                  </div>
+                </Show>
+
+                {/* Room mode — host picks, everyone follows. Roles are derived
+                  from the sorted peer list, so nothing is sent but this. */}
+                <Show when={jamIsHost()}>
+                  <div class={panelStyles.modePicker}>
+                    <For each={JAM_MODES}>
+                      {(m) => (
+                        <button
+                          class={panelStyles.modeBtn}
+                          classList={{
+                            [panelStyles.modeBtnActive]: jamRoomMode() === m.id,
+                          }}
+                          title={m.blurb}
+                          aria-pressed={jamRoomMode() === m.id}
+                          onClick={() => selectJamRoomMode(m.id)}
+                        >
+                          {m.label}
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+
+                {/* Which part is mine, once the room is actually split. */}
+                <Show when={!jamMyRole().isUnison}>
+                  <div
+                    class={panelStyles.roleBadge}
+                    style={{ 'border-color': myColor(), color: myColor() }}
+                    title={jamModeInfo(jamMyRole().mode).blurb}
+                  >
+                    You sing: {jamMyRole().name}
+                  </div>
+                </Show>
+
+                {/* Your last take, scored over the whole run the way the solo
+                  exercises score theirs -- the canvas scoreboard beside it
+                  is a live rolling hit rate, which is a different number on
+                  purpose. Yours only: peer streams are untrusted. */}
+                <Show when={jamOwnRunScore()}>
+                  {(run) => (
+                    <div
+                      class={panelStyles.takeChip}
+                      title={`Your last take, scored across all ${run().notes.length} notes. Coverage ${Math.round(run().coverage * 100)}% — notes you did not sing count as zero.`}
+                    >
+                      <span class={panelStyles.takeLabel}>Your take</span>
+                      <span class={panelStyles.takeScore}>{run().score}</span>
+                      <Show when={run().coverage < 1}>
+                        <span class={panelStyles.takeCoverage}>
+                          {Math.round(run().coverage * 100)}% sung
+                        </span>
+                      </Show>
+                    </div>
+                  )}
+                </Show>
+              </div>
+
+              {/* Exercise picker — an overlay, so opening it does not shove
+                the canvas and the pitch strip down the page. */}
+              <Show when={showExercisePicker()}>
+                <div class={panelStyles.exercisePicker}>
+                  <For each={pickerShelves()}>
+                    {(shelf) => (
+                      <Show when={shelf.entries.length > 0}>
+                        <div class={panelStyles.pickShelf}>
+                          <div class={panelStyles.pickShelfLabel}>
+                            {shelf.label}
+                          </div>
+                          <For each={shelf.entries}>
+                            {(entry) => (
+                              <button
+                                class={panelStyles.pickItem}
+                                onClick={() => {
+                                  selectJamExercise(entry.build())
+                                  setShowExercisePicker(false)
+                                }}
+                              >
+                                <span class={panelStyles.pickName}>
+                                  {entry.name}
+                                </span>
+                                <span class={panelStyles.pickMeta}>
+                                  {entry.detail}
+                                </span>
+                              </button>
+                            )}
+                          </For>
+                        </div>
+                      </Show>
                     )}
                   </For>
                 </div>
               </Show>
-
-              {/* Which part is mine, once the room is actually split. */}
-              <Show when={!jamMyRole().isUnison}>
-                <div
-                  class={panelStyles.roleBadge}
-                  style={{ 'border-color': myColor(), color: myColor() }}
-                  title={jamModeInfo(jamMyRole().mode).blurb}
-                >
-                  You sing: {jamMyRole().name}
-                </div>
-              </Show>
-
-              {/* Your last take, scored over the whole run the way the solo
-                  exercises score theirs -- the canvas scoreboard beside it
-                  is a live rolling hit rate, which is a different number on
-                  purpose. Yours only: peer streams are untrusted. */}
-              <Show when={jamOwnRunScore()}>
-                {(run) => (
-                  <div
-                    class={panelStyles.takeChip}
-                    title={`Your last take, scored across all ${run().notes.length} notes. Coverage ${Math.round(run().coverage * 100)}% — notes you did not sing count as zero.`}
-                  >
-                    <span class={panelStyles.takeLabel}>Your take</span>
-                    <span class={panelStyles.takeScore}>{run().score}</span>
-                    <Show when={run().coverage < 1}>
-                      <span class={panelStyles.takeCoverage}>
-                        {Math.round(run().coverage * 100)}% sung
-                      </span>
-                    </Show>
-                  </div>
-                )}
-              </Show>
             </div>
-
-            {/* Exercise picker dropdown — shelved by where it came from */}
-            <Show when={showExercisePicker()}>
-              <div class={panelStyles.exercisePicker}>
-                <For each={pickerShelves()}>
-                  {(shelf) => (
-                    <Show when={shelf.entries.length > 0}>
-                      <div class={panelStyles.pickShelf}>
-                        <div class={panelStyles.pickShelfLabel}>
-                          {shelf.label}
-                        </div>
-                        <For each={shelf.entries}>
-                          {(entry) => (
-                            <button
-                              class={panelStyles.pickItem}
-                              onClick={() => {
-                                selectJamExercise(entry.build())
-                                setShowExercisePicker(false)
-                              }}
-                            >
-                              <span class={panelStyles.pickName}>
-                                {entry.name}
-                              </span>
-                              <span class={panelStyles.pickMeta}>
-                                {entry.detail}
-                              </span>
-                            </button>
-                          )}
-                        </For>
-                      </div>
-                    </Show>
-                  )}
-                </For>
-              </div>
-            </Show>
 
             {/* ── Canvases: exercise (main) + shared pitch (strip) ─ */}
             <div class={panelStyles.canvasArea}>

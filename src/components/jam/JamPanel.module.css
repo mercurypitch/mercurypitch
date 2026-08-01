@@ -75,7 +75,23 @@
     border-color 0.15s;
 }
 
-.aboutBtn:hover,
+/* Hover only where hover is real. A touch tap leaves a synthetic hover
+   behind that the browser clears on its own schedule, so on a tablet an
+   unguarded :hover kept the panel up after the tap and looked like it was
+   closing on a timer. Touch gets the click toggle and nothing else. */
+@media (hover: hover) and (pointer: fine) {
+  .about:hover .aboutPanel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .aboutBtn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
 .aboutOpen .aboutBtn {
   color: var(--accent);
   border-color: var(--accent);
@@ -115,7 +131,6 @@
   margin-top: 8px;
 }
 
-.about:hover .aboutPanel,
 .aboutOpen .aboutPanel {
   opacity: 1;
   visibility: visible;
@@ -176,6 +191,15 @@
 }
 
 /* ── Exercise transport bar row ───────────────────────────────────── */
+
+/* Anchor for the picker, which overlays the canvas instead of taking a
+   row in the flex column -- opening a song list should not shove the
+   piano roll and the pitch strip down the page. */
+.transportRow {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 3;
+}
 
 .exerciseBar {
   display: flex;
@@ -477,17 +501,25 @@
 /* ── Exercise picker dropdown ─────────────────────────────────────── */
 
 .exercisePicker {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(420px, 100%);
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  background: var(--bg-tertiary);
+  /* Opaque enough to read a song list against a rehearsal-room photo AND
+     the piano roll behind it -- this one floats over both, so it does not
+     follow the room-glass slider the flat panels do. */
+  background: rgba(22, 27, 34, 0.97);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  max-height: 320px;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  max-height: min(420px, 55vh);
   overflow-y: auto;
-  flex-shrink: 0;
   animation: fadeDown 0.15s ease-out;
+  z-index: 4;
 }
 
 @keyframes fadeDown {
