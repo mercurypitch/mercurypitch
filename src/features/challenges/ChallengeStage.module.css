@@ -9,6 +9,13 @@
 .stage {
   z-index: var(--z-focus, 500);
   background: #080b12;
+  /* The shell leaves its own frame click-through (pointer-events: none
+     with only header/canvas/footer re-enabled). This stage paints an
+     OPAQUE background over that frame, so the margins and the band
+     between header and canvas look solid — a stray click there would
+     otherwise reach the sidebar underneath, switch tabs, and destroy a
+     one-take run with nothing recorded. Opaque means clickable. */
+  pointer-events: auto;
 }
 
 .closeButton,

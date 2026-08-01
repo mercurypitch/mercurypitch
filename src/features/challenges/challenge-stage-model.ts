@@ -28,8 +28,14 @@ export const CHALLENGE_TAIL_BEATS = 1
 const TOLERANCE_CENTS = 60
 const HOLD_TO_PASS_MS = 450
 const MATCHED_FLOOR = 70
-/** Ignore implausible gaps between samples when summing held time. */
-const MAX_SAMPLE_GAP_MS = 250
+/**
+ * Gap between consecutive voiced samples that still counts as continuous
+ * hold. Frames arrive ~every 20-40 ms, so this admits a dropped frame or
+ * two and nothing more: the drill DECAYS its hold timer while a voice is
+ * unvoiced, and a generous bridge here would hand the matched floor to
+ * three sporadic blips that the drill scores far lower.
+ */
+const MAX_SAMPLE_GAP_MS = 60
 /** A cleared note keeps this much shine after its window passes. */
 const CLEARED_GLOW = 0.72
 /** Live glow forgives a bit more than scoring so the light leads the singer. */
@@ -39,6 +45,43 @@ const GLOW_RECENCY_SEC = 0.3
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value))
+
+/**
+ * Whole-octave shift that best fits the challenge line into the singer's
+ * comfortable range: the octave whose transposed notes leave the least
+ * total distance outside [min, max]. Zero when no range is known, so an
+ * unconfigured singer sings it exactly as authored.
+ */
+export function octaveShiftForSinger(
+  items: readonly MelodyItem[],
+  singerRange?: { min: number; max: number },
+): number {
+  if (singerRange === undefined || items.length === 0) return 0
+  const midis = items.map((item) => item.note.midi)
+  let bestShift = 0
+  let bestCost = Number.POSITIVE_INFINITY
+  for (let octave = -3; octave <= 3; octave++) {
+    const shift = octave * 12
+    let cost = 0
+    for (const midi of midis) {
+      const moved = midi + shift
+      if (moved < singerRange.min) cost += singerRange.min - moved
+      else if (moved > singerRange.max) cost += moved - singerRange.max
+    }
+    // Ties favour the SMALLER move (compared explicitly — iteration order
+    // would otherwise hand a tie to the most extreme octave), so a line
+    // already in range stays exactly where it was authored.
+    const better =
+      cost < bestCost - 1e-9 ||
+      (Math.abs(cost - bestCost) <= 1e-9 &&
+        Math.abs(shift) < Math.abs(bestShift))
+    if (better) {
+      bestCost = cost
+      bestShift = shift
+    }
+  }
+  return bestShift
+}
 
 export interface ChallengeStageSource {
   id: string
@@ -55,6 +98,7 @@ export interface ChallengeStageSource {
  */
 export function challengeToZenExercise(
   challenge: ChallengeStageSource,
+  singerRange?: { min: number; max: number },
 ): ZenExerciseDefinition | null {
   const items = challenge.targetItems
     .filter(
@@ -68,12 +112,24 @@ export function challengeToZenExercise(
   if (items.length === 0) return null
 
   const firstBeat = items[0]!.startBeat
-  const rootMidi = items[0]!.note.midi
+  // Sing it in YOUR octave. Challenges are authored at absolute pitch
+  // ("Vincero" lands on B4), and scoring is octave-sensitive — so an
+  // untransposed line is unwinnable for any voice outside the authored
+  // octave, which the drill this replaces never did to anyone (it
+  // generated notes inside the singer's comfortable range). Shifting by
+  // whole octaves preserves every interval and the shape of the feat,
+  // so the board stays comparable.
+  // Semitones stay relative to the line's OWN first note; only the root
+  // moves. (Measuring them against the shifted root would cancel the
+  // transposition exactly — rootMidi + semitone would land back on the
+  // authored pitch.)
+  const sourceRoot = items[0]!.note.midi
+  const rootMidi = sourceRoot + octaveShiftForSinger(items, singerRange)
   const targets = items.map((item, index) => ({
     id: `challenge-note-${index}`,
     startBeat: CHALLENGE_LEAD_IN_BEATS + (item.startBeat - firstBeat),
     durationBeats: Math.max(0.25, item.duration),
-    semitone: item.note.midi - rootMidi,
+    semitone: item.note.midi - sourceRoot,
     cue: midiToNoteName(item.note.midi),
     showCue: true,
   }))

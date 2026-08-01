@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, scoreChallengeNotes, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
+import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, octaveShiftForSinger, scoreChallengeNote, scoreChallengeNotes, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
 import type { ResolvedZenTarget, ZenPitchPoint } from '@/features/zen/types'
 import { resolveZenTargets } from '@/features/zen/zen-model'
 import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
@@ -237,5 +237,100 @@ describe('challengeTargetHighlights', () => {
       cleared: false,
       missed: true,
     })
+  })
+})
+
+describe('review fixes: fairness and hold parity', () => {
+  const line = (midis: number[]): MelodyItem[] =>
+    midis.map((midi, i) => ({
+      id: i + 1,
+      note: {
+        midi,
+        name: 'C',
+        octave: Math.floor(midi / 12) - 1,
+        freq: 440,
+      },
+      duration: 1,
+      startBeat: i,
+    }))
+
+  it('drops a tenor line into a bass singer octave, keeping every interval', () => {
+    // "Vincero" sits on B4 (71); a bass tops out far below it. Without
+    // this the board is unwinnable for that voice through no fault of
+    // their own — the drill this replaces always generated reachable notes.
+    const items = line([67, 69, 71])
+    const bass = { min: 40, max: 60 }
+    const shift = octaveShiftForSinger(items, bass)
+    expect(shift).toBe(-12)
+
+    const exercise = challengeToZenExercise(
+      { id: 'w', title: 'T', targetItems: items },
+      bass,
+    )
+    expect(exercise?.defaultRootMidi).toBe(55)
+    // Intervals are preserved exactly — only the octave moved.
+    expect(exercise?.targets.map((t) => t.semitone)).toEqual([0, 2, 4])
+  })
+
+  it('leaves a line already in range exactly where it was authored', () => {
+    const items = line([60, 62, 64])
+    expect(octaveShiftForSinger(items, { min: 55, max: 72 })).toBe(0)
+    // And with no configured range, nothing is assumed.
+    expect(octaveShiftForSinger(items, undefined)).toBe(0)
+  })
+
+  it('sporadic blips no longer buy the matched floor', () => {
+    // Three short voiced blips 40 cents flat, scattered across a 1s
+    // window with silence between them. The drill decays its hold timer
+    // through that silence and never reaches 450ms; bridging the gaps
+    // here used to hand out the 70 floor for the same singing.
+    const target: ResolvedZenTarget = {
+      id: 'n1',
+      startBeat: 0,
+      durationBeats: 1,
+      semitone: 0,
+      startSec: 0,
+      endSec: 1,
+      startMidi: 60,
+      endMidi: 60,
+      cue: 'C',
+      showCue: true,
+    }
+    const flat = 60 - 0.4
+    const points: ZenPitchPoint[] = [
+      { timeSec: 0.05, midi: flat, clarity: 1 },
+      { timeSec: 0.08, midi: flat, clarity: 1 },
+      { timeSec: 0.45, midi: flat, clarity: 1 },
+      { timeSec: 0.48, midi: flat, clarity: 1 },
+      { timeSec: 0.85, midi: flat, clarity: 1 },
+      { timeSec: 0.88, midi: flat, clarity: 1 },
+    ]
+    const scored = scoreChallengeNote(points, target)
+    expect(scored.matched).toBe(false)
+    expect(scored.score).toBeLessThan(70)
+  })
+
+  it('a genuinely held note still matches', () => {
+    const target: ResolvedZenTarget = {
+      id: 'n1',
+      startBeat: 0,
+      durationBeats: 1,
+      semitone: 0,
+      startSec: 0,
+      endSec: 1,
+      startMidi: 60,
+      endMidi: 60,
+      cue: 'C',
+      showCue: true,
+    }
+    // Continuous frames at ~30ms, dead on pitch, for 600ms.
+    const points: ZenPitchPoint[] = Array.from({ length: 21 }, (_, i) => ({
+      timeSec: 0.1 + i * 0.03,
+      midi: 60,
+      clarity: 1,
+    }))
+    const scored = scoreChallengeNote(points, target)
+    expect(scored.matched).toBe(true)
+    expect(scored.score).toBeGreaterThanOrEqual(70)
   })
 })
