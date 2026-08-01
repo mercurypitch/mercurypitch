@@ -143,6 +143,13 @@ export interface StemMixerAudioController {
   ensureAudioCtx: () => AudioContext
   disconnectSources: () => void
   loadStems: () => Promise<void>
+  /** Incremental single-stem add for the "Add stem" pills — no loading
+   *  overlay, joins a running mix in sync. Resolves false on failure. */
+  addExtraStem: (input: {
+    label: string
+    color: string
+    url: string
+  }) => Promise<boolean>
 
   // Transport
   handlePlay: () => void
@@ -540,6 +547,47 @@ export const useStemMixerAudioController = (
       deps.showNotification(`Stem loading failed: ${msg}`, 'error')
     } finally {
       setLoading(false)
+    }
+  }
+
+  /**
+   * Add ONE more stem to a running mix — the in-place path behind the
+   * "Add stem" pills. Unlike loadStems this is incremental: no loading
+   * overlay, nothing refetched, and if playback is running the new
+   * track joins IN SYNC via a seek to the current position (which
+   * rebuilds every source with the house fade dips, so no pop).
+   */
+  const addExtraStem = async (input: {
+    label: string
+    color: string
+    url: string
+  }): Promise<boolean> => {
+    try {
+      const ctx = ensureAudioCtx()
+      const resp = await fetch(input.url)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const buf = await ctx.decodeAudioData(await resp.arrayBuffer())
+      deps.setExtras((list) => [
+        ...list,
+        {
+          label: input.label,
+          url: input.url,
+          color: input.color,
+          buffer: buf,
+          gainNode: null,
+          analyserNode: null,
+          sourceNode: null,
+          muted: false,
+          soloed: false,
+          volume: 0.8,
+        },
+      ])
+      if (buf.duration > duration()) setDuration(buf.duration)
+      if (playing()) seekTo(elapsed())
+      return true
+    } catch (err) {
+      console.warn('[StemMixer] add stem failed:', err)
+      return false
     }
   }
 
@@ -1164,6 +1212,7 @@ export const useStemMixerAudioController = (
     ensureAudioCtx,
     disconnectSources,
     loadStems,
+    addExtraStem,
     handlePlay,
     handlePause,
     handleStop,
