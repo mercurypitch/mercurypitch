@@ -13,7 +13,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
-import { hasValidToken } from '@/db/services/auth-service'
+import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -64,10 +64,13 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // The account ask is a renderable beat only while it is due. A
     // visitor who declined last week walks the same flow without being
     // asked again — and the progress bar shortens to match, rather than
-    // promising a step that never arrives. Someone already signed in has
-    // nothing to create, so the ask disappears for them too (a replay
-    // used to offer "Create a free account" to its own account holder).
-    const accountAskDue = !hasValidToken() && shouldShowNudge('onboarding-twin')
+    // promising a step that never arrives. Someone with a real account has
+    // nothing to create, so the ask disappears for them too (a replay used
+    // to offer "Create a free account" to its own account holder). Real
+    // means upgraded — anonymous identities hold tokens and are exactly
+    // who the ask is for.
+    const accountAskDue =
+      !hasUpgradedAccount() && shouldShowNudge('onboarding-twin')
     const beats = accountAskDue
       ? RENDERABLE
       : RENDERABLE.filter((beat) => beat !== 'keep')
@@ -139,9 +142,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   const handleCreateAccount = () => {
-    if (hasValidToken()) {
-      // Signed in mid-flow (another tab, or a token that appeared after
-      // the mount check): there is no account to create. Just move on.
+    if (hasUpgradedAccount()) {
+      // A real account appeared mid-flow (another tab, or after the
+      // mount check): there is nothing to create. Just move on.
       advanceBeat()
       return
     }

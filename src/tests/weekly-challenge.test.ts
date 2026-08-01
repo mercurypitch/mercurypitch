@@ -116,6 +116,16 @@ describe('target-note (de)serialization', () => {
     expect(rendered).not.toMatch(/\d\d/) // guards against the "G33" bug
   })
 
+  it('stores the bare letter in note.name (renderers append the octave)', () => {
+    // Pin the field itself: midiToNoteName returns "G3", but NoteName is
+    // letter-only and canvases render name + octave — "G33" otherwise.
+    const items = notesToMelodyItems('G3 C#4')
+    expect(items[0].note.name).toBe('G')
+    expect(items[1].note.name).toBe('C#')
+    // Negative octaves must strip too (midi 0 is "C-1").
+    expect(notesToMelodyItems('C-1')[0].note.name).toBe('C')
+  })
+
   it('round-trips cleanly (parse -> render -> parse is stable)', () => {
     const first = notesToMelodyItems('A2 F#4 Bb3')
     const rendered = melodyItemsToNotes(first) // flats normalize to sharps (Bb3 -> A#3)

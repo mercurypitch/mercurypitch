@@ -81,7 +81,7 @@ This provisions:
 pnpm run typecheck        # TypeScript type checking
 pnpm run lint             # ESLint
 pnpm run fmt              # Prettier format check
-pnpm run check:syntax     # All three in sequence (read-only)
+pnpm run check:ci         # Full gate in sequence (read-only; check:syntax = alias)
 pnpm run check            # Typecheck + auto-fix lint + auto-format
 ```
 

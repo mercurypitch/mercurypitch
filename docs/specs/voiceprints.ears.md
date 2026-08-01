@@ -79,7 +79,9 @@ device's latest print.)
 **Ubiquitous:** Every record shall carry `madeBy`: the signed-in user's id at
 capture, or `'anonymous'` when nobody was signed in. Records from before
 tagging (no `madeBy`) count as anonymous. The tag is device-side only and is
-never sent to the cloud.
+never sent to the cloud. Note: a lazily provisioned anonymous identity holds
+a token, so its takes tag with that identity's id and follow it through an
+in-place upgrade to a real account.
 
 ### REQ-VPR-014 — Unclaimed takes are offered, never taken
 **While** signed in **and** the device holds anonymous/legacy records, the
@@ -87,9 +89,12 @@ voiceprint section shall show a notice ("keep these on this account?") with
 explicit accept and "Not now" actions. **When** accepted, those records are
 retagged to the account and uploaded (retag-first, so a failed upload is
 recovered by the next ordinary sync; already-known `takenAt` are skipped).
-Records tagged to a **different** account are never offered and never
-adopted — their owner sees them by signing in; everyone sees them signed
-out.
+**When** a password account is REGISTERED on this device, unclaimed records
+are adopted automatically — creating the account at the onboarding keep beat
+is the consent the notice would ask for; Google and existing-account
+sign-ins stay prompt-gated. Records tagged to a **different** account are
+never offered and never adopted — their owner sees them by signing in;
+everyone sees them signed out.
 
 ### REQ-VPR-015 — "Not now" is quiet, per account
 **When** the notice is declined, it shall stay hidden **for that account**
@@ -112,8 +117,10 @@ record has no twin portrait to build a card from.
 ## 6. End-to-end scenarios (Playwright backlog)
 
 1. Anonymous capture → record visible in settings, survives reload.
-2. Anonymous capture → register → adoption notice shows; accept → record in
-   the account (REQ-VPR-014) and on a second signed-in browser context.
+2. Anonymous capture → register → record adopts into the new account
+   automatically (REQ-VPR-014) and shows on a second signed-in browser
+   context; anonymous capture → sign in to an EXISTING account → notice
+   shows, accept adopts.
 3. Signed-in capture → visible on another device signed into the same account.
 4. Delete account → cloud gone (list empty on a fresh context), device copy
    still shown locally when signed out (REQ-VPR-009/010).

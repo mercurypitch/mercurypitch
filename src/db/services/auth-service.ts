@@ -80,6 +80,19 @@ export function hasValidToken(): boolean {
   return payload.exp > Date.now() / 1000 + 60
 }
 
+/**
+ * True when the held token belongs to a REAL account (password/Google).
+ * Lazily provisioned anonymous identities hold valid tokens too, so
+ * hasValidToken() alone cannot answer "do they still need to create an
+ * account?" — asking it that quietly removed the account offer for
+ * exactly the users it targets.
+ */
+export function hasUpgradedAccount(): boolean {
+  if (!hasValidToken()) return false
+  const payload = decodeToken(getAuthToken() ?? '')
+  return payload != null && payload.provider !== 'anonymous'
+}
+
 // ── HTTP helpers ────────────────────────────────────────────────
 
 function requireBaseUrl(): string {

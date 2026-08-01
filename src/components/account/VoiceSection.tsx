@@ -55,13 +55,17 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   // Unclaimed device takes (made signed-out, or before tagging existed)
   // are offered to the signed-in account once, explicitly — never
   // uploaded behind its back (shared-PC rule, spec REQ-VPR-011).
-  // Armed once per mount; per-account quiet periods live in the service.
-  const adoptionArmed = adoptionNoticeDue()
+  // Re-evaluated when signedIn flips, so registering or signing in from
+  // this very panel surfaces the notice without a remount; per-account
+  // quiet periods live in the service.
   const [adoptionDone, setAdoptionDone] = createSignal(false)
   const [adopting, setAdopting] = createSignal(false)
   const adoptableCount = () => listAdoptableVoiceprints().length
   const showAdoption = () =>
-    props.signedIn && adoptionArmed && !adoptionDone() && adoptableCount() > 0
+    props.signedIn &&
+    !adoptionDone() &&
+    adoptionNoticeDue() &&
+    adoptableCount() > 0
 
   const acceptAdoption = async () => {
     if (adopting()) return
@@ -120,7 +124,11 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') setZoomed(false)
+    if (event.key === 'Escape') {
+      setZoomed(false)
+      // Same reset the backdrop click does — reopening starts on the front.
+      setFlipped(false)
+    }
   }
   window.addEventListener('keydown', onKeyDown)
   onCleanup(() => window.removeEventListener('keydown', onKeyDown))

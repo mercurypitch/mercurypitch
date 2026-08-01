@@ -224,9 +224,11 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
 
   /**
    * The vibrato pane draws the animated wave, so rate/depth get dressed
-   * back up as the VibratoResult the canvas was built around. Thresholds
-   * mirror vocal-analyzer's classifier; the canvas itself only reads
-   * detected/rateHz/depthCents.
+   * back up as the VibratoResult the canvas was built around. Rate/depth
+   * thresholds mirror vocal-analyzer's classifier — its spectral
+   * significance gate isn't available here, so this pane can read
+   * "detected" slightly more eagerly than the analyzer. The canvas only
+   * reads detected/rateHz/depthCents.
    */
   const vibratoResult = (): VibratoResult | null => {
     const rate = props.vibratoRate ?? null

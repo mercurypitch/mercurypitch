@@ -342,6 +342,9 @@ export function declineAdoption(): void {
  * locally, then upload. Returns how many were adopted.
  */
 export async function adoptDeviceVoiceprints(): Promise<number> {
+  // Don't interleave with an in-flight auto-sync: both read the cloud
+  // list before pushing, and an overlap could upload a take twice.
+  if (syncing !== null) await syncing
   const adoptable = listAdoptableVoiceprints()
   if (adoptable.length === 0) return 0
   const me = getUserId()

@@ -13,6 +13,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
+import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -113,6 +114,12 @@ export const AuthModal: Component = () => {
             credentials.password,
             name,
           )
+          // Creating the account IS the consent the voiceprint adoption
+          // notice would ask for — the onboarding keep beat promised "keep
+          // this take", so takes made signed-out on this device join the
+          // brand-new account right away. Signing in to an EXISTING
+          // account stays prompt-gated (spec REQ-VPR-014).
+          void adoptDeviceVoiceprints()
           showNotification('Account created — progress is now synced', 'info')
           setBusy(false) // before close() — its busy-guard is for user dismissal
           close()

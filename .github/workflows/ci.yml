@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Syntax check (Node.js --check)
+      - name: Full gate (check:ci)
         run: pnpm run check:ci
 
   cleanup:

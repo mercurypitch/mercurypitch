@@ -1663,11 +1663,12 @@ const AppShell: Component<AppProps> = (props) => {
   // the analytics module.
   onMount(() => trackEvent('app_open'))
 
-  // Rescue anonymous voiceprints on sign-in. Someone who made one during
-  // onboarding and then created the account we told them would keep it
-  // must not find it missing — which is what would happen, since the
-  // local copy is all they had. Re-runs on every auth transition; it is
-  // idempotent (deduped by takenAt) and a no-op with nothing to upload.
+  // Sync own voiceprints on every auth transition. Uploads only the takes
+  // made under the signed-in identity (deduped by takenAt; no-op when
+  // empty). Takes made signed-out are deliberately NOT swept up here:
+  // registering a new account adopts them explicitly (AuthModal), and
+  // signing in to an existing account offers them via the Settings notice
+  // instead — owner decision D2, docs/specs/voiceprints.ears.md section 4.
   createEffect(() => {
     authVersion()
     void syncLocalVoiceprints()
