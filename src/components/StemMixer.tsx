@@ -3184,10 +3184,20 @@ export const StemMixerStyles: string = `
 /* "Add stem" pills — session parts on this device not yet in the mix. */
 .sm-add-stem-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.45rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid var(--border, #30363d);
+}
+
+/* The pills sit in their own centred row under the label. */
+.sm-add-stem-pills {
+  display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.3rem;
-  padding-top: 0.15rem;
 }
 
 .sm-add-stem-label {
@@ -3239,6 +3249,12 @@ export const StemMixerStyles: string = `
   display: flex;
   gap: 0.5rem;
   min-width: 0;
+  /* Many stems on a short screen (landscape tablet, where height is the
+     scarce axis): the deck scrolls instead of running off the panel.
+     The cap only bites when the space is genuinely too small. */
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .sm-stem-strip {

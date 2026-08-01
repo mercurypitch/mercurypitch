@@ -490,7 +490,15 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     const p = splitProgress()
     if (p === null) return 'Starting…'
     if (p.phase === 'uploading') return 'Uploading instrumental…'
-    if (p.phase === 'saving') return 'Saving stems…'
+    if (p.phase === 'saving') {
+      const where =
+        p.partIndex !== undefined && p.partTotal !== undefined
+          ? ` ${p.partIndex} of ${p.partTotal}`
+          : ''
+      return p.part !== undefined
+        ? `Saving ${p.part}${where}…`
+        : 'Saving stems…'
+    }
     const pct = Math.round(p.pct)
     // The tail end is the server writing stems with no finer progress —
     // keep saying "working" instead of parking on a number.
@@ -957,6 +965,7 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
               when={!splitBusy() && !partsLoading()}
               fallback={
                 <span class="rv-parts-progress">
+                  <span class="rv-parts-spinner" aria-hidden="true" />
                   {splitBusy() ? splitProgressLabel() : 'Loading stems…'}
                 </span>
               }
