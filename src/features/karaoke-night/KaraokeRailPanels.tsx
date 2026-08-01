@@ -259,6 +259,16 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   // One library row — shared by the flat list and the grouped hierarchy so a
   // song looks and behaves identically wherever it is nested.
   type LibrarySong = ReturnType<typeof librarySongs>[number]
+
+  // Full-band parts beyond vocal/instrumental already on this device.
+  // stemMeta is stored metadata, so counting is free — no blob loads
+  // (owner asked for exactly this cheap "+N" signal on the cards).
+  const CORE_STEMS = new Set(['vocal', 'instrumental'])
+  const partStemCount = (s: LibrarySong): number =>
+    Object.keys(getUvrSession(s.sessionId)?.stemMeta ?? {}).filter(
+      (name) => !CORE_STEMS.has(name),
+    ).length
+
   const songRow = (s: LibrarySong) => (
     <li>
       <button
@@ -295,6 +305,14 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         <span class="kn-library-title">
           {s.originalFile?.name ?? s.sessionId}
         </span>
+        <Show when={partStemCount(s) > 0}>
+          <span
+            class="kn-chip kn-chip--stems"
+            title={`${partStemCount(s)} more stems from the full-band split (drums, bass, ...) are on this device`}
+          >
+            +{partStemCount(s)}
+          </span>
+        </Show>
       </button>
     </li>
   )
