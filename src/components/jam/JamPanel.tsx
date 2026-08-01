@@ -10,6 +10,8 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
+import type { HostedRoom } from '@/lib/jam/jam-rooms'
+import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
@@ -35,6 +37,9 @@ export const JamPanel: Component = () => {
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   const [showAbout, setShowAbout] = createSignal(false)
+  // Read once on mount and after edits: localStorage is not reactive, and
+  // the list only changes in response to something happening on this page.
+  const [myRooms, setMyRooms] = createSignal<HostedRoom[]>([])
   let aboutRef: HTMLDivElement | undefined
 
   // Tap-outside and Escape close the "?" panel. A tap has no hover to fall
@@ -82,7 +87,11 @@ export const JamPanel: Component = () => {
   })
 
   onMount(() => {
-    // 1. SessionStorage auto-rejoin (highest priority -- preserves host)
+    setMyRooms(hostedRooms())
+
+    // 1. SessionStorage auto-rejoin (highest priority -- preserves host,
+    //    now that the owner token is stored per room rather than held in
+    //    memory for the lifetime of one connection)
     const prev = getJamSessionInfo()
     if (prev && jamState() === 'idle') {
       setDisplayName(prev.displayName)
@@ -238,6 +247,27 @@ export const JamPanel: Component = () => {
     createJamRoom(name).catch(() => {})
   }
 
+  /**
+   * Walk back into a room this device hosts. Same join path as a room code
+   * -- the difference is the stored owner token, which signaling attaches
+   * and the DO checks. If the room was cleaned up while nobody was in it,
+   * the DO adopts this joiner as owner instead, so the controls come back
+   * either way.
+   */
+  const rejoinHostedRoom = (room: HostedRoom) => {
+    setJoining(true)
+    setJoinRoomId(room.roomId)
+    if (room.displayName !== '') setDisplayName(room.displayName)
+    joinJamRoom(room.roomId, room.displayName || getRandomName())
+      .then((ok) => {
+        if (!ok) {
+          forgetHostedRoom(room.roomId)
+          setMyRooms(hostedRooms())
+        }
+      })
+      .finally(() => setJoining(false))
+  }
+
   const handleJoin = () => {
     const roomId = joinRoomId().trim().toUpperCase()
     if (!roomId) return
@@ -319,6 +349,56 @@ export const JamPanel: Component = () => {
               Create Room
             </button>
           </div>
+
+          {/* Rooms this device hosts. Device-local: nothing is registered
+              anywhere and nobody else can see or enumerate them. Rejoining
+              presents the stored owner token, which is what hands the
+              transport and mode controls back. */}
+          <Show when={myRooms().length > 0}>
+            <div class={jamStyles.divider}>
+              <span>your rooms</span>
+            </div>
+            <div class={panelStyles.myRooms}>
+              <For each={myRooms()}>
+                {(room) => (
+                  <div class={panelStyles.myRoom}>
+                    <button
+                      class={panelStyles.myRoomBtn}
+                      disabled={joining()}
+                      onClick={() => rejoinHostedRoom(room)}
+                    >
+                      <span class={panelStyles.myRoomCode}>{room.roomId}</span>
+                      <span class={panelStyles.myRoomMeta}>
+                        as {room.displayName || 'Anonymous'} · rejoin as host
+                      </span>
+                    </button>
+                    <button
+                      class={panelStyles.myRoomForget}
+                      title="Forget this room"
+                      aria-label={`Forget room ${room.roomId}`}
+                      onClick={() => {
+                        forgetHostedRoom(room.roomId)
+                        setMyRooms(hostedRooms())
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </For>
+            </div>
+          </Show>
 
           <div class={jamStyles.divider}>
             <span>or join existing</span>

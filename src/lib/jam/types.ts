@@ -43,6 +43,8 @@ export type SignalingMessage =
       peerId: string
       isHost: boolean
       peers: Array<{ id: string; displayName: string }>
+      /** Issued only when an ownerless room adopts this joiner as owner. */
+      ownerToken?: string
     }
   | { type: 'peer-joined'; peerId: string; displayName: string }
   | { type: 'peer-left'; peerId: string }

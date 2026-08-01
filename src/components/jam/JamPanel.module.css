@@ -142,6 +142,83 @@
   pointer-events: auto;
 }
 
+/* ── Your rooms ───────────────────────────────────────────────────── */
+
+.myRooms {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.myRoom {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.myRoomBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.myRoomBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.myRoomBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.myRoomCode {
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.myRoomMeta {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.myRoomForget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.myRoomForget:hover {
+  color: var(--red, #f85149);
+  border-color: var(--red, #f85149);
+}
+
 /* ── Session layout — fills parent jam-panel fully ────────────────── */
 
 .sessionLayout {

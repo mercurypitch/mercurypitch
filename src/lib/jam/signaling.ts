@@ -2,6 +2,7 @@
 // WebSocket client that connects to the Cloudflare Durable Object
 // signaling relay for SDP/ICE exchange and room lifecycle.
 
+import { ownerTokenFor, rememberHostedRoom, touchHostedRoom } from './jam-rooms'
 import type { JamCallbacks, SignalingMessage } from './types'
 
 const SIGNALING_URL = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
@@ -54,12 +55,16 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
     ws.onopen = () => {
       connecting = false
+      // Fall back to the stored secret: the in-memory copy survives a
+      // reconnect but not a reload or a Leave, and without it the host
+      // walks back into their own room as an ordinary peer.
+      const token = currentOwnerToken ?? ownerTokenFor(roomId)
       ws?.send(
         JSON.stringify({
           type: 'join-room',
           roomId,
           displayName,
-          ownerToken: currentOwnerToken ?? undefined,
+          ownerToken: token ?? undefined,
         }),
       )
     }
@@ -141,6 +146,13 @@ export function createSignalingClient(callbacks: JamCallbacks) {
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
         currentOwnerToken = msg.ownerToken ?? null
+        if (msg.ownerToken !== undefined && msg.ownerToken !== '') {
+          rememberHostedRoom(
+            msg.roomId,
+            currentDisplayName ?? '',
+            msg.ownerToken,
+          )
+        }
         callbacks.onHostStatus?.(msg.isHost)
         console.info(
           '[jam:signaling] room created',
@@ -152,6 +164,19 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
       case 'room-joined':
         currentPeerId = msg.peerId
+        // An ownerless room adopts its first joiner, so a fresh token can
+        // arrive here too -- that is how walking back into a room whose DO
+        // has since been cleaned up returns the controls.
+        if (msg.ownerToken !== undefined && msg.ownerToken !== '') {
+          currentOwnerToken = msg.ownerToken
+          rememberHostedRoom(
+            msg.roomId,
+            currentDisplayName ?? '',
+            msg.ownerToken,
+          )
+        } else if (msg.isHost) {
+          touchHostedRoom(msg.roomId)
+        }
         callbacks.onHostStatus?.(msg.isHost)
         console.info(
           '[jam:signaling] room joined, peer',
