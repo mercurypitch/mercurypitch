@@ -67,8 +67,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     // promising a step that never arrives. Someone already signed in has
     // nothing to create, so the ask disappears for them too (a replay
     // used to offer "Create a free account" to its own account holder).
-    const accountAskDue =
-      !hasValidToken() && shouldShowNudge('onboarding-twin')
+    const accountAskDue = !hasValidToken() && shouldShowNudge('onboarding-twin')
     const beats = accountAskDue
       ? RENDERABLE
       : RENDERABLE.filter((beat) => beat !== 'keep')

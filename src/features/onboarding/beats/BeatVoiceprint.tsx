@@ -23,6 +23,8 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import type { LiveVizMode } from '@/features/mirror/LiveViz'
+import { LiveViz } from '@/features/mirror/LiveViz'
 import { TaskDemo } from '@/features/mirror/TaskDemo'
 import { playReferenceTone } from '@/features/mirror/tone-player'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -36,6 +38,8 @@ import styles from '../onboarding.module.css'
 
 const GLIDE_SEC = 8
 const HOLD_SEC = 6
+/** 2*PI*r for the countdown ring's r=31 circle in its 72 viewBox. */
+const RING_CIRCUMFERENCE = 194.8
 const MATCH_TAKE_SEC = 3
 const REFERENCE_SEC = 1.4
 /** Hear the note, then a beat to prepare before singing it back. */
@@ -63,6 +67,21 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   })
   const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
+
+  /**
+   * Live feedback for the take being recorded — the Mirror's own canvas
+   * (trace for glides, tightening ring for the hold, target line for
+   * matches). Null outside a take. The singer watching their pitch draw
+   * itself is the payoff that a bare countdown number never delivered
+   * (owner testing: "no pitch tracker like in voice mirror").
+   */
+  const [viz, setViz] = createSignal<{
+    mode: LiveVizMode
+    target: number | null
+  } | null>(null)
+  const [vizReset, setVizReset] = createSignal(0)
+  /** Length of the current take, so the countdown ring can fill. */
+  const [recordTotal, setRecordTotal] = createSignal(1)
 
   /**
    * A note from the middle of the measured range, offered during the
@@ -160,9 +179,15 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     title: string,
     body: string,
     seconds: number,
+    live: { mode: LiveVizMode; target?: number } | null = null,
   ): Promise<F0Frame[]> => {
     setStage({ kind: 'record', title, body })
     if (session === null) return []
+    setViz(
+      live === null ? null : { mode: live.mode, target: live.target ?? null },
+    )
+    setVizReset((k) => k + 1)
+    setRecordTotal(seconds)
     setRemaining(seconds)
     clearInterval(timer)
     timer = window.setInterval(() => {
@@ -170,6 +195,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     }, 1000)
     const frames = await session.record(seconds)
     clearInterval(timer)
+    setViz(null)
     return frames
   }
 
@@ -201,6 +227,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       'Glide up',
       'Low to high, one smooth slide.',
       GLIDE_SEC,
+      { mode: 'glide' },
     )
     if (!alive()) return
     // A beat of acknowledgement between tasks: without it the flow jumps
@@ -222,6 +249,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       'Glide down',
       'High to low, one smooth slide.',
       GLIDE_SEC,
+      { mode: 'glide' },
     )
     if (!alive()) return
     await brief('Both directions in.', 'That was 2 of 3.', 1)
@@ -250,7 +278,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     if (!alive()) return
     await brief('Ready…', 'Take a breath.', 2)
     if (!alive()) return
-    const hold = await record('Hold it', 'Steady as you can.', HOLD_SEC)
+    const hold = await record('Hold it', 'Steady as you can.', HOLD_SEC, {
+      mode: 'hold',
+    })
     if (!alive()) return
     await brief('Nice and steady.', 'Last one: sing a note back to us.', 1)
     if (!alive()) return
@@ -303,6 +333,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         `Sing ${name}`,
         `Note ${i + 1} of ${targets.length}.`,
         MATCH_TAKE_SEC,
+        { mode: 'match', target },
       )
       if (!alive()) return
       matches.push({ targetMidi: target, frames })
@@ -379,13 +410,42 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         </div>
       </Show>
 
-      <Show when={current().kind === 'record' || current().kind === 'brief'}>
+      <Show when={current().kind === 'record' && viz() !== null}>
+        <div class={styles.liveViz}>
+          <LiveViz
+            latest={() => session?.latestSmoothed() ?? null}
+            mode={viz()?.mode ?? 'glide'}
+            targetMidi={viz()?.target ?? null}
+            resetKey={vizReset()}
+          />
+        </div>
+      </Show>
+
+      <Show when={current().kind === 'brief'}>
         <div class={styles.countdown} aria-live="polite">
           {remaining()}
         </div>
       </Show>
 
       <Show when={current().kind === 'record'}>
+        {/* The ring fills as the take runs — progress, not just a number
+            counting at you. */}
+        <div class={styles.countdownRing} aria-live="polite">
+          <svg viewBox="0 0 72 72" aria-hidden="true">
+            <circle class={styles.ringTrack} cx="36" cy="36" r="31" />
+            <circle
+              class={styles.ringFill}
+              cx="36"
+              cy="36"
+              r="31"
+              stroke-dasharray={`${RING_CIRCUMFERENCE}`}
+              stroke-dashoffset={`${
+                RING_CIRCUMFERENCE * (remaining() / Math.max(1, recordTotal()))
+              }`}
+            />
+          </svg>
+          <span class={styles.countdownNum}>{remaining()}</span>
+        </div>
         <p class={styles.recordingTag}>Recording</p>
         <p class={styles.recordHint}>
           Done before the count ends? Just stop singing — we keep what we heard.
