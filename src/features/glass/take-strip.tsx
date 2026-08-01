@@ -8,9 +8,10 @@
 // column beneath the FX rail. Phones: a swipeable horizontal
 // strip so the pane stays big.
 //
-// Privacy contract unchanged: takes are session-only, in-memory —
-// removal drops the audio immediately, and leaving the page drops
-// everything. Metrics/deltas never depend on the audio.
+// Privacy contract: takes begin session-only and in-memory. A singer
+// can explicitly keep one in the local voice vault; otherwise removal
+// drops it immediately and leaving the page drops it. Metrics/deltas
+// never depend on the persisted audio.
 // ============================================================
 
 import type { Component } from 'solid-js'
@@ -27,6 +28,14 @@ export interface GlassTake {
   peaks: Float32Array | null
   /** This take broke the glass. */
   shattered: boolean
+  /** Derived numbers saved beside an explicitly kept take. */
+  metrics: {
+    meanAbsCents: number | null
+    bestLockSec: number
+    inBandPct: number
+    peakResonance: number
+  }
+  saveState: 'idle' | 'saving' | 'saved' | 'error'
 }
 
 const PEAK_BUCKETS = 72
@@ -198,6 +207,7 @@ export const TakeStrip: Component<{
   /** True while a rep is actively recording — playback would collide. */
   disabled: boolean
   onToggle: (id: number) => void
+  onKeep: (id: number) => void
   onRemove: (id: number) => void
 }> = (props) => (
   <Show when={props.takes.length > 0}>
@@ -242,6 +252,31 @@ export const TakeStrip: Component<{
                     playing={playing()}
                   />
                 </span>
+              </button>
+              <button
+                class="glass-take-keep"
+                classList={{ saved: take.saveState === 'saved' }}
+                disabled={
+                  props.disabled ||
+                  take.saveState === 'saving' ||
+                  take.saveState === 'saved'
+                }
+                onClick={() => props.onKeep(take.id)}
+                aria-label={`${
+                  take.saveState === 'saved'
+                    ? 'Kept'
+                    : take.saveState === 'error'
+                      ? 'Retry keeping'
+                      : 'Keep'
+                } take ${take.rep} in voice history`}
+              >
+                {take.saveState === 'saving'
+                  ? 'Saving'
+                  : take.saveState === 'saved'
+                    ? 'Kept'
+                    : take.saveState === 'error'
+                      ? 'Retry keep'
+                      : 'Keep'}
               </button>
               <button
                 class="glass-take-remove"
