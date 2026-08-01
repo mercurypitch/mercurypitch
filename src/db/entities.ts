@@ -116,6 +116,45 @@ export interface ZenTakeRecord extends DbEntity {
   scoreAverageCents?: number
 }
 
+// ── Voice History ──────────────────────────────────────────────
+
+/** A local real-voice recording explicitly kept by the singer. */
+export type VoiceTakeSource =
+  | 'glass'
+  | 'exercise'
+  | 'legend'
+  | 'karaoke'
+  | 'freeform'
+
+/**
+ * Lightweight, list-safe metadata. The audio payload deliberately lives in
+ * voiceTakeAudio so rendering history never hydrates every recording.
+ */
+export interface VoiceTakeRecord extends DbEntity {
+  source: VoiceTakeSource
+  comparisonKey: string
+  contextVersion: number
+  capturedAt: string
+  durationMs: number
+  mimeType: string
+  sizeBytes: number
+  peaks: number[]
+  title: string
+  favorite: boolean
+  contextJson: string
+  metricsJson?: string
+  metricsVersion?: number
+  roomId?: string
+}
+
+/** One-to-one local audio payload for a VoiceTakeRecord. */
+export interface VoiceTakeAudioRecord extends DbEntity {
+  takeId: string
+  mimeType: string
+  size: number
+  data: ArrayBuffer
+}
+
 // ── Voiceprints ─────────────────────────────────────────────────
 
 /** Where a voiceprint was measured. */

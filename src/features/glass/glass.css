@@ -964,7 +964,7 @@ body {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 26px 9px 10px;
+  padding: 9px 26px 54px 10px;
   background: none;
   border: 0;
   color: inherit;
@@ -1048,6 +1048,34 @@ body {
 .glass-take-remove:hover {
   color: #f8a1a1;
   opacity: 1;
+}
+.glass-take-keep {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  min-width: 72px;
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid rgba(141, 184, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(11, 16, 38, 0.76);
+  color: #b8d3ff;
+  font: 600 10px/1.2 inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.glass-take-keep:hover:not(:disabled) {
+  border-color: rgba(141, 184, 255, 0.8);
+  color: #eef5ff;
+}
+.glass-take-keep.saved {
+  border-color: rgba(120, 222, 181, 0.44);
+  color: #9fe4c5;
+}
+.glass-take-keep:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 @media (min-width: 880px) {
   /* In the rail: fill its width, stack vertically beneath the FX card. */

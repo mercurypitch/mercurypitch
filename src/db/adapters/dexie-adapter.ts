@@ -55,6 +55,12 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
+    // v6: explicit local real-voice history. Metadata is split from audio so
+    // journal queries never pull large binary payloads into memory.
+    this.version(6).stores({
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
+    })
   }
 }
 

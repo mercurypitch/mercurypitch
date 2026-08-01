@@ -9,10 +9,10 @@
 // scope or simple mode never renders a cover that leads nowhere.
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
+import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
@@ -548,36 +548,29 @@ export function DestinationArtwork(props: {
   )
 }
 
-// ── The sixth cover: a veiled teaser for the next chapter ──────────
-// Unrevealed it is only a slow-breathing question mark. Hovering
-// (desktop) or tapping (touch/keyboard) lifts the veil over ~1.4s to
-// show the Hear Yourself proposition. Not navigable yet — on purpose.
+// ── The sixth cover: a veiled entry to local voice history ─────────
+// At rest it is a slow-breathing question mark. Hovering reveals the
+// proposition on desktop; activating it always opens the local vault.
 function MysteryCover(): JSX.Element {
-  const [revealed, setRevealed] = createSignal(false)
-
   return (
     <button
       type="button"
-      class={`${styles.cover} ${styles.mystery} ${
-        revealed() ? styles.mysteryRevealed : ''
-      }`}
+      class={`${styles.cover} ${styles.mystery}`}
       data-destination="mystery"
-      aria-expanded={revealed()}
-      aria-label="Coming soon: Hear Yourself — reveal a preview"
-      onClick={() => setRevealed((r) => !r)}
+      aria-label="Open Hear Yourself voice history"
+      onClick={() => setActiveTab(TAB_VOICE_HISTORY)}
     >
-      <span class={styles.mysteryScene} aria-hidden={!revealed()}>
+      <span class={styles.mysteryScene} aria-hidden="true">
         <span class={styles.mysteryBackdrop} />
         <span class={styles.coverShade} />
         <span class={`${styles.coverCopy} ${styles.mysteryCopy}`}>
-          <span class={styles.coverEyebrow}>Coming soon</span>
+          <span class={styles.coverEyebrow}>Private voice history</span>
           <span class={styles.coverTitle}>Hear Yourself</span>
           <span class={styles.coverDescription}>
-            A private home for your voice. Keep tiny takes on your device,
-            revisit your best Legend runs, take on weekly creative challenges —
-            and hear yourself grow, week by week.
+            Keep tiny Glass takes on your device, return to the same practice
+            thread, and hear the space between Earlier and Later.
           </span>
-          <span class={styles.mysteryStatus}>Now being tuned</span>
+          <span class={styles.mysteryStatus}>Open voice history</span>
         </span>
       </span>
 
@@ -588,7 +581,7 @@ function MysteryCover(): JSX.Element {
           Hover to peek
         </span>
         <span class={styles.mysteryHint} data-hint-tap>
-          Tap to peek
+          Tap to open
         </span>
       </span>
     </button>
@@ -691,7 +684,9 @@ export const DestinationGallery: Component = () => {
           {(destination) => <DestinationCover destination={destination} />}
         </For>
 
-        <MysteryCover />
+        <Show when={isTabVisible(TAB_VOICE_HISTORY, practiceScope(), uiMode())}>
+          <MysteryCover />
+        </Show>
       </div>
     </section>
   )

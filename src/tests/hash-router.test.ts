@@ -3,8 +3,19 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
-import { buildHash, navigateTo, parseHash, pushHash, replaceHash, } from '@/lib/hash-router'
+import {
+  TAB_COMPOSE,
+  TAB_SETTINGS,
+  TAB_SINGING,
+  TAB_VOICE_HISTORY,
+} from '@/features/tabs/constants'
+import {
+  buildHash,
+  navigateTo,
+  parseHash,
+  pushHash,
+  replaceHash,
+} from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
 
@@ -35,6 +46,10 @@ describe('parseHash', () => {
     expect(parseHash('#/guitar')).toEqual({ type: 'tab', tab: 'guitar' })
     expect(parseHash('#/piano')).toEqual({ type: 'tab', tab: 'piano' })
     expect(parseHash('#/jam')).toEqual({ type: 'tab', tab: 'jam' })
+    expect(parseHash('#/voice-history')).toEqual({
+      type: 'tab',
+      tab: TAB_VOICE_HISTORY,
+    })
     // #/uvr is treated as uvr-upload by the router, not tab:uvr
     // Test separately in UVR routes below
   })

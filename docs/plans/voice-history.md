@@ -1,6 +1,8 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **planning draft**, 2026-07-28.
+Status: **first local vertical slice implemented on draft PR #364**, updated
+2026-08-01. Glass is the initial capture adapter; Exercise and Legend adapters
+remain follow-on work on the same neutral vault contract.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -216,7 +218,7 @@ Proposed incremental Dexie version:
 
 ```ts
 this.version(5).stores({
-  voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey, favorite',
+  voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
   voiceTakeAudio: 'id, &takeId',
 })
 ```
@@ -312,14 +314,13 @@ in the simple-mode bar or under mobile **More** should be decided with the final
 navigation label and ordering; adding it must not accidentally displace a
 current primary mobile tab.
 
-### Feature flag
+### Release control
 
-Use a dedicated `voiceHistoryEnabled` runtime flag rather than coupling release
-to the broad advanced/dev switches. Before the flag opens:
-
-- the PR #359 mystery card remains a teaser;
-- direct routes fall back safely;
-- capture surfaces do not show a keep action that leads nowhere.
+The first local slice is review-controlled by draft PR #364 instead of adding a
+second client-side feature flag. The mystery card, history tab, and Glass keep
+action ship as one coherent unit. If a staged beta is needed after review, add
+a dedicated `voiceHistoryEnabled` flag across all three entry points rather
+than coupling release to the broad advanced/dev switches.
 
 ## 7. States that must be designed
 
@@ -411,40 +412,23 @@ offline-first contract.
 
 ## 10. Delivery ladder
 
-Each implementation step should be a separate PR targeting `main`.
+The original ladder below separated planning and implementation. The user
+explicitly chose to consolidate the local vault, Glass adapter, navigation, and
+Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 
-### PR 0 — this planning branch
+### PR #364 — implemented local slice
 
 - Durable `PRODUCT.md`.
 - This product, UX, data, rollout, and verification plan.
-- No feature code.
-
-### PR 1 — teaser measurement
-
-- Add `mystery_reveal` once-per-session behavior and worker allowlist.
-- Verify hover does not inflate desktop counts.
-- Keep the teaser non-navigable.
-
-### PR 2 — local vault foundation
-
-- Dexie entities/version and repository exports.
-- Voice-take service with atomic durable writes.
-- Shared recorder extraction.
-- Storage snapshot, export, deletion, and wipe primitives.
-- Fake-IndexedDB and recorder unit tests.
-- No production navigation yet.
-
-### PR 3 — first vertical slice
-
-- Glass **Keep this take** adapter.
-- Voice-history route/page behind its dedicated flag.
+- Dexie v6 entities, local-only routing, and atomic durable voice-take writes.
+- Glass **Keep** adapter with explicit consent and retry/storage feedback.
 - Empty, overview, thread, playback, storage, export, and delete states.
-- Homepage teaser becomes navigable only when the flag is on.
-- This validates persistence with real audio before expanding capture.
+- Navigable mystery card and dedicated **Hear Yourself** tab.
+- Earlier/Later workspace for matching Glass target contexts.
+- Count-only vault events and focused service/component coverage.
 
-### PR 4 — comparison release candidate
+### Follow-on — capture expansion
 
-- Earlier/Later workspace.
 - Repeatable exercise capture and comparison keys.
 - Legend metadata and capture through the exercise path.
 - Accessibility, mobile behavior, funnel events, and end-to-end tests.
@@ -468,7 +452,7 @@ Each implementation step should be a separate PR targeting `main`.
 
 ### Unit and service tests
 
-- Dexie v4 to v5 upgrade preserves all existing tables and rows.
+- Dexie v5 to v6 upgrade preserves all existing tables and rows.
 - Metadata queries do not read audio payloads.
 - Save is atomic under metadata failure, blob failure, and quota failure.
 - Durable write retry does not duplicate a take.

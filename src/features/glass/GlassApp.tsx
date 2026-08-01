@@ -10,15 +10,18 @@
 // retry — until the glass shatters (burst animation lands in P4)
 // or the singer ends the session.
 //
-// Audio never leaves the device: takes are recorded on-device,
-// played back once, then dropped. Hardened mic handling (probe +
-// rebuild + generation tokens) is ported from the Voice Mirror.
+// Audio never leaves the device: takes are recorded on-device and
+// dropped with the session unless the singer explicitly keeps one in
+// local voice history. Hardened mic handling (probe + rebuild +
+// generation tokens) is ported from the Voice Mirror.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { saveVoiceTake } from '@/db/services/voice-take-service'
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, shareCard, supportsImageClipboard, } from '@/features/mirror/card-renderer'
+import { trackEvent } from '@/lib/analytics'
 import type { DemoSound } from '@/lib/demo-audio'
 import { playApproachAndLock, playSirenSweep, playTargetHum, } from '@/lib/demo-audio'
 import { formatGlassDelta, loadGlassBaseline, saveGlassBaseline, } from '@/lib/glass/baseline'
@@ -37,6 +40,7 @@ import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
+import { showNotification } from '@/stores/notifications-store'
 import { renderShatterCard } from './card-renderer'
 import { trackGlass } from './funnel'
 import type { FxRack as FxAudio, FxSettings } from './fx-rack'
@@ -153,7 +157,7 @@ export const GlassApp: Component = () => {
   // The glide brief waits on an I'm-ready click so users can read + watch
   // the demo; false once they commit (then a short prep count-in runs).
   const [awaitingReady, setAwaitingReady] = createSignal(false)
-  // Reviewable takes (session-only, in-memory — the privacy contract).
+  // Reviewable takes begin session-only; Keep is the explicit persistence gate.
   const [takes, setTakes] = createSignal<GlassTake[]>([])
   const [playingTakeId, setPlayingTakeId] = createSignal<number | null>(null)
   const [takeProgress, setTakeProgress] = createSignal(0)
@@ -276,11 +280,21 @@ export const GlassApp: Component = () => {
     rep: number,
     blob: Blob,
     shattered: boolean,
+    metrics: RepMetrics,
   ): Promise<void> {
     const id = takeIdSeq++
     setTakes((prev) => [
       ...prev,
-      { id, rep, blob, durationSec: 0, peaks: null, shattered },
+      {
+        id,
+        rep,
+        blob,
+        durationSec: 0,
+        peaks: null,
+        shattered,
+        metrics,
+        saveState: 'idle',
+      },
     ])
     // Decode NOW, while the session context is alive — the PCM buffer
     // outlives the context, so results-screen review needs no mic revival.
@@ -407,6 +421,88 @@ export const GlassApp: Component = () => {
     if (playingTakeId() === id) stopTakePlayback()
     takeBuffers.delete(id)
     setTakes((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  function keepTake(id: number): void {
+    const take = takes().find((candidate) => candidate.id === id)
+    const state = session()
+    const targetMidi = state.targetMidi
+    if (take === undefined || targetMidi === null) return
+
+    const target = midiToNoteNameOctave(targetMidi)
+    const durationMs = Math.round(
+      (take.durationSec > 0
+        ? take.durationSec
+        : GLASS_CONFIG.reps.singSeconds) * 1000,
+    )
+    const peaks = take.peaks ?? new Float32Array()
+    const metrics = take.metrics
+    setTakes((current) =>
+      current.map((candidate) =>
+        candidate.id === id ? { ...candidate, saveState: 'saving' } : candidate,
+      ),
+    )
+    trackEvent('voice_keep_attempt')
+
+    void (async () => {
+      const result = await saveVoiceTake({
+        source: 'glass',
+        comparisonKey: `glass:target-midi:${targetMidi}:v1`,
+        contextVersion: 1,
+        durationMs,
+        blob: take.blob,
+        peaks,
+        title: `Glass · ${target} · Take ${take.rep}`,
+        context: {
+          targetMidi,
+          targetLabel: target,
+          rep: take.rep,
+          shattered: take.shattered,
+        },
+        metrics: {
+          meanAbsCents: metrics.meanAbsCents,
+          bestLockSec: metrics.bestLockSec,
+          inBandPct: metrics.inBandPct,
+          peakResonance: metrics.peakResonance,
+        },
+        metricsVersion: 1,
+      })
+      setTakes((current) =>
+        current.map((candidate) =>
+          candidate.id === id
+            ? {
+                ...candidate,
+                saveState: result.ok ? 'saved' : 'error',
+              }
+            : candidate,
+        ),
+      )
+      if (result.ok) {
+        trackEvent('voice_keep_success')
+        showNotification(
+          'Take kept in Hear Yourself on this device.',
+          'success',
+          { channel: 'voice-take-save' },
+        )
+        return
+      }
+
+      trackEvent('voice_keep_failure')
+      if (result.quotaExceeded || !result.roomAvailable) {
+        trackEvent('voice_storage_warning')
+        showNotification(
+          'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+          'warning',
+          { channel: 'voice-take-save' },
+        )
+      } else {
+        showNotification(
+          'The take could not be kept. Your session copy is still here; retry before leaving Glass.',
+          'error',
+          { channel: 'voice-take-save' },
+        )
+      }
+    })()
   }
 
   function disposeTakes(): void {
@@ -1042,7 +1138,9 @@ export const GlassApp: Component = () => {
         // (ribbon at the lock) is what fractures.
         renderer?.shatter({ epicness, seed })
         if (audioContext !== null) playGlassShatter(audioContext, epicness)
-        if (take.takeBlob !== null) void addTake(rep, take.takeBlob, true)
+        if (take.takeBlob !== null) {
+          void addTake(rep, take.takeBlob, true, metrics)
+        }
         dispatch({ type: 'shattered', metrics })
         trackGlass('glass_shatter', {
           rep,
@@ -1065,7 +1163,9 @@ export const GlassApp: Component = () => {
         bestLockMs: Math.round(metrics.bestLockSec * 1000),
         inBandPct: round2(metrics.inBandPct),
       })
-      if (take.takeBlob !== null) void addTake(rep, take.takeBlob, false)
+      if (take.takeBlob !== null) {
+        void addTake(rep, take.takeBlob, false, metrics)
+      }
       await playbackPhase(take.frames, take.takeBlob)
       if (!alive()) return
       dispatch({ type: 'playback-done' })
@@ -1406,6 +1506,7 @@ export const GlassApp: Component = () => {
                     progress={takeProgress()}
                     disabled={subPhase() === 'active'}
                     onToggle={toggleTake}
+                    onKeep={keepTake}
                     onRemove={removeTake}
                   />
                 </div>
@@ -1453,6 +1554,7 @@ export const GlassApp: Component = () => {
                   progress={takeProgress()}
                   disabled={false}
                   onToggle={toggleTake}
+                  onKeep={keepTake}
                   onRemove={removeTake}
                 />
               </div>
@@ -1499,6 +1601,7 @@ export const GlassApp: Component = () => {
                   progress={takeProgress()}
                   disabled={false}
                   onToggle={toggleTake}
+                  onKeep={keepTake}
                   onRemove={removeTake}
                 />
               </div>
@@ -1554,6 +1657,7 @@ export const GlassApp: Component = () => {
                   progress={takeProgress()}
                   disabled={false}
                   onToggle={toggleTake}
+                  onKeep={keepTake}
                   onRemove={removeTake}
                 />
               </div>
@@ -1654,8 +1758,9 @@ const TrustInfo: Component = () => {
       <Show when={open()}>
         <div class="glass-info-pop" role="note">
           Private by design: your audio never leaves this device — analysis runs
-          in your browser. Takes live only in this tab and are gone when you
-          leave. Your numbers stay on device.
+          in your browser. Unkept takes are gone when you leave; a take enters
+          local Hear Yourself history only when you choose Keep. Your numbers
+          stay on device.
         </div>
       </Show>
     </div>
@@ -2057,7 +2162,7 @@ const Landing: Component<{
     </button>
     <p class="glass-trust">
       Your audio never leaves this device — takes are recorded on-device and
-      gone when you leave.
+      gone when you leave unless you explicitly Keep one in local voice history.
     </p>
   </section>
 )

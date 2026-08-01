@@ -133,4 +133,7 @@ export type {
   WhisperTranscriptionRecord,
   UserSurveyResponse,
   ZenTakeRecord,
+  VoiceTakeRecord,
+  VoiceTakeAudioRecord,
+  VoiceTakeSource,
 } from './entities'

@@ -670,28 +670,28 @@
   }
 }
 
-/* Reveal — a persistent tap/keyboard toggle... */
-.mysteryRevealed .mysteryScene {
+/* Keyboard focus reveals the proposition before activation. */
+.mystery:focus-visible .mysteryScene {
   opacity: 1;
 }
 
-.mysteryRevealed .mysteryBackdrop {
+.mystery:focus-visible .mysteryBackdrop {
   filter: blur(0) saturate(1);
   transform: scale(1);
 }
 
-.mysteryRevealed .mysteryCopy > * {
+.mystery:focus-visible .mysteryCopy > * {
   opacity: 1;
   transform: translateY(0);
 }
 
-.mysteryRevealed .mysteryVeil {
+.mystery:focus-visible .mysteryVeil {
   opacity: 0;
   transform: scale(1.1);
   pointer-events: none;
 }
 
-/* ...and the same unveil on desktop hover, kept out of touch emulation. */
+/* The same unveil on desktop hover, kept out of touch emulation. */
 @media (hover: hover) {
   .mystery:hover .mysteryScene {
     opacity: 1;
