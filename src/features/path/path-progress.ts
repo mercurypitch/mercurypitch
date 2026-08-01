@@ -12,15 +12,19 @@
 // starts with one segment already lit (the endowed-progress head start —
 // partly-filled rings get finished far more often than empty ones).
 //
-// Device-local for v1 (like the daily session); the streak stays the
-// cloud-synced signal.
+// Stored locally and mirrored to the signed-in account (settings-service
+// syncs PATH_PROGRESS_KEY). Sign-in UNIONS the two sides via
+// mergePathProgress rather than letting the cloud win — a device that
+// practised offline must never lose days to a staler copy.
 
 import type { ExerciseType } from '@/features/exercises/types'
 import { ASCENT_ID, ASCENT_WEEKS, DAYS_PER_WEEK, getWeek, } from '@/features/path/path-content'
 import { IS_DEV, IS_TEST } from '@/lib/defaults'
 import { createPersistedSignal } from '@/lib/storage'
 
-const STORAGE_KEY = 'mp_path_progress'
+/** Also the cloud-sync key — see settings-service's INCLUDED_KEYS. */
+export const PATH_PROGRESS_KEY = 'mp_path_progress'
+const STORAGE_KEY = PATH_PROGRESS_KEY
 
 /** Sentinel for the pre-lit first segment — never collides with a date. */
 export const ENDOWED_DAY = 'endowed'
@@ -154,6 +158,52 @@ export function recordPathPracticeDay(date = todayStr()): void {
     completedWeeks,
     weekDays: { ...p.weekDays, [p.currentWeek]: nextDays },
   })
+}
+
+/** Distinct practice days across every week — the "how far in" measure. */
+function totalDays(p: PathProgress): number {
+  return Object.values(p.weekDays).reduce((sum, days) => sum + days.length, 0)
+}
+
+/**
+ * Union two copies of the same path — used when a sign-in brings a cloud
+ * copy to a device that already has local progress.
+ *
+ * Practice days are the thing users would grieve losing, so they merge as
+ * a set: a day lit on EITHER side stays lit. Everything else follows from
+ * the furthest-along side. Two different paths can't be merged (only one
+ * runs at a time), so the deeper one wins outright.
+ */
+export function mergePathProgress(
+  a: PathProgress | null,
+  b: PathProgress | null,
+): PathProgress | null {
+  if (a === null) return b
+  if (b === null) return a
+  if (a.pathId !== b.pathId) return totalDays(b) > totalDays(a) ? b : a
+
+  const weekDays: Record<number, string[]> = {}
+  const orders = new Set([
+    ...Object.keys(a.weekDays),
+    ...Object.keys(b.weekDays),
+  ])
+  for (const key of orders) {
+    const order = Number(key)
+    weekDays[order] = [
+      ...new Set([...(a.weekDays[order] ?? []), ...(b.weekDays[order] ?? [])]),
+    ].sort()
+  }
+
+  return {
+    pathId: a.pathId,
+    // Earliest start: the day they actually began the climb.
+    startedAt: a.startedAt <= b.startedAt ? a.startedAt : b.startedAt,
+    currentWeek: Math.max(a.currentWeek, b.currentWeek),
+    weekDays,
+    completedWeeks: [
+      ...new Set([...a.completedWeeks, ...b.completedWeeks]),
+    ].sort((x, y) => x - y),
+  }
 }
 
 /**
