@@ -15,6 +15,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPreviewPlayer, ENVELOPE_DEFAULTS } from '@/lib/preview-player'
+import { showNotification } from '@/stores/notifications-store'
+
+vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
 
 type GainOp = { op: string; value?: number; at?: number; tau?: number }
 
@@ -216,5 +219,53 @@ describe('createPreviewPlayer', () => {
     lastElement().onended?.()
     expect(onEnded).toHaveBeenCalledTimes(1)
     expect(player.playing).toBe(false)
+  })
+
+  it('a failed source resolves false with a notification, never a rejection', async () => {
+    // The owner-reported crash: a CSP-blocked R2 stem URL rejected play()
+    // and the fire-and-forget caller turned it into an app-level
+    // "Application Error". The player must absorb it.
+    const player = createPreviewPlayer()
+    const element = new (globalThis.Audio as unknown as typeof FakeAudio)()
+    void element
+    const first = FakeAudio.instances.at(-1)
+
+    // Make the NEXT created element (the player's own) reject play().
+    const rejecting = () =>
+      Promise.reject(new DOMException('no source', 'NotSupportedError'))
+
+    const outcomePromise = player.play('https://r2.example/expired.wav')
+    const playersElement = FakeAudio.instances.at(-1)!
+    expect(playersElement).not.toBe(first)
+    playersElement.play.mockImplementationOnce(rejecting)
+
+    // First call already ran with the default resolve mock, so drive a
+    // fresh attempt through the rejecting implementation instead.
+    await outcomePromise
+    playersElement.paused = true
+    const failed = await player.play('https://r2.example/expired-2.wav')
+
+    expect(failed).toBe(false)
+    expect(player.playing).toBe(false)
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(showNotification).mock.calls[0][0]).toContain(
+      "Couldn't play",
+    )
+  })
+
+  it('a retry after a failed source re-assigns the src', async () => {
+    const player = createPreviewPlayer()
+    void (await player.play('blob:one'))
+    const element = lastElement()
+    element.play.mockImplementationOnce(() =>
+      Promise.reject(new DOMException('no source', 'NotSupportedError')),
+    )
+    expect(await player.play('blob:two')).toBe(false)
+
+    // The failed URL was forgotten: replaying it must set src again and
+    // succeed with the default (resolving) play mock.
+    element.src = ''
+    expect(await player.play('blob:two')).toBe(true)
+    expect(element.src).toBe('blob:two')
   })
 })
