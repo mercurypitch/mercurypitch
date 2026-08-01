@@ -37,9 +37,6 @@ export const JamPanel: Component = () => {
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
   const [showAbout, setShowAbout] = createSignal(false)
-  // Read once on mount and after edits: localStorage is not reactive, and
-  // the list only changes in response to something happening on this page.
-  const [myRooms, setMyRooms] = createSignal<HostedRoom[]>([])
   let aboutRef: HTMLDivElement | undefined
 
   // Tap-outside and Escape close the "?" panel. A tap has no hover to fall
@@ -87,8 +84,6 @@ export const JamPanel: Component = () => {
   })
 
   onMount(() => {
-    setMyRooms(hostedRooms())
-
     // 1. SessionStorage auto-rejoin (highest priority -- preserves host,
     //    now that the owner token is stored per room rather than held in
     //    memory for the lifetime of one connection)
@@ -260,10 +255,7 @@ export const JamPanel: Component = () => {
     if (room.displayName !== '') setDisplayName(room.displayName)
     joinJamRoom(room.roomId, room.displayName || getRandomName())
       .then((ok) => {
-        if (!ok) {
-          forgetHostedRoom(room.roomId)
-          setMyRooms(hostedRooms())
-        }
+        if (!ok) forgetHostedRoom(room.roomId)
       })
       .finally(() => setJoining(false))
   }
@@ -354,12 +346,12 @@ export const JamPanel: Component = () => {
               anywhere and nobody else can see or enumerate them. Rejoining
               presents the stored owner token, which is what hands the
               transport and mode controls back. */}
-          <Show when={myRooms().length > 0}>
+          <Show when={hostedRooms().length > 0}>
             <div class={jamStyles.divider}>
               <span>your rooms</span>
             </div>
             <div class={panelStyles.myRooms}>
-              <For each={myRooms()}>
+              <For each={hostedRooms()}>
                 {(room) => (
                   <div class={panelStyles.myRoom}>
                     <button
@@ -376,10 +368,7 @@ export const JamPanel: Component = () => {
                       class={panelStyles.myRoomForget}
                       title="Forget this room"
                       aria-label={`Forget room ${room.roomId}`}
-                      onClick={() => {
-                        forgetHostedRoom(room.roomId)
-                        setMyRooms(hostedRooms())
-                      }}
+                      onClick={() => forgetHostedRoom(room.roomId)}
                     >
                       <svg
                         viewBox="0 0 24 24"
