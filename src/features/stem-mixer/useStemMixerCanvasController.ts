@@ -13,6 +13,7 @@ import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
+import { clampOverviewWindow, columnSampleRange, timeToX, } from './overview-mapping'
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
 import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
 import type { EditableNote } from './pitch-edit-model'
@@ -189,9 +190,13 @@ export const useStemMixerCanvasController = (
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
-    const totalDur = deps.duration() || 1
     const winStart = deps.windowStart()
     const winEnd = winStart + deps.windowDuration()
+    // ONE mapping for waveform columns, playhead and loop markers — the
+    // zoom-out desync came from the waveform stretching a clamped sample
+    // range across the full width while the playhead mapped the raw
+    // window (see overview-mapping.ts).
+    const win = { start: winStart, duration: deps.windowDuration() }
 
     for (let ti = 0; ti < activeTracks.length; ti++) {
       const track = activeTracks[ti]
@@ -199,14 +204,9 @@ export const useStemMixerCanvasController = (
       const data = buffer.getChannelData(0)
       const peaks = getPeaks(buffer)
       const totalSamples = data.length
-
-      const visibleStart = Math.floor((winStart / totalDur) * totalSamples)
-      const visibleEnd = Math.min(
-        totalSamples,
-        Math.floor((winEnd / totalDur) * totalSamples),
-      )
-      const visibleSamples = visibleEnd - visibleStart
-      const samplesPerPixel = visibleSamples / w
+      // The buffer's OWN duration, not the transport's: stem decodes can
+      // differ slightly, and mapping through the transport skewed tracks.
+      const bufferDuration = buffer.duration
       const yOff = ti * trackHeight
 
       // Center line
@@ -227,12 +227,15 @@ export const useStemMixerCanvasController = (
       ctx.lineWidth = 1
       ctx.beginPath()
       for (let x = 0; x < w; x++) {
-        const sStart = visibleStart + Math.floor(x * samplesPerPixel)
-        const sEnd = Math.min(
-          visibleStart + Math.floor((x + 1) * samplesPerPixel),
-          visibleEnd,
+        const range = columnSampleRange(x, w, win, bufferDuration, totalSamples)
+        // Outside the buffer: silence, never stretched-in neighbours.
+        if (range === null) continue
+        const { min, max } = queryWaveformPeakRange(
+          data,
+          peaks,
+          range.sStart,
+          range.sEnd,
         )
-        const { min, max } = queryWaveformPeakRange(data, peaks, sStart, sEnd)
         ctx.moveTo(x, midY + min * amp)
         ctx.lineTo(x, midY + max * amp)
       }
@@ -241,7 +244,7 @@ export const useStemMixerCanvasController = (
       // Playhead
       const elapsed = deps.elapsed()
       if (elapsed >= winStart && elapsed <= winEnd) {
-        const px = ((elapsed - winStart) / deps.windowDuration()) * w
+        const px = timeToX(elapsed, win, w)
         // Glow effect
         ctx.save()
         ctx.shadowColor = 'rgba(56, 189, 248, 0.6)'
@@ -272,8 +275,7 @@ export const useStemMixerCanvasController = (
       if (ti === 0 && (deps.loopStart() > 0 || deps.loopEnd() > 0)) {
         const ls = deps.loopStart()
         const le = deps.loopEnd()
-        const winDurLocal = deps.windowDuration()
-        const xOf = (t: number) => ((t - winStart) / winDurLocal) * w
+        const xOf = (t: number) => timeToX(t, win, w)
         const drawMarker = (t: number, color: string, label: string) => {
           const x = xOf(t)
           if (x < -2 || x > w + 2) return
@@ -1335,32 +1337,27 @@ export const useStemMixerCanvasController = (
           at.startY = at.clientY
         }
       } else if (pinchStartDistance > 0) {
-        // Horizontal pinch — zoom (dampened for smooth scaling)
+        // Horizontal pinch — zoom (dampened for smooth scaling). The old
+        // hardcoded 150s ceiling made long songs impossible to zoom out
+        // of by pinch; the song's own length is the bound now.
         const ratio = curDist / pinchStartDistance
         const dampenedRatio = 1 + (ratio - 1) * 0.35
-        const newDuration = Math.max(
-          10,
-          Math.min(150, pinchStartWindowDuration / dampenedRatio),
+        const canvas = e.currentTarget as HTMLCanvasElement
+        const rect = canvas.getBoundingClientRect()
+        const midX =
+          (activeTouches[0].clientX + activeTouches[1].clientX) / 2 - rect.left
+        const midRatio = midX / rect.width
+        const midTime =
+          pinchStartWindowStart + midRatio * pinchStartWindowDuration
+        const wanted = pinchStartWindowDuration / dampenedRatio
+        const next = clampOverviewWindow(
+          midTime - midRatio * wanted,
+          wanted,
+          deps.duration(),
         )
-        if (newDuration !== deps.windowDuration()) {
-          // Keep midpoint stable
-          const canvas = e.currentTarget as HTMLCanvasElement
-          const rect = canvas.getBoundingClientRect()
-          const midX =
-            (activeTouches[0].clientX + activeTouches[1].clientX) / 2 -
-            rect.left
-          const midRatio = midX / rect.width
-          const midTime =
-            pinchStartWindowStart + midRatio * pinchStartWindowDuration
-          const newStart = Math.max(
-            0,
-            Math.min(
-              deps.duration() - newDuration,
-              midTime - midRatio * newDuration,
-            ),
-          )
-          deps.setWindowDuration(newDuration)
-          deps.setWindowStart(newStart)
+        if (next.duration !== deps.windowDuration()) {
+          deps.setWindowDuration(next.duration)
+          deps.setWindowStart(next.start)
           redrawAll()
         }
       }

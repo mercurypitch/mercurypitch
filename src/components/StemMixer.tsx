@@ -8,6 +8,7 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
+import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -1135,15 +1136,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const setPitchStudioWindow = (nextDuration: number): void => {
     const songDuration = audio.duration()
     if (songDuration <= 0) return
-    const minimumDuration = Math.min(4, songDuration)
-    const duration = Math.max(
-      minimumDuration,
-      Math.min(songDuration, nextDuration),
-    )
     const center = audio.windowStart() + audio.windowDuration() / 2
-    const maxStart = Math.max(0, songDuration - duration)
-    audio.setWindowDuration(duration)
-    audio.setWindowStart(Math.max(0, Math.min(maxStart, center - duration / 2)))
+    const next = clampOverviewWindow(
+      center - nextDuration / 2,
+      nextDuration,
+      songDuration,
+    )
+    audio.setWindowDuration(next.duration)
+    audio.setWindowStart(next.start)
     canvas.queueCanvasRedraw()
   }
 
@@ -1200,9 +1200,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   const onWorkspaceWheel = (e: WheelEvent) => {
     e.preventDefault()
-    audio.setWindowDuration((prev) =>
-      Math.min(150, Math.max(10, prev + (e.deltaY > 0 ? 5 : -5))),
+    // Proportional step, clamped to the SONG — the old fixed 5s step
+    // inside a hardcoded 10..150s range meant an 18-minute song snapped
+    // to 150s on the first wheel tick and the window could overhang the
+    // ending, which desynced the overview from the playhead.
+    const prev = audio.windowDuration()
+    const step = Math.max(5, prev * 0.12)
+    const next = clampOverviewWindow(
+      audio.windowStart(),
+      prev + (e.deltaY > 0 ? step : -step),
+      audio.duration(),
     )
+    audio.setWindowDuration(next.duration)
+    audio.setWindowStart(next.start)
   }
 
   // ── Lyrics panel props bundle ──────────────────────────────────
