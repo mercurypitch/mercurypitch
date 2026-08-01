@@ -2,11 +2,12 @@
 // MultiPaneView — Resizable multi-pane layout with sync'd time axes
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { VibratoResult } from '@/lib/vocal-analyzer'
 import { addPane, paneLayout, removePane, setPaneHeights, togglePaneCollapse, toggleSyncTime, } from '@/stores/pane-layout-store'
 import type { PaneConfig, PaneLayerType } from '@/types'
+import { LinkChain, Pencil } from './icons'
 import { CentsDeviationPane } from './panes/CentsDeviationPane'
 import { PitchTracePane } from './panes/PitchTracePane'
 // ── Pane renderer selectors (imported lazily to avoid circular deps) ──
@@ -57,14 +58,25 @@ const PANE_LABELS: Record<PaneLayerType, string> = {
   spectrum: 'Spectrum',
 }
 
-const PANE_ICONS: Record<PaneLayerType, string> = {
+// Unicode DRAWING glyphs, not emoji (repo rule) — the one entry that
+// needs a pictorial icon renders the shared Pencil SVG instead.
+const PANE_ICONS: Record<PaneLayerType, string | (() => JSX.Element)> = {
   spectrogram: '≋',
   waveform: '∿',
   'pitch-trace': '╱╲',
   'cents-deviation': '◎',
   vibrato: '〜',
-  annotation: '📝',
+  annotation: () => (
+    <span style={{ display: 'inline-flex', 'vertical-align': '-2px' }}>
+      <Pencil size={11} />
+    </span>
+  ),
   spectrum: '▁',
+}
+
+const paneIcon = (type: PaneLayerType): JSX.Element => {
+  const icon = PANE_ICONS[type]
+  return typeof icon === 'function' ? icon() : icon
 }
 
 // ============================================================
@@ -411,7 +423,7 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                     'font-size': '0.8rem',
                   }}
                 >
-                  {PANE_ICONS[type]} {PANE_LABELS[type]}
+                  {paneIcon(type)} {PANE_LABELS[type]}
                 </button>
               )}
             </For>
@@ -441,9 +453,12 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
             padding: '4px 10px',
             'border-radius': '4px',
             cursor: 'pointer',
+            display: 'inline-flex',
+            'align-items': 'center',
+            gap: '4px',
           }}
         >
-          🔗 Sync
+          <LinkChain size={11} /> Sync
         </button>
 
         {/* Reset */}
@@ -515,7 +530,7 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                       'margin-right': '2px',
                     }}
                   >
-                    {PANE_ICONS[pane.layerType]}
+                    {paneIcon(pane.layerType)}
                   </span>
                   <span
                     style={{

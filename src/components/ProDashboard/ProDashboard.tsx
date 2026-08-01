@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { CentsDeviationCanvas } from '@/components/CentsDeviationCanvas'
+import { PowerSymbol } from '@/components/icons'
 import { SpectrogramCanvas } from '@/components/SpectrogramCanvas'
 import { VibratoWaveformCanvas } from '@/components/VibratoWaveformCanvas'
 import type { LiveAnalysisSnapshot } from '@/lib/live-pitch-analysis'
@@ -9,6 +10,14 @@ import { ProFader } from './ProFader'
 import { ProKnob } from './ProKnob'
 
 // ── Style constants ────────────────────────────────────────────
+
+/** The pillar headers' power glyph — an SVG, not the emoji-class U+23FB
+ *  character (repo rule); aligned to sit on the text baseline. */
+const PowerGlyph: Component = () => (
+  <span style={{ display: 'inline-flex', 'vertical-align': '-2px' }}>
+    <PowerSymbol size={12} />
+  </span>
+)
 
 const pillarBg = {
   background: '#0f172a',
@@ -166,7 +175,9 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
       >
         {/* Pillar 1: Pitch (Green) */}
         <div style={pillarBg}>
-          <div style={pillarHeader('#2dd4bf')}>⏻ pitch</div>
+          <div style={pillarHeader('#2dd4bf')}>
+            <PowerGlyph /> pitch
+          </div>
 
           <ProKnob
             label="Stability"
@@ -201,7 +212,9 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
 
         {/* Pillar 2: Resonance (Orange) — chest/mask/head ratios */}
         <div style={pillarBg}>
-          <div style={pillarHeader('#fb923c')}>⏻ resonance</div>
+          <div style={pillarHeader('#fb923c')}>
+            <PowerGlyph /> resonance
+          </div>
 
           <div style={{ display: 'flex', gap: '24px', height: '120px' }}>
             <ProFader
@@ -244,7 +257,9 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
 
         {/* Pillar 3: Dynamics (Yellow) */}
         <div style={pillarBg}>
-          <div style={pillarHeader('#eab308')}>⏻ dynamics</div>
+          <div style={pillarHeader('#eab308')}>
+            <PowerGlyph /> dynamics
+          </div>
 
           <ProKnob
             label="HNR"
@@ -326,7 +341,7 @@ export const ProDashboard: Component<ProDashboardProps> = (props) => {
                 'font-weight': '600',
               }}
             >
-              ⏻ pitch trace
+              <PowerGlyph /> pitch trace
             </span>
             <span
               style={{ color: 'rgba(255,255,255,0.4)', 'font-size': '0.75rem' }}
