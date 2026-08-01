@@ -89,7 +89,17 @@ export function createSignalingClient(callbacks: JamCallbacks) {
 
     ws.onerror = () => {
       connecting = false
-      callbacks.onError('Signaling connection failed')
+      // A WebSocket error carries no detail by design, so say what was
+      // attempted and name the cause that actually bites in practice: on a
+      // LAN dev server the page's self-signed certificate is accepted for
+      // the document but not always for the socket, and the handshake is
+      // refused before it ever reaches the server.
+      console.warn('[jam:signaling] socket failed', url)
+      callbacks.onError(
+        url.startsWith('wss://') && !url.includes('localhost')
+          ? `Could not open the room connection to ${new URL(url).host}. On a local network this is usually the certificate: open https://${new URL(url).host} directly and accept it, then try again.`
+          : 'Signaling connection failed',
+      )
     }
   }
 
