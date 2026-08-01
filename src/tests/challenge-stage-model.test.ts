@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, finalizeChallengeScore, scoreChallengeNotes, } from '@/features/challenges/challenge-stage-model'
+import { CHALLENGE_LEAD_IN_BEATS, CHALLENGE_TAIL_BEATS, challengeTargetHighlights, challengeToZenExercise, scoreChallengeNotes, summarizeChallengeRun, } from '@/features/challenges/challenge-stage-model'
 import type { ResolvedZenTarget, ZenPitchPoint } from '@/features/zen/types'
 import { resolveZenTargets } from '@/features/zen/zen-model'
 import { midiToFrequency, midiToNoteName } from '@/lib/frequency-to-note'
@@ -113,7 +113,7 @@ describe('challengeToZenExercise', () => {
 
 describe('challenge run scoring (sight-singing parity)', () => {
   it('scores a fully sung, in-tune run at 100', () => {
-    const { targets } = resolvedChallenge([
+    const { targets, loopSec } = resolvedChallenge([
       melodyItem(60, 0),
       melodyItem(64, 1),
       melodyItem(67, 2),
@@ -121,11 +121,15 @@ describe('challenge run scoring (sight-singing parity)', () => {
     const points = targets.flatMap((target) => sungWindow(target))
     const notes = scoreChallengeNotes(points, targets)
     expect(notes.every((n) => n.sung && n.matched)).toBe(true)
-    expect(finalizeChallengeScore(notes)).toBe(100)
+    const summary = summarizeChallengeRun(points, targets, loopSec)
+    expect(summary.score).toBe(100)
+    expect(summary.avgAccuracy).toBe(100)
+    expect(summary.notesScored).toBe(3)
+    expect(summary.clearedCount).toBe(3)
   })
 
-  it('counts unsung notes as zero — stopping halfway halves the score', () => {
-    const { targets } = resolvedChallenge([
+  it('counts unsung notes as zero — a full pass singing half scores half', () => {
+    const { targets, loopSec } = resolvedChallenge([
       melodyItem(60, 0),
       melodyItem(64, 1),
     ])
@@ -134,15 +138,43 @@ describe('challenge run scoring (sight-singing parity)', () => {
     expect(notes[0]!.score).toBe(100)
     expect(notes[1]!.sung).toBe(false)
     expect(notes[1]!.score).toBe(0)
-    expect(finalizeChallengeScore(notes)).toBe(50)
+    const summary = summarizeChallengeRun(firstOnly, targets, loopSec)
+    expect(summary.score).toBe(50)
+    expect(summary.clearedCount).toBe(1)
   })
 
-  it('scores a silent run at zero', () => {
+  it('spans the whole sequence for an ended-early run (no cherry-picking)', () => {
     const { targets } = resolvedChallenge([
       melodyItem(60, 0),
       melodyItem(64, 1),
+      melodyItem(67, 2),
+      melodyItem(64, 3),
     ])
-    expect(finalizeChallengeScore(scoreChallengeNotes([], targets))).toBe(0)
+    // Nail the first note, then end the run just after its window: the
+    // drill's fix — score spans all four notes, avgAccuracy stays the
+    // quality of what was sung.
+    const firstOnly = sungWindow(targets[0]!)
+    const endedAt = targets[0]!.endSec + 0.1
+    const summary = summarizeChallengeRun(firstOnly, targets, endedAt)
+    expect(summary.notesAttempted).toBe(4)
+    expect(summary.notesScored).toBe(1)
+    expect(summary.score).toBe(25)
+    expect(summary.avgAccuracy).toBe(100)
+    expect(summary.bestNote).toBe(100)
+  })
+
+  it('scores a silent run at zero', () => {
+    const { targets, loopSec } = resolvedChallenge([
+      melodyItem(60, 0),
+      melodyItem(64, 1),
+    ])
+    const full = summarizeChallengeRun([], targets, loopSec)
+    expect(full.score).toBe(0)
+    expect(full.avgAccuracy).toBe(0)
+    expect(full.clearedCount).toBe(0)
+    const neverStarted = summarizeChallengeRun([], targets, 0)
+    expect(neverStarted.score).toBe(0)
+    expect(neverStarted.notesScored).toBe(0)
   })
 
   it('applies the matched floor to a wobbly but held note', () => {

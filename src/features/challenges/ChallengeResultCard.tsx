@@ -5,15 +5,14 @@
 // (challenge-result-store): a full card instead of a toast — cosmic
 // celebration art and the badge on a pass, warm encouragement on a
 // miss — with one obvious next step: go again (re-arms the attempt and
-// relaunches the drill) or close and stay on the tab.
+// relaunches the challenge stage) or close and stay on the tab.
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { showNotification } from '@/stores/notifications-store'
-import { startExercise } from '@/stores/ui-store'
+import { openChallengeStage } from '@/stores/ui-store'
 import type { ChallengeResult } from './challenge-result-store'
 import { clearChallengeResult, lastChallengeResult, } from './challenge-result-store'
 import styles from './ChallengeResultCard.module.css'
@@ -70,10 +69,11 @@ export const ChallengeResultCard: Component = () => {
       rewardBadgeId: challenge.rewardBadgeId,
       founderScore: challenge.founderScore,
     })
-    startExercise(EXERCISE_SIGHT_SINGING, {
-      notes: challenge.targetItems.map((i) =>
-        midiToNoteNameOctave(i.note.midi),
-      ),
+    openChallengeStage({
+      challengeId: challenge.id,
+      title: challenge.title,
+      targetScore: challenge.targetScore,
+      targetItems: challenge.targetItems,
     })
   }
 
