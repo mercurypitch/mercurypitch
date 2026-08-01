@@ -9,6 +9,26 @@
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
+
+  /* Room glass. JamPage writes --jam-alpha inline from the header slider
+     (jamRoomAlpha in the jam store); the theme's --bg-* tokens are rebound
+     to it here, so every jam surface that already said var(--bg-primary)
+     turns translucent without owning an opacity of its own. The literal
+     below is only the pre-hydration fallback -- the inline value wins.
+
+     Custom properties resolve where they are DECLARED, not where they are
+     used, so this block has to live on the one element that has the alpha.
+     Redeclaring --jam-alpha on a descendant will not re-resolve them. */
+  --jam-alpha: 0.3;
+  --bg-primary: rgba(13, 17, 23, var(--jam-alpha));
+  --bg-secondary: rgba(22, 27, 34, var(--jam-alpha));
+  --bg-tertiary: rgba(33, 38, 45, min(1, calc(var(--jam-alpha) + 0.1)));
+
+  /* Flat panels sitting directly on the backdrop: transport bars, chips. */
+  --jam-glass: rgba(13, 17, 23, var(--jam-alpha));
+  /* Floating widgets (chat, camera, heatmap) stack over the canvas as well
+     as the photo, so they keep more body -- they carry running text. */
+  --jam-float: rgba(13, 17, 23, min(1, calc(var(--jam-alpha) + 0.28)));
 }
 
 .backdrop {

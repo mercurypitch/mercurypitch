@@ -12,7 +12,7 @@
 .chatWindow {
   width: 320px;
   height: 400px;
-  background: rgba(13, 17, 23, 0.95);
+  background: var(--jam-float, rgba(13, 17, 23, 0.95));
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 12px;

@@ -160,6 +160,51 @@ const _jamUnreadChatCount = createSignal(0)
 export const jamUnreadChatCount = _jamUnreadChatCount[0]
 export const setJamUnreadChatCount = _jamUnreadChatCount[1]
 
+// ── Room glass ───────────────────────────────────────────────────────
+// How solid the room's UI surfaces are over the rehearsal-room backdrop:
+// 1 = opaque, 0.05 = almost pure photo. JamPage writes it to --jam-alpha
+// and every jam surface resolves its background from there, so the header
+// slider rethemes the whole room in one move.
+//
+// A display preference, not session state -- persisted across reloads and
+// deliberately NOT reset by cleanupJam().
+
+const LS_ROOM_ALPHA = 'pitchperfect_jam_alpha'
+const ROOM_ALPHA_MIN = 0.05
+const ROOM_ALPHA_MAX = 1
+/** 70% transparent: the backdrop is the point of the room. */
+const ROOM_ALPHA_DEFAULT = 0.3
+
+function loadRoomAlpha(): number {
+  try {
+    const v = Number(localStorage.getItem(LS_ROOM_ALPHA))
+    if (v >= ROOM_ALPHA_MIN && v <= ROOM_ALPHA_MAX) return v
+  } catch {
+    /* localStorage unavailable */
+  }
+  return ROOM_ALPHA_DEFAULT
+}
+
+const [_jamRoomAlpha, _setJamRoomAlpha] = createSignal(loadRoomAlpha())
+
+export const jamRoomAlpha = _jamRoomAlpha
+
+export function setJamRoomAlpha(value: number): void {
+  const clamped = Math.min(
+    ROOM_ALPHA_MAX,
+    Math.max(
+      ROOM_ALPHA_MIN,
+      Number.isFinite(value) ? value : ROOM_ALPHA_DEFAULT,
+    ),
+  )
+  _setJamRoomAlpha(clamped)
+  try {
+    localStorage.setItem(LS_ROOM_ALPHA, String(clamped))
+  } catch {
+    /* storage full or unavailable */
+  }
+}
+
 // ── Tab ──────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line solid/reactivity
