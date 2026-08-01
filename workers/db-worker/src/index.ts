@@ -19,6 +19,7 @@ import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
+import { getPerksForUser } from './perks'
 import type { TableDef } from './tables'
 import { maskPublicRow, TABLES } from './tables'
 import { validateWrite } from './validation'
@@ -1655,6 +1656,13 @@ async function handleRequest(
     const auth = await getAuth(request, env)
     if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
     return respond(await getLeagueMe(env, auth.userId))
+  }
+
+  // Supporter cosmetic perks (shared dev+prod DB, email-keyed grants).
+  if (url.pathname === '/api/perks/me' && request.method === 'GET') {
+    const auth = await getAuth(request, env)
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    return respond({ perks: await getPerksForUser(env, auth.userId) })
   }
 
   if (url.pathname === '/api/friends/code' && request.method === 'GET') {

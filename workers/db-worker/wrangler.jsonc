@@ -26,6 +26,15 @@
       // Tracked schema history. `wrangler d1 migrations apply` records applied
       // files in d1_migrations, so each runs exactly once per database.
       "migrations_dir": "migrations"
+    },
+    {
+      // Supporter-perk grants. ONE database shared by dev AND prod on
+      // purpose (grants are email-keyed and published once per person) —
+      // every env block references this same database_id.
+      "binding": "PERKS_DB",
+      "database_name": "mercurypitch-perks",
+      "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
+      "migrations_dir": "migrations-perks"
     }
   ],
   // Create this permanent bucket before deployment. Do not attach the UVR
@@ -92,6 +101,13 @@
           // Filled in by scripts/init-cloudflare-db.sh (run: pnpm db:init:dev)
           "database_id": "e00340be-93fd-44ee-b22e-cb1124a1aadc",
           "migrations_dir": "migrations"
+        },
+        {
+          // Shared with prod — see the top-level PERKS_DB note.
+          "binding": "PERKS_DB",
+          "database_name": "mercurypitch-perks",
+          "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
+          "migrations_dir": "migrations-perks"
         }
       ],
       "r2_buckets": [
@@ -122,6 +138,13 @@
           "database_name": "mercurypitch-db",
           "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949",
           "migrations_dir": "migrations"
+        },
+        {
+          // Shared with dev — see the top-level PERKS_DB note.
+          "binding": "PERKS_DB",
+          "database_name": "mercurypitch-perks",
+          "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
+          "migrations_dir": "migrations-perks"
         }
       ],
       "r2_buckets": [

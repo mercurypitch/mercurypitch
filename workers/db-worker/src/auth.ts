@@ -21,6 +21,7 @@
 
 import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './email'
 import { shouldTouchLastActive } from './last-active'
+import { purgePerksByEmail } from './perks'
 
 export interface Env {
   /** Where emailed links land when the request Origin is not a first-party
@@ -39,6 +40,10 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string
   /** Shared secret for seed/admin writes via X-Admin-Key header. */
   ADMIN_KEY?: string
+  /** Supporter-perk grants — ONE database shared by dev AND prod (grants
+   *  are keyed by email, published once per person). Optional so a local
+   *  worker without the binding degrades to "no perks". */
+  PERKS_DB?: D1Database
   /** Comma-separated extra app origins allowed as Google returnTo targets. */
   APP_ORIGINS?: string
   /**
@@ -1445,6 +1450,12 @@ async function handleDeleteMe(request: Request, env: Env, respond: Respond): Pro
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
 
+  // Read the email before the user row disappears — the perks purge
+  // (separate shared DB, keyed by email) needs it afterwards.
+  const userRow = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
+    .bind(userId)
+    .first<{ email: string | null }>()
+
   const statements = [
     ...USER_OWNED_TABLES.map(({ table, column }) =>
       env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(userId),
@@ -1457,6 +1468,8 @@ async function handleDeleteMe(request: Request, env: Env, respond: Respond): Pro
   // One batch so a mid-way failure can't strand a user row without its data
   // (or, worse, orphaned data without its user).
   await env.DB.batch(statements)
+
+  await purgePerksByEmail(env, userRow?.email ?? null)
 
   return respond({ ok: true, deleted: userId })
 }
