@@ -59,6 +59,10 @@
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+  /* Breathing room above the buttons. Collapses into the body copy's
+     1.25rem bottom margin in the plain dialog; in the type-to-confirm
+     variant it is what separates the buttons from the input. */
+  margin-top: 1rem;
 }
 
 .cancel {
