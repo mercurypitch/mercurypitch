@@ -5,6 +5,7 @@
 
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
+import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient } from './signaling'
 import type { JamCallbacks, JamPeer } from './types'
 
@@ -149,7 +150,11 @@ export function createJamService(callbacks: JamCallbacks) {
         video: false,
       })
     } catch (err) {
-      callbacks.onError('Microphone access denied or unavailable')
+      // Ask the browser what it already decided, so a site-level Block --
+      // which never shows a prompt -- is named as such instead of looking
+      // like a permission the user simply has not granted yet.
+      const blocked = (await micPermissionState()) === 'denied'
+      callbacks.onError(micErrorMessage(err, blocked))
       throw err
     }
     // Request video separately — failure is non-fatal
