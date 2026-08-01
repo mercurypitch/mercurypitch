@@ -27,9 +27,18 @@ export interface ExerciseSessionVoiceTake {
   result: ExerciseResult
 }
 
+export type ExerciseVoiceCaptureOutcome =
+  | { state: 'ready'; take: ExerciseSessionVoiceTake }
+  | {
+      state: 'unsupported' | 'error' | 'discarded'
+      take: null
+    }
+
 export interface ExerciseVoiceCaptureController {
   state: () => ExerciseVoiceCaptureState
   take: () => ExerciseSessionVoiceTake | null
+  /** Resolve the current run's processed take without polling reactive state. */
+  awaitOutcome: () => Promise<ExerciseVoiceCaptureOutcome>
   discard: () => void
 }
 
@@ -85,6 +94,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let running = false
   let voiceRecorder: TakeRecorder | null = null
   let cappedVoiceBlob: Promise<Blob | null> | null = null
+  let pendingVoiceOutcome: Promise<ExerciseVoiceCaptureOutcome> | null = null
   let voiceCaptureTimer: ReturnType<typeof setTimeout> | undefined
   let voiceCaptureGeneration = 0
   let activeVoiceConfig: ExerciseConfig | null = null
@@ -138,6 +148,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     voiceRecorder?.discard()
     voiceRecorder = null
     cappedVoiceBlob = null
+    pendingVoiceOutcome = null
     activeVoiceConfig = null
     setVoiceTake(null)
     setVoiceCaptureState('idle')
@@ -182,29 +193,57 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     cappedVoiceBlob = null
     setVoiceCaptureState('processing')
 
-    void (async () => {
+    const outcomePromise = (async (): Promise<ExerciseVoiceCaptureOutcome> => {
       const blob = await blobPromise
-      if (generation !== voiceCaptureGeneration) return
+      if (generation !== voiceCaptureGeneration) {
+        return { state: 'discarded', take: null }
+      }
       if (blob === null || blob.size === 0) {
         setVoiceCaptureState('error')
-        return
+        return { state: 'error', take: null }
       }
       const inspection = await inspectVoiceTake(
         blob,
         audioEngine.getAudioContext(),
         Math.max(0, Math.round(fallbackDurationMs)),
       )
-      if (generation !== voiceCaptureGeneration) return
-      setVoiceTake({
+      if (generation !== voiceCaptureGeneration) {
+        return { state: 'discarded', take: null }
+      }
+      const take: ExerciseSessionVoiceTake = {
         blob,
         durationMs: inspection.durationMs,
         peaks: inspection.peaks,
         capturedAt: new Date(exerciseResult.completedAt).toISOString(),
         config,
         result: exerciseResult,
-      })
+      }
+      setVoiceTake(take)
       setVoiceCaptureState('ready')
+      return { state: 'ready', take }
     })()
+    pendingVoiceOutcome = outcomePromise
+    void outcomePromise.finally(() => {
+      if (pendingVoiceOutcome === outcomePromise) pendingVoiceOutcome = null
+    })
+  }
+
+  function awaitVoiceCaptureOutcome(): Promise<ExerciseVoiceCaptureOutcome> {
+    const state = getVoiceCaptureState()
+    const take = getVoiceTake()
+    if (state === 'ready' && take !== null) {
+      return Promise.resolve({ state: 'ready', take })
+    }
+    if (state === 'processing' && pendingVoiceOutcome !== null) {
+      return pendingVoiceOutcome
+    }
+    if (state === 'unsupported') {
+      return Promise.resolve({ state: 'unsupported', take: null })
+    }
+    if (state === 'error') {
+      return Promise.resolve({ state: 'error', take: null })
+    }
+    return Promise.resolve({ state: 'discarded', take: null })
   }
 
   // NOTE: exercises deliberately do NOT subscribe to practice-engine
@@ -436,6 +475,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   const voiceCapture: ExerciseVoiceCaptureController = {
     state: getVoiceCaptureState,
     take: getVoiceTake,
+    awaitOutcome: awaitVoiceCaptureOutcome,
     discard: discardVoiceTake,
   }
 

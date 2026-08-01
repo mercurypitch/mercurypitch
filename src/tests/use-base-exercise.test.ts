@@ -313,7 +313,9 @@ describe('useBaseExercise', () => {
         completedAt: Date.UTC(2026, 7, 1, 12),
       })
 
-      await vi.waitFor(() => expect(base.voiceCapture.state()).toBe('ready'))
+      const outcome = await base.voiceCapture.awaitOutcome()
+      expect(outcome.state).toBe('ready')
+      expect(outcome.take?.config.targetNote).toBe('A3')
       expect(base.voiceCapture.take()?.config.targetNote).toBe('A3')
       expect(base.voiceCapture.take()?.blob.size).toBeGreaterThan(0)
       expect(base.voiceCapture.take()?.result.score).toBe(82)

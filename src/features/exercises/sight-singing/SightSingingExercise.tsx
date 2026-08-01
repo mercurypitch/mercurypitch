@@ -6,8 +6,10 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
+import { activeWeeklyAttempt } from '@/features/challenges/weekly-attempt'
+import { launchTargetNotes } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { midiToNoteName } from '@/lib/frequency-to-note'
+import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { keyName, scaleType } from '@/stores/app-store'
@@ -144,24 +146,47 @@ function StaffNote(p: {
 const SightSingingExercise: Component<Props> = (props) => {
   const audioEngine = untrack(() => props.audioEngine)
   const practiceEngine = untrack(() => props.practiceEngine)
+  const weeklyAttemptAtLaunch = untrack(activeWeeklyAttempt)
+  const weeklyVoiceHandoff =
+    weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
+  const launchedTargetNotes =
+    untrack(() => launchTargetNotes(EXERCISE_SIGHT_SINGING))?.slice() ?? []
+  const launchedMidiSequence = launchedTargetNotes.flatMap((name) => {
+    try {
+      const midi = noteToMidi(name)
+      return Number.isFinite(midi) ? [midi] : []
+    } catch {
+      return []
+    }
+  })
 
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
     config: () => ({
       type: 'sight-singing',
-      targetNotes: currentScale().map((note) => `${note.name}${note.octave}`),
-      pattern: `${keyName()}:${scaleType()}`,
+      targetNotes:
+        launchedTargetNotes.length > 0
+          ? [...launchedTargetNotes]
+          : currentScale().map((note) => `${note.name}${note.octave}`),
+      pattern:
+        weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
+          ? `legend:${weeklyAttemptAtLaunch.challengeId}`
+          : `${keyName()}:${scaleType()}`,
     }),
   })
 
   const controller = useSightSingingController(base)
 
   const handleStart = async () => {
-    const scale = currentScale()
-    if (scale.length < 3) return
-    const range = getComfortableMidiRange(vocalRangePreset())
-    controller.setScale(scale, range.min, range.max)
+    if (launchedMidiSequence.length > 0) {
+      controller.setSequence(launchedMidiSequence)
+    } else {
+      const scale = currentScale()
+      if (scale.length < 3) return
+      const range = getComfortableMidiRange(vocalRangePreset())
+      controller.setScale(scale, range.min, range.max)
+    }
     if (!(await base.start())) return
     controller.startRounds()
   }
@@ -178,17 +203,31 @@ const SightSingingExercise: Component<Props> = (props) => {
     }
   })
 
+  let recordedCompletedAt: number | null = null
   createEffect(() => {
     const r = base.result()
-    if (r && r.type === 'sight-singing') {
-      untrack(() =>
-        recordExerciseResult({
-          type: r.type,
-          score: r.score,
-          metrics: r.metrics,
-          completedAt: r.completedAt,
-        }),
-      )
+    if (
+      r &&
+      r.type === 'sight-singing' &&
+      r.completedAt !== recordedCompletedAt
+    ) {
+      recordedCompletedAt = r.completedAt
+      const entry = {
+        type: r.type,
+        score: r.score,
+        metrics: r.metrics,
+        completedAt: r.completedAt,
+      }
+      untrack(() => {
+        if (!weeklyVoiceHandoff) {
+          recordExerciseResult(entry)
+          return
+        }
+        const outcomePromise = base.voiceCapture.awaitOutcome()
+        void outcomePromise.then((weeklyVoiceCapture) =>
+          recordExerciseResult(entry, { weeklyVoiceCapture }),
+        )
+      })
     }
   })
 
@@ -218,7 +257,7 @@ const SightSingingExercise: Component<Props> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
-      voiceCapture={base.voiceCapture}
+      voiceCapture={weeklyVoiceHandoff ? undefined : base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

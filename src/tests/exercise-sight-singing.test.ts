@@ -128,6 +128,18 @@ describe('useSightSingingController', () => {
     expect(ctrl.getSequence()).toEqual([])
   })
 
+  it('keeps an authored launch sequence note-for-note', () => {
+    const base = createMockBase()
+    const ctrl = useSightSingingController(base)
+
+    ctrl.setSequence([55, 60, 64, 62])
+
+    expect(ctrl.getSequence().map((note) => note.midi)).toEqual([
+      55, 60, 64, 62,
+    ])
+    expect(ctrl.getSequence().map((note) => note.index)).toEqual([0, 1, 2, 3])
+  })
+
   it('drives notes to completion on an in-tune sung pitch: score rises and the run completes', () => {
     vi.useFakeTimers()
 

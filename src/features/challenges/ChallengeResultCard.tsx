@@ -9,18 +9,20 @@
 // Home and Challenges share the flow.
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, createSignal, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
+import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
 import { closeChallengeStage, openChallengeStage, openSingingZen, } from '@/stores/ui-store'
 import { challengeResultArt } from './challenge-result-art'
 import type { ChallengeResult } from './challenge-result-store'
-import { clearChallengeResult, finalizingResult, lastChallengeResult, } from './challenge-result-store'
+import { clearChallengeResult, discardChallengeVoiceCapture, finalizingResult, lastChallengeResult, } from './challenge-result-store'
 import { challengeToZenExercise } from './challenge-stage-model'
 import styles from './ChallengeResultCard.module.css'
 import { beginWeeklyAttempt } from './weekly-attempt'
 import { getActiveWeekly } from './weekly-service'
+import { keepWeeklyLegendVoiceTake } from './weekly-voice-take'
 
 /** Headline + line per tier, pure for tests. */
 export function challengeResultCopy(result: ChallengeResult): {
@@ -46,9 +48,126 @@ export function challengeResultCopy(result: ChallengeResult): {
 }
 
 export const ChallengeResultCard: Component = () => {
+  const [voiceKeepState, setVoiceKeepState] = createSignal<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle')
+  let voiceResultKey: string | null = null
+  let voiceResultGeneration = 0
+
+  createEffect(() => {
+    const result = lastChallengeResult()
+    const capture = result?.voiceCapture
+    const nextKey =
+      result === null
+        ? null
+        : capture?.state === 'ready'
+          ? `${result.challengeId}:${capture.take.capturedAt}`
+          : `${result.challengeId}:${result.score}`
+    if (nextKey !== voiceResultKey) {
+      voiceResultKey = nextKey
+      voiceResultGeneration++
+      setVoiceKeepState('idle')
+    }
+  })
+
   const passed = (): boolean => {
     const r = lastChallengeResult()
     return r !== null && r.tier !== 'attempted'
+  }
+
+  const voiceHeading = (result: ChallengeResult): string => {
+    if (voiceKeepState() === 'saving') return 'Keeping voice take'
+    if (voiceKeepState() === 'saved') return 'Voice take kept'
+    if (voiceKeepState() === 'error') return 'Could not keep voice take'
+    if (result.voiceCapture?.state === 'ready') {
+      return 'Keep this Legend take?'
+    }
+    if (result.voiceCapture?.state === 'discarded') return 'Replay discarded'
+    return 'Replay unavailable'
+  }
+
+  const voiceCopy = (result: ChallengeResult): string => {
+    if (voiceKeepState() === 'saving') return 'Saving locally on this device…'
+    if (voiceKeepState() === 'saved') {
+      return 'Available in Hear Yourself on this device.'
+    }
+    if (voiceKeepState() === 'error') {
+      return 'The temporary replay is still available. Retry or discard it.'
+    }
+    if (result.voiceCapture?.state === 'ready') {
+      return 'It stays temporary unless you explicitly keep it on this device.'
+    }
+    if (result.voiceCapture?.state === 'unsupported') {
+      return 'This browser saved the score but cannot record a replay.'
+    }
+    if (result.voiceCapture?.state === 'error') {
+      return 'The replay could not be prepared. Your score is unchanged.'
+    }
+    return 'Your score remains on the Legend board.'
+  }
+
+  const keepVoiceTake = (): void => {
+    const result = lastChallengeResult()
+    const capture = result?.voiceCapture
+    if (result === null || capture?.state !== 'ready') return
+    const take = capture.take
+    const context = {
+      challengeId: result.challengeId,
+      title: result.title,
+      score: result.score,
+      targetScore: result.targetScore,
+      tier: result.tier,
+    }
+    const resultGeneration = voiceResultGeneration
+    setVoiceKeepState('saving')
+    trackEvent('voice_keep_attempt')
+
+    void (async () => {
+      try {
+        const saveResult = await keepWeeklyLegendVoiceTake({ context, take })
+        if (saveResult.ok) {
+          if (resultGeneration === voiceResultGeneration) {
+            setVoiceKeepState('saved')
+          }
+          trackEvent('voice_keep_success')
+          showNotification(
+            'Legend take kept in Hear Yourself on this device.',
+            'success',
+            { channel: 'voice-take-save' },
+          )
+          return
+        }
+
+        if (resultGeneration === voiceResultGeneration) {
+          setVoiceKeepState('error')
+        }
+        trackEvent('voice_keep_failure')
+        if (saveResult.quotaExceeded || !saveResult.roomAvailable) {
+          trackEvent('voice_storage_warning')
+          showNotification(
+            'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+            'warning',
+            { channel: 'voice-take-save' },
+          )
+        } else {
+          showNotification(
+            'The Legend take could not be kept. Retry or discard its temporary copy.',
+            'error',
+            { channel: 'voice-take-save' },
+          )
+        }
+      } catch {
+        if (resultGeneration === voiceResultGeneration) {
+          setVoiceKeepState('error')
+        }
+        trackEvent('voice_keep_failure')
+        showNotification(
+          'The Legend take could not be kept. Retry or discard its temporary copy.',
+          'error',
+          { channel: 'voice-take-save' },
+        )
+      }
+    })()
   }
 
   const goAgain = async (): Promise<void> => {
@@ -167,6 +286,48 @@ export const ChallengeResultCard: Component = () => {
                     <p class={styles.badgeLine}>
                       A new badge is yours — find it with your achievements.
                     </p>
+                  </Show>
+                  <Show when={result().voiceCapture !== undefined}>
+                    <section
+                      class={styles.voicePanel}
+                      aria-busy={voiceKeepState() === 'saving'}
+                    >
+                      <div class={styles.voiceCopy}>
+                        <strong>{voiceHeading(result())}</strong>
+                        <span role="status" aria-live="polite">
+                          {voiceCopy(result())}
+                        </span>
+                      </div>
+                      <Show
+                        when={
+                          result().voiceCapture?.state === 'ready' &&
+                          voiceKeepState() !== 'saved'
+                        }
+                      >
+                        <div class={styles.voiceActions}>
+                          <button
+                            type="button"
+                            class={styles.keepVoice}
+                            disabled={voiceKeepState() === 'saving'}
+                            onClick={keepVoiceTake}
+                          >
+                            {voiceKeepState() === 'saving'
+                              ? 'Saving'
+                              : voiceKeepState() === 'error'
+                                ? 'Retry Keep'
+                                : 'Keep Take'}
+                          </button>
+                          <button
+                            type="button"
+                            class={styles.discardVoice}
+                            disabled={voiceKeepState() === 'saving'}
+                            onClick={discardChallengeVoiceCapture}
+                          >
+                            Discard
+                          </button>
+                        </div>
+                      </Show>
+                    </section>
                   </Show>
                   <div class={styles.actions}>
                     <button

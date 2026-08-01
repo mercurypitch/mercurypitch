@@ -15,7 +15,11 @@
 
 .card {
   width: min(460px, 94vw);
-  overflow: hidden;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--border, #30363d);
   border-radius: 14px;
   background: var(--bg-secondary, #10151d);
@@ -67,6 +71,72 @@
   color: #e3b341;
 }
 
+.voicePanel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px 0;
+  border-block: 1px solid var(--border, #30363d);
+}
+
+.voiceCopy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.voiceCopy strong {
+  color: var(--text-primary, #c9d1d9);
+  font-size: 0.84rem;
+}
+
+.voiceCopy span {
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.voiceActions {
+  display: flex;
+  gap: 8px;
+}
+
+.keepVoice,
+.discardVoice {
+  min-height: 44px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.keepVoice {
+  flex: 1;
+  border: none;
+  background: var(--accent, #58a6ff);
+  color: #fff;
+}
+
+.discardVoice {
+  border: 1px solid var(--border, #30363d);
+  background: transparent;
+  color: var(--text-secondary, #8b949e);
+}
+
+.keepVoice:disabled,
+.discardVoice:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.keepVoice:focus-visible,
+.discardVoice:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
 .actions {
   display: grid;
   gap: 8px;
@@ -115,6 +185,15 @@
   .primary,
   .secondary {
     min-height: 44px;
+  }
+
+  .voiceActions {
+    flex-direction: column;
+  }
+
+  .keepVoice,
+  .discardVoice {
+    width: 100%;
   }
 }
 

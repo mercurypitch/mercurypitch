@@ -43,6 +43,7 @@ function renderCompleteCapture() {
     const voiceCapture: ExerciseVoiceCaptureController = {
       state: captureState,
       take,
+      awaitOutcome: async () => ({ state: 'ready', take: voiceTake }),
       discard,
     }
 
