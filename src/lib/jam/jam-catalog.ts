@@ -27,6 +27,48 @@ import type { MelodyData, MelodyItem, NoteName } from '@/types'
 /** Which shelf of the picker an entry came from. */
 export type JamSourceKind = 'exercise' | 'weekly' | 'ascent' | 'melody'
 
+/**
+ * Built melodies carry their origin in their id, and the id travels over the
+ * wire with the melody -- so every peer can tell what the room is running,
+ * not just the host who picked it. Kept here, next to the builders that
+ * write them, so the format has exactly one owner.
+ */
+const ID_PREFIX = {
+  exercise: 'jam-exercise-',
+  ascent: 'jam-ascent-',
+  weekly: 'jam-weekly-',
+} as const
+
+export interface JamRunSource {
+  kind: JamSourceKind
+  /**
+   * The drill this run counts as, when it counts as one. Absent for the
+   * weekly (its notes are a challenge, not a drill) and for saved melodies
+   * (a tune of your own is not an exercise), and those runs are therefore
+   * not creditable as practice -- see creditOwnJamRun in the jam store.
+   */
+  exerciseType?: ExerciseType
+}
+
+/** Read a melody id back into the shelf it came from. */
+export function jamRunSource(melodyId: string | undefined): JamRunSource {
+  if (melodyId === undefined) return { kind: 'melody' }
+  for (const kind of ['exercise', 'ascent'] as const) {
+    const prefix = ID_PREFIX[kind]
+    if (melodyId.startsWith(prefix)) {
+      const type = melodyId.slice(prefix.length)
+      // Only a type still in the drill table counts: a room running an id
+      // from a build where the drill has since been retired should fall
+      // back to "not creditable" rather than record an unknown exercise.
+      return type in JAM_DRILLS
+        ? { kind, exerciseType: type as ExerciseType }
+        : { kind }
+    }
+  }
+  if (melodyId.startsWith(ID_PREFIX.weekly)) return { kind: 'weekly' }
+  return { kind: 'melody' }
+}
+
 export interface JamCatalogEntry {
   /** Stable across rebuilds -- used as the picker's list key. */
   id: string
@@ -225,7 +267,8 @@ export function jamExerciseEntries(defaultOctave: number): JamCatalogEntry[] {
     kind: 'exercise' as const,
     name: drill.title,
     detail: `${drill.notes.length} note${drill.notes.length === 1 ? '' : 's'} · ${drill.bpm} bpm · ${drill.blurb}`,
-    build: () => drillToMelody(`jam-exercise-${type}`, drill, defaultOctave),
+    build: () =>
+      drillToMelody(`${ID_PREFIX.exercise}${type}`, drill, defaultOctave),
   }))
 }
 
@@ -244,7 +287,7 @@ export function jamWeeklyEntry(
     name: weekly.title,
     detail: `This week's challenge · ${weekly.targetItems.length} notes · target ${weekly.targetScore}`,
     build: () => ({
-      id: `jam-weekly-${weekly.id}`,
+      id: `${ID_PREFIX.weekly}${weekly.id}`,
       name: weekly.title,
       bpm: 90,
       key: 'C',
@@ -271,7 +314,8 @@ export function jamAscentEntries(
         kind: 'ascent' as const,
         name: drill.title,
         detail: `Week ${week.order} · ${week.title} · ${drill.blurb}`,
-        build: () => drillToMelody(`jam-ascent-${type}`, drill, defaultOctave),
+        build: () =>
+          drillToMelody(`${ID_PREFIX.ascent}${type}`, drill, defaultOctave),
       },
     ]
   })

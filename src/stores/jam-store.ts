@@ -3,11 +3,13 @@
 // Wires together jam-service callbacks with SolidJS signals.
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
+import { jamRunSource } from '@/lib/jam/jam-catalog'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import { createJamService } from '@/lib/jam/service'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
+import { recordExerciseResult } from '@/stores/exercise-history-store'
 import type { MelodyData } from '@/types'
 
 // ── SessionStorage keys for auto-rejoin on page reload ──────────────
@@ -217,33 +219,108 @@ export function setJamRoomAlpha(value: number): void {
 export const [jamOwnRunScore, setJamOwnRunScore] =
   createSignal<JamRunScore | null>(null)
 
-/** Local receive time the current take began; 0 when none is running. */
-let runStartedAt = 0
+/** Local receive time the current pass began; 0 when none is running. */
+let passStartedAt = 0
+/** When the session of passes began -- survives a loop wrapping round. */
+let sessionStartedAt = 0
+/** Best pass of the current session, which is what gets credited. */
+let sessionBest: JamRunScore | null = null
 
 /**
- * Settle the take that just ended. Called from every path that ends one --
- * stop, natural finish, a loop wrapping round, and the same events arriving
- * from the host -- and idempotent, because those paths overlap (the host
- * both stops locally and broadcasts a stop it will not receive, while peers
- * only ever see the broadcast).
+ * Score the pass that just ended and show it.
+ *
+ * Idempotent, because the paths that end a pass overlap: the host both
+ * stops locally and broadcasts a stop it will not receive, while peers only
+ * ever see the broadcast.
  */
 function settleOwnRun(): void {
-  if (runStartedAt === 0) return
-  const startedAt = runStartedAt
-  runStartedAt = 0
+  if (passStartedAt === 0) return
+  const startedAt = passStartedAt
+  passStartedAt = 0
   const result = scoreOwnJamRun(
     jamExerciseMelody(),
     jamPitchHistory(),
     jamPeerId(),
     startedAt,
   )
-  // Nothing sung at all is not a run worth recording.
-  if (result.coverage > 0) setJamOwnRunScore(result)
+  // Nothing sung at all is not a pass worth showing.
+  if (result.coverage === 0) return
+  setJamOwnRunScore(result)
+  if (sessionBest === null || result.score > sessionBest.score) {
+    sessionBest = result
+  }
 }
 
-/** Open a fresh take: later samples belong to it, earlier ones do not. */
+/**
+ * A loop wrapped: the pass that just finished is scored and shown, and a
+ * fresh one opens, but the SESSION continues -- so nothing is credited.
+ * See creditOwnRun for why that distinction matters.
+ */
+export function wrapOwnRun(): void {
+  settleOwnRun()
+  beginOwnRun()
+}
+
+/** Open a fresh pass: later samples belong to it, earlier ones do not. */
 function beginOwnRun(): void {
-  runStartedAt = Date.now()
+  passStartedAt = Date.now()
+  if (sessionStartedAt === 0) sessionStartedAt = Date.now()
+}
+
+/**
+ * Credit the session that just finished to practice history -- once.
+ *
+ * The unit of credit is the SESSION, not the pass. A looping room wraps
+ * every few seconds, and recordExerciseResult does far more than append a
+ * row: it auto-advances the daily routine, counts a finished run for the
+ * survey gate, and credits practice minutes. Firing that per wrap would
+ * inflate all three, which is exactly the double-count its own header
+ * warns about. So passes update the on-screen score and only stopping
+ * (or the melody running out) credits anything -- with the best pass as
+ * the score and the whole session's wall time as the minutes.
+ *
+ * Only runs that came from the exercise or Ascent shelf can be credited,
+ * because only those are a drill with an ExerciseType. Two shelves are
+ * deliberately left out:
+ *
+ *   - a saved melody of your own is not an exercise, and there is no
+ *     honest type to file it under.
+ *   - the weekly could arm a real board attempt, and deliberately does
+ *     not. recordWeeklyAttempt only fires for an attempt armed from the
+ *     Challenges hero, and that path ends by calling setActiveTab
+ *     (weekly-attempt.ts) -- so arming from here would throw the singer
+ *     out of a live room, mid-session, while everyone else waits. Attempts
+ *     stay an explicit act on the Challenges tab; jamming the weekly is
+ *     practice.
+ */
+const MIN_CREDITED_SESSION_MS = 3_000
+
+function creditOwnRun(): void {
+  const startedAt = sessionStartedAt
+  const best = sessionBest
+  sessionStartedAt = 0
+  sessionBest = null
+
+  if (startedAt === 0 || best === null) return
+  const durationMs = Date.now() - startedAt
+  // A stray start-stop is not practice.
+  if (durationMs < MIN_CREDITED_SESSION_MS) return
+
+  const { exerciseType } = jamRunSource(jamExerciseMelody()?.id)
+  if (exerciseType === undefined) return
+
+  recordExerciseResult({
+    type: exerciseType,
+    score: best.score,
+    metrics: {
+      durationMs,
+      coverage: best.coverage,
+      notes: best.notes.length,
+      // So a look through history can tell a room run from a solo one.
+      jam: 1,
+    },
+    completedAt: Date.now(),
+  })
 }
 
 // ── Tab ──────────────────────────────────────────────────────────────
@@ -462,6 +539,7 @@ export function initJam() {
           setJamExerciseNoteIndex(-1)
           stopPlaybackTimer()
           settleOwnRun()
+          creditOwnRun()
           break
         case 'seek':
           if (msg.currentBeat !== undefined) {
@@ -712,6 +790,7 @@ export function jamPlaybackStop(): void {
   setJamExerciseNoteIndex(-1)
   stopPlaybackTimer()
   settleOwnRun()
+  creditOwnRun()
   jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
 }
 
@@ -749,8 +828,7 @@ function startPlaybackTimer(): void {
         setJamExerciseBeat(0)
         setJamExerciseNoteIndex(-1)
         playbackLastTick = now
-        settleOwnRun()
-        beginOwnRun()
+        wrapOwnRun()
         jamService?.sendPlaybackCommand('seek', 0, jamExerciseBpm())
         playbackTimerId = requestAnimationFrame(tick)
       } else {
@@ -761,6 +839,7 @@ function startPlaybackTimer(): void {
         setJamExerciseNoteIndex(-1)
         stopPlaybackTimer()
         settleOwnRun()
+        creditOwnRun()
         jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
       }
       return
@@ -816,7 +895,9 @@ function cleanupJam(): void {
   setJamUnreadChatCount(0)
   // Leaving mid-take abandons it rather than settling it: the samples are
   // gone with the history above, so there is nothing honest left to score.
-  runStartedAt = 0
+  passStartedAt = 0
+  sessionStartedAt = 0
+  sessionBest = null
   setJamOwnRunScore(null)
 }
 
