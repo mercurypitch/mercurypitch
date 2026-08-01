@@ -4,7 +4,8 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ASCENT_WEEKS, DAYS_PER_WEEK } from '@/features/path/path-content'
-import { activePathExercises, ENDOWED_DAY, pathComplete, pathFreeRoam, pathProgress, recordPathPracticeDay, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
+import type { PathProgress } from '@/features/path/path-progress'
+import { activePathExercises, ENDOWED_DAY, mergePathProgress, pathComplete, pathFreeRoam, pathProgress, recordPathPracticeDay, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
 
 const day = (n: number): string => `2026-08-${String(n).padStart(2, '0')}` // distinct local dates
 
@@ -137,5 +138,66 @@ describe('path content sanity', () => {
       expect(w.focus.length).toBeGreaterThan(20)
       expect(w.goals.length).toBeGreaterThanOrEqual(2)
     }
+  })
+})
+
+// ── Cross-device merge ──────────────────────────────────────────
+// Signing in on a second device must never cost someone practice days.
+
+describe('mergePathProgress', () => {
+  const make = (over: Partial<PathProgress> = {}): PathProgress => ({
+    pathId: 'ascent',
+    startedAt: '2026-08-01T00:00:00.000Z',
+    currentWeek: 1,
+    weekDays: { 1: [ENDOWED_DAY] },
+    completedWeeks: [],
+    ...over,
+  })
+
+  it('returns the other side when one is missing', () => {
+    const p = make()
+    expect(mergePathProgress(null, p)).toBe(p)
+    expect(mergePathProgress(p, null)).toBe(p)
+    expect(mergePathProgress(null, null)).toBeNull()
+  })
+
+  it('unions practice days rather than overwriting them', () => {
+    const phone = make({ weekDays: { 1: [ENDOWED_DAY, day(1), day(2)] } })
+    const laptop = make({ weekDays: { 1: [ENDOWED_DAY, day(3)] } })
+    const merged = mergePathProgress(phone, laptop)
+    expect(merged!.weekDays[1]).toEqual(
+      [day(1), day(2), day(3), ENDOWED_DAY].sort(),
+    )
+    // Nothing invented, nothing duplicated.
+    expect(new Set(merged!.weekDays[1]).size).toBe(4)
+  })
+
+  it('keeps the furthest week and the earliest start', () => {
+    const ahead = make({
+      startedAt: '2026-08-05T00:00:00.000Z',
+      currentWeek: 3,
+      completedWeeks: [1, 2],
+      weekDays: { 3: [day(9)] },
+    })
+    const behind = make({
+      startedAt: '2026-08-01T00:00:00.000Z',
+      currentWeek: 2,
+      completedWeeks: [1],
+      weekDays: { 2: [day(8)] },
+    })
+    const merged = mergePathProgress(ahead, behind)!
+    expect(merged.currentWeek).toBe(3)
+    expect(merged.completedWeeks).toEqual([1, 2])
+    expect(merged.startedAt).toBe('2026-08-01T00:00:00.000Z')
+    // Weeks only one side knew about survive.
+    expect(merged.weekDays[2]).toEqual([day(8)])
+    expect(merged.weekDays[3]).toEqual([day(9)])
+  })
+
+  it('cannot blend two different paths — the deeper one wins', () => {
+    const ascent = make({ weekDays: { 1: [day(1), day(2), day(3)] } })
+    const other = make({ pathId: 'other', weekDays: { 1: [day(1)] } })
+    expect(mergePathProgress(other, ascent)).toBe(ascent)
+    expect(mergePathProgress(ascent, other)).toBe(ascent)
   })
 })

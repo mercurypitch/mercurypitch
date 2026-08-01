@@ -1,0 +1,169 @@
+// ============================================================
+// Settings sync — the pull that must not eat someone's climb
+// ============================================================
+//
+// Preferences are last-write-wins, and that is fine: the newest device
+// is the best guess for what someone wants. Progress is not a
+// preference. If a phone practised offline for three days and then the
+// account's staler copy landed on top, those days would be gone with no
+// way to get them back.
+//
+// So the Ascent key is pulled through a merge, and the merged value is
+// pushed straight back so both sides agree afterwards.
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const state = vi.hoisted(() => ({
+  authed: true,
+  rows: [] as Array<{ id: string; userId: string; key: string; value: string }>,
+  updates: [] as Array<{ id: string; value: string }>,
+  creates: [] as Array<{ key: string; value: string }>,
+}))
+
+// Partial: path-progress reads IS_DEV/IS_TEST from the same module.
+vi.mock('@/lib/defaults', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  API_BASE_URL: 'https://api.test',
+}))
+vi.mock('@/db/services/auth-service', () => ({
+  hasValidToken: () => state.authed,
+}))
+vi.mock('@/db/services/user-service', () => ({ authVersion: () => 0 }))
+vi.mock('@/db', () => ({
+  getDb: async () => ({
+    getRepository: () => ({
+      findAll: async (opts?: { where?: { key?: string } }) =>
+        state.rows.filter(
+          (r) => opts?.where?.key === undefined || r.key === opts.where.key,
+        ),
+      update: async (id: string, patch: { value: string }) => {
+        state.updates.push({ id, value: patch.value })
+        const row = state.rows.find((r) => r.id === id)
+        if (row !== undefined) row.value = patch.value
+      },
+      create: async (row: { key: string; value: string }) => {
+        state.creates.push({ key: row.key, value: row.value })
+        const created = { ...row, userId: '', id: `srv-${state.rows.length}` }
+        state.rows.push(created)
+        return created
+      },
+    }),
+  }),
+}))
+
+import { pullCloudSettings } from '@/db/services/settings-service'
+import { PATH_PROGRESS_KEY } from '@/features/path/path-progress'
+
+const KEY = PATH_PROGRESS_KEY
+
+const climb = (days: string[], over: Record<string, unknown> = {}): string =>
+  JSON.stringify({
+    pathId: 'ascent',
+    startedAt: '2026-08-01T00:00:00.000Z',
+    currentWeek: 1,
+    weekDays: { 1: days },
+    completedWeeks: [],
+    ...over,
+  })
+
+/** Wait out the un-awaited pushes the pull fires. */
+const settle = (): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, 0))
+
+beforeEach(() => {
+  localStorage.clear()
+  state.authed = true
+  state.rows = []
+  state.updates = []
+  state.creates = []
+})
+
+describe('pulling the Ascent from an account', () => {
+  it('keeps days that only the device knows about', async () => {
+    localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
+    state.rows = [
+      { id: 'r1', userId: 'u', key: KEY, value: climb(['2026-08-03']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual([
+      '2026-08-01',
+      '2026-08-02',
+      '2026-08-03',
+    ])
+    // …and the account is brought up to date, not left behind.
+    expect(state.updates.at(-1)?.value).toContain('2026-08-01')
+  })
+
+  it('does not overwrite a further climb with a staler one', async () => {
+    localStorage.setItem(
+      KEY,
+      climb(['2026-08-01'], { currentWeek: 4, completedWeeks: [1, 2, 3] }),
+    )
+    state.rows = [{ id: 'r1', userId: 'u', key: KEY, value: climb([]) }]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      currentWeek: number
+      completedWeeks: number[]
+    }
+    expect(local.currentWeek).toBe(4)
+    expect(local.completedWeeks).toEqual([1, 2, 3])
+  })
+
+  it('uploads a climb the account has never seen', async () => {
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+    state.rows = [] // fresh account, first sign-in on this device
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(state.creates).toHaveLength(1)
+    expect(state.creates[0]!.key).toBe(KEY)
+    expect(state.creates[0]!.value).toContain('2026-08-01')
+  })
+
+  it('takes the account copy when the device has none', async () => {
+    state.rows = [
+      { id: 'r1', userId: 'u', key: KEY, value: climb(['2026-08-05']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(KEY)).toContain('2026-08-05')
+    expect(state.updates).toHaveLength(0) // nothing to push back
+  })
+
+  it('prefers the account copy over unparseable local data', async () => {
+    localStorage.setItem(KEY, 'not json')
+    state.rows = [
+      { id: 'r1', userId: 'u', key: KEY, value: climb(['2026-08-05']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(KEY)).toContain('2026-08-05')
+  })
+
+  it('leaves ordinary preferences on last-write-wins', async () => {
+    localStorage.setItem('pitchperfect_theme', '"midnight"')
+    state.rows = [
+      { id: 'r1', userId: 'u', key: 'pitchperfect_theme', value: '"dawn"' },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem('pitchperfect_theme')).toBe('"dawn"')
+    expect(state.updates).toHaveLength(0)
+  })
+})

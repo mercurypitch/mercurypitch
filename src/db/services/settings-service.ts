@@ -19,6 +19,8 @@ import { getDb } from '@/db'
 import type { UserSetting } from '@/db/entities'
 import { hasValidToken } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
+import type { PathProgress } from '@/features/path/path-progress'
+import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
 import { API_BASE_URL } from '@/lib/defaults'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 
@@ -40,12 +42,49 @@ const EXCLUDED_KEYS = new Set([
   'pitchperfect_activity_count',
 ])
 
+/**
+ * Unprefixed keys that ARE account state and must follow the user across
+ * devices. The Ascent's progress predates the prefix convention; renaming
+ * it would strand every climb already in progress, so it opts in by name.
+ */
+const INCLUDED_KEYS = new Set<string>([PATH_PROGRESS_KEY])
+
+/**
+ * Keys whose two sides must be reconciled, not overwritten, when a
+ * sign-in finds a value on both the device and the account.
+ *
+ * Everything else is a preference — last one wins is right, and the newest
+ * device is the best guess. Progress is not a preference: overwriting it
+ * destroys practice days someone actually did. Each resolver takes the raw
+ * strings and returns the value both sides should end up holding.
+ */
+const MERGE_ON_PULL: Record<
+  string,
+  (local: string | null, cloud: string) => string
+> = {
+  [PATH_PROGRESS_KEY]: (local, cloud) => {
+    if (local === null) return cloud
+    try {
+      const merged = mergePathProgress(
+        JSON.parse(local) as PathProgress | null,
+        JSON.parse(cloud) as PathProgress | null,
+      )
+      return JSON.stringify(merged)
+    } catch {
+      // Unparseable on either side — prefer the account's copy over a
+      // corrupt local one rather than dropping the pull entirely.
+      return cloud
+    }
+  },
+}
+
 /** Safety valve: skip anything suspiciously large for a preference. */
 const MAX_VALUE_BYTES = 8 * 1024
 
 const PUSH_DEBOUNCE_MS = 1500
 
 function isSyncedKey(key: string): boolean {
+  if (INCLUDED_KEYS.has(key)) return true
   return key.startsWith(SYNCED_PREFIX) && !EXCLUDED_KEYS.has(key)
 }
 
@@ -96,8 +135,23 @@ export async function pullCloudSettings(): Promise<void> {
     for (const row of rows) {
       if (!isSyncedKey(row.key)) continue
       cloudRowIds.set(row.key, row.id)
-      if (localStorage.getItem(row.key) !== row.value) {
-        applyPersistedValue(row.key, row.value)
+      const local = localStorage.getItem(row.key)
+      const merge = MERGE_ON_PULL[row.key]
+      const next = merge === undefined ? row.value : merge(local, row.value)
+      if (local !== next) applyPersistedValue(row.key, next)
+      // A merge can leave the account behind the device (local-only days).
+      // applyPersistedValue deliberately doesn't echo, so push it back.
+      if (next !== row.value) void pushSetting(row.key, next)
+    }
+
+    // Backfill: a climb that started before this device ever signed in has
+    // no cloud row at all, and nothing would upload it until the next
+    // practice day. Seed it now so the account owns it immediately.
+    for (const key of Object.keys(MERGE_ON_PULL)) {
+      if (cloudRowIds.has(key)) continue
+      const local = localStorage.getItem(key)
+      if (local !== null && local.length <= MAX_VALUE_BYTES) {
+        void pushSetting(key, local)
       }
     }
   } catch (err) {
