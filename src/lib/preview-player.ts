@@ -34,6 +34,8 @@
 // own their audio graph (e.g. OfflinePitchCanvas). Environments without
 // a usable AudioContext (jsdom) degrade to direct element control.
 
+import { showNotification } from '@/stores/notifications-store'
+
 export const ENVELOPE_DEFAULTS = {
   /** Exponential fade-in on play/resume. */
   attackMs: 90,
@@ -101,8 +103,9 @@ export interface PreviewPlayerOptions {
 
 export interface PreviewPlayer {
   /** Load `url` (if it changed) and fade playback in. Safe to call while
-   *  a fade-out is in flight — the pending pause is cancelled. */
-  play(url: string): Promise<void>
+   *  a fade-out is in flight — the pending pause is cancelled. Resolves
+   *  false (never rejects) when the source could not be played. */
+  play(url: string): Promise<boolean>
   /** Fade out, then pause. Keeps the position. */
   pause(): void
   /** Fade out, pause and rewind to zero. */
@@ -199,7 +202,16 @@ export function createPreviewPlayer(
     )
   }
 
-  const play = async (url: string): Promise<void> => {
+  /**
+   * Start (or resume) playback of `url`. Returns false when the source
+   * could not be played — a failed play must never escape as an
+   * unhandled rejection: most callers fire-and-forget, and the global
+   * error handler treats unhandled rejections as an app crash. An
+   * expired presigned URL or a CSP-blocked host is a playback problem,
+   * not an application error (owner hit exactly this: a blocked R2
+   * stem source took the whole app down with the crash overlay).
+   */
+  const play = async (url: string): Promise<boolean> => {
     const element = ensureGraph()
     // A play during a fade-out must win over the queued pause.
     clearTimeout(pauseTimer)
@@ -218,8 +230,25 @@ export function createPreviewPlayer(
     }
     // Gain sits at (or is ramping toward) 0 here; start the transport
     // first, then open the envelope — the swell begins from real silence.
-    await element.play()
+    try {
+      await element.play()
+    } catch (err) {
+      wantPlaying = false
+      // Forget the failed source so a retry re-assigns src cleanly.
+      currentUrl = null
+      const aborted = err instanceof DOMException && err.name === 'AbortError'
+      // AbortError is a play() interrupted by our own pause/new-load —
+      // routine, not worth a toast.
+      if (!aborted) {
+        showNotification(
+          "Couldn't play this audio — the source may have expired or isn't supported here. Re-open the song to refresh it.",
+          'error',
+        )
+      }
+      return false
+    }
     if (enveloped && ctx && gain) openEnvelope(gain, ctx, attackS)
+    return true
   }
 
   const pause = () => {
