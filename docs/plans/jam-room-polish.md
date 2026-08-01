@@ -1,7 +1,7 @@
 # Jam room: polish + a reason to be there
 
-**Status:** phases 0, 1 and 2 are implemented on
-`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 3-6 are unbuilt.
+**Status:** phases 0-3 are implemented on
+`feat/jam-tab-polish-transparency-55a592` (PR #388); phases 4-6 are unbuilt.
 
 The Jam tab has a working multiplayer spine and almost nothing to do with it.
 This plan is about the second half.
@@ -158,17 +158,45 @@ practice-minute credit, and its own header warns that calling it twice
 double-counts. Deciding which jam runs credit what is phase 3's job, not a
 line to slip in behind a scoring change.
 
-## 6. Phase 3 — make it count
+## 6. Phase 3 — make it count (implemented)
 
-Once phase 2 lands, wiring is small:
+A run from the **exercise or Ascent shelf** goes through
+`recordExerciseResult` with the phase-2 score, the session's wall time as its
+minutes, and `metrics.jam` so history can tell a room run from a solo one.
+That one call is the whole fan-out: streaks, Ascent progress,
+`practice-intelligence/weakness-analyzer`, badges, and the session record.
 
-- Jam runs feed `exercise-history-store`, and therefore streaks, Ascent
-  progress, `practice-intelligence/weakness-analyzer` and badges.
-- A jam attempt at the weekly challenge posts to the real weekly board through
-  `challenge-attempt.ts` / `weekly-attempt.ts`.
-- A jam slice on the leaderboard via `leaderboard-service`.
-- A **"jammed with"** badge line — the one achievement that is only reachable
-  with another person in the room.
+`jamRunSource` reads the shelf back out of the melody id — which travels with
+the melody, so every peer knows what the room is running, not just the host
+who picked it. An id whose drill no longer exists is refused rather than
+filed as an unknown exercise type.
+
+**The unit of credit is the session, not the pass.** `recordExerciseResult`
+is a funnel, not a log: it auto-advances the daily routine, counts a finished
+run for the survey gate, and credits practice minutes. A looping room wraps
+every few seconds, so crediting per wrap would inflate all three — the
+double-count its own header warns about. Passes update the on-screen score;
+only stopping (or the melody running out) credits anything, with the best
+pass as the score. Runs under three seconds, and runs nobody sang, credit
+nothing.
+
+**Two shelves deliberately do not count:**
+
+- A saved melody of your own is not an exercise; there is no honest type.
+- The weekly *could* arm a real board attempt and does not. `recordWeeklyAttempt`
+  only fires for an attempt armed from the Challenges hero, and that path ends
+  in `setActiveTab` (`weekly-attempt.ts:149`) — arming from here would throw
+  the singer out of a live room, mid-session, while everyone else waits.
+  Attempts stay an explicit act on the Challenges tab; jamming the weekly is
+  practice. **This is a change from what this plan originally sketched**, and
+  the navigation is the reason.
+
+Covered by `src/tests/jam-credit.test.ts`.
+
+**Still open from this phase:** the jam leaderboard slice and the "jammed
+with" badge. Both want a decision about what a room result means publicly,
+which is easier to make once phase 4's modes exist — a Duel result is a much
+more natural leaderboard row than "sang a scale near someone".
 
 ## 7. Phase 4 — modes worth having
 
