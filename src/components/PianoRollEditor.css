@@ -1166,6 +1166,33 @@ Keeps your existing styles, only adjusts layout
   border: 1px dashed rgba(139, 148, 158, 0.65);
 }
 
+/* The grid is a real horizontal viewport. Before this rule the container had
+   NO css at all — overflow defaulted to visible, so it never scrolled, every
+   `scrollLeft` write in piano-roll.ts was a no-op, and anything past the first
+   viewport width was clipped away by .roll-grid-body's overflow-x: hidden. */
+.roll-grid-container {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+}
+
+/* The layer is the scroll spacer: JS sets its width to the full song so the
+   scrollbar has something to travel, while the canvases inside stay
+   viewport-sized (a 267-bar song would be ~102k device px wide — far past the
+   browser's canvas limit, which is why the grid used to render blank). */
+.roll-grid-layer {
+  position: relative;
+}
+
+.roll-grid-layer > .roll-grid,
+.roll-grid-layer > .roll-ball {
+  position: absolute;
+  top: 0;
+  /* `left` is set from JS to the scroll offset on every scroll. */
+  left: 0;
+}
+
 /* The left keyboard is interactive: presses audition lanes, drags glissando.
    touch-action: none keeps presses from scrolling the page on touch. */
 .roll-piano {
@@ -1258,4 +1285,41 @@ Keeps your existing styles, only adjusts layout
   --roll-font-small: 9px sans-serif;
   --roll-font-label: 10px sans-serif;
   --roll-font-mono: 11px monospace;
+}
+
+/* Bar navigator — paging + jump-to-bar, for songs longer than a viewport. */
+.roll-bar-jump {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+}
+
+.roll-bar-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.roll-bar-input {
+  width: 46px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.66rem;
+  text-align: center;
+}
+
+.roll-bar-input::-webkit-outer-spin-button,
+.roll-bar-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.roll-bar-total {
+  min-width: 28px;
+  color: var(--text-secondary);
 }

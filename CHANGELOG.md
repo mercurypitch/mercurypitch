@@ -5,6 +5,26 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Big songs open properly in Compose.** Loading a long MIDI (hundreds of
+  bars) used to show an empty grid you couldn't scroll — the editor was trying
+  to draw the entire song onto a single canvas far larger than browsers allow,
+  so it drew nothing at all. Compose now draws just the part you're looking at
+  and scrolls smoothly through the rest, with Prev/Next page buttons and a
+  "go to bar" box for getting around long songs. Playback keeps the playhead
+  in view, and a dense song no longer bogs the editor down.
+- **Imported songs land on the right rows.** The grid now positions itself
+  over the song's actual pitch range instead of leaving high and low notes
+  stranded off-grid — while melodies that already fit keep the rows you chose.
+- **You can see which melody you're editing.** Compose shows the melody name
+  next to the view tabs, and the score header names it too, so Split view no
+  longer looks like two different pieces — no need to open the sidebar.
+- **Imports keep their own name.** Importing a MIDI from Compose (or opening a
+  shared link) used to pour the notes into whatever melody was open and keep
+  that melody's old name; imports now become a melody named after the file or
+  the shared song.
+
 ### Added
 
 - **Drum kit mode in Compose.** A new Melody / Drums switch in the Compose

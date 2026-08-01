@@ -611,7 +611,10 @@ const AppShell: Component<AppProps> = (props) => {
       showNotification('Shared melody is empty or invalid', 'warning')
       return
     }
-    melodyStore.setMelody(items)
+    // Land the shared notes in a melody actually CALLED that — setMelody
+    // would have kept whatever name was open, so the toast and the header
+    // disagreed about what had just been loaded.
+    melodyStore.loadImportedMelody(items, name, { bpm: bpmVal })
     // Drum-kit share links restore the drum preset (legacy links carry no
     // dk field and default to melody).
     melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
@@ -2677,6 +2680,9 @@ const AppShell: Component<AppProps> = (props) => {
                                 >
                                   <SheetMusicView
                                     melody={activePlaybackItems}
+                                    melodyName={() =>
+                                      melodyStore.currentMelody()?.name ?? null
+                                    }
                                     musicKey={keyNameSignal}
                                     scaleType={scaleTypeSignal}
                                     currentBeat={currentBeat}
@@ -2797,70 +2803,91 @@ const AppShell: Component<AppProps> = (props) => {
                   </Show>
                   <div class={styles.composeToolbarOuter}>
                     <div class={styles.composeToolbar}>
-                      <div
-                        class={styles.editorTabs}
-                        role="tablist"
-                        aria-label="Editor view"
-                        data-tour="compose.editor"
-                      >
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]:
-                              editorView() === 'piano-roll',
-                          }}
-                          aria-selected={editorView() === 'piano-roll'}
-                          onClick={() => setEditorView('piano-roll')}
-                          title="Piano Roll"
+                      {/* Column 1 wraps the identity + the view tabs so the
+                          toolbar keeps exactly three grid children and
+                          data-tour="compose.editor" stays on the tablist. */}
+                      <div class={styles.editorLeft}>
+                        <div
+                          class={styles.composeIdentity}
+                          data-testid="compose-melody-name"
+                          title={
+                            melodyStore.currentMelody()?.name ??
+                            'No melody loaded'
+                          }
                         >
-                          <MusicBoard /> Piano Roll
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]:
-                              editorView() === 'sheet-music',
-                          }}
-                          aria-selected={editorView() === 'sheet-music'}
-                          data-testid="view-sheet-music"
-                          onClick={() => setEditorView('sheet-music')}
-                          title="Sheet Music"
+                          <span class={styles.composeIdentityIcon}>
+                            <MusicNote />
+                          </span>
+                          <span class={styles.composeIdentityName}>
+                            {melodyStore.currentMelody()?.name ?? 'Untitled'}
+                          </span>
+                        </div>
+                        <div
+                          class={styles.editorTabs}
+                          role="tablist"
+                          aria-label="Editor view"
+                          data-tour="compose.editor"
                         >
-                          <Music /> Sheet Music
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]: editorView() === 'split',
-                          }}
-                          aria-selected={editorView() === 'split'}
-                          data-testid="view-split"
-                          onClick={() => setEditorView('split')}
-                          title="Split piano roll and sheet music"
-                        >
-                          <Split /> Split
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]:
-                              editorView() === 'session-editor',
-                          }}
-                          aria-selected={editorView() === 'session-editor'}
-                          data-testid="view-session-editor"
-                          onClick={() => setEditorView('session-editor')}
-                          title="Session Editor"
-                        >
-                          <SlidersHorizontal /> Session Editor
-                        </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            class={styles.editorTab}
+                            classList={{
+                              [styles.editorTabActive]:
+                                editorView() === 'piano-roll',
+                            }}
+                            aria-selected={editorView() === 'piano-roll'}
+                            onClick={() => setEditorView('piano-roll')}
+                            title="Piano Roll"
+                          >
+                            <MusicBoard /> Piano Roll
+                          </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            class={styles.editorTab}
+                            classList={{
+                              [styles.editorTabActive]:
+                                editorView() === 'sheet-music',
+                            }}
+                            aria-selected={editorView() === 'sheet-music'}
+                            data-testid="view-sheet-music"
+                            onClick={() => setEditorView('sheet-music')}
+                            title="Sheet Music"
+                          >
+                            <Music /> Sheet Music
+                          </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            class={styles.editorTab}
+                            classList={{
+                              [styles.editorTabActive]:
+                                editorView() === 'split',
+                            }}
+                            aria-selected={editorView() === 'split'}
+                            data-testid="view-split"
+                            onClick={() => setEditorView('split')}
+                            title="Split piano roll and sheet music"
+                          >
+                            <Split /> Split
+                          </button>
+                          <button
+                            type="button"
+                            role="tab"
+                            class={styles.editorTab}
+                            classList={{
+                              [styles.editorTabActive]:
+                                editorView() === 'session-editor',
+                            }}
+                            aria-selected={editorView() === 'session-editor'}
+                            data-testid="view-session-editor"
+                            onClick={() => setEditorView('session-editor')}
+                            title="Session Editor"
+                          >
+                            <SlidersHorizontal /> Session Editor
+                          </button>
+                        </div>
                       </div>
 
                       <ControlOverlay static inline idPrefix="compose">
@@ -2970,6 +2997,9 @@ const AppShell: Component<AppProps> = (props) => {
                       >
                         <SheetMusicView
                           melody={() => melodyStore.items()}
+                          melodyName={() =>
+                            melodyStore.currentMelody()?.name ?? null
+                          }
                           musicKey={keyNameSignal}
                           scaleType={scaleTypeSignal}
                           currentBeat={currentBeat}
@@ -3032,6 +3062,9 @@ const AppShell: Component<AppProps> = (props) => {
                         targetPitch={() => null}
                         noteAccuracyMap={() => new Map()}
                         onMelodyChange={updateComposeMelody}
+                        onMelodyImport={(melody, name) => {
+                          melodyStore.loadImportedMelody(melody, name)
+                        }}
                         onInstrumentChange={(instrument) => {
                           // Update three things at once:
                           //   1. App's primary AudioEngine (used during practice
@@ -3074,6 +3107,9 @@ const AppShell: Component<AppProps> = (props) => {
                           >
                             <SheetMusicView
                               melody={() => melodyStore.items()}
+                              melodyName={() =>
+                                melodyStore.currentMelody()?.name ?? null
+                              }
                               musicKey={keyNameSignal}
                               scaleType={scaleTypeSignal}
                               currentBeat={currentBeat}

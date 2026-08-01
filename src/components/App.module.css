@@ -82,6 +82,50 @@
   -webkit-user-select: text;
 }
 
+/* Grid column 1: the melody identity above the view tabs. Wrapping them keeps
+   .composeToolbar at exactly three grid children (a 4th would spill into an
+   implicit second row) and leaves data-tour="compose.editor" on the tablist. */
+.editorLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-self: start;
+  min-width: 0;
+}
+
+/* Which melody/song you are editing — the sidebar can't always be open, and
+   without this the Compose and Sheet halves of Split view read as different
+   pieces. */
+.composeIdentity {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 2px;
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+}
+
+.composeIdentityIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.composeIdentityIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.composeIdentityName {
+  overflow: hidden;
+  max-width: 34ch;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .editorTabs {
   display: flex;
   gap: 4px;
@@ -106,6 +150,11 @@
   }
 
   .editorTabs {
+    justify-self: center;
+  }
+
+  .editorLeft {
+    align-items: center;
     justify-self: center;
   }
 

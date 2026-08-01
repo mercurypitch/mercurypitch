@@ -311,3 +311,9 @@
 .clickLayerScrub:active {
   cursor: grabbing;
 }
+
+/* A melody name is a proper noun, not a key signature — don't capitalize it
+   the way the key/scale fallback is. */
+.scoreTitleName {
+  text-transform: none;
+}

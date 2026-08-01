@@ -44,6 +44,13 @@ describe('PianoRollEditor Playback Behavior', () => {
       closePath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      // Effect notes (slides/trills) draw curved paths. They only reach this
+      // code when the note is ON-scale, which is why row auto-fit made these
+      // suddenly necessary: the notes used to render as off-grid blocks.
+      bezierCurveTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      ellipse: vi.fn(),
+      arcTo: vi.fn(),
       stroke: vi.fn(),
       strokeRect: vi.fn(),
       fill: vi.fn(),

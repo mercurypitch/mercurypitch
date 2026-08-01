@@ -1499,6 +1499,36 @@ export function getCurrentKind(): MelodyKind {
   return currentMelody()?.kind ?? 'melody'
 }
 
+/**
+ * Load imported notes as a NAMED melody.
+ *
+ * `setMelody` swaps notes into whatever melody happens to be current and keeps
+ * its old name, so importing "Prelude.mid" while "New Melody 3" was open left
+ * the library claiming those notes were "New Melody 3" — the header, the share
+ * link and the sidebar all disagreed with the content. Imports reuse an
+ * existing melody of the same name (re-importing the same file updates it in
+ * place, matching the Singing picker) or create one named after the source.
+ */
+export function loadImportedMelody(
+  items: MelodyItem[],
+  name: string,
+  extra?: Partial<MelodyData>,
+): MelodyData | null {
+  const trimmed = name.trim()
+  const existing =
+    trimmed === ''
+      ? undefined
+      : getAllMelodies().find((m) => m.name === trimmed)
+  const target =
+    existing ?? createNewMelody(trimmed === '' ? undefined : trimmed)
+  const updated = updateMelody(target.id, {
+    ...extra,
+    items: [...items],
+  })
+  if (updated != null) setCurrentMelody(updated)
+  return updated ?? null
+}
+
 /** Set the current melody's editor preset. Creates a melody first if none is
  *  active (mirrors setMelody), so the toggle always has something to write. */
 export function setMelodyKind(kind: MelodyKind): void {
@@ -1535,6 +1565,7 @@ export const melodyStore = {
   items: getCurrentItems,
   getCurrentKind,
   setMelodyKind,
+  loadImportedMelody,
   flushLibrarySave,
 
   // Melody note operations
