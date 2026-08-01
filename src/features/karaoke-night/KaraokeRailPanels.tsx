@@ -1,10 +1,11 @@
 // Store-backed rail panels (upload + library) for the Karaoke Night page.
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, onMount, Show, } from 'solid-js'
 import type { GroupDeleteTarget } from '@/components/GroupDeleteConfirmDialog'
 import { GroupDeleteConfirmDialog } from '@/components/GroupDeleteConfirmDialog'
 import { Trash2 } from '@/components/icons'
+import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-accept'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
@@ -261,13 +262,26 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   type LibrarySong = ReturnType<typeof librarySongs>[number]
 
   // Full-band parts beyond vocal/instrumental already on this device.
-  // stemMeta is stored metadata, so counting is free — no blob loads
-  // (owner asked for exactly this cheap "+N" signal on the cards).
+  // Counted from the stem BLOB table, not the session's stemMeta: a
+  // full-band split writes its part blobs and never touches stemMeta
+  // (which describes the original separation only), so the metadata
+  // read always said zero and the chip never appeared. Metadata-only
+  // query — the blobs themselves are not loaded.
   const CORE_STEMS = new Set(['vocal', 'instrumental'])
+  const [partCounts] = createResource(
+    () => librarySongs().map((s) => s.sessionId),
+    async (ids) => {
+      const entries = await Promise.all(
+        ids.map(async (id) => {
+          const types = await listStemTypes(id)
+          return [id, types.filter((t) => !CORE_STEMS.has(t)).length] as const
+        }),
+      )
+      return new Map(entries)
+    },
+  )
   const partStemCount = (s: LibrarySong): number =>
-    Object.keys(getUvrSession(s.sessionId)?.stemMeta ?? {}).filter(
-      (name) => !CORE_STEMS.has(name),
-    ).length
+    partCounts()?.get(s.sessionId) ?? 0
 
   const songRow = (s: LibrarySong) => (
     <li>
