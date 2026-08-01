@@ -662,7 +662,13 @@ export async function joinJamRoom(
     // Wait for signaling handshake — peer ID arrives via room-joined
     const peerId = await waitForPeerId()
     if (peerId === null || peerId === '') {
-      setJamError('Failed to join room — no response from server')
+      // Do not clobber a specific diagnosis. The socket reports its own
+      // failure immediately; this timeout fires five seconds later, and
+      // overwriting made every failure look like an unreachable server
+      // when the real one was usually the connection never opening.
+      if (jamError() === null) {
+        setJamError('Failed to join room — no response from server')
+      }
       setJamState('idle')
       return false
     }
@@ -672,7 +678,7 @@ export async function joinJamRoom(
     saveJamSession(roomId, displayName)
     return true
   } catch (_err) {
-    setJamError('Failed to join room')
+    if (jamError() === null) setJamError('Failed to join room')
     setJamState('idle')
     return false
   }
