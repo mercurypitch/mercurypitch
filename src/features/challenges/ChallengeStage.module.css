@@ -1,0 +1,274 @@
+.root {
+  --challenge-border: #2a3344;
+  --challenge-ink: #edf3fc;
+  --challenge-muted: #8e9aae;
+  --pitch-reference: #f59e0b;
+  --pitch-user: #a78bfa;
+}
+
+.stage {
+  z-index: var(--z-focus, 500);
+  background: #080b12;
+}
+
+.closeButton,
+.endButton,
+.beginButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.closeButton {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--challenge-border);
+  border-radius: 9px;
+  color: #c8d2e1;
+  background: #111722;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.closeButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.endButton {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 58%, #fff 8%);
+  border-radius: 9px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, var(--pitch-reference));
+  box-shadow: 0 8px 22px rgba(245, 158, 11, 0.18);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+/* ── Ready overlay ─────────────────────────────────────────── */
+
+/* Covers only the shell's canvas surface (same insets), so the header's
+   Close and the footer readouts stay interactive underneath the card. */
+.overlay {
+  position: fixed;
+  z-index: calc(var(--z-focus, 500) + 1);
+  inset: 88px 16px 108px;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(3, 5, 9, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.readyCard {
+  display: grid;
+  gap: 11px;
+  width: min(430px, 100%);
+  padding: 22px;
+  border: 1px solid
+    color-mix(in srgb, var(--pitch-reference) 34%, var(--challenge-border));
+  border-radius: 16px;
+  color: var(--challenge-ink);
+  background:
+    radial-gradient(
+      circle at 20% -30%,
+      color-mix(in srgb, var(--pitch-reference) 16%, transparent),
+      transparent 55%
+    ),
+    rgba(13, 18, 28, 0.96);
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.5),
+    inset 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  text-align: center;
+}
+
+.readyCard h3 {
+  margin: 0;
+  font-size: 1.14rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.cardEyebrow {
+  margin: 0;
+  color: color-mix(in srgb, var(--pitch-reference) 76%, #d7deea);
+  font-size: 0.61rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cardMeta {
+  margin: 0;
+  color: #ffe0a6;
+  font:
+    650 0.72rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.cardHint {
+  margin: 0;
+  color: var(--challenge-muted);
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.beginButton {
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 4px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 65%, #fff 8%);
+  border-radius: 10px;
+  color: #171109;
+  background: linear-gradient(180deg, #ffc15a, var(--pitch-reference));
+  box-shadow: 0 10px 26px rgba(245, 158, 11, 0.2);
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.beginButton svg {
+  width: 15px;
+  height: 15px;
+}
+
+.error {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+/* ── Footer readouts ───────────────────────────────────────── */
+
+.notesReadout,
+.transportReadout,
+.targetReadout {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.notesReadout {
+  justify-content: flex-start;
+  color: var(--challenge-muted);
+  font-size: 0.66rem;
+}
+
+.notesReadout strong {
+  color: #ffe0a6;
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+.transportReadout {
+  justify-content: center;
+}
+
+.timeReadout,
+.footerHint {
+  color: var(--challenge-muted);
+  font:
+    0.63rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: nowrap;
+}
+
+.footerHint {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.targetReadout {
+  justify-content: flex-end;
+  color: var(--challenge-muted);
+  font-size: 0.64rem;
+  white-space: nowrap;
+}
+
+/* ── Recorded chip ─────────────────────────────────────────── */
+
+.doneChip {
+  position: fixed;
+  z-index: calc(var(--z-focus, 500) + 1);
+  bottom: 118px;
+  left: 50%;
+  display: grid;
+  gap: 2px;
+  padding: 12px 22px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 55%, transparent);
+  border-radius: 13px;
+  color: var(--challenge-ink);
+  background: rgba(13, 18, 28, 0.94);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.5),
+    0 0 28px rgba(245, 158, 11, 0.22);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  transform: translateX(-50%);
+  animation: challenge-done-in 300ms ease-out;
+}
+
+.doneChip strong {
+  color: #ffe0a6;
+  font-size: 1.5rem;
+  font-weight: 780;
+  line-height: 1.1;
+}
+
+.doneChip span {
+  color: var(--challenge-muted);
+  font-size: 0.64rem;
+}
+
+@keyframes challenge-done-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .overlay {
+    inset: 80px 10px 142px;
+    padding: 10px;
+  }
+
+  .readyCard {
+    padding: 16px;
+  }
+
+  .targetReadout {
+    display: none;
+  }
+
+  .closeButton,
+  .endButton {
+    min-height: 44px;
+  }
+
+  .doneChip {
+    bottom: 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doneChip {
+    animation: none;
+  }
+}

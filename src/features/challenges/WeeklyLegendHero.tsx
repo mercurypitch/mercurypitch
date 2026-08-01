@@ -2,16 +2,16 @@
 // WeeklyLegendHero — the "This Week's Legend" card (Home)
 // ============================================================
 // Shows the active weekly challenge: feat framing, countdown, a "Hear it"
-// link (official upload), a "Sing it" attempt that launches the line as a
-// sight-singing drill, and a compact board (top singers + the founder + your
-// standing). Reuses the exercise launch + the weekly-attempt return path.
+// link (official upload), a "Sing it" attempt that performs the line on the
+// challenge stage (zen canvas), and a compact board (top singers + the
+// founder + your standing). The stage reports through the exercise-history
+// funnel, so the weekly-attempt return path is unchanged.
 
 import type { Component } from 'solid-js'
 import { createEffect, createResource, For, Show } from 'solid-js'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { setActiveTab, startExercise } from '@/stores/ui-store'
+import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
 import { beginWeeklyAttempt, weeklyAttemptVersion } from './weekly-attempt'
 import { getActiveWeekly, getWeeklyBoard, hoursUntil } from './weekly-service'
 import styles from './WeeklyLegendHero.module.css'
@@ -48,8 +48,11 @@ export const WeeklyLegendHero: Component = () => {
       rewardBadgeId: c.rewardBadgeId,
       founderScore: c.founderScore,
     })
-    startExercise(EXERCISE_SIGHT_SINGING, {
-      notes: c.targetItems.map((i) => midiToNoteNameOctave(i.note.midi)),
+    openChallengeStage({
+      challengeId: c.id,
+      title: c.title,
+      targetScore: c.targetScore,
+      targetItems: c.targetItems,
     })
   }
 
