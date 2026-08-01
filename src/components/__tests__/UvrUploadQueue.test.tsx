@@ -3,6 +3,19 @@ import { describe, expect, it, vi } from 'vitest'
 import type { UvrUploadQueueItem } from '@/lib/uvr-upload-queue'
 import { UvrUploadQueue } from '../UvrUploadQueue'
 
+// The queue card derives its "full band" second step from the module-level
+// split registry; stub it so tests can place a split on a session without
+// running one.
+const splitRegistry = vi.hoisted(() => ({
+  value: {} as Record<
+    string,
+    { phase: 'uploading' | 'processing' | 'saving'; pct: number }
+  >,
+}))
+vi.mock('@/lib/uvr-stem-split', () => ({
+  activeStemSplits: () => splitRegistry.value,
+}))
+
 function cancelledSong(): UvrUploadQueueItem {
   return {
     id: 'cancelled-song',
@@ -170,5 +183,54 @@ describe('UvrUploadQueue controls and terminal states', () => {
         'Stopped after the current song. Skipped songs were not processed.',
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('UvrUploadQueue background full-band split step', () => {
+  const completedWithSession = (): UvrUploadQueueItem => ({
+    ...song('done', 'singing.mp3', 'completed'),
+    progress: 100,
+    sessionId: 'session-9',
+    message: 'Stems saved',
+  })
+
+  const renderQueue = (items: UvrUploadQueueItem[]) =>
+    render(() => (
+      <UvrUploadQueue
+        items={() => items}
+        running={() => false}
+        mode={() => 'server'}
+        onStart={vi.fn()}
+        onRemove={vi.fn()}
+        onSkip={vi.fn()}
+        onSkipRemaining={vi.fn()}
+        onCancel={vi.fn()}
+        onRetryFailed={vi.fn()}
+        onClear={vi.fn()}
+      />
+    ))
+
+  it('surfaces the running part-split as a second step on the same card', () => {
+    splitRegistry.value = { 'session-9': { phase: 'processing', pct: 41 } }
+    renderQueue([completedWithSession()])
+
+    // The card keeps its terminal state AND shows the split still working.
+    expect(screen.getByText('In your library')).toBeInTheDocument()
+    expect(screen.getByText('Separating full band 41%')).toBeInTheDocument()
+  })
+
+  it('labels the save phase of the split distinctly', () => {
+    splitRegistry.value = { 'session-9': { phase: 'saving', pct: 60 } }
+    renderQueue([completedWithSession()])
+
+    expect(screen.getByText('Saving band stems 60%')).toBeInTheDocument()
+  })
+
+  it('shows no split step when none is running for the session', () => {
+    splitRegistry.value = {}
+    renderQueue([completedWithSession()])
+
+    expect(screen.queryByText(/full band/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/band stems/i)).not.toBeInTheDocument()
   })
 })

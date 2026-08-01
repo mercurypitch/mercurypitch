@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig, RunpodStatus } from '@/lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -321,6 +321,77 @@ describe('mapStatusToResponse', () => {
       'processing',
     )
     expect(mapStatusToResponse('rp_gpu_job1', {}).status).toBe('processing')
+  })
+})
+
+// ── classifyStemFromFilename ────────────────────────────────────
+
+describe('classifyStemFromFilename', () => {
+  it('classifies every stem the registry can emit by its marker', () => {
+    for (const stem of [
+      'drums',
+      'bass',
+      'guitar',
+      'piano',
+      'other',
+      'instrumental',
+    ]) {
+      expect(classifyStemFromFilename(`Song_(${stem})_htdemucs_6s.flac`)).toBe(
+        stem,
+      )
+    }
+    expect(classifyStemFromFilename('Song_(Vocals)_model.flac')).toBe('vocal')
+    expect(classifyStemFromFilename('Song_(Karaoke)_model.flac')).toBe(
+      'instrumental',
+    )
+  })
+
+  it('lets the LAST marker win — split outputs append theirs to the source name', () => {
+    // A second pass splits "Song_(Instrumental)_x.flac"; audio-separator
+    // appends the part marker to that base, so the FIRST marker names the
+    // source, not the stem. Matching the first classified every split part
+    // as 'instrumental' — the 2026-08-01 "split produced no part stems"
+    // resume failure.
+    expect(
+      classifyStemFromFilename(
+        'Song_(Instrumental)_bs_roformer_(Drums)_htdemucs_6s.flac',
+      ),
+    ).toBe('drums')
+    expect(
+      classifyStemFromFilename(
+        'Song_(Instrumental)_bs_roformer_(Guitar)_htdemucs_6s.flac',
+      ),
+    ).toBe('guitar')
+    expect(
+      classifyStemFromFilename(
+        'Song_(Instrumental)_bs_roformer_(Piano)_htdemucs_6s.flac',
+      ),
+    ).toBe('piano')
+  })
+
+  it('never lets a guitar/piano part fall through to the substring scan', () => {
+    // The upload-path split names files "instrumental_(Guitar)_…" — with no
+    // guitar marker, the substring scan hit "instrumental" first.
+    expect(classifyStemFromFilename('instrumental_(Guitar)_model.wav')).toBe(
+      'guitar',
+    )
+    expect(classifyStemFromFilename('instrumental_(Piano)_model.wav')).toBe(
+      'piano',
+    )
+  })
+
+  it('beats stem words inside song titles', () => {
+    expect(classifyStemFromFilename('Piano Man_(Drums)_model.flac')).toBe(
+      'drums',
+    )
+    expect(classifyStemFromFilename('Vocal Coach_(Instrumental)_x.flac')).toBe(
+      'instrumental',
+    )
+  })
+
+  it('falls back to substrings, then unknown', () => {
+    expect(classifyStemFromFilename('my-guitar-take.wav')).toBe('guitar')
+    expect(classifyStemFromFilename('mystery.wav')).toBe('unknown')
   })
 })
 

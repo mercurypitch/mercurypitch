@@ -579,8 +579,17 @@ async function startRunpodJob(
     }
   }
 
+  // Neutralize parentheses in the name the handler will base output files
+  // on. audio-separator appends "_(Stem)_model" to this base, and stem
+  // classification (handler + our R2 recovery) keys on parenthesised
+  // markers — a reused stem named "Song_(Instrumental)_x.flac" (or an
+  // upload titled "Love (Drums) Mix.mp3") would otherwise plant a bogus
+  // marker in EVERY output name and misclassify the split's parts.
+  const rawJobFilename = file?.name ?? reuseKey?.name ?? 'input'
+  const jobFilename = rawJobFilename.replace(/[()]/g, '')
+
   const input = buildJobInput({
-    filename: file?.name ?? reuseKey?.name ?? 'input',
+    filename: jobFilename,
     model,
     output_format: outputFormat,
     stems,

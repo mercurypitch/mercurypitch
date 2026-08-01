@@ -668,6 +668,26 @@ describe('handleRunpodRequest — metering', () => {
       'runpod-dev/prev-job/Song_(Instrumental)_model.wav',
     )
     expect(input.source_stem).toBe('instrumental')
+    // The reused stem's own "(Instrumental)" marker must not survive into
+    // the name output files are based on — audio-separator appends the new
+    // stem marker to it, and a leftover marker misclassifies every part.
+    expect(input.filename).toBe('Song_Instrumental_model.wav')
+  })
+
+  it('strips parentheses from upload names so stray markers cannot misclassify stems', async () => {
+    const spy = mockFetchOnce({ id: 'job-parens' })
+    const file = smallFile()
+    Object.defineProperty(file, 'name', { value: 'Love (Drums) Mix.mp3' })
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file,
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(200)
+    const sent = JSON.parse(spy.mock.calls.at(-1)?.[1]?.body as string) as {
+      input: { filename: string }
+    }
+    expect(sent.input.filename).toBe('Love Drums Mix.mp3')
   })
 
   it('410s an expired reuse target so the client falls back to uploading', async () => {

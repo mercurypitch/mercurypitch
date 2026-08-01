@@ -379,18 +379,34 @@ export function mapStatusToResponse(
 
 // Mirrors the handler's _classify_stem (runpod/handler.py): the parenthesised
 // marker in "<song>_(Vocals)_<model>.flac" wins over a bare substring so a song
-// literally called "Vocal Coach" can't misclassify its instrumental. Karaoke
-// models label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
+// literally called "Vocal Coach" can't misclassify its instrumental. The LAST
+// marker wins because audio-separator APPENDS its marker to the input's base
+// name — a second-pass split of "Song_(Instrumental)_x.flac" emits files like
+// "Song_(Instrumental)_x_(Drums)_y.flac", where only the final marker names
+// the stem (matching the first classified every split part as 'instrumental',
+// which is what broke re-attaching to a split after a reload). Karaoke models
+// label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
 // contract that IS the instrumental. Used to recover a job's stems straight
 // from R2 by filename when RunPod no longer has the job result.
-const STEM_MARKER_RE = /\((vocals?|instrumental|karaoke|drums|bass|other)\)/i
-const STEM_KEYS = ['vocal', 'instrumental', 'drums', 'bass', 'other']
+const STEM_MARKER_RE =
+  /\((vocals?|instrumental|karaoke|drums|bass|guitar|piano|other)\)/gi
+const STEM_KEYS = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+]
 
 export function classifyStemFromFilename(filename: string): string {
   const low = filename.toLowerCase()
-  const marker = STEM_MARKER_RE.exec(low)
-  if (marker) {
-    const raw = marker[1]
+  // matchAll clones the regex, so the module-level /g pattern keeps no
+  // lastIndex state between calls.
+  let raw: string | undefined
+  for (const m of low.matchAll(STEM_MARKER_RE)) raw = m[1]
+  if (raw !== undefined) {
     if (raw.startsWith('vocal')) return 'vocal'
     if (raw === 'karaoke') return 'instrumental'
     return raw

@@ -2,6 +2,8 @@ import type { Accessor, Component } from 'solid-js'
 import { For, Match, Show, Switch } from 'solid-js'
 import { formatFileSize } from '@/lib/audio-accept'
 import { uvrLengthFactor } from '@/lib/uvr-api'
+import type { StemSplitProgress } from '@/lib/uvr-stem-split'
+import { activeStemSplits } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueItem, UvrUploadQueueStatus, } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode } from '@/stores/app-store'
@@ -32,6 +34,14 @@ const statusLabel: Record<UvrUploadQueueStatus, string> = {
   omitted: 'Skipped',
   error: 'Needs attention',
   cancelled: 'Cancelled',
+}
+
+/** Second step on a "Full band" card: the background part-split that keeps
+ *  running after the main separation lands (drums/bass/guitar/piano). */
+const splitStepLabel = (p: StemSplitProgress): string => {
+  if (p.phase === 'saving') return `Saving band stems ${Math.round(p.pct)}%`
+  if (p.phase === 'uploading') return 'Starting full-band split…'
+  return `Separating full band ${Math.round(p.pct)}%`
 }
 
 function StatusIcon(props: { status: UvrUploadQueueStatus }) {
@@ -214,6 +224,25 @@ export const UvrUploadQueue: Component<UvrUploadQueueProps> = (props) => {
                   <div class="uvr-queue-track">
                     <span style={{ width: `${Math.max(3, item.progress)}%` }} />
                   </div>
+                </Show>
+                <Show
+                  when={
+                    item.sessionId !== undefined
+                      ? activeStemSplits()[item.sessionId]
+                      : undefined
+                  }
+                  keyed
+                >
+                  {(split) => (
+                    <>
+                      <div class="uvr-queue-state-line uvr-queue-split-line">
+                        <span>{splitStepLabel(split)}</span>
+                      </div>
+                      <div class="uvr-queue-track uvr-queue-track--split">
+                        <span style={{ width: `${Math.max(3, split.pct)}%` }} />
+                      </div>
+                    </>
+                  )}
                 </Show>
               </div>
               <Show when={item.status === 'queued'}>

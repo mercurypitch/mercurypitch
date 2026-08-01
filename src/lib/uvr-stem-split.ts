@@ -13,7 +13,7 @@ import type { UvrStemType } from '@/db/entities'
 import { deleteStemBlobs, getStemBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import { eventBus } from './event-bus'
 import type { OutputFile } from './uvr-api'
-import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, pollForCompletion, processAudio, splitStemsFor, TerminalPollError, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
+import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, KEEP_POLLING, pollForCompletion, processAudio, splitStemsFor, TerminalPollError, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
 import { wavDurationSeconds } from './wav-meta'
 
 /** The stems a split can add to a session (everything except the core trio). */
@@ -228,6 +228,59 @@ export async function runStemSplit(
   return { ...attached, elapsedMs: Date.now() - startedAt }
 }
 
+// ── Parts decision — what to do with a 'completed' listing ───────
+// A "completed" status is not always a final verdict: the worker's R2
+// recovery fallback (runpod-bridge statusFromR2) synthesizes one from
+// whatever stem files have landed in the bucket, which mid-upload lists
+// only some of the parts — or none that classify as parts at all. Pure
+// and separate from the poll loop so the three outcomes are testable.
+
+/** How long consecutive part-less "completed" listings are treated as
+ *  still-processing before the split gives up (recoverably). Covers the
+ *  handler's stem-upload window and a RunPod status blip; a genuinely
+ *  empty result then surfaces as a retryable error, not a dead session. */
+export const EMPTY_SPLIT_LISTING_PATIENCE_MS = 90_000
+
+export type SplitPartsDecision =
+  | { action: 'save'; parts: OutputFile[] }
+  | { action: 'wait' }
+  | { action: 'give-up'; returned: string[] }
+
+/**
+ * Decide how to treat the files of a 'completed' split status.
+ *
+ * - Any file matching a wanted part stem → save what came back (a subset,
+ *   e.g. 5 of 6, is accepted rather than all-or-nothing — every consumer
+ *   hydrates parts individually, so a missing one just isn't offered).
+ * - No matching parts yet → 'wait' (treat as still-processing) until the
+ *   patience window since the first empty listing runs out, then
+ *   'give-up' with the stem names that WERE returned for the error text.
+ *
+ * `emptySince` is the caller-held timestamp of the first part-less listing
+ * in the current streak (null when the last status was usable/alive); the
+ * returned value is the next state to hold.
+ */
+export function decideSplitParts(args: {
+  files: readonly OutputFile[]
+  wanted: readonly string[]
+  emptySince: number | null
+  now: number
+  patienceMs?: number
+}): { decision: SplitPartsDecision; emptySince: number | null } {
+  const wantedSet = new Set(args.wanted)
+  const parts = args.files.filter((f) => wantedSet.has(f.stem))
+  if (parts.length > 0) {
+    return { decision: { action: 'save', parts }, emptySince: null }
+  }
+  const since = args.emptySince ?? args.now
+  const patience = args.patienceMs ?? EMPTY_SPLIT_LISTING_PATIENCE_MS
+  if (args.now - since >= patience) {
+    const returned = [...new Set(args.files.map((f) => f.stem))]
+    return { decision: { action: 'give-up', returned }, emptySince: null }
+  }
+  return { decision: { action: 'wait' }, emptySince: since }
+}
+
 /**
  * Poll a running split job and persist its parts — the second half of
  * runStemSplit, callable on its own to RE-ATTACH after a reload (the
@@ -267,20 +320,47 @@ export async function attachToStemSplitJob(
 
   const saved: StemSplitPart[] = []
   let completionError: unknown
+  const wanted = splitStemsFor(model, 'instrumental')
+  // First part-less "completed" listing of the current streak — reset
+  // whenever the server reports the job alive again (a progress tick),
+  // so a RunPod retry that re-queues the job restarts the patience clock.
+  let emptySince: number | null = null
 
   try {
     await pollForCompletion(
       serverSessionId,
-      (pct) => notify({ phase: 'processing', pct }),
+      (pct) => {
+        emptySince = null
+        notify({ phase: 'processing', pct })
+      },
       async (files: OutputFile[]) => {
         try {
-          const wanted = new Set<string>(splitStemsFor(model, 'instrumental'))
-          const parts = files.filter((f) => wanted.has(f.stem))
-          if (parts.length === 0) {
-            throw new StemSplitError('The split produced no part stems.', {
-              recoverable: false,
-            })
+          const verdict = decideSplitParts({
+            files,
+            wanted,
+            emptySince,
+            now: Date.now(),
+          })
+          emptySince = verdict.emptySince
+          if (verdict.decision.action === 'wait') {
+            // Nothing usable listed yet while the job may still be
+            // uploading (or the status was an R2 mid-upload snapshot) —
+            // treat as still-processing rather than a failure.
+            return KEEP_POLLING
           }
+          if (verdict.decision.action === 'give-up') {
+            const returned = verdict.decision.returned
+            throw new StemSplitError(
+              returned.length > 0
+                ? `The split finished without part stems — the server returned: ${returned.join(', ')}. Please try the split again.`
+                : 'The split finished without part stems. Please try the split again.',
+              // The job is done and its output is wrong — but re-running
+              // the split is perfectly viable, so keep the marker/retry
+              // affordances instead of declaring the session dead.
+              { recoverable: true },
+            )
+          }
+          const parts = verdict.decision.parts
           let done = 0
           for (const part of parts) {
             if (options.signal?.aborted === true) {

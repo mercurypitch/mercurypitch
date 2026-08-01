@@ -270,11 +270,18 @@ def _apply_stem_selection(
 
 
 def _classify_stem(name: str) -> str:
-    """Map an output filename (or dir/filename) to a registry stem name."""
+    """Map an output filename (or dir/filename) to a registry stem name.
+
+    The LAST parenthesised marker wins: audio-separator appends its marker
+    to the input's base name, so a second pass over
+    "Song_(Instrumental)_x.flac" emits "Song_(Instrumental)_x_(Drums)_y",
+    where only the final marker names the stem. Mirrors _classify_stem in
+    runpod/handler.py — keep the two in sync.
+    """
     low = name.lower()
-    marker = _STEM_MARKER_RE.search(low)
-    if marker:
-        raw = marker.group(1)
+    markers = _STEM_MARKER_RE.findall(low)
+    if markers:
+        raw = markers[-1]
         if raw.startswith("vocal"):
             return "vocal"
         # Karaoke models label the music-plus-backing-vocals stem

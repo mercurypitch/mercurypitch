@@ -2091,6 +2091,20 @@
   transition: width 0.3s ease;
 }
 
+/* Second step on a "Full band" card: the background part-split (drums,
+   bass, guitar, piano) that keeps running after the main separation —
+   same footprint as the main state line, tinted to read as a sub-step. */
+.uvr-queue-split-line {
+  margin-top: 0.3rem;
+  color: var(--accent, #a78bfa);
+  font-size: 0.63rem;
+  font-weight: 600;
+}
+
+.uvr-queue-track--split span {
+  background: linear-gradient(90deg, #3f8f6b, #7ed9ae);
+}
+
 .uvr-queue-row-action {
   display: grid;
   place-items: center;

@@ -663,6 +663,13 @@ export class TerminalPollError extends Error {
   }
 }
 
+/** onComplete may return this to reject a 'completed' status as not actually
+ *  final — the poll then continues instead of resolving. Exists for listings
+ *  that can be transient snapshots: the worker's R2 recovery fallback
+ *  synthesizes "completed" from whatever stems have landed in the bucket,
+ *  which mid-upload is empty or partial while the job is still running. */
+export const KEEP_POLLING = 'keep-polling'
+
 /**
  * Poll for processing completion with timeout and abort support
  */
@@ -673,7 +680,13 @@ export async function pollForCompletion(
     indeterminate?: boolean,
     phase?: 'queued' | 'processing',
   ) => void,
-  onComplete: (files: OutputFile[]) => void | Promise<void>,
+  onComplete: (
+    files: OutputFile[],
+  ) =>
+    | undefined
+    | typeof KEEP_POLLING
+    | Promise<void>
+    | Promise<typeof KEEP_POLLING | undefined>,
   onError: (error: string) => void,
   intervalMs: number = 1000,
   signal?: AbortSignal,
@@ -725,8 +738,9 @@ export async function pollForCompletion(
           // and leave a "completed" session with no durable local audio. Its
           // own try/catch: a completion-handler throw is TERMINAL, not a
           // transient network blip the outer catch would otherwise retry.
+          let verdict: unknown
           try {
-            await onComplete(status.files)
+            verdict = await onComplete(status.files)
           } catch (completionErr) {
             const msg =
               completionErr instanceof Error
@@ -734,6 +748,18 @@ export async function pollForCompletion(
                 : 'Failed to finalize the separation'
             onError(msg)
             reject(new TerminalPollError(msg))
+            return
+          }
+          if (verdict === KEEP_POLLING) {
+            // The handler judged this "completed" listing unusable-so-far
+            // (e.g. an R2 recovery snapshot taken mid-upload) — keep
+            // polling; the 30-minute wall clock above still bounds it.
+            setTimeout(
+              () => {
+                void poll()
+              },
+              Math.max(intervalMs, 2000),
+            )
             return
           }
           resolve()
