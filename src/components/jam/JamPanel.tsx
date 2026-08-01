@@ -4,7 +4,11 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onMount, Show, } from 'solid-js'
 import { MicInsightHint } from '@/components/MicInsightHint'
+import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
+import { getActiveWeekly } from '@/features/challenges/weekly-service'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { activePathWeek } from '@/features/path/path-progress'
+import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
@@ -29,7 +33,6 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
-  const [roomCopied, setRoomCopied] = createSignal(false)
   const [linkCopied, setLinkCopied] = createSignal(false)
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
@@ -97,6 +100,42 @@ export const JamPanel: Component = () => {
   const melodyOptions = createMemo(() => {
     const lib = getMelodyLibrarySignal()()
     return Object.values(lib.melodies)
+  })
+
+  // This week's challenge, fetched once the room is live. Null covers both
+  // "no API configured" and "no challenge running" -- the shelf just does
+  // not render, which is why the fetch never needs an error branch.
+  const [weekly, setWeekly] = createSignal<WeeklyChallenge | null>(null)
+
+  createEffect(() => {
+    if (jamState() !== 'active') return
+    void getActiveWeekly()
+      .then(setWeekly)
+      .catch(() => setWeekly(null))
+  })
+
+  /**
+   * What the room can sing, grouped by where it came from. Exercises, the
+   * weekly challenge and the Ascent week all resolve to the same thing a
+   * saved melody does -- a target contour on a beat grid -- so the picker
+   * treats them identically and selectJamExercise broadcasts the result.
+   */
+  const pickerShelves = createMemo(() => {
+    const octave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
+    const week = activePathWeek()
+    const weeklyEntry = jamWeeklyEntry(weekly())
+    return [
+      {
+        label: "This week's challenge",
+        entries: weeklyEntry === null ? [] : [weeklyEntry],
+      },
+      {
+        label: week === null ? 'Your Ascent' : `Ascent · week ${week.order}`,
+        entries: jamAscentEntries(week, octave),
+      },
+      { label: 'Exercises', entries: jamExerciseEntries(octave) },
+      { label: 'Your melodies', entries: jamMelodyEntries(melodyOptions()) },
+    ]
   })
 
   const FUNNY_NAMES = [
@@ -189,8 +228,13 @@ export const JamPanel: Component = () => {
       <Show when={jamState() === 'idle'}>
         <div class={jamStyles.connect}>
           <h2 class={jamStyles.title}>Jam Session</h2>
-          <p class={jamStyles.desc} style={{ 'font-style': 'italic' }}>
-            "Where words fail, music speaks."
+          <p class={jamStyles.desc}>
+            A practice room for up to 12. Everyone sings the same line and every
+            voice draws its own trail on one shared piano roll, scored live.
+          </p>
+          <p class={panelStyles.lobbyRunnable}>
+            Run this week's challenge, your Ascent week, any drill, or one of
+            your own melodies.
           </p>
 
           <div class={jamStyles.field}>
@@ -345,23 +389,11 @@ export const JamPanel: Component = () => {
                     </For>
                   </div>
                 </div>
+                {/* The room code stays visible -- people read it aloud.
+                    Copying the link is the one action worth a button here;
+                    the invite modal (the icon on the right) has the rest. */}
                 <div class={panelStyles.roomIdRow}>
                   <span class={jamStyles.roomIdBadge}>{jamRoomId()}</span>
-                  <button
-                    class={`${jamStyles.btn} ${jamStyles.btnSm}`}
-                    onClick={() => {
-                      navigator.clipboard
-                        .writeText(jamRoomId() ?? '')
-                        .catch(() => {})
-                      setRoomCopied(true)
-                      setTimeout(() => setRoomCopied(false), 2000)
-                    }}
-                  >
-                    {roomCopied() ? 'Copied!' : 'Copy'}
-                  </button>
-                </div>
-                <div class={panelStyles.roomLinkRow}>
-                  <code class={panelStyles.roomLink}>{roomLink()}</code>
                   <button
                     class={`${jamStyles.btn} ${jamStyles.btnSm}`}
                     onClick={() => {
@@ -370,7 +402,7 @@ export const JamPanel: Component = () => {
                       setTimeout(() => setLinkCopied(false), 2000)
                     }}
                   >
-                    {linkCopied() ? 'Copied!' : 'Copy Link'}
+                    {linkCopied() ? 'Copied!' : 'Copy link'}
                   </button>
                 </div>
               </div>
@@ -654,23 +686,36 @@ export const JamPanel: Component = () => {
               </Show>
             </div>
 
-            {/* Exercise picker dropdown */}
+            {/* Exercise picker dropdown — shelved by where it came from */}
             <Show when={showExercisePicker()}>
               <div class={panelStyles.exercisePicker}>
-                <For each={melodyOptions()}>
-                  {(melody) => (
-                    <button
-                      class={panelStyles.pickItem}
-                      onClick={() => {
-                        selectJamExercise(melody)
-                        setShowExercisePicker(false)
-                      }}
-                    >
-                      <span class={panelStyles.pickName}>{melody.name}</span>
-                      <span class={panelStyles.pickMeta}>
-                        {melody.bpm} bpm · {melody.key} {melody.scaleType}
-                      </span>
-                    </button>
+                <For each={pickerShelves()}>
+                  {(shelf) => (
+                    <Show when={shelf.entries.length > 0}>
+                      <div class={panelStyles.pickShelf}>
+                        <div class={panelStyles.pickShelfLabel}>
+                          {shelf.label}
+                        </div>
+                        <For each={shelf.entries}>
+                          {(entry) => (
+                            <button
+                              class={panelStyles.pickItem}
+                              onClick={() => {
+                                selectJamExercise(entry.build())
+                                setShowExercisePicker(false)
+                              }}
+                            >
+                              <span class={panelStyles.pickName}>
+                                {entry.name}
+                              </span>
+                              <span class={panelStyles.pickMeta}>
+                                {entry.detail}
+                              </span>
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
                   )}
                 </For>
               </div>
