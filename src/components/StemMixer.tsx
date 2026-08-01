@@ -4971,10 +4971,17 @@ export const StemMixerStyles: string = `
   min-height: 4rem;
   align-items: center;
   padding-block: 0.55rem;
+  /* Breathing room from the neighbouring lines, and wrapped rows of
+     2.75rem marker targets get their own separation. */
+  margin-block: 0.25rem;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   cursor: crosshair !important;
+}
+
+.sm-lyrics-gen-line-marker-mode .sm-lyrics-gen-line-text {
+  row-gap: 0.55rem;
 }
 
 .sm-lyrics-gen-line-future {
@@ -5003,7 +5010,12 @@ export const StemMixerStyles: string = `
   line-height: 1.4;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 0.3rem;
+  /* The row gap is load-bearing: each word is a stacked time+text
+     block, so on a WRAPPED long line a zero row gap put the second
+     row's time labels flush under the first row's text — the line read
+     as squeezed and, in marker mode, the touch targets overlapped and
+     became unhittable after auto-advance (owner testing). */
+  gap: 0.4rem 0.3rem;
 }
 
 .sm-lyrics-gen-word {
