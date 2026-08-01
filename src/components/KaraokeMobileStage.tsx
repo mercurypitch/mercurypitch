@@ -33,7 +33,7 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
-import { buildWordNoteIndex, glyphForWordTime, } from '@/features/stem-mixer/zen-note-glyphs'
+import { buildWordNoteIndex, glyphForWordTime, hasWordNotes, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
@@ -372,7 +372,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const wordNoteIndex = createMemo(() =>
     buildWordNoteIndex(props.alignedWords?.() ?? []),
   )
-  const hasNoteData = (): boolean => wordNoteIndex().size > 0
+  const hasNoteData = (): boolean => hasWordNotes(wordNoteIndex())
   const toggleNoteGlyphs = (): void => {
     const next = !noteGlyphsOn()
     setNoteGlyphsOn(next)
