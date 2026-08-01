@@ -1,8 +1,19 @@
+// ============================================================
+// DestinationGallery — the Home page's card grid
+// ============================================================
+//
+// `HOME_DESTINATIONS` is the content; the component is the renderer. Adding a
+// card means adding an entry there and, if it needs new artwork, a
+// `DestinationVisual` variant with matching CSS. Tab-targeting cards are
+// filtered through `isTabVisible`, so a tab hidden by the current practice
+// scope or simple mode never renders a cover that leads nowhere.
+
 import type { Component, JSX } from 'solid-js'
-import { createSignal, For, Match, Show, Switch } from 'solid-js'
+import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_SINGING, } from '@/features/tabs/constants'
+import { practiceScope, uiMode } from '@/stores/settings-store'
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
 
@@ -639,39 +650,51 @@ function DestinationCover(props: {
   )
 }
 
-export const DestinationGallery: Component = () => (
-  <section
-    class={`${styles.section} home-destinations`}
-    aria-labelledby="destination-heading"
-  >
-    <div class={styles.heading}>
-      <div>
-        <p class={styles.headingEyebrow}>Explore MercuryPitch</p>
-        <h2 id="destination-heading">Choose your next room</h2>
+export const DestinationGallery: Component = () => {
+  // Tab covers for tabs the current scope/mode hides would render but lead
+  // nowhere (the scope guard bounces back to Home) — drop them instead.
+  const visibleDestinations = createMemo(() =>
+    HOME_DESTINATIONS.filter(
+      (destination) =>
+        destination.target.kind === 'page' ||
+        isTabVisible(destination.target.tab, practiceScope(), uiMode()),
+    ),
+  )
+
+  return (
+    <section
+      class={`${styles.section} home-destinations`}
+      aria-labelledby="destination-heading"
+    >
+      <div class={styles.heading}>
+        <div>
+          <p class={styles.headingEyebrow}>Explore MercuryPitch</p>
+          <h2 id="destination-heading">Choose your next room</h2>
+        </div>
+        <p class={styles.headingCopy}>
+          Move from daily practice into performance, focused drills, or a
+          deeper look at your voice.
+        </p>
       </div>
-      <p class={styles.headingCopy}>
-        Move from daily practice into performance, focused drills, or a deeper
-        look at your voice.
-      </p>
-    </div>
 
-    <div class={styles.gallery}>
-      <svg
-        class={styles.mercuryRail}
-        viewBox="0 0 1000 620"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path d="M-30 116 C108 25 205 224 332 142 S533 43 634 164 831 244 1034 102 M-16 514 C141 415 231 596 368 486 S565 394 689 510 874 558 1024 462" />
-      </svg>
+      <div class={styles.gallery}>
+        <svg
+          class={styles.mercuryRail}
+          viewBox="0 0 1000 620"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d="M-30 116 C108 25 205 224 332 142 S533 43 634 164 831 244 1034 102 M-16 514 C141 415 231 596 368 486 S565 394 689 510 874 558 1024 462" />
+        </svg>
 
-      <For each={HOME_DESTINATIONS}>
-        {(destination) => <DestinationCover destination={destination} />}
-      </For>
+        <For each={visibleDestinations()}>
+          {(destination) => <DestinationCover destination={destination} />}
+        </For>
 
-      <MysteryCover />
-    </div>
-  </section>
-)
+        <MysteryCover />
+      </div>
+    </section>
+  )
+}
 
 export default DestinationGallery
