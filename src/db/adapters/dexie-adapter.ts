@@ -59,10 +59,13 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
-    // v6: exact session-and-stem reads let standalone playback rooms hydrate
-    // only the band parts they selected instead of materializing every blob.
+    // v6: exact stem reads plus explicit local real-voice history. Voice-take
+    // metadata stays separate from audio so journal queries never materialize
+    // large binary payloads.
     this.version(6).stores({
       uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
     })
     // v7: canonical Piano projects and non-destructive legacy-import markers.
     // Both stores are intentionally local-only and absent from CLOUD_ENTITIES.
