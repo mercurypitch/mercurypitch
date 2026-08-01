@@ -11,14 +11,19 @@ import { audioRegistry } from '@/lib/audio-registry'
 import type { PlaybackState } from '@/lib/piano-roll'
 import { PianoRollEditor } from '@/lib/piano-roll'
 import { useConfirm } from '@/lib/use-confirm'
-import { gridLinesVisible } from '@/stores/settings-store'
-import type { MelodyItem, ScaleDegree } from '@/types'
+import { composeHintsVisible, gridLinesVisible, setComposeHintsVisible, setGridLinesVisible, } from '@/stores/settings-store'
+import type { MelodyItem, MelodyKind, ScaleDegree } from '@/types'
 import { AlertTriangle } from './icons'
 import styles from './PianoRollCanvas.module.css'
 
 interface PianoRollCanvasProps {
   melody: () => MelodyItem[]
   scale: () => ScaleDegree[]
+  /** Editor preset — 'drums' swaps the rows for GM drum lanes. */
+  kind?: () => MelodyKind
+  /** Store scale type — keeps the editor's optimistic rebuilds and its
+   *  toolbar Scale select aligned with scale changes made anywhere. */
+  scaleType?: () => string
   bpm: () => number
   totalBeats: () => number
   playbackState: () => PlaybackState
@@ -92,6 +97,12 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
           confirmIcon: <AlertTriangle />,
           onConfirm: accept,
         }),
+      // The toolbar grid button flips the persisted setting; the
+      // gridLinesVisible effect below round-trips it into setShowGrid so
+      // the toolbar, settings panel, and canvas always agree.
+      onGridToggle: () => setGridLinesVisible(!gridLinesVisible()),
+      // Same round-trip contract for the hover-hints toggle.
+      onHoverHintsToggle: () => setComposeHintsVisible(!composeHintsVisible()),
     })
     editor.setMelody(props.melody())
     editor.setScale(props.scale())
@@ -123,6 +134,30 @@ export const PianoRollCanvas: Component<PianoRollCanvasProps> = (props) => {
   createEffect(() => {
     const s = props.scale()
     editor?.setScale(s)
+  })
+
+  // Propagate the editor preset (melody rows vs drum lanes). On the way back
+  // to melody, re-push the store scale: setScale ignores store updates while
+  // drums are active, so the editor's rows could be stale otherwise.
+  createEffect(() => {
+    const k = props.kind?.() ?? 'melody'
+    editor?.setKind(k)
+    if (k === 'melody') {
+      editor?.setScale(props.scale())
+    }
+  })
+
+  // Propagate the hover-hints setting into the editor (and its toolbar
+  // button state).
+  createEffect(() => {
+    editor?.setHoverHints(composeHintsVisible())
+  })
+
+  // Keep the editor's scale type in lockstep with the store, no matter
+  // where it was changed (toolbar select, sidebar, scale builder).
+  createEffect(() => {
+    const st = props.scaleType?.()
+    if (st != null && st !== '') editor?.syncScaleType(st)
   })
 
   // Propagate BPM changes

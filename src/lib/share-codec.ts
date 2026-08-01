@@ -56,6 +56,7 @@ export interface MelodyShareData {
   k?: string // key
   s?: string // scale type
   tb?: number // total beats
+  dk?: 1 // drum kit melody (absent = pitched; old decoders ignore it)
   i: CompactMelodyItem[] // items
 }
 
@@ -118,6 +119,7 @@ export function encodeMelodyForShare(
   scaleType?: string,
   totalBeats?: number,
   name?: string,
+  kind?: 'melody' | 'drums',
 ): string {
   const compact: CompactMelodyItem[] = items.map((item) => {
     // Rest notes use midi=-1 sentinel (valid MIDI range is 21-108)
@@ -156,6 +158,7 @@ export function encodeMelodyForShare(
         totalBeats != null && totalBeats !== 0 && !Number.isNaN(totalBeats)
           ? totalBeats
           : undefined,
+      dk: kind === 'drums' ? 1 : undefined,
       i: compact,
     },
   }

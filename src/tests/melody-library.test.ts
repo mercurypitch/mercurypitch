@@ -216,6 +216,8 @@ describe('Melody Library System', () => {
 
       melodyStore.deleteMelody(_melody.id)
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -238,6 +240,8 @@ describe('Melody Library System', () => {
 
       melodyStore.saveCurrentMelody('Saved Name')
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -250,6 +254,8 @@ describe('Melody Library System', () => {
     it('stores playlists to localStorage on create', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -272,6 +278,8 @@ describe('Melody Library System', () => {
 
       melodyStore.saveCurrentMelody('Saved Name')
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -597,6 +605,8 @@ describe('Melody Library System', () => {
     it('stores playlists to localStorage on create', () => {
       const _id = melodyStore.createPlaylist('My Playlist')
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -654,6 +664,8 @@ describe('Melody Library System', () => {
 
       melodyStore.saveCurrentMelody('Saved Name')
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const calls = localStorageMock.setItem.mock.calls
       const libraryCall = calls.findLast(
         (call) => call[0] === STORAGE_KEY_LIBRARY,
@@ -1084,6 +1096,8 @@ describe('Melody Library System', () => {
 
       melodyStore.saveSession(_session)
 
+      // Library writes are debounced — flush the pending save first.
+      melodyStore.flushLibrarySave()
       const _sessionId = _session.id
       const stored = localStorageMock.getItem(STORAGE_KEY_LIBRARY)
       expect(stored).toBeDefined()

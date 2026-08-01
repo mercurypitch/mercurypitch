@@ -10,7 +10,7 @@ import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { Music, MusicBoard, SlidersHorizontal, Split } from '@/components/icons'
+import { Drum, Music, MusicBoard, MusicNote, SlidersHorizontal, Split, } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicInsightHint } from '@/components/MicInsightHint'
@@ -118,8 +118,8 @@ import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
-import { debounce } from '@/lib/debounce'
 import { IS_DEV } from '@/lib/defaults'
+import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo } from '@/lib/hash-router'
 import type { MidiSongNote } from '@/lib/midi-song'
@@ -612,6 +612,9 @@ const AppShell: Component<AppProps> = (props) => {
       return
     }
     melodyStore.setMelody(items)
+    // Drum-kit share links restore the drum preset (legacy links carry no
+    // dk field and default to melody).
+    melodyStore.setMelodyKind(data.dk === 1 ? 'drums' : 'melody')
     if (bpmVal > 0) setBpm(bpmVal)
     if (keyVal != null && keyVal !== '') setKeyName(keyVal)
     if (scaleVal != null && scaleVal !== '') setScaleType(scaleVal)
@@ -723,6 +726,7 @@ const AppShell: Component<AppProps> = (props) => {
       scaleTypeSignal(),
       melodyTotalBeats(items),
       melodyStore.currentMelody()?.name,
+      melodyStore.getCurrentKind(),
     )
     void copyShareUrl(encoded).then((ok) => {
       if (ok) showNotification('Share link copied!', 'info')
@@ -1346,16 +1350,11 @@ const AppShell: Component<AppProps> = (props) => {
     setActiveTab(newTab)
   }
 
-  // ── Debounced auto-save for melody changes ─────────────────
-  const debouncedAutoSave = debounce(() => {
-    const currentMelody = melodyStore.getCurrentMelody()
-    if (currentMelody === null) return
-    showNotification('Melody saved!', 'success')
-  }, 500)
-
+  // Compose autosave is silent: melodyStore.setMelody persists (debounced
+  // inside the store), and a per-edit "Melody saved!" toast was pure noise —
+  // every drag ended in one.
   const updateComposeMelody = (melody: MelodyItem[]): void => {
     melodyStore.setMelody(melody)
-    debouncedAutoSave()
   }
 
   // If the active tab gets filtered out (scope/UI-mode change, or a deep link
@@ -1881,6 +1880,14 @@ const AppShell: Component<AppProps> = (props) => {
         !recording.isRecording() &&
         (isPlaying() || editorPlaybackState() === 'playing')
       ) {
+        // Drum-kit melodies route to the synthesized drum voices (one-shots —
+        // nothing to hold, so noteEnd bookkeeping is skipped for them).
+        if (melodyStore.getCurrentKind() === 'drums') {
+          const voice = drumVoiceForMidi(item.note.midi)
+          if (voice) void audioEngine.playDrum(voice)
+          return
+        }
+
         const beatDurationMs = 60000 / bpm()
         const noteDurationMs = item.duration * beatDurationMs
 
@@ -2869,13 +2876,14 @@ const AppShell: Component<AppProps> = (props) => {
                             setSavedVol(vol)
                             audioEngine?.setVolume(vol / 100)
                           }}
-                          speed={playbackSpeed}
-                          onSpeedChange={setPlaybackSpeed}
                           metronomeEnabled={() => metronomeEnabled()}
                           onMetronomeToggle={() =>
                             setMetronomeEnabled(metronomeEnabled() === false)
                           }
                           isRecording={() => recording.isRecording()}
+                          recordDisabled={() =>
+                            melodyStore.getCurrentKind() === 'drums'
+                          }
                           onRecordToggle={() => {
                             // Stopping a take routes through the full editor
                             // stop so playback halts (open-ended mode is
@@ -2900,6 +2908,48 @@ const AppShell: Component<AppProps> = (props) => {
                           onClearLoop={handleClearLoop}
                         />
                       </ControlOverlay>
+
+                      <div
+                        class={styles.kindToggle}
+                        role="tablist"
+                        aria-label="Compose mode"
+                        data-tour="compose.kind"
+                      >
+                        <button
+                          type="button"
+                          role="tab"
+                          class={styles.editorTab}
+                          classList={{
+                            [styles.editorTabActive]:
+                              melodyStore.getCurrentKind() === 'melody',
+                          }}
+                          aria-selected={
+                            melodyStore.getCurrentKind() === 'melody'
+                          }
+                          data-testid="compose-kind-melody"
+                          onClick={() => melodyStore.setMelodyKind('melody')}
+                          title="Melody preset — pitched note rows"
+                        >
+                          <MusicNote /> Melody
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class={styles.editorTab}
+                          classList={{
+                            [styles.editorTabActive]:
+                              melodyStore.getCurrentKind() === 'drums',
+                          }}
+                          aria-selected={
+                            melodyStore.getCurrentKind() === 'drums'
+                          }
+                          data-testid="compose-kind-drums"
+                          onClick={() => melodyStore.setMelodyKind('drums')}
+                          title="Drum preset — GM drum lanes with synthesized kit sounds"
+                        >
+                          <Drum /> Drums
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2941,7 +2991,12 @@ const AppShell: Component<AppProps> = (props) => {
                       editorView() === 'piano-roll' || editorView() === 'split'
                     }
                   >
-                    <div style={{ position: 'relative' }}>
+                    <div
+                      class={styles.rollStack}
+                      classList={{
+                        [styles.rollStackSplit]: editorView() === 'split',
+                      }}
+                    >
                       <Show when={recording.pendingTake() !== null}>
                         <ComposeTakeReview
                           amount={reviewAmount}
@@ -2958,6 +3013,8 @@ const AppShell: Component<AppProps> = (props) => {
                         isRecording={recording.isRecording}
                         onEditorReady={setEditorApi}
                         scale={() => melodyStore.currentScale()}
+                        kind={() => melodyStore.getCurrentKind()}
+                        scaleType={() => scaleTypeSignal()}
                         bpm={() => bpm()}
                         totalBeats={composeTotalBeats}
                         playbackState={editorPlaybackState}

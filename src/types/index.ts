@@ -314,6 +314,11 @@ export interface PresetData {
 }
 
 /** A single melody saved in the library */
+/** Editor preset a melody was written with. Absent = 'melody' (legacy data
+ *  and every pitched composition); 'drums' renders GM drum lanes and routes
+ *  playback through the synthesized drum voices. */
+export type MelodyKind = 'melody' | 'drums'
+
 export interface MelodyData {
   /** Unique melody ID */
   id: string
@@ -327,6 +332,8 @@ export interface MelodyData {
   key: string
   /** Scale type (e.g., 'major', 'minor', 'pentatonic') */
   scaleType: string
+  /** Editor preset (absent = 'melody') */
+  kind?: MelodyKind
   /** Last played timestamp */
   lastPlayed?: number
   /** Default octave */

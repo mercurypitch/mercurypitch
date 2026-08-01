@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi, } from 'vitest'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
-import { beatToCursor, notationDurationBeats, notationKeySignature, quantizeNotationDuration, renderSheetMusic, xToBeat, } from '@/lib/sheet-music-renderer'
+import type { SheetSystemBox } from '@/lib/sheet-music-renderer'
+import { beatToCursor, midiToStaffY, notationDurationBeats, notationKeySignature, quantizeNotationDuration, renderSheetMusic, staffYToMidi, xToBeat, } from '@/lib/sheet-music-renderer'
 import type { MelodyItem } from '@/types'
 
 beforeAll(() => {
@@ -169,5 +170,39 @@ describe('sheet music rendering', () => {
 
     expect(cursor).not.toBeNull()
     expect(xToBeat(layout, system, cursor!.x)).toBeCloseTo(2, 4)
+  })
+})
+
+describe('midiToStaffY (ghost preview inverse)', () => {
+  const sys = (clef: 'treble' | 'bass') =>
+    ({
+      clef,
+      lineTopY: 100,
+      lineSpacing: 10,
+    }) as unknown as SheetSystemBox
+
+  it('round-trips every natural through staffYToMidi on both clefs', () => {
+    const naturals = [
+      48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77,
+      79,
+    ]
+    for (const clef of ['treble', 'bass'] as const) {
+      for (const midi of naturals) {
+        const y = midiToStaffY(sys(clef), midi)
+        expect(staffYToMidi(sys(clef), y), `midi ${midi} on ${clef}`).toBe(midi)
+      }
+    }
+  })
+
+  it('places a sharp on its base letter position', () => {
+    const s = sys('treble')
+    expect(midiToStaffY(s, 61)).toBe(midiToStaffY(s, 60)) // C#4 sits on C4
+    expect(midiToStaffY(s, 66)).toBe(midiToStaffY(s, 65)) // F#4 sits on F4
+  })
+
+  it('steps one half-space per diatonic letter', () => {
+    const s = sys('treble')
+    // E4 (bottom line, treble) is one half-space below F4
+    expect(midiToStaffY(s, 64) - midiToStaffY(s, 65)).toBe(5)
   })
 })

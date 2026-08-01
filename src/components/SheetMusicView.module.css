@@ -238,3 +238,76 @@
     transition: none;
   }
 }
+
+/* Hover ghost — a dashed preview of the note a click would place, at its
+   snapped beat column and staff position, shaped by the selected length. */
+.ghostNote {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+.ghostLabel {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  padding: 1px 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 5px;
+}
+
+/* Header right side: the pointer-mode hint plus the Edit/Scrub toggle. */
+.headerTools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modeToggle {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: color-mix(in srgb, var(--bg-primary, #0d1117) 70%, transparent);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 7px;
+}
+
+.modeTab {
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary, #8b949e);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.modeTab:hover {
+  color: var(--text-primary, #e6edf3);
+}
+
+.modeTabActive {
+  color: var(--accent, #58a6ff);
+  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
+}
+
+/* Scrub mode: the staff acts as a transport surface. */
+.clickLayerScrub {
+  cursor: grab;
+}
+
+.clickLayerScrub:active {
+  cursor: grabbing;
+}

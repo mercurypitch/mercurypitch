@@ -278,6 +278,20 @@ export function setReverbType(type: ReverbType): void {
 export const [gridLinesVisible, setGridLinesVisible] =
   createPersistedSignal<boolean>('pitchperfect_grid', true)
 
+// ── Compose hover hints ─────────────────────────────────────────────
+// Floating tooltip near the cursor in the piano roll naming the hovered
+// note (or drum piece, which it also auditions). Toolbar View group toggle.
+export const [composeHintsVisible, setComposeHintsVisible] =
+  createPersistedSignal<boolean>('pitchperfect_compose_hints', true)
+
+// ── Sheet interaction mode ──────────────────────────────────────────
+// The score's pointer behavior when editing is available: 'edit' places
+// notes on click (with the hover ghost), 'scrub' turns clicks and drags
+// into transport seeking, Guitar-Pro style. Toggled in the sheet header.
+export type SheetInteractionMode = 'edit' | 'scrub'
+export const [sheetInteractionMode, setSheetInteractionMode] =
+  createPersistedSignal<SheetInteractionMode>('pitchperfect_sheet_mode', 'edit')
+
 // ── Swipe-to-change-tabs (mobile) ───────────────────────────────────
 // Opt-in and OFF by default: with the bottom tab bar now the primary way
 // to move between views on a phone, a half-screen horizontal swipe was

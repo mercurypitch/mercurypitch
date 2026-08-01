@@ -4,7 +4,7 @@
 
 import { createSignal } from 'solid-js'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
-import type { MelodyData, MelodyItem, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
+import type { MelodyData, MelodyItem, MelodyKind, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
 import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
 import { VOCAL_RANGES, vocalRangePreset } from './settings-store'
 
@@ -109,7 +109,14 @@ function loadLibrary(): UnifiedLibrary {
   return DEFAULT_LIBRARY
 }
 
-function _saveLibraryToStorage(): void {
+// The library write is debounced: every drag mousemove funnels through
+// setMelody, and stringifying the whole library into localStorage per
+// mouse event froze long drags. Reads always come from the in-memory
+// signal, so a trailing write is invisible to app logic; the flush
+// hooks below cover tab close / backgrounding.
+let _saveTimer: ReturnType<typeof setTimeout> | null = null
+
+function _writeLibraryNow(): void {
   try {
     localStorage.setItem(
       STORAGE_KEY_LIBRARY,
@@ -118,6 +125,29 @@ function _saveLibraryToStorage(): void {
   } catch {
     // Fail silently
   }
+}
+
+function _saveLibraryToStorage(): void {
+  if (_saveTimer !== null) clearTimeout(_saveTimer)
+  _saveTimer = setTimeout(() => {
+    _saveTimer = null
+    _writeLibraryNow()
+  }, 400)
+}
+
+/** Write any pending debounced library save immediately. */
+export function flushLibrarySave(): void {
+  if (_saveTimer === null) return
+  clearTimeout(_saveTimer)
+  _saveTimer = null
+  _writeLibraryNow()
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushLibrarySave)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushLibrarySave()
+  })
 }
 
 let _idCounter = 100
@@ -1462,6 +1492,36 @@ export function getMelody(id: string): MelodyData | undefined {
 }
 
 // ============================================================
+// Melody kind (editor preset: pitched melody vs GM drum kit)
+// ============================================================
+
+export function getCurrentKind(): MelodyKind {
+  return currentMelody()?.kind ?? 'melody'
+}
+
+/** Set the current melody's editor preset. Creates a melody first if none is
+ *  active (mirrors setMelody), so the toggle always has something to write. */
+export function setMelodyKind(kind: MelodyKind): void {
+  const existing = currentMelody()
+  if (existing == null) {
+    createNewMelody()
+  }
+  const melody = currentMelody()
+  if (melody == null || (melody.kind ?? 'melody') === kind) return
+  const updated: MelodyData = { ...melody, kind, updatedAt: Date.now() }
+  setMelodyLibrary((prev) => ({
+    ...prev,
+    melodies: {
+      ...prev.melodies,
+      [melody.id]: updated,
+    },
+    meta: { ...prev.meta, lastUpdated: Date.now() },
+  }))
+  _saveLibraryToStorage()
+  setCurrentMelody(updated)
+}
+
+// ============================================================
 // Export Store
 // ============================================================
 
@@ -1473,6 +1533,9 @@ export const melodyStore = {
   setMelody,
   getCurrentItems,
   items: getCurrentItems,
+  getCurrentKind,
+  setMelodyKind,
+  flushLibrarySave,
 
   // Melody note operations
   addMelodyNote,

@@ -14,8 +14,9 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Music } from '@/components/icons'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import { ensureSheetMusicFonts } from '@/lib/sheet-music-fonts'
-import type { SheetLayout } from '@/lib/sheet-music-renderer'
-import { beatToCursor, noteBoxAt, renderSheetMusic, staffYToMidi, systemAtY, xToBeat, } from '@/lib/sheet-music-renderer'
+import type { SheetLayout, SheetSystemBox } from '@/lib/sheet-music-renderer'
+import { beatToCursor, midiToStaffY, noteBoxAt, renderSheetMusic, staffYToMidi, systemAtY, xToBeat, } from '@/lib/sheet-music-renderer'
+import { setSheetInteractionMode, sheetInteractionMode, } from '@/stores/settings-store'
 import type { MelodyItem, NoteName, ScaleDegree } from '@/types'
 import styles from './SheetMusicView.module.css'
 
@@ -73,6 +74,11 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   const [renderError, setRenderError] = createSignal<string | null>(null)
   const [fontsReady, setFontsReady] = createSignal(false)
   const editable = (): boolean => typeof props.onMelodyChange === 'function'
+  // Scrub mode turns the editable score into a transport surface (click a
+  // bar to jump, drag to scrub) without leaving the view. Only meaningful
+  // when editing is available — read-only instances already seek.
+  const scrubMode = (): boolean =>
+    editable() && sheetInteractionMode() === 'scrub'
 
   const measureWidth = (): number => {
     const w = scrollRef?.clientWidth ?? 960
@@ -247,43 +253,29 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   // Pitch tolerance for treating a click as "on a note" (≈ one staff space).
   const NOTE_Y_TOL = 12
 
-  const handleClick = (e: MouseEvent): void => {
+  /** Where a click at (px, py) would land a new note: the containing system,
+   *  the duration-snapped start beat, and the scale-snapped pitch. One
+   *  routine feeds both the hover ghost and the actual placement, so the
+   *  preview can never lie about what a click will do. */
+  const placementAt = (
+    px: number,
+    py: number,
+  ): {
+    sys: SheetSystemBox
+    startBeat: number
+    dur: number
+    note: MelodyItem['note']
+  } | null => {
     const l = layout()
-    const c = localCoords(e)
-    if (!l || !c) return
-
-    if (!editable()) {
-      // Read-only: a click in a note's column seeks to that note; anywhere
-      // else in a bar scrubs to the nearest beat under the click.
-      const hit = noteBoxAt(l, c.px, c.py)
-      if (hit && props.onSeek) {
-        props.onSeek(hit.startBeat)
-        return
-      }
-      const sys = systemAtY(l, c.py)
-      if (sys && props.onSeek) {
-        const beat = Math.round(xToBeat(l, sys, c.px))
-        props.onSeek(Math.max(0, Math.min(beat, l.totalBeats)))
-      }
-      return
-    }
-
-    // Editing: a click landing on a notehead seeks; empty staff places a note.
-    const onNote = noteBoxAt(l, c.px, c.py, NOTE_Y_TOL)
-    if (onNote && props.onSeek) {
-      props.onSeek(onNote.startBeat)
-      return
-    }
-
-    // Otherwise place a note at the clicked staff position.
-    const sys = systemAtY(l, c.py)
-    if (!sys) return
-    const beat = xToBeat(l, sys, c.px)
+    if (!l) return null
+    const sys = systemAtY(l, py)
+    if (!sys) return null
+    const beat = xToBeat(l, sys, px)
     const dur = props.noteDuration?.() ?? 1
     const snapUnit = dur >= 1 ? 1 : 0.5
     const startBeat = Math.max(0, Math.round(beat / snapUnit) * snapUnit)
 
-    const rawMidi = staffYToMidi(sys, c.py)
+    const rawMidi = staffYToMidi(sys, py)
     const scale = props.scale?.() ?? []
     const snapped = snapToScale(rawMidi, scale)
     let note: MelodyItem['note']
@@ -298,13 +290,115 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
       const { name, octave } = midiToNote(rawMidi)
       note = { midi: rawMidi, name, octave, freq: midiToFreq(rawMidi) }
     }
+    return { sys, startBeat, dur, note }
+  }
 
-    const item: MelodyItem = { id: nextId(), note, duration: dur, startBeat }
+  // Hover ghost: a dashed preview of the note a click would place — its
+  // pitch position, snapped beat column, duration glyph, and name.
+  const [ghost, setGhost] = createSignal<{
+    x: number
+    y: number
+    dur: number
+    label: string
+  } | null>(null)
+
+  /** Seek to whatever sits under (px, py): a note's start, else the nearest
+   *  beat in the bar. Shared by read-only clicks and scrub mode. */
+  const seekAt = (px: number, py: number): void => {
+    const l = layout()
+    if (!l || !props.onSeek) return
+    const hit = noteBoxAt(l, px, py)
+    if (hit) {
+      props.onSeek(hit.startBeat)
+      return
+    }
+    const sys = systemAtY(l, py)
+    if (!sys) return
+    const beat = Math.round(xToBeat(l, sys, px))
+    props.onSeek(Math.max(0, Math.min(beat, l.totalBeats)))
+  }
+
+  // Drag-to-scrub (scrub mode): press anywhere on the staff and drag.
+  let scrubbing = false
+
+  const handleDown = (e: MouseEvent): void => {
+    if (!scrubMode()) return
+    const c = localCoords(e)
+    if (!c) return
+    scrubbing = true
+    seekAt(c.px, c.py)
+  }
+
+  const endScrub = (): void => {
+    scrubbing = false
+  }
+
+  const handleMove = (e: MouseEvent): void => {
+    if (!editable()) return
+    const l = layout()
+    const c = localCoords(e)
+    if (!l || !c) {
+      setGhost(null)
+      return
+    }
+    if (scrubMode()) {
+      setGhost(null)
+      if (scrubbing) seekAt(c.px, c.py)
+      return
+    }
+    // Over an existing notehead a click seeks instead of placing.
+    if (noteBoxAt(l, c.px, c.py, NOTE_Y_TOL)) {
+      setGhost(null)
+      return
+    }
+    const p = placementAt(c.px, c.py)
+    if (!p) {
+      setGhost(null)
+      return
+    }
+    const pos = beatToCursor(l, p.startBeat)
+    setGhost({
+      x: pos?.x ?? c.px,
+      y: midiToStaffY(p.sys, p.note.midi),
+      dur: p.dur,
+      label: `${p.note.name}${p.note.octave}`,
+    })
+  }
+
+  const handleClick = (e: MouseEvent): void => {
+    const l = layout()
+    const c = localCoords(e)
+    if (!l || !c) return
+
+    if (!editable() || scrubMode()) {
+      // Read-only and scrub mode: a click in a note's column seeks to that
+      // note; anywhere else in a bar jumps to the nearest beat.
+      seekAt(c.px, c.py)
+      return
+    }
+
+    // Editing: a click landing on a notehead seeks; empty staff places a note.
+    const onNote = noteBoxAt(l, c.px, c.py, NOTE_Y_TOL)
+    if (onNote && props.onSeek) {
+      props.onSeek(onNote.startBeat)
+      return
+    }
+
+    // Otherwise place a note at the clicked staff position — exactly what
+    // the hover ghost previewed (same placementAt routine).
+    const p = placementAt(c.px, c.py)
+    if (!p) return
+    const item: MelodyItem = {
+      id: nextId(),
+      note: p.note,
+      duration: p.dur,
+      startBeat: p.startBeat,
+    }
     props.onMelodyChange?.([...props.melody(), item])
   }
 
   const handleContextMenu = (e: MouseEvent): void => {
-    if (!editable()) return
+    if (!editable() || scrubMode()) return
     const l = layout()
     const c = localCoords(e)
     if (!l || !c) return
@@ -335,13 +429,49 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
             </strong>
           </span>
         </div>
-        <span class={styles.modeHint}>
-          {editable()
-            ? 'Click to add · right-click to remove'
-            : props.isPlaying?.() === true
-              ? 'Following playback'
-              : 'Click the staff to seek'}
-        </span>
+        <div class={styles.headerTools}>
+          <span class={styles.modeHint}>
+            {editable()
+              ? scrubMode()
+                ? 'Click a bar to jump · drag to scrub'
+                : 'Click to add · right-click to remove'
+              : props.isPlaying?.() === true
+                ? 'Following playback'
+                : 'Click the staff to seek'}
+          </span>
+          <Show when={editable()}>
+            <div
+              class={styles.modeToggle}
+              role="tablist"
+              aria-label="Score pointer mode"
+            >
+              <button
+                type="button"
+                role="tab"
+                class={styles.modeTab}
+                classList={{ [styles.modeTabActive]: !scrubMode() }}
+                aria-selected={!scrubMode()}
+                data-testid="sheet-mode-edit"
+                title="Edit — click the staff to add notes"
+                onClick={() => setSheetInteractionMode('edit')}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class={styles.modeTab}
+                classList={{ [styles.modeTabActive]: scrubMode() }}
+                aria-selected={scrubMode()}
+                data-testid="sheet-mode-scrub"
+                title="Scrub — click or drag on the staff to move playback"
+                onClick={() => setSheetInteractionMode('scrub')}
+              >
+                Scrub
+              </button>
+            </div>
+          </Show>
+        </div>
       </header>
 
       {props.toolbar?.()}
@@ -395,11 +525,99 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
               />
             )}
 
+            <Show when={ghost()}>
+              {(g) => (
+                <>
+                  <svg
+                    class={styles.ghostNote}
+                    data-testid="sheet-ghost-note"
+                    viewBox="0 0 26 46"
+                    width="26"
+                    height="46"
+                    style={{
+                      left: `${g().x - 9}px`,
+                      top: `${g().y - 38}px`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {/* Notehead — hollow for half/whole, tinted for shorter */}
+                    <ellipse
+                      cx="9"
+                      cy="38"
+                      rx="6.3"
+                      ry="4.5"
+                      transform="rotate(-15 9 38)"
+                      fill={g().dur >= 2 ? 'none' : 'currentColor'}
+                      fill-opacity={g().dur >= 2 ? undefined : 0.4}
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-dasharray="3 2"
+                    />
+                    {/* Stem (whole notes have none) */}
+                    <Show when={g().dur < 4}>
+                      <line
+                        x1="15.1"
+                        y1="37"
+                        x2="15.1"
+                        y2="7"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-dasharray="3 2"
+                      />
+                    </Show>
+                    {/* Flags: one for eighth, two for sixteenth */}
+                    <Show when={g().dur <= 0.5}>
+                      <path
+                        d="M15.1 7 C 21 11 22 17 17.5 23"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-dasharray="3 2"
+                      />
+                    </Show>
+                    <Show when={g().dur <= 0.25}>
+                      <path
+                        d="M15.1 14 C 21 18 22 24 17.5 30"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-dasharray="3 2"
+                      />
+                    </Show>
+                    {/* Dot for dotted half (3 beats) */}
+                    <Show when={g().dur === 3}>
+                      <circle cx="20.5" cy="37" r="1.8" fill="currentColor" />
+                    </Show>
+                  </svg>
+                  <span
+                    class={styles.ghostLabel}
+                    style={{
+                      left: `${g().x + 14}px`,
+                      top: `${g().y - 32}px`,
+                    }}
+                  >
+                    {g().label}
+                  </span>
+                </>
+              )}
+            </Show>
+
             <div
               class={styles.clickLayer}
-              classList={{ [styles.clickLayerEdit]: editable() }}
+              classList={{
+                [styles.clickLayerEdit]: editable() && !scrubMode(),
+                [styles.clickLayerScrub]: scrubMode(),
+              }}
+              data-testid="sheet-click-layer"
               onClick={handleClick}
               onContextMenu={handleContextMenu}
+              onMouseDown={handleDown}
+              onMouseUp={endScrub}
+              onMouseMove={handleMove}
+              onMouseLeave={() => {
+                setGhost(null)
+                endScrub()
+              }}
             />
             <Show when={!fontsReady() && renderError() === null}>
               <div
