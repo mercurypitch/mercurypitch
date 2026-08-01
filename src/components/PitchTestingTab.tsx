@@ -26,6 +26,7 @@ import { segmentPitchesToNotes } from '@/lib/pitch-algorithms/note-segmenter'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { alignPitchToWords, filterWordSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
 import { freqToMidi } from '@/lib/scale-data'
+import { exposeForE2E } from '@/lib/test-utils'
 import { formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
@@ -215,6 +216,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
   })
   // Aliases for backward compatibility
   const whisperStatus = whisper.status
+  // e2e hook (owner-run real-audio smoke): the finished segments, so the
+  // spec can judge span lengths and text variety rather than parsing logs.
+  exposeForE2E('__whisperSegments', () => whisper.segments())
   const whisperProgress = whisper.progress
   const whisperSegments = whisper.segments
   const transcribeElapsed = whisper.elapsed
@@ -1646,6 +1650,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   <input
                     type="file"
                     accept="audio/*"
+                    data-testid="pitch-file-input"
                     onChange={handleFileUpload}
                     style={{ display: 'none' }}
                   />
@@ -2162,6 +2167,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                         </select>
                         <button
                           class="sm-transcribe-btn"
+                          data-testid="whisper-transcribe"
                           style={{ 'margin-left': 'auto' }}
                           onClick={(e) => {
                             e.stopPropagation()
