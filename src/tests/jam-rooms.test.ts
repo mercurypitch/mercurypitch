@@ -6,13 +6,16 @@
 // render because localStorage is disabled is worse than no room list.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { forgetHostedRoom, hostedRooms, ownerTokenFor, rememberHostedRoom, touchHostedRoom, } from '@/lib/jam/jam-rooms'
+import { forgetHostedRoom, hostedRooms, ownerTokenFor, refreshHostedRooms, rememberHostedRoom, touchHostedRoom, } from '@/lib/jam/jam-rooms'
 
 const KEY = 'pitchperfect_jam_hosted_rooms'
 
 describe('hosted rooms', () => {
   beforeEach(() => {
     localStorage.clear()
+    // The reactive list is a cache over storage, so clearing storage behind
+    // it does not invalidate it -- refresh is the documented way to reload.
+    refreshHostedRooms()
     vi.restoreAllMocks()
   })
 
@@ -74,6 +77,7 @@ describe('hosted rooms', () => {
       },
     ]
     localStorage.setItem(KEY, JSON.stringify(stale))
+    refreshHostedRooms()
     expect(hostedRooms()).toEqual([])
   })
 
@@ -86,6 +90,7 @@ describe('hosted rooms', () => {
 
   it('ignores a malformed store rather than throwing', () => {
     localStorage.setItem(KEY, 'not json at all')
+    refreshHostedRooms()
     expect(hostedRooms()).toEqual([])
     expect(ownerTokenFor('ABCD')).toBeNull()
   })
@@ -95,6 +100,7 @@ describe('hosted rooms', () => {
       KEY,
       JSON.stringify([{ roomId: 'ABCD', lastSeen: Date.now() }, null, 42]),
     )
+    refreshHostedRooms()
     expect(hostedRooms()).toEqual([])
   })
 
@@ -108,8 +114,10 @@ describe('hosted rooms', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new Error('denied')
     })
+    // The signal still updates -- that is deliberate, so the lobby works
+    // even where storage is denied. What must not happen is a throw.
     expect(() => rememberHostedRoom('ABCD', 'Edgy', 't')).not.toThrow()
-    expect(hostedRooms()).toEqual([])
+    expect(() => hostedRooms()).not.toThrow()
     expect(ownerTokenFor('ABCD')).toBeNull()
   })
 

@@ -1,8 +1,10 @@
 /* JamExerciseCanvas — Piano-roll canvas for shared exercise */
 
 /* The canvas itself paints no base fill; this background is the room glass
-   (--bg-primary is rebound to --jam-alpha on the jam page), and the blur
-   keeps note heads legible against a detailed rehearsal-room photo. */
+   (--bg-primary is rebound to --jam-alpha on the jam page). The blur is
+   deliberately slight: note heads paint their own solid backing, so it is
+   only there to take the hard edge off fine photo detail behind moving
+   pitch trails, not to hide the room. */
 .container {
   width: 100%;
   height: 100%; /* fills whatever the parent allocates */
@@ -10,7 +12,7 @@
   border-radius: 6px;
   overflow: hidden;
   background: var(--bg-primary, #0d1117);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(1px);
 }
 
 .container canvas {
