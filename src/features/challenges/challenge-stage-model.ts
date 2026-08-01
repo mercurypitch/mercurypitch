@@ -7,10 +7,12 @@
 // can host it unchanged, and a finished run is scored per note with the
 // sight-singing drill's semantics so the recorded result is interchangeable
 // with a drill run: per-note quality from pitch proximity (best 30% of the
-// attempt), a matched floor of 70 for a held note — and, coverage-honest,
-// UNSUNG NOTES COUNT ZERO in the final score. The armed weekly attempt
-// consumes the result exactly as if the drill had produced it.
+// attempt), a matched floor of 70 for a held note — and the final score is
+// the drill's own finalizeSightSingingScore, so unsung notes count zero and
+// the armed weekly attempt consumes the result exactly as if the drill had
+// produced it.
 
+import { finalizeSightSingingScore } from '@/features/exercises/sight-singing/use-sight-singing-controller'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { MelodyItem } from '@/types'
 import type { ResolvedZenTarget, ZenExerciseDefinition, ZenPitchPoint, ZenTargetHighlight, } from '../zen/types'
@@ -200,21 +202,52 @@ export function scoreChallengeNotes(
   return targets.map((target) => scoreChallengeNote(points, target))
 }
 
-/**
- * Coverage-honest finalisation: the run's score is the per-note average over
- * EVERY note in the challenge — a note never sung contributes zero, so
- * stopping halfway cannot outscore singing the whole line.
- */
-export function finalizeChallengeScore(
-  noteScores: readonly ChallengeNoteScore[],
-): number {
-  if (noteScores.length === 0) return 0
-  const total = noteScores.reduce((sum, note) => sum + note.score, 0)
-  return clamp(Math.round(total / noteScores.length), 0, 100)
-}
-
 /** A note counts as cleared (kept shining) from the matched floor upward. */
 export const CHALLENGE_CLEAR_SCORE = MATCHED_FLOOR
+
+export interface ChallengeRunSummary {
+  /** Whole-sequence score — finalizeSightSingingScore, unsung notes zero. */
+  score: number
+  /** Quality of what was actually reached (the drill's avgAccuracy). */
+  avgAccuracy: number
+  bestNote: number
+  notesAttempted: number
+  notesScored: number
+  /** Notes at/above the matched floor — the "notes lit" count. */
+  clearedCount: number
+}
+
+/**
+ * Summarise a finished run with the drill's exact finalisation. "Scored"
+ * notes are the windows the run reached (their end fell within
+ * durationSec) — ending mid-window leaves the current note unscored, like
+ * the drill's Stop & Score — and finalizeSightSingingScore spans the WHOLE
+ * sequence, so unsung notes count zero and a partial run cannot outscore an
+ * honest full pass.
+ */
+export function summarizeChallengeRun(
+  points: readonly ZenPitchPoint[],
+  targets: readonly ResolvedZenTarget[],
+  durationSec: number,
+): ChallengeRunSummary {
+  const reached = targets.filter(
+    (target) => target.endSec <= durationSec + 0.05,
+  )
+  const notes = scoreChallengeNotes(points, reached)
+  const final = finalizeSightSingingScore(
+    notes.map((note) => note.score),
+    targets.length,
+  )
+  return {
+    score: final.score,
+    avgAccuracy: final.avgAccuracy,
+    bestNote: final.bestNote,
+    notesAttempted: targets.length,
+    notesScored: notes.length,
+    clearedCount: notes.filter((note) => note.score >= CHALLENGE_CLEAR_SCORE)
+      .length,
+  }
+}
 
 /**
  * Live per-target emphasis for the canvas. Current-window targets glow with

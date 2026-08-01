@@ -10,8 +10,11 @@
 // so the armed weekly attempt, board write and badges are untouched.
 //
 // One take counts: there is no pause and no in-stage retry. Ending the run
-// early scores what was sung (the drill's "Stop & Score" semantic); the
-// stage then hands off to the Challenges tab, which owns result display.
+// early scores what was sung (the drill's "Stop & Score" semantic). The
+// after-run moment belongs to the Challenges tab: the weekly return path
+// presents the result card and navigates there itself (which unmounts this
+// stage); the stage keeps only a fallback hand-off for runs the weekly path
+// does not consume.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -29,7 +32,7 @@ import type { ZenPitchRun } from '../zen/types'
 import { useZenPitchSession } from '../zen/useZenPitchSession'
 import type { ZenCanvasRenderModel } from '../zen/zen-canvas-renderer'
 import { ZenPitchCanvas } from '../zen/ZenPitchCanvas'
-import { CHALLENGE_CLEAR_SCORE, CHALLENGE_LEAD_IN_BEATS, challengeTargetHighlights, challengeToZenExercise, finalizeChallengeScore, scoreChallengeNotes, } from './challenge-stage-model'
+import { CHALLENGE_LEAD_IN_BEATS, challengeTargetHighlights, challengeToZenExercise, summarizeChallengeRun, } from './challenge-stage-model'
 import styles from './ChallengeStage.module.css'
 
 interface ChallengeStageProps {
@@ -42,14 +45,17 @@ interface ChallengeStageProps {
 }
 
 interface ChallengeOutcome {
-  score: number
-  clearedCount: number
-  totalNotes: number
+  /** The recorded pass's trace, frozen for the final lit-line view. */
   points: ZenPitchRun['points']
 }
 
-/** How long the final shine lingers before the stage hands off to the board. */
-const DONE_LINGER_MS = 1600
+/**
+ * Fallback hand-off delay. The weekly return path normally presents the
+ * result card and navigates to the Challenges tab itself; this timer only
+ * fires when that path did not (attempt disarmed, persistence failure, or
+ * the stage was launched over the Challenges tab so no transition occurs).
+ */
+const DONE_FALLBACK_MS = 1600
 
 export function ChallengeStage(props: ChallengeStageProps) {
   // The launch object is immutable for this mount (keyed <Show>), so the
@@ -98,44 +104,35 @@ export function ChallengeStage(props: ChallengeStageProps) {
     if (completing) return
     completing = true
     // finish() may finalize a trailing fragment of the next loop; the
-    // onRunFinalized guard keeps the first (real) pass.
+    // onRunFinalized guard keeps the first (real) pass. A run with too few
+    // voiced points finalizes to null — summarised as an unsung take.
     session.finish()
     const run = finishedRun
     const targets = untrack(session.targets)
-    const noteScores = scoreChallengeNotes(run?.points ?? [], targets)
-    const score = finalizeChallengeScore(noteScores)
-    const clearedCount = noteScores.filter(
-      (note) => note.score >= CHALLENGE_CLEAR_SCORE,
-    ).length
-    const sungCount = noteScores.filter((note) => note.sung).length
-    const bestNote = noteScores.reduce(
-      (best, note) => Math.max(best, note.score),
-      0,
+    const summary = summarizeChallengeRun(
+      run?.points ?? [],
+      targets,
+      run?.durationSec ?? 0,
     )
-    const durationSec = run?.durationSec ?? untrack(session.loopDurationSec)
 
     // The single funnel every exercise uses — the armed weekly attempt
-    // consumes this entry and writes the board row; nothing else needed.
+    // consumes this entry, writes the board row, presents the result card
+    // and navigates to the Challenges tab. Metrics mirror the drill's
+    // result shape exactly.
     recordExerciseResult({
       type: EXERCISE_SIGHT_SINGING,
-      score,
+      score: summary.score,
       metrics: {
-        notesAttempted: noteScores.length,
-        notesScored: sungCount,
-        avgAccuracy: score,
-        bestNote,
-        durationMs: Math.round(durationSec * 1000),
+        notesAttempted: summary.notesAttempted,
+        notesScored: summary.notesScored,
+        avgAccuracy: summary.avgAccuracy,
+        bestNote: summary.bestNote,
       },
       completedAt: Date.now(),
     })
 
-    setOutcome({
-      score,
-      clearedCount,
-      totalNotes: noteScores.length,
-      points: run?.points ?? [],
-    })
-    doneTimer = setTimeout(finishToBoard, DONE_LINGER_MS)
+    setOutcome({ points: run?.points ?? [] })
+    doneTimer = setTimeout(finishToBoard, DONE_FALLBACK_MS)
   }
 
   // A pass ends when the session's loop wraps: elapsed snaps from the loop's
@@ -409,17 +406,6 @@ export function ChallengeStage(props: ChallengeStageProps) {
             </Show>
           </div>
         </div>
-      </Show>
-
-      <Show when={outcome()}>
-        {(done) => (
-          <div class={styles.doneChip} data-testid="challenge-done-chip">
-            <strong>{done().score}%</strong>
-            <span>
-              {done().clearedCount} of {done().totalNotes} notes lit
-            </span>
-          </div>
-        )}
       </Show>
     </div>
   )

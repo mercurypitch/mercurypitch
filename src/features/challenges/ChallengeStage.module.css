@@ -196,53 +196,6 @@
   white-space: nowrap;
 }
 
-/* ── Recorded chip ─────────────────────────────────────────── */
-
-.doneChip {
-  position: fixed;
-  z-index: calc(var(--z-focus, 500) + 1);
-  bottom: 118px;
-  left: 50%;
-  display: grid;
-  gap: 2px;
-  padding: 12px 22px;
-  border: 1px solid color-mix(in srgb, var(--pitch-reference) 55%, transparent);
-  border-radius: 13px;
-  color: var(--challenge-ink);
-  background: rgba(13, 18, 28, 0.94);
-  box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.5),
-    0 0 28px rgba(245, 158, 11, 0.22);
-  backdrop-filter: blur(12px);
-  text-align: center;
-  transform: translateX(-50%);
-  animation: challenge-done-in 300ms ease-out;
-}
-
-.doneChip strong {
-  color: #ffe0a6;
-  font-size: 1.5rem;
-  font-weight: 780;
-  line-height: 1.1;
-}
-
-.doneChip span {
-  color: var(--challenge-muted);
-  font-size: 0.64rem;
-}
-
-@keyframes challenge-done-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 @media (max-width: 760px) {
   .overlay {
     inset: 80px 10px 142px;
@@ -260,15 +213,5 @@
   .closeButton,
   .endButton {
     min-height: 44px;
-  }
-
-  .doneChip {
-    bottom: 150px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .doneChip {
-    animation: none;
   }
 }
