@@ -3,18 +3,14 @@
 Requirements for the three playback modes — `once`, `repeat`, and `session` —
 covering selection, per-mode behaviour, and the settings they share.
 
-Source:
-
-- `src/features/tabs/constants.ts` — `PLAYBACK_MODE_ONCE` / `_REPEAT` / `_SESSION`
-- `src/features/playback/usePlaybackController.ts` — transport and mode routing
-- `src/features/session/useSessionSequencer.ts` — session-mode item sequencing
-- `src/stores/playback-state-store.ts` — shared `isPlaying` / `isPaused` state
-- `src/components/TransportControls.tsx` — mode selection UI
-
-Tests:
-
-- `src/e2e/playback.spec.ts`, `src/e2e/practice-playback.spec.ts`
-  (`REQ-PLAY-001..026`)
+**Source:** `src/features/tabs/constants.ts` — `PLAYBACK_MODE_ONCE` /
+`_REPEAT` / `_SESSION`; `src/features/playback/usePlaybackController.ts` —
+transport and mode routing; `src/features/session/useSessionSequencer.ts` —
+session-mode item sequencing; `src/stores/playback-state-store.ts` — shared
+`isPlaying` / `isPaused` state; `src/components/TransportControls.tsx` — mode
+selection UI
+**Tests:** `src/e2e/playback.spec.ts`, `src/e2e/practice-playback.spec.ts`
+(`REQ-PLAY-001..026`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

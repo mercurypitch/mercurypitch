@@ -3,19 +3,13 @@
 Requirements for the guided spotlight tours: how steps are presented,
 navigated, completed, and re-run.
 
-Source:
-
-- `src/stores/app-store.ts` — `WALKTHROUGH_STEPS`, `PAGE_TOURS`,
-  `PAGE_TOUR_CATALOG`, `GUIDE_SECTIONS`
-- `src/stores/walkthrough-store.ts` — completion tracking
-- `src/components/Walkthrough.tsx` — spotlight renderer
-- `src/features/tours/` — per-page tour offers
-
-Tests:
-
-- `src/e2e/walkthrough.spec.ts` (`REQ-WALK-001..020`)
-- `pnpm test:tours` (`scripts/walk-tours.mjs`) — full two-viewport walk,
-  **release gate only**
+**Source:** `src/stores/app-store.ts` — `WALKTHROUGH_STEPS`, `PAGE_TOURS`,
+`PAGE_TOUR_CATALOG`, `GUIDE_SECTIONS`; `src/stores/walkthrough-store.ts` —
+completion tracking; `src/components/Walkthrough.tsx` — spotlight renderer;
+`src/features/tours/` — per-page tour offers
+**Tests:** `src/e2e/walkthrough.spec.ts` (`REQ-WALK-001..020`);
+`pnpm test:tours` (`scripts/walk-tours.mjs`) — full two-viewport walk,
+**release gate only**
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

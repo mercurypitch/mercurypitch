@@ -3,15 +3,10 @@
 Requirements for the drag-and-drop session timeline: composing an ordered
 practice session from melodies, presets, scales, and rests.
 
-Source:
-
-- `src/stores/session-store.ts` — session items and persistence
-- `src/components/SessionMiniTimeline.tsx` — timeline rendering
-- `src/features/session/useSessionSequencer.ts` — playback of the composed session
-
-Tests:
-
-- `src/e2e/session-editor.spec.ts` (`REQ-SED-001..026`)
+**Source:** `src/stores/session-store.ts` — session items and persistence;
+`src/components/SessionMiniTimeline.tsx` — timeline rendering;
+`src/features/session/useSessionSequencer.ts` — playback of the composed session
+**Tests:** `src/e2e/session-editor.spec.ts` (`REQ-SED-001..026`)
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

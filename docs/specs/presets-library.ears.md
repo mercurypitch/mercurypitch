@@ -3,15 +3,11 @@
 Requirements for the presets browser: categorised starting points (scales,
 rhythms, melodies, warm-ups) that load into the editor.
 
-Source:
-
-- `src/stores/ui-store.ts` — presets-library visibility (`showPresetsLibrary`)
-- `src/components/LibraryTab.tsx` — quick-start entry point
-- `src/data/` — preset definitions
-
-Tests:
-
-- `src/e2e/comprehensive.spec.ts` (`REQ-PRESET-001..016`) — partial coverage
+**Source:** `src/stores/ui-store.ts` — presets-library visibility
+(`showPresetsLibrary`); `src/components/LibraryTab.tsx` — quick-start entry
+point; `src/data/` — preset definitions
+**Tests:** `src/e2e/comprehensive.spec.ts` (`REQ-PRESET-001..016`) — partial
+coverage
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").

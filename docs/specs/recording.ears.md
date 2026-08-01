@@ -2,16 +2,12 @@
 
 Requirements for capturing sung or keyed input as notes on the piano roll.
 
-Source:
-
-- `src/features/recording/useRecordingController.ts` — capture and note commit
-- `src/lib/pitch-pipeline/` — denoise and note segmentation
-- `src/lib/mic-manager.ts` — the shared device owner
-- `src/lib/piano-roll.ts` — rendering committed notes
-
-Tests:
-
-- `src/e2e/practice-playback.spec.ts` (`REQ-REC-001..020`) — partial coverage
+**Source:** `src/features/recording/useRecordingController.ts` — capture and
+note commit; `src/lib/pitch-pipeline/` — denoise and note segmentation;
+`src/lib/mic-manager.ts` — the shared device owner; `src/lib/piano-roll.ts` —
+rendering committed notes
+**Tests:** `src/e2e/practice-playback.spec.ts` (`REQ-REC-001..020`) — partial
+coverage
 
 EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
 behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
