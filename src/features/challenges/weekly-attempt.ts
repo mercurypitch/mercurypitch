@@ -12,8 +12,11 @@ import { createSignal } from 'solid-js'
 import { checkAndGrantBadges, grantBadgeByRef, } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import type { ExerciseType } from '@/features/exercises/types'
+import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
+import { setActiveTab } from '@/stores/ui-store'
+import { presentChallengeResult } from './challenge-result-store'
 
 export interface WeeklyAttemptTarget {
   challengeId: string
@@ -118,17 +121,7 @@ export async function recordWeeklyAttempt(entry: {
     trackEvent('weekly_attempt')
 
     const tier = weeklyTier(score, a.targetScore, a.founderScore)
-    if (tier === 'beat-founder') {
-      showNotification(`You beat the Founder — ${score}%!`, 'success')
-    } else if (tier === 'completed') {
-      showNotification(`Legend complete: ${a.title} (${score}%)`, 'success')
-    } else {
-      showNotification(
-        `${a.title}: ${score}% (target ${a.targetScore}%)`,
-        'info',
-      )
-    }
-
+    let badgeGranted = false
     if (
       tier !== 'attempted' &&
       a.rewardBadgeId !== undefined &&
@@ -136,8 +129,24 @@ export async function recordWeeklyAttempt(entry: {
       a.rewardBadgeId !== ''
     ) {
       await grantBadgeByRef(a.rewardBadgeId)
+      badgeGranted = true
     }
     await checkAndGrantBadges()
+
+    // The after-run moment belongs to the Challenges tab, not a toast
+    // over the exercise screen: publish the result and go there. The
+    // tab presents the pass/fail card with "go again" as the next step
+    // (owner flow — the exercise's own Try again is plain practice
+    // under the one-attempt rule and must never be the visible path).
+    presentChallengeResult({
+      challengeId: a.challengeId,
+      title: a.title,
+      score,
+      targetScore: a.targetScore,
+      tier,
+      badgeGranted,
+    })
+    setActiveTab(TAB_CHALLENGES)
   } catch {
     // The drill result stands even if persistence fails.
   }
