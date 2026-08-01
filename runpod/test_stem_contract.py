@@ -50,6 +50,15 @@ CLASSIFY_CASES = [
     ("Piano Man_(Drums)_htdemucs.flac", "drums"),
     ("Vocal Coach_(Instrumental)_x.flac", "instrumental"),
     ("Bass Guitar Hero_(Vocals)_x.flac", "vocal"),
+    # Second-pass splits feed a FIRST pass's stem back in, so its own marker
+    # survives in the base name and audio-separator APPENDS the new one —
+    # the LAST marker names the stem. Matching the first classified every
+    # split part as 'instrumental' (the 2026-08-01 "split produced no part
+    # stems" failure).
+    ("Song_(Instrumental)_bs_roformer_(Drums)_htdemucs_6s.flac", "drums"),
+    ("Song_(Instrumental)_bs_roformer_(Guitar)_htdemucs_6s.flac", "guitar"),
+    ("Song_(Instrumental)_bs_roformer_(Piano)_htdemucs_6s.flac", "piano"),
+    ("Empire of the Clouds_(Instrumental)_x_(Other)_htdemucs_6s.wav", "other"),
 ]
 
 

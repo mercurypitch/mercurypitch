@@ -8,7 +8,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OutputFile } from '@/lib/uvr-api'
-import { TerminalPollError } from '@/lib/uvr-api'
+import { KEEP_POLLING, TerminalPollError } from '@/lib/uvr-api'
 
 const api = vi.hoisted(() => ({
   processAudio: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@/lib/uvr-api', async (importOriginal) => ({
 }))
 vi.mock('@/db/services/uvr-service', () => db)
 
-import { runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
+import { decideSplitParts, EMPTY_SPLIT_LISTING_PATIENCE_MS, runStemSplit, SPLIT_PART_STEMS, StemSplitError, } from '@/lib/uvr-stem-split'
 
 const serverFiles = (stems: string[]): OutputFile[] =>
   stems.map((stem) => ({
@@ -222,5 +222,211 @@ describe('runStemSplit', () => {
     const err = await runStemSplit('session-1').catch((e: unknown) => e)
     expect(err).toBeInstanceOf(StemSplitError)
     expect((err as StemSplitError).recoverable).toBe(true)
+  })
+
+  // ── Part-less / partial "completed" listings ───────────────────
+  // The worker's R2 recovery fallback synthesizes 'completed' from
+  // whatever stem files have landed in the bucket, so a listing without
+  // (all of) the parts can just mean "still uploading".
+
+  it('treats a part-less completed listing as still-processing, then saves', async () => {
+    const verdicts: unknown[] = []
+    api.pollForCompletion.mockImplementation(
+      async (
+        _sid: string,
+        _onProgress: (pct: number) => void,
+        onComplete: (files: OutputFile[]) => Promise<unknown>,
+      ) => {
+        // Mid-upload snapshots: only non-part stems, then nothing at all.
+        verdicts.push(await onComplete(serverFiles(['instrumental'])))
+        verdicts.push(await onComplete([]))
+        await onComplete(
+          serverFiles(['drums', 'bass', 'guitar', 'piano', 'other']),
+        )
+      },
+    )
+    const result = await runStemSplit('session-1')
+    expect(verdicts).toEqual([KEEP_POLLING, KEEP_POLLING])
+    expect(result.saved.sort()).toEqual([
+      'bass',
+      'drums',
+      'guitar',
+      'other',
+      'piano',
+    ])
+  })
+
+  it('accepts a partial part set instead of failing all-or-nothing', async () => {
+    api.pollForCompletion.mockImplementation(
+      async (
+        _sid: string,
+        _onProgress: (pct: number) => void,
+        onComplete: (files: OutputFile[]) => Promise<unknown>,
+      ) => {
+        // Piano missing (plus the stray vocal the server may return).
+        await onComplete(
+          serverFiles(['drums', 'bass', 'guitar', 'other', 'vocal']),
+        )
+      },
+    )
+    const result = await runStemSplit('session-1')
+    expect(result.saved.sort()).toEqual(['bass', 'drums', 'guitar', 'other'])
+  })
+
+  it('gives up recoverably once part-less completions outlast the patience window', async () => {
+    vi.useFakeTimers()
+    try {
+      api.pollForCompletion.mockImplementation(
+        async (
+          _sid: string,
+          _onProgress: (pct: number) => void,
+          onComplete: (files: OutputFile[]) => Promise<unknown>,
+        ) => {
+          expect(await onComplete(serverFiles(['instrumental']))).toBe(
+            KEEP_POLLING,
+          )
+          vi.setSystemTime(Date.now() + EMPTY_SPLIT_LISTING_PATIENCE_MS + 1000)
+          await onComplete(serverFiles(['instrumental']))
+        },
+      )
+      const err = await runStemSplit('session-1').catch((e: unknown) => e)
+      expect(err).toBeInstanceOf(StemSplitError)
+      // Retryable: the job is done but re-splitting is perfectly viable.
+      expect((err as StemSplitError).recoverable).toBe(true)
+      // The message names what the server DID return.
+      expect((err as StemSplitError).message).toContain('instrumental')
+      expect(db.saveStemBlobDurable).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restarts the patience window when the job reports itself alive again', async () => {
+    vi.useFakeTimers()
+    try {
+      api.pollForCompletion.mockImplementation(
+        async (
+          _sid: string,
+          onProgress: (pct: number) => void,
+          onComplete: (files: OutputFile[]) => Promise<unknown>,
+        ) => {
+          expect(await onComplete(serverFiles(['instrumental']))).toBe(
+            KEEP_POLLING,
+          )
+          // RunPod answers IN_PROGRESS again — the empty streak resets.
+          onProgress(60)
+          vi.setSystemTime(Date.now() + EMPTY_SPLIT_LISTING_PATIENCE_MS + 1000)
+          expect(await onComplete(serverFiles(['instrumental']))).toBe(
+            KEEP_POLLING,
+          )
+          await onComplete(
+            serverFiles(['drums', 'bass', 'guitar', 'piano', 'other']),
+          )
+        },
+      )
+      const result = await runStemSplit('session-1')
+      expect(result.saved).toContain('drums')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+// ── decideSplitParts (pure) ──────────────────────────────────────
+// The three-way call on a 'completed' listing: save what matches, wait
+// while a part-less listing may still be an upload in progress, give up
+// (recoverably) once it has outstayed the patience window.
+
+describe('decideSplitParts', () => {
+  const WANTED = ['drums', 'bass', 'guitar', 'piano', 'other'] as const
+
+  it('saves every matching part and closes the empty streak', () => {
+    const { decision, emptySince } = decideSplitParts({
+      files: serverFiles(['drums', 'bass', 'guitar', 'piano', 'other']),
+      wanted: WANTED,
+      emptySince: 1_000,
+      now: 5_000,
+    })
+    expect(decision.action).toBe('save')
+    if (decision.action === 'save') {
+      expect(decision.parts.map((p) => p.stem).sort()).toEqual([
+        'bass',
+        'drums',
+        'guitar',
+        'other',
+        'piano',
+      ])
+    }
+    expect(emptySince).toBeNull()
+  })
+
+  it('saves a subset — and never the stray non-part stems', () => {
+    const { decision } = decideSplitParts({
+      files: serverFiles(['drums', 'vocal', 'instrumental']),
+      wanted: WANTED,
+      emptySince: null,
+      now: 0,
+    })
+    expect(decision.action).toBe('save')
+    if (decision.action === 'save') {
+      expect(decision.parts.map((p) => p.stem)).toEqual(['drums'])
+    }
+  })
+
+  it('waits on the first part-less listing and opens the streak', () => {
+    const { decision, emptySince } = decideSplitParts({
+      files: serverFiles(['instrumental']),
+      wanted: WANTED,
+      emptySince: null,
+      now: 10_000,
+    })
+    expect(decision).toEqual({ action: 'wait' })
+    expect(emptySince).toBe(10_000)
+  })
+
+  it('keeps the original streak start while waiting', () => {
+    const { decision, emptySince } = decideSplitParts({
+      files: [],
+      wanted: WANTED,
+      emptySince: 10_000,
+      now: 10_000 + EMPTY_SPLIT_LISTING_PATIENCE_MS - 1,
+    })
+    expect(decision).toEqual({ action: 'wait' })
+    expect(emptySince).toBe(10_000)
+  })
+
+  it('gives up after the patience window, naming what WAS returned', () => {
+    const { decision, emptySince } = decideSplitParts({
+      files: serverFiles(['vocal', 'instrumental', 'instrumental']),
+      wanted: WANTED,
+      emptySince: 10_000,
+      now: 10_000 + EMPTY_SPLIT_LISTING_PATIENCE_MS,
+    })
+    expect(decision).toEqual({
+      action: 'give-up',
+      returned: ['vocal', 'instrumental'],
+    })
+    expect(emptySince).toBeNull()
+  })
+
+  it('gives up on a persistently empty listing with nothing to name', () => {
+    const { decision } = decideSplitParts({
+      files: [],
+      wanted: WANTED,
+      emptySince: 0,
+      now: EMPTY_SPLIT_LISTING_PATIENCE_MS,
+    })
+    expect(decision).toEqual({ action: 'give-up', returned: [] })
+  })
+
+  it('honours a caller-supplied patience for tests and tuning', () => {
+    const { decision } = decideSplitParts({
+      files: [],
+      wanted: WANTED,
+      emptySince: 0,
+      now: 50,
+      patienceMs: 50,
+    })
+    expect(decision.action).toBe('give-up')
   })
 })

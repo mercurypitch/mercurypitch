@@ -645,10 +645,14 @@ def _materialize_input(job_input: dict, job_dir: str) -> str:
 
 
 # audio-separator names outputs "<input>_(<Stem>)_<model>.<ext>" — match the
-# parenthesised marker first so a song called e.g. "Vocal Coach.mp3" can't
-# misclassify its instrumental stem via a bare substring hit. Karaoke models
-# label their music-plus-backing-vocals stem "(Karaoke)" — for the app's
-# contract that IS the instrumental.
+# parenthesised marker over a bare substring so a song called e.g.
+# "Vocal Coach.mp3" can't misclassify its instrumental stem. The LAST marker
+# wins: the marker is APPENDED to the input's base name, so a second pass over
+# "Song_(Instrumental)_x.flac" emits "Song_(Instrumental)_x_(Drums)_y.flac",
+# where only the final marker names the stem — matching the first classified
+# every split part as 'instrumental'. Karaoke models label their
+# music-plus-backing-vocals stem "(Karaoke)" — for the app's contract that IS
+# the instrumental.
 _STEM_MARKER_RE = re.compile(
     r"\((vocals?|instrumental|karaoke|drums|bass|guitar|piano|other)\)",
     re.IGNORECASE,
@@ -657,9 +661,9 @@ _STEM_MARKER_RE = re.compile(
 
 def _classify_stem(filename: str) -> str:
     low = filename.lower()
-    marker = _STEM_MARKER_RE.search(low)
-    if marker:
-        raw = marker.group(1)
+    markers = _STEM_MARKER_RE.findall(low)
+    if markers:
+        raw = markers[-1]
         if raw.startswith("vocal"):
             return "vocal"
         if raw == "karaoke":
