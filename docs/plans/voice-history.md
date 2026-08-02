@@ -1,9 +1,9 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **local vault, Glass, repeatable Exercise, Weekly Legend, and direct
-freeform capture implemented on draft PR #364**, updated 2026-08-02. The
-remaining local-release gate is browser validation, especially the real iPhone
-Safari recording path.
+Status: **local vault, Glass, repeatable Exercise, Weekly Legend, direct
+freeform capture, and listening-studio polish implemented on draft PR #364**,
+updated 2026-08-02. The remaining local-release gate is browser validation,
+especially the real iPhone Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -446,6 +446,17 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Multiple named freeform threads can coexist. Singers can start a different
   thread from the direct-capture flow and rename a freeform thread without
   changing its stable comparison key or separating its existing takes.
+- Live freeform feedback layers a truthful mic-energy envelope with a smoothed
+  pitch contour and an unmistakable recording state; it never invents a score
+  or target for freeform singing.
+- Saved history reuses the Glass canvas waveform, with frame-synchronised
+  playheads for fluid playback rather than coarse media `timeupdate` steps.
+- A single playback-only listening room applies Dry, Starlight, Nebula,
+  Supernova, or custom Echo/Reverb/Hall settings equally to Earlier and Later;
+  saved blobs remain dry and effect tails are reset between takes.
+- Take deletion and clear-all use the app's accessible confirmation dialog,
+  including busy-state protection and a typed confirmation for the bulk wipe;
+  native browser dialogs are not used.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
@@ -498,12 +509,20 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Keyboard and touch A/B switching.
 - Object URLs are revoked.
 - Delete confirmation restores focus.
+- Playback progress samples every animation frame and invalidates stale loops.
+- Listening-room presets and custom sends stay within safe bounds.
+- Live visualization keeps bounded waveform/pitch history and treats uncertain
+  pitch frames as gaps.
 - Feature flag keeps teaser, route, and capture actions consistent.
 
 ### End-to-end checks
 
 - Keep a Glass take, reload, reopen, play, export, and delete.
 - Keep two eligible takes and complete an Earlier/Later comparison.
+- Drag a listening-room slider with a real pointer and confirm the setting does
+  not alter or replace the stored take.
+- Confirm capture shows a live waveform/pitch contour, saved history uses the
+  Glass canvas waveform, and deletion opens only the in-app dialog.
 - Deny mic; lose mic mid-capture; recover without a stuck indicator.
 - Disable network and repeat the full local flow.
 - Simulate low quota without falsely reporting a successful save.

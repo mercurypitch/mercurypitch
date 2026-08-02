@@ -66,10 +66,10 @@ export async function saveVoiceTake(
     return { ok: false, quotaExceeded: true, roomAvailable }
   }
 
-  const bytes = await draft.blob.arrayBuffer()
-  const db = await getDb()
-  const result = await durableWrite('save voice take', () =>
-    localTransaction(db, async (transactionDb) => {
+  const result = await durableWrite('save voice take', async () => {
+    const bytes = await draft.blob.arrayBuffer()
+    const db = await getDb()
+    return localTransaction(db, async (transactionDb) => {
       const takeRepo =
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
       const audioRepo =
@@ -103,8 +103,8 @@ export async function saveVoiceTake(
         data: bytes,
       })
       return created
-    }),
-  )
+    })
+  })
 
   if (result.ok) void ensurePersistentStorage('voice-takes')
   return { ...result, roomAvailable }

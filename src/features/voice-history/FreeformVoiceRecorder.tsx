@@ -7,13 +7,17 @@ import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { IconCross, IconMic } from '@/components/exercise-icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { trackEvent } from '@/lib/analytics'
+import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
+import type { F0Stream } from '@/lib/pitch-f0-stream'
+import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
 import type { FreeformThreadTarget, FreeformVoiceTakeCapture, } from './freeform-voice-take'
 import { keepFreeformVoiceTake } from './freeform-voice-take'
 import styles from './FreeformVoiceRecorder.module.css'
+import { LiveVoiceCapture } from './LiveVoiceCapture'
 
 type RecorderState =
   | 'idle'
@@ -32,7 +36,8 @@ interface FreeformVoiceRecorderProps {
   onStartNewThread: () => void
 }
 
-const MIC_CONSUMER_ID = 'voice-history-freeform'
+const MIC_CONSUMER_PREFIX = 'voice-history-freeform'
+let recorderInstance = 0
 const MAX_CAPTURE_MS = 5 * 60 * 1000
 
 function formatElapsed(durationMs: number): string {
@@ -60,6 +65,7 @@ function createCaptureAudioContext(): AudioContext | null {
 export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   props,
 ) => {
+  const micConsumerId = `${MIC_CONSUMER_PREFIX}:${++recorderInstance}`
   const [title, setTitle] = createSignal(untrack(() => props.target.title))
   const [state, setState] = createSignal<RecorderState>('idle')
   const [capture, setCapture] = createSignal<FreeformVoiceTakeCapture | null>(
@@ -71,8 +77,10 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   const [previewProgress, setPreviewProgress] = createSignal(0)
   const [message, setMessage] = createSignal<string | null>(null)
   const [titleError, setTitleError] = createSignal<string | null>(null)
+  const previewProgressLoop = createMediaProgressLoop(setPreviewProgress)
 
   let recorder: TakeRecorder | null = null
+  let pitchStream: F0Stream | null = null
   let captureContext: AudioContext | null = null
   let previewAudio: HTMLAudioElement | null = null
   let timer: ReturnType<typeof setInterval> | null = null
@@ -94,7 +102,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   }
 
   function releaseMic(): void {
-    micManager.release(MIC_CONSUMER_ID)
+    micManager.release(micConsumerId)
   }
 
   function closeCaptureContext(): void {
@@ -105,7 +113,14 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     }
   }
 
+  function disposePitchStream(): void {
+    pitchStream?.takeFrames()
+    pitchStream?.dispose()
+    pitchStream = null
+  }
+
   function clearPreview(): void {
+    previewProgressLoop.stop()
     previewAudio?.pause()
     previewAudio = null
     const url = previewUrl()
@@ -121,6 +136,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     recorder?.discard()
     recorder?.dispose()
     recorder = null
+    disposePitchStream()
     releaseMic()
     closeCaptureContext()
     clearPreview()
@@ -142,11 +158,11 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   onMount(() => {
     const shouldFocusTitle = untrack(() => props.target.title === '')
     unregisterMicIndicator = registerMicIndicator(
-      MIC_CONSUMER_ID,
+      micConsumerId,
       // Deliberately non-reactive: the sentinel polls this accessor on its
       // own watchdog interval instead of subscribing inside Solid's graph.
       // eslint-disable-next-line solid/reactivity
-      () => state() === 'recording' || state() === 'processing',
+      () => state() === 'recording',
       handleMicLoss,
     )
     queueMicrotask(() => {
@@ -161,6 +177,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     recorder?.discard()
     recorder?.dispose()
     recorder = null
+    disposePitchStream()
     releaseMic()
     closeCaptureContext()
     clearPreview()
@@ -191,7 +208,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   ): Promise<void> {
     try {
       if (context?.state === 'suspended') await context.resume()
-      const stream = await micManager.acquire(MIC_CONSUMER_ID)
+      const stream = await micManager.acquire(micConsumerId)
       if (run !== activeRun) {
         releaseMic()
         return
@@ -206,6 +223,14 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
       }
 
       recorder = nextRecorder
+      if (context !== null) {
+        try {
+          pitchStream = createF0Stream(context, stream)
+          pitchStream.startTask()
+        } catch {
+          pitchStream = null
+        }
+      }
       startedAt = Date.now()
       capturedAt = new Date(startedAt).toISOString()
       nextRecorder.start()
@@ -215,6 +240,10 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
       capTimer = setTimeout(() => stopRecording(), MAX_CAPTURE_MS)
     } catch (error) {
       if (run !== activeRun) return
+      recorder?.discard()
+      recorder?.dispose()
+      recorder = null
+      disposePitchStream()
       releaseMic()
       closeCaptureContext()
       setState('idle')
@@ -233,6 +262,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     const run = activeRun
     const fallbackDurationMs = Math.max(0, Date.now() - startedAt)
     recorder = null
+    disposePitchStream()
     clearTimers()
     setElapsedMs(fallbackDurationMs)
     setState('processing')
@@ -285,34 +315,59 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     const url = previewUrl()
     if (url === null) return
     if (previewAudio !== null) {
-      if (previewAudio.paused) {
-        void previewAudio
+      const currentAudio = previewAudio
+      if (currentAudio.paused) {
+        void currentAudio
           .play()
-          .then(() => setPreviewPlaying(true))
-          .catch(() =>
-            setMessage(
-              'Playback was blocked. Tap play again to hear the take.',
-            ),
-          )
+          .then(() => {
+            if (
+              previewAudio !== currentAudio ||
+              !isMediaPlaybackActive(currentAudio)
+            )
+              return
+            setPreviewPlaying(true)
+            previewProgressLoop.start(currentAudio)
+          })
+          .catch(() => {
+            if (previewAudio !== currentAudio) return
+            setMessage('Playback was blocked. Tap play again to hear the take.')
+          })
       } else {
-        previewAudio.pause()
+        previewProgressLoop.sample(currentAudio)
+        previewProgressLoop.stop()
+        currentAudio.pause()
         setPreviewPlaying(false)
       }
       return
     }
 
     const nextAudio = new Audio(url)
+    nextAudio.setAttribute('playsinline', '')
     previewAudio = nextAudio
     nextAudio.addEventListener('timeupdate', () => {
-      if (!Number.isFinite(nextAudio.duration) || nextAudio.duration <= 0)
-        return
-      setPreviewProgress(nextAudio.currentTime / nextAudio.duration)
+      if (previewAudio !== nextAudio) return
+      previewProgressLoop.sample(nextAudio)
+    })
+    nextAudio.addEventListener('play', () => {
+      if (previewAudio !== nextAudio) return
+      setPreviewPlaying(true)
+      previewProgressLoop.start(nextAudio)
+    })
+    nextAudio.addEventListener('pause', () => {
+      if (previewAudio !== nextAudio) return
+      previewProgressLoop.sample(nextAudio)
+      previewProgressLoop.stop()
+      setPreviewPlaying(false)
     })
     nextAudio.addEventListener('ended', () => {
+      if (previewAudio !== nextAudio) return
+      previewProgressLoop.stop()
       setPreviewPlaying(false)
       setPreviewProgress(1)
     })
     nextAudio.addEventListener('error', () => {
+      if (previewAudio !== nextAudio) return
+      previewProgressLoop.stop()
       setPreviewPlaying(false)
       setMessage(
         'This browser could not replay the temporary take, but you can still keep the original audio.',
@@ -320,10 +375,16 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     })
     void nextAudio
       .play()
-      .then(() => setPreviewPlaying(true))
-      .catch(() =>
-        setMessage('Playback was blocked. Tap play again to hear the take.'),
-      )
+      .then(() => {
+        if (previewAudio !== nextAudio || !isMediaPlaybackActive(nextAudio))
+          return
+        setPreviewPlaying(true)
+        previewProgressLoop.start(nextAudio)
+      })
+      .catch(() => {
+        if (previewAudio !== nextAudio) return
+        setMessage('Playback was blocked. Tap play again to hear the take.')
+      })
   }
 
   function keepTake(): void {
@@ -383,7 +444,11 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
   }
 
   return (
-    <section class={styles.recorder} aria-labelledby="freeform-recorder-title">
+    <section
+      class={styles.recorder}
+      aria-labelledby="freeform-recorder-title"
+      aria-busy={state() === 'saving' || state() === 'processing'}
+    >
       <div class={styles.heading}>
         <div>
           <span>Direct capture</span>
@@ -402,6 +467,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
           class={styles.closeButton}
           onClick={closeRecorder}
           aria-label="Close recorder"
+          disabled={state() === 'saving'}
         >
           <IconCross size={19} />
         </button>
@@ -444,21 +510,27 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
           </Show>
         </label>
 
-        <div class={styles.captureField}>
-          <div class={styles.captureStatus}>
+        <div
+          class={styles.captureField}
+          classList={{ [styles.captureFieldLive]: state() === 'recording' }}
+        >
+          <div
+            class={styles.captureStatus}
+            classList={{ [styles.captureStatusLive]: state() === 'recording' }}
+          >
             <span
               class={styles.micMark}
               classList={{ [styles.micLive]: state() === 'recording' }}
               aria-hidden="true"
             >
-              <IconMic size={20} />
+              <IconMic size={state() === 'recording' ? 25 : 20} />
             </span>
             <div>
               <strong aria-live="polite" aria-atomic="true">
                 {state() === 'starting'
                   ? 'Opening microphone'
                   : state() === 'recording'
-                    ? 'Recording dry voice'
+                    ? 'Recording now'
                     : state() === 'processing'
                       ? 'Preparing replay'
                       : state() === 'saved'
@@ -471,7 +543,9 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
               </strong>
               <span>
                 {state() === 'recording' || state() === 'processing'
-                  ? `${formatElapsed(elapsedMs())} · five-minute maximum`
+                  ? state() === 'recording'
+                    ? `${formatElapsed(elapsedMs())} · live waveform and pitch · five-minute maximum`
+                    : `${formatElapsed(elapsedMs())} · preparing your waveform`
                   : state() === 'saved'
                     ? `${formatElapsed(elapsedMs())} · saved locally`
                     : state() === 'ready' || state() === 'saving'
@@ -480,6 +554,13 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
               </span>
             </div>
           </div>
+
+          <Show when={state() === 'recording'}>
+            <LiveVoiceCapture
+              active={true}
+              frame={() => pitchStream?.latestSmoothed() ?? null}
+            />
+          </Show>
 
           <Show when={state() === 'idle'}>
             <button

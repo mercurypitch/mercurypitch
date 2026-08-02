@@ -67,6 +67,7 @@
 }
 
 .cancel {
+  min-height: 44px;
   padding: 0.5rem 1rem;
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
@@ -85,6 +86,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 44px;
   padding: 0.5rem 1rem;
   background: var(--red);
   color: white;
@@ -135,6 +137,7 @@
 
 .phraseInput {
   width: 100%;
+  min-height: 44px;
   margin-top: 0.4rem;
   padding: 0.45rem 0.6rem;
   border-radius: 6px;

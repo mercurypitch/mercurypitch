@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-l
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseShell } from '@/features/exercises/ExerciseShell'
+import type { ExerciseStatus } from '@/features/exercises/types'
 import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/features/exercises/use-base-exercise'
 
 const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
@@ -18,8 +19,8 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: trackMock }))
 
-function renderCompleteCapture() {
-  const voiceTake: ExerciseSessionVoiceTake = {
+function makeVoiceTake(): ExerciseSessionVoiceTake {
+  return {
     blob: new Blob(['voice'], { type: 'audio/webm' }),
     durationMs: 4200,
     peaks: new Float32Array([0.2, 0.8]),
@@ -32,6 +33,10 @@ function renderCompleteCapture() {
       completedAt: Date.UTC(2026, 7, 1, 12),
     },
   }
+}
+
+function renderCompleteCapture() {
+  const voiceTake = makeVoiceTake()
   let discardCalls = 0
 
   const Harness = () => {
@@ -106,5 +111,67 @@ describe('ExerciseShell voice capture', () => {
 
     expect(discardCalls()).toBe(1)
     expect(screen.getByText('84%')).toBeInTheDocument()
+  })
+
+  it('does not let an earlier save mark the next run as already kept', async () => {
+    let resolveKeep:
+      | ((result: {
+          ok: boolean
+          quotaExceeded: boolean
+          roomAvailable: boolean
+          value: object
+        }) => void)
+      | undefined
+    keepMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveKeep = resolve
+      }),
+    )
+    const firstTake = makeVoiceTake()
+    const Harness = () => {
+      const [status, setStatus] = createSignal<ExerciseStatus>('complete')
+      const [take] = createSignal<ExerciseSessionVoiceTake | null>(firstTake)
+      const voiceCapture: ExerciseVoiceCaptureController = {
+        state: () => 'ready',
+        take,
+        awaitOutcome: async () => ({ state: 'ready', take: take()! }),
+        discard: vi.fn(),
+      }
+      return (
+        <ExerciseShell
+          type="long-note"
+          title="Long Note Practice"
+          status={status}
+          currentScore={() => 84}
+          resultScore={() => 84}
+          voiceCapture={voiceCapture}
+          onBack={() => {}}
+          onStart={() => {}}
+          activeContent={<div>active</div>}
+          onStop={() => {}}
+          resultSummary={<>Steady zone 78%</>}
+          onTryAgain={() => setStatus('active')}
+          onChangeTarget={() => {}}
+        />
+      )
+    }
+    render(() => <Harness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
+    resolveKeep?.({
+      ok: true,
+      quotaExceeded: false,
+      roomAvailable: true,
+      value: {},
+    })
+    await waitFor(() =>
+      expect(trackMock).toHaveBeenCalledWith('voice_keep_success'),
+    )
+
+    expect(screen.getByRole('button', { name: 'Keep Take' })).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Kept' }),
+    ).not.toBeInTheDocument()
   })
 })

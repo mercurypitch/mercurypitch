@@ -17,22 +17,50 @@ surface seed 828675af; no challenger staging replaces the established shell.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconMic } from '@/components/exercise-icons'
 import { Pencil } from '@/components/icons'
+import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
+import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
+import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
+import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
 import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
 import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
+import { bindListeningRoomSettings } from './listening-room-settings'
 import styles from './VoiceHistoryPage.module.css'
+import { VoiceRoomPanel } from './VoiceRoomPanel'
 
 interface VoiceThread {
   key: string
   title: string
   source: VoiceTakeRecord['source']
   takes: VoiceTakeRecord[]
+}
+
+type DeleteIntent =
+  | { kind: 'take'; take: VoiceTakeRecord }
+  | { kind: 'all'; count: number }
+
+export function createPlaybackRequestGate(): {
+  begin: () => () => boolean
+  cancel: () => void
+} {
+  let generation = 0
+  return {
+    begin: () => {
+      const request = ++generation
+      return () => request === generation
+    },
+    cancel: () => {
+      generation += 1
+    },
+  }
 }
 
 function formatDate(value: string): string {
@@ -81,40 +109,31 @@ const Waveform: Component<{
   take: VoiceTakeRecord
   active: boolean
   progress?: number
+  playing?: boolean
 }> = (props) => (
   <div
     class={styles.waveform}
     classList={{ [styles.waveformActive]: props.active }}
     role="img"
-    aria-label={`Waveform for ${props.take.title}`}
+    aria-label={
+      props.take.peaks.length > 0
+        ? `Waveform for ${props.take.title}`
+        : `Waveform unavailable for ${props.take.title}`
+    }
   >
-    <For
-      each={
-        props.take.peaks.length > 0
-          ? props.take.peaks
-          : [0.12, 0.2, 0.16, 0.28, 0.18, 0.12]
-      }
-    >
-      {(peak) => (
-        <span
-          class={styles.waveBar}
-          style={{ height: `${Math.max(8, Math.round(peak * 100))}%` }}
-        />
-      )}
-    </For>
-    <Show when={props.active}>
-      <span
-        class={styles.waveProgress}
-        style={{ transform: `scaleX(${props.progress ?? 0})` }}
-        aria-hidden="true"
-      />
-    </Show>
+    <VoiceTakeWaveform
+      class={styles.waveformCanvas}
+      peaks={props.take.peaks}
+      progress={props.active ? (props.progress ?? 0) : 0}
+      playing={props.active && props.playing === true}
+    />
   </div>
 )
 
 export function VoiceHistoryPage(): JSX.Element {
   const [takes, setTakes] = createSignal<VoiceTakeRecord[]>([])
   const [loading, setLoading] = createSignal(true)
+  const [loadFailed, setLoadFailed] = createSignal(false)
   const [selectedKey, setSelectedKey] = createSignal<string | null>(null)
   const [earlierId, setEarlierId] = createSignal<string | null>(null)
   const [laterId, setLaterId] = createSignal<string | null>(null)
@@ -129,15 +148,31 @@ export function VoiceHistoryPage(): JSX.Element {
   const [renameTitle, setRenameTitle] = createSignal('')
   const [renameError, setRenameError] = createSignal<string | null>(null)
   const [renameSaving, setRenameSaving] = createSignal(false)
+  const [deleteIntent, setDeleteIntent] = createSignal<DeleteIntent | null>(
+    null,
+  )
+  const [deleteBusy, setDeleteBusy] = createSignal(false)
+  const [deleteError, setDeleteError] = createSignal<string | null>(null)
+  const [roomSettings, setRoomSettings] = createSignal<FxSettings>({
+    ...FX_PRESETS[0].settings,
+  })
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
+  let listeningContext: AudioContext | null = null
+  let listeningSource: MediaElementAudioSourceNode | null = null
+  let listeningRack: FxRack | null = null
+  let uninstallAudioUnlock = (): void => undefined
   let recordLaunchButton: HTMLButtonElement | undefined
   let recorderReturnFocus: HTMLElement | null = null
   let renameInput: HTMLInputElement | undefined
   let renameButton: HTMLButtonElement | undefined
   let comparisonStarted = false
   let comparisonPendingComplete = false
+  let playbackTakeId: string | null = null
+  let playbackIsCurrent = (): boolean => false
+  const playbackRequests = createPlaybackRequestGate()
+  const playbackProgress = createMediaProgressLoop(setProgress)
 
   const threads = createMemo<VoiceThread[]>(() => {
     const grouped = new Map<string, VoiceTakeRecord[]>()
@@ -182,9 +217,80 @@ export function VoiceHistoryPage(): JSX.Element {
     () => selectedThread()?.takes.find((take) => take.id === laterId()) ?? null,
   )
 
+  function ensureListeningContext(): AudioContext | null {
+    if (listeningContext !== null && listeningContext.state !== 'closed') {
+      return listeningContext
+    }
+    const WindowAudioContext =
+      window.AudioContext ??
+      (
+        window as typeof window & {
+          webkitAudioContext?: typeof AudioContext
+        }
+      ).webkitAudioContext
+    if (WindowAudioContext === undefined) return null
+    try {
+      listeningContext = new WindowAudioContext()
+      return listeningContext
+    } catch {
+      listeningContext = null
+      return null
+    }
+  }
+
+  function disposeListeningGraph(): void {
+    listeningSource?.disconnect()
+    listeningSource = null
+    listeningRack?.dispose()
+    listeningRack = null
+  }
+
+  function connectListeningRoom(element: HTMLAudioElement): void {
+    const context = listeningContext
+    if (context === null || context.state === 'closed') return
+    disposeListeningGraph()
+    let nextRack: FxRack | null = null
+    let nextSource: MediaElementAudioSourceNode | null = null
+    try {
+      nextRack = createFxRack(context, { safetyLimiter: true })
+      nextRack.setSettings(roomSettings())
+      nextSource = context.createMediaElementSource(element)
+      nextSource.connect(nextRack.input)
+      listeningRack = nextRack
+      listeningSource = nextSource
+    } catch {
+      nextRack?.dispose()
+      // Once a media element has become a WebAudio source it no longer uses
+      // its direct output. Keep dry playback alive if the FX graph fails.
+      if (nextSource !== null) {
+        nextSource.disconnect()
+        try {
+          nextSource.connect(context.destination)
+          listeningSource = nextSource
+        } catch {
+          listeningSource = null
+        }
+      }
+    }
+  }
+
+  function disposeListeningContext(): void {
+    disposeListeningGraph()
+    const current = listeningContext
+    listeningContext = null
+    if (current !== null && current.state !== 'closed') {
+      void current.close().catch(() => undefined)
+    }
+  }
+
   function disposeAudio(): void {
+    playbackRequests.cancel()
+    playbackIsCurrent = () => false
+    playbackProgress.stop()
     audio?.pause()
     audio = null
+    disposeListeningGraph()
+    playbackTakeId = null
     if (audioUrl !== null) URL.revokeObjectURL(audioUrl)
     audioUrl = null
     setActiveId(null)
@@ -192,17 +298,29 @@ export function VoiceHistoryPage(): JSX.Element {
     setProgress(0)
   }
 
-  async function refresh(currentKey: string | null = null): Promise<void> {
-    const [loaded, snapshot] = await Promise.all([
-      listVoiceTakes(),
-      getVoiceStorageSnapshot(),
-    ])
-    setTakes(loaded)
-    setStorage(snapshot)
-    setLoading(false)
-    const keys = new Set(loaded.map((take) => take.comparisonKey))
-    if (currentKey !== null && keys.has(currentKey)) setSelectedKey(currentKey)
-    else setSelectedKey(loaded[0]?.comparisonKey ?? null)
+  async function refresh(currentKey: string | null = null): Promise<boolean> {
+    if (takes().length === 0) setLoading(true)
+    setLoadFailed(false)
+    try {
+      const [loaded, snapshot] = await Promise.all([
+        listVoiceTakes(),
+        getVoiceStorageSnapshot(),
+      ])
+      setTakes(loaded)
+      setStorage(snapshot)
+      const keys = new Set(loaded.map((take) => take.comparisonKey))
+      if (currentKey !== null && keys.has(currentKey)) {
+        setSelectedKey(currentKey)
+      } else {
+        setSelectedKey(loaded[0]?.comparisonKey ?? null)
+      }
+      return true
+    } catch {
+      setLoadFailed(true)
+      return false
+    } finally {
+      setLoading(false)
+    }
   }
 
   createEffect(() => {
@@ -218,11 +336,21 @@ export function VoiceHistoryPage(): JSX.Element {
 
   onMount(() => {
     trackEvent('voice_history_open')
+    uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
     void refresh()
   })
-  onCleanup(disposeAudio)
+  onCleanup(() => {
+    uninstallAudioUnlock()
+    disposeAudio()
+    disposeListeningContext()
+  })
+
+  // The helper establishes its own createEffect and reads this accessor there.
+  // eslint-disable-next-line solid/reactivity
+  bindListeningRoomSettings(roomSettings, () => listeningRack)
 
   function playTake(take: VoiceTakeRecord, fromComparison = false): void {
+    unlockAudio(ensureListeningContext())
     const isCurrentTake = activeId() === take.id
     void playTakeAsync(take, fromComparison, isCurrentTake)
   }
@@ -239,37 +367,83 @@ export function VoiceHistoryPage(): JSX.Element {
       trackEvent('voice_compare_start')
     }
     if (isCurrentTake && audio !== null) {
-      if (audio.paused) {
-        await audio.play()
-        setPlaying(true)
+      const currentAudio = audio
+      const requestIsCurrent = playbackIsCurrent
+      if (currentAudio.paused) {
+        try {
+          await currentAudio.play()
+          if (
+            !requestIsCurrent() ||
+            audio !== currentAudio ||
+            !isMediaPlaybackActive(currentAudio)
+          )
+            return
+          setPlaying(true)
+          playbackProgress.start(currentAudio)
+        } catch {
+          if (!requestIsCurrent() || audio !== currentAudio) return
+          setPlayerError(
+            'Playback was blocked. Tap play again to start the recording.',
+          )
+        }
       } else {
-        audio.pause()
+        playbackProgress.sample(currentAudio)
+        playbackProgress.stop()
+        currentAudio.pause()
         setPlaying(false)
       }
       return
     }
 
     disposeAudio()
+    const requestIsCurrent = playbackRequests.begin()
+    playbackIsCurrent = requestIsCurrent
+    playbackTakeId = takeId
     setPlayerError(null)
-    const blob = await getVoiceTakeBlob(takeId)
+    let blob: Blob | null
+    try {
+      blob = await getVoiceTakeBlob(takeId)
+    } catch {
+      if (requestIsCurrent()) {
+        playbackTakeId = null
+        setPlayerError(
+          'This take could not be opened from local storage. Try again or export it from the history list.',
+        )
+      }
+      return
+    }
+    if (!requestIsCurrent()) return
     if (blob === null) {
+      playbackTakeId = null
       setPlayerError(
         'This take’s audio is missing. Its history record remains available to delete.',
       )
       return
     }
-    audioUrl = URL.createObjectURL(blob)
-    audio = new Audio(audioUrl)
-    audio.addEventListener('timeupdate', () => {
-      if (
-        audio === null ||
-        !Number.isFinite(audio.duration) ||
-        audio.duration <= 0
-      )
-        return
-      setProgress(audio.currentTime / audio.duration)
+    const nextAudioUrl = URL.createObjectURL(blob)
+    const nextAudio = new Audio(nextAudioUrl)
+    nextAudio.setAttribute('playsinline', '')
+    audioUrl = nextAudioUrl
+    audio = nextAudio
+    connectListeningRoom(nextAudio)
+    nextAudio.addEventListener('timeupdate', () => {
+      if (!requestIsCurrent() || audio !== nextAudio) return
+      playbackProgress.sample(nextAudio)
     })
-    audio.addEventListener('ended', () => {
+    nextAudio.addEventListener('play', () => {
+      if (!requestIsCurrent() || audio !== nextAudio) return
+      setPlaying(true)
+      playbackProgress.start(nextAudio)
+    })
+    nextAudio.addEventListener('pause', () => {
+      if (!requestIsCurrent() || audio !== nextAudio) return
+      playbackProgress.sample(nextAudio)
+      playbackProgress.stop()
+      setPlaying(false)
+    })
+    nextAudio.addEventListener('ended', () => {
+      if (!requestIsCurrent() || audio !== nextAudio) return
+      playbackProgress.stop()
       setPlaying(false)
       setProgress(1)
       if (comparisonPendingComplete) {
@@ -277,7 +451,9 @@ export function VoiceHistoryPage(): JSX.Element {
         trackEvent('voice_compare_complete')
       }
     })
-    audio.addEventListener('error', () => {
+    nextAudio.addEventListener('error', () => {
+      if (!requestIsCurrent() || audio !== nextAudio) return
+      playbackProgress.stop()
       setPlaying(false)
       setPlayerError(
         'This browser could not decode the recording. Export it to keep the original file.',
@@ -285,9 +461,17 @@ export function VoiceHistoryPage(): JSX.Element {
     })
     setActiveId(takeId)
     try {
-      await audio.play()
+      await nextAudio.play()
+      if (
+        !requestIsCurrent() ||
+        audio !== nextAudio ||
+        !isMediaPlaybackActive(nextAudio)
+      )
+        return
       setPlaying(true)
+      playbackProgress.start(nextAudio)
     } catch {
+      if (!requestIsCurrent() || audio !== nextAudio) return
       setPlayerError(
         'Playback was blocked. Tap play again to start the recording.',
       )
@@ -295,7 +479,15 @@ export function VoiceHistoryPage(): JSX.Element {
   }
 
   async function exportTake(take: VoiceTakeRecord): Promise<void> {
-    const blob = await getVoiceTakeBlob(take.id)
+    let blob: Blob | null
+    try {
+      blob = await getVoiceTakeBlob(take.id)
+    } catch {
+      setPlayerError(
+        'This take could not be opened from local storage and cannot be exported right now.',
+      )
+      return
+    }
     if (blob === null) {
       setPlayerError('This take’s audio is missing and cannot be exported.')
       return
@@ -311,24 +503,66 @@ export function VoiceHistoryPage(): JSX.Element {
         .toLowerCase() || 'voice-take'
     }-${take.capturedAt.slice(0, 10)}.${extension}`
     anchor.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
     trackEvent('voice_export')
   }
 
   function removeTake(take: VoiceTakeRecord): void {
-    const confirmed = window.confirm(
-      `Delete “${take.title}” from this device? This cannot be undone.`,
-    )
-    if (!confirmed) return
-    const key = take.comparisonKey
-    const wasActive = activeId() === take.id
+    setDeleteError(null)
+    setDeleteIntent({ kind: 'take', take })
+  }
+
+  function confirmDelete(): void {
+    const intent = deleteIntent()
+    if (intent === null || deleteBusy()) return
+    setDeleteBusy(true)
+    setDeleteError(null)
+    setPlayerError(null)
     void (async () => {
-      if (wasActive) disposeAudio()
-      if (await deleteVoiceTake(take.id)) {
-        trackEvent('voice_delete')
-        await refresh(key)
-      } else {
-        setPlayerError('The take could not be deleted. Please try again.')
+      try {
+        if (intent.kind === 'take') {
+          const key = intent.take.comparisonKey
+          if (playbackTakeId === intent.take.id) disposeAudio()
+          if (!(await deleteVoiceTake(intent.take.id))) {
+            setDeleteError('The take could not be deleted. Please try again.')
+            return
+          }
+          trackEvent('voice_delete')
+          setDeleteError(null)
+          setDeleteIntent(null)
+          if (!(await refresh(key))) {
+            setPlayerError(
+              'The take was deleted, but voice history could not refresh. Reload the page to update the list.',
+            )
+            return
+          }
+          queueMicrotask(() => recordLaunchButton?.focus())
+        } else {
+          disposeAudio()
+          if (!(await wipeVoiceTakes())) {
+            setDeleteError(
+              'Voice history could not be cleared. Please try again.',
+            )
+            return
+          }
+          setDeleteError(null)
+          setDeleteIntent(null)
+          if (!(await refresh())) {
+            setPlayerError(
+              'Voice history was cleared, but the page could not refresh. Reload the page to update the list.',
+            )
+            return
+          }
+          queueMicrotask(() => recordLaunchButton?.focus())
+        }
+      } catch {
+        setDeleteError(
+          intent.kind === 'take'
+            ? 'The take could not be deleted. Please try again.'
+            : 'Voice history could not be cleared. Please try again.',
+        )
+      } finally {
+        setDeleteBusy(false)
       }
     })()
   }
@@ -370,18 +604,8 @@ export function VoiceHistoryPage(): JSX.Element {
   }
 
   function wipeAll(): void {
-    if (
-      !window.confirm(
-        'Delete every kept voice take from this device? This cannot be undone.',
-      )
-    )
-      return
-    void (async () => {
-      disposeAudio()
-      if (await wipeVoiceTakes()) await refresh()
-      else
-        setPlayerError('Voice history could not be cleared. Please try again.')
-    })()
+    setDeleteError(null)
+    setDeleteIntent({ kind: 'all', count: takes().length })
   }
 
   function openNewRecorder(): void {
@@ -416,7 +640,9 @@ export function VoiceHistoryPage(): JSX.Element {
   }
 
   async function handleFreeformKept(comparisonKey: string): Promise<void> {
-    await refresh(comparisonKey)
+    if (!(await refresh(comparisonKey))) {
+      throw new Error('Voice history refresh failed')
+    }
     closeRecorder()
   }
 
@@ -453,10 +679,9 @@ export function VoiceHistoryPage(): JSX.Element {
     setRenameError(null)
     void (async () => {
       if (await renameFreeformVoiceThread(comparisonKey, nextTitle)) {
-        try {
-          await refresh(comparisonKey)
+        if (await refresh(comparisonKey)) {
           finishRenaming()
-        } catch {
+        } else {
           setRenameError(
             'The thread was renamed, but the page could not refresh. Reload Hear Yourself to see it.',
           )
@@ -469,6 +694,34 @@ export function VoiceHistoryPage(): JSX.Element {
         setRenameSaving(false)
       }
     })()
+  }
+
+  function deleteDialogMessage(): JSX.Element {
+    const intent = deleteIntent()
+    if (intent?.kind === 'take') {
+      return (
+        <>
+          Delete <strong>{intent.take.title}</strong> from this device? This
+          cannot be undone.
+          <Show when={deleteError()}>
+            <span class={styles.deleteDialogError} role="alert">
+              {deleteError()}
+            </span>
+          </Show>
+        </>
+      )
+    }
+    return (
+      <>
+        Delete all {intent?.count ?? 0} kept takes from this device? Their audio
+        cannot be recovered.
+        <Show when={deleteError()}>
+          <span class={styles.deleteDialogError} role="alert">
+            {deleteError()}
+          </span>
+        </Show>
+      </>
+    )
   }
 
   return (
@@ -530,9 +783,24 @@ export function VoiceHistoryPage(): JSX.Element {
       </Show>
 
       <Show
-        when={!loading()}
+        when={!loading() && !loadFailed()}
         fallback={
-          <div class={styles.loading}>Opening your local voice history…</div>
+          <Show
+            when={loadFailed()}
+            fallback={
+              <div class={styles.loading} role="status">
+                Opening your local voice history…
+              </div>
+            }
+          >
+            <div class={styles.alert} role="alert">
+              Your local voice history could not be opened. Your recordings have
+              not been changed.
+              <button type="button" onClick={() => void refresh()}>
+                Try again
+              </button>
+            </div>
+          </Show>
         }
       >
         <Show
@@ -580,6 +848,7 @@ export function VoiceHistoryPage(): JSX.Element {
                   <button
                     type="button"
                     class={styles.threadButton}
+                    aria-pressed={selectedKey() === thread.key}
                     classList={{
                       [styles.threadSelected]: selectedKey() === thread.key,
                     }}
@@ -699,6 +968,11 @@ export function VoiceHistoryPage(): JSX.Element {
                       </Show>
                     </div>
 
+                    <VoiceRoomPanel
+                      settings={roomSettings()}
+                      onChange={setRoomSettings}
+                    />
+
                     <Show
                       when={thread().takes.length >= 2}
                       fallback={
@@ -707,6 +981,7 @@ export function VoiceHistoryPage(): JSX.Element {
                             take={thread().takes[0]!}
                             active={activeId() === thread().takes[0]!.id}
                             progress={progress()}
+                            playing={playing()}
                           />
                           <div>
                             <h3>One more matching take unlocks comparison.</h3>
@@ -791,6 +1066,7 @@ export function VoiceHistoryPage(): JSX.Element {
                                         take={take()}
                                         active={activeId() === take().id}
                                         progress={progress()}
+                                        playing={playing()}
                                       />
                                       <button
                                         type="button"
@@ -929,6 +1205,7 @@ export function VoiceHistoryPage(): JSX.Element {
                               take={take}
                               active={activeId() === take.id}
                               progress={progress()}
+                              playing={playing()}
                             />
                             <div class={styles.takeActions}>
                               <button
@@ -956,6 +1233,29 @@ export function VoiceHistoryPage(): JSX.Element {
           </div>
         </Show>
       </Show>
+      <ConfirmDialog
+        open={deleteIntent() !== null}
+        title={
+          deleteIntent()?.kind === 'all'
+            ? 'Clear all voice history?'
+            : 'Delete this take?'
+        }
+        message={deleteDialogMessage()}
+        confirmLabel={
+          deleteBusy()
+            ? 'Deleting…'
+            : deleteIntent()?.kind === 'all'
+              ? 'Clear history'
+              : 'Delete take'
+        }
+        confirmPhrase={deleteIntent()?.kind === 'all' ? 'delete' : undefined}
+        busy={deleteBusy()}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setDeleteError(null)
+          setDeleteIntent(null)
+        }}
+      />
     </section>
   )
 }

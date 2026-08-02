@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 
+const { getDbMock } = vi.hoisted(() => ({ getDbMock: vi.fn() }))
 const adapter = new InMemoryAdapter()
 
 vi.mock('@/db', () => ({
-  getDb: async () => adapter,
+  getDb: getDbMock,
   ensurePersistentStorage: vi.fn().mockResolvedValue(false),
 }))
 
@@ -19,6 +20,7 @@ function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
   const data = new Uint8Array([1, 2, 3, 4])
   const blob = new Blob([data], { type: 'audio/webm' })
   Object.defineProperty(blob, 'arrayBuffer', {
+    configurable: true,
     value: async () => data.buffer.slice(0),
   })
   return {
@@ -38,6 +40,8 @@ function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
 
 beforeEach(async () => {
   await adapter.destroy()
+  getDbMock.mockReset()
+  getDbMock.mockResolvedValue(adapter)
   vi.mocked(ensurePersistentStorage).mockClear()
 })
 
@@ -75,6 +79,29 @@ describe('voice take persistence', () => {
     })
     expect([...new Uint8Array(bytes)]).toEqual([1, 2, 3, 4])
     expect(ensurePersistentStorage).toHaveBeenCalledWith('voice-takes')
+  })
+
+  it('returns an actionable failure when the local blob cannot be read', async () => {
+    const unreadable = draft()
+    const arrayBuffer = vi
+      .fn<() => Promise<ArrayBuffer>>()
+      .mockRejectedValue(
+        new DOMException('Blob read failed', 'NotReadableError'),
+      )
+    Object.defineProperty(unreadable.blob, 'arrayBuffer', {
+      value: arrayBuffer,
+    })
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    await expect(saveVoiceTake(unreadable)).resolves.toMatchObject({
+      ok: false,
+      quotaExceeded: false,
+      roomAvailable: true,
+    })
+    expect(arrayBuffer).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
   })
 
   it('lists newest first and updates list-safe metadata', async () => {
