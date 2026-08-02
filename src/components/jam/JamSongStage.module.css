@@ -82,20 +82,6 @@
   }
 }
 
-/* Shown when the host picked a song only they hold. Amber, like the
-   preview chip: a caveat rather than something anyone switched on. */
-.localWarning {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  font-size: 0.76rem;
-  line-height: 1.4;
-  color: #e3a221;
-  border: 1px dashed rgba(227, 162, 33, 0.45);
-  border-radius: 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
-}
-
 /* ── Your run score ─────────────────────────────────────────────────
    Beside the title in the transport, not over the lyrics: mid-song a
    singer should be able to ignore it entirely. */

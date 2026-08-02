@@ -60,10 +60,11 @@ describe('a room running a song', () => {
     expect(store.jamSong()?.origin).toBe('local')
   })
 
-  it('refuses your own song once somebody else is listening', () => {
-    // The problem was never the song, it was somebody expecting to hear
-    // it. This is the check that has to read the ROOM, not just the song
-    // -- passing no peer count meant it could never fire.
+  it('loads your own song with peers present, and asks you to send it', () => {
+    // Once the transfer existed this stopped being a refusal: the room
+    // can fix it, so it offers the button instead. The check still has to
+    // read the ROOM rather than just the song -- that is what decides
+    // whether there is anybody to send to at all.
     store.setJamPeers([
       {
         id: 'p1',
@@ -74,9 +75,9 @@ describe('a room running a song', () => {
         hasAudio: true,
       },
     ])
-    expect(store.selectJamSong(song({ origin: 'local' }))).toBe(false)
-    expect(store.jamSong()).toBeNull()
-    expect(store.jamError()).toMatch(/nobody else in the room could hear/i)
+    expect(store.selectJamSong(song({ origin: 'local' }))).toBe(true)
+    expect(store.jamSong()?.origin).toBe('local')
+    expect(store.jamError()).toBeNull()
     store.setJamPeers([])
   })
 

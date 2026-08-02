@@ -14,12 +14,13 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
+import { JamSongShare } from './JamSongShare'
 import styles from './JamSongStage.module.css'
 
 /**
@@ -277,15 +278,6 @@ export const JamSongStage: Component = () => {
             )}
           </Show>
 
-          <Show
-            when={song().origin === 'local' && jamConnectedPeers().length > 0}
-          >
-            <div class={styles.localWarning} role="note">
-              Only you can hear this — it is on your device, not shared with the
-              room yet. Everyone else sees the words and the pitch lanes.
-            </div>
-          </Show>
-
           <div class={styles.transport}>
             <span class={styles.title}>
               {song().title}
@@ -326,6 +318,10 @@ export const JamSongStage: Component = () => {
             />
 
             <JamLyricVersionPicker />
+
+            {/* The offer to send this song out, or the progress of it
+                arriving. Renders nothing when there is nothing to say. */}
+            <JamSongShare />
 
             <Show when={song().stems.vocal}>
               <JamGuideVocal volume={guideVolume} onVolume={setGuideVolume} />
