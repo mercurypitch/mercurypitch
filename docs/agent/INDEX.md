@@ -96,6 +96,7 @@ These are the rules that break things when ignored.
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 266 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
+| `community` | [profile-model.ts](../../src/features/community/profile-model.ts) | 130 | Profile model — the numbers behind "your voice, so far" Pure data-in/data-out. |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
