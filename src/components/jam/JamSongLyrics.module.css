@@ -1,0 +1,85 @@
+/* JamSongLyrics — the read-only lyric column of a song room. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary, #0d1117);
+  backdrop-filter: blur(3px);
+  overflow: hidden;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Half a panel of padding top and bottom so the FIRST and LAST lines can
+     still centre themselves -- without it the song appears to start and end
+     mid-scroll. */
+  padding: 40% 16px;
+  scrollbar-width: thin;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Sung already: dimmed rather than hidden, so the singer keeps a sense of
+   where they are in the SONG and not only in the bar. */
+.linePast {
+  opacity: 0.4;
+}
+
+.lineCurrent {
+  color: var(--text-primary);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.14));
+  font-weight: 600;
+  /* A nudge rather than a scale: scaling reflows the neighbours and makes
+     the whole column twitch on every line change. */
+  transform: translateX(4px);
+}
+
+.lineText {
+  flex: 1;
+}
+
+.lineTime {
+  flex: none;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.empty {
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .line {
+    font-size: 0.92rem;
+  }
+
+  .scroll {
+    padding: 35% 12px;
+  }
+}
