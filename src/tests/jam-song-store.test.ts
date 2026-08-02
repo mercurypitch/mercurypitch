@@ -53,11 +53,30 @@ describe('a room running a song', () => {
     expect(store.jamIsSongRoom()).toBe(true)
   })
 
-  it('refuses a device-local song and says why', () => {
-    // Loading it would leave everyone else in silence with no explanation.
+  it('lets you sing your own song when the room is just you', () => {
+    store.setJamPeers([])
+    expect(store.selectJamSong(song({ origin: 'local' }))).toBe(true)
+    expect(store.jamSong()?.origin).toBe('local')
+  })
+
+  it('refuses your own song once somebody else is listening', () => {
+    // The problem was never the song, it was somebody expecting to hear
+    // it. This is the check that has to read the ROOM, not just the song
+    // -- passing no peer count meant it could never fire.
+    store.setJamPeers([
+      {
+        id: 'p1',
+        displayName: 'Ada',
+        connectionState: 'connected',
+        latency: 0,
+        hasVideo: false,
+        hasAudio: true,
+      },
+    ])
     expect(store.selectJamSong(song({ origin: 'local' }))).toBe(false)
     expect(store.jamSong()).toBeNull()
-    expect(store.jamError()).toMatch(/only on your device/i)
+    expect(store.jamError()).toMatch(/nobody else in the room could hear/i)
+    store.setJamPeers([])
   })
 
   it('clears the drill when a song loads', () => {

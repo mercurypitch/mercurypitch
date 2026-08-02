@@ -238,7 +238,10 @@ export const jamIsSongRoom = createRoot(() => {
  * with nothing to explain it -- the same failure Relay's empty parts had.
  */
 export function selectJamSong(song: JamSong): boolean {
-  const verdict = songPlayableInRoom(song)
+  // Peer count matters: a song only this device holds is fine alone and a
+  // problem once somebody is waiting to hear it. Passing 0 by omission
+  // meant the refusal could never fire, whoever was in the room.
+  const verdict = songPlayableInRoom(song, jamConnectedPeers().length)
   if (!verdict.ok) {
     setJamError(verdict.reason ?? 'That song cannot be played in a room.')
     return false
