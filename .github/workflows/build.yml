@@ -197,6 +197,14 @@ jobs:
             --remote \
             --config "$generated_db_config"
 
+          # PR previews use an isolated database, so keep the weekly challenge
+          # UI testable with one active fixture and one archived fixture. This
+          # seed is never applied to dev or production.
+          pnpm exec wrangler d1 execute "$preview_database_name" \
+            --remote \
+            --config "$generated_db_config" \
+            --file workers/db-worker/preview-weekly-seed.sql
+
           preview_settings=$(
             curl --fail-with-body --silent --show-error \
               --request POST \
