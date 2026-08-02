@@ -1,0 +1,49 @@
+/* ── JamLyricVersionPicker ──────────────────────────────────────────
+   A segmented control in the transport. Compact, because it is a thing
+   you set once a song and then ignore. */
+
+.picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.options {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  /* Resolves against the room's glass, so the transparency slider moves
+     this with everything else instead of leaving an opaque island. */
+  background: rgb(255 255 255 / 6%);
+}
+
+.option {
+  padding: 3px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.option:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 8%);
+}
+
+.optionOn {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 16%);
+  font-weight: 600;
+}
