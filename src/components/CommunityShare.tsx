@@ -11,6 +11,7 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
+import { accuracySeries, profileStats, scoreSeries, } from '@/features/community/profile-model'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
@@ -376,34 +377,26 @@ export const CommunityShare: Component = () => {
     }
   })
 
-  // Real recent-session series for the profile charts (oldest → newest)
-  const recentSessions = createMemo(() => getSessionHistory().slice(-8))
-  const recentScores = createMemo(() =>
-    recentSessions().map((s) => Math.round(s.score || 0)),
-  )
+  // Real recent-session series for the profile charts (oldest → newest).
+  // The arithmetic lives in profile-model so it can be tested without
+  // mounting this 1100-line component, and so the profile can be rebuilt
+  // around it without touching the rest of the Community tab.
+  const recentScores = createMemo(() => scoreSeries(getSessionHistory(), 8))
   const recentAccuracy = createMemo(() =>
-    recentSessions().map((s) =>
-      s.avgCents !== undefined
-        ? Math.max(0, Math.min(100, Math.round(100 - Math.abs(s.avgCents))))
-        : Math.round(s.score || 0),
-    ),
+    accuracySeries(getSessionHistory(), 8),
   )
 
-  // Real personal records derived from session history (null if none yet)
+  // Real personal records derived from session history (null if none yet).
+  // Null, not zeros: "best score 0%" reads as a bad result to someone who
+  // has simply not sung yet.
   const personalRecords = createMemo(() => {
-    const sessions = getSessionHistory()
-    if (sessions.length === 0) return null
-    const scores = sessions.map((s) => s.score || 0)
-    const recent = sessions.slice(-5)
+    const stats = profileStats(getSessionHistory())
+    if (stats === null) return null
     return {
-      best: Math.round(Math.max(...scores)),
-      sessions: sessions.length,
-      recentAvg: Math.round(
-        recent.reduce((a, s) => a + (s.score || 0), 0) / recent.length,
-      ),
-      firstDate: new Date(
-        Math.min(...sessions.map((s) => s.completedAt)),
-      ).toLocaleDateString(),
+      best: stats.best,
+      sessions: stats.sessions,
+      recentAvg: stats.recentAverage,
+      firstDate: new Date(stats.firstAt).toLocaleDateString(),
     }
   })
 
