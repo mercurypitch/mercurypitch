@@ -23,7 +23,8 @@ import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { midiToFrequency, noteToMidi } from '@/lib/frequency-to-note'
 import { useNotePreview } from '@/lib/use-note-preview'
-import { dialSeats, octavesIn, pitchClassAvailable, rangeBand, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from './note-dial-model'
+import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
+import { arcPath, dialSeats, octavesIn, pitchClassAvailable, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from './note-dial-model'
 import styles from './NoteDial.module.css'
 
 interface NoteDialProps {
@@ -130,6 +131,13 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
     return Number.isNaN(midi) ? null : midiToFrequency(midi)
   })
 
+  const ends = createMemo(() => rangeEnds(selectable(), noteToMidi))
+  /** "tenor", "mezzo-soprano" — the preset the notes actually came from. */
+  const voiceType = createMemo(() =>
+    VOCAL_RANGES[vocalRangePreset()].label.toLowerCase(),
+  )
+  const sweep = createMemo(() => arcPath(position(), HUB, HUB, R * 0.99))
+
   return (
     <div class={`${styles.dial} ${props.class ?? ''}`}>
       <Show when={props.label != null}>
@@ -146,7 +154,12 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
           onPointerDown={seatFromEvent}
           onKeyDown={onKeyDown}
         >
-          <circle class={styles.rim} cx={HUB} cy={HUB} r={R} />
+          <circle class={styles.rim} cx={HUB} cy={HUB} r={R * 0.99} />
+          {/* The rim doubles as the range gauge: 12 o'clock is the bottom
+              of the range and it fills clockwise to the selected note. */}
+          <Show when={sweep() !== ''}>
+            <path class={styles.sweep} d={sweep()} />
+          </Show>
 
           <For each={seats}>
             {(seat) => {
@@ -195,37 +208,55 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
           </text>
           <Show when={hz()}>
             {(f) => (
-              <text class={styles.hubHz} x={HUB} y={HUB + 14}>
+              <text class={styles.hubHz} x={HUB} y={HUB + 13}>
                 {f().toFixed(1)} Hz
               </text>
             )}
           </Show>
+          <text class={styles.hubBand} x={HUB} y={HUB + 27}>
+            {rangeBand(position()).toUpperCase()}
+          </text>
         </svg>
 
         <div class={styles.side}>
           <Show when={octaves().length > 1}>
-            <div class={styles.octaves} role="group" aria-label="Octave">
-              <For each={octaves()}>
-                {(octave) => (
-                  <button
-                    type="button"
-                    class={styles.octave}
-                    aria-pressed={current()?.octave === octave}
-                    onClick={() => pickOctave(octave)}
-                  >
-                    {octave}
-                  </button>
-                )}
-              </For>
-            </div>
+            <section class={styles.section}>
+              <h4 class={styles.sectionLabel}>Octave</h4>
+              <div class={styles.octaves} role="group" aria-label="Octave">
+                <For each={octaves()}>
+                  {(octave) => (
+                    <button
+                      type="button"
+                      class={styles.octave}
+                      aria-pressed={current()?.octave === octave}
+                      onClick={() => pickOctave(octave)}
+                    >
+                      {octave}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </section>
           </Show>
-          <p class={styles.readout}>
-            <span class={styles.band}>{rangeBand(position())}</span> in this
-            range
-          </p>
-          <div class={styles.meter} aria-hidden="true">
-            <i style={{ width: `${(position() * 100).toFixed(1)}%` }} />
-          </div>
+
+          <section class={styles.section}>
+            <h4 class={styles.sectionLabel}>Where it sits in your range</h4>
+            <div class={styles.meter} aria-hidden="true">
+              <i style={{ width: `${(position() * 100).toFixed(1)}%` }} />
+            </div>
+            <p class={styles.readout}>
+              <b class={styles.readoutNote}>{props.selected}</b>
+              <Show when={ends()} fallback={<> is the only note on offer.</>}>
+                {(e) => (
+                  <>
+                    {' '}
+                    — {Math.round(position() * 100)}% up your {voiceType()}{' '}
+                    range ({e().low}&ndash;{e().high}).
+                  </>
+                )}
+              </Show>
+            </p>
+          </section>
         </div>
       </div>
     </div>

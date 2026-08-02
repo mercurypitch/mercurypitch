@@ -9,7 +9,7 @@
 // in a suite rather than be noticed by someone clicking C#.
 
 import { describe, expect, it } from 'vitest'
-import { dialSeats, octavesIn, PITCH_CLASSES, pitchClassAvailable, rangeBand, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from '@/components/note-dial-model'
+import { arcPath, dialSeats, octavesIn, PITCH_CLASSES, pitchClassAvailable, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from '@/components/note-dial-model'
 
 const midiOf = (note: string): number => {
   const m = /^([A-G]#?)(-?\d+)$/.exec(note)
@@ -121,6 +121,49 @@ describe('what the range readout says', () => {
   it('calls a single-note range the middle rather than dividing by zero', () => {
     expect(rangePosition('C4', ['C4'], midiOf)).toBe(0.5)
     expect(rangePosition('C4', [], midiOf)).toBe(0.5)
+  })
+})
+
+describe('the range arc on the rim', () => {
+  it('draws nothing at the bottom of the range', () => {
+    expect(arcPath(0, 100, 100, 90)).toBe('')
+  })
+
+  it('starts at twelve o clock and sweeps clockwise', () => {
+    // A quarter turn ends at three o'clock: (cx + r, cy).
+    const d = arcPath(0.25, 100, 100, 90)
+    expect(d.startsWith('M 100.000 10.000')).toBe(true)
+    expect(d.endsWith('190.000 100.000')).toBe(true)
+  })
+
+  it('sets the large-arc flag only past the halfway point', () => {
+    expect(arcPath(0.4, 100, 100, 90)).toContain('90 90 0 0 1')
+    expect(arcPath(0.6, 100, 100, 90)).toContain('90 90 0 1 1')
+  })
+
+  it('closes a full sweep with two arcs, since one would not render', () => {
+    // A single arc from a point back to itself is degenerate and draws
+    // nothing — the highest note in the range would lose its gauge.
+    const d = arcPath(1, 100, 100, 90)
+    expect(d.match(/A /g)).toHaveLength(2)
+  })
+
+  it('clamps rather than trusting a position outside 0..1', () => {
+    expect(arcPath(-0.5, 100, 100, 90)).toBe('')
+    expect(arcPath(2, 100, 100, 90).match(/A /g)).toHaveLength(2)
+  })
+})
+
+describe('naming the ends of the range', () => {
+  it('reports the lowest and highest by pitch, not by list order', () => {
+    expect(rangeEnds(['G4', 'C3', 'A#5', 'E3'], midiOf)).toEqual({
+      low: 'C3',
+      high: 'A#5',
+    })
+  })
+
+  it('returns null for an empty range', () => {
+    expect(rangeEnds([], midiOf)).toBeNull()
   })
 })
 

@@ -17,14 +17,21 @@
 .body {
   display: flex;
   align-items: center;
-  gap: 18px;
+  /* The prototype's breathing room. 18px had the two columns almost
+     touching, which is most of why the built version read as cramped
+     next to it. */
+  gap: 32px;
   flex-wrap: wrap;
+  padding: 20px 22px;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
 }
 
 /* Sized in one place. The exercise panels vary in width, so the dial
    tracks the space it is given rather than fixing a pixel size. */
 .face {
-  width: clamp(168px, 42vw, 208px);
+  width: clamp(190px, 46vw, 250px);
   height: auto;
   flex: none;
   display: block;
@@ -42,6 +49,15 @@
   fill: none;
   stroke: var(--border);
   stroke-width: 1;
+}
+
+/* The range gauge riding the rim. */
+.sweep {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: d 0.2s ease;
 }
 
 .seat {
@@ -105,6 +121,17 @@
   stroke: var(--border);
 }
 
+/* Low / mid / high, under the frequency — the prototype put the word
+   where the eye already is rather than off in the side column. */
+.hubBand {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  fill: var(--accent);
+  text-anchor: middle;
+  pointer-events: none;
+}
+
 .hubNote {
   font-size: 26px;
   font-weight: 650;
@@ -117,7 +144,7 @@
 }
 
 .hubHz {
-  font-size: 8.5px;
+  font-size: 9px;
   fill: var(--text-muted);
   text-anchor: middle;
   font-variant-numeric: tabular-nums;
@@ -127,8 +154,25 @@
 .side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 0;
+  gap: 20px;
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* Same voice as the panel labels elsewhere in the exercise chrome. */
+.sectionLabel {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
 }
 
 .octaves {
@@ -138,7 +182,7 @@
 }
 
 .octave {
-  padding: 6px 12px;
+  padding: 9px 17px;
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -172,15 +216,15 @@
 
 .readout {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
   color: var(--text-muted);
 }
 
-.band {
-  font-weight: 600;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.readoutNote {
+  color: var(--text-primary);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .meter {
@@ -210,5 +254,11 @@
 
   .side {
     width: 100%;
+    flex-basis: auto;
+  }
+
+  .body {
+    gap: 22px;
+    padding: 16px;
   }
 }
