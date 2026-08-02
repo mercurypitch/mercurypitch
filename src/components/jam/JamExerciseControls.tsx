@@ -23,8 +23,11 @@ export const JamExerciseControls: Component<JamExerciseControlsProps> = (
   return (
     <Show when={jamIsHost()}>
       <div class={styles.bar}>
-        {/* Select exercise */}
+        {/* Select exercise. The marker lets the picker's dismiss-on-
+            outside-click ignore this button -- without it, one tap would
+            close the picker on pointerdown and reopen it on click. */}
         <button
+          data-jam-picker-toggle
           class={`${styles.btn} ${styles.btnSelect}`}
           onClick={() => props.onSelectExercise()}
           title="Choose a melody to practice"
