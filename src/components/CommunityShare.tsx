@@ -708,12 +708,14 @@ export const CommunityShare: Component = () => {
               )}
             </For>
             {displayMelodies().length === 0 && (
-              <div class={modalStyles.emptyState}>
+              <div
+                class={`${modalStyles.emptyState} empty-state empty-state-compact`}
+              >
                 <span class="empty-icon">{IconMelody()}</span>
                 <h3>No melodies shared yet</h3>
                 <p>
-                  Share your melodies with the community to start building your
-                  library.
+                  Melodies you share appear here, and anyone with the link can
+                  open them.
                 </p>
                 <button
                   class="primary-btn"
@@ -721,7 +723,7 @@ export const CommunityShare: Component = () => {
                   aria-label="Share your first melody"
                   title="Share your first melody"
                 >
-                  <IconShare /> Share Your First Melody
+                  <IconShare /> Share a melody
                 </button>
               </div>
             )}
@@ -801,12 +803,14 @@ export const CommunityShare: Component = () => {
               )}
             </For>
             {displaySessions().length === 0 && (
-              <div class={modalStyles.emptyState}>
+              <div
+                class={`${modalStyles.emptyState} empty-state empty-state-compact`}
+              >
                 <span class="empty-icon">{IconSession()}</span>
                 <h3>No sessions shared yet</h3>
                 <p>
-                  Share your practice sessions to track progress and inspire
-                  others.
+                  Share a session to keep a record of how it went, and to let
+                  others sing along with it.
                 </p>
                 <button
                   class="primary-btn"
@@ -814,7 +818,7 @@ export const CommunityShare: Component = () => {
                   aria-label="Share your first session"
                   title="Share your first session"
                 >
-                  <IconShare /> Share Your First Session
+                  <IconShare /> Share a session
                 </button>
               </div>
             )}

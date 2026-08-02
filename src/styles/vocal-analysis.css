@@ -3622,3 +3622,432 @@
     font-size: 26px;
   }
 }
+
+/* ============================================================
+   Community tab — scoped refinement (2026-08-02)
+   ============================================================
+   Everything below is scoped to .community-share-tab on purpose: these
+   class names (.tag, .action-btn, .primary-btn, .empty-state) are shared
+   globals, and the Community surface was the one that had outgrown them.
+
+   The diagnosis was rhythm, not colour. One 16px gap did every job —
+   between a title and its date, between tags and actions, between cards —
+   so nothing grouped and nothing led. The fixes are proximity first:
+   tight inside a card, generous between them. */
+
+/* ── The tab bar reads as one control ───────────────────────────── */
+/* Three equally-weighted buttons with their own borders competed with the
+   content they filter. A recessed track with one lifted segment says
+   "pick one of these" without any of them shouting. */
+.community-share-tab .community-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 22px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.community-share-tab .community-tab {
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.community-share-tab .community-tab:hover:not(.active) {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+.community-share-tab .community-tab.active {
+  background: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+  /* Offset and blur, so the segment sits ON the track rather than glowing. */
+  box-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+}
+
+.community-share-tab .community-tab.active .tab-name {
+  font-weight: 600;
+}
+
+/* The default focus ring landed on top of the active border and read as a
+   rendering fault. Inset keeps it legible without doubling the outline. */
+.community-share-tab .community-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ── Cards: the name leads, everything else supports ────────────── */
+.community-share-tab .melodies-grid,
+.community-share-tab .sessions-grid {
+  gap: 18px;
+}
+
+.community-share-tab .melody-card,
+.community-share-tab .session-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 16px;
+  border-radius: 14px;
+  /* A single top-lit wash: enough to separate the card from the page
+     without the flat fill reading as a placeholder box. */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--text-primary) 4%, transparent),
+      transparent 42%
+    ),
+    var(--bg-secondary);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.community-share-tab .melody-card:hover,
+.community-share-tab .session-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 55%);
+  transform: translateY(-2px);
+}
+
+/* Title and date belong together, so they sit tight; the date recedes to
+   a tabular figure rather than competing as a second heading. */
+.community-share-tab .melody-header {
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.community-share-tab .melody-name,
+.community-share-tab .session-card .session-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  /* A shared melody can carry any title someone typed. */
+  overflow-wrap: anywhere;
+}
+
+.community-share-tab .melody-date {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-share-tab .melody-info {
+  margin: 0 0 14px;
+}
+
+.community-share-tab .melody-author {
+  font-size: 0.8125rem;
+}
+
+.community-share-tab .melody-tags {
+  margin-top: 10px;
+}
+
+.community-share-tab .tag {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.6875rem;
+  letter-spacing: 0.01em;
+}
+
+/* Actions are the last thing you need, so they hold the quietest weight
+   until the card is under the pointer — and stay fully visible to keyboard
+   users, who cannot hover to discover them. */
+.community-share-tab .melody-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.community-share-tab .melody-card .action-btn,
+.community-share-tab .session-card .action-btn {
+  padding: 7px 10px;
+  font-size: 0.8125rem;
+  opacity: 0.82;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.community-share-tab .melody-card:hover .action-btn,
+.community-share-tab .session-card:hover .action-btn,
+.community-share-tab .action-btn:focus-visible {
+  opacity: 1;
+}
+
+/* ── Empty states invite rather than announce ───────────────────── */
+/* A 64px grey glyph was the loudest thing on an empty page, and the
+   saturated full-size button under it was the second. Both were arguing
+   for attention nobody had a reason to give yet. */
+.community-share-tab .empty-state {
+  padding: 52px 24px;
+}
+
+.community-share-tab .empty-icon {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.community-share-tab .empty-state h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.community-share-tab .empty-state p {
+  max-width: 34ch;
+  margin-bottom: 22px;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* ── Alignment: a list is read down a column ────────────────────── */
+/* .community-panel sets text-align: center, which every card inherited —
+   so names, authors and dates each found their own centre and the eye had
+   no edge to run down. Centring suits a poster, not a list of things you
+   scan and pick from. */
+.community-share-tab,
+.community-share-tab .community-header,
+.community-share-tab .community-content {
+  text-align: left;
+}
+
+.community-share-tab .community-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.community-share-tab .community-header-content h2 {
+  letter-spacing: -0.02em;
+}
+
+.community-share-tab .community-subtitle {
+  margin: 6px 0 0;
+  max-width: 52ch;
+}
+
+/* The share buttons are one pair, so they wrap together rather than one
+   of them breaking its own label across two lines. */
+.community-share-tab .community-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.community-share-tab .community-actions button {
+  white-space: nowrap;
+}
+
+/* A shared title can be a sentence. Two lines is enough to recognise it;
+   beyond that the card grows and drags a whole grid row of dead space
+   along with it. The full name stays available as the title attribute. */
+.community-share-tab .melody-name,
+.community-share-tab .session-card .session-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Cards in a row share a height so their action rows line up; the title
+   clamp above is what keeps that height sensible. */
+.community-share-tab .melodies-grid,
+.community-share-tab .sessions-grid {
+  align-items: stretch;
+}
+
+/* The header is a title block plus a pair of actions. The title takes the
+   room it needs and yields the rest, so the two share buttons sit side by
+   side at their own width instead of each claiming a full line. */
+.community-share-tab .community-header-content {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.community-share-tab .community-actions {
+  flex: 0 0 auto;
+}
+
+.community-share-tab .community-actions .share-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 9px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* ── Session cards ──────────────────────────────────────────────── */
+/* These are built from CSS-module classes (sessionCard, actionBtn,
+   statValue), so they are addressed structurally here rather than by a
+   name the hash would break.
+ *
+ * Two things had gone wrong. The run stats borrowed the PROFILE hero's
+ * statValue, which is display-sized where it lives — so "4 runs" was set
+ * larger than the song title. And the footer was never a flex row, so its
+ * two icon buttons stacked into a column. */
+.community-share-tab .sessions-grid > div {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--text-primary) 4%, transparent),
+      transparent 42%
+    ),
+    var(--bg-secondary);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.community-share-tab .sessions-grid > div:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 55%);
+  transform: translateY(-2px);
+}
+
+/* Title owns its own line; the per-run scores are detail, not a headline. */
+.community-share-tab .session-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.community-share-tab .session-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.community-share-tab .session-score-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.community-share-tab .session-info {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.community-share-tab .session-date {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+}
+
+/* Back to card scale: these support the title, they do not replace it. */
+.community-share-tab .session-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 14px 0 0;
+}
+
+.community-share-tab .session-stats .stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.community-share-tab .session-stats .stat-item > span:last-child {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.community-share-tab .session-stats .stat-icon svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.community-share-tab .session-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.community-share-tab .session-footer button {
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
+}
+
+.community-share-tab .sessions-grid > div:hover .session-footer button,
+.community-share-tab .session-footer button:focus-visible {
+  opacity: 1;
+}
+
+/* The badge was a fixed 24px square, so "92%" overflowed its own box and
+   the run scores ran into each other. They are a row of small readings,
+   so they size to their content. */
+.community-share-tab .session-score-badge {
+  width: auto;
+  height: auto;
+  min-width: 0;
+}
+
+/* No panel inside a panel: the stats belong to the card, and a second
+   filled box around them only adds an edge the eye has to cross. */
+.community-share-tab .session-stats {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+/* White on --accent (#58a6ff in this theme) measures 2.53:1 — under the
+   4.5:1 floor for body text, so the label on the one button an empty page
+   offers was the least legible thing on it. The dark foreground the app
+   already uses on accent fills (see .rv-stem-btn-play) measures ~7.4:1.
+   Scoped rather than global: .primary-btn carries the same problem
+   everywhere it is used, and that is a wider change than this surface. */
+.community-share-tab .empty-state .primary-btn {
+  color: var(--bg-primary);
+}
+
+.community-share-tab .empty-state .primary-btn svg {
+  color: inherit;
+}
