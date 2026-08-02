@@ -209,3 +209,55 @@
   border: 1px solid rgb(255 255 255 / 25%);
   border-radius: 50%;
 }
+
+/* ── Assign button ──────────────────────────────────────────────────
+   Quiet until wanted: a visible button on every line is a lot of
+   furniture over a lyric sheet somebody is trying to read. */
+.assignBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 8%);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.line:hover .assignBtn,
+.assignBtn:focus-visible,
+/* A line that already has a singer keeps its button visible -- otherwise
+   the only way to change it is to remember it is there. */
+.assignBtnSet {
+  opacity: 1;
+}
+
+.assignBtn:hover {
+  background: rgb(255 255 255 / 16%);
+  color: var(--text-primary);
+}
+
+/* Touch has no hover, so the button must never be invisible there. */
+@media (hover: none) {
+  .assignBtn {
+    opacity: 0.65;
+  }
+}
+
+/* The line whose assign popover is open.
+   Both declarations are load-bearing. The z-index lifts it above the lines
+   that follow it in the DOM; the opacity is what makes that possible at
+   all, because a dimmed line (.linePast, .lineNotMine) creates its own
+   stacking context and traps the popover inside it, where later siblings
+   paint straight over the menu. Last in the file so it wins the cascade
+   over the dimming rules it has to undo. */
+.lineAssigning {
+  z-index: 20;
+  opacity: 1;
+}

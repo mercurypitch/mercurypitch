@@ -16,6 +16,7 @@ import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
 import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
+import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
@@ -286,6 +287,8 @@ export const JamSongStage: Component = () => {
               onSeek={(to) => seekTo(to)}
             />
 
+            <JamLyricVersionPicker />
+
             <Show when={song().stems.vocal}>
               <JamGuideVocal volume={guideVolume} onVolume={setGuideVolume} />
             </Show>
@@ -322,6 +325,7 @@ export const JamSongStage: Component = () => {
           <div class={styles.split}>
             <JamSongLyrics
               scores={jamSongLineScores}
+              onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
               lines={song().lines}
               positionSec={jamSongPositionSec}
               showNotes={false}
