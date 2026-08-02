@@ -58,6 +58,9 @@ hear in their own recordings.
 - UK English (`en-GB`) is the initial exercise locale.
 - The voice-history foundation is a local take vault. Saving a take is an
   explicit user action; audio is not uploaded in the first release.
+- Singers can start a self-chosen practice thread directly in Hear Yourself,
+  review a dry temporary recording, and keep or discard it explicitly. Keeping
+  another take in that thread unlocks the same Earlier/Later comparison.
 - Voice history and comparison work while signed out and without a configured
   backend.
 - Future cloud sync is opt-in portability for signed-in users. New users will
