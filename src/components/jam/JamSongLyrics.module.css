@@ -28,6 +28,8 @@
 }
 
 .line {
+  /* Anchors the assign popover, which must not reflow the sheet. */
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -143,4 +145,67 @@
 .lineScore_missed {
   color: #f09a9a;
   background: rgb(240 154 154 / 14%);
+}
+
+/* ── Who sings what ─────────────────────────────────────────────────
+   A colour bar down the leading edge, matching that person's pitch lane
+   on the right. Readable at singing distance, where a name is not. */
+.singerBar {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 3px;
+  min-height: 1em;
+  margin-right: 2px;
+  border-radius: 2px;
+}
+
+/* Somebody else's line: still readable, because following the whole song
+   is the point, but visibly not yours to come in on. */
+.lineNotMine {
+  opacity: 0.55;
+}
+
+/* The two-tap assign popover. Absolute so it never reflows the lyric
+   sheet underneath it -- a column that jumps while you are reading is
+   worse than no assignment feature at all. */
+.assign {
+  position: absolute;
+  z-index: 5;
+  right: 8px;
+  top: calc(100% - 4px);
+  display: flex;
+  flex-direction: column;
+  min-width: 9rem;
+  padding: 4px;
+  border: 1px solid var(--border-color, rgb(255 255 255 / 14%));
+  border-radius: 8px;
+  background: var(--bg-elevated, #14181f);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+.assignItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.assignItem:hover,
+.assignItem:focus-visible {
+  background: rgb(255 255 255 / 8%);
+}
+
+.assignDot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: 50%;
 }

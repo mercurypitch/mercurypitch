@@ -198,6 +198,14 @@ export interface JamSongMessage {
      * backing track is missing.
      */
     notes?: JamSongNote[]
+    /**
+     * Who sings which line (see lib/jam/jam-song-parts.ts).
+     *
+     * Travels with the manifest rather than as its own message: the
+     * allocation is authored against THIS lyric sheet, and a part map
+     * arriving separately could describe a song the peer has not loaded.
+     */
+    parts?: Record<number, string>
   }
 }
 

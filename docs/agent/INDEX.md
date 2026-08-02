@@ -105,7 +105,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 3.4k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
+| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 3.6k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.8k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 1.8k | Voice Mirror — pure metrics over F0 frame streams. |
@@ -299,9 +299,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.3k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.3k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.3k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.2k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->

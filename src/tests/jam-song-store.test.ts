@@ -176,11 +176,79 @@ describe('per-line scores', () => {
   })
 })
 
+describe('who sings which line', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(true)
+    store.setJamPeerId('me')
+    store.selectJamSong(song())
+  })
+
+  it('gives every line to the room until somebody assigns one', () => {
+    expect(store.jamLineIsMine(0)).toBe(true)
+    expect(store.jamSongParts()).toEqual({})
+  })
+
+  it('assigns a run of lines in one go', () => {
+    store.assignJamSongLines(1, 3, 'ada')
+    expect(store.jamSongParts()).toEqual({ 1: 'ada', 2: 'ada', 3: 'ada' })
+  })
+
+  it('knows which lines are mine once parts exist', () => {
+    store.assignJamSongLines(0, 0, 'me')
+    store.assignJamSongLines(1, 1, 'ada')
+    expect(store.jamLineIsMine(0)).toBe(true)
+    expect(store.jamLineIsMine(1)).toBe(false)
+    // Still unassigned, so still everyone's.
+    expect(store.jamLineIsMine(2)).toBe(true)
+  })
+
+  it('refuses to let a guest re-cut the song', () => {
+    // The allocation is authored by the host; two people editing it from
+    // opposite ends of a mesh is a room nobody can sing in.
+    store.setJamIsHost(false)
+    store.assignJamSongLines(0, 2, 'ada')
+    expect(store.jamSongParts()).toEqual({})
+  })
+
+  it('hands a departed singer’s lines on rather than letting them go silent', () => {
+    store.setJamPeers([
+      {
+        id: 'ada',
+        displayName: 'Ada',
+        connectionState: 'connected',
+        latency: 0,
+        hasVideo: false,
+        hasAudio: true,
+      },
+    ])
+    store.assignJamSongLines(0, 0, 'ada')
+    store.assignJamSongLines(1, 1, 'bo')
+    // Bo was never in the peer list, so bo's line is orphaned.
+    store.rehomeJamSongParts()
+    expect(store.jamSongParts()[1]).not.toBe('bo')
+    expect(store.jamSongParts()[1]).toBeDefined()
+  })
+
+  it('forgets the allocation when a different song loads', () => {
+    // A new song is a new lyric sheet; line 3 means something else now.
+    store.assignJamSongLines(0, 2, 'ada')
+    store.selectJamSong(song({ id: 'other' }))
+    expect(store.jamSongParts()).toEqual({})
+  })
+})
+
 describe('attaching lyrics to a loaded song', () => {
   beforeEach(() => {
     store.clearJamSong()
     store.setJamError(null)
     store.setJamPeers([])
+    // Explicit rather than inherited: the parts suite above leaves the
+    // room hosted, and a test that only passes in file order is a trap.
+    store.setJamIsHost(false)
+    store.setJamPeerId(null)
   })
 
   it('gives the loaded song its words', () => {

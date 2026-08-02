@@ -223,22 +223,21 @@ rather than attached: plain lyrics cannot scroll.
 This is the feature the user actually wants, and it is cheaper than it looks
 because `LyricsBlock` already exists for repeat marking.
 
-**Model:** one optional field.
+**Model:** shipped as a flat `line -> peer` map (`lib/jam/jam-song-parts.ts`),
+not the `LyricsBlock` field this plan first proposed.
 
-```ts
-interface LyricsBlock {
-  id: string
-  label: string
-  lineIndices: number[]
-  repeatCount: number
-  singerId?: string   // <- new: who sings this block
-}
-```
+The block model carries repeat counts, labels and an edit layer that only mean
+anything inside an editor, and importing it here would have pulled in the very
+controller the post-release refactor is meant to break up — for a room that
+needs none of it. A map is what the room actually uses, and blocks can project
+onto one later without either side changing. The gesture is two taps: tap a
+line, pick a singer.
 
-The block editor already lets you mark a range of lines and label it. Marking
-that block "Singer 2" instead of "Chorus" is the same gesture on the same
-model. Blocks are already shared with the song, so the assignment travels with
-it and every peer sees the same allocation.
+The allocation travels **inside the song manifest** rather than as its own
+message, and is re-sent whole rather than as a delta. A part map arriving
+separately could describe a lyric sheet the peer has not loaded, and a peer
+that missed one delta would sing the wrong part for the rest of the song —
+which is undiagnosable from inside a room.
 
 **Roles map to blocks, not to sorted-peer-index.** This is the departure from
 the existing modes: Harmony and Relay derive roles from the peer list because
@@ -246,8 +245,18 @@ nothing about the melody says who sings what. A song *does* — the assignment
 is authored. So the room needs a claim step: peers pick (or are given) a
 singer slot, and `jamMyTarget` returns the lines for that slot.
 
-**Unassigned blocks are everyone's.** A song with no assignments is a unison
-singalong, which is the sane default and the thing most rooms will do.
+**Unassigned lines are everyone's.** A song with no assignments is a unison
+singalong, which is the sane default and the thing most rooms will do — the
+feature costs nothing until somebody uses it.
+
+**A part never falls silent.** When a singer leaves, their lines pass to
+whoever is still here, and back to the room if nobody is. From inside a room,
+silence where a verse should be is indistinguishable from the song being
+broken.
+
+**You are not scored on somebody else's line.** Being marked down for staying
+quiet through another singer's verse is the opposite of what assigning parts
+is for, so the line scorer skips lines that are not yours.
 
 **Lead and backing** is then just two blocks over the same lines with
 different singers — no extra concept needed.
