@@ -42,6 +42,7 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import { glassShareText, renderShatterCard } from './card-renderer'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import { showNotification } from '@/stores/notifications-store'
 import { trackGlass } from './funnel'
 import type { FxRack as FxAudio, FxSettings } from './fx-rack'
@@ -282,8 +283,12 @@ export const GlassApp: Component = () => {
     blob: Blob,
     shattered: boolean,
     metrics: RepMetrics,
+    frames: readonly PitchFrame[],
   ): Promise<void> {
     const id = takeIdSeq++
+    const contour = encodeVoiceAtlasContour(frames, {
+      source: 'f0-stream-yin-v1',
+    })
     setTakes((prev) => [
       ...prev,
       {
@@ -292,6 +297,7 @@ export const GlassApp: Component = () => {
         blob,
         durationSec: 0,
         peaks: null,
+        contour,
         shattered,
         metrics,
         saveState: 'idle',
@@ -453,6 +459,7 @@ export const GlassApp: Component = () => {
         durationMs,
         blob: take.blob,
         peaks,
+        contour: take.contour,
         title: `Glass · ${target} · Take ${take.rep}`,
         context: {
           targetMidi,
@@ -922,12 +929,15 @@ export const GlassApp: Component = () => {
         // No playback BEAT after the burst (the burst is the payoff), but
         // the winning take is kept for the review strip — with the wait
         // capped so a slow MediaRecorder can never delay the shatter.
+        // Freeze analysis on the same instant as the audible performance;
+        // MediaRecorder.stop() may need hundreds of milliseconds to flush.
+        const winningFrames = f0.takeFrames()
         const winningBlob =
           recorder === null
             ? null
             : await Promise.race([recorder.stop(), sleep(400).then(() => null)])
         return {
-          frames: f0.takeFrames(),
+          frames: winningFrames,
           shattered: true,
           peakResonance: peak,
           takeBlob: winningBlob,
@@ -1140,7 +1150,7 @@ export const GlassApp: Component = () => {
         renderer?.shatter({ epicness, seed })
         if (audioContext !== null) playGlassShatter(audioContext, epicness)
         if (take.takeBlob !== null) {
-          void addTake(rep, take.takeBlob, true, metrics)
+          void addTake(rep, take.takeBlob, true, metrics, take.frames)
         }
         dispatch({ type: 'shattered', metrics })
         trackGlass('glass_shatter', {
@@ -1165,7 +1175,7 @@ export const GlassApp: Component = () => {
         inBandPct: round2(metrics.inBandPct),
       })
       if (take.takeBlob !== null) {
-        void addTake(rep, take.takeBlob, false, metrics)
+        void addTake(rep, take.takeBlob, false, metrics, take.frames)
       }
       await playbackPhase(take.frames, take.takeBlob)
       if (!alive()) return

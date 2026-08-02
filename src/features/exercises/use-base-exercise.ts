@@ -3,6 +3,8 @@ import type { AudioEngine } from '@/lib/audio-engine'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
+import type { VoiceAtlasContourPayloadV1, VoiceAtlasRawFrame, } from '@/lib/voice-contour'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import type { TracePoint } from './last-run-trace'
 import { downsampleTrace, publishRunTrace } from './last-run-trace'
 import type { ExerciseConfig, ExerciseResult, ExerciseState } from './types'
@@ -23,6 +25,7 @@ export interface ExerciseSessionVoiceTake {
   durationMs: number
   peaks: Float32Array
   capturedAt: string
+  contour: VoiceAtlasContourPayloadV1
   config: ExerciseConfig
   result: ExerciseResult
 }
@@ -98,6 +101,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
   let voiceCaptureTimer: ReturnType<typeof setTimeout> | undefined
   let voiceCaptureGeneration = 0
   let activeVoiceConfig: ExerciseConfig | null = null
+  let voiceContourFrames: VoiceAtlasRawFrame[] = []
+  let cappedVoiceContourFrames: VoiceAtlasRawFrame[] | null = null
+  let voiceContourRecording = false
   // Target-pitch timeline of the current run: one point per reference-tone
   // change, on the same elapsed-seconds epoch as pitchHistory `.time`. Feeds
   // the published run trace (pitch-race share / duet-with-past-self).
@@ -142,12 +148,22 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     voiceCaptureTimer = undefined
   }
 
+  function finishVoiceContourCapture(): VoiceAtlasRawFrame[] {
+    voiceContourRecording = false
+    const frames = voiceContourFrames
+    voiceContourFrames = []
+    return frames
+  }
+
   function discardVoiceTake(): void {
     voiceCaptureGeneration++
     clearVoiceCaptureTimer()
     voiceRecorder?.discard()
     voiceRecorder = null
     cappedVoiceBlob = null
+    voiceContourFrames = []
+    cappedVoiceContourFrames = null
+    voiceContourRecording = false
     pendingVoiceOutcome = null
     activeVoiceConfig = null
     setVoiceTake(null)
@@ -169,11 +185,15 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     }
     voiceRecorder = recorder
     voiceRecorder.start()
+    voiceContourFrames = []
+    cappedVoiceContourFrames = null
+    voiceContourRecording = true
     setVoiceCaptureState('recording')
     voiceCaptureTimer = setTimeout(() => {
       const current = voiceRecorder
       voiceRecorder = null
       if (current !== null) cappedVoiceBlob = current.stop()
+      cappedVoiceContourFrames = finishVoiceContourCapture()
       voiceCaptureTimer = undefined
     }, MAX_EXERCISE_CAPTURE_MS)
   }
@@ -191,6 +211,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
     const blobPromise =
       cappedVoiceBlob ?? current?.stop() ?? Promise.resolve(null)
     cappedVoiceBlob = null
+    const contourFrames =
+      cappedVoiceContourFrames ?? finishVoiceContourCapture()
+    cappedVoiceContourFrames = null
     setVoiceCaptureState('processing')
 
     const outcomePromise = (async (): Promise<ExerciseVoiceCaptureOutcome> => {
@@ -215,6 +238,9 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         durationMs: inspection.durationMs,
         peaks: inspection.peaks,
         capturedAt: new Date(exerciseResult.completedAt).toISOString(),
+        contour: encodeVoiceAtlasContour(contourFrames, {
+          source: 'practice-engine-v1',
+        }),
         config,
         result: exerciseResult,
       }
@@ -328,6 +354,16 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       const pitch = practiceEngine.update()
       const now = performance.now()
       const elapsed = now - startTime
+      const inputLevel = practiceEngine.getInputLevel()
+
+      if (voiceContourRecording) {
+        voiceContourFrames.push({
+          t: elapsed / 1000,
+          f0: pitch?.frequency ?? 0,
+          conf: pitch?.clarity ?? 0,
+          rms: inputLevel,
+        })
+      }
 
       batch(() => {
         if (pitch && pitch.frequency > 0 && pitch.clarity >= 0.2) {
@@ -349,7 +385,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
                 // Real per-frame loudness so dynamics exercises can score
                 // actual crescendo/decrescendo (reuses the mic RMS the engine
                 // already computes for its input-level meter).
-                rms: practiceEngine.getInputLevel(),
+                rms: inputLevel,
               },
             ]
             return next.length > MAX_PITCH_HISTORY

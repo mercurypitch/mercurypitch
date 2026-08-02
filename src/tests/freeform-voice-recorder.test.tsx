@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { FreeformVoiceRecorder } from '@/features/voice-history/FreeformVoiceRecorder'
+import { drainPitchStream, FreeformVoiceRecorder, } from '@/features/voice-history/FreeformVoiceRecorder'
 
 const {
   acquireMock,
@@ -118,6 +118,25 @@ describe('FreeformVoiceRecorder', () => {
     await waitFor(() => expect(acquireMock).toHaveBeenCalled())
     expect(startMock).toHaveBeenCalled()
     expect(keepMock).not.toHaveBeenCalled()
+  })
+
+  it('drains the raw contour exactly once before stream teardown', () => {
+    const takeFrames = vi.fn().mockReturnValue([
+      { t: 0, f0: 440, conf: 0.9, rms: 0.25 },
+      { t: 0.05, f0: 0, conf: 0, rms: 0.1 },
+    ])
+    const dispose = vi.fn()
+    const stream = {
+      takeFrames,
+      dispose,
+    } as unknown as Parameters<typeof drainPitchStream>[0]
+
+    expect(drainPitchStream(stream)).toEqual([
+      { t: 0, f0: 440, conf: 0.9, rms: 0.25 },
+      { t: 0.05, f0: 0, conf: 0, rms: 0.1 },
+    ])
+    expect(takeFrames).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
   })
 
   it('discards an active temporary take and releases the shared mic on close', async () => {

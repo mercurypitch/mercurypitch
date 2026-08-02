@@ -65,6 +65,13 @@ hear in their own recordings.
   comparison.
 - Voice history and comparison work while signed out and without a configured
   backend.
+- Voice Atlas maps an explicitly kept take as Take Topography: true time,
+  confidence-filtered pitch, relative energy, and honest unvoiced gaps. Twin
+  Trails places Earlier and Later in one shared time/pitch domain without
+  time-warping either performance.
+- Reflection Beacons are singer-authored observations (Keep, Curious, and Try
+  next time), not algorithmic judgements. Older takes without contour data
+  stay playable through their cached waveform.
 - Future cloud sync is opt-in portability for signed-in users. New users will
   receive a limited free storage allowance; additional cloud capacity will be
   paid. Allowance sizes, pricing, retention policy, and launch timing remain
@@ -86,6 +93,8 @@ hear in their own recordings.
   public sharing plainly.
 - Progress claims use real takes and compatible contextual metrics, never a
   fabricated composite “voice score.”
+- Voice Atlas colours identify Earlier, Later, and the active playhead; they do
+  not encode better/worse or an implied direction of improvement.
 
 ## Evidence on Hand
 
@@ -99,6 +108,9 @@ hear in their own recordings.
 - Existing local real-voice capture and playback:
   `src/features/glass/take-recorder.ts` and
   `src/features/glass/take-strip.tsx`
+- Versioned Voice Atlas contour codec and shared render model:
+  `src/lib/voice-contour.ts` and
+  `src/features/voice-history/voice-atlas-model.ts`
 - IndexedDB, durable-write, quota, and persistent-storage patterns under
   `src/db/`
 - No recorded user research, take-volume distribution, cloud-storage
