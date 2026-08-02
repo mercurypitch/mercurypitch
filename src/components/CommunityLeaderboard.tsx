@@ -8,6 +8,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 's
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 import { CheckCircle, ChevronDown, Play } from '@/components/icons'
 import type { ChallengeDefinition, ChallengeProgress, LeaderboardCategory as DBLeaderboardCategory, } from '@/db/entities'
+import { hasValidToken } from '@/db/services/auth-service'
 import { loadChallengeDefinitions, loadChallengeProgress, } from '@/db/services/challenges-service'
 import { follow, getFollowing, unfollow } from '@/db/services/follow-service'
 import { loadLeaderboardPage } from '@/db/services/leaderboard-service'
@@ -17,6 +18,7 @@ import { authVersion, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { peekPendingFriendCode } from '@/lib/pending-friend-code'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import type { LeaderboardCategory, LeaderboardUser, LeaderboardView, } from '@/types'
 import { IconCloseSimple, IconFilter } from './hidden-features-icons'
 
@@ -233,7 +235,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     peekPendingFriendCode() != null
       ? 'friends'
       : // eslint-disable-next-line solid/reactivity -- one-time signal init
-        (props.view ?? 'global')
+        (props.view ?? 'league')
   ) as LeaderboardView
   // eslint-disable-next-line solid/reactivity -- one-time signal init
   const initialCategory = (props.category ?? 'overall') as LeaderboardCategory
@@ -529,14 +531,17 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       </div>
 
       {/* Leaderboard Tabs */}
+      {/* League leads: it is the main event, and the ladder is the reason
+          to come back weekly. Global — a flat all-time list — reads as a
+          wall of strangers, so it sits last. */}
       <div class="leaderboard-tabs">
         <button
-          class={`leaderboard-tab ${activeView() === 'global' ? 'active' : ''}`}
-          onClick={() => setActiveView('global')}
+          class={`leaderboard-tab ${activeView() === 'league' ? 'active' : ''}`}
+          onClick={() => setActiveView('league')}
+          data-testid="league-tab"
         >
-          <IconSearch />
-          <span class="tab-name">Global</span>
-          <span class="tab-count">{allLeaderboardUsers().length}</span>
+          <IconTrophy />
+          <span class="tab-name">League</span>
         </button>
         <button
           class={`leaderboard-tab ${activeView() === 'friends' ? 'active' : ''}`}
@@ -568,12 +573,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
           <span class="tab-count">{weeklyChallenges().length}</span>
         </button>
         <button
-          class={`leaderboard-tab ${activeView() === 'league' ? 'active' : ''}`}
-          onClick={() => setActiveView('league')}
-          data-testid="league-tab"
+          class={`leaderboard-tab ${activeView() === 'global' ? 'active' : ''}`}
+          onClick={() => setActiveView('global')}
         >
-          <IconTrophy />
-          <span class="tab-name">League</span>
+          <IconSearch />
+          <span class="tab-name">Global</span>
+          <span class="tab-count">{allLeaderboardUsers().length}</span>
         </button>
       </div>
 
@@ -686,13 +691,31 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                           </>
                         }
                       >
-                        Leagues are for registered singers — create an account
-                        in Settings → Account to climb the ladder. Practice
-                        earns weekly points; the top of each league advances
-                        every Monday.
+                        Leagues are for registered singers. Practice earns
+                        weekly points; the top of each league advances every
+                        Monday.
                       </Show>
                     </Show>
                   </p>
+                  {/* This is now the landing view, so a signed-out visitor
+                      meets the ladder first. Give them the door here rather
+                      than sending them off to hunt through Settings — the
+                      trophies above are the pitch, this is the button. */}
+                  <Show
+                    when={
+                      leagueMe() != null &&
+                      leagueMe()?.reason !== 'unavailable' &&
+                      !hasValidToken()
+                    }
+                  >
+                    <button
+                      type="button"
+                      class="challenge-join-btn league-join-cta"
+                      onClick={() => openAuthModal('register')}
+                    >
+                      Create an account to climb
+                    </button>
+                  </Show>
                 </div>
               }
             >
