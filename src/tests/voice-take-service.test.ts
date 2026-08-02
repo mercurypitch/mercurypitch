@@ -11,9 +11,9 @@ vi.mock('@/db', () => ({
 
 import { ensurePersistentStorage } from '@/db'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
-import { CLOUD_ENTITIES } from '@/db/adapters/hybrid-adapter'
+import { CLOUD_ENTITIES, HybridAdapter } from '@/db/adapters/hybrid-adapter'
 import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '@/db/entities'
-import { deleteVoiceTake, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, saveVoiceTake, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { deleteVoiceTake, deleteVoiceThread, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, saveVoiceTake, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
@@ -168,17 +168,47 @@ describe('voice take persistence', () => {
     ])
   })
 
-  it('deletes audio with its metadata and supports a full local wipe', async () => {
+  it('deletes takes, complete threads, and the full local history', async () => {
     const first = await saveVoiceTake(draft())
     const second = await saveVoiceTake(draft('2026-08-02T12:00:00.000Z'))
+    const otherThread = await saveVoiceTake({
+      ...draft('2026-08-03T12:00:00.000Z'),
+      comparisonKey: 'glass:target-midi:61:v1',
+      title: 'Glass · C-sharp 4 · Take 1',
+    })
 
     expect(await deleteVoiceTake(first.value!.id)).toBe(true)
     expect(await getVoiceTakeBlob(first.value!.id)).toBeNull()
-    expect(await listVoiceTakes()).toHaveLength(1)
+    expect(await listVoiceTakes()).toHaveLength(2)
+
+    expect(await deleteVoiceThread(second.value!.comparisonKey)).toBe(true)
+    expect(await getVoiceTakeBlob(second.value!.id)).toBeNull()
+    expect((await listVoiceTakes()).map((take) => take.id)).toEqual([
+      otherThread.value!.id,
+    ])
 
     expect(await wipeVoiceTakes()).toBe(true)
     expect(await listVoiceTakes()).toEqual([])
-    expect(await getVoiceTakeBlob(second.value!.id)).toBeNull()
+    expect(await getVoiceTakeBlob(otherThread.value!.id)).toBeNull()
+  })
+
+  it('clears local voice stores through the preview HybridAdapter path', async () => {
+    const cloud = new InMemoryAdapter()
+    const local = new DexieAdapter()
+    const hybrid = new HybridAdapter(cloud, local)
+    const cloudTransaction = vi.spyOn(cloud, 'transaction')
+    getDbMock.mockResolvedValue(hybrid)
+
+    try {
+      const saved = await saveVoiceTake(draft())
+      expect(saved.ok).toBe(true)
+      expect(await wipeVoiceTakes()).toBe(true)
+      expect(await listVoiceTakes()).toEqual([])
+      expect(await getVoiceTakeBlob(saved.value!.id)).toBeNull()
+      expect(cloudTransaction).not.toHaveBeenCalled()
+    } finally {
+      await hybrid.destroy()
+    }
   })
 })
 

@@ -53,6 +53,7 @@ export const VoiceTakeWaveform: Component<{
   peaks: ArrayLike<number> | null
   progress: number
   playing: boolean
+  showPlayhead?: boolean
   class?: string
 }> = (props) => {
   let canvas: HTMLCanvasElement | undefined
@@ -94,7 +95,7 @@ export const VoiceTakeWaveform: Component<{
     }
     context.shadowBlur = 0
 
-    if (props.playing) {
+    if (props.showPlayhead === true) {
       const playedX = Math.max(0, Math.min(1, props.progress)) * rect.width
       context.strokeStyle = 'rgba(255, 233, 168, 0.9)'
       context.lineWidth = 1.4
@@ -120,6 +121,7 @@ export const VoiceTakeWaveform: Component<{
     void props.peaks
     void props.progress
     void props.playing
+    void props.showPlayhead
     scheduleDraw()
   })
 
