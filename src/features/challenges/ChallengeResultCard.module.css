@@ -68,9 +68,14 @@
 }
 
 .actions {
-  display: flex;
+  display: grid;
   gap: 8px;
   margin-top: 6px;
+}
+
+.secondaryActions {
+  display: flex;
+  gap: 8px;
 }
 
 .primary {
@@ -86,6 +91,7 @@
 }
 
 .secondary {
+  flex: 1;
   padding: 9px 14px;
   border: 1px solid var(--border, #30363d);
   border-radius: 8px;
@@ -93,4 +99,21 @@
   color: var(--text-secondary, #8b949e);
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid #f6b94b;
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .secondaryActions {
+    display: grid;
+  }
+
+  .primary,
+  .secondary {
+    min-height: 44px;
+  }
 }

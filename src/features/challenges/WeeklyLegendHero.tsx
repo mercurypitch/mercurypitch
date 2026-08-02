@@ -12,6 +12,7 @@ import { createEffect, createResource, For, Show } from 'solid-js'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
+import { requestPastChallengesScroll } from './PastWeeklyChallenges'
 import { beginWeeklyAttempt, weeklyAttemptVersion } from './weekly-attempt'
 import { getActiveWeekly, getWeeklyBoard, hoursUntil } from './weekly-service'
 import styles from './WeeklyLegendHero.module.css'
@@ -47,13 +48,20 @@ export const WeeklyLegendHero: Component = () => {
       targetScore: c.targetScore,
       rewardBadgeId: c.rewardBadgeId,
       founderScore: c.founderScore,
+      targetItems: c.targetItems,
     })
     openChallengeStage({
       challengeId: c.id,
       title: c.title,
       targetScore: c.targetScore,
       targetItems: c.targetItems,
+      mode: 'ranked',
     })
+  }
+
+  function showPastChallenges(): void {
+    requestPastChallengesScroll()
+    setActiveTab(TAB_CHALLENGES)
   }
 
   return (
@@ -146,11 +154,8 @@ export const WeeklyLegendHero: Component = () => {
           </div>
         </Show>
 
-        <button
-          class={styles.allLink}
-          onClick={() => setActiveTab(TAB_CHALLENGES)}
-        >
-          All challenges
+        <button class={styles.allLink} onClick={showPastChallenges}>
+          See past challenges
         </button>
       </Show>
     </section>

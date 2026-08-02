@@ -3,9 +3,12 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
+import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
+import { TAB_HOME } from '@/features/tabs/constants'
 import { showNotification } from '@/stores/notifications-store'
+import { activeTab, challengeStageLaunch, closeChallengeStage, setActiveTab, } from '@/stores/ui-store'
 
 vi.mock('@/db/services/session-service', () => ({
   saveSessionRecord: vi.fn(async () => ({})),
@@ -15,7 +18,11 @@ vi.mock('@/db/services/badge-grant-engine', () => ({
   grantBadgeByRef: vi.fn(async () => undefined),
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
-vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
+vi.mock('@/stores/notifications-store', () => ({
+  removeNotificationsByChannel: vi.fn(),
+  showNotification: vi.fn(),
+  TOUR_OFFER_CHANNEL: 'tour-offer',
+}))
 
 describe('weeklyTier', () => {
   it('grades below target as attempted', () => {
@@ -43,6 +50,20 @@ describe('weeklyTier', () => {
 })
 
 describe('recordWeeklyAttempt', () => {
+  it('presents the result without navigating away from the challenge stage', async () => {
+    setActiveTab(TAB_HOME)
+    beginWeeklyAttempt({
+      challengeId: 'w-overlay',
+      title: 'Vincero',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+
+    await recordWeeklyAttempt({ type: 'sight-singing', score: 80 })
+
+    expect(activeTab()).toBe(TAB_HOME)
+  })
+
   it('consumes exactly one matching run, then disarms', async () => {
     beginWeeklyAttempt({
       challengeId: 'w1',
@@ -105,6 +126,43 @@ describe('hoursUntil', () => {
   it('returns a positive count for a future deadline', () => {
     const inTwoDays = new Date(Date.now() + 2 * 86_400_000).toISOString()
     expect(hoursUntil(inTwoDays)).toBeGreaterThanOrEqual(47)
+  })
+})
+
+describe('past weekly challenge practice', () => {
+  it('disarms a live-week take and opens the archive melody unranked', () => {
+    beginWeeklyAttempt({
+      challengeId: 'current-week',
+      title: 'Current Legend',
+      exercise: 'sight-singing',
+      targetScore: 70,
+    })
+
+    practisePastChallenge({
+      id: 'past-week',
+      slug: 'past-week',
+      title: 'Past Legend',
+      description: 'A finished melody.',
+      featType: 'sustain',
+      voiceTypeSplit: null,
+      difficulty: 'beginner',
+      targetItems: notesToMelodyItems('C4 C4'),
+      targetScore: 60,
+      hearItUrl: null,
+      startsAt: '2026-07-20T00:00:00.000Z',
+      endsAt: '2026-07-27T00:00:00.000Z',
+      rewardBadgeId: null,
+      founderScore: null,
+      founderTrace: null,
+      status: 'closed',
+    })
+
+    expect(activeWeeklyAttempt()).toBe(null)
+    expect(challengeStageLaunch()).toMatchObject({
+      challengeId: 'past-week',
+      mode: 'practice',
+    })
+    closeChallengeStage()
   })
 })
 

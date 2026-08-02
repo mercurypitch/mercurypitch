@@ -12,7 +12,7 @@ import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
 import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/challenges/challenge-attempt'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
-import { ChallengeResultCard } from '@/features/challenges/ChallengeResultCard'
+import { PastWeeklyChallenges } from '@/features/challenges/PastWeeklyChallenges'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { launchDrill } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconLeaf, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
@@ -314,10 +314,9 @@ export const VocalChallenges: Component = () => {
           "coming soon" state when there is no active Legend. */}
       <div class="challenges-weekly">
         <WeeklyLegendHero />
-        {/* The after-run pass/fail card — presented whenever a Legend
-            attempt was just recorded (weekly-attempt navigates here). */}
-        <ChallengeResultCard />
       </div>
+
+      <PastWeeklyChallenges />
 
       {/* Category Tabs */}
       <div class="category-tabs">

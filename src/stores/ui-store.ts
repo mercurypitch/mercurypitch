@@ -14,6 +14,7 @@ import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
+import type { ZenExerciseDefinition } from '@/features/zen/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
@@ -159,6 +160,8 @@ export interface SingingZenLaunch {
   mode: 'monitor' | 'exercise'
   exerciseId?: string
   exerciseVersion?: number
+  /** A launch-scoped exercise not yet present in the shared catalogue. */
+  exerciseDefinition?: ZenExerciseDefinition
   source: SingingZenSource
 }
 
@@ -172,6 +175,11 @@ export function openSingingZen(
         mode: 'exercise'
         exerciseId: string
         exerciseVersion?: number
+        source: SingingZenSource
+      }
+    | {
+        mode: 'exercise'
+        exerciseDefinition: ZenExerciseDefinition
         source: SingingZenSource
       },
 ): void {
@@ -202,6 +210,8 @@ export interface ChallengeStageLaunch {
   title: string
   targetScore: number
   targetItems: MelodyItem[]
+  /** Ranked weekly take, or an unranked replay from the archive. */
+  mode: 'ranked' | 'practice'
 }
 
 export const [challengeStageLaunch, setChallengeStageLaunch] =

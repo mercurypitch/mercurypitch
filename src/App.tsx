@@ -67,6 +67,11 @@ const ChallengeStage = lazy(async () =>
     default: m.ChallengeStage,
   })),
 )
+const ChallengeResultCard = lazy(async () =>
+  import('@/features/challenges/ChallengeResultCard').then((m) => ({
+    default: m.ChallengeResultCard,
+  })),
+)
 // First Light onboarding — lazy so a returning visitor pays nothing for a
 // flow they have already walked.
 const FirstLight = lazy(async () =>
@@ -3288,12 +3293,16 @@ const AppShell: Component<AppProps> = (props) => {
             <Suspense>
               <ZenPitchStage
                 {...(launch.mode === 'exercise'
-                  ? {
-                      initialExerciseId: launch.exerciseId,
-                      ...(launch.exerciseVersion === undefined
-                        ? {}
-                        : { initialExerciseVersion: launch.exerciseVersion }),
-                    }
+                  ? launch.exerciseDefinition !== undefined
+                    ? { initialExerciseDefinition: launch.exerciseDefinition }
+                    : {
+                        initialExerciseId: launch.exerciseId,
+                        ...(launch.exerciseVersion === undefined
+                          ? {}
+                          : {
+                              initialExerciseVersion: launch.exerciseVersion,
+                            }),
+                      }
                   : {})}
                 subscribeFrames={practice.subscribeFrames}
                 micActive={micActive}
@@ -3315,11 +3324,19 @@ const AppShell: Component<AppProps> = (props) => {
                 micActive={micActive}
                 startMic={() => practiceEngine.startMic()}
                 stopMic={() => practiceEngine.stopMic()}
+                playTone={(frequency, duration) =>
+                  audioEngine.playTone(frequency, duration)
+                }
+                stopTone={() => audioEngine.stopTone()}
                 onClose={closeChallengeStage}
               />
             </Suspense>
           )}
         </Show>
+
+        <Suspense>
+          <ChallengeResultCard />
+        </Suspense>
 
         {/* Score overlay */}
         <Show when={showPracticeResultPopup() && practiceResult() !== null}>
