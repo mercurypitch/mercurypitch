@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lineAt, lineIndexAt, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { lineAt, lineIndexAt, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 
 const lines: LyricsLineTiming[] = [
@@ -97,5 +97,60 @@ describe('songPlayableInRoom', () => {
     const verdict = songPlayableInRoom(song({ stems: { instrumental: '' } }))
     expect(verdict.ok).toBe(false)
     expect(verdict.reason).toMatch(/backing track/i)
+  })
+})
+
+describe('rests', () => {
+  const sung: LyricsLineTiming[] = [
+    { text: 'one', startSec: 0, endSec: 4 },
+    // Eight seconds of nothing -- a singer needs to know when to come back.
+    { text: 'two', startSec: 12, endSec: 14 },
+    // A short breath, not a rest.
+    { text: 'three', startSec: 15, endSec: 17 },
+  ]
+
+  it('finds the gap worth counting into', () => {
+    const rests = restsBetween(sung)
+    expect(rests).toHaveLength(1)
+    expect(rests[0]).toMatchObject({ beforeLine: 1, startSec: 4, endSec: 12 })
+  })
+
+  it('ignores a breath between lines', () => {
+    // 1s from 14 to 15 is a phrase break, not a rest.
+    expect(restsBetween(sung).some((r) => r.beforeLine === 2)).toBe(false)
+  })
+
+  it('caps the dots, because a long intro is not forty dots', () => {
+    const long = [
+      { text: 'a', startSec: 0, endSec: 1 },
+      { text: 'b', startSec: 60 },
+    ]
+    expect(restsBetween(long)[0]!.dotCount).toBeLessThanOrEqual(8)
+  })
+
+  it('does not treat the time before the first line as a rest', () => {
+    // That is an intro and wants a count-in of its own.
+    const late = [{ text: 'first', startSec: 20, endSec: 22 }]
+    expect(restsBetween(late)).toEqual([])
+  })
+
+  it('uses the next line start when a line has no end', () => {
+    const open = [
+      { text: 'a', startSec: 0 },
+      { text: 'b', startSec: 10 },
+    ]
+    expect(restsBetween(open)).toEqual([])
+  })
+
+  it('counts down rather than reporting the total', () => {
+    // "two left" is the useful number, not "this rest is eight seconds".
+    const rests = restsBetween(sung)
+    expect(restAt(rests, 10)?.secondsLeft).toBeCloseTo(2)
+    expect(restAt(rests, 5)?.secondsLeft).toBeCloseTo(7)
+  })
+
+  it('is null while someone is actually singing', () => {
+    expect(restAt(restsBetween(sung), 1)).toBeNull()
+    expect(restAt(restsBetween(sung), 13)).toBeNull()
   })
 })
