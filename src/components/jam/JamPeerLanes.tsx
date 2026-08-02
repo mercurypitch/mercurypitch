@@ -13,17 +13,30 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onCleanup, onMount } from 'solid-js'
+import { notesInWindow } from '@/lib/jam/jam-song'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import type { TimeStampedPitchSample } from '@/lib/jam/types'
+import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
 import { jamPeers, jamPitchHistory } from '@/stores/jam-store'
 import styles from './JamPeerLanes.module.css'
 
 interface JamPeerLanesProps {
   myPeerId: () => string | null
+  /** The line to aim at, drawn behind every trail. Empty is legal. */
+  notes?: () => JamSongNote[]
+  /** Where the song is, so the target scrolls with it. */
+  positionSec?: () => number
 }
 
 /** Seconds of history a lane shows. Long enough to see a phrase. */
 const WINDOW_SEC = 8
+/**
+ * Where "now" sits across the lane.
+ *
+ * Not at the right edge: with a target line to sing, you need to see what
+ * is COMING more than what has gone, so the playhead sits three quarters
+ * along and the next second or two is visible ahead of it.
+ */
+const NOW_AT = 0.75
 /** The vocal range a lane spans, in MIDI. Roughly E2 to C6. */
 const MIDI_MIN = 40
 const MIDI_MAX = 84
@@ -56,6 +69,8 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
             peerId={lane.id}
             name={lane.name}
             color={colors()[lane.id] ?? '#58a6ff'}
+            notes={props.notes}
+            positionSec={props.positionSec}
           />
         )}
       </For>
@@ -63,9 +78,13 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
   )
 }
 
-const Lane: Component<{ peerId: string; name: string; color: string }> = (
-  props,
-) => {
+const Lane: Component<{
+  peerId: string
+  name: string
+  color: string
+  notes?: () => JamSongNote[]
+  positionSec?: () => number
+}> = (props) => {
   let canvasRef: HTMLCanvasElement | undefined
   let frame: number | null = null
 
@@ -101,6 +120,34 @@ const Lane: Component<{ peerId: string; name: string; color: string }> = (
       ctx.lineTo(w, h / 2)
       ctx.stroke()
 
+      // The target line, behind the trail. Drawn from the SONG clock, not
+      // from sample ages: the notes are pinned to the recording, and
+      // sliding them by wall time would drift away from the music.
+      const notes = props.notes?.() ?? []
+      const pos = props.positionSec?.() ?? 0
+      if (notes.length > 0) {
+        const windowFrom = pos - WINDOW_SEC * (1 - NOW_AT)
+        const windowTo = pos + WINDOW_SEC * NOW_AT
+        const secToX = (t: number) => ((t - windowFrom) / WINDOW_SEC) * w
+        ctx.fillStyle = 'rgba(255,255,255,0.16)'
+        for (const n of notesInWindow(notes, windowFrom, windowTo)) {
+          const x = secToX(n.startSec)
+          const width = Math.max(2, secToX(n.endSec) - x)
+          const y = midiToY(n.midi)
+          ctx.beginPath()
+          ctx.roundRect(x, y - 3, width, 6, 3)
+          ctx.fill()
+        }
+        // Where "now" is, so the target and the trail meet somewhere the
+        // eye can find.
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(w * NOW_AT, 0)
+        ctx.lineTo(w * NOW_AT, h)
+        ctx.stroke()
+      }
+
       ctx.strokeStyle = props.color
       ctx.lineWidth = 2
       ctx.lineJoin = 'round'
@@ -110,7 +157,7 @@ const Lane: Component<{ peerId: string; name: string; color: string }> = (
         if (s.frequency <= 0 || s.midi <= 0) continue
         const age = now - s.timestamp
         if (age > WINDOW_SEC * 1000) continue
-        const x = w - age * pxPerMs
+        const x = w * NOW_AT - age * pxPerMs
         const y = midiToY(s.midi)
         // Break the stroke across a gap rather than drawing a straight line
         // through a breath -- a joined-up line implies a slide that was

@@ -8,7 +8,7 @@
 
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import type { JamSong } from '@/lib/jam/jam-song'
-import type { LyricsLineTiming } from '@/lib/jam/types'
+import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import type { LrcLine } from '@/lib/lyrics-service'
 
 /**
@@ -67,6 +67,7 @@ export function sessionToJamSong(
   urls: { instrumental: string; vocal?: string },
   lines: LyricsLineTiming[] = [],
   durationSec = 0,
+  notes: JamSongNote[] = [],
 ): JamSong | null {
   if (urls.instrumental === '') return null
   return {
@@ -83,6 +84,7 @@ export function sessionToJamSong(
         : { vocal: urls.vocal }),
     },
     lines,
+    notes,
     durationSec,
     origin: 'local',
   }
@@ -104,6 +106,7 @@ export function sessionToJamSong(
 export function demoSongToJamSong(
   manifest: DemoSongManifest | null,
   lines: LyricsLineTiming[] = [],
+  notes: JamSongNote[] = [],
 ): JamSong | null {
   const instrumental = manifest?.stems.instrumental ?? ''
   if (manifest === null || instrumental === '') return null
@@ -118,6 +121,7 @@ export function demoSongToJamSong(
         : { vocal: manifest.stems.vocal }),
     },
     lines,
+    notes,
     // A missing duration is not fatal -- the audio element knows the real
     // one once it loads; this is only for the scrubber's initial extent.
     durationSec: manifest.durationSec ?? 0,

@@ -254,7 +254,11 @@ export const JamSongStage: Component = () => {
               positionSec={jamSongPositionSec}
               showNotes={false}
             />
-            <JamPeerLanes myPeerId={jamPeerId} />
+            <JamPeerLanes
+              myPeerId={jamPeerId}
+              notes={() => song().notes}
+              positionSec={jamSongPositionSec}
+            />
           </div>
         </div>
       )}
