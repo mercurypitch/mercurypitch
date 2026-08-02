@@ -2583,8 +2583,30 @@
   opacity: 0.5;
 }
 
+/* 64px, not the old 32. The medallions carry a tier ring around an
+   emblem, and at 32px only the ring survived — sixteen badges read as
+   three. The number is the whole reason the art exists; see
+   challenge-badges/badge-size.html in dotfiles for the comparison. */
 .badge-icon {
   font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+}
+
+.badge-medal {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+/* Locked badges keep the shape and lose the metal: you can see what is
+   there to earn without it looking earned. Opacity alone (on .locked)
+   left the gold still reading as gold. */
+.badge-item.locked .badge-medal {
+  filter: grayscale(0.85) brightness(0.72);
 }
 
 .badge-info {
