@@ -16,6 +16,7 @@ import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
+import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
@@ -936,6 +937,15 @@ export const JamPanel: Component = () => {
                         </button>
                       )}
                     </For>
+                  </div>
+                </Show>
+
+                {/* Say it plainly. Everything on screen is real UI, but the
+                  peers are invented -- letting someone believe a stranger
+                  joined their preview would be worse than not previewing. */}
+                <Show when={jamSignalingIsMocked()}>
+                  <div class={panelStyles.previewChip} role="note">
+                    Preview room — these peers are not real
                   </div>
                 </Show>
 

@@ -427,6 +427,22 @@
   cursor: default;
 }
 
+/* Preview rooms only. Amber rather than the accent colour: this is a
+   caveat, not a feature, and it should not look like something you turned
+   on. */
+.previewChip {
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #e3a221;
+  border: 1px dashed rgba(227, 162, 33, 0.5);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
 /* ── Last take ────────────────────────────────────────────────────── */
 
 .takeChip {
