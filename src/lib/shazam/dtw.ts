@@ -24,8 +24,11 @@ export function dtwMatch(
   const n = query.length
   const m = reference.length
 
+  // Nothing to align. A normalized distance of 1 would have read as
+  // "about a semitone out" — a decent match — so empty input used to be
+  // worth exp(-1) = 0.37 of a recognition for free.
   if (n === 0 || m === 0) {
-    return { distance: Infinity, normalizedDistance: 1, path: [] }
+    return { distance: Infinity, normalizedDistance: Infinity, path: [] }
   }
 
   const maxLen = Math.max(n, m)
@@ -72,8 +75,12 @@ export function dtwMatch(
   }
 
   const totalCost = cost[(n - 1) * m + (m - 1)]
+  // The band never reached the far corner, so these two sequences have no
+  // alignment under this constraint. Same trap as the empty case: scoring
+  // an impossible alignment at 0.37 handed every over-long reference a
+  // third of a match it had not earned.
   if (!isFinite(totalCost)) {
-    return { distance: Infinity, normalizedDistance: 1, path: [] }
+    return { distance: Infinity, normalizedDistance: Infinity, path: [] }
   }
 
   // Reconstruct the warp path
@@ -90,9 +97,13 @@ export function dtwMatch(
 }
 
 /**
- * Open-end DTW — the query can match any contiguous subsequence of
- * the reference. Useful for partial matching (user sings only part
- * of a melody). Returns the best match region.
+ * Subsequence DTW — the query aligns to any contiguous stretch of the
+ * reference, so someone can sing eight seconds of a chorus and still be
+ * found inside a three-minute stem.
+ *
+ * "Open" applies to the REFERENCE axis only: matching may begin and end
+ * at any column, but every query note must be consumed. Freeing the
+ * query axis as well is what broke this — see the loop below.
  */
 export function dtwMatchSubsequence(
   query: number[],
@@ -103,25 +114,43 @@ export function dtwMatchSubsequence(
   const m = reference.length
 
   if (n === 0 || m === 0) {
-    return { distance: Infinity, normalizedDistance: 1, path: [], matchEnd: m }
+    return {
+      distance: Infinity,
+      normalizedDistance: Infinity,
+      path: [],
+      matchEnd: m,
+    }
   }
 
   // Subsequence DTW needs no band constraint — the query must be
   // able to match anywhere in the reference sequence.
   const band = bandWidth ?? m
 
-  // Accumulated cost matrix
+  // Accumulated cost matrix, and the step each cell was reached by.
+  // Recording the step here rather than re-deriving it afterwards keeps
+  // the backtrace honest: a second pass over the finished matrix does
+  // not know about the band or the open-begin row, so it could point at
+  // cells the forward pass never filled.
   const cost = new Float64Array(n * m)
   cost.fill(Infinity)
+  // 0 = diagonal, 1 = up, 2 = left
+  const backptr = new Uint8Array(n * m)
 
-  // Starting column cost
-  const startCost = new Float64Array(n)
-  for (let i = 0; i < n; i++) {
-    // Open-begin: low cost to start matching at the beginning
-    startCost[i] = 0
-  }
-
-  // Fill accumulated cost matrix
+  // Fill accumulated cost matrix.
+  //
+  // Open-begin belongs to the FIRST QUERY NOTE only: row 0 costs just its
+  // own local distance, which is what lets the match start at any column.
+  // Every later row must pay for the row above it.
+  //
+  // The bug this replaced offered that same free start on every row
+  // (`minPrev = min(minPrev, startCost[i - 1])`, where startCost was
+  // all zeros). With a zero floor available at every step the matrix
+  // stopped accumulating altogether: each cell held nothing but its own
+  // local distance, and the reported distance collapsed to the gap
+  // between the LAST query note and its nearest neighbour anywhere in
+  // the reference. On a reference of any length that gap is essentially
+  // always zero — so unrelated songs came back at 100%, and the ranking
+  // fell through to whatever the length bonus happened to say.
   for (let i = 0; i < n; i++) {
     const bandStart = Math.max(0, i - band)
     const bandEnd = Math.min(m - 1, i + band)
@@ -130,23 +159,29 @@ export function dtwMatchSubsequence(
       const d = Math.abs(query[i] - reference[j])
       const idx = i * m + j
 
-      let minPrev = Infinity
-      if (i > 0 && j > 0) {
-        minPrev = Math.min(minPrev, cost[(i - 1) * m + (j - 1)]) // diagonal
-      }
-      if (i > 0) {
-        minPrev = Math.min(minPrev, cost[(i - 1) * m + j]) // up
-        minPrev = Math.min(minPrev, startCost[i - 1]) // open-begin
-      }
-      if (j > 0) {
-        minPrev = Math.min(minPrev, cost[i * m + (j - 1)]) // left
-      }
-      // Open-begin at first query element
       if (i === 0) {
-        minPrev = Math.min(minPrev, 0)
+        // Free to begin anywhere along the reference.
+        cost[idx] = d
+        continue
+      }
+
+      let minPrev = cost[(i - 1) * m + j] // up
+      let bestPtr = 1
+      if (j > 0) {
+        const diag = cost[(i - 1) * m + (j - 1)]
+        if (diag < minPrev) {
+          minPrev = diag
+          bestPtr = 0
+        }
+        const left = cost[i * m + (j - 1)]
+        if (left < minPrev) {
+          minPrev = left
+          bestPtr = 2
+        }
       }
 
       cost[idx] = minPrev + d
+      backptr[idx] = bestPtr
     }
   }
 
@@ -165,14 +200,13 @@ export function dtwMatchSubsequence(
   if (!isFinite(bestCost)) {
     return {
       distance: Infinity,
-      normalizedDistance: 1,
+      normalizedDistance: Infinity,
       path: [],
       matchEnd: m,
     }
   }
 
   // Backtrace from (n-1, matchEnd) to find the path
-  const backptr = computeBackpointers(cost, n, m)
   const path = reconstructPathFrom(backptr, n - 1, matchEnd, m)
 
   const normalizedDistance = path.length > 0 ? bestCost / path.length : 1
@@ -254,33 +288,4 @@ function reconstructPathFrom(
   }
 
   return path
-}
-
-function computeBackpointers(
-  cost: Float64Array,
-  n: number,
-  m: number,
-): Uint8Array {
-  const backptr = new Uint8Array(n * m)
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < m; j++) {
-      const idx = i * m + j
-      let best = Infinity
-      let bestPtr = 0
-      if (i > 0 && j > 0 && cost[(i - 1) * m + (j - 1)] < best) {
-        best = cost[(i - 1) * m + (j - 1)]
-        bestPtr = 0
-      }
-      if (i > 0 && cost[(i - 1) * m + j] < best) {
-        best = cost[(i - 1) * m + j]
-        bestPtr = 1
-      }
-      if (j > 0 && cost[i * m + (j - 1)] < best) {
-        best = cost[i * m + (j - 1)]
-        bestPtr = 2
-      }
-      backptr[idx] = bestPtr
-    }
-  }
-  return backptr
 }

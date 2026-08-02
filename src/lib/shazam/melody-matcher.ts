@@ -43,15 +43,13 @@ export function matchPitchContour(
   let noteSeq = contour.noteSequence
   let ioiSeq = contour.ioiSequence
   if (noteSeq.length > MAX_QUERY_NOTES) {
-    noteSeq = sampleEvenly(noteSeq, MAX_QUERY_NOTES)
-    // Rebuild IOIs from sampled notes if we have enough data
-    if (contour.onsets.length > 0) {
-      const iois: number[] = []
-      for (let i = 1; i < noteSeq.length; i++) {
-        iois.push(contour.durationSec / noteSeq.length)
-      }
-      ioiSeq = iois
-    }
+    const kept = evenlySpacedIndices(noteSeq.length, MAX_QUERY_NOTES)
+    noteSeq = kept.map((i) => noteSeq[i])
+    // Fold the dropped notes' intervals into the surviving ones, so the
+    // sampled query keeps the real timing of the phrase. The previous
+    // rebuild pushed one constant per gap, which is not a rhythm — it is
+    // a flat line, scored against real references as though it were one.
+    ioiSeq = collapseIOIs(contour.ioiSequence, kept)
   }
 
   const candidates: MatchCandidate[] = []
@@ -118,38 +116,35 @@ export function matchPitchContour(
     }
 
     // 2. Interval match (transposition-invariant)
+    // Needs >=2 notes on both sides — one note has no interval.
+    const haveIntervals = fp.intervalSequence.length > 0 && noteSeq.length > 1
     let intervalScore = 0
-    if (
-      fp.intervalSequence.length > 0 &&
-      noteSeq.length > 1 // need ≥2 notes for intervals
-    ) {
+    if (haveIntervals) {
       const contourIntervals: number[] = []
       for (let i = 1; i < noteSeq.length; i++) {
         contourIntervals.push(noteSeq[i] - noteSeq[i - 1])
       }
-      if (contourIntervals.length > 0 && fp.intervalSequence.length > 0) {
-        intervalScore = bestMatchWithOffset(
-          contourIntervals,
-          fp.intervalSequence,
-        ).score
-      }
+      intervalScore = bestMatchWithOffset(
+        contourIntervals,
+        fp.intervalSequence,
+      ).score
     }
 
     // 3. Chroma match (octave-invariant, for humming)
+    const haveChroma = fp.chromaSequence.length > 0 && noteSeq.length > 0
     let chromaScore = 0
-    if (fp.chromaSequence.length > 0 && noteSeq.length > 0) {
+    if (haveChroma) {
       const contourChroma = noteSeq.map((m) => m % 12)
       chromaScore = bestMatchWithOffset(contourChroma, fp.chromaSequence).score
     }
 
     // 4. Rhythm match (IOI-based, tempo-normalized)
+    const haveRhythm = ioiSeq.length > 0 && fp.ioiSequence.length > 0
     let rhythmScore = 0
-    if (ioiSeq.length > 0 && fp.ioiSequence.length > 0) {
+    if (haveRhythm) {
       const contourIOIs = normalizeIOIs(ioiSeq, contour.durationSec)
       const fpIOIs = normalizeIOIs(fp.ioiSequence, fp.durationSec)
-      if (contourIOIs.length > 0 && fpIOIs.length > 0) {
-        rhythmScore = bestMatchWithOffset(contourIOIs, fpIOIs).score
-      }
+      rhythmScore = bestMatchWithOffset(contourIOIs, fpIOIs).score
     }
 
     // 5. Length bonus — prefer similar note counts
@@ -170,14 +165,24 @@ export function matchPitchContour(
     }
 
     // ── Weighted confidence ──────────────────────────────
-    const confidence = Math.round(
-      (effPitchWeight * pitchScore +
-        weights.intervalWeight * intervalScore +
-        effChromaWeight * chromaScore +
-        weights.rhythmWeight * rhythmScore +
-        weights.lengthBonusWeight * lengthBonus) *
-        100,
-    )
+    //
+    // Only features with data on BOTH sides are weighed, and the total is
+    // divided by the weight actually spent. Otherwise a feature nobody
+    // has scores 0 at full price: a flawless match against a stem
+    // fingerprint carrying no IOIs was capped at 85%, and the percentage
+    // was not comparable between two references that happened to hold
+    // different features.
+    const weighed: [weight: number, score: number][] = [
+      [effPitchWeight, pitchScore],
+      [weights.lengthBonusWeight, lengthBonus],
+    ]
+    if (haveIntervals) weighed.push([weights.intervalWeight, intervalScore])
+    if (haveChroma) weighed.push([effChromaWeight, chromaScore])
+    if (haveRhythm) weighed.push([weights.rhythmWeight, rhythmScore])
+
+    const spent = weighed.reduce((sum, [w]) => sum + w, 0)
+    const earned = weighed.reduce((sum, [w, s]) => sum + w * s, 0)
+    const confidence = spent > 0 ? Math.round((earned / spent) * 100) : 0
 
     if (confidence < (opts.minConfidence ?? 0)) continue
 
@@ -328,13 +333,44 @@ function computeLengthBonus(queryNotes: number, refNotes: number): number {
   return ratio
 }
 
-/** Downsample an array to at most `targetLen` elements, evenly spaced */
-function sampleEvenly(arr: number[], targetLen: number): number[] {
-  if (arr.length <= targetLen) return arr
-  const result: number[] = []
-  const step = (arr.length - 1) / (targetLen - 1)
+/** Indices of `targetLen` evenly spaced items across a run of `length`. */
+function evenlySpacedIndices(length: number, targetLen: number): number[] {
+  if (length <= targetLen) return [...Array(length).keys()]
+  if (targetLen <= 1) return [0]
+  const step = (length - 1) / (targetLen - 1)
+  const out: number[] = []
+  let last = -1
   for (let i = 0; i < targetLen; i++) {
-    result.push(arr[Math.round(i * step)])
+    const idx = Math.round(i * step)
+    // Rounding can repeat an index; a note must not be counted twice.
+    if (idx !== last) {
+      out.push(idx)
+      last = idx
+    }
   }
-  return result
+  return out
+}
+
+/**
+ * Re-derive inter-onset intervals for a downsampled note sequence.
+ *
+ * `iois[k]` is the gap between note k and note k+1, so the gap between
+ * two surviving notes is the sum of every gap they skipped over. That
+ * keeps the sampled phrase's real timing instead of flattening it.
+ */
+function collapseIOIs(iois: number[], keptIndices: number[]): number[] {
+  if (iois.length === 0 || keptIndices.length < 2) return []
+  const out: number[] = []
+  for (let k = 1; k < keptIndices.length; k++) {
+    let gap = 0
+    for (
+      let i = keptIndices[k - 1];
+      i < keptIndices[k] && i < iois.length;
+      i++
+    ) {
+      gap += iois[i]
+    }
+    out.push(gap)
+  }
+  return out
 }

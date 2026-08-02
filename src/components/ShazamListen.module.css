@@ -171,10 +171,23 @@
   color: var(--color-text, #e2e8f0);
 }
 
+/* The dismiss button was left out of the icon rules above, so its X
+   rendered at the SVG default size instead of 16px and sat on the text
+   baseline rather than beside it — which is what threw this row out of
+   line. Centre and wrap the row too, so the pair stays centred when the
+   card narrows and the buttons stack. */
 .resultActions {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Same box height as .resultDismiss, which carries a 1px border. */
+.retryBtn {
+  border: 1px solid transparent;
 }
 
 .resultDismiss {
@@ -288,6 +301,7 @@
 .stopBtn,
 .cancelBtn,
 .retryBtn,
+.resultDismiss,
 .uploadLink {
   display: inline-flex;
   align-items: center;
@@ -303,7 +317,8 @@
 
 .stopBtn svg,
 .cancelBtn svg,
-.retryBtn svg {
+.retryBtn svg,
+.resultDismiss svg {
   width: 16px;
   height: 16px;
 }
