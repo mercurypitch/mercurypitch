@@ -10,6 +10,7 @@ import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
+import { badgeArtSrc } from '@/features/challenges/badge-art'
 import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/challenges/challenge-attempt'
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { PastWeeklyChallenges } from '@/features/challenges/PastWeeklyChallenges'
@@ -428,7 +429,32 @@ export const VocalChallenges: Component = () => {
           <For each={badges()}>
             {(badge) => (
               <div class={`badge-item ${badge.earned ? 'earned' : 'locked'}`}>
-                <div class="badge-icon">{renderIcon(badge.icon)}</div>
+                {/* The drawn medallion when one exists, the old glyph
+                    otherwise — seeding a badge is never blocked on
+                    generating its art. Locked badges keep the art but
+                    lose their colour (see .badge-item.locked). */}
+                <div class="badge-icon">
+                  <Show
+                    when={
+                      typeof badge.icon === 'string'
+                        ? badgeArtSrc(badge.icon)
+                        : undefined
+                    }
+                    fallback={renderIcon(badge.icon)}
+                  >
+                    {(src) => (
+                      <img
+                        class="badge-medal"
+                        src={src()}
+                        width="64"
+                        height="64"
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                  </Show>
+                </div>
                 <div class="badge-info">
                   <span class="badge-name">{badge.name}</span>
                   <span class="badge-tier">{badge.tier}</span>
