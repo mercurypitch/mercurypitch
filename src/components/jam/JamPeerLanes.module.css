@@ -1,0 +1,41 @@
+/* JamPeerLanes — one scrolling pitch lane per singer. */
+
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.lane {
+  position: relative;
+  /* Grows to share the height, but never collapses to a sliver in a
+     twelve-person room -- a lane you cannot read is not worth the space. */
+  flex: 1 1 0;
+  min-height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary, #0d1117);
+  backdrop-filter: blur(3px);
+  overflow: hidden;
+}
+
+.laneName {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  z-index: 1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+.laneCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
