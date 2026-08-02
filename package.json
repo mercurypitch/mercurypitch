@@ -54,6 +54,7 @@
     "deploy:db:dev": "cd workers/db-worker && pnpm exec wrangler deploy --env dev",
     "deploy:db:prod": "cd workers/db-worker && pnpm exec wrangler deploy --env prod",
     "typecheck:db": "tsc -p workers/db-worker",
+    "typecheck:jam": "tsc -p workers/jam-worker",
     "size": "vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh"
   },
   "dependencies": {

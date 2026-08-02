@@ -45,6 +45,17 @@ jobs:
       environment: prod
     secrets: inherit
 
+  # The jam signaling worker ships on the same release tag. Independent of
+  # the db-worker job: they share no state, and the jam worker has no
+  # migrations to order against anything.
+  deploy-jam-prod:
+    name: Prod jam worker
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    uses: ./.github/workflows/deploy-jam.yml
+    with:
+      environment: prod
+    secrets: inherit
+
   build-and-deploy:
     name: Build & Deploy App
     runs-on: ubuntu-latest
