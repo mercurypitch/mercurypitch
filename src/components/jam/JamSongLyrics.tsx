@@ -27,6 +27,8 @@ interface JamSongLyricsProps {
   showNotes: boolean
   /** Your score per line, filled in as the playhead leaves each one. */
   scores?: () => Record<number, JamLineScore>
+  /** Jump the song to a line. Absent for anyone who cannot move the room. */
+  onSeek?: (toSec: number) => void
 }
 
 /**
@@ -41,6 +43,20 @@ function scoreBand(score: number): 'good' | 'close' | 'missed' {
   if (score >= 50) return 'close'
   return 'missed'
 }
+
+/** A person, for the per-line "who sings this" button. */
+const SingerIcon: Component = () => (
+  <svg
+    viewBox="0 0 16 16"
+    width="12"
+    height="12"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="5" r="3" />
+    <path d="M2.5 14a5.5 5.5 0 0 1 11 0z" />
+  </svg>
+)
 
 /** Dots that empty as the rest runs out -- the karaoke count-in idea. */
 const RestDots: Component<{ total: number; left: number }> = (props) => (
@@ -154,10 +170,16 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                   [styles.lineNotMine]:
                     singerOfLine(jamSongParts(), i()) !== null &&
                     !jamLineIsMine(i()),
+                  // Raised while its popover is open -- see the CSS note.
+                  [styles.lineAssigning]: assigning() === i(),
                 }}
                 onClick={() => {
+                  // Jump to the line. This is the gesture people reach for
+                  // first -- "take it from the chorus" -- so it gets the
+                  // whole row, and assigning a singer gets its own button.
                   if (!jamIsHost()) return
-                  setAssigning(assigning() === i() ? null : i())
+                  setAssigning(null)
+                  props.onSeek?.(line.startSec)
                 }}
               >
                 {/* The count-in sits above the line it leads into, which
@@ -205,6 +227,28 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                       {s().score}
                     </span>
                   )}
+                </Show>
+                {/* Host-only, and quiet until wanted: a button per line is
+                    a lot of furniture over a lyric sheet, so it only inks
+                    in on hover, on focus, or once the line HAS a singer. */}
+                <Show when={jamIsHost()}>
+                  <button
+                    type="button"
+                    class={styles.assignBtn}
+                    classList={{
+                      [styles.assignBtnSet]:
+                        singerOfLine(jamSongParts(), i()) !== null,
+                    }}
+                    title="Who sings this line"
+                    aria-label={`Who sings line ${i() + 1}`}
+                    onClick={(e) => {
+                      // Or the row's seek would fire underneath it.
+                      e.stopPropagation()
+                      setAssigning(assigning() === i() ? null : i())
+                    }}
+                  >
+                    <SingerIcon />
+                  </button>
                 </Show>
                 <Show when={jamIsHost() && assigning() === i()}>
                   <div class={styles.assign}>
