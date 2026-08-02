@@ -2,6 +2,8 @@
 // Hybrid Adapter Tests — cloud/local entity routing
 // ============================================================
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { CLOUD_ENTITIES, HybridAdapter } from '@/db/adapters/hybrid-adapter'
 import type { DatabaseAdapter, DbEntity, Repository } from '@/db/types'
@@ -164,5 +166,45 @@ describe('HybridAdapter', () => {
       expect(await repo.findAll()).toHaveLength(1)
       expect(cloud.calls).toEqual(['findAll'])
     })
+  })
+})
+
+// ── Allowlist drift ──────────────────────────────────────────────
+// The bug this guards against shipped silently and stayed hidden for
+// weeks: `voiceprints` was exposed by the worker but missing from
+// CLOUD_ENTITIES, so every cloud call fell through to a Dexie store that
+// does not exist, threw, and was swallowed by a catch meant for network
+// failures. The gallery kept rendering from localStorage, so nothing
+// looked wrong — while dev D1 held zero rows.
+//
+// Reading the worker's own source keeps this honest: a future entity
+// added on one side only fails here instead of in production.
+
+describe('client/worker allowlist agreement', () => {
+  const workerTables = (): Set<string> => {
+    // The registry is a plain object literal; parse the top-level keys
+    // rather than importing worker code into a browser-env test.
+    const src = readFileSync(
+      resolve(__dirname, '../../workers/db-worker/src/tables.ts'),
+      'utf8',
+    )
+    const body = src.slice(src.indexOf('export const TABLES'))
+    return new Set(
+      [...body.matchAll(/^ {2}([a-zA-Z]+): \{/gm)].map((m) => m[1]!),
+    )
+  }
+
+  it('every cloud entity is actually served by the worker', () => {
+    const served = workerTables()
+    expect(served.size).toBeGreaterThan(10) // the parse itself still works
+    const unserved = [...CLOUD_ENTITIES].filter((e) => !served.has(e))
+    expect(unserved).toEqual([])
+  })
+
+  it('keeps voiceprints routed to the cloud', () => {
+    // Named explicitly: this is the entity the drift actually hit, and a
+    // silent removal would look like a passing suite again.
+    expect(CLOUD_ENTITIES.has('voiceprints')).toBe(true)
+    expect(workerTables().has('voiceprints')).toBe(true)
   })
 })

@@ -3450,6 +3450,12 @@
   padding: 2px 16px 0;
 }
 
+/* League is the landing view, so a signed-out visitor meets the ladder
+   first and needs the door right here. */
+.league-join-cta {
+  margin-top: 12px;
+}
+
 .league-hero-eyebrow {
   font-size: 11px;
   text-transform: uppercase;

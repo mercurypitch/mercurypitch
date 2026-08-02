@@ -165,9 +165,13 @@ async function pushToCloud(
         takenAt: record.takenAt,
       })
     }
-  } catch {
+  } catch (err) {
     // The local copy already succeeded — a failed upload must never
     // lose the take or surface as an error at the moment of delight.
+    // But stay audible: this swallow once hid a routing bug (voiceprints
+    // missing from CLOUD_ENTITIES) for weeks, because a wiring failure
+    // and a flaky network look identical from in here.
+    console.warn('[voiceprints] upload failed; kept on this device', err)
   }
 }
 

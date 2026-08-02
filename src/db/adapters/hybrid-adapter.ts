@@ -35,6 +35,11 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   'userSettings',
   'follows',
   'userSurveyResponses',
+  // Omitted until 2026-08-02, which meant voiceprint-service's cloud calls
+  // were routed to a Dexie store that does not exist — they threw, its
+  // catch swallowed them, and dev D1 held zero rows while the gallery
+  // rendered happily from localStorage. See the drift test below.
+  'voiceprints',
 ])
 
 /**
@@ -51,6 +56,10 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   'userSettings',
   'follows',
   'userSurveyResponses',
+  // access: 'user' in the worker — signed out it 401s, so reads must
+  // resolve empty rather than round-trip. The device copy is what the
+  // gallery shows when nobody is signed in.
+  'voiceprints',
 ])
 
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
