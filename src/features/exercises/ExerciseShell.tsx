@@ -131,6 +131,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // Opens the slider. Sticky while Custom is the selected mode so the value
   // stays adjustable between runs, rather than collapsing after every pick.
   const [customOpen, setCustomOpen] = createSignal(false)
+  let voiceKeepGeneration = 0
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
@@ -172,6 +173,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   createEffect(
     on(status, (s, previous) => {
       if (s === 'active' && previous !== 'active') {
+        voiceKeepGeneration += 1
         setVoiceKeepState('idle')
         const stats = getExerciseStats(props.type)
         setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
@@ -211,30 +213,41 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     if (take === null || take === undefined) return
     setVoiceKeepState('saving')
     trackEvent('voice_keep_attempt')
+    const generation = voiceKeepGeneration
 
     void (async () => {
-      const result = await keepExerciseVoiceTake({ exerciseTitle, take })
-      if (result.ok) {
-        setVoiceKeepState('saved')
-        trackEvent('voice_keep_success')
-        showNotification(
-          'Exercise take kept in Hear Yourself on this device.',
-          'success',
-          { channel: 'voice-take-save' },
-        )
-        return
-      }
+      try {
+        const result = await keepExerciseVoiceTake({ exerciseTitle, take })
+        if (result.ok) {
+          if (generation === voiceKeepGeneration) setVoiceKeepState('saved')
+          trackEvent('voice_keep_success')
+          showNotification(
+            'Exercise take kept in Hear Yourself on this device.',
+            'success',
+            { channel: 'voice-take-save' },
+          )
+          return
+        }
 
-      setVoiceKeepState('error')
-      trackEvent('voice_keep_failure')
-      if (result.quotaExceeded || !result.roomAvailable) {
-        trackEvent('voice_storage_warning')
-        showNotification(
-          'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
-          'warning',
-          { channel: 'voice-take-save' },
-        )
-      } else {
+        if (generation === voiceKeepGeneration) setVoiceKeepState('error')
+        trackEvent('voice_keep_failure')
+        if (result.quotaExceeded || !result.roomAvailable) {
+          trackEvent('voice_storage_warning')
+          showNotification(
+            'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
+            'warning',
+            { channel: 'voice-take-save' },
+          )
+        } else {
+          showNotification(
+            'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
+            'error',
+            { channel: 'voice-take-save' },
+          )
+        }
+      } catch {
+        if (generation === voiceKeepGeneration) setVoiceKeepState('error')
+        trackEvent('voice_keep_failure')
         showNotification(
           'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
           'error',
@@ -242,6 +255,12 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         )
       }
     })()
+  }
+
+  function tryAgain(): void {
+    voiceKeepGeneration += 1
+    setVoiceKeepState('idle')
+    props.onTryAgain()
   }
 
   function discardVoiceTake(): void {
@@ -357,7 +376,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         props.onStop()
       } else if (s === 'complete') {
         e.preventDefault()
-        props.onTryAgain()
+        tryAgain()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -656,9 +675,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               </Show>
               <button
                 class="exercise-btn exercise-btn-primary exercise-idle-start"
-                onClick={() =>
-                  isComplete() ? props.onTryAgain() : props.onStart()
-                }
+                onClick={() => (isComplete() ? tryAgain() : props.onStart())}
               >
                 {isComplete() ? 'Try Again' : (props.startLabel ?? 'Start')}
               </button>

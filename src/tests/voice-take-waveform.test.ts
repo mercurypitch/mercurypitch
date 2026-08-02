@@ -15,13 +15,12 @@ describe('voice take waveform layout', () => {
     expect(bars.at(-1)!.x + bars.at(-1)!.width).toBeGreaterThan(990)
   })
 
-  it('renders a full-width idle waveform when decoding has no peaks', () => {
+  it('renders an honest full-width baseline when decoding has no peaks', () => {
     const bars = layoutVoiceWaveBars(new Float32Array(), 360, 66, 0)
 
     expect(bars).toHaveLength(72)
     expect(bars.at(-1)!.x + bars.at(-1)!.width).toBeGreaterThan(355)
-    expect(
-      new Set(bars.map((bar) => Math.round(bar.height))).size,
-    ).toBeGreaterThan(1)
+    expect(new Set(bars.map((bar) => Math.round(bar.height))).size).toBe(1)
+    expect(Math.max(...bars.map((bar) => bar.height))).toBeLessThan(4)
   })
 })

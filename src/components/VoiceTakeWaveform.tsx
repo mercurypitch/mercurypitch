@@ -18,7 +18,7 @@ export interface VoiceWaveBar {
 
 /** Spread cached peak buckets across the full rendered width. */
 export function layoutVoiceWaveBars(
-  peaks: Float32Array | null,
+  peaks: ArrayLike<number> | null,
   width: number,
   height: number,
   progress: number,
@@ -31,7 +31,9 @@ export function layoutVoiceWaveBars(
   const playedX = Math.max(0, Math.min(1, progress)) * width
 
   return Array.from({ length: count }, (_, index) => {
-    const fallback = 0.12 + 0.06 * Math.sin(index * 0.9)
+    // Missing legacy/corrupt peaks get an honest neutral baseline, not a
+    // fabricated voice shape that could be mistaken for measured audio.
+    const fallback = 0.045
     const amplitude = Math.max(0, Math.min(1, source?.[index] ?? fallback))
     const barHeight = Math.max(2, amplitude * (height * 0.86))
     const x = index * step + (step - barWidth) / 2
@@ -48,7 +50,7 @@ export function layoutVoiceWaveBars(
 
 /** Glass-compatible aqua-to-violet waveform with a gold playback sweep. */
 export const VoiceTakeWaveform: Component<{
-  peaks: Float32Array | null
+  peaks: ArrayLike<number> | null
   progress: number
   playing: boolean
   class?: string

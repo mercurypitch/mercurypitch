@@ -57,6 +57,11 @@
   background: rgb(141 184 255 / 10%);
 }
 
+.closeButton:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
 .body {
   display: grid;
   grid-template-columns: minmax(240px, 0.85fr) minmax(300px, 1.15fr);
@@ -131,10 +136,27 @@
   gap: 18px;
 }
 
+.captureFieldLive {
+  width: 100%;
+}
+
 .captureStatus {
   display: flex;
   align-items: center;
   gap: 13px;
+}
+
+.captureStatusLive {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid rgb(255 105 113 / 22%);
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgb(117 26 39 / 24%), rgb(14 24 41 / 70%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
+}
+
+.captureStatusLive strong {
+  color: #fff0f1;
 }
 
 .captureStatus > div {
@@ -148,6 +170,7 @@
 }
 
 .micMark {
+  position: relative;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -159,9 +182,40 @@
 }
 
 .micLive {
-  color: #ffb5b5;
-  background: rgb(255 105 105 / 12%);
-  box-shadow: 0 5px 18px rgb(255 91 91 / 16%);
+  width: 54px;
+  height: 54px;
+  color: #fff7f7;
+  background: linear-gradient(145deg, #ff737b, #c72f42);
+  box-shadow:
+    0 0 0 0 rgb(255 87 100 / 32%),
+    0 9px 26px rgb(255 58 77 / 27%);
+  animation: recordingPulse 1.55s ease-out infinite;
+}
+
+.micLive::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgb(255 122 130 / 30%);
+  border-radius: 50%;
+}
+
+@keyframes recordingPulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(255 87 100 / 34%),
+      0 9px 26px rgb(255 58 77 / 27%);
+  }
+  70% {
+    box-shadow:
+      0 0 0 13px rgb(255 87 100 / 0%),
+      0 9px 26px rgb(255 58 77 / 27%);
+  }
+  100% {
+    box-shadow:
+      0 0 0 13px rgb(255 87 100 / 0%),
+      0 9px 26px rgb(255 58 77 / 27%);
+  }
 }
 
 .recordButton,
@@ -198,6 +252,12 @@
 
 .stopButton > span {
   border-radius: 2px;
+}
+
+.stopButton {
+  color: #fff;
+  background: linear-gradient(120deg, #df4a58, #b9283b);
+  box-shadow: 0 8px 22px rgb(180 29 53 / 25%);
 }
 
 .recordButton:disabled,
@@ -319,5 +379,11 @@
   .reviewActions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .micLive {
+    animation: none;
   }
 }

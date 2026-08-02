@@ -359,7 +359,6 @@
   height: 100%;
   background: #8db8ff;
   transform-origin: left;
-  transition: transform 120ms linear;
 }
 
 .compareSides {
@@ -390,41 +389,34 @@
 
 .waveform {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  display: block;
   width: 100%;
   height: 66px;
-  padding: 8px 0;
   overflow: hidden;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(93 161 255 / 4%),
+      transparent 22% 78%,
+      rgb(160 111 255 / 4%)
+    ),
+    rgb(4 9 17 / 34%);
 }
 
-.waveBar {
-  flex: 1 1 2px;
-  min-width: 1px;
-  max-width: 5px;
-  border-radius: 3px;
-  background: rgb(141 184 255 / 44%);
-  transition:
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.waveformActive .waveBar {
-  background: #8db8ff;
-  box-shadow: 0 3px 8px rgb(99 147 229 / 22%);
-}
-
-.waveProgress {
-  position: absolute;
-  inset: 8px 0;
+.waveformCanvas {
+  display: block;
   width: 100%;
-  border-right: 2px solid #e2eeff;
-  background: linear-gradient(90deg, transparent 74%, rgb(141 184 255 / 13%));
-  filter: drop-shadow(0 0 5px rgb(141 184 255 / 70%));
-  transform-origin: left;
-  pointer-events: none;
-  transition: transform 120ms linear;
+  height: 100%;
+  transition:
+    filter 180ms ease,
+    opacity 180ms ease;
+  opacity: 0.76;
+}
+
+.waveformActive .waveformCanvas {
+  filter: saturate(1.14) brightness(1.08);
+  opacity: 1;
 }
 
 .playButton,
@@ -597,6 +589,16 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
+}
+
+.deleteDialogError {
+  display: block;
+  margin-top: 10px;
+  padding: 9px 10px;
+  color: #ffd0d3;
+  border: 1px solid rgb(255 105 113 / 24%);
+  border-radius: 8px;
+  background: rgb(96 24 37 / 28%);
 }
 
 .loading {
@@ -854,8 +856,7 @@
 @media (prefers-reduced-motion: reduce) {
   .threadButton,
   .compareSide,
-  .waveBar,
-  .waveProgress,
+  .waveformCanvas,
   .progressTrack span {
     transition: none;
   }
