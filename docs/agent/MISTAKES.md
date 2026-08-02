@@ -124,6 +124,35 @@ flag every exit has to remember. Teardown must also settle what it cancels:
 `worker.terminate()` leaves pending promises hanging forever.
 **See:** `runWhisperChunkPlan` in `src/lib/useWhisperTranscription.ts`
 
+### An 'i' or '?' popover needs a portal and three closers
+**Symptom:** the info panel stays open after clicking elsewhere and after
+navigating to another tab, where it hangs over the new screen; the first card
+in a row opens its panel past the container edge and the text is cut in half;
+the sidebar draws straight over it.
+**Cause:** all three come from the same instinct — build the panel *inside* the
+card it belongs to, with a `<details>` or a boolean signal and absolute
+positioning. Inside the card it cannot escape the card's `overflow` (clipping)
+or its stacking context (the sidebar wins at `z-index: 200`), and a `<details>`
+has no concept of "someone clicked somewhere else".
+**Rule:** use `InfoPopover` (`src/components/InfoPopover.tsx`). Do not hand-roll
+another one. What it does, and what any replacement must also do:
+
+- **Portal the panel to `<body>`** and position it `fixed` from the trigger's
+  `getBoundingClientRect()`. No ancestor can then clip it or bury it.
+- **Clamp to the viewport** on both axes, and flip above the trigger when there
+  is no room below. Centring on the trigger is not enough — the leftmost card
+  in a grid still overflows.
+- **Close on all four:** outside `pointerdown` (capture), `Escape`, scroll
+  (capture — a panel positioned from a stale rect ends up stranded), and
+  unmount. The unmount one is what stops it surviving a tab change.
+- **Remove every listener in `onCleanup`.** A document-level listener that
+  outlives the component is a leak that fires against a dead signal.
+- **Sit below modals.** `z-index: 9000` clears the sidebar and app chrome;
+  dialogs and notifications at 10000+ should still win.
+
+**See:** `src/components/InfoPopover.tsx`, and the badge hints in
+`VocalChallenges.tsx` for a call site.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

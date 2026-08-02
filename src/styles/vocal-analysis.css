@@ -2397,6 +2397,91 @@
   border-color: var(--accent);
 }
 
+/* ── Weekly challenge card ──────────────────────────────────────────
+   The lift the community cards got: a real surface, a hover that reads
+   as pickup-able, and a progress block that spans the card.
+
+   Everything here is scoped under .challenge-card on purpose —
+   .progress-bar is 80px wide by design in nine other places, and this is
+   the one card that wants it full width. */
+.challenges-grid .challenge-card {
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--bg-card) 92%, var(--accent) 8%),
+    var(--bg-secondary) 62%
+  );
+  border-radius: 14px;
+  padding: 18px;
+  gap: 14px;
+}
+
+.challenges-grid .challenge-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+}
+
+.challenges-grid .challenge-icon {
+  color: var(--accent);
+}
+
+.challenge-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.challenge-progress-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.challenges-grid .challenge-card .progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.challenges-grid .challenge-card .progress-text {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* The icon sat on the text baseline rather than beside the label, and
+   white on this accent measures 2.5:1 — under the 4.5:1 floor. */
+.challenge-join-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  color: var(--bg-primary);
+  font-weight: 600;
+}
+
+.challenge-join-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.challenge-join-btn:hover:not(:disabled) {
+  background: var(--accent-hover, var(--accent));
+  filter: brightness(1.08);
+}
+
+.challenge-join-btn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: default;
+}
+
 .challenge-card.locked {
   opacity: 0.6;
   cursor: not-allowed;
@@ -2575,78 +2660,18 @@
 }
 
 /* ── How a badge is earned ──────────────────────────────────────────
-   Achievements carry their requirement and a progress bar; badges showed
-   a name and a tier, so a locked one told the singer nothing about what
-   to go and do. The seed has carried `unlockCondition` all along.
-
-   A <details>, not a :hover tooltip — hover does not exist on a phone,
-   and the collection has to be readable on one. Tap opens it; pointer
-   users also get it on hover, below. */
+   The condition now lives in an InfoPopover, which portals to <body> —
+   so it cannot be clipped by the card and cannot be buried under the
+   sidebar, and it closes on outside click / Escape / scroll / nav. The
+   panel styling went with it; only the trigger's placement is ours. */
 .badge-item {
   position: relative;
 }
 
-.badge-hint {
+.badge-hint-toggle {
   position: absolute;
   top: 6px;
   right: 6px;
-}
-
-.badge-hint-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
-  cursor: pointer;
-  user-select: none;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-  /* The default disclosure triangle has no place inside a 20px circle. */
-  list-style: none;
-}
-
-.badge-hint-toggle::-webkit-details-marker {
-  display: none;
-}
-
-.badge-hint-toggle:hover,
-.badge-hint[open] .badge-hint-toggle {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.badge-hint-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.badge-hint-body {
-  position: absolute;
-  top: 26px;
-  right: 0;
-  z-index: 5;
-  width: max-content;
-  max-width: 210px;
-  margin: 0;
-  padding: 9px 11px;
-  text-align: left;
-  font-size: 0.76rem;
-  line-height: 1.4;
-  color: var(--text-primary);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 9px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .badge-hint-earned {
@@ -2654,24 +2679,6 @@
   margin-top: 6px;
   font-size: 0.7rem;
   color: var(--accent);
-}
-
-/* Pointer users get it without a click. Touch devices report `hover:
-   none`, so they are untouched by this and keep the tap behaviour. */
-@media (hover: hover) {
-  .badge-item:hover .badge-hint-body {
-    display: block;
-  }
-  .badge-hint:not([open]) .badge-hint-body {
-    display: none;
-  }
-}
-
-/* The last cards in a row would push their panel off the right edge. */
-.badges-grid > .badge-item:nth-child(4n) .badge-hint-body,
-.badges-grid > .badge-item:last-child .badge-hint-body {
-  right: 0;
-  left: auto;
 }
 
 .badge-item.earned {

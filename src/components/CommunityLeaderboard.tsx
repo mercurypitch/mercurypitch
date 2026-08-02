@@ -882,15 +882,16 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                     <div class="challenge-content">
                       <h4 class="challenge-name">{challenge.name}</h4>
                       <p class="challenge-desc">{challenge.description}</p>
-                      <div class="challenge-stats">
-                        <span class="stat-user">
-                          {challenge.completed
-                            ? 'Completed'
-                            : `Your progress: ${challenge.userScore} / ${challenge.targetScore}`}
-                        </span>
-                      </div>
                     </div>
+                    {/* One reading of the number, not two. The stats row
+                        said "Your progress: 0 / 55" and the bar's caption
+                        said "0 / 55" directly beneath it. Label, bar, count
+                        — and the bar spans the card instead of the 80px the
+                        shared .progress-bar gives it. */}
                     <div class="challenge-progress">
+                      <span class="challenge-progress-label">
+                        {challenge.completed ? 'Completed' : 'Your progress'}
+                      </span>
                       <div class="progress-bar">
                         <div
                           class="progress-fill"

@@ -14,6 +14,7 @@ import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
+import { alreadyShared, melodyFingerprint, sessionFingerprint, } from '@/features/community/share-identity'
 import { fuzzyMatch } from '@/lib/fuzzy-match'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare, generateShareFullUrl, } from '@/lib/share-codec'
@@ -166,6 +167,10 @@ export interface SharedMelody {
   bpm?: number
   key?: string
   scale?: string
+  /** Content fingerprint, so the same melody cannot be shared twice.
+   *  Optional: cards shared before this existed simply carry none and
+   *  never block a new share. */
+  shareFingerprint?: string
 }
 
 export interface SharedSession {
@@ -175,6 +180,9 @@ export interface SharedSession {
   author: string
   results: number[]
   date: number
+  /** Identifies the RUN, so the same one cannot be published twice.
+   *  Optional for cards shared before this existed. */
+  shareFingerprint?: string
 }
 
 export interface UserStats {
@@ -382,6 +390,26 @@ export const CommunityShare: Component = () => {
     const bpmVal = m.bpm ?? bpm()
     const keyVal = m.key ?? keyName()
     const scaleVal = m.scale ?? scaleType()
+
+    // Nothing stopped the same melody being shared over and over, filling
+    // the shelf with identical cards and a DB row for each. Keyed on the
+    // notes, not the title — renaming is not re-composing.
+    const fingerprint = melodyFingerprint({
+      items: m.items,
+      bpm: bpmVal,
+      key: keyVal,
+      scale: scaleVal,
+    })
+    if (alreadyShared(fingerprint, localMelodies())) {
+      showNotification(
+        `You have already shared this melody — it is on your Melodies shelf.`,
+        'info',
+      )
+      setPickerType(null)
+      setActiveTab('melodies')
+      return
+    }
+
     const encoded = encodeMelodyForShare(
       m.items,
       bpmVal,
@@ -401,6 +429,7 @@ export const CommunityShare: Component = () => {
       bpm: bpmVal,
       key: keyVal || undefined,
       scale: scaleVal || undefined,
+      shareFingerprint: fingerprint,
     }
 
     const updated = [...localMelodies(), shareable]
@@ -451,13 +480,34 @@ export const CommunityShare: Component = () => {
   )
 
   const shareSession = (s: SessionResult) => {
+    const name = s.sessionName || s.name || 'Practice Session'
+    const completedAt = s.completedAt || Date.now()
+    // The run, not the routine: two runs of the same drill on different
+    // days are different results and both belong. This only stops the
+    // SAME run being published twice.
+    const fingerprint = sessionFingerprint({
+      name,
+      score: Math.round(s.score || 0),
+      completedAt,
+    })
+    if (alreadyShared(fingerprint, localSessions())) {
+      showNotification(
+        'You have already shared this run — it is on your Sessions shelf.',
+        'info',
+      )
+      setPickerType(null)
+      setActiveTab('sessions')
+      return
+    }
+
     const shareable: SharedSession = {
       id: generateId(),
-      name: s.sessionName || s.name || 'Practice Session',
+      name,
       items: [],
       author: currentProfile().displayName,
       results: [Math.round(s.score || 0)],
-      date: s.completedAt || Date.now(),
+      date: completedAt,
+      shareFingerprint: fingerprint,
     }
 
     const updated = [...localSessions(), shareable]

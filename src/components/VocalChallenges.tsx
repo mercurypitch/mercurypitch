@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import modalStyles from '@/components/Modal.module.css'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
@@ -470,27 +471,21 @@ export const VocalChallenges: Component = () => {
                     and a tier, so a locked one told the singer nothing
                     about what to go and do.
 
-                    A <details> rather than a CSS :hover tooltip: hover
-                    does not exist on a phone, and this has to work on
-                    both. Tapping the 'i' opens it; pointer users get it
-                    on hover too, via .badge-item:hover in the CSS. */}
-                <details class="badge-hint">
-                  <summary
-                    class="badge-hint-toggle"
-                    aria-label={`How to earn ${badge.name}`}
-                    title={badge.unlockCondition}
-                  >
-                    i
-                  </summary>
-                  <p class="badge-hint-body">
-                    {badge.unlockCondition || badge.description}
-                    <Show when={badge.earned && badge.earnedDate > 0}>
-                      <span class="badge-hint-earned">
-                        Earned {new Date(badge.earnedDate).toLocaleDateString()}
-                      </span>
-                    </Show>
-                  </p>
-                </details>
+                    InfoPopover, not a hand-rolled panel: it portals to
+                    <body>, so the leftmost card in a row cannot clip it
+                    and the sidebar cannot draw over it, and it closes on
+                    outside click, Escape, scroll and navigation. */}
+                <InfoPopover
+                  class="badge-hint-toggle"
+                  label={`How to earn ${badge.name}`}
+                >
+                  {badge.unlockCondition || badge.description}
+                  <Show when={badge.earned && badge.earnedDate > 0}>
+                    <span class="badge-hint-earned">
+                      Earned {new Date(badge.earnedDate).toLocaleDateString()}
+                    </span>
+                  </Show>
+                </InfoPopover>
                 {badge.earned && (
                   <span class="badge-check">
                     <IconCheckSolid />
