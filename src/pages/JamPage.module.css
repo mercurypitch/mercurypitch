@@ -2,13 +2,24 @@
 
 /* Fill .main-content (a full-height flex column) so the backdrop spans
    the viewport, not just the lobby form; sessionLayout's flex:1 +
-   height:100% also finally get a real flex parent to fill. */
+   height:100% also finally get a real flex parent to fill.
+ *
+ * `flex: 1 1 0`, not `1 0 auto`. Both fill an empty lobby, but
+ * flex-shrink:0 also meant this could never be SMALLER than its content —
+ * so once a session put an exercise canvas inside, the canvas's measured
+ * height grew the page and .main-content scrolled. Everything below here
+ * (sessionLayout, mainArea, canvasArea) already carries min-height:0 and
+ * overflow:hidden to bound exactly that; none of it could work while the
+ * top of the chain refused to shrink. `basis: 0` keeps the lobby fill. */
 .page {
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
+  flex: 1 1 0;
+  /* Without this, the page's automatic minimum size is its content — the
+     same refusal to shrink by another name. */
+  min-height: 0;
 
   /* Room glass. JamPage writes --jam-alpha inline from the header slider
      (jamRoomAlpha in the jam store); the theme's --bg-* tokens are rebound
