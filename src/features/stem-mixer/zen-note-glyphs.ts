@@ -4,19 +4,109 @@
 //
 // The zen stage annotates lyric words with the note the singer SHOULD
 // sing, chord-chart style (glyph anchored over the word's start). The
-// notes come from the pitch-word alignment — whose word times are NOT
-// always the sheet's own LRC times: when Whisper wins the segment-source
-// contest (or word windows are estimated from line-only LRC), the
-// aligned starts drift from the display words by real fractions of a
-// second. The old exact ±1 ms lookup then missed every word and the
-// toggle showed nothing at all (owner testing, regression). The lookup
-// is therefore exact-first with a bounded nearest-neighbour fallback —
-// wide enough to absorb cross-source drift, narrow enough never to
-// borrow a note across a silence gap.
+// notes come from the pitch-word alignment, whose word times are its
+// own — not the sheet's.
+//
+// This has been fixed twice and come back twice, so the mechanism is
+// worth stating. The first attempt keyed on the display word's start
+// time exactly (±1ms); the second widened that to a 0.4s nearest match.
+// Both kept the same false premise: that the DISPLAY word has a time at
+// all. Uploaded and line-only LRC carry line times and nothing else, so
+// `wordTimes` is undefined, every lookup returned null, and the toggle
+// showed nothing however wide the tolerance got.
+//
+// Meanwhile the lyrics panel had been getting this right the whole time,
+// forty lines away in another file: estimate a window for the word when
+// the sheet has no per-word times, then match by time-range OVERLAP
+// rather than by start proximity. That logic now lives here and both
+// surfaces call it, so they cannot drift apart again — which is the
+// actual bug behind all three reports.
 //
 // Pure data-in/data-out (no Solid, no DOM), mirroring zen-navigation.ts.
 
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
+
+/** A lyric line as either surface holds it, with whatever timing it has. */
+export interface LyricLineWindow {
+  /** Line start (seconds) — always present; LRC is line-timed at minimum. */
+  time: number
+  /** Line end. The zen list derives it from the next entry's start. */
+  endTime: number
+  words: readonly string[]
+  /** Per-word starts, when the sheet actually carries them. */
+  wordTimes?: readonly number[] | undefined
+  /** Per-word ends, rarer still. */
+  wordEndTimes?: readonly number[] | undefined
+}
+
+/**
+ * The time window a word occupies.
+ *
+ * Real per-word stamps when the sheet has them; otherwise the line's span
+ * split evenly across its words. The estimate is crude and entirely
+ * sufficient — it only has to be close enough to overlap the right aligned
+ * word, and being crude is far better than the alternative of returning
+ * nothing at all for every line-timed sheet.
+ */
+export function wordWindow(
+  line: LyricLineWindow,
+  wordIndex: number,
+): { startSec: number; endSec: number } {
+  const times = line.wordTimes
+  if (
+    times !== undefined &&
+    times.length > 0 &&
+    times[wordIndex] !== undefined
+  ) {
+    const startSec = times[wordIndex]!
+    const endSec =
+      line.wordEndTimes?.[wordIndex] ??
+      (wordIndex + 1 < times.length ? times[wordIndex + 1]! : line.endTime)
+    return { startSec, endSec }
+  }
+  const count = Math.max(1, line.words.length)
+  const perWord = Math.max(0.05, (line.endTime - line.time) / count)
+  const startSec = line.time + wordIndex * perWord
+  return { startSec, endSec: startSec + perWord }
+}
+
+/**
+ * The aligned word overlapping this window the most, or null when none
+ * does. Overlap rather than nearest-start: a sung word and its aligned
+ * counterpart share time even when their starts disagree, which is
+ * exactly the cross-source drift the earlier fixes were chasing.
+ */
+export function noteForWindow(
+  alignedWords: readonly AlignedWord[],
+  startSec: number,
+  endSec: number,
+): { noteName: string; midi: number } | null {
+  let best: { noteName: string; midi: number } | null = null
+  let bestOverlap = 0
+  for (const word of alignedWords) {
+    if (word.midi == null || word.noteName == null || word.noteName === '') {
+      continue
+    }
+    const overlap =
+      Math.min(endSec, word.endSec) - Math.max(startSec, word.startSec)
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap
+      best = { noteName: word.noteName, midi: word.midi }
+    }
+  }
+  return best
+}
+
+/** The note for one word of one line — the whole lookup, both surfaces. */
+export function noteForWord(
+  alignedWords: readonly AlignedWord[],
+  line: LyricLineWindow,
+  wordIndex: number,
+): { noteName: string; midi: number } | null {
+  if (alignedWords.length === 0) return null
+  const { startSec, endSec } = wordWindow(line, wordIndex)
+  return noteForWindow(alignedWords, startSec, endSec)
+}
 
 /** Key resolution for the exact index: 1 ms. */
 const KEY_MS = 1000

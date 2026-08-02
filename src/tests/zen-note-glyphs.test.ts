@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildWordNoteIndex, glyphForWordTime, hasWordNotes, } from '@/features/stem-mixer/zen-note-glyphs'
+import { buildWordNoteIndex, glyphForWordTime, hasWordNotes, noteForWord, wordWindow, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 
 const aligned = (startSec: number, noteName: string | null): AlignedWord => ({
@@ -64,5 +64,62 @@ describe('zen note glyphs — word→note lookup', () => {
     expect(glyphForWordTime(index, undefined)).toBeNull()
     expect(glyphForWordTime(index, Number.NaN)).toBeNull()
     expect(glyphForWordTime(index, 0)).toBeNull()
+  })
+})
+
+// ── The line-only sheet ──────────────────────────────────────────
+// The case that broke this twice. An uploaded or line-timed LRC carries
+// line times and nothing per word, so `wordTimes` is undefined — and any
+// lookup keyed on the display word's own start returns null for every
+// word, no matter how wide its tolerance. The panel had always handled
+// this by estimating a window and matching on overlap; the zen stage had
+// not. Both call the same function now, and these are the tests that
+// fail if anyone keys on start times again.
+
+describe('noteForWord on a sheet with no per-word timing', () => {
+  // "Now a shadow on a hill" over 12.0-16.0s: four words, 1s each.
+  const line = {
+    time: 12,
+    endTime: 16,
+    words: ['Now', 'a', 'shadow', 'on'],
+  }
+
+  const words: AlignedWord[] = [
+    aligned(12.1, 'G4'),
+    aligned(13.2, 'A4'),
+    aligned(14.05, 'B4'),
+    aligned(15.3, 'C5'),
+  ]
+
+  it('still finds a note for every word', () => {
+    const notes = line.words.map(
+      (_, i) => noteForWord(words, line, i)?.noteName ?? null,
+    )
+    expect(notes).toEqual(['G4', 'A4', 'B4', 'C5'])
+  })
+
+  it('estimates windows evenly across the line', () => {
+    expect(wordWindow(line, 0)).toEqual({ startSec: 12, endSec: 13 })
+    expect(wordWindow(line, 3)).toEqual({ startSec: 15, endSec: 16 })
+  })
+
+  it('prefers real per-word times when the sheet has them', () => {
+    const timed = { ...line, wordTimes: [12.0, 13.2, 14.0, 15.3] }
+    expect(wordWindow(timed, 1).startSec).toBe(13.2)
+    expect(noteForWord(words, timed, 1)?.noteName).toBe('A4')
+  })
+
+  it('returns null when nothing overlaps the word at all', () => {
+    // Alignment covers a different part of the song entirely.
+    const elsewhere = [aligned(90, 'G4'), aligned(91, 'A4')]
+    expect(noteForWord(elsewhere, line, 0)).toBeNull()
+  })
+
+  it('has nothing to say without an alignment', () => {
+    expect(noteForWord([], line, 0)).toBeNull()
+  })
+
+  it('skips aligned words the analysis could not name', () => {
+    expect(noteForWord([aligned(12.1, null)], line, 0)).toBeNull()
   })
 })
