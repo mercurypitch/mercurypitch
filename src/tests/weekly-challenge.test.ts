@@ -3,8 +3,8 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { clearChallengeResult, lastChallengeResult, } from '@/features/challenges/challenge-result-store'
+import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
 import { activeWeeklyAttempt, beginWeeklyAttempt, clearWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
