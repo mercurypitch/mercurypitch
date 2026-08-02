@@ -305,15 +305,7 @@ export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
   // The words changed, so the lines scored against them are stale.
   resetJamLineScores()
   if (!jamIsHost()) return
-  jamService?.sendSong({
-    id: next.id,
-    title: next.title,
-    artist: next.artist,
-    stems: next.stems,
-    lines: next.lines,
-    notes: next.notes,
-    durationSec: next.durationSec,
-  })
+  broadcastSongWithParts()
 }
 
 // ── Who sings which line ─────────────────────────────────────────────
@@ -700,7 +692,15 @@ export function initJam() {
     onPeerJoined: (peer) => {
       console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
-      // State sync is handled via DataChannel onopen in service.ts now
+      // Tell them what the room is on. The DataChannel's onopen only sends
+      // video-state, so somebody arriving mid-song saw an empty room and
+      // no way to ask what everyone else was singing.
+      //
+      // Safe to re-send to everyone now that a manifest for the song
+      // already loaded no longer resets the transport (see onSongMessage) --
+      // before that, one person joining would have stopped the music for
+      // the whole room.
+      if (jamIsHost() && jamSong() !== null) broadcastSongWithParts()
     },
     onPeerLeft: (peerId) => {
       setJamPeers((prev) => prev.filter((p) => p.id !== peerId))
@@ -828,6 +828,27 @@ export function initJam() {
         setJamSong(null)
         setJamSongPositionSec(0)
         setJamSongParts({})
+        return
+      }
+      // An UPDATE to the song already loaded -- the host assigned a part,
+      // or found the lyrics -- is not a new song, and must not touch the
+      // transport. Treating it as one stopped the music mid-verse for
+      // everybody except the person who made the change, which looks
+      // exactly like the room breaking by itself.
+      const same = jamSong()?.id === msg.song.id
+      if (same) {
+        setJamSong((prev) =>
+          prev === null
+            ? prev
+            : {
+                ...prev,
+                lines: msg.song?.lines ?? prev.lines,
+                notes: msg.song?.notes ?? prev.notes,
+              },
+        )
+        setJamSongParts(msg.song.parts ?? {})
+        // The words or the parts moved under the scores, so they are stale.
+        resetJamLineScores()
         return
       }
       // Peers trust the host's manifest but still resolve the audio
