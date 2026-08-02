@@ -11,7 +11,17 @@
 // and when it was saturated the connection simply failed, indistinguishable
 // from any other failure. "Works for everyone except one person" was this.
 
-const ICE_ENDPOINT = '/api/jam/ice'
+/**
+ * Same base as the signaling client, not a hardcoded path.
+ *
+ * VITE_JAM_SIGNALING_URL can point the jam API at a different host, and a
+ * hardcoded '/api/jam/ice' would keep asking the PAGE origin for credentials
+ * while signaling talked to the configured one -- a 404 that degrades
+ * silently to STUN, so the room would still work and nobody would notice
+ * TURN had quietly stopped being used.
+ */
+const JAM_BASE = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
+const ICE_ENDPOINT = `${JAM_BASE.replace(/\/$/, '')}/ice`
 /** Long enough for a slow cold start, short enough not to stall a join. */
 const FETCH_TIMEOUT_MS = 4000
 
