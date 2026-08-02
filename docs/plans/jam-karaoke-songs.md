@@ -16,19 +16,19 @@ uploaded, separated by UVR, and never left. There is no URL another peer can
 fetch, and pushing tens of megabytes down a DataChannel to eleven people is
 not a plan.
 
-So the room can only sing songs that are **fetchable by everyone**:
+There are two ways to solve that, and this plan takes the second:
 
-| Source | Shareable? | Why |
+| Source | How the room gets it | |
 |---|---|---|
-| Karaoke Night demo song | **Yes** | Already on R2 (`mercury-pitch-models`, wildcard GET CORS since 2026-07-17) |
-| A future shared/library song | Yes, once it exists | Same shape as the demo |
-| A user's own separated session | **No** | Stems are device-local; no fetchable URL exists |
+| Karaoke Night demo song | Fetched from R2 by each peer | Already public, wildcard GET CORS |
+| A user's own separated session | **Sent peer-to-peer, §1b** | Nothing uploaded, nothing on our servers |
+| Hosting user songs ourselves | Rejected | Uploading users' separated music to shared storage is a different product with a licensing question attached |
 
-That is why the demo song is the right first target, and it is not a
-convenience — it is the only thing that currently works. Making a user's own
-song jammable is a separate, much larger piece of work (uploading stems to
-shared storage, with the licensing questions that opens), and it should not
-be smuggled in behind this.
+The demo song is still the right first target -- it needs no transfer, so it
+proves the layout, the seconds transport and the per-peer trails without
+also proving the file transfer. But it is a **stepping stone, not the
+ceiling**: the point of the feature is singing your own songs together, and
+§1b is how that works.
 
 ## 1b. Getting the audio there: peer-to-peer transfer
 
