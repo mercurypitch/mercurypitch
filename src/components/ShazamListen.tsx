@@ -115,7 +115,9 @@ export function ShazamListen(props: ShazamListenProps) {
       chroma: number
       rhythm: number
     }
-    notes: number
+    /** lengthBonus as a percentage — NOT a note count, despite the old
+     *  field name sitting under a header that reads "N NOTES". */
+    lengthBonus: number
   }
   const [liveMatches, setLiveMatches] = createSignal<LiveMatchEntry[]>([])
   const [liveQueryNotes, setLiveQueryNotes] = createSignal(0)
@@ -657,7 +659,7 @@ export function ShazamListen(props: ShazamListenProps) {
             chroma: Math.round((c.breakdown?.chromaScore ?? 0) * 100),
             rhythm: Math.round((c.breakdown?.rhythmScore ?? 0) * 100),
           },
-          notes: Math.round((c.breakdown?.lengthBonus ?? 0) * 100),
+          lengthBonus: Math.round((c.breakdown?.lengthBonus ?? 0) * 100),
         })),
       )
 
@@ -1077,7 +1079,7 @@ export function ShazamListen(props: ShazamListenProps) {
                   <div class={styles.liveMatchDetail}>
                     P:{match.breakdown.pitch} I:{match.breakdown.interval} C:
                     {match.breakdown.chroma} R:{match.breakdown.rhythm} L:
-                    {match.notes}
+                    {match.lengthBonus}
                   </div>
                 </Show>
               </button>
