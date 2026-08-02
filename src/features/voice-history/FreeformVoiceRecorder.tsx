@@ -3,8 +3,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { IconCross, IconMic } from '@/components/exercise-icons'
+import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { trackEvent } from '@/lib/analytics'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -32,9 +33,6 @@ interface FreeformVoiceRecorderProps {
 
 const MIC_CONSUMER_ID = 'voice-history-freeform'
 const MAX_CAPTURE_MS = 5 * 60 * 1000
-const FALLBACK_PEAKS = [
-  0.18, 0.32, 0.2, 0.48, 0.27, 0.62, 0.38, 0.7, 0.45, 0.3, 0.54, 0.22,
-]
 
 function formatElapsed(durationMs: number): string {
   if (durationMs > 0 && durationMs < 1000) return '<1s'
@@ -519,24 +517,11 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
               role="img"
               aria-label="Waveform for the temporary take"
             >
-              <For
-                each={
-                  take().peaks.length > 0
-                    ? Array.from(take().peaks)
-                    : FALLBACK_PEAKS
-                }
-              >
-                {(peak) => (
-                  <span
-                    style={{
-                      height: `${Math.max(8, Math.round(peak * 100))}%`,
-                    }}
-                  />
-                )}
-              </For>
-              <i
-                style={{ transform: `scaleX(${previewProgress()})` }}
-                aria-hidden="true"
+              <VoiceTakeWaveform
+                class={styles.waveformCanvas}
+                peaks={take().peaks}
+                progress={previewProgress()}
+                playing={previewPlaying()}
               />
             </div>
             <div class={styles.reviewActions}>
