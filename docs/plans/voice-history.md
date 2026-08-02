@@ -259,6 +259,7 @@ getVoiceTake(id): Promise<VoiceTakeRecord | null>
 getVoiceTakeBlob(id): Promise<Blob | null>
 updateVoiceTake(id, patch): Promise<Result>
 deleteVoiceTake(id): Promise<Result>
+deleteVoiceThread(comparisonKey): Promise<Result>
 exportVoiceTake(id): Promise<File | null>
 exportAllVoiceTakes(): Promise<Blob>
 getVoiceStorageSnapshot(): Promise<VoiceStorageSnapshot>
@@ -450,13 +451,17 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   pitch contour and an unmistakable recording state; it never invents a score
   or target for freeform singing.
 - Saved history reuses the Glass canvas waveform, with frame-synchronised
-  playheads for fluid playback rather than coarse media `timeupdate` steps.
+  playheads for fluid playback rather than coarse media `timeupdate` steps;
+  every replay waveform is a pointer- and keyboard-accessible seek control.
 - A single playback-only listening room applies Dry, Starlight, Nebula,
   Supernova, or custom Echo/Reverb/Hall settings equally to Earlier and Later;
   saved blobs remain dry and effect tails are reset between takes.
-- Take deletion and clear-all use the app's accessible confirmation dialog,
-  including busy-state protection and a typed confirmation for the bulk wipe;
-  native browser dialogs are not used.
+- Take, complete-thread, and clear-all deletion use the app's accessible
+  confirmation dialog. Thread and whole-history deletion are separate actions
+  with typed confirmation, and native browser dialogs are not used.
+- Local bulk deletion stays transactional through both direct Dexie and the PR
+  preview's HybridAdapter path without parallel IndexedDB work inside a single
+  transaction.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
@@ -478,7 +483,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 ### PR 5 — source expansion
 
 - Karaoke take adapter.
-- Storage-management refinements from measured take sizes and failure rates.
+- Storage-management refinements from measured take sizes and failure rates,
+  including bulk export and richer quota/usage controls.
 - Jam remains excluded until multi-party consent is designed.
 
 ### PR 6+ — cloud portability
@@ -496,7 +502,8 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Metadata queries do not read audio payloads.
 - Save is atomic under metadata failure, blob failure, and quota failure.
 - Durable write retry does not duplicate a take.
-- Delete/wipe removes both metadata and audio.
+- Delete-take, delete-thread, and wipe-all remove both metadata and audio while
+  preserving records outside the chosen scope.
 - Storage estimate unknown/low/available branches.
 - MIME selection and unsupported `MediaRecorder`.
 - Comparison eligibility and default-pair selection.
@@ -521,8 +528,11 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
 - Keep two eligible takes and complete an Earlier/Later comparison.
 - Drag a listening-room slider with a real pointer and confirm the setting does
   not alter or replace the stored take.
+- Drag a replay waveform with a real pointer, confirm its playhead seeks to the
+  requested position, and repeat with keyboard arrows.
 - Confirm capture shows a live waveform/pitch contour, saved history uses the
-  Glass canvas waveform, and deletion opens only the in-app dialog.
+  Glass canvas waveform, and take/thread/all deletion opens only the in-app
+  dialog.
 - Deny mic; lose mic mid-capture; recover without a stuck indicator.
 - Disable network and repeat the full local flow.
 - Simulate low quota without falsely reporting a successful save.

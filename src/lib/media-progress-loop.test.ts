@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createMediaProgressLoop, isMediaPlaybackActive, } from './media-progress-loop'
+import { createMediaProgressLoop, isMediaPlaybackActive, mediaProgressFromPointer, } from './media-progress-loop'
 
 interface MutableMediaClock {
   currentTime: number
@@ -30,6 +30,13 @@ function createScheduler() {
 }
 
 describe('media progress loop', () => {
+  it('maps pointer positions across the timeline and clamps either edge', () => {
+    expect(mediaProgressFromPointer(150, 100, 200)).toBe(0.25)
+    expect(mediaProgressFromPointer(40, 100, 200)).toBe(0)
+    expect(mediaProgressFromPointer(400, 100, 200)).toBe(1)
+    expect(mediaProgressFromPointer(150, 100, 0)).toBe(0)
+  })
+
   it('samples playback on every animation frame', () => {
     const frames = createScheduler()
     const updates: number[] = []

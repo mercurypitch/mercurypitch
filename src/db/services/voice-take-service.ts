@@ -209,6 +209,35 @@ export async function deleteVoiceTake(takeId: string): Promise<boolean> {
   }
 }
 
+/** Delete one complete practice thread while leaving every other take intact. */
+export async function deleteVoiceThread(
+  comparisonKey: string,
+): Promise<boolean> {
+  if (comparisonKey === '') return false
+  try {
+    const db = await getDb()
+    await localTransaction(db, async (transactionDb) => {
+      const takeRepo =
+        transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
+      const audioRepo =
+        transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      const takes = await takeRepo.findAll({ where: { comparisonKey } })
+      if (takes.length === 0) throw new Error('Voice thread not found')
+
+      for (const take of takes) {
+        const audioRows = await audioRepo.findAll({
+          where: { takeId: take.id },
+        })
+        for (const row of audioRows) await audioRepo.delete(row.id)
+        await takeRepo.delete(take.id)
+      }
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function wipeVoiceTakes(): Promise<boolean> {
   try {
     const db = await getDb()
@@ -217,10 +246,10 @@ export async function wipeVoiceTakes(): Promise<boolean> {
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
       const audioRepo =
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
-      const [takes, audioRows] = await Promise.all([
-        takeRepo.findAll(),
-        audioRepo.findAll(),
-      ])
+      // Keep both store reads in an explicit sequence; deletion must not rely
+      // on parallel jobs retaining the same active IndexedDB transaction.
+      const takes = await takeRepo.findAll()
+      const audioRows = await audioRepo.findAll()
       for (const row of audioRows) await audioRepo.delete(row.id)
       for (const take of takes) await takeRepo.delete(take.id)
     })
