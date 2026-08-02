@@ -185,6 +185,31 @@ describe('mic reconciliation', () => {
     expect(engine.isMicActive()).toBe(true)
   })
 
+  it('preserves the device-busy recovery message through practice-engine', async () => {
+    stubAudioContext()
+    mockGetUserMedia(() => {
+      const error = new Error('device busy')
+      error.name = 'NotReadableError'
+      return Promise.reject(error)
+    })
+    const engine = new AudioEngine()
+    const practice = new PracticeEngine(engine)
+    const errors: string[] = []
+    practice.addCallbacks({
+      onMicStateChange: (active, error) => {
+        if (!active && error !== undefined) errors.push(error)
+      },
+    })
+
+    const started = practice.startMic()
+    await vi.advanceTimersByTimeAsync(250)
+
+    await expect(started).resolves.toBe(false)
+    expect(errors).toEqual([
+      'The microphone is in use by another app or browser tab.',
+    ])
+  })
+
   it('practice-engine heals an isMicActive mismatch and emits onMicStateChange', () => {
     let engineActive = true
     const fakeAudioEngine = {

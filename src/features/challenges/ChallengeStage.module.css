@@ -222,6 +222,10 @@
   line-height: 1.45;
 }
 
+.micInsight {
+  text-align: start;
+}
+
 .practiceNotice {
   margin: 0;
   padding: 8px 10px;

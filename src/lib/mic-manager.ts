@@ -142,6 +142,13 @@ export class MicManager {
     return [...this.consumers]
   }
 
+  /** Last device acquisition error. Consumers use this to preserve the
+   * browser's useful "busy"/permission distinction after a boolean start API
+   * reports failure. Cleared by the next successful acquire. */
+  getError(): MicError | null {
+    return this.error
+  }
+
   getPreferredDevice(): string | null {
     return this.preferredDeviceId
   }

@@ -118,6 +118,8 @@ export function usePracticeController(deps: Deps): PracticeController {
       if (error !== undefined && error !== '') {
         setMicError(error)
         showNotification(error, 'error')
+      } else {
+        setMicError(null)
       }
     },
   })

@@ -122,6 +122,7 @@ describe('MicManager', () => {
     await expect(mgr.acquire('a')).rejects.toMatchObject({
       kind: 'permission-denied',
     })
+    expect(mgr.getError()).toMatchObject({ kind: 'permission-denied' })
     expect(mgr.isActive()).toBe(false)
     expect(mgr.getConsumers()).toEqual([])
   })
@@ -141,6 +142,7 @@ describe('MicManager', () => {
     await expect(acquired).resolves.toBe(stream)
     expect(gum).toHaveBeenCalledTimes(2)
     expect(mgr.isActive()).toBe(true)
+    expect(mgr.getError()).toBeNull()
   })
 
   it('notifies subscribers on state changes', async () => {
