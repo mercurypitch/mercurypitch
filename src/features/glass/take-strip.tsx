@@ -15,7 +15,8 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, For, onCleanup, Show } from 'solid-js'
+import { For, Show } from 'solid-js'
+import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { computeVoicePeaks } from '@/lib/voice-capture'
 import { IconShatter } from './icons'
 
@@ -38,8 +39,6 @@ export interface GlassTake {
   }
   saveState: 'idle' | 'saving' | 'saved' | 'error'
 }
-
-const PEAK_BUCKETS = 72
 
 export const computePeaks = computeVoicePeaks
 
@@ -82,98 +81,6 @@ const IconRemove: Component = () => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 )
-
-/** The card's waveform: gradient glow bars + played-portion sweep. */
-const TakeWave: Component<{
-  peaks: Float32Array | null
-  /** 0..1 played fraction (0 when not playing). */
-  progress: number
-  playing: boolean
-}> = (props) => {
-  let canvas: HTMLCanvasElement | undefined
-
-  const draw = (): void => {
-    if (!canvas) return
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
-    const rect = canvas.getBoundingClientRect()
-    if (rect.width === 0) return
-    if (canvas.width !== Math.round(rect.width * dpr)) {
-      canvas.width = Math.round(rect.width * dpr)
-      canvas.height = Math.round(rect.height * dpr)
-    }
-    const c = canvas.getContext('2d')
-    if (!c) return
-    c.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const W = rect.width
-    const H = rect.height
-    c.clearRect(0, 0, W, H)
-
-    const peaks = props.peaks
-    const mid = H / 2
-    const n = peaks?.length ?? PEAK_BUCKETS
-    const step = W / n
-    const barW = Math.max(1.5, step * 0.55)
-    const playedX = props.progress * W
-
-    for (let i = 0; i < n; i++) {
-      // Decode pending: a quiet idle shimmer instead of silence.
-      const p = peaks?.[i] ?? 0.12 + 0.06 * Math.sin(i * 0.9)
-      const h = Math.max(2, p * (H * 0.86))
-      const x = i * step + (step - barW) / 2
-      const played = x + barW / 2 <= playedX
-      // Brand gradient (aqua → violet) by position; played bars go gold.
-      const hue = played ? null : i / n
-      c.fillStyle = played
-        ? 'rgba(255, 233, 168, 0.95)'
-        : `rgba(${Math.round(88 + 100 * hue!)}, ${Math.round(
-            166 - 26 * hue!,
-          )}, 255, 0.9)`
-      c.shadowColor = c.fillStyle
-      c.shadowBlur = props.playing ? 6 : 3
-      const rTop = mid - h / 2
-      c.beginPath()
-      c.roundRect(x, rTop, barW, h, barW / 2)
-      c.fill()
-    }
-    c.shadowBlur = 0
-
-    if (props.playing) {
-      c.strokeStyle = 'rgba(255, 233, 168, 0.9)'
-      c.lineWidth = 1.4
-      c.shadowColor = '#ffe9a8'
-      c.shadowBlur = 8
-      c.beginPath()
-      c.moveTo(playedX, 2)
-      c.lineTo(playedX, H - 2)
-      c.stroke()
-      c.shadowBlur = 0
-    }
-  }
-
-  createEffect(() => {
-    // Reactive deps: peaks arrival, playhead motion, play state.
-    void props.peaks
-    void props.progress
-    void props.playing
-    requestAnimationFrame(draw)
-  })
-
-  const observer =
-    typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => draw())
-      : null
-  onCleanup(() => observer?.disconnect())
-
-  return (
-    <canvas
-      class="glass-take-wave"
-      ref={(el) => {
-        canvas = el
-        observer?.observe(el)
-      }}
-    />
-  )
-}
 
 export const TakeStrip: Component<{
   takes: GlassTake[]
@@ -222,7 +129,8 @@ export const TakeStrip: Component<{
                       </span>
                     </Show>
                   </span>
-                  <TakeWave
+                  <VoiceTakeWaveform
+                    class="glass-take-wave"
                     peaks={take.peaks}
                     progress={playing() ? props.progress : 0}
                     playing={playing()}

@@ -77,7 +77,7 @@ These are the rules that break things when ignored.
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.9k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 5.9k | _(no header comment)_ |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.0k | _(no header comment)_ |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.3k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
