@@ -31,6 +31,14 @@ import styles from './JamSongStage.module.css'
  */
 const RESYNC_THRESHOLD_SEC = 0.35
 
+/**
+ * How far the guide vocal may drift from the backing track.
+ *
+ * Tighter than the peer threshold because these two elements are on ONE
+ * device with no network between them: any gap here is a bug, not latency.
+ */
+const GUIDE_DRIFT_SEC = 0.12
+
 export const JamSongStage: Component = () => {
   let audioRef: HTMLAudioElement | undefined
   let vocalRef: HTMLAudioElement | undefined
@@ -154,6 +162,11 @@ export const JamSongStage: Component = () => {
     if (!jamIsHost()) return
     const el = audioRef
     if (el !== undefined) el.currentTime = toSec
+    // The guide moves with it. The follow effect would catch this on the
+    // next position tick anyway, but "anyway" is up to a quarter of a
+    // second of the wrong words in your ear, and a scrub is precisely
+    // when you are listening for where you landed.
+    if (vocalRef !== undefined) vocalRef.currentTime = toSec
     jamSongSeek(toSec)
   }
 
@@ -193,12 +206,37 @@ export const JamSongStage: Component = () => {
     if (guide === undefined || main === undefined) return
     guide.volume = guideVolume()
     if (jamExercisePlaying() && !jamExercisePaused() && guideVolume() > 0) {
-      if (Math.abs(guide.currentTime - main.currentTime) > 0.12) {
-        guide.currentTime = main.currentTime
-      }
+      // Snap on the way in rather than trusting where it stopped. Muting
+      // pauses this element, so the playhead can travel a long way -- a
+      // whole scrub -- while it sits still, and resuming from there is
+      // exactly the "vocal is out of step" people hear.
+      guide.currentTime = main.currentTime
       void guide.play().catch(() => {})
     } else {
       guide.pause()
+    }
+  })
+
+  /**
+   * ...and follows the playhead once it is running.
+   *
+   * Separate from the effect above, for the same reason the room's own
+   * transport is split in two: this one has to re-run on every position
+   * change, and an effect that calls play() or pause() on every tick
+   * races itself.
+   *
+   * The dependency is the ROOM's position, not `main.currentTime`. A DOM
+   * property is not reactive, so the old single effect never re-ran on a
+   * seek at all -- the guide vocal simply carried on from wherever it was,
+   * permanently out of step until you happened to toggle the volume.
+   */
+  createEffect(() => {
+    jamSongPositionSec()
+    const guide = vocalRef
+    const main = audioRef
+    if (guide === undefined || main === undefined || guide.paused) return
+    if (Math.abs(guide.currentTime - main.currentTime) > GUIDE_DRIFT_SEC) {
+      guide.currentTime = main.currentTime
     }
   })
 
@@ -311,8 +349,11 @@ export const JamSongStage: Component = () => {
                   class={styles.btn}
                   onClick={() => {
                     // Same reason as seekTo: stop rewinds the clock, and
-                    // the element IS the clock.
+                    // the element IS the clock. Both elements, or the
+                    // guide resumes mid-song against a backing track that
+                    // restarted from the top.
                     if (audioRef !== undefined) audioRef.currentTime = 0
+                    if (vocalRef !== undefined) vocalRef.currentTime = 0
                     jamSongStop()
                   }}
                 >
