@@ -61,9 +61,9 @@ export const MIC_INSIGHT_MESSAGE: Record<MicInsight, string> = {
   'mic-off':
     'Your mic is off — turn it on to be heard and scored while you play along.',
   'no-input':
-    "Your mic is on but we can't hear you — sing up, or check your mic input.",
+    'Your mic is on, but no usable input is reaching MercuryPitch. Check the selected input and close other tabs or apps using it.',
   'too-quiet':
-    "We can hear you, but it's too quiet to read your pitch — move closer or lower the mic sensitivity.",
+    'Input is too weak for pitch tracking. Move closer, check the input gain, and close other tabs or apps using this mic.',
 }
 
 const now = (): number =>

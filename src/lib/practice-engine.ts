@@ -6,6 +6,7 @@ import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
 import { showNotification } from '@/stores/notifications-store'
 import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
+import { micManager } from './mic-manager'
 import type { PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
 
@@ -209,8 +210,11 @@ export class PracticeEngine {
         this.emit('onMicStateChange', true)
         return true
       }
-      console.warn('[PracticeEngine] Mic start failed - access denied')
-      this.emit('onMicStateChange', false, 'Microphone access denied')
+      const message =
+        micManager.getError()?.message ??
+        'The microphone could not start. Check browser permission and the selected input device.'
+      console.warn('[PracticeEngine] Mic start failed:', message)
+      this.emit('onMicStateChange', false, message)
       return false
     } catch (err) {
       console.error('[PracticeEngine] Mic start error:', err)

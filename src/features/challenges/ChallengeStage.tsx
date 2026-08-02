@@ -17,8 +17,11 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Loop, Pause, Play, Trophy, Volume2, VolumeX, X, } from '@/components/icons'
+import { MicInsightHint } from '@/components/MicInsightHint'
+import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
+import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -39,6 +42,9 @@ interface ChallengeStageProps {
   launch: ChallengeStageLaunch
   subscribeFrames: (listener: PracticeFrameListener) => () => void
   micActive: Accessor<boolean>
+  micError: Accessor<string | null>
+  getMicLevel: () => number
+  isDetecting: () => boolean
   startMic: () => Promise<boolean>
   stopMic: () => void
   playTone: (frequency: number, durationMs: number) => Promise<void>
@@ -120,6 +126,14 @@ export function ChallengeStage(props: ChallengeStageProps) {
     if (outcome() !== null) return 'done'
     return session.status() === 'running' ? 'live' : 'ready'
   }
+
+  const micInsights = useMicInsights({
+    enabled: () => phase() === 'live',
+    micActive: () => props.micActive(),
+    isPlaying: () => phase() === 'live',
+    getLevel: () => props.getMicLevel(),
+    isDetecting: () => props.isDetecting(),
+  })
 
   const stopPreview = (): void => {
     previewToken += 1
@@ -302,7 +316,8 @@ export function ChallengeStage(props: ChallengeStageProps) {
       completing = previousOutcome !== null
       if (previousOutcome !== null) setRunKind(previousOutcome.kind)
       setStartError(
-        'Microphone access is needed to sing the challenge. Check the browser permission and try again.',
+        props.micError() ??
+          'The microphone could not start. Check browser permission and the selected input device.',
       )
       return
     }
@@ -339,6 +354,9 @@ export function ChallengeStage(props: ChallengeStageProps) {
       durationSec: session.loopDurationSec(),
       elapsedSec:
         done !== null ? session.loopDurationSec() : session.elapsedSec(),
+      ...(definition === null
+        ? {}
+        : { timeGridIntervalSec: 60 / definition.bpm }),
       viewport: session.viewport(),
       targets: session.targets(),
       targetVisibility: 'on',
@@ -602,6 +620,22 @@ export function ChallengeStage(props: ChallengeStageProps) {
         }
       />
 
+      <MicInsightHint
+        message={micInsights.message}
+        insight={micInsights.insight}
+        class={styles.micInsight}
+        style={{
+          position: 'fixed',
+          top: '96px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          'z-index': 'calc(var(--z-focus, 500) + 2)',
+          width: 'max-content',
+          'max-width': 'min(680px, calc(100vw - 32px))',
+          'white-space': 'normal',
+        }}
+      />
+
       <Show when={phase() === 'ready'}>
         <div class={styles.overlay}>
           <div class={styles.readyCard} data-testid="challenge-ready-card">
@@ -656,6 +690,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
                 {previewError()}
               </p>
             </Show>
+            <MicTroubleshooting />
             <Show
               when={definition !== null}
               fallback={

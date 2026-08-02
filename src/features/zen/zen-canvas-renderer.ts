@@ -4,6 +4,10 @@ import type { ResolvedZenTarget, ZenPitchPoint, ZenTargetHighlight, ZenTargetVis
 export interface ZenCanvasRenderModel {
   durationSec: number
   elapsedSec: number
+  /** Optional musical grid step. Challenge stages use one beat here so the
+   *  canvas lines agree with authored note timing instead of dividing an
+   *  arbitrary loop duration into equal visual slices. */
+  timeGridIntervalSec?: number
   viewport: ZenViewport
   targets: readonly ResolvedZenTarget[]
   targetVisibility: ZenTargetVisibility
@@ -45,6 +49,35 @@ const NOTE_NAMES = [
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value))
+
+/** Resolve the vertical time grid. Plain Zen keeps its quiet 4/8-way visual
+ * grid; authored stages may supply a musical interval so notes and lines share
+ * the same clock. The loop seam is always included. */
+export function resolveZenTimeGrid(
+  durationSec: number,
+  width: number,
+  intervalSec?: number,
+): number[] {
+  const duration = Math.max(0.001, durationSec)
+  if (
+    intervalSec !== undefined &&
+    Number.isFinite(intervalSec) &&
+    intervalSec > 0
+  ) {
+    const times: number[] = []
+    for (let time = 0; time < duration - 0.0001; time += intervalSec) {
+      times.push(time)
+    }
+    times.push(duration)
+    return times
+  }
+
+  const divisions = width < 620 ? 4 : 8
+  return Array.from(
+    { length: divisions + 1 },
+    (_, division) => (duration * division) / divisions,
+  )
+}
 
 export function createZenCanvasLayout(
   width: number,
@@ -140,15 +173,18 @@ function drawGrid(
     }
   }
 
-  const timeDivisions = width < 620 ? 4 : 8
-  for (let division = 0; division <= timeDivisions; division += 1) {
-    const time = (model.durationSec * division) / timeDivisions
+  const gridTimes = resolveZenTimeGrid(
+    model.durationSec,
+    width,
+    model.timeGridIntervalSec,
+  )
+  for (const time of gridTimes) {
     const x = layout.timeToX(time)
-    ctx.strokeStyle =
-      division === timeDivisions
-        ? 'rgba(245, 158, 11, 0.28)'
-        : 'rgba(80, 96, 122, 0.14)'
-    ctx.lineWidth = division === timeDivisions ? 1.2 : 0.7
+    const isLoopSeam = Math.abs(time - model.durationSec) < 0.0001
+    ctx.strokeStyle = isLoopSeam
+      ? 'rgba(245, 158, 11, 0.28)'
+      : 'rgba(80, 96, 122, 0.14)'
+    ctx.lineWidth = isLoopSeam ? 1.2 : 0.7
     ctx.beginPath()
     ctx.moveTo(Math.round(x) + 0.5, layout.top)
     ctx.lineTo(Math.round(x) + 0.5, height - layout.bottom)
