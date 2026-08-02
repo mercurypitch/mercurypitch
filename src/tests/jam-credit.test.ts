@@ -181,6 +181,53 @@ describe('crediting a room run', () => {
     expect(recordExerciseResult).toHaveBeenCalledTimes(1)
   }, 10_000)
 
+  it('keeps your part fixed when someone joins mid-take', async () => {
+    // Roles come from the sorted peer list, so a join re-derives them. Mid
+    // take that would rewrite the notes under a singer already singing and
+    // then score their samples against a part they never saw -- in Harmony
+    // Stack, a near-zero for doing nothing wrong.
+    store.setJamPeerId('mmm')
+    store.setJamPeers([])
+    store.selectJamRoomMode('harmony')
+    store.selectJamExercise(melody('jam-exercise-long-note'))
+    store.jamPlaybackPlay(0)
+    const during = store.jamMyTarget()
+
+    // Two singers arrive: alone I was unison, now I would be a chord tone.
+    store.setJamPeers([
+      { id: 'aaa', displayName: 'A' },
+      { id: 'zzz', displayName: 'Z' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any)
+    expect(store.jamMyTarget()).toBe(during)
+
+    store.jamPlaybackStop()
+    store.selectJamRoomMode('unison')
+    store.setJamPeers([])
+  })
+
+  it('picks up the new assignment on the next take', async () => {
+    store.setJamPeerId('mmm')
+    store.setJamPeers([])
+    store.selectJamRoomMode('harmony')
+    store.selectJamExercise(melody('jam-exercise-long-note'))
+    store.jamPlaybackPlay(0)
+    const firstTake = store.jamMyTarget()
+    store.jamPlaybackStop()
+
+    store.setJamPeers([
+      { id: 'aaa', displayName: 'A' },
+      { id: 'zzz', displayName: 'Z' },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ] as any)
+    store.jamPlaybackPlay(0)
+    // Now three in the room: my part is a different chord tone.
+    expect(store.jamMyTarget()).not.toBe(firstTake)
+    store.jamPlaybackStop()
+    store.selectJamRoomMode('unison')
+    store.setJamPeers([])
+  })
+
   it('credits nothing more when stop is pressed twice', async () => {
     await playAndStop(melody('jam-exercise-long-note'))
     store.jamPlaybackStop()

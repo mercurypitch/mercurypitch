@@ -256,7 +256,13 @@ export const jamMyRole = createRoot(() => {
  * mode only has to answer "what are MY notes" and the piano roll, the MIDI
  * range, the per-note scoring and the take chip all follow.
  */
-export const jamMyTarget = createRoot(() => {
+/**
+ * The part the room would assign right now, before a take pins it down.
+ *
+ * Reactive on the peer list, which is correct between takes and wrong
+ * during one -- hence jamMyTarget below.
+ */
+const jamLiveTarget = createRoot(() => {
   const memo = createMemo(() => {
     const role = jamMyRole()
     return targetForRole(
@@ -266,6 +272,26 @@ export const jamMyTarget = createRoot(() => {
       role.roleCount,
     )
   })
+  return memo
+})
+
+/**
+ * The part frozen for the take in progress, if there is one.
+ *
+ * Roles come from the sorted peer list, so somebody joining or leaving
+ * re-derives them -- which is right between takes and wrong during one. Mid
+ * take it would rewrite the notes under a singer already singing, and then
+ * score their samples against a part they never saw. In Harmony Stack that
+ * is a near-zero for doing nothing wrong.
+ *
+ * So a take captures its target when it starts and keeps it. The new
+ * assignment applies from the next take, which is when the room can
+ * actually act on it.
+ */
+const [takeTarget, setTakeTarget] = createSignal<MelodyData | null>(null)
+
+export const jamMyTarget = createRoot(() => {
+  const memo = createMemo(() => takeTarget() ?? jamLiveTarget())
   return memo
 })
 
@@ -318,13 +344,17 @@ function settleOwnRun(): void {
  */
 export function wrapOwnRun(): void {
   settleOwnRun()
-  beginOwnRun()
+  // Deliberately does NOT re-pin: a looped run is one continuous take, and
+  // letting the part change between wraps is the same bug in slow motion.
+  passStartedAt = Date.now()
 }
 
 /** Open a fresh pass: later samples belong to it, earlier ones do not. */
 function beginOwnRun(): void {
   passStartedAt = Date.now()
   if (sessionStartedAt === 0) sessionStartedAt = Date.now()
+  // Pin the part for the duration of the take -- see jamMyTarget.
+  setTakeTarget(jamLiveTarget())
 }
 
 /**
@@ -356,6 +386,7 @@ function beginOwnRun(): void {
 const MIN_CREDITED_SESSION_MS = 3_000
 
 function creditOwnRun(): void {
+  setTakeTarget(null)
   const startedAt = sessionStartedAt
   const best = sessionBest
   sessionStartedAt = 0
@@ -965,6 +996,7 @@ function cleanupJam(): void {
   passStartedAt = 0
   sessionStartedAt = 0
   sessionBest = null
+  setTakeTarget(null)
   setJamOwnRunScore(null)
   setJamRoomMode('unison')
 }
