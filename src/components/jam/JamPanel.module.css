@@ -695,13 +695,29 @@
   overflow: hidden;
 }
 
+/* Groups the view toggles beside the BPM control, matching its glass so
+   the two read as one bar of room settings rather than loose buttons. */
+.viewToggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  flex-shrink: 0;
+}
+
 .pitchToggleBtn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
-  background: transparent;
+  /* Not `transparent`: on a bright backdrop the button vanished into the
+     photo. The same disc the round room controls use, which the slider
+     drives across the full range but never below a findable floor. */
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-secondary);
