@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, For, Show, } from 'solid-js'
 import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
 import modalStyles from '@/components/Modal.module.css'
@@ -11,6 +11,7 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
+import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
@@ -276,6 +277,15 @@ export const CommunityShare: Component = () => {
   })
 
   // Current user profile (DB-backed, canonical persisted user id)
+  // The voice twin shown on the profile is the newest measured one.
+  // Keyed on authVersion because signing in changes WHOSE voice this is,
+  // and an unkeyed resource would keep the previous identity's twin.
+  const [voiceprints] = createResource(authVersion, listVoiceprints)
+  const latestTwin = (): string | undefined => {
+    const twin = voiceprints()?.[0]?.twin
+    return twin === null || twin === undefined || twin === '' ? undefined : twin
+  }
+
   const currentProfile = createMemo(() => {
     const userId = getUserId()
 
@@ -743,6 +753,7 @@ export const CommunityShare: Component = () => {
             streak={currentProfile().streak}
             sharedMelodies={displayMelodies().length}
             sharedSessions={displaySessions().length}
+            twinName={latestTwin()}
           />
         </Show>
       </div>
