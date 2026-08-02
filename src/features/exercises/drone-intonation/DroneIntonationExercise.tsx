@@ -3,7 +3,7 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } 
 import { For } from 'solid-js'
 import { IconDrone, IconMic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -139,7 +139,7 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
         </div>
       }
       idleSettings={
-        <NotePillSelector
+        <NoteDial
           label="Drone Note"
           notes={getNoteOptions(vocalRangePreset())}
           selected={startNote()}

@@ -3,7 +3,7 @@ import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-
 import { For } from 'solid-js'
 import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -124,7 +124,7 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
         </div>
       }
       idleSettings={
-        <NotePillSelector
+        <NoteDial
           label="Starting Note"
           notes={getNoteOptions(vocalRangePreset())}
           selected={startNote()}

@@ -3,7 +3,7 @@ import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-
 import { For } from 'solid-js'
 import { IconMic, IconMusic, IconReply } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -122,7 +122,7 @@ const CallResponseExercise: Component<CallResponseExerciseProps> = (props) => {
         </div>
       }
       idleSettings={
-        <NotePillSelector
+        <NoteDial
           label="Key"
           notes={getNoteOptions(vocalRangePreset())}
           selected={startNote()}

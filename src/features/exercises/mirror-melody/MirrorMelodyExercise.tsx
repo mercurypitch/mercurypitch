@@ -3,7 +3,7 @@ import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-
 import { For } from 'solid-js'
 import { IconMic, IconMirror, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -110,7 +110,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
         </div>
       }
       idleSettings={
-        <NotePillSelector
+        <NoteDial
           label="Root Note"
           notes={getNoteOptions(vocalRangePreset())}
           selected={startNote()}
