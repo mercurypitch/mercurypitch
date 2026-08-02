@@ -663,8 +663,13 @@
   color: var(--red);
 }
 
-.copyBtn {
+/* Tinted on HOVER, not at rest. It used to carry the accent all the time
+   while .actionBtn:hover replaced it with plain grey, so the colour
+   *left* on hover — the button read as un-hovering when you pointed at
+   it. Only the two community share cards use this. */
+.copyBtn:hover:not(:disabled) {
   background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .deleteBtn:disabled,

@@ -21,8 +21,12 @@ vi.mock('@/features/path/path-progress', () => progress)
 vi.mock('@/features/routines/use-daily-routine', () => ({
   launchRoutineSegment: vi.fn(),
   useDailyRoutine: () => ({
-    startOrResume: vi.fn(),
+    // Mirrors the real hook: startOrResume returns the template, and
+    // isComplete is a memo. The CTA reads both — it offers an encore when
+    // the day is already done rather than silently doing nothing.
+    startOrResume: vi.fn(() => ({ segments: [] })),
     currentSegment: () => null,
+    isComplete: () => false,
     totalDurationSec: () => 480,
   }),
 }))

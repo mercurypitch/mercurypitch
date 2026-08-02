@@ -73,6 +73,10 @@ export interface UserBadge {
    *  medallion art is keyed by it, and iconForName throws the string
    *  away. */
   iconName: string
+  /** What earns it, in the singer's words. Seeded, but never surfaced —
+   *  so the collection showed a wall of grey medals with no way to learn
+   *  what any of them wanted. */
+  unlockCondition: string
   /** Tier */
   tier: 'bronze' | 'silver' | 'gold' | 'platinum'
   /** Earned date */
@@ -250,6 +254,7 @@ export const VocalChallenges: Component = () => {
         description: def.description,
         icon: iconForName(def.icon),
         iconName: def.icon,
+        unlockCondition: def.unlockCondition,
         tier: def.tier,
         earned: !!userBadge,
         earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
@@ -460,6 +465,32 @@ export const VocalChallenges: Component = () => {
                   <span class="badge-name">{badge.name}</span>
                   <span class="badge-tier">{badge.tier}</span>
                 </div>
+                {/* How it is earned. Achievements already show their
+                    requirement and a progress bar; badges showed a name
+                    and a tier, so a locked one told the singer nothing
+                    about what to go and do.
+
+                    A <details> rather than a CSS :hover tooltip: hover
+                    does not exist on a phone, and this has to work on
+                    both. Tapping the 'i' opens it; pointer users get it
+                    on hover too, via .badge-item:hover in the CSS. */}
+                <details class="badge-hint">
+                  <summary
+                    class="badge-hint-toggle"
+                    aria-label={`How to earn ${badge.name}`}
+                    title={badge.unlockCondition}
+                  >
+                    i
+                  </summary>
+                  <p class="badge-hint-body">
+                    {badge.unlockCondition || badge.description}
+                    <Show when={badge.earned && badge.earnedDate > 0}>
+                      <span class="badge-hint-earned">
+                        Earned {new Date(badge.earnedDate).toLocaleDateString()}
+                      </span>
+                    </Show>
+                  </p>
+                </details>
                 {badge.earned && (
                   <span class="badge-check">
                     <IconCheckSolid />
@@ -551,9 +582,25 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
     ).tip
 
   return (
-    <div class="challenge-modal">
-      <div class="modal-backdrop" onClick={() => props.onClose?.()} />
-      <div class={modalStyles.modalContent}>
+    // The shared overlay, like every other modal in the app. This used to
+    // hand-roll `.challenge-modal` + an absolutely positioned
+    // `.modal-backdrop` SIBLING of the content — and the module's
+    // .modalContent carries no `position`, so it stayed in flow while the
+    // backdrop did not. Positioned boxes paint above in-flow ones, so the
+    // scrim covered the dialog: the modal was behind its own backdrop,
+    // blur and all, which is why Start Challenge looked like a blurred
+    // page with nothing on it.
+    <div
+      class={`${modalStyles.modalOverlay} challenge-modal-overlay`}
+      onClick={() => props.onClose?.()}
+    >
+      <div
+        class={modalStyles.modalContent}
+        role="dialog"
+        aria-modal="true"
+        aria-label={props.challenge.name}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           class={modalStyles.modalClose}
           onClick={() => props.onClose?.()}

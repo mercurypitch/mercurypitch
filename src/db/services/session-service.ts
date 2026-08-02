@@ -2,11 +2,21 @@
 // Session Service — DB-backed session record operations
 // ============================================================
 
+import { createSignal } from 'solid-js'
 import { getDb } from '@/db'
 import type { SessionRecord, SessionSource } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { addScoredMs, NOMINAL_RUN_MS } from '@/db/services/practice-minutes'
 import { trackEvent } from '@/lib/analytics'
+
+/**
+ * Bumped whenever a session record lands. Every producer — session mode,
+ * exercises, challenges, the weekly attempt — funnels through
+ * saveSessionRecord, so anything keyed on this refreshes for all four
+ * without each caller having to remember to say so.
+ */
+const [sessionRecordVersion, bumpSessionRecordVersion] = createSignal(0)
+export { sessionRecordVersion }
 
 export async function saveSessionRecord(data: {
   melodyName: string
@@ -54,6 +64,8 @@ export async function saveSessionRecord(data: {
     })
   } catch {
     return null
+  } finally {
+    bumpSessionRecordVersion((v) => v + 1)
   }
 }
 
