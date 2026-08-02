@@ -51,6 +51,39 @@
   line-height: 1.65;
 }
 
+.headerActions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.recordLaunch,
+.recordAnother {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.recordLaunch {
+  color: #07101e;
+  border: 0;
+  background: #a9c9ff;
+  box-shadow: 0 8px 18px rgb(76 119 194 / 22%);
+}
+
+.recordLaunch:disabled,
+.recordAnother:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
 .storageBadge {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -148,6 +181,9 @@
 .threadButton:focus-visible,
 .playButton:focus-visible,
 .primaryAction:focus-visible,
+.secondaryAction:focus-visible,
+.recordLaunch:focus-visible,
+.recordAnother:focus-visible,
 .takeRow button:focus-visible {
   outline: 2px solid #8db8ff;
   outline-offset: 2px;
@@ -203,6 +239,21 @@
   color: #b8d5ff;
   border: 1px solid rgb(141 184 255 / 20%);
   border-radius: 999px;
+}
+
+.workspaceActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recordAnother {
+  min-height: 44px;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+  color: #c2d7f7;
+  border: 1px solid rgb(141 184 255 / 20%);
+  background: transparent;
 }
 
 .compare {
@@ -316,6 +367,12 @@
   box-shadow: 0 8px 18px rgb(76 119 194 / 22%);
   cursor: pointer;
   text-decoration: none;
+}
+
+.primaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .takeSelectors {
@@ -497,6 +554,20 @@
   line-height: 1.65;
 }
 
+.emptyActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.secondaryAction {
+  padding: 9px 2px;
+  font-weight: 700;
+  color: #b8d5ff;
+  text-underline-offset: 3px;
+}
+
 .emptyPulse {
   position: relative;
   display: grid;
@@ -562,6 +633,15 @@
     padding: 9px 12px;
   }
 
+  .headerActions {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .recordLaunch {
+    width: 100%;
+  }
+
   .desk {
     display: block;
   }
@@ -613,6 +693,11 @@
 
   .localSeal {
     padding: 5px 8px;
+  }
+
+  .workspaceActions {
+    align-items: end;
+    flex-direction: column-reverse;
   }
 
   .takeSelectors,
