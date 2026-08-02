@@ -4,6 +4,8 @@
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
+import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
+import { overallLineScore } from '@/lib/jam/jam-line-scoring'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
@@ -12,7 +14,8 @@ import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
 import { createJamService } from '@/lib/jam/service'
-import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
+import { jamSignalingIsMocked } from '@/lib/jam/signaling'
+import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import type { MelodyData } from '@/types'
 
@@ -241,7 +244,15 @@ export function selectJamSong(song: JamSong): boolean {
   // Peer count matters: a song only this device holds is fine alone and a
   // problem once somebody is waiting to hear it. Passing 0 by omission
   // meant the refusal could never fire, whoever was in the room.
-  const verdict = songPlayableInRoom(song, jamConnectedPeers().length)
+  //
+  // A preview room counts as empty. Its peers are invented (signaling-mock),
+  // so refusing on their behalf blocks a real feature to protect people who
+  // do not exist -- which is a preview making the thing it exists to
+  // demonstrate untestable.
+  const verdict = songPlayableInRoom(
+    song,
+    jamSignalingIsMocked() ? 0 : jamConnectedPeers().length,
+  )
   if (!verdict.ok) {
     setJamError(verdict.reason ?? 'That song cannot be played in a room.')
     return false
@@ -255,6 +266,7 @@ export function selectJamSong(song: JamSong): boolean {
 
   setJamSong(song)
   setJamSongPositionSec(0)
+  resetJamLineScores()
   setJamError(null)
   jamService?.sendSong({
     id: song.id,
@@ -270,11 +282,78 @@ export function selectJamSong(song: JamSong): boolean {
   return true
 }
 
+/**
+ * Give the loaded song its words, after the fact.
+ *
+ * The manifest is re-sent so peers get them too: they are following the
+ * host's song, and words that only the finder can see would leave everyone
+ * else reading an empty column while somebody sings.
+ *
+ * Host-only for the broadcast. A guest attaching lyrics updates their own
+ * view -- which is a fair thing to want if they found the words first --
+ * but must not rewrite what the room is singing from.
+ */
+export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
+  const song = jamSong()
+  if (song === null || lines.length === 0) return
+  const next = { ...song, lines }
+  setJamSong(next)
+  // The words changed, so the lines scored against them are stale.
+  resetJamLineScores()
+  if (!jamIsHost()) return
+  jamService?.sendSong({
+    id: next.id,
+    title: next.title,
+    artist: next.artist,
+    stems: next.stems,
+    lines: next.lines,
+    notes: next.notes,
+    durationSec: next.durationSec,
+  })
+}
+
 export function clearJamSong(): void {
   setJamSong(null)
   setJamSongPositionSec(0)
+  resetJamLineScores()
   jamService?.sendSong(null)
 }
+
+// ── Per-line scores ──────────────────────────────────────────────────
+// Your own take, line by line (see lib/jam/jam-line-scoring.ts).
+//
+// Own samples only, exactly as the drill scorer does: the DataChannel is
+// an unauthenticated relay, so a score built from what a peer SAYS it sang
+// is a score anybody can type. Everyone scores themselves and shares the
+// number, which is a claim rather than a proof -- fine for a jam, and the
+// reason none of this feeds credits or a leaderboard.
+//
+// Keyed by line index rather than pushed onto a list because a singer can
+// scrub back and take a line again, and the second attempt should replace
+// the first rather than appear beside it.
+
+export const [jamSongLineScores, setJamSongLineScores] = createSignal<
+  Record<number, JamLineScore>
+>({})
+
+export function recordJamLineScore(score: JamLineScore): void {
+  // Lines with nothing to sing are not recorded at all -- an empty badge
+  // on an instrumental bar reads as a zero you earned.
+  if (score.noteCount === 0) return
+  setJamSongLineScores((prev) => ({ ...prev, [score.lineIndex]: score }))
+}
+
+export function resetJamLineScores(): void {
+  setJamSongLineScores({})
+}
+
+/** The take so far, or null when nothing scoreable has been sung yet. */
+export const jamSongRunScore = createRoot(() => {
+  const memo = createMemo(() =>
+    overallLineScore(Object.values(jamSongLineScores())),
+  )
+  return memo
+})
 
 // ── Room mode ────────────────────────────────────────────────────────
 // What the room does with the shared melody (see lib/jam/jam-modes.ts).
@@ -1012,6 +1091,9 @@ export function jamPlaybackSeek(beat: number): void {
 
 export function jamSongPlay(fromSec = 0): void {
   if (jamSong() === null) return
+  // Only a play from the top is a new take. Resuming from a pause keeps
+  // the lines you already sang -- clearing them would punish a breath.
+  if (fromSec === 0) resetJamLineScores()
   setJamSongPositionSec(fromSec)
   setJamExercisePlaying(true)
   setJamExercisePaused(false)
