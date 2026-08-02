@@ -8,6 +8,7 @@ import { createStore, produce } from 'solid-js/store'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
+import { noteForWord } from '@/features/stem-mixer/zen-note-glyphs'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { buildForwardMarkerPath } from '@/lib/marker-path'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
@@ -402,44 +403,17 @@ export const StemMixerLyricsPanelBody: Component<
   )
 
   // Look up the mapped note for a word by temporal overlap with alignment data
+  // The one word-to-note lookup, shared with the zen stage
+  // (zen-note-glyphs). It used to live here alone, and the zen copy
+  // keyed on display word times instead — which uploaded sheets do not
+  // have, so its glyphs vanished while these kept working. One
+  // implementation is what stops that recurring.
   const getWordNote = (
     parsedLyric: ParsedLyric,
     wi: number,
   ): { noteName: string; midi: number } | null => {
     if (!props.showLyricNoteLabels()) return null
-    const result = props.alignmentResult()
-    if (result.alignedWords.length === 0) return null
-
-    const wordTimes = parsedLyric.wordTimes
-    let wordStart: number
-    let wordEnd: number
-    if (wordTimes && wordTimes.length > 0 && wordTimes[wi] !== undefined) {
-      wordStart = wordTimes[wi]
-      wordEnd =
-        parsedLyric.wordEndTimes?.[wi] ??
-        (wi + 1 < wordTimes.length ? wordTimes[wi + 1] : parsedLyric.endTime)
-    } else {
-      const wordCount = parsedLyric.words.length
-      const duration = parsedLyric.endTime - parsedLyric.time
-      const perWord = Math.max(0.05, duration / wordCount)
-      wordStart = parsedLyric.time + wi * perWord
-      wordEnd = wordStart + perWord
-    }
-
-    let best: { noteName: string; midi: number } | null = null
-    let bestOverlap = 0
-    for (const aw of result.alignedWords) {
-      if (aw.midi == null) continue
-      const overlap = Math.max(
-        0,
-        Math.min(wordEnd, aw.endSec) - Math.max(wordStart, aw.startSec),
-      )
-      if (overlap > bestOverlap) {
-        bestOverlap = overlap
-        best = { noteName: aw.noteName!, midi: aw.midi }
-      }
-    }
-    return best
+    return noteForWord(props.alignmentResult().alignedWords, parsedLyric, wi)
   }
 
   // ── Lyrics text editing ─────────────────────────────────────

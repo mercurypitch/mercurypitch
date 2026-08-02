@@ -33,7 +33,7 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
-import { buildWordNoteIndex, glyphForWordTime, hasWordNotes, } from '@/features/stem-mixer/zen-note-glyphs'
+import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
@@ -695,10 +695,17 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                           >
                             <Show when={glyphsForLine(idx)}>
                               {(() => {
-                                const glyph = glyphForWordTime(
-                                  wordNoteIndex(),
-                                  entry.wordTimes?.[i()],
+                                // Overlap against the word's window, not a
+                                // start-time match: an uploaded sheet has no
+                                // per-word times at all, and the earlier
+                                // start-keyed lookups therefore drew nothing
+                                // on every line-timed song.
+                                const note = noteForWord(
+                                  props.alignedWords?.() ?? [],
+                                  entry,
+                                  i(),
                                 )
+                                const glyph = note?.noteName ?? null
                                 return glyph === null ? null : (
                                   <i
                                     class={styles.noteGlyph}
