@@ -43,19 +43,25 @@ stem for a normal song, 200 MB for a long one, and a song is two stems. On a
 typical home upload that is 40 seconds to five minutes to ONE peer, before a
 second peer doubles it. That is not a loading state, it is an abandonment.
 
-### So it transcodes to Opus first
+### So it transcodes first -- as AAC, not Opus
 
-WebCodecs `AudioEncoder`, in the browser, at transfer time. Opus at 96 kbps
-stereo is ~0.72 MB/min:
+**Corrected after reading `docs/plans/device-sync.md`.** That plan already
+solved this problem and reached a different answer: **AAC-in-MP4, because
+Safari's Opus support is patchier**, at a user-selectable quality defaulting
+to 128 kbps. A jam room that only played on Chrome would be a poor trade for
+a slightly smaller file.
 
 | 4-minute song, both stems | Transfer to one peer |
 |---|---|
 | WAV: 100-400 MB | 40 s - 5 min |
-| **Opus: ~6 MB** | **~4 s** |
+| **AAC 128k: ~7.6 MB** | **~5 s** |
 
-Roughly 50x, and it is the difference between the feature feeling instant and
-feeling broken. It also makes small rooms viable: three uploads of 6 MB is
-under twenty seconds, where three uploads of WAV is a quarter of an hour.
+Roughly 50x, and the difference between the feature feeling instant and
+feeling broken. It also makes small rooms viable: three uploads of 7.6 MB is
+under half a minute, where three uploads of WAV is a quarter of an hour.
+
+Encode on the **sending** side, so a phone only ever decodes -- the same rule
+device-sync uses, and for the same reason.
 
 **Compression costs nothing here**, which is worth being explicit about
 because it looks like a tradeoff and is not. Pitch detection runs on each
@@ -101,18 +107,45 @@ Two is the target and works comfortably. Beyond four this wants a
 distribution tree -- peer 1 forwards to peer 2 while the host sends to peer 3
 -- which is deliberately not planned now.
 
-### Deferred: compressing at separation instead
+### This is device-sync's P2P transport, not a second mechanism
 
-Transcoding at transfer time means paying the encode on every session. The
-alternative is encoding once when the stems are separated and storing the
-Opus copy alongside the WAV, which makes transfers instant and repeatable at
-the cost of IndexedDB space -- ideally as a user choice, since someone
-keeping masters wants the WAV and someone jamming does not.
+The bigger correction. `docs/plans/device-sync.md` does not merely overlap
+with this -- **jam song transfer IS its Phase 5**, and the pipeline it needs
+is that plan's Phase 2:
 
-That version also serves cross-device sync, which needs the same small copy
-for the same reason. See `docs/plans/device-sync.md` on
-`feat/device-sync-plan` -- **read it before building the transfer**, so the
-two share one mechanism rather than growing two that do the same thing.
+```
+        Bundle pipeline (producer: async iterator {path, blob})
+                             |
+        +--------------------+--------------------+
+        v                    v                    v
+    ManualFile             Drive                 P2P
+    (exists)             (Phase 4)          (Phase 5 = this)
+```
+
+`SyncTransport` is already specified there as `put(path, blob)` / `get(path)`
+/ `list()`, with a `BlobStore` adapter behind it (web: Dexie, native:
+Filesystem), following the `src/lib/platform/` seam convention. A jam room
+sending a song is one more adapter over that interface -- the chunking and
+backpressure described above become the *implementation* of `put`, not a
+bespoke feature.
+
+**So the ordering is a dependency, not a preference:**
+
+| Needs | From |
+|---|---|
+| A portable, small bundle | device-sync Phase 1 (user-selectable quality) |
+| A streaming producer/consumer | device-sync Phase 2 (the load-bearing refactor) |
+| The P2P adapter | This plan, = device-sync Phase 5 |
+
+Building jam's transfer before Phases 1-2 means writing the encode, the
+chunking and the reassembly twice and then reconciling them. Building it
+after means jam gets the transport nearly free, and native mobile inherits
+all of it -- which is exactly why the quality setting lives in `userSettings`
+and follows the user across devices.
+
+The one thing this plan adds that device-sync does not need: **transfer only
+over a directly connected pair** (above). Drive and manual file transports
+have no such constraint; the P2P one does.
 
 ## 2. What already exists
 
@@ -208,15 +241,31 @@ different singers — no extra concept needed.
 4. **Singer assignment on blocks**, unassigned = everyone.
 5. **Claiming a slot in the room.**
 
-Open questions worth settling before 4, not during:
+### Decided
 
-- **Who assigns?** Host-only is simplest and matches how mode and tempo work.
-- **What happens when a singer leaves mid-song?** Their blocks should fall
-  back to everyone rather than going silent — the same lesson as Relay's
-  empty parts.
+**The host assigns**, as in any multiplayer game. It already owns the melody,
+the mode and the tempo, so this adds no new authority and no new argument
+about who wins.
+
+**A singer leaving never stops the song.** Their blocks pass to the next
+singer in the room, and the host can reassign afterwards. Falling silent is
+the one unacceptable outcome -- it is the same failure as Relay's empty
+parts, where a person was left with nothing to sing and no explanation. The
+rule generalises: *every assignment needs a defined fallback, and the
+fallback is never silence.*
+
+Concretely, in order of preference as each becomes impossible:
+
+1. The next singer by role index takes the orphaned blocks.
+2. If nobody is left to take them, they become everyone's (unison).
+3. The host can override either at any time.
+
+### Still open
+
 - **Does a song run count as practice?** It has no `ExerciseType`, so under
   the current crediting rules it would not. Probably right for now; revisit
-  with the leaderboard question.
+  alongside the leaderboard question, which is stuck on the same "what does a
+  room result mean publicly" decision.
 
 ## 7. What this is not
 
