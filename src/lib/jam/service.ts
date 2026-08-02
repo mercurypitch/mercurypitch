@@ -5,24 +5,10 @@
 
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
+import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
 import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient } from './signaling'
 import type { JamCallbacks, JamPeer } from './types'
-
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-]
 
 // Audio constraints optimized for music — disable all processing
 const AUDIO_CONSTRAINTS: MediaTrackConstraints = {
@@ -48,6 +34,12 @@ export function createJamService(callbacks: JamCallbacks) {
   /** ICE restart attempts per peer, reset once the pair connects. */
   const iceRetries = new Map<string, number>()
   const iceRecoveryTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  /**
+   * Fetched once when the room is entered. Starts as the STUN-only fallback
+   * so a peer connection built before the fetch lands still has somewhere to
+   * look, rather than being constructed with nothing.
+   */
+  let iceServers: RTCIceServer[] = FALLBACK_ICE_SERVERS
   let disposed = false
   let videoEnabled = false
   let localDisplayName = ''
@@ -116,18 +108,26 @@ export function createJamService(callbacks: JamCallbacks) {
   async function createRoom(displayName: string): Promise<void> {
     if (disposed) return
     localDisplayName = displayName
-    await startLocalStream()
+    // Alongside the mic, not after it: both are prerequisites for a usable
+    // connection and neither depends on the other, so serialising them would
+    // just add the slower one's latency to entering a room.
+    const [servers] = await Promise.all([getIceServers(), startLocalStream()])
+    iceServers = servers
     signaling.createRoom(displayName)
   }
 
   async function joinRoom(roomId: string, displayName: string): Promise<void> {
     if (disposed) return
     localDisplayName = displayName
-    await startLocalStream()
+    const [servers] = await Promise.all([getIceServers(), startLocalStream()])
+    iceServers = servers
     signaling.connect(roomId, displayName)
   }
 
   function leaveRoom(): void {
+    // Credentials are short-lived; the next room mints its own.
+    resetIceServers()
+    iceServers = FALLBACK_ICE_SERVERS
     for (const [, dc] of dataChannels) {
       dc.close()
     }
@@ -243,7 +243,7 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed || peerConnections.has(peer.id)) return
 
     console.info('[jam:service] initiating connection to', peer.id)
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
+    const pc = new RTCPeerConnection({ iceServers: iceServers })
 
     // Add local audio track
     if (localStream) {
@@ -266,7 +266,7 @@ export function createJamService(callbacks: JamCallbacks) {
 
     let pc = peerConnections.get(from)
     if (!pc) {
-      pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
+      pc = new RTCPeerConnection({ iceServers: iceServers })
       if (localStream) {
         localStream.getTracks().forEach((t) => {
           pc!.addTrack(t, localStream!)
