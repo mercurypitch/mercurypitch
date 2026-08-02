@@ -15,6 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
   authed: true,
+  userId: 'singer-a',
   rows: [] as Array<{ id: string; userId: string; key: string; value: string }>,
   updates: [] as Array<{ id: string; value: string }>,
   creates: [] as Array<{ key: string; value: string }>,
@@ -28,7 +29,10 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
 }))
-vi.mock('@/db/services/user-service', () => ({ authVersion: () => 0 }))
+vi.mock('@/db/services/user-service', () => ({
+  authVersion: () => 0,
+  getUserId: () => state.userId,
+}))
 vi.mock('@/db', () => ({
   getDb: async () => ({
     getRepository: () => ({
@@ -73,6 +77,7 @@ const settle = (): Promise<void> =>
 beforeEach(() => {
   localStorage.clear()
   state.authed = true
+  state.userId = 'singer-a'
   state.rows = []
   state.updates = []
   state.creates = []
@@ -165,5 +170,78 @@ describe('pulling the Ascent from an account', () => {
 
     expect(localStorage.getItem('pitchperfect_theme')).toBe('"dawn"')
     expect(state.updates).toHaveLength(0)
+  })
+})
+
+// ── The shared computer ──────────────────────────────────────────
+// One household, one laptop, two singers. Logout does not clear
+// localStorage, so the previous singer's progress is still sitting there
+// when the next one signs in — and a union cannot be undone.
+
+describe('a second account on the same device', () => {
+  const OWNER_KEY = 'mp_sync_owner'
+
+  it('does not give one singer the other singer practice days', async () => {
+    // Singer A practised here and the device now belongs to them.
+    localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
+    localStorage.setItem(OWNER_KEY, 'singer-a')
+
+    // Singer B signs in on the same laptop.
+    state.userId = 'singer-b'
+    state.rows = [
+      { id: 'r1', userId: 'singer-b', key: KEY, value: climb(['2026-08-09']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    // B sees B's climb only — A's days are not absorbed.
+    expect(local.weekDays[1]).toEqual(['2026-08-09'])
+    // …and nothing of A's was uploaded to B's account.
+    expect(state.updates).toHaveLength(0)
+    expect(state.creates).toHaveLength(0)
+  })
+
+  it('does not upload one singer progress to an account that has none', async () => {
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+    localStorage.setItem(OWNER_KEY, 'singer-a')
+    state.userId = 'singer-b'
+    state.rows = [] // B has never climbed
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(state.creates).toHaveLength(0)
+  })
+
+  it('still merges the signed-out climb of the person signing in', async () => {
+    // No owner recorded: this device has only ever been used signed out,
+    // so the local climb belongs to whoever is signing in now.
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+    state.rows = [
+      { id: 'r1', userId: 'singer-a', key: KEY, value: climb(['2026-08-05']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual(['2026-08-01', '2026-08-05'])
+  })
+
+  it('claims the device for the account that just pulled', async () => {
+    state.rows = [
+      { id: 'r1', userId: 'singer-a', key: KEY, value: climb(['2026-08-05']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
   })
 })
