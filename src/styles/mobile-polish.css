@@ -170,6 +170,12 @@
     width: 100%;
   }
 
+  /* Roomier tap targets on the routine pills. */
+  .routine-pill {
+    padding: 7px 13px;
+    font-size: 0.8rem;
+  }
+
   /* The comfort note is a dial now, so the 6-column grid that tamed 36
      pills is gone with them. The dial sizes itself (clamp on .face) and
      stacks its octave row underneath below 420px. */

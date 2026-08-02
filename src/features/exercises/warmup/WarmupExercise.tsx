@@ -133,14 +133,14 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       settingsSheetLabel="Routine & comfort note"
       idleSettings={
         <>
-          <div class="note-pill-selector">
-            <span class="note-pill-selector-label">Routine</span>
-            <div class="note-pill-row">
+          <div class="routine-picker">
+            <span class="routine-picker-label">Routine</span>
+            <div class="routine-row">
               <For each={PATTERN_ORDER}>
                 {(p) => (
                   <button
                     type="button"
-                    class={`note-pill${pattern() === p ? ' note-pill-selected' : ''}`}
+                    class={`routine-pill${pattern() === p ? ' routine-pill-selected' : ''}`}
                     onClick={() => setPattern(p)}
                     aria-pressed={pattern() === p}
                   >
