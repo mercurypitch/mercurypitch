@@ -251,6 +251,22 @@ jobs:
           jq -e '.exercises | arrays' db-smoke.json > /dev/null
 
           export VITE_API_BASE_URL="$db_preview_url"
+          # Previews are served WITHOUT the jam signaling worker, so the real
+          # client hangs on a WebSocket that never connects and the Jam tab is
+          # a dead end. The mock renders the room with invented peers, clearly
+          # labelled as such.
+          #
+          # It has to be exported HERE, not on the build step above: as the
+          # comment below says, `versions upload` runs Wrangler's custom build
+          # a second time, and that rebuild is what becomes the preview
+          # bundle. Anything set on the earlier build is thrown away -- which
+          # is exactly how the first attempt at this shipped a preview that
+          # still tried to open a real WebSocket.
+          #
+          # Deliberately not set for the dev or prod deploys: dev.mercurypitch.com
+          # HAS the jam worker, and mocking there would hide the bugs this
+          # feature is made of.
+          export VITE_JAM_MOCK_SIGNALING=1
           pnpm exec wrangler versions upload --env preview 2>&1 | tee upload.log
           # `versions upload` runs Wrangler's custom build a second time. Guard
           # both sides of the pairing: the generated bundle must point to this
