@@ -45,6 +45,42 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
+
+  /**
+   * Close the picker when the click lands anywhere else.
+   *
+   * Having to go back and hit the same button again is the kind of thing
+   * that is only obvious once you are holding a phone: the picker covers
+   * the room, and the instinct is to tap the room to dismiss it.
+   *
+   * Listens on pointerdown rather than click so a press that starts
+   * outside dismisses immediately, and in the CAPTURE phase so a click on
+   * some other control both closes this and does its own job. The toggle
+   * button is excluded, or it would close here and reopen on its own
+   * handler in the same gesture.
+   */
+  let pickerRef: HTMLDivElement | undefined
+
+  onMount(() => {
+    const onDown = (e: PointerEvent) => {
+      if (!showExercisePicker()) return
+      const t = e.target as Node | null
+      if (t === null) return
+      if (pickerRef?.contains(t) === true) return
+      // The toggle marks itself (JamExerciseControls); letting this run on
+      // it would close the picker here and reopen it on the button's own
+      // click, so one tap would appear to do nothing.
+      if (
+        t instanceof Element &&
+        t.closest('[data-jam-picker-toggle]') !== null
+      ) {
+        return
+      }
+      setShowExercisePicker(false)
+    }
+    document.addEventListener('pointerdown', onDown, true)
+    onCleanup(() => document.removeEventListener('pointerdown', onDown, true))
+  })
   const [showAbout, setShowAbout] = createSignal(false)
   const [roomMenuOpen, setRoomMenuOpen] = createSignal(false)
   let roomActionsRef: HTMLDivElement | undefined
@@ -1014,7 +1050,7 @@ export const JamPanel: Component = () => {
               {/* Exercise picker — an overlay, so opening it does not shove
                 the canvas and the pitch strip down the page. */}
               <Show when={showExercisePicker()}>
-                <div class={panelStyles.exercisePicker}>
+                <div class={panelStyles.exercisePicker} ref={pickerRef}>
                   <For each={pickerShelves()}>
                     {(shelf) => (
                       <Show when={shelf.entries.length > 0}>
