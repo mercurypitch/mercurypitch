@@ -853,34 +853,6 @@ export const JamPanel: Component = () => {
                 canvas rather than push it down the flex column. */}
             <div class={panelStyles.transportRow}>
               <div class={panelStyles.exerciseBar}>
-                {/* Live pitch toggle — always reachable on the left */}
-                <button
-                  class={panelStyles.pitchToggleBtn}
-                  classList={{
-                    [panelStyles.pitchToggleBtnActive]: showLivePitch(),
-                  }}
-                  onClick={() => setShowLivePitch((v) => !v)}
-                  title={
-                    showLivePitch()
-                      ? 'Hide live pitch monitor'
-                      : 'Show live pitch monitor'
-                  }
-                >
-                  <svg
-                    viewBox="0 0 16 16"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  >
-                    <path
-                      d="M2 8h2l2-4 2 8 2-5 2 3h2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </button>
                 <JamExerciseControls
                   onSelectExercise={() =>
                     setShowExercisePicker(!showExercisePicker())
@@ -940,6 +912,40 @@ export const JamPanel: Component = () => {
                     <span class={panelStyles.bpmLabel}>bpm</span>
                   </div>
                 </Show>
+
+                {/* View toggles. Grouped beside the BPM control rather than
+                    stranded at the far left: these shape what the room LOOKS
+                    like, which is the same kind of decision as the tempo, and
+                    a lone button across the bar reads as unrelated. */}
+                <div class={panelStyles.viewToggles}>
+                  <button
+                    class={panelStyles.pitchToggleBtn}
+                    classList={{
+                      [panelStyles.pitchToggleBtnActive]: showLivePitch(),
+                    }}
+                    onClick={() => setShowLivePitch((v) => !v)}
+                    title={
+                      showLivePitch()
+                        ? 'Hide live pitch monitor'
+                        : 'Show live pitch monitor'
+                    }
+                  >
+                    <svg
+                      viewBox="0 0 16 16"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    >
+                      <path
+                        d="M2 8h2l2-4 2 8 2-5 2 3h2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
 
                 {/* Room mode — host picks, everyone follows. Roles are derived
                   from the sorted peer list, so nothing is sent but this. */}
