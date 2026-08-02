@@ -248,6 +248,12 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   )
 
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
+  /** hasValidToken reads localStorage, not a signal — authVersion is what
+   *  makes it re-evaluate when someone signs in or out mid-view. */
+  const signedIn = createMemo(() => {
+    authVersion()
+    return hasValidToken()
+  })
   const PAGE_SIZE = 25
 
   const visibleCategories = createMemo(() =>
@@ -673,41 +679,48 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               fallback={
                 <div class="league-locked" data-testid="league-locked">
                   <p class="weekly-challenges-desc">
-                    {/* Until /api/league/me answers, say nothing committal —
-                        a fetch blip must not tell a signed-in user to go
-                        create an account. */}
+                    {/* Signed out, /api/league/me answers 401 and never
+                        resolves — so a visitor would sit on "Loading your
+                        league…" forever. This is now the landing view, so
+                        that state has to be the invitation instead. */}
                     <Show
-                      when={leagueMe() != null}
-                      fallback={<>Loading your league…</>}
+                      when={signedIn()}
+                      fallback={
+                        <>
+                          Leagues are for registered singers. Practice earns
+                          weekly points; the top of each league advances every
+                          Monday.
+                        </>
+                      }
                     >
+                      {/* Signed in: until the fetch answers, say nothing
+                          committal — a blip must not tell a signed-in user
+                          to go create an account. */}
                       <Show
-                        when={leagueMe()?.reason !== 'unavailable'}
-                        fallback={
-                          <>
-                            Leagues aren’t enabled on this environment yet — its
-                            database predates the league tables. Apply the D1
-                            migrations that ship with this change and the ladder
-                            lights up.
-                          </>
-                        }
+                        when={leagueMe() != null}
+                        fallback={<>Loading your league…</>}
                       >
-                        Leagues are for registered singers. Practice earns
-                        weekly points; the top of each league advances every
-                        Monday.
+                        <Show
+                          when={leagueMe()?.reason !== 'unavailable'}
+                          fallback={
+                            <>
+                              Leagues aren’t enabled on this environment yet —
+                              its database predates the league tables. Apply the
+                              D1 migrations that ship with this change and the
+                              ladder lights up.
+                            </>
+                          }
+                        >
+                          Leagues are for registered singers. Practice earns
+                          weekly points; the top of each league advances every
+                          Monday.
+                        </Show>
                       </Show>
                     </Show>
                   </p>
-                  {/* This is now the landing view, so a signed-out visitor
-                      meets the ladder first. Give them the door here rather
-                      than sending them off to hunt through Settings — the
-                      trophies above are the pitch, this is the button. */}
-                  <Show
-                    when={
-                      leagueMe() != null &&
-                      leagueMe()?.reason !== 'unavailable' &&
-                      !hasValidToken()
-                    }
-                  >
+                  {/* The trophies above are the pitch; this is the door.
+                      Better than sending them off to hunt through Settings. */}
+                  <Show when={!signedIn()}>
                     <button
                       type="button"
                       class="challenge-join-btn league-join-cta"
