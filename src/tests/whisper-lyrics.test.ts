@@ -34,7 +34,7 @@ const row = (over: Partial<LyricsEditRow>): LyricsEditRow => ({
   ...over,
 })
 
-describe('groupWhisperWordsIntoLines', () => {
+describe('groupWhisperWordsIntoLines (REQ-WSP-006, REQ-WSP-007)', () => {
   it('gathers back-to-back words into one phrase, not one line per word', () => {
     const lines = groupWhisperWordsIntoLines(
       phrase('I never felt this way', 10),
@@ -159,7 +159,7 @@ describe('groupWhisperWordsIntoLines', () => {
   })
 })
 
-describe('segmentsToLrc', () => {
+describe('segmentsToLrc (REQ-WSP-006)', () => {
   it('emits one LRC line per phrase, with the words stamped inline', () => {
     const out = segmentsToLrc(phrase('Heaven can wait', 12, 0.5))
     expect(out).toBe('[00:12.00]Heaven [00:12.50]can [00:13.00]wait')
