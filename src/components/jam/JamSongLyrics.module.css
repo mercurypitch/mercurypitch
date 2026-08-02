@@ -16,11 +16,15 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* Half a panel of padding top and bottom so the FIRST and LAST lines can
-     still centre themselves -- without it the song appears to start and end
-     mid-scroll. */
-  padding: 40% 16px;
+  /* Modest padding. An earlier version used 40% to let the first and last
+     lines centre themselves -- but percentage padding resolves against
+     WIDTH, so on a wide column that was ~360px of empty space top and
+     bottom, and the whole page grew a scrollbar to contain it. Centring is
+     done by arithmetic in the component instead, which clamps naturally at
+     both ends. */
+  padding: 12px 16px;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
 }
 
 .line {

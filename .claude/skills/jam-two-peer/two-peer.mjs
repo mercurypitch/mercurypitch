@@ -88,6 +88,13 @@ const role = (p) => p.locator('text=/You sing:/').first().innerText().catch(() =
 console.log('host: ', await role(host.page))
 console.log('guest:', await role(guest.page))
 
+// Does the PAGE scroll? It should not -- the room fits the viewport and
+// only the lyric column scrolls inside it.
+const scroll = await host.page.evaluate(() => ({
+  pageScrollable: document.documentElement.scrollHeight > window.innerHeight + 4,
+  pageOverflow: document.documentElement.scrollHeight - window.innerHeight,
+}))
+console.log('page scroll:', JSON.stringify(scroll))
 await host.page.screenshot({ path: `${OUT}/host.png` })
 await guest.page.screenshot({ path: `${OUT}/guest.png` })
 // The header controls alone, which is what most polish questions are about.
