@@ -17,6 +17,17 @@ import type { JamSong } from '@/lib/jam/jam-song'
 import { lrcToSongLines, sessionToJamSong } from '@/lib/jam/jam-song-sources'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
+import type { LyricsVersionKind } from '@/lib/lyrics-versions'
+import { sortVersions, VERSION_LABELS } from '@/lib/lyrics-versions'
+
+/** One set of words a room could sing, out of a session's history. */
+export interface JamLyricChoice {
+  kind: LyricsVersionKind
+  label: string
+  lines: LyricsLineTiming[]
+  /** The one the mixer last had selected. */
+  active: boolean
+}
 import type { UvrSession } from '@/stores/uvr-store'
 
 /**
@@ -33,6 +44,57 @@ export function jammableSessions(
 }
 
 /**
+ * Every set of words this session has, that a room could actually sing.
+ *
+ * A session accumulates versions -- the imported LRC, the one you fixed by
+ * hand, an auto-sync pass -- and they are not equally good. LRCLib's line
+ * timings are routinely a couple of seconds out, so the hand-corrected
+ * version is usually the one worth singing to, and the room had no way to
+ * ask for it: it took whatever `text` happened to hold.
+ *
+ * Versions with no usable timings are dropped rather than listed. Offering
+ * a choice that turns the lyric column into a static wall is offering a
+ * dead end.
+ */
+export async function sessionLyricChoices(
+  sessionId: string,
+): Promise<JamLyricChoice[]> {
+  try {
+    const lyrics = await loadLyricsFromDb(sessionId)
+    if (lyrics === null) return []
+    const versions = lyrics.versions ?? []
+    const choices: JamLyricChoice[] = []
+    for (const v of sortVersions(versions)) {
+      const lines = lrcToSongLines(parseLrcFile(v.text))
+      if (lines.length === 0) continue
+      choices.push({
+        kind: v.kind,
+        label: VERSION_LABELS[v.kind],
+        lines,
+        active: lyrics.activeVersionKind === v.kind,
+      })
+    }
+    if (choices.length > 0) return choices
+    // No version history: an older session, or one whose lyrics were saved
+    // before versions existed. The single stored text is still a choice.
+    if (lyrics.format !== 'lrc') return []
+    const lines = lrcToSongLines(parseLrcFile(lyrics.text))
+    return lines.length === 0
+      ? []
+      : [
+          {
+            kind: 'imported',
+            label: VERSION_LABELS.imported,
+            lines,
+            active: true,
+          },
+        ]
+  } catch {
+    return []
+  }
+}
+
+/**
  * Timed lines for a session, or none.
  *
  * Only LRC gives times, and times are what the lyric column scrolls by. A
@@ -43,14 +105,12 @@ export function jammableSessions(
 export async function sessionSongLines(
   sessionId: string,
 ): Promise<LyricsLineTiming[]> {
-  try {
-    const lyrics = await loadLyricsFromDb(sessionId)
-    if (lyrics === null || lyrics.format !== 'lrc') return []
-    return lrcToSongLines(parseLrcFile(lyrics.text))
-  } catch {
-    // Lyrics are a nicety; a database hiccup must not cost you the song.
-    return []
-  }
+  // The active version wins over the raw `text` field: the room should
+  // open on the words you last chose in the mixer, not on whichever
+  // import happened to be written last.
+  const choices = await sessionLyricChoices(sessionId)
+  if (choices.length === 0) return []
+  return (choices.find((c) => c.active) ?? choices[0])?.lines ?? []
 }
 
 /**
