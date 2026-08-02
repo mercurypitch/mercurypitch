@@ -2,7 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconWave } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
@@ -126,7 +126,7 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       }
       idleSettings={
         <>
-          <NotePillSelector
+          <NoteDial
             label="Target"
             notes={getNoteOptions(vocalRangePreset())}
             selected={targetNote()}

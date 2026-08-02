@@ -2,7 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconSlide } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -161,21 +161,23 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
         </div>
       }
       idleSettings={
-        <>
-          <NotePillSelector
+        // Two dials, so they sit side by side rather than stacking into a
+        // column taller than the panel. Wraps on narrow screens.
+        <div class="exercise-dial-pair">
+          <NoteDial
             label="From"
             notes={getNoteOptions(vocalRangePreset())}
             selected={fromNote()}
             onChange={setFromNote}
           />
-          <NotePillSelector
+          <NoteDial
             label="To"
             notes={getNoteOptions(vocalRangePreset())}
             selected={toNote()}
             onChange={setToNote}
             disabledNotes={[fromNote()]}
           />
-        </>
+        </div>
       }
       onStart={() => void handleStart()}
       stopLabel="Stop & Score"

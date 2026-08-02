@@ -170,27 +170,11 @@
     width: 100%;
   }
 
-  /* Roomier tap targets on the routine + note pills. */
-  .note-pill {
-    padding: 7px 13px;
-    font-size: 0.8rem;
-  }
-
-  /* Comfort note: a tidy fixed grid rather than a ragged wrap, so all
-     36 notes read as one block and Start stays close below. */
+  /* The comfort note is a dial now, so the 6-column grid that tamed 36
+     pills is gone with them. The dial sizes itself (clamp on .face) and
+     stacks its octave row underneath below 420px. */
   .warmup-comfort-note {
     width: 100%;
-  }
-  .warmup-comfort-note .note-pill-row {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
-    width: 100%;
-    max-width: 100%;
-  }
-  .warmup-comfort-note .note-pill {
-    padding: 9px 2px;
-    text-align: center;
   }
 
   /* Primary CTA: full-width, thumb-friendly, and pinned to the bottom

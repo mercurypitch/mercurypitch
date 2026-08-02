@@ -3,7 +3,7 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } 
 import { For } from 'solid-js'
 import { IconList, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
@@ -126,7 +126,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
         </div>
       }
       idleSettings={
-        <NotePillSelector
+        <NoteDial
           label="Key"
           notes={getNoteOptions(vocalRangePreset())}
           selected={startNote()}

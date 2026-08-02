@@ -2,7 +2,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconFire } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
-import { NotePillSelector } from '@/components/NotePillSelector'
+import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchPattern, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -150,7 +150,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
               </For>
             </div>
           </div>
-          <NotePillSelector
+          <NoteDial
             class="warmup-comfort-note"
             label="Comfort note"
             notes={getNoteOptions(vocalRangePreset())}
