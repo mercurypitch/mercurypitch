@@ -120,6 +120,12 @@ export interface JamPlaybackMessage {
   type: 'playback'
   action: 'play' | 'pause' | 'stop' | 'seek'
   currentBeat?: number
+  /**
+   * Position in the song's own timeline, for a room running a song rather
+   * than a drill. Present INSTEAD of currentBeat, never alongside it -- the
+   * two coordinates do not mix, and a receiver uses whichever it was sent.
+   */
+  positionSec?: number
   timestamp: number
   /**
    * The host's tempo, stamped on every transport command. Peers adopt it,
@@ -140,8 +146,43 @@ export type JamDataMessage =
   | JamChatMessage
   | JamPitchMessage
   | JamMelodyMessage
+  | JamSongMessage
   | JamPlaybackMessage
   | JamVideoStateMessage
+
+// ── Songs ────────────────────────────────────────────────────────────
+
+/**
+ * One lyric line, pinned to the song's own timeline.
+ *
+ * Seconds, not beats: a song's lyrics are authored against the recording,
+ * and the beat grid the drills use does not survive rubato. See
+ * lib/jam/jam-song.ts for why the two timelines stay separate.
+ */
+export interface LyricsLineTiming {
+  text: string
+  startSec: number
+  /** Absent means "until the next line starts". */
+  endSec?: number
+}
+
+/**
+ * The room loading a song. Carries a manifest, never audio -- every peer
+ * fetches the same URLs, and peer-to-peer transfer of a local song is a
+ * later phase (docs/plans/jam-karaoke-songs.md).
+ */
+export interface JamSongMessage {
+  type: 'song'
+  action: 'set' | 'clear'
+  song?: {
+    id: string
+    title: string
+    artist?: string
+    stems: { instrumental: string; vocal?: string }
+    lines: LyricsLineTiming[]
+    durationSec: number
+  }
+}
 
 // ── State helpers ────────────────────────────────────────────────────
 
