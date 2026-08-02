@@ -158,6 +158,7 @@ if (!(await exTab.count())) {
   await browser.close()
   process.exit(1)
 }
+await exTab.first().click()
 await page.locator('.exercises-grid').first().waitFor({ timeout: 8000 })
 await page.waitForTimeout(800)
 
