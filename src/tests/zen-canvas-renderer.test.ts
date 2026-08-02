@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { resolveZenTimeGrid } from './zen-canvas-renderer'
+import { resolveZenTimeGrid } from '@/features/zen/zen-canvas-renderer'
 
 describe('resolveZenTimeGrid', () => {
   it('aligns an authored challenge grid to whole beats', () => {
