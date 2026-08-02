@@ -1,0 +1,115 @@
+// ── Jam songs ────────────────────────────────────────────────────────
+// A song a room can sing together, and the timeline it runs on.
+//
+// Everything else in the jam room measures time in BEATS, because a drill
+// is a tempo and a grid. A song is neither: it has lyrics pinned to
+// seconds, it can rubato, and nothing about it is usefully expressed as a
+// bar. So a song carries its own timeline in seconds and the beat path is
+// left completely alone -- which is the point, because the beat path is
+// what the drills depend on.
+//
+// The two coordinates never mix. A room is running one or the other, and
+// jamSongPositionSec is only meaningful while a song is loaded.
+
+import type { LyricsLineTiming } from '@/lib/jam/types'
+
+/** Where a song's audio lives, and what every peer must be able to reach. */
+export interface JamSongStems {
+  /** The backing track. Required -- there is nothing to sing over without it. */
+  instrumental: string
+  /** Optional guide vocal, for hearing the line rather than scoring it. */
+  vocal?: string
+}
+
+export interface JamSong {
+  id: string
+  title: string
+  artist?: string
+  stems: JamSongStems
+  /** Lyrics with start times in seconds; empty is legal (an instrumental). */
+  lines: LyricsLineTiming[]
+  durationSec: number
+  /**
+   * Where the audio came from, which decides whether the room can run it
+   * at all. 'url' is fetchable by every peer; 'local' exists on one device
+   * and needs the peer-to-peer transfer that phase 1 does not build.
+   */
+  origin: 'url' | 'local'
+}
+
+/**
+ * The line being sung at a given moment, or null before the first / after
+ * the last.
+ *
+ * Linear rather than a binary search on purpose: a lyric sheet is tens of
+ * lines, this runs once per frame at most, and the obvious version is the
+ * one that stays correct when someone adds a rest row.
+ */
+export function lineAt(
+  lines: readonly LyricsLineTiming[],
+  positionSec: number,
+): LyricsLineTiming | null {
+  let current: LyricsLineTiming | null = null
+  for (const line of lines) {
+    if (line.startSec > positionSec) break
+    current = line
+  }
+  if (current === null) return null
+  // A line with an end time stops being current once it passes; one without
+  // runs until the next line starts, which the loop above already handles.
+  if (current.endSec !== undefined && positionSec >= current.endSec) return null
+  return current
+}
+
+/** Index of the current line, or -1. Cheaper for callers that only scroll. */
+export function lineIndexAt(
+  lines: readonly LyricsLineTiming[],
+  positionSec: number,
+): number {
+  const line = lineAt(lines, positionSec)
+  return line === null ? -1 : lines.indexOf(line)
+}
+
+/**
+ * How far a transport command travelled, in seconds.
+ *
+ * The beat path already compensates for this (beatsInFlight in the jam
+ * store): a play at position 0 does not arrive at position 0, it arrives
+ * one-way-latency later, and a peer starting at the number in the message
+ * is permanently that far behind. Same correction, simpler units -- no
+ * tempo to convert through.
+ *
+ * Clamped for the same reason: a stale RTT reading should nudge the
+ * playhead, never throw it into the middle of the song.
+ */
+const MAX_FLIGHT_MS = 500
+
+export function secondsInFlight(rttMs: number): number {
+  if (!Number.isFinite(rttMs) || rttMs <= 0) return 0
+  return Math.min(rttMs, MAX_FLIGHT_MS) / 2 / 1000
+}
+
+/**
+ * Can this room actually play this song?
+ *
+ * Phase 1 answers "only if every peer can fetch it". A local song needs the
+ * peer-to-peer transfer (see docs/plans/jam-karaoke-songs.md §1b), so it is
+ * refused here with a reason rather than loaded into a room where half the
+ * people would sit in silence wondering what broke.
+ */
+export function songPlayableInRoom(song: JamSong): {
+  ok: boolean
+  reason?: string
+} {
+  if (song.origin === 'local') {
+    return {
+      ok: false,
+      reason:
+        'This song is only on your device. Sharing your own songs with a room is coming — for now, pick one everybody can load.',
+    }
+  }
+  if (!song.stems.instrumental) {
+    return { ok: false, reason: 'This song has no backing track to sing over.' }
+  }
+  return { ok: true }
+}
