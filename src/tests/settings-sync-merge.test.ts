@@ -16,6 +16,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({
   authed: true,
   userId: 'singer-a',
+  failReads: false,
+  failWrites: false,
   rows: [] as Array<{ id: string; userId: string; key: string; value: string }>,
   updates: [] as Array<{ id: string; value: string }>,
   creates: [] as Array<{ key: string; value: string }>,
@@ -36,16 +38,20 @@ vi.mock('@/db/services/user-service', () => ({
 vi.mock('@/db', () => ({
   getDb: async () => ({
     getRepository: () => ({
-      findAll: async (opts?: { where?: { key?: string } }) =>
-        state.rows.filter(
+      findAll: async (opts?: { where?: { key?: string } }) => {
+        if (state.failReads) throw new Error('offline')
+        return state.rows.filter(
           (r) => opts?.where?.key === undefined || r.key === opts.where.key,
-        ),
+        )
+      },
       update: async (id: string, patch: { value: string }) => {
+        if (state.failWrites) throw new Error('offline')
         state.updates.push({ id, value: patch.value })
         const row = state.rows.find((r) => r.id === id)
         if (row !== undefined) row.value = patch.value
       },
       create: async (row: { key: string; value: string }) => {
+        if (state.failWrites) throw new Error('offline')
         state.creates.push({ key: row.key, value: row.value })
         const created = { ...row, userId: '', id: `srv-${state.rows.length}` }
         state.rows.push(created)
@@ -81,6 +87,8 @@ beforeEach(() => {
   state.rows = []
   state.updates = []
   state.creates = []
+  state.failReads = false
+  state.failWrites = false
 })
 
 describe('pulling the Ascent from an account', () => {
@@ -243,5 +251,93 @@ describe('a second account on the same device', () => {
     await settle()
 
     expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+  })
+})
+
+// ── The rest of the migration matrix ─────────────────────────────
+// Device-to-account migration is the moment a local-first app can lose
+// someone's work, so the failure modes get named tests rather than a
+// hope that the happy path generalises.
+
+describe('when the network or the data misbehaves', () => {
+  it('leaves the device untouched when the pull cannot reach the account', async () => {
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+    state.failReads = true
+
+    await pullCloudSettings()
+    await settle()
+
+    // Still exactly what the device had — not cleared, not half-applied.
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual(['2026-08-01'])
+  })
+
+  it('keeps the local copy when the push back fails', async () => {
+    localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
+    state.rows = [
+      { id: 'r1', userId: 'singer-a', key: KEY, value: climb(['2026-08-03']) },
+    ]
+    state.failWrites = true
+
+    await pullCloudSettings()
+    await settle()
+
+    // The merge still landed on the device: a failed upload must never
+    // cost days, and the next pull will carry them up.
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual([
+      '2026-08-01',
+      '2026-08-02',
+      '2026-08-03',
+    ])
+  })
+
+  it('does not upload a value too large to be a setting', async () => {
+    // A climb cannot really reach 8 KB, but the guard is what stops an
+    // unbounded key being added later and quietly filling the table.
+    const huge = JSON.stringify({
+      pathId: 'ascent',
+      startedAt: '2026-08-01T00:00:00.000Z',
+      currentWeek: 1,
+      weekDays: { 1: Array.from({ length: 2000 }, (_, i) => `pad-${i}`) },
+      completedWeeks: [],
+    })
+    expect(huge.length).toBeGreaterThan(8 * 1024)
+    localStorage.setItem(KEY, huge)
+    state.rows = []
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(state.creates).toHaveLength(0)
+  })
+
+  it('counts a day once when both sides already know it', async () => {
+    // Two devices that practised the same day must not produce two days.
+    localStorage.setItem(KEY, climb(['2026-08-01', '2026-08-02']))
+    state.rows = [
+      {
+        id: 'r1',
+        userId: 'singer-a',
+        key: KEY,
+        value: climb(['2026-08-02', '2026-08-03']),
+      },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual([
+      '2026-08-01',
+      '2026-08-02',
+      '2026-08-03',
+    ])
   })
 })
