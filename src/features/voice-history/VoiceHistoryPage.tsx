@@ -23,10 +23,10 @@ import { Pencil } from '@/components/icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
-import { deleteVoiceTake, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
-import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
+import { createMediaProgressLoop, isMediaPlaybackActive, mediaProgressFromPointer, } from '@/lib/media-progress-loop'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
 import type { FreeformThreadTarget } from './freeform-voice-take'
@@ -45,6 +45,7 @@ interface VoiceThread {
 
 type DeleteIntent =
   | { kind: 'take'; take: VoiceTakeRecord }
+  | { kind: 'thread'; thread: VoiceThread }
   | { kind: 'all'; count: number }
 
 export function createPlaybackRequestGate(): {
@@ -110,25 +111,74 @@ const Waveform: Component<{
   active: boolean
   progress?: number
   playing?: boolean
-}> = (props) => (
-  <div
-    class={styles.waveform}
-    classList={{ [styles.waveformActive]: props.active }}
-    role="img"
-    aria-label={
-      props.take.peaks.length > 0
-        ? `Waveform for ${props.take.title}`
-        : `Waveform unavailable for ${props.take.title}`
-    }
-  >
-    <VoiceTakeWaveform
-      class={styles.waveformCanvas}
-      peaks={props.take.peaks}
-      progress={props.active ? (props.progress ?? 0) : 0}
-      playing={props.active && props.playing === true}
-    />
-  </div>
-)
+  onSeek: (progress: number) => void
+}> = (props) => {
+  const currentProgress = (): number =>
+    props.active ? (props.progress ?? 0) : 0
+  const seekFromPointer = (event: PointerEvent): void => {
+    const surface = event.currentTarget as HTMLDivElement
+    const bounds = surface.getBoundingClientRect()
+    props.onSeek(
+      mediaProgressFromPointer(event.clientX, bounds.left, bounds.width),
+    )
+  }
+
+  return (
+    <div
+      class={styles.waveform}
+      classList={{ [styles.waveformActive]: props.active }}
+      role="slider"
+      tabindex="0"
+      aria-label={`Seek ${props.take.title}`}
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow={Math.round(currentProgress() * 100)}
+      aria-valuetext={`${Math.round(currentProgress() * 100)} percent`}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId)
+        seekFromPointer(event)
+      }}
+      onPointerMove={(event) => {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          seekFromPointer(event)
+        }
+      }}
+      onPointerUp={(event) => {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId)
+        }
+      }}
+      onKeyDown={(event) => {
+        const step = 0.05
+        const current = currentProgress()
+        const next =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? 1
+              : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+                ? current - step
+                : event.key === 'ArrowRight' || event.key === 'ArrowUp'
+                  ? current + step
+                  : null
+        if (next === null) return
+        event.preventDefault()
+        props.onSeek(Math.max(0, Math.min(1, next)))
+      }}
+    >
+      <VoiceTakeWaveform
+        class={styles.waveformCanvas}
+        peaks={props.take.peaks}
+        progress={currentProgress()}
+        playing={props.active && props.playing === true}
+        showPlayhead={props.active}
+      />
+      <span class={styles.waveformHint} aria-hidden="true">
+        Drag to seek
+      </span>
+    </div>
+  )
+}
 
 export function VoiceHistoryPage(): JSX.Element {
   const [takes, setTakes] = createSignal<VoiceTakeRecord[]>([])
@@ -355,10 +405,45 @@ export function VoiceHistoryPage(): JSX.Element {
     void playTakeAsync(take, fromComparison, isCurrentTake)
   }
 
+  function applyPlaybackSeek(
+    element: HTMLAudioElement,
+    take: VoiceTakeRecord,
+    nextProgress: number,
+  ): boolean {
+    const clamped = Math.max(0, Math.min(1, nextProgress))
+    const mediaDuration =
+      Number.isFinite(element.duration) && element.duration > 0
+        ? element.duration
+        : take.durationMs / 1000
+    if (!Number.isFinite(mediaDuration) || mediaDuration <= 0) return false
+    try {
+      element.currentTime = mediaDuration * clamped
+      setProgress(clamped)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  function seekTake(
+    take: VoiceTakeRecord,
+    nextProgress: number,
+    fromComparison = false,
+  ): void {
+    unlockAudio(ensureListeningContext())
+    if (activeId() === take.id && audio !== null) {
+      applyPlaybackSeek(audio, take, nextProgress)
+      if (playing()) playbackProgress.start(audio)
+      return
+    }
+    void playTakeAsync(take, fromComparison, false, nextProgress)
+  }
+
   async function playTakeAsync(
     take: VoiceTakeRecord,
     fromComparison: boolean,
     isCurrentTake: boolean,
+    requestedProgress?: number,
   ): Promise<void> {
     const takeId = take.id
     if (fromComparison && !comparisonStarted) {
@@ -459,6 +544,16 @@ export function VoiceHistoryPage(): JSX.Element {
         'This browser could not decode the recording. Export it to keep the original file.',
       )
     })
+    if (requestedProgress !== undefined) {
+      const applyRequestedSeek = (): void => {
+        if (!requestIsCurrent() || audio !== nextAudio) return
+        applyPlaybackSeek(nextAudio, take, requestedProgress)
+      }
+      nextAudio.addEventListener('loadedmetadata', applyRequestedSeek, {
+        once: true,
+      })
+      applyRequestedSeek()
+    }
     setActiveId(takeId)
     try {
       await nextAudio.play()
@@ -512,6 +607,11 @@ export function VoiceHistoryPage(): JSX.Element {
     setDeleteIntent({ kind: 'take', take })
   }
 
+  function removeThread(thread: VoiceThread): void {
+    setDeleteError(null)
+    setDeleteIntent({ kind: 'thread', thread })
+  }
+
   function confirmDelete(): void {
     const intent = deleteIntent()
     if (intent === null || deleteBusy()) return
@@ -533,6 +633,26 @@ export function VoiceHistoryPage(): JSX.Element {
           if (!(await refresh(key))) {
             setPlayerError(
               'The take was deleted, but voice history could not refresh. Reload the page to update the list.',
+            )
+            return
+          }
+          queueMicrotask(() => recordLaunchButton?.focus())
+        } else if (intent.kind === 'thread') {
+          if (intent.thread.takes.some((take) => take.id === playbackTakeId)) {
+            disposeAudio()
+          }
+          if (!(await deleteVoiceThread(intent.thread.key))) {
+            setDeleteError(
+              'The practice thread could not be deleted. Please try again.',
+            )
+            return
+          }
+          trackEvent('voice_delete')
+          setDeleteError(null)
+          setDeleteIntent(null)
+          if (!(await refresh())) {
+            setPlayerError(
+              'The thread was deleted, but voice history could not refresh. Reload the page to update the list.',
             )
             return
           }
@@ -559,7 +679,9 @@ export function VoiceHistoryPage(): JSX.Element {
         setDeleteError(
           intent.kind === 'take'
             ? 'The take could not be deleted. Please try again.'
-            : 'Voice history could not be cleared. Please try again.',
+            : intent.kind === 'thread'
+              ? 'The practice thread could not be deleted. Please try again.'
+              : 'Voice history could not be cleared. Please try again.',
         )
       } finally {
         setDeleteBusy(false)
@@ -703,6 +825,21 @@ export function VoiceHistoryPage(): JSX.Element {
         <>
           Delete <strong>{intent.take.title}</strong> from this device? This
           cannot be undone.
+          <Show when={deleteError()}>
+            <span class={styles.deleteDialogError} role="alert">
+              {deleteError()}
+            </span>
+          </Show>
+        </>
+      )
+    }
+    if (intent?.kind === 'thread') {
+      return (
+        <>
+          Delete <strong>{intent.thread.title}</strong> and its{' '}
+          {intent.thread.takes.length}{' '}
+          {intent.thread.takes.length === 1 ? 'take' : 'takes'} from this
+          device? Every other practice thread stays intact.
           <Show when={deleteError()}>
             <span class={styles.deleteDialogError} role="alert">
               {deleteError()}
@@ -876,19 +1013,19 @@ export function VoiceHistoryPage(): JSX.Element {
             </aside>
 
             <div class={styles.workspace}>
-              <Show when={selectedThread()}>
+              <Show when={selectedThread()} keyed>
                 {(thread) => (
                   <>
                     <div class={styles.workspaceHead}>
                       <Show
-                        when={renamingKey() === thread().key}
+                        when={renamingKey() === thread.key}
                         fallback={
                           <div>
-                            <span>{thread().source} thread</span>
-                            <h2>{thread().title}</h2>
+                            <span>{thread.source} thread</span>
+                            <h2>{thread.title}</h2>
                             <p>
-                              {formatDate(thread().takes[0]!.capturedAt)} to{' '}
-                              {formatDate(thread().takes.at(-1)!.capturedAt)}
+                              {formatDate(thread.takes[0]!.capturedAt)} to{' '}
+                              {formatDate(thread.takes.at(-1)!.capturedAt)}
                             </p>
                           </div>
                         }
@@ -938,14 +1075,14 @@ export function VoiceHistoryPage(): JSX.Element {
                           </Show>
                         </form>
                       </Show>
-                      <Show when={renamingKey() !== thread().key}>
+                      <Show when={renamingKey() !== thread.key}>
                         <div class={styles.workspaceActions}>
-                          <Show when={thread().source === 'freeform'}>
+                          <Show when={thread.source === 'freeform'}>
                             <button
                               ref={renameButton}
                               type="button"
                               class={styles.renameThread}
-                              onClick={() => startRenaming(thread())}
+                              onClick={() => startRenaming(thread)}
                               disabled={recorderTarget() !== null}
                             >
                               <Pencil size={14} />
@@ -954,7 +1091,7 @@ export function VoiceHistoryPage(): JSX.Element {
                             <button
                               type="button"
                               class={styles.recordAnother}
-                              onClick={() => openThreadRecorder(thread())}
+                              onClick={() => openThreadRecorder(thread)}
                               disabled={recorderTarget() !== null}
                             >
                               <IconMic size={16} />
@@ -974,14 +1111,17 @@ export function VoiceHistoryPage(): JSX.Element {
                     />
 
                     <Show
-                      when={thread().takes.length >= 2}
+                      when={thread.takes.length >= 2}
                       fallback={
                         <div class={styles.oneTake}>
                           <Waveform
-                            take={thread().takes[0]!}
-                            active={activeId() === thread().takes[0]!.id}
+                            take={thread.takes[0]!}
+                            active={activeId() === thread.takes[0]!.id}
                             progress={progress()}
                             playing={playing()}
+                            onSeek={(nextProgress) =>
+                              seekTake(thread.takes[0]!, nextProgress)
+                            }
                           />
                           <div>
                             <h3>One more matching take unlocks comparison.</h3>
@@ -991,9 +1131,9 @@ export function VoiceHistoryPage(): JSX.Element {
                             </p>
                             <button
                               type="button"
-                              onClick={() => void playTake(thread().takes[0]!)}
+                              onClick={() => void playTake(thread.takes[0]!)}
                             >
-                              {activeId() === thread().takes[0]!.id && playing()
+                              {activeId() === thread.takes[0]!.id && playing()
                                 ? 'Pause take'
                                 : 'Play take'}
                             </button>
@@ -1067,6 +1207,9 @@ export function VoiceHistoryPage(): JSX.Element {
                                         active={activeId() === take().id}
                                         progress={progress()}
                                         playing={playing()}
+                                        onSeek={(nextProgress) =>
+                                          seekTake(take(), nextProgress, true)
+                                        }
                                       />
                                       <button
                                         type="button"
@@ -1099,20 +1242,20 @@ export function VoiceHistoryPage(): JSX.Element {
                                 chooseEarlier(id)
                               }}
                             >
-                              <For each={thread().takes}>
+                              <For each={thread.takes}>
                                 {(take, index) => (
                                   <option
                                     value={take.id}
                                     disabled={
                                       index() >=
-                                      thread().takes.findIndex(
+                                      thread.takes.findIndex(
                                         (candidate) =>
                                           candidate.id === laterId(),
                                       )
                                     }
                                   >
                                     {formatDate(take.capturedAt)} · Take{' '}
-                                    {thread().takes.indexOf(take) + 1}
+                                    {thread.takes.indexOf(take) + 1}
                                   </option>
                                 )}
                               </For>
@@ -1127,20 +1270,20 @@ export function VoiceHistoryPage(): JSX.Element {
                                 chooseLater(id)
                               }}
                             >
-                              <For each={thread().takes}>
+                              <For each={thread.takes}>
                                 {(take, index) => (
                                   <option
                                     value={take.id}
                                     disabled={
                                       index() <=
-                                      thread().takes.findIndex(
+                                      thread.takes.findIndex(
                                         (candidate) =>
                                           candidate.id === earlierId(),
                                       )
                                     }
                                   >
                                     {formatDate(take.capturedAt)} · Take{' '}
-                                    {thread().takes.indexOf(take) + 1}
+                                    {thread.takes.indexOf(take) + 1}
                                   </option>
                                 )}
                               </For>
@@ -1156,15 +1299,24 @@ export function VoiceHistoryPage(): JSX.Element {
                           <span>Thread history</span>
                           <h3>Every kept take</h3>
                         </div>
-                        <button
-                          type="button"
-                          class={styles.dangerLink}
-                          onClick={wipeAll}
-                        >
-                          Clear all voice history
-                        </button>
+                        <div class={styles.historyDangerActions}>
+                          <button
+                            type="button"
+                            class={styles.dangerLink}
+                            onClick={() => removeThread(thread)}
+                          >
+                            Delete this thread
+                          </button>
+                          <button
+                            type="button"
+                            class={styles.dangerLink}
+                            onClick={wipeAll}
+                          >
+                            Clear entire voice history
+                          </button>
+                        </div>
                       </div>
-                      <For each={[...thread().takes].reverse()}>
+                      <For each={[...thread.takes].reverse()}>
                         {(take) => (
                           <article class={styles.takeRow}>
                             <button
@@ -1206,6 +1358,9 @@ export function VoiceHistoryPage(): JSX.Element {
                               active={activeId() === take.id}
                               progress={progress()}
                               playing={playing()}
+                              onSeek={(nextProgress) =>
+                                seekTake(take, nextProgress)
+                              }
                             />
                             <div class={styles.takeActions}>
                               <button
@@ -1238,7 +1393,9 @@ export function VoiceHistoryPage(): JSX.Element {
         title={
           deleteIntent()?.kind === 'all'
             ? 'Clear all voice history?'
-            : 'Delete this take?'
+            : deleteIntent()?.kind === 'thread'
+              ? 'Delete this practice thread?'
+              : 'Delete this take?'
         }
         message={deleteDialogMessage()}
         confirmLabel={
@@ -1246,9 +1403,15 @@ export function VoiceHistoryPage(): JSX.Element {
             ? 'Deleting…'
             : deleteIntent()?.kind === 'all'
               ? 'Clear history'
-              : 'Delete take'
+              : deleteIntent()?.kind === 'thread'
+                ? 'Delete thread'
+                : 'Delete take'
         }
-        confirmPhrase={deleteIntent()?.kind === 'all' ? 'delete' : undefined}
+        confirmPhrase={
+          deleteIntent()?.kind === 'all' || deleteIntent()?.kind === 'thread'
+            ? 'delete'
+            : undefined
+        }
         busy={deleteBusy()}
         onConfirm={confirmDelete}
         onCancel={() => {
