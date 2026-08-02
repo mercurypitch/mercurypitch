@@ -1,0 +1,159 @@
+/* ── JamLyricsFinder ────────────────────────────────────────────────
+   Lives inside the lyrics column, so it inherits the room's glass and
+   only has to lay itself out. */
+
+.finder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  /* Scrolls on its own: a long result list must not push the transport
+     off a phone screen. */
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.lead {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.input {
+  flex: 1 1 10rem;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, rgb(255 255 255 / 12%));
+  border-radius: 8px;
+  background: rgb(0 0 0 / 20%);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.primary {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-color, #58a6ff);
+  color: #04121f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.link {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 4%);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.result:hover,
+.result:focus-visible {
+  border-color: var(--accent-color, #58a6ff);
+  background: rgb(255 255 255 / 8%);
+}
+
+.resultTitle {
+  font-weight: 600;
+  /* The title takes the slack so artist and badge stay put. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultArtist {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.badgeSynced,
+.badgePlain {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.badgeSynced {
+  color: #6ee7a8;
+  background: rgb(110 231 168 / 14%);
+}
+
+.badgePlain {
+  color: var(--text-tertiary, var(--text-secondary));
+  background: rgb(255 255 255 / 8%);
+}
+
+.paste {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color, rgb(255 255 255 / 12%));
+  border-radius: 8px;
+  background: rgb(0 0 0 / 20%);
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.none,
+.error {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.none {
+  color: var(--text-secondary);
+}
+
+.error {
+  color: #f09a9a;
+}

@@ -198,6 +198,26 @@ Per-line scoring falls out of the lyrics timings: each line is a time range,
 so a line gets a score the same way a note does today. That gives the room a
 running "who is nailing which line" without inventing a new scorer.
 
+**Shipped** as `lib/jam/jam-line-scoring.ts`, built on the same
+`scoreNoteInRange` the drills use. Two details the design did not anticipate:
+
+- *Two clocks.* Pitch samples are stamped `Date.now()`; notes and lyrics live
+  on the song's timeline. Everything converts through an anchor, and the
+  anchor is captured **per line, when the line is entered** rather than once
+  per run — which is what keeps scoring correct across a seek or a pause.
+- *A line with no notes is not a miss.* An instrumental bar inside a lyric
+  sheet scores nothing and is excluded from the run average; a line that
+  *had* notes and went unsung scores zero. Conflating the two punished honest
+  runs for singing nothing where nothing was written.
+
+**Lyrics when a session has none.** A separated session usually has no LRC —
+you split the stems and never opened the lyrics panel — which left the column
+empty and the room a backing track with a pitch lane. `JamLyricsFinder`
+searches LRCLib (reusing `lyrics-service`, which is already a clean module),
+or takes pasted LRC, and saves the result against the session so the mixer and
+the next room both find it. Entries without timings are refused with a reason
+rather than attached: plain lyrics cannot scroll.
+
 ## 5. Phase 3 — assigning singers to parts
 
 This is the feature the user actually wants, and it is cheaper than it looks
