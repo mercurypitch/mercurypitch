@@ -478,6 +478,10 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function setupDataChannel(dc: RTCDataChannel, peerId: string): void {
     dataChannels.set(peerId, dc)
+    // Stem audio arrives as raw binary. Without this it would surface as a
+    // Blob in some browsers and an ArrayBuffer in others, and the receiver
+    // would have to sniff which.
+    dc.binaryType = 'arraybuffer'
     dc.onopen = () => {
       console.info('[jam:service] DataChannel open to', peerId)
       dc.send(JSON.stringify({ type: 'video-state', enabled: videoEnabled }))
@@ -490,9 +494,16 @@ export function createJamService(callbacks: JamCallbacks) {
     }
     dc.onmessage = (event) => {
       try {
-        // Peer payloads are untrusted: a binary frame or a non-string body
-        // would throw out of JSON.parse into the catch below, but being
-        // explicit keeps the failure a parse error rather than a surprise.
+        // Stem audio is the one payload that is not JSON: it is the
+        // message type where bytes are the whole problem, so it travels
+        // raw rather than paying base64's extra third.
+        if (event.data instanceof ArrayBuffer) {
+          callbacks.onSongFileChunk?.(event.data, peerId)
+          return
+        }
+        // Anything else non-string is not ours. Peer payloads are
+        // untrusted, and being explicit keeps this a routing decision
+        // rather than a surprise inside JSON.parse.
         if (typeof event.data !== 'string') return
         const data = JSON.parse(event.data)
         console.info(
@@ -519,6 +530,9 @@ export function createJamService(callbacks: JamCallbacks) {
             break
           case 'song':
             callbacks.onSongMessage?.(data)
+            break
+          case 'song-file':
+            callbacks.onSongFileMessage?.(data, peerId)
             break
           case 'playback':
             callbacks.onPlaybackMessage?.(data, peerId)
@@ -577,6 +591,27 @@ export function createJamService(callbacks: JamCallbacks) {
   }
 
   /** A song manifest -- URLs and lyrics, never audio. */
+  /**
+   * The channel to one peer, for a transfer to drive directly.
+   *
+   * Handed out rather than wrapped because a transfer needs the channel's
+   * bufferedAmount and its bufferedamountlow event to apply backpressure,
+   * and a send(payload) wrapper cannot express waiting.
+   */
+  function channelTo(peerId: string): RTCDataChannel | null {
+    return dataChannels.get(peerId) ?? null
+  }
+
+  /** The connection to one peer, so a transfer can ask about its route. */
+  function connectionTo(peerId: string): RTCPeerConnection | null {
+    return peerConnections.get(peerId) ?? null
+  }
+
+  function sendSongFileMessage(peerId: string, msg: object): void {
+    const dc = dataChannels.get(peerId)
+    if (dc?.readyState === 'open') dc.send(JSON.stringify(msg))
+  }
+
   function sendSong(song: object | null): void {
     broadcastData(
       song === null
@@ -754,6 +789,9 @@ export function createJamService(callbacks: JamCallbacks) {
     sendPitch,
     sendMelody,
     sendSong,
+    channelTo,
+    connectionTo,
+    sendSongFileMessage,
     sendPlaybackCommandSec,
     sendClearMelody,
     sendPlaybackCommand,

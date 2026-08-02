@@ -178,6 +178,28 @@ export interface JamSongNote {
   endSec: number
 }
 
+/**
+ * The control track of a stem transfer.
+ *
+ * The bytes travel as raw binary frames alongside these; an offer opens a
+ * transfer, and only one runs at a time per peer, which is what lets a
+ * chunk be matched to its transfer without a header on every frame.
+ */
+export interface JamSongFileMessage {
+  type: 'song-file'
+  action: 'offer' | 'done' | 'abort'
+  transferId: string
+  /** Present on 'offer'. */
+  header?: {
+    stem: 'instrumental' | 'vocal'
+    bytes: number
+    sha256: string
+    mime: string
+  }
+  /** Present on 'abort', so the other end can say why it stopped. */
+  reason?: string
+}
+
 export interface JamSongMessage {
   type: 'song'
   action: 'set' | 'clear'
@@ -245,6 +267,14 @@ export interface JamCallbacks {
   onPitchMessage?: (msg: JamPitchMessage) => void
   onMelodyMessage?: (msg: JamMelodyMessage) => void
   onSongMessage?: (msg: JamSongMessage) => void
+  /** Control frames for a stem transfer (offer / done / abort). */
+  onSongFileMessage?: (msg: JamSongFileMessage, fromPeerId: string) => void
+  /**
+   * A slice of stem audio. Binary, and deliberately NOT wrapped in JSON:
+   * base64 would cost a third more bytes on the one message type where
+   * bytes are the whole problem.
+   */
+  onSongFileChunk?: (chunk: ArrayBuffer, fromPeerId: string) => void
   /** fromPeerId lets the store charge the message its own flight time. */
   onPlaybackMessage?: (msg: JamPlaybackMessage, fromPeerId: string) => void
   onVideoState?: (peerId: string, enabled: boolean) => void
