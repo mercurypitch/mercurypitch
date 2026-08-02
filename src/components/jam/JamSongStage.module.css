@@ -95,3 +95,25 @@
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
   backdrop-filter: blur(8px);
 }
+
+/* ── Your run score ─────────────────────────────────────────────────
+   Beside the title in the transport, not over the lyrics: mid-song a
+   singer should be able to ignore it entirely. */
+.runScore {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.runScore strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.runLines {
+  font-size: 0.72rem;
+  color: var(--text-tertiary, var(--text-secondary));
+}
