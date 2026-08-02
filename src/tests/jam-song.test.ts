@@ -96,10 +96,21 @@ describe('songPlayableInRoom', () => {
     expect(verdict.warning).toMatch(/only you can hear/i)
   })
 
-  it('refuses a device-local song once somebody else is listening', () => {
+  it('offers to SEND a device-local song rather than refusing it', () => {
+    // This used to be a flat refusal, because there was no way to get the
+    // audio to anyone. There is now, so the answer is "not yet, and here
+    // is the button" -- refusing something the room can fix is worse than
+    // asking it to.
     const verdict = songPlayableInRoom(song({ origin: 'local' }), 1)
-    expect(verdict.ok).toBe(false)
-    expect(verdict.reason).toMatch(/nobody else in the room could hear/i)
+    expect(verdict.ok).toBe(true)
+    expect(verdict.needsShare).toBe(true)
+    expect(verdict.warning).toMatch(/send it to the room/i)
+  })
+
+  it('does not ask to share when nobody is there to share with', () => {
+    expect(
+      songPlayableInRoom(song({ origin: 'local' }), 0).needsShare,
+    ).toBeUndefined()
   })
 
   it('warns about a local song rather than staying silent about it', () => {

@@ -172,29 +172,28 @@ export function restAt(
 /**
  * Can this room actually play this song?
  *
- * Phase 1 answers "only if every peer can fetch it". A local song needs the
- * peer-to-peer transfer (see docs/plans/jam-karaoke-songs.md §1b), so it is
- * refused here with a reason rather than loaded into a room where half the
- * people would sit in silence wondering what broke.
+ * A local song used to be refused outright once anybody else was in the
+ * room, because there was no way to get the audio to them. There is now
+ * (docs/plans/jam-song-p2p-transfer.md), so the answer changes from "no"
+ * to "not yet, and here is the button" -- which is what `needsShare`
+ * says. Refusing something the room can fix is worse than asking it to.
  */
 export function songPlayableInRoom(
   song: JamSong,
   peerCount = 0,
-): { ok: boolean; reason?: string; warning?: string } {
-  // A local song plays perfectly well for the person who owns it. It is
-  // only a problem once somebody else is in the room expecting to hear
-  // it, so refuse on THAT rather than on the song -- practising alone
-  // with your own material is the obvious thing to want, and blocking it
-  // to protect a case that is not happening is just being unhelpful.
-  if (song.origin === 'local' && peerCount > 0) {
-    return {
-      ok: false,
-      reason:
-        'This song is only on your device, so nobody else in the room could hear it. Sharing your own songs is coming — for now pick one everybody can load, or sing it alone.',
-    }
-  }
+): { ok: boolean; reason?: string; warning?: string; needsShare?: boolean } {
+  // Still the first check: a song with no backing track is broken however
+  // many people are listening, and no amount of sending fixes it.
   if (!song.stems.instrumental) {
     return { ok: false, reason: 'This song has no backing track to sing over.' }
+  }
+  if (song.origin === 'local' && peerCount > 0) {
+    return {
+      ok: true,
+      needsShare: true,
+      warning:
+        'Only you can hear this one so far. Send it to the room and everybody gets the backing track — until then they see the words, the notes and the pitch lanes.',
+    }
   }
   if (song.origin === 'local') {
     return {

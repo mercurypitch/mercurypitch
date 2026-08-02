@@ -3,9 +3,11 @@
 // Wires together jam-service callbacks with SolidJS signals.
 
 import { createMemo, createRoot, createSignal } from 'solid-js'
+import { getStemBlob } from '@/db/services/uvr-service'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { overallLineScore } from '@/lib/jam/jam-line-scoring'
+import { sessionIdOfSong } from '@/lib/jam/jam-lyrics-attach'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
@@ -13,8 +15,10 @@ import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
+import { SongFileInbox } from '@/lib/jam/jam-song-inbox'
 import type { JamSongParts } from '@/lib/jam/jam-song-parts'
 import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
+import { encodeStemsForShare, shareStemsWithPeers, } from '@/lib/jam/jam-song-share'
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
@@ -374,11 +378,220 @@ export function rehomeJamSongParts(): void {
   broadcastSongWithParts()
 }
 
+// ── Sharing a song with the room ─────────────────────────────────────
+// Encoding and moving the audio for a song only this device holds
+// (lib/jam/jam-song-share.ts, jam-song-inbox.ts).
+
+export interface JamShareState {
+  phase: 'idle' | 'encoding' | 'sending' | 'receiving' | 'done' | 'error'
+  /** 0-1 through the current stage. */
+  ratio: number
+  message: string
+}
+
+export const [jamShareState, setJamShareState] = createSignal<JamShareState>({
+  phase: 'idle',
+  ratio: 0,
+  message: '',
+})
+
+/**
+ * Blob URLs minted for stems that arrived from a peer.
+ *
+ * Kept so they can be revoked. A blob URL pins its data in memory for the
+ * life of the document, so a room where three songs were shared would
+ * hold all three until the tab closed.
+ */
+const receivedStemUrls = new Set<string>()
+
+function revokeReceivedStems(): void {
+  for (const url of receivedStemUrls) URL.revokeObjectURL(url)
+  receivedStemUrls.clear()
+}
+
+/**
+ * Point the loaded song at audio that arrived from a peer.
+ *
+ * Deliberately NOT written to IndexedDB. This is somebody else's file,
+ * received to sing along to for as long as the room lasts; quietly
+ * building a library of other people's audio on someone's disk is not a
+ * thing to do without asking, and nothing about the feature needs it.
+ */
+export function applyReceivedStem(
+  stem: 'instrumental' | 'vocal',
+  blob: Blob,
+): void {
+  const song = jamSong()
+  if (song === null) return
+  const url = URL.createObjectURL(blob)
+  receivedStemUrls.add(url)
+  setJamSong({
+    ...song,
+    stems: { ...song.stems, [stem]: url },
+    // It plays here now, so it is no longer the local-only case that the
+    // warning and the share prompt are about.
+    ...(stem === 'instrumental' ? { origin: 'url' as const } : {}),
+  })
+}
+
+/**
+ * Inbound transfers, one per peer.
+ *
+ * Module-level rather than per-service so a reconnect does not lose a
+ * transfer mid-flight, and cleared explicitly on leaving.
+ */
+const songInbox = new SongFileInbox({
+  onProgress: (peerId, p) =>
+    setJamShareState({
+      phase: 'receiving',
+      ratio: p.ratio,
+      message: `Getting the song from ${peerName(peerId)}…`,
+    }),
+  onStem: ({ stem, blob }) => {
+    applyReceivedStem(stem, blob)
+    setJamShareState({
+      phase: 'done',
+      ratio: 1,
+      message:
+        stem === 'instrumental'
+          ? 'Got the backing track — you can hear the song now.'
+          : 'Got the guide vocal too.',
+    })
+  },
+  onFailed: (_peerId, reason) =>
+    setJamShareState({ phase: 'error', ratio: 0, message: reason }),
+})
+
+let shareAbort: { aborted: boolean } | null = null
+
+/** Stop a share in progress -- the host changed their mind, or left. */
+export function cancelJamSongShare(): void {
+  if (shareAbort !== null) shareAbort.aborted = true
+}
+
+/**
+ * Send the loaded song to everyone in the room.
+ *
+ * Host-only and explicit: encoding costs seconds of CPU and the transfer
+ * costs somebody's data, so it happens when asked rather than the moment
+ * a local song is picked.
+ */
+export async function shareJamSongWithRoom(): Promise<void> {
+  const song = jamSong()
+  if (song === null || !jamIsHost()) return
+  const sessionId = sessionIdOfSong(song)
+  if (sessionId === null) {
+    setJamShareState({
+      phase: 'error',
+      ratio: 0,
+      message: 'This song did not come from one of your separations.',
+    })
+    return
+  }
+  const peers = jamConnectedPeers()
+  if (peers.length === 0) {
+    setJamShareState({
+      phase: 'error',
+      ratio: 0,
+      message: 'Nobody else is in the room yet.',
+    })
+    return
+  }
+
+  const signal = { aborted: false }
+  shareAbort = signal
+  try {
+    setJamShareState({
+      phase: 'encoding',
+      ratio: 0,
+      message: 'Packing the song…',
+    })
+    const [instrumental, vocal] = await Promise.all([
+      getStemBlob(sessionId, 'instrumental'),
+      getStemBlob(sessionId, 'vocal'),
+    ])
+    if (instrumental === null) {
+      setJamShareState({
+        phase: 'error',
+        ratio: 0,
+        message: 'The backing track is missing from this device.',
+      })
+      return
+    }
+    const encoded = await encodeStemsForShare(
+      {
+        instrumental: await instrumental.arrayBuffer(),
+        ...(vocal === null ? {} : { vocal: await vocal.arrayBuffer() }),
+      },
+      (p) =>
+        setJamShareState({
+          phase: 'encoding',
+          ratio: p.ratio,
+          message: `Packing the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'}…`,
+        }),
+    )
+    if (signal.aborted) {
+      setJamShareState({ phase: 'idle', ratio: 0, message: '' })
+      return
+    }
+
+    const { sent, skipped } = await shareStemsWithPeers(
+      encoded,
+      peers.map((peer) => ({
+        peerId: peer.id,
+        channel: jamService?.channelTo(peer.id) ?? null,
+        connection: jamService?.connectionTo(peer.id) ?? null,
+      })),
+      {
+        sendMessage: (peerId, msg) =>
+          jamService?.sendSongFileMessage(peerId, msg),
+        nextTransferId: () => globalThis.crypto.randomUUID(),
+      },
+      {
+        signal,
+        onProgress: (p) =>
+          setJamShareState({
+            phase: 'sending',
+            ratio: p.ratio,
+            message: `Sending to ${peerName(p.peerId)}…`,
+          }),
+      },
+    )
+
+    // Report the shortfall rather than a bare tick. Somebody who did not
+    // get it is going to hear silence, and being told why beforehand is
+    // the difference between a limitation and a bug.
+    setJamShareState({
+      phase: 'done',
+      ratio: 1,
+      message:
+        skipped.length === 0
+          ? `Sent to everyone (${sent.length}).`
+          : `Sent to ${sent.length}. ${skipped.length} could not receive it: ${skipped[0]?.reason ?? ''}`,
+    })
+  } catch (err) {
+    setJamShareState({
+      phase: 'error',
+      ratio: 0,
+      message:
+        err instanceof Error ? err.message : 'The song could not be sent.',
+    })
+  } finally {
+    shareAbort = null
+  }
+}
+
+function peerName(peerId: string): string {
+  return jamPeers().find((p) => p.id === peerId)?.displayName ?? 'them'
+}
+
 export function clearJamSong(): void {
   setJamSong(null)
   setJamSongPositionSec(0)
   setJamSongParts({})
   resetJamLineScores()
+  revokeReceivedStems()
+  setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   jamService?.sendSong(null)
 }
 
@@ -722,6 +935,8 @@ export function initJam() {
         delete next[peerId]
         return next
       })
+      // Nothing more is coming from them.
+      songInbox.forget(peerId)
       // Their lines have to go somewhere. A part that falls silent because
       // its singer closed a tab is indistinguishable, from inside the room,
       // from the song being broken.
@@ -822,6 +1037,34 @@ export function initJam() {
         stopPlaybackTimer()
         setJamPitchTab('exercise')
       }
+    },
+    onSongFileMessage: (msg, fromPeerId) => {
+      switch (msg.action) {
+        case 'offer':
+          if (msg.header === undefined) return
+          songInbox.offer(fromPeerId, {
+            transferId: msg.transferId,
+            ...msg.header,
+          })
+          setJamShareState({
+            phase: 'receiving',
+            ratio: 0,
+            message: `Getting the song from ${peerName(fromPeerId)}…`,
+          })
+          break
+        case 'done':
+          void songInbox.done(fromPeerId)
+          break
+        case 'abort':
+          songInbox.abort(
+            fromPeerId,
+            msg.reason ?? 'The sender stopped part-way through.',
+          )
+          break
+      }
+    },
+    onSongFileChunk: (chunk, fromPeerId) => {
+      songInbox.chunk(fromPeerId, chunk)
     },
     onSongMessage: (msg) => {
       if (msg.action === 'clear' || msg.song === undefined) {
@@ -1287,6 +1530,13 @@ function cleanupJam(): void {
   stopJamPitchDetection()
   stopPlaybackTimer()
   clearJamSession()
+  // A share in flight is over, and a blob URL pins its data for the life
+  // of the document -- leaving a room should not keep somebody else's
+  // song in memory until the tab closes.
+  cancelJamSongShare()
+  songInbox.clear()
+  revokeReceivedStems()
+  setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   for (const [, source] of remoteAudioNodes) {
     source.disconnect()
   }
