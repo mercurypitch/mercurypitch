@@ -61,6 +61,26 @@ await host.page.waitForFunction(
 )
 console.log('connected: both peers in the room')
 
+// Optionally load a song, so the split layout and scrubber can be seen.
+//   JAM_SONG=1 node .claude/skills/jam-two-peer/two-peer.mjs ./shots
+if (process.env.JAM_SONG === '1') {
+  await host.page
+    .getByRole('button', { name: 'Choose a melody to practice' })
+    .click()
+  await host.page.waitForTimeout(1500)
+  const song = host.page.locator('[class*="pickItem"]').first()
+  await song.click()
+  await host.page.waitForTimeout(3000)
+  console.log(
+    'song:',
+    await host.page
+      .locator('[class*="title"]')
+      .first()
+      .innerText()
+      .catch(() => '(none)'),
+  )
+}
+
 // Roles must differ AND be derived independently on each device.
 await host.page.getByRole('button', { name: /^Harmony Stack$/ }).click().catch(() => {})
 await host.page.waitForTimeout(2500)
