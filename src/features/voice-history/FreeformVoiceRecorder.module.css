@@ -108,6 +108,22 @@
   color: #ffb5b5;
 }
 
+.switchThread {
+  justify-self: start;
+  min-height: 44px;
+  margin-top: 2px;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b8d5ff;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .captureField {
   display: grid;
   align-content: start;
@@ -256,6 +272,7 @@
 
 .closeButton:focus-visible,
 .promptField input:focus-visible,
+.switchThread:focus-visible,
 .recordButton:focus-visible,
 .stopButton:focus-visible,
 .reviewActions button:focus-visible {
