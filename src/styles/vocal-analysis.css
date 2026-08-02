@@ -4203,7 +4203,16 @@
   pointer-events: none;
   background-image: url('/community/room-tone.webp');
   background-size: cover;
-  background-position: center top;
+  /* Centred, not `center top`. The art is a 3.15:1 banner whose subject —
+     the planet — sits at 76% across and 56% down. Anchoring to the top
+     showed only the upper half of the old 1.79:1 frame, which cut the
+     planet off entirely and left nothing but haze in one corner.
+
+     70% across, not 50%: a narrow panel crops the banner's SIDES (cover
+     scales it to the height instead), and dead-centre threw the planet
+     away again below about 900px. On a wide panel the full width shows
+     and the horizontal figure does nothing. */
+  background-position: 70% 50%;
   opacity: 0.55;
   /* Fades out downward so the grid does not end on a hard edge. */
   mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);

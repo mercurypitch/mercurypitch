@@ -208,3 +208,44 @@ export function rangeBand(position: number): 'low' | 'mid' | 'high' {
   if (position < 1 / 3) return 'low'
   return position < 2 / 3 ? 'mid' : 'high'
 }
+
+/**
+ * SVG path for the arc that sweeps the rim to show where the selected
+ * note falls in the range — 12 o'clock is the bottom of the range, and
+ * it fills clockwise.
+ *
+ * Returns '' for an empty sweep, and closes the full circle with two
+ * half-arcs because a single arc from a point back to itself is
+ * degenerate and renders as nothing.
+ */
+export function arcPath(
+  position: number,
+  cx: number,
+  cy: number,
+  r: number,
+): string {
+  const p = Math.min(1, Math.max(0, position))
+  if (p <= 0.0005) return ''
+  const start = -Math.PI / 2
+  const at = (a: number): string =>
+    `${(cx + Math.cos(a) * r).toFixed(3)} ${(cy + Math.sin(a) * r).toFixed(3)}`
+  if (p >= 0.9995) {
+    // Two half-turns, so the circle actually draws.
+    return `M ${at(start)} A ${r} ${r} 0 1 1 ${at(start + Math.PI)} A ${r} ${r} 0 1 1 ${at(start)}`
+  }
+  const end = start + p * Math.PI * 2
+  const largeArc = p > 0.5 ? 1 : 0
+  return `M ${at(start)} A ${r} ${r} 0 ${largeArc} 1 ${at(end)}`
+}
+
+/** The lowest and highest notes a list offers, by pitch. */
+export function rangeEnds(
+  available: readonly string[],
+  toMidi: (note: string) => number,
+): { low: string; high: string } | null {
+  const sorted = available
+    .filter((n) => Number.isFinite(toMidi(n)))
+    .sort((a, b) => toMidi(a) - toMidi(b))
+  if (sorted.length === 0) return null
+  return { low: sorted[0]!, high: sorted[sorted.length - 1]! }
+}
