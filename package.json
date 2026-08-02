@@ -107,7 +107,7 @@
     "vite-plugin-qrcode": "^0.4.1",
     "vite-plugin-solid": "^2.10.0",
     "vitest": "^4.1.5",
-    "wrangler": "^4.105.0"
+    "wrangler": "^4.118.0"
   },
   "browserslist": [
     "last 2 Chrome versions",
