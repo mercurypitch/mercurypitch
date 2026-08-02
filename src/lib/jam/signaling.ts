@@ -3,6 +3,7 @@
 // signaling relay for SDP/ICE exchange and room lifecycle.
 
 import { ownerTokenFor, rememberHostedRoom, touchHostedRoom } from './jam-rooms'
+import { createMockSignalingClient } from './signaling-mock'
 import type { JamCallbacks, SignalingMessage } from './types'
 
 const SIGNALING_URL = import.meta.env.VITE_JAM_SIGNALING_URL ?? '/api/jam'
@@ -23,7 +24,27 @@ function getWsUrl(path: string): string {
   return `${protocol}//${host}${normalizedPath}`
 }
 
+/**
+ * Is this build one where the signaling worker does not exist?
+ *
+ * PR previews are served without the jam worker, so the real client hangs
+ * on a WebSocket that will never connect and the Jam tab is a dead end.
+ * The flag is opt-in rather than "any non-production build", so a local
+ * dev server with `pnpm dev:jam` running still exercises the real thing --
+ * mocking that would hide the bugs this whole feature is made of.
+ */
+export function jamSignalingIsMocked(): boolean {
+  return import.meta.env.VITE_JAM_MOCK_SIGNALING === '1'
+}
+
 export function createSignalingClient(callbacks: JamCallbacks) {
+  if (jamSignalingIsMocked()) {
+    return createMockSignalingClient(callbacks)
+  }
+  return createRealSignalingClient(callbacks)
+}
+
+function createRealSignalingClient(callbacks: JamCallbacks) {
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
   let currentRoomId: string | null = null
