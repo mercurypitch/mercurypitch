@@ -111,6 +111,19 @@ one stretch of a song — judge a *line*, not the whole result.
 **Rule:** use a `div` with a class. Pages inside `.main-content` also need
 `flex-shrink: 0`.
 
+### An aborted run is not a result
+**Symptom:** a transcription torn down after 2 of 18 chunks reported
+"hallucination detected", deleted the session's cached transcription and blamed
+the model. The same audio transcribed perfectly a minute later.
+**Cause:** the chunk loop set a local `aborted` flag that only one of the exits
+read. The truncated prefix fell through to the quality guard, which judged it
+as the model's output.
+**Rule:** a cancelled or torn-down async run returns before it reports, caches
+or judges anything — and carries the abort in its *return type*, not a local
+flag every exit has to remember. Teardown must also settle what it cancels:
+`worker.terminate()` leaves pending promises hanging forever.
+**See:** `runWhisperChunkPlan` in `src/lib/useWhisperTranscription.ts`
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

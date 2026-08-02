@@ -129,8 +129,8 @@ These are the rules that break things when ignored.
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 690 | Lyrics Service — fetch, parse, and sync lyrics |
 | [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
+| [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 668 | Shared Whisper transcription controller hook. |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
-| [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 581 | Shared Whisper transcription controller hook. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 555 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [runpod.ts](../../src/lib/runpod.ts) | 534 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |

@@ -41,6 +41,13 @@ interface ShazamListenProps {
 
 type ListenState = 'idle' | 'listening' | 'processing' | 'error'
 
+/**
+ * How long Stop waits for a transcription that is already running before it
+ * gives up on it. Whisper's own ceiling is 300s, and a stuck worker used to
+ * hold the whole session there.
+ */
+const WHISPER_FINAL_WAIT_MS = 5000
+
 export function ShazamListen(props: ShazamListenProps) {
   let audioEngine: AudioEngine | null = null
   let buffer: LivePitchBuffer | null = null
@@ -170,8 +177,17 @@ export function ShazamListen(props: ShazamListenProps) {
   let whisperSource: MediaStreamAudioSourceNode | null = null
   let whisperAccumulated: Float32Array = new Float32Array(0)
   let whisperSegments: WhisperSegment[] = []
+  /**
+   * Bumped every time whisper capture stops (speech toggled off, session
+   * cancelled or stopped, unmount). A transcription that resolves after its
+   * run was torn down is not a result — writing its words to the screen, or
+   * its segments into the next session's song matching, is a dead run
+   * speaking. Compare the id captured before the await.
+   */
+  let whisperRunId = 0
 
   function stopWhisperRecording() {
+    whisperRunId++
     if (whisperScriptNode) {
       whisperScriptNode.disconnect()
       whisperScriptNode.onaudioprocess = null
@@ -201,6 +217,9 @@ export function ShazamListen(props: ShazamListenProps) {
     if (!micStream) return
 
     whisperAccumulated = new Float32Array(0)
+    // Segments only survive to the end of the session that produced them; a
+    // cancelled session must not lend its words to the next one's matching.
+    whisperSegments = []
     setWhisperBufferSecs(0) // Browser automatically resamples to 16kHz
     whisperAudioCtx = new AudioContext({ sampleRate: 16000 })
 
@@ -252,11 +271,13 @@ export function ShazamListen(props: ShazamListenProps) {
       return
 
     isTranscribing = true
+    const runId = whisperRunId
     try {
       // Copy the accumulated data so we can transcribe without blocking
       const audioData = new Float32Array(whisperAccumulated)
 
       const result = await whisperService.transcribe(audioData)
+      if (runId !== whisperRunId) return
       setSpeechText(result.text)
       // Accumulate timestamped segments for lyrics matching
       if (result.chunks.length > 0) {
@@ -405,8 +426,12 @@ export function ShazamListen(props: ShazamListenProps) {
     }
     if (speechEngine() === 'whisper') {
       stopWhisperRecording()
-      // Wait for any ongoing transcription to finish
-      while (isTranscribing) {
+      // Wait for any ongoing transcription to finish -- but bounded, so a
+      // wedged worker cannot hold the session open until Whisper's 300s
+      // ceiling. The final pass below re-reads the whole accumulated buffer,
+      // so nothing is lost by walking away from a slow chunk.
+      const waitUntil = Date.now() + WHISPER_FINAL_WAIT_MS
+      while (isTranscribing && Date.now() < waitUntil) {
         await new Promise((r) => setTimeout(r, 100))
       }
       // Final transcription of any remaining audio
@@ -537,6 +562,10 @@ export function ShazamListen(props: ShazamListenProps) {
       speechRecognizer = null
       setSpeechText('')
     }
+    // Cancel used to leave whisper capture running: its interval kept
+    // transcribing, and its 16 kHz AudioContext kept reading the mic, for as
+    // long as the page stayed open.
+    stopWhisperRecording()
     stopAll()
     setListenState('idle')
     setErrorMessage('')
