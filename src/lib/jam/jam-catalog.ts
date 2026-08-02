@@ -22,10 +22,11 @@ import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, } from '@/features/exercises/types'
 import type { PathWeek } from '@/features/path/path-content'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
+import type { JamSong } from '@/lib/jam/jam-song'
 import type { MelodyData, MelodyItem, NoteName } from '@/types'
 
 /** Which shelf of the picker an entry came from. */
-export type JamSourceKind = 'exercise' | 'weekly' | 'ascent' | 'melody'
+export type JamSourceKind = 'exercise' | 'weekly' | 'ascent' | 'melody' | 'song'
 
 /**
  * Built melodies carry their origin in their id, and the id travels over the
@@ -69,16 +70,35 @@ export function jamRunSource(melodyId: string | undefined): JamRunSource {
   return { kind: 'melody' }
 }
 
-export interface JamCatalogEntry {
+interface JamCatalogEntryBase {
   /** Stable across rebuilds -- used as the picker's list key. */
   id: string
-  kind: JamSourceKind
   name: string
   /** One line under the name: what the room is about to sing. */
   detail: string
+}
+
+/**
+ * Something a room can run.
+ *
+ * A union rather than one shape with two optional builders: a song and a
+ * drill are not interchangeable -- they run on different timelines and go
+ * through different store actions -- so the picker has to branch, and the
+ * type should make forgetting to branch a compile error rather than a
+ * room that loads a song and then waits for a beat that never comes.
+ */
+export type JamMelodyEntry = JamCatalogEntryBase & {
+  kind: 'exercise' | 'weekly' | 'ascent' | 'melody'
   /** Built lazily: the octave depends on the host's range setting. */
   build: () => MelodyData
 }
+
+export type JamSongEntry = JamCatalogEntryBase & {
+  kind: 'song'
+  buildSong: () => JamSong
+}
+
+export type JamCatalogEntry = JamMelodyEntry | JamSongEntry
 
 // ── Exercise blueprints ──────────────────────────────────────────────
 // Notes are written at octave 4 and transposed to the host's range when
@@ -261,7 +281,7 @@ function drillToMelody(
 // ── Shelves ──────────────────────────────────────────────────────────
 
 /** Every exercise that reduces to a target contour, in catalogue order. */
-export function jamExerciseEntries(defaultOctave: number): JamCatalogEntry[] {
+export function jamExerciseEntries(defaultOctave: number): JamMelodyEntry[] {
   return Object.entries(JAM_DRILLS).map(([type, drill]) => ({
     id: `exercise:${type}`,
     kind: 'exercise' as const,
@@ -279,7 +299,7 @@ export function jamExerciseEntries(defaultOctave: number): JamCatalogEntry[] {
  */
 export function jamWeeklyEntry(
   weekly: WeeklyChallenge | null,
-): JamCatalogEntry | null {
+): JamMelodyEntry | null {
   if (weekly === null || weekly.targetItems.length === 0) return null
   return {
     id: `weekly:${weekly.id}`,
@@ -303,7 +323,7 @@ export function jamWeeklyEntry(
 export function jamAscentEntries(
   week: PathWeek | null,
   defaultOctave: number,
-): JamCatalogEntry[] {
+): JamMelodyEntry[] {
   if (week === null) return []
   return week.exercises.flatMap((type) => {
     const drill = JAM_DRILLS[type]
@@ -321,8 +341,35 @@ export function jamAscentEntries(
   })
 }
 
+/**
+ * Songs the room can sing.
+ *
+ * Only ones every peer can fetch (see jam-song-sources.ts). A null song
+ * yields an empty shelf rather than a disabled row -- offering something
+ * that cannot be picked is worse than not offering it.
+ */
+export function jamSongEntries(songs: Array<JamSong | null>): JamSongEntry[] {
+  return songs
+    .filter((s): s is JamSong => s !== null)
+    .map((song) => ({
+      id: `song:${song.id}`,
+      kind: 'song' as const,
+      name: song.title,
+      detail: [
+        song.artist,
+        song.lines.length > 0 ? `${song.lines.length} lines` : 'no lyrics yet',
+        song.durationSec > 0
+          ? `${Math.floor(song.durationSec / 60)}:${String(Math.round(song.durationSec % 60)).padStart(2, '0')}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      buildSong: () => song,
+    }))
+}
+
 /** Saved melodies -- the room's original and only shelf. */
-export function jamMelodyEntries(melodies: MelodyData[]): JamCatalogEntry[] {
+export function jamMelodyEntries(melodies: MelodyData[]): JamMelodyEntry[] {
   return melodies.map((melody) => ({
     id: `melody:${melody.id}`,
     kind: 'melody' as const,

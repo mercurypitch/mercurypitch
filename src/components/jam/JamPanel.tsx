@@ -6,14 +6,19 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { MicInsightHint } from '@/components/MicInsightHint'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
+import { loadDemoSong } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
-import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
+import type { JamSong } from '@/lib/jam/jam-song'
+import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import type { LyricsLineTiming } from '@/lib/jam/types'
+import { parseLrcFile } from '@/lib/lyrics-service'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import jamStyles from './Jam.module.css'
@@ -143,6 +148,34 @@ export const JamPanel: Component = () => {
   // not render, which is why the fetch never needs an error branch.
   const [weekly, setWeekly] = createSignal<WeeklyChallenge | null>(null)
 
+  /**
+   * The one song a room can sing today: its stems are already public, so
+   * every peer resolves the same URLs and nothing has to be transferred.
+   * Null until it loads, and null forever if the manifest is missing --
+   * the shelf then renders empty rather than offering a dead row.
+   */
+  const [demoSong, setDemoSong] = createSignal<JamSong | null>(null)
+
+  createEffect(() => {
+    if (jamState() !== 'active') return
+    void (async () => {
+      const manifest = await loadDemoSong()
+      if (manifest === null) return
+      let lines: LyricsLineTiming[] = []
+      const lyricsUrl = manifest.lyrics ?? ''
+      if (lyricsUrl.toLowerCase().endsWith('.lrc')) {
+        // Straight from the URL rather than the local lyrics db: the room
+        // wants the timings, not a copy of someone's edits, and every peer
+        // must end up with the same lines.
+        const text = await fetch(lyricsUrl)
+          .then((r) => (r.ok ? r.text() : ''))
+          .catch(() => '')
+        if (text !== '') lines = lrcToSongLines(parseLrcFile(text))
+      }
+      setDemoSong(demoSongToJamSong(manifest, lines))
+    })()
+  })
+
   createEffect(() => {
     if (jamState() !== 'active') return
     void getActiveWeekly()
@@ -161,6 +194,7 @@ export const JamPanel: Component = () => {
     const week = activePathWeek()
     const weeklyEntry = jamWeeklyEntry(weekly())
     return [
+      { label: 'Songs', entries: jamSongEntries([demoSong()]) },
       {
         label: "This week's challenge",
         entries: weeklyEntry === null ? [] : [weeklyEntry],
@@ -953,7 +987,17 @@ export const JamPanel: Component = () => {
                               <button
                                 class={panelStyles.pickItem}
                                 onClick={() => {
-                                  selectJamExercise(entry.build())
+                                  // A song and a drill run on different
+                                  // timelines and go through different
+                                  // store actions; the catalogue union
+                                  // makes forgetting this a compile error
+                                  // rather than a room that loads a song
+                                  // and waits for a beat that never comes.
+                                  if (entry.kind === 'song') {
+                                    selectJamSong(entry.buildSong())
+                                  } else {
+                                    selectJamExercise(entry.build())
+                                  }
                                   setShowExercisePicker(false)
                                 }}
                               >
