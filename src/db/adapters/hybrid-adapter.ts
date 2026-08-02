@@ -40,6 +40,7 @@ export const CLOUD_ENTITIES: ReadonlySet<string> = new Set([
   // catch swallowed them, and dev D1 held zero rows while the gallery
   // rendered happily from localStorage. See the drift test below.
   'voiceprints',
+  'userActivity',
 ])
 
 /**
@@ -60,6 +61,7 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
   // resolve empty rather than round-trip. The device copy is what the
   // gallery shows when nobody is signed in.
   'voiceprints',
+  'userActivity',
 ])
 
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {

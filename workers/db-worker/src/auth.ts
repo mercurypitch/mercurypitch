@@ -1407,6 +1407,8 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // Voiceprints are the account's measured voice history - personal data
   // that must not outlive the account.
   { table: 'voiceprints', column: 'userId' },
+  // What someone did is as personal as what they sang.
+  { table: 'userActivity', column: 'userId' },
   { table: 'emailVerifications', column: 'userId' },
   // League rows are per-user too: leaving them would keep a ghost entry in
   // this week's standings (rendered as Singer-<id>) and a point history for
