@@ -7,6 +7,7 @@ import { ringFill, startAscent } from '@/features/path/path-progress'
 import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { getZenExercise } from '@/features/zen/exercise-catalog'
 import { ascentGuidedAssignmentsForWeek, refreshGuidedContent, } from '@/features/zen/guided-content-store'
+import { showNotification } from '@/stores/notifications-store'
 import { openSingingZen, startExercise } from '@/stores/ui-store'
 import styles from './PathWeekGuide.module.css'
 
@@ -52,9 +53,24 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
   })
 
   function practiseToday(): void {
-    routine.startOrResume()
+    const template = routine.startOrResume()
     const current = routine.currentSegment()
-    if (current !== null) launchRoutineSegment(current)
+    if (current !== null) {
+      launchRoutineSegment(current)
+      return
+    }
+
+    // Today's routine is already finished, so currentSegment() is null and
+    // this button silently did nothing — the singer pressed the day's main
+    // CTA and got no response at all. Replay from the top instead.
+    //
+    // Deliberately NOT routine.reset(): that clears today's completion,
+    // and with it the streak credit the singer already earned. An encore
+    // should cost them nothing.
+    const first = template?.segments?.[0]
+    if (first === undefined) return
+    showNotification("Today's routine is done — running it again.", 'info')
+    launchRoutineSegment(first)
   }
 
   return (
@@ -171,7 +187,7 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
             class={`${styles.cta} path-cta`}
             onClick={practiseToday}
           >
-            Practise today · ~
+            {routine.isComplete() ? 'Practise again · ~' : 'Practise today · ~'}
             {Math.max(1, Math.round(routine.totalDurationSec() / 60) || 8)} min
           </button>
         </Show>

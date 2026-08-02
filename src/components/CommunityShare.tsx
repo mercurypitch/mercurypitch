@@ -8,13 +8,15 @@ import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
 import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
+import { fuzzyMatch } from '@/lib/fuzzy-match'
 import { generateId } from '@/lib/id'
-import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
+import { copyShareUrl, encodeMelodyForShare, generateShareFullUrl, } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
 import { bpm, getSessionHistory, keyName, melodyStore, scaleType, } from '@/stores'
 import { getAllMelodies } from '@/stores/melody-store'
@@ -318,11 +320,13 @@ export const CommunityShare: Component = () => {
     let result = sharedMelodies()
 
     if (searchQuery()) {
-      const query = searchQuery().toLowerCase()
+      // Fuzzy, not substring: "warmup" should still find "Warm-up", and a
+      // typo should not make the shelf look empty.
+      const query = searchQuery()
       result = result.filter(
         (m) =>
-          m.name.toLowerCase().includes(query) ||
-          (m.tags?.some((t) => t.toLowerCase().includes(query)) ?? false),
+          fuzzyMatch(query, m.name) ||
+          (m.tags?.some((t) => fuzzyMatch(query, t)) ?? false),
       )
     }
 
@@ -342,11 +346,9 @@ export const CommunityShare: Component = () => {
     let result = sharedSessions()
 
     if (searchQuery()) {
-      const query = searchQuery().toLowerCase()
+      const query = searchQuery()
       result = result.filter(
-        (s) =>
-          s.name.toLowerCase().includes(query) ||
-          s.author.toLowerCase().includes(query),
+        (s) => fuzzyMatch(query, s.name) || fuzzyMatch(query, s.author),
       )
     }
 
@@ -422,6 +424,32 @@ export const CommunityShare: Component = () => {
   }
 
   // Share a specific practice session.
+  /**
+   * Runs a singer could share: every finished attempt, whatever produced
+   * it. The picker used to read the local session-mode history, so
+   * exercises and challenges were unshareable and a singer who only did
+   * those saw an empty picker forever.
+   */
+  const [runRecords] = createResource(
+    () => [authVersion(), sessionRecordVersion()] as const,
+    async () => await loadSessionRecords(50),
+  )
+  const RUN_KIND: Record<string, string> = {
+    practice: 'session',
+    exercise: 'exercise',
+    challenge: 'challenge',
+    weekly: 'weekly challenge',
+  }
+  const shareableRuns = createMemo(() =>
+    (runRecords() ?? []).map((r) => ({
+      id: r.id,
+      name: r.melodyName || 'Practice session',
+      score: Math.round(r.score ?? 0),
+      kind: RUN_KIND[r.source ?? 'practice'] ?? 'session',
+      completedAt: new Date(r.endedAt ?? r.startedAt).getTime(),
+    })),
+  )
+
   const shareSession = (s: SessionResult) => {
     const shareable: SharedSession = {
       id: generateId(),
@@ -474,6 +502,37 @@ export const CommunityShare: Component = () => {
       () => showNotification('Share link copied to clipboard!', 'info'),
       () => showNotification(`Failed to copy link: ${link}`, 'error'),
     )
+  }
+
+  /**
+   * Open a shared item, rather than only offering its link.
+   *
+   * Both eye buttons carried no onClick at all — they looked like
+   * controls and did nothing. A melody opens through the same encoded
+   * share URL the copy button produces, so the app's existing
+   * load-from-URL path handles it and there is one format to maintain.
+   */
+  const openShared = (type: 'melody' | 'session', id: string) => {
+    if (type === 'melody') {
+      const melody = sharedMelodies().find((m) => m.id === id)
+      if (melody && melody.items.length > 0) {
+        window.location.href = generateShareFullUrl(
+          encodeMelodyForShare(
+            melody.items,
+            melody.bpm ?? 120,
+            melody.key,
+            melody.scale,
+            undefined,
+            melody.name,
+          ),
+        )
+        return
+      }
+      showNotification('That melody has no notes to open.', 'error')
+      return
+    }
+    // Sessions use the legacy share route, same as their copy link.
+    window.location.href = `${window.location.origin}${window.location.pathname}#/share?type=session&id=${encodeURIComponent(id)}`
   }
 
   // Tabs
@@ -616,8 +675,9 @@ export const CommunityShare: Component = () => {
                     </button>
                     <button
                       class={`${modalStyles.actionBtn} view-btn`}
-                      aria-label="View"
-                      title="View"
+                      onClick={() => openShared('melody', melody.id)}
+                      aria-label={`Open ${melody.name}`}
+                      title="Open this melody"
                     >
                       <span>
                         <IconEye />
@@ -632,19 +692,46 @@ export const CommunityShare: Component = () => {
                 class={`${modalStyles.emptyState} empty-state empty-state-compact`}
               >
                 <span class="empty-icon">{IconMelody()}</span>
-                <h3>No melodies shared yet</h3>
-                <p>
-                  Melodies you share appear here, and anyone with the link can
-                  open them.
-                </p>
-                <button
-                  class="primary-btn"
-                  onClick={() => setPickerType('melody')}
-                  aria-label="Share your first melody"
-                  title="Share your first melody"
+                {/* An active search means the shelf is not empty — the
+                    filter is. Saying "nothing shared yet" there sends
+                    someone off to re-share things they already have. */}
+                <Show
+                  when={searchQuery().trim() === ''}
+                  fallback={
+                    <>
+                      <h3>No melodies match "{searchQuery()}"</h3>
+                      <p>
+                        {sharedMelodies().length} shared melod
+                        {sharedMelodies().length === 1
+                          ? 'y is'
+                          : 'ies are'}{' '}
+                        here — try a different word, or clear the search.
+                      </p>
+                      <button
+                        class="primary-btn"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="Clear the search"
+                        title="Clear the search"
+                      >
+                        Clear search
+                      </button>
+                    </>
+                  }
                 >
-                  <IconShare /> Share a melody
-                </button>
+                  <h3>No melodies shared yet</h3>
+                  <p>
+                    Melodies you share appear here, and anyone with the link can
+                    open them.
+                  </p>
+                  <button
+                    class="primary-btn"
+                    onClick={() => setPickerType('melody')}
+                    aria-label="Share your first melody"
+                    title="Share your first melody"
+                  >
+                    <IconShare /> Share a melody
+                  </button>
+                </Show>
               </div>
             )}
           </div>
@@ -711,8 +798,9 @@ export const CommunityShare: Component = () => {
                     </button>
                     <button
                       class={`${modalStyles.actionBtn} view-btn`}
-                      aria-label="View"
-                      title="View"
+                      onClick={() => openShared('session', session.id)}
+                      aria-label={`Open ${session.name}`}
+                      title="Open this session"
                     >
                       <span>
                         <IconEye />
@@ -727,19 +815,41 @@ export const CommunityShare: Component = () => {
                 class={`${modalStyles.emptyState} empty-state empty-state-compact`}
               >
                 <span class="empty-icon">{IconSession()}</span>
-                <h3>No sessions shared yet</h3>
-                <p>
-                  Share a session to keep a record of how it went, and to let
-                  others sing along with it.
-                </p>
-                <button
-                  class="primary-btn"
-                  onClick={() => setPickerType('session')}
-                  aria-label="Share your first session"
-                  title="Share your first session"
+                <Show
+                  when={searchQuery().trim() === ''}
+                  fallback={
+                    <>
+                      <h3>No sessions match "{searchQuery()}"</h3>
+                      <p>
+                        {sharedSessions().length} shared session
+                        {sharedSessions().length === 1 ? ' is' : 's are'} here —
+                        try a different word, or clear the search.
+                      </p>
+                      <button
+                        class="primary-btn"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="Clear the search"
+                        title="Clear the search"
+                      >
+                        Clear search
+                      </button>
+                    </>
+                  }
                 >
-                  <IconShare /> Share a session
-                </button>
+                  <h3>No sessions shared yet</h3>
+                  <p>
+                    Share a session to keep a record of how it went, and to let
+                    others sing along with it.
+                  </p>
+                  <button
+                    class="primary-btn"
+                    onClick={() => setPickerType('session')}
+                    aria-label="Share your first session"
+                    title="Share your first session"
+                  >
+                    <IconShare /> Share a session
+                  </button>
+                </Show>
               </div>
             )}
           </div>
@@ -857,30 +967,42 @@ export const CommunityShare: Component = () => {
               </Show>
 
               <Show when={pickerType() === 'session'}>
-                <For each={getSessionHistory()}>
+                {/* Every finished run, not just session mode's local copy.
+                    This listed getSessionHistory(), which only session mode
+                    appends to and only when a run produced a scored item —
+                    so it read "no practice sessions yet" however much the
+                    singer had actually practised, and Community > Sessions
+                    could never fill up. */}
+                <For each={shareableRuns()}>
                   {(s) => (
                     <div class="share-picker-row">
                       <div class="share-picker-info">
-                        <span class="share-picker-name">
-                          {s.sessionName || s.name || 'Practice Session'}
-                        </span>
+                        <span class="share-picker-name">{s.name}</span>
                         <span class="share-picker-meta">
-                          {Math.round(s.score || 0)}% &middot;{' '}
+                          {s.score}% &middot; {s.kind} &middot;{' '}
                           {new Date(s.completedAt).toLocaleDateString()}
                         </span>
                       </div>
                       <button
                         class="primary-btn share-picker-action"
-                        onClick={() => shareSession(s)}
+                        onClick={() =>
+                          shareSession({
+                            name: s.name,
+                            sessionName: s.name,
+                            score: s.score,
+                            completedAt: s.completedAt,
+                          } as SessionResult)
+                        }
                       >
                         Share
                       </button>
                     </div>
                   )}
                 </For>
-                <Show when={getSessionHistory().length === 0}>
+                <Show when={shareableRuns().length === 0}>
                   <p class="share-picker-empty">
-                    No practice sessions yet — complete a session to share it.
+                    Nothing to share yet — finish a session, exercise or
+                    challenge and it will appear here.
                   </p>
                 </Show>
               </Show>

@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For } from 'solid-js'
 import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
-import { getSessionHistory } from '@/stores/practice-session-store'
+import { localDayKey, usePracticeActivity, } from '@/features/practice-intelligence/practice-activity'
 
 interface CalendarHeatmapProps {
   weeks?: number
@@ -29,15 +29,13 @@ function dayLevel(count: number, maxCount: number): DayCell['level'] {
 
 export const CalendarHeatmap: Component<CalendarHeatmapProps> = (props) => {
   const weeks = () => props.weeks ?? 12
+  // Session mode's local history counted only session mode. Exercises and
+  // challenges are practice too; the records table has all four.
+  const activity = usePracticeActivity()
 
   const grid = createMemo(() => {
-    const sessions = getSessionHistory()
     const countByDay = new Map<string, number>()
-
-    for (const s of sessions) {
-      const date = new Date(s.completedAt).toISOString().slice(0, 10)
-      countByDay.set(date, (countByDay.get(date) ?? 0) + 1)
-    }
+    for (const [date, day] of activity()) countByDay.set(date, day.count)
 
     const maxCount = Math.max(1, ...countByDay.values())
 
@@ -53,7 +51,7 @@ export const CalendarHeatmap: Component<CalendarHeatmapProps> = (props) => {
     for (let i = 0; i < weeks() * 7; i++) {
       const d = new Date(startDate)
       d.setDate(d.getDate() + i)
-      const dateStr = d.toISOString().slice(0, 10)
+      const dateStr = localDayKey(d.toISOString())
       const count = countByDay.get(dateStr) ?? 0
       cells.push({
         date: dateStr,

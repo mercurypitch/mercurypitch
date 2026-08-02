@@ -2574,6 +2574,106 @@
   transition: all 0.2s ease;
 }
 
+/* ── How a badge is earned ──────────────────────────────────────────
+   Achievements carry their requirement and a progress bar; badges showed
+   a name and a tier, so a locked one told the singer nothing about what
+   to go and do. The seed has carried `unlockCondition` all along.
+
+   A <details>, not a :hover tooltip — hover does not exist on a phone,
+   and the collection has to be readable on one. Tap opens it; pointer
+   users also get it on hover, below. */
+.badge-item {
+  position: relative;
+}
+
+.badge-hint {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.badge-hint-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+  /* The default disclosure triangle has no place inside a 20px circle. */
+  list-style: none;
+}
+
+.badge-hint-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.badge-hint-toggle:hover,
+.badge-hint[open] .badge-hint-toggle {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.badge-hint-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.badge-hint-body {
+  position: absolute;
+  top: 26px;
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 210px;
+  margin: 0;
+  padding: 9px 11px;
+  text-align: left;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.badge-hint-earned {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+/* Pointer users get it without a click. Touch devices report `hover:
+   none`, so they are untouched by this and keep the tap behaviour. */
+@media (hover: hover) {
+  .badge-item:hover .badge-hint-body {
+    display: block;
+  }
+  .badge-hint:not([open]) .badge-hint-body {
+    display: none;
+  }
+}
+
+/* The last cards in a row would push their panel off the right edge. */
+.badges-grid > .badge-item:nth-child(4n) .badge-hint-body,
+.badges-grid > .badge-item:last-child .badge-hint-body {
+  right: 0;
+  left: auto;
+}
+
 .badge-item.earned {
   border: 2px solid var(--accent);
   background: linear-gradient(135deg, rgba(var(--accent), 0.1), transparent);
@@ -2728,38 +2828,13 @@
 }
 
 /* Challenge Modal */
-.challenge-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+/* The challenge modal now uses the shared Modal.module.css overlay, like
+   every other modal in the app. It used to hand-roll a fixed wrapper plus
+   an absolutely positioned .modal-backdrop SIBLING of the content — and
+   the module's .modalContent carries no `position`, so the scrim painted
+   over the dialog instead of behind it. Only the blur is kept, scoped. */
+.challenge-modal-overlay {
   backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  position: relative;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
 }
 
 .modal-close {

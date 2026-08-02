@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createMemo, For } from 'solid-js'
-import { sessionResults } from '@/stores'
+import { describeDay, localDayKey, usePracticeActivity, } from '@/features/practice-intelligence/practice-activity'
 import styles from './StreakCalendar.module.css'
 
 interface StreakCalendarProps {
@@ -10,12 +10,12 @@ interface StreakCalendarProps {
 const DAY_MS = 86400000
 
 export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
+  // Every practice record, not just session mode's local copy — exercises
+  // and challenges are practice too, and the calendar used to ignore both.
+  const activity = usePracticeActivity()
   const activityMap = createMemo(() => {
     const map = new Map<string, number>()
-    for (const entry of sessionResults()) {
-      const date = new Date(entry.completedAt).toISOString().slice(0, 10)
-      map.set(date, (map.get(date) ?? 0) + 1)
-    }
+    for (const [date, day] of activity()) map.set(date, day.count)
     return map
   })
 
@@ -27,7 +27,7 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
 
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today.getTime() - i * DAY_MS)
-      const dateStr = d.toISOString().slice(0, 10)
+      const dateStr = localDayKey(d.toISOString())
       currentWeek.push({
         date: dateStr,
         count: activityMap().get(dateStr) ?? 0,
@@ -78,7 +78,7 @@ export const StreakCalendar: Component<StreakCalendarProps> = (props) => {
                 {(day) => (
                   <div
                     class={cellClass(day.count)}
-                    title={`${formatDate(day.date)}: ${day.count} session${day.count !== 1 ? 's' : ''}`}
+                    title={`${formatDate(day.date)} — ${describeDay(activity().get(day.date))}`}
                   />
                 )}
               </For>
