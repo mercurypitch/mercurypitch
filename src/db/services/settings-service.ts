@@ -18,7 +18,7 @@ import { createEffect } from 'solid-js'
 import { getDb } from '@/db'
 import type { UserSetting } from '@/db/entities'
 import { hasValidToken } from '@/db/services/auth-service'
-import { authVersion } from '@/db/services/user-service'
+import { authVersion, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -78,6 +78,39 @@ const MERGE_ON_PULL: Record<
   },
 }
 
+/**
+ * Which account the device's merge-key values belong to.
+ *
+ * Merging is only safe when the local side is the SAME person. Logout does
+ * not clear localStorage (auth-service.ts `logout`), so on a shared computer
+ * one singer's progress is still sitting there when the next one signs in —
+ * and a union is irreversible, so their Ascent would permanently absorb
+ * practice days they never did. Unset means the local copy was made
+ * signed-out: that IS the person now signing in, and merging is exactly
+ * what they want (this is the "I practised before making an account" path).
+ *
+ * Same rule the voiceprints take from decision D2, kept deliberately
+ * conservative: when the owner does not match, the account's copy wins and
+ * the device's is left alone rather than uploaded.
+ */
+const MERGE_OWNER_KEY = 'mp_sync_owner'
+
+function localMergeOwner(): string | null {
+  try {
+    return localStorage.getItem(MERGE_OWNER_KEY)
+  } catch {
+    return null
+  }
+}
+
+function claimMergeOwner(userId: string): void {
+  try {
+    localStorage.setItem(MERGE_OWNER_KEY, userId)
+  } catch {
+    /* private mode — merging simply stays conservative next time */
+  }
+}
+
 /** Safety valve: skip anything suspiciously large for a preference. */
 const MAX_VALUE_BYTES = 8 * 1024
 
@@ -132,11 +165,15 @@ export async function pullCloudSettings(): Promise<void> {
     const repo = db.getRepository<UserSetting>('userSettings')
     const rows = await repo.findAll()
     cloudRowIds.clear()
+    // Whose progress is sitting on this device? Only merge with our own.
+    const me = getUserId()
+    const owner = localMergeOwner()
+    const mayMerge = owner === null || owner === me
     for (const row of rows) {
       if (!isSyncedKey(row.key)) continue
       cloudRowIds.set(row.key, row.id)
       const local = localStorage.getItem(row.key)
-      const merge = MERGE_ON_PULL[row.key]
+      const merge = mayMerge ? MERGE_ON_PULL[row.key] : undefined
       const next = merge === undefined ? row.value : merge(local, row.value)
       if (local !== next) applyPersistedValue(row.key, next)
       // A merge can leave the account behind the device (local-only days).
@@ -146,14 +183,21 @@ export async function pullCloudSettings(): Promise<void> {
 
     // Backfill: a climb that started before this device ever signed in has
     // no cloud row at all, and nothing would upload it until the next
-    // practice day. Seed it now so the account owns it immediately.
-    for (const key of Object.keys(MERGE_ON_PULL)) {
-      if (cloudRowIds.has(key)) continue
-      const local = localStorage.getItem(key)
-      if (local !== null && local.length <= MAX_VALUE_BYTES) {
-        void pushSetting(key, local)
+    // practice day. Seed it now so the account owns it immediately — but
+    // only when the device's copy is ours to give (see MERGE_OWNER_KEY).
+    if (mayMerge) {
+      for (const key of Object.keys(MERGE_ON_PULL)) {
+        if (cloudRowIds.has(key)) continue
+        const local = localStorage.getItem(key)
+        if (local !== null && local.length <= MAX_VALUE_BYTES) {
+          void pushSetting(key, local)
+        }
       }
     }
+
+    // From here the device's copy belongs to this account, so the next
+    // signer-in gets the account's own data instead of inheriting ours.
+    if (me !== '') claimMergeOwner(me)
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
   }
