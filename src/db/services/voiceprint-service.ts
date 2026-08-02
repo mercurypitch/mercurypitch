@@ -20,8 +20,8 @@
 
 import { getDb } from '@/db'
 import type { Voiceprint, VoiceprintSource } from '@/db/entities'
-import { hasValidToken } from '@/db/services/auth-service'
-import { getUserId } from '@/db/services/user-service'
+import { hasUpgradedAccount, hasValidToken } from '@/db/services/auth-service'
+import { getDeviceId, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { MirrorSummary } from '@/lib/mirror/metrics'
 
@@ -118,10 +118,15 @@ export async function saveVoiceprint(input: {
     twin: input.twin,
     source: input.source,
     takenAt: input.takenAt ?? new Date().toISOString(),
-    // The token decides the tag, not the local device id — the device id
-    // survives sign-in/out and would make every signed-out take look like
-    // it belonged to whoever signs in next.
-    madeBy: tokenHeld() ? getUserId() : MADE_ANONYMOUSLY,
+    // A REAL account decides the tag, not merely a held token. Lazily
+    // provisioned anonymous identities hold valid tokens too (see
+    // auth-service's hasUpgradedAccount), and tagging with one stranded
+    // the take: it matched neither MADE_ANONYMOUSLY, so it was never
+    // offered for adoption, nor any account's id, so it never showed up
+    // again after signing in. Not the device id either — that survives
+    // sign-in/out and would make every signed-out take look like it
+    // belonged to whoever signs in next.
+    madeBy: realAccountHeld() ? getUserId() : MADE_ANONYMOUSLY,
   }
 
   writeLocal([record, ...loadLocalVoiceprints()])
@@ -129,10 +134,10 @@ export async function saveVoiceprint(input: {
   return record
 }
 
-/** hasValidToken, guarded like cloudAvailable — a throw must never lose a save. */
-function tokenHeld(): boolean {
+/** hasUpgradedAccount, guarded like cloudAvailable — a throw must never lose a save. */
+function realAccountHeld(): boolean {
   try {
-    return hasValidToken()
+    return hasUpgradedAccount()
   } catch {
     return false
   }
@@ -292,13 +297,31 @@ async function runSync(): Promise<number> {
 
 const ADOPT_DECLINE_KEY = 'mercurypitch.voiceprints.adoptDecline.v1'
 
-/** Device takes the signed-in account could adopt (anonymous or legacy). */
+/**
+ * Device takes the signed-in account could adopt: made signed-out, or made
+ * under this device's own anonymous identity.
+ *
+ * The second case is the repair. Until 2026-08-02 a take made while an
+ * anonymous token was held got tagged with that identity's id — which is
+ * the device id — so it belonged to nobody reachable and vanished the
+ * moment a real account signed in. Offering it is safe: the device id is
+ * per-browser, never another person's account, and adoption stays
+ * prompt-gated exactly like a signed-out take (decision D2).
+ *
+ * When the account was an in-place upgrade of this device its id IS the
+ * device id, so those takes are already the account's own — excluded here
+ * rather than offered back to their owner.
+ */
 export function listAdoptableVoiceprints(): VoiceprintRecord[] {
   if (!cloudAvailable()) return []
+  const me = getUserId()
+  const device = getDeviceId()
   return sortNewestFirst(
-    loadLocalVoiceprints().filter(
-      (record) => recordMadeBy(record) === MADE_ANONYMOUSLY,
-    ),
+    loadLocalVoiceprints().filter((record) => {
+      const madeBy = recordMadeBy(record)
+      if (madeBy === MADE_ANONYMOUSLY) return true
+      return device !== '' && madeBy === device && madeBy !== me
+    }),
   )
 }
 

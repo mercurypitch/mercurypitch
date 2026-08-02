@@ -79,9 +79,14 @@ device's latest print.)
 **Ubiquitous:** Every record shall carry `madeBy`: the signed-in user's id at
 capture, or `'anonymous'` when nobody was signed in. Records from before
 tagging (no `madeBy`) count as anonymous. The tag is device-side only and is
-never sent to the cloud. Note: a lazily provisioned anonymous identity holds
-a token, so its takes tag with that identity's id and follow it through an
-in-place upgrade to a real account.
+never sent to the cloud.
+
+A **real** account decides the tag, not merely a held token. A lazily
+provisioned anonymous identity holds a valid token too, and tagging with it
+was only safe on the in-place-upgrade path: sign in to an account created
+somewhere else and the take matched neither `'anonymous'` (never offered)
+nor the account id (never shown) — stranded on the device, invisible
+forever. Amended 2026-08-02 after exactly that happened on dev.
 
 ### REQ-VPR-014 — Unclaimed takes are offered, never taken
 **While** signed in **and** the device holds anonymous/legacy records, the
@@ -95,6 +100,14 @@ is the consent the notice would ask for; Google and existing-account
 sign-ins stay prompt-gated. Records tagged to a **different** account are
 never offered and never adopted — their owner sees them by signing in;
 everyone sees them signed out.
+
+Records tagged with this **device's own id** are treated as unclaimed: an
+anonymous identity's id IS the device id (the worker keys
+`/api/auth/anonymous` on it), so they were made here before the device
+belonged to anyone. Safe to offer — a device id is per-browser, never
+another person's account — and it recovers the takes stranded by the
+pre-2026-08-02 tagging. Excluded when the account id equals the device id,
+because an in-place upgrade means those takes are already the account's.
 
 ### REQ-VPR-015 — "Not now" is quiet, per account
 **When** the notice is declined, it shall stay hidden **for that account**
