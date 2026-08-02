@@ -11,8 +11,9 @@
 // what keeps a room together across the join.
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount, Show } from 'solid-js'
-import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamSong, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongSeek, jamSongStop, setJamSongPositionSec, } from '@/stores/jam-store'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamSong, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongSeek, jamSongStop, setJamSongPositionSec, } from '@/stores/jam-store'
+import { JamGuideVocal } from './JamGuideVocal'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
@@ -29,6 +30,14 @@ const RESYNC_THRESHOLD_SEC = 0.35
 
 export const JamSongStage: Component = () => {
   let audioRef: HTMLAudioElement | undefined
+  let vocalRef: HTMLAudioElement | undefined
+
+  /**
+   * Guide-vocal level, per person and not room state -- see JamGuideVocal.
+   * Off by default: the room is karaoke, and someone who knows the song
+   * does not want the original singer in their ear.
+   */
+  const [guideVolume, setGuideVolume] = createSignal(0)
 
   // The host's element drives the store; everyone else's follows it.
   onMount(() => {
@@ -114,6 +123,30 @@ export const JamSongStage: Component = () => {
   })
 
   /**
+   * The guide vocal is a second element on the same clock.
+   *
+   * Kept in step with the backing track rather than driven independently:
+   * two elements playing the same song a beat apart is worse than no
+   * guide at all. It follows a tighter threshold than the peer resync
+   * because these two are on ONE device with no network between them --
+   * any gap here is a bug, not latency.
+   */
+  createEffect(() => {
+    const guide = vocalRef
+    const main = audioRef
+    if (guide === undefined || main === undefined) return
+    guide.volume = guideVolume()
+    if (jamExercisePlaying() && !jamExercisePaused() && guideVolume() > 0) {
+      if (Math.abs(guide.currentTime - main.currentTime) > 0.12) {
+        guide.currentTime = main.currentTime
+      }
+      void guide.play().catch(() => {})
+    } else {
+      guide.pause()
+    }
+  })
+
+  /**
    * Correct drift, guests only, and only past the threshold -- a seek is
    * audible, so chasing 50ms of jitter is worse than the jitter.
    *
@@ -139,6 +172,25 @@ export const JamSongStage: Component = () => {
             preload="auto"
             crossorigin="anonymous"
           />
+          <Show when={song().stems.vocal}>
+            {(url) => (
+              <audio
+                ref={vocalRef}
+                src={url()}
+                preload="auto"
+                crossorigin="anonymous"
+              />
+            )}
+          </Show>
+
+          <Show
+            when={song().origin === 'local' && jamConnectedPeers().length > 0}
+          >
+            <div class={styles.localWarning} role="note">
+              Only you can hear this — it is on your device, not shared with the
+              room yet. Everyone else sees the words and the pitch lanes.
+            </div>
+          </Show>
 
           <div class={styles.transport}>
             <span class={styles.title}>
@@ -162,6 +214,10 @@ export const JamSongStage: Component = () => {
               canSeek={jamIsHost()}
               onSeek={(to) => seekTo(to)}
             />
+
+            <Show when={song().stems.vocal}>
+              <JamGuideVocal volume={guideVolume} onVolume={setGuideVolume} />
+            </Show>
 
             <Show when={jamIsHost()}>
               <div class={styles.buttons}>

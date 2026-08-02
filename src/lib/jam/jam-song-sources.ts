@@ -50,6 +50,45 @@ export function stripWordTimings(text: string): string {
 }
 
 /**
+ * One of the user's own separated sessions, as a room song.
+ *
+ * Marked `origin: 'local'`, which is the honest label: the stems live in
+ * THIS browser's IndexedDB behind a blob URL that means nothing on
+ * another device. The host can sing it today; peers cannot hear it until
+ * the peer-to-peer transfer lands (docs/plans/jam-karaoke-songs.md §1b).
+ *
+ * Built anyway rather than hidden, because the whole path -- picking,
+ * loading, lyrics, lanes, transport -- is the same one the transfer will
+ * eventually feed, and a shelf you cannot see is a feature nobody can
+ * tell you is wrong.
+ */
+export function sessionToJamSong(
+  session: { sessionId: string; originalFile?: { name?: string } },
+  urls: { instrumental: string; vocal?: string },
+  lines: LyricsLineTiming[] = [],
+  durationSec = 0,
+): JamSong | null {
+  if (urls.instrumental === '') return null
+  return {
+    id: `session:${session.sessionId}`,
+    // The filename is the only name a separated session has; strip the
+    // extension so the shelf does not read "my song.mp3".
+    title: (session.originalFile?.name ?? 'Untitled')
+      .replace(/\.[^.]+$/, '')
+      .trim(),
+    stems: {
+      instrumental: urls.instrumental,
+      ...(urls.vocal === undefined || urls.vocal === ''
+        ? {}
+        : { vocal: urls.vocal }),
+    },
+    lines,
+    durationSec,
+    origin: 'local',
+  }
+}
+
+/**
  * The Karaoke Night demo as a room song.
  *
  * This is the one song that needs no transfer: its stems are already on

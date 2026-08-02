@@ -160,19 +160,31 @@ export function restAt(
  * refused here with a reason rather than loaded into a room where half the
  * people would sit in silence wondering what broke.
  */
-export function songPlayableInRoom(song: JamSong): {
-  ok: boolean
-  reason?: string
-} {
-  if (song.origin === 'local') {
+export function songPlayableInRoom(
+  song: JamSong,
+  peerCount = 0,
+): { ok: boolean; reason?: string; warning?: string } {
+  // A local song plays perfectly well for the person who owns it. It is
+  // only a problem once somebody else is in the room expecting to hear
+  // it, so refuse on THAT rather than on the song -- practising alone
+  // with your own material is the obvious thing to want, and blocking it
+  // to protect a case that is not happening is just being unhelpful.
+  if (song.origin === 'local' && peerCount > 0) {
     return {
       ok: false,
       reason:
-        'This song is only on your device. Sharing your own songs with a room is coming — for now, pick one everybody can load.',
+        'This song is only on your device, so nobody else in the room could hear it. Sharing your own songs is coming — for now pick one everybody can load, or sing it alone.',
     }
   }
   if (!song.stems.instrumental) {
     return { ok: false, reason: 'This song has no backing track to sing over.' }
+  }
+  if (song.origin === 'local') {
+    return {
+      ok: true,
+      warning:
+        'Only you can hear this one — it is on your device, not shared with the room yet.',
+    }
   }
   return { ok: true }
 }

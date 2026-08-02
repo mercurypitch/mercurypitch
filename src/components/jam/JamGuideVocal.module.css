@@ -1,0 +1,57 @@
+/* JamGuideVocal — collapsed button, expands to a slider. */
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 2px 6px 2px 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(8px);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.btnMuted {
+  color: var(--text-secondary);
+}
+
+/* Collapsed by default. Width rather than display, so the expansion is a
+   slide rather than a jump and the transport bar does not reflow. */
+.slider {
+  width: 0;
+  opacity: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  transition:
+    width 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.controlOpen .slider {
+  width: 84px;
+  opacity: 1;
+}
+
+/* Touch has no hover, so it stays open -- a control that needs a hover to
+   reach is a control a phone cannot use. */
+@media (hover: none) {
+  .slider {
+    width: 84px;
+    opacity: 1;
+  }
+}
