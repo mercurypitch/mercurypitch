@@ -18,6 +18,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import { computeVoicePeaks } from '@/lib/voice-capture'
+import type { VoiceAtlasContourPayloadV1 } from '@/lib/voice-contour'
 import { IconShatter } from './icons'
 
 export interface GlassTake {
@@ -28,6 +29,8 @@ export interface GlassTake {
   durationSec: number
   /** Peak buckets for the waveform (null: decode pending/failed). */
   peaks: Float32Array | null
+  /** Compact raw-F0 map captured in the same pass as this recording. */
+  contour: VoiceAtlasContourPayloadV1
   /** This take broke the glass. */
   shattered: boolean
   /** Derived numbers saved beside an explicitly kept take. */

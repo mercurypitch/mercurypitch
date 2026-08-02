@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GlassTake } from '@/features/glass/take-strip'
 import { TakeStrip } from '@/features/glass/take-strip'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 function take(saveState: GlassTake['saveState'] = 'idle'): GlassTake {
   return {
@@ -10,6 +11,7 @@ function take(saveState: GlassTake['saveState'] = 'idle'): GlassTake {
     blob: new Blob(),
     durationSec: 4.2,
     peaks: new Float32Array([0.2, 0.7, 0.4]),
+    contour: encodeVoiceAtlasContour([], { source: 'f0-stream-yin-v1' }),
     shattered: false,
     metrics: {
       meanAbsCents: 12,

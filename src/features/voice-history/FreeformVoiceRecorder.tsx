@@ -11,9 +11,11 @@ import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-pro
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
+import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, inspectVoiceTake } from '@/lib/voice-capture'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FreeformThreadTarget, FreeformVoiceTakeCapture, } from './freeform-voice-take'
 import { keepFreeformVoiceTake } from './freeform-voice-take'
 import styles from './FreeformVoiceRecorder.module.css'
@@ -60,6 +62,14 @@ function createCaptureAudioContext(): AudioContext | null {
   } catch {
     return null
   }
+}
+
+/** Stop one contour stream, preserving its raw frames before graph teardown. */
+export function drainPitchStream(stream: F0Stream | null): PitchFrame[] {
+  if (stream === null) return []
+  const frames = stream.takeFrames()
+  stream.dispose()
+  return frames
 }
 
 export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
@@ -113,10 +123,10 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     }
   }
 
-  function disposePitchStream(): void {
-    pitchStream?.takeFrames()
-    pitchStream?.dispose()
+  function disposePitchStream(): PitchFrame[] {
+    const current = pitchStream
     pitchStream = null
+    return drainPitchStream(current)
   }
 
   function clearPreview(): void {
@@ -262,12 +272,18 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     const run = activeRun
     const fallbackDurationMs = Math.max(0, Date.now() - startedAt)
     recorder = null
-    disposePitchStream()
+    const contourFrames = disposePitchStream()
     clearTimers()
     setElapsedMs(fallbackDurationMs)
     setState('processing')
     releaseMic()
-    void finishRecording(currentRecorder, context, run, fallbackDurationMs)
+    void finishRecording(
+      currentRecorder,
+      context,
+      run,
+      fallbackDurationMs,
+      contourFrames,
+    )
   }
 
   async function finishRecording(
@@ -275,6 +291,7 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
     context: AudioContext | null,
     run: number,
     fallbackDurationMs: number,
+    contourFrames: readonly PitchFrame[],
   ): Promise<void> {
     const blob = await currentRecorder.stop()
     currentRecorder.dispose()
@@ -304,6 +321,9 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
       durationMs: inspection.durationMs,
       peaks: inspection.peaks,
       capturedAt,
+      contour: encodeVoiceAtlasContour(contourFrames, {
+        source: 'f0-stream-yin-v1',
+      }),
     }
     setCapture(nextCapture)
     setPreviewUrl(URL.createObjectURL(blob))

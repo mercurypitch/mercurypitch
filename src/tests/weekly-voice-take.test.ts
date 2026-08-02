@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { keepWeeklyLegendVoiceTake, weeklyLegendComparisonKey, weeklyLegendThreadTitle, } from '@/features/challenges/weekly-voice-take'
 import type { ExerciseSessionVoiceTake } from '@/features/exercises/use-base-exercise'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 const { saveVoiceTakeMock } = vi.hoisted(() => ({
   saveVoiceTakeMock: vi.fn(),
@@ -15,6 +16,7 @@ const take: ExerciseSessionVoiceTake = {
   durationMs: 6200,
   peaks: new Float32Array([0.2, 0.7]),
   capturedAt: '2026-08-01T12:00:00.000Z',
+  contour: encodeVoiceAtlasContour([], { source: 'practice-engine-v1' }),
   config: {
     type: 'sight-singing',
     targetNotes: ['G4', 'A4', 'B4'],
@@ -72,6 +74,7 @@ describe('Weekly Legend voice take', () => {
         comparisonKey: 'legend:week-31:v1',
         capturedAt: take.capturedAt,
         blob: take.blob,
+        contour: take.contour,
         context: expect.objectContaining({
           weeklyChallengeId: 'week-31',
           challengeTitle: 'The Impossible Note',

@@ -1,3 +1,4 @@
+import { Dexie } from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 
@@ -12,8 +13,10 @@ vi.mock('@/db', () => ({
 import { ensurePersistentStorage } from '@/db'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { CLOUD_ENTITIES, HybridAdapter } from '@/db/adapters/hybrid-adapter'
-import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '@/db/entities'
-import { deleteVoiceTake, deleteVoiceThread, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, saveVoiceTake, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import type { VoiceTakeAudioRecord, VoiceTakeContourRecord, VoiceTakeRecord, } from '@/db/entities'
+import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, saveVoiceTake, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { createVoiceReflection, parseVoiceReflections, } from '@/features/voice-history/voice-reflections'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
@@ -35,6 +38,14 @@ function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
     context: { targetMidi: 60, targetLabel: 'C4', rep: 1 },
     metrics: { meanAbsCents: 12, bestLockSec: 1.4 },
     metricsVersion: 1,
+    contour: encodeVoiceAtlasContour(
+      [
+        { t: 0, f0: 261.63, conf: 0.94, rms: 0.12 },
+        { t: 0.04, f0: 263.1, conf: 0.91, rms: 0.3 },
+        { t: 0.08, f0: 0, conf: 0.08, rms: 0.04 },
+      ],
+      { source: 'f0-stream-yin-v1' },
+    ),
   }
 }
 
@@ -66,6 +77,11 @@ describe('voice take persistence', () => {
       meanAbsCents: 12,
       bestLockSec: 1.4,
     })
+    expect(result.value).toMatchObject({
+      contourVersion: 1,
+      contourPointCount: 3,
+    })
+    expect(result.value!.contourBytes).toBeGreaterThan(0)
 
     const audio = await getVoiceTakeBlob(result.value!.id)
     expect(audio?.type).toBe('audio/webm')
@@ -78,7 +94,40 @@ describe('voice take persistence', () => {
       reader.readAsArrayBuffer(audio!)
     })
     expect([...new Uint8Array(bytes)]).toEqual([1, 2, 3, 4])
+    const contour = await getVoiceTakeContour(result.value!.id)
+    expect(contour).toMatchObject({ source: 'f0-stream-yin-v1' })
+    expect(contour?.points[0]).toMatchObject({ timeMs: 0, midiCents: 6000 })
+    expect(contour?.points[0]?.confidence).toBeCloseTo(0.94, 2)
+    expect(await getVoiceStorageSnapshot()).toMatchObject({
+      takeCount: 1,
+      voiceBytes: 4 + result.value!.contourBytes!,
+    })
     expect(ensurePersistentStorage).toHaveBeenCalledWith('voice-takes')
+  })
+
+  it('keeps legacy takes playable when no Atlas contour exists', async () => {
+    const legacyDraft = { ...draft(), contour: undefined }
+    const result = await saveVoiceTake(legacyDraft)
+
+    expect(result.ok).toBe(true)
+    expect(result.value!.contourVersion).toBeUndefined()
+    expect(await getVoiceTakeContour(result.value!.id)).toBeNull()
+    expect(await getVoiceTakeBlob(result.value!.id)).not.toBeNull()
+  })
+
+  it('treats corrupt or unknown contour rows as an unavailable Atlas', async () => {
+    const result = await saveVoiceTake({ ...draft(), contour: undefined })
+    const contourRepo =
+      adapter.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+    await contourRepo.create({
+      takeId: result.value!.id,
+      contourVersion: 99,
+      analysisSource: 'future-analyser',
+      pointCount: 1,
+      payloadJson: '{"v":99,"p":[]}',
+    })
+
+    expect(await getVoiceTakeContour(result.value!.id)).toBeNull()
   })
 
   it('returns an actionable failure when the local blob cannot be read', async () => {
@@ -118,6 +167,29 @@ describe('voice take persistence', () => {
         favorite: true,
       }),
     ).toMatchObject({ title: 'My C4 baseline', favorite: true })
+  })
+
+  it('stores bounded subjective reflections on take metadata', async () => {
+    const saved = await saveVoiceTake(draft())
+    const reflection = createVoiceReflection({
+      id: 'notice-1',
+      kind: 'curious',
+      position: 0.42,
+      note: 'The onset feels different here.',
+      createdAt: '2026-08-02T12:00:00.000Z',
+    })
+
+    const updated = await updateVoiceTakeReflections(saved.value!.id, [
+      reflection,
+    ])
+
+    expect(updated?.reflectionsVersion).toBe(1)
+    expect(
+      parseVoiceReflections(
+        updated?.reflectionsJson,
+        updated?.reflectionsVersion,
+      ),
+    ).toEqual([reflection])
   })
 
   it('renames every take in a freeform thread without changing its identity', async () => {
@@ -179,10 +251,12 @@ describe('voice take persistence', () => {
 
     expect(await deleteVoiceTake(first.value!.id)).toBe(true)
     expect(await getVoiceTakeBlob(first.value!.id)).toBeNull()
+    expect(await getVoiceTakeContour(first.value!.id)).toBeNull()
     expect(await listVoiceTakes()).toHaveLength(2)
 
     expect(await deleteVoiceThread(second.value!.comparisonKey)).toBe(true)
     expect(await getVoiceTakeBlob(second.value!.id)).toBeNull()
+    expect(await getVoiceTakeContour(second.value!.id)).toBeNull()
     expect((await listVoiceTakes()).map((take) => take.id)).toEqual([
       otherThread.value!.id,
     ])
@@ -190,6 +264,7 @@ describe('voice take persistence', () => {
     expect(await wipeVoiceTakes()).toBe(true)
     expect(await listVoiceTakes()).toEqual([])
     expect(await getVoiceTakeBlob(otherThread.value!.id)).toBeNull()
+    expect(await getVoiceTakeContour(otherThread.value!.id)).toBeNull()
   })
 
   it('clears local voice stores through the preview HybridAdapter path', async () => {
@@ -205,6 +280,7 @@ describe('voice take persistence', () => {
       expect(await wipeVoiceTakes()).toBe(true)
       expect(await listVoiceTakes()).toEqual([])
       expect(await getVoiceTakeBlob(saved.value!.id)).toBeNull()
+      expect(await getVoiceTakeContour(saved.value!.id)).toBeNull()
       expect(cloudTransaction).not.toHaveBeenCalled()
     } finally {
       await hybrid.destroy()
@@ -223,7 +299,7 @@ describe('voice take Dexie schema', () => {
     await dexie.destroy()
   })
 
-  it('creates the v6 metadata and audio stores', async () => {
+  it('creates the v7 metadata, audio, and contour stores', async () => {
     const take = await dexie
       .getRepository<VoiceTakeRecord>('voiceTakes')
       .create({
@@ -247,6 +323,16 @@ describe('voice take Dexie schema', () => {
         size: 4,
         data: new Uint8Array([1, 2, 3, 4]).buffer,
       })
+    const contour = await dexie
+      .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+      .create({
+        takeId: take.id,
+        contourVersion: 1,
+        analysisSource: 'f0-stream-yin-v1',
+        pointCount: 1,
+        payloadJson:
+          '{"v":1,"s":"f0-stream-yin-v1","hz":30,"p":[[0,6000,900,200]],"r":[6000,6000],"vr":1}',
+      })
 
     expect(
       await dexie
@@ -258,10 +344,55 @@ describe('voice take Dexie schema', () => {
         .getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
         .findById(audio.id),
     ).toMatchObject({ takeId: take.id, size: 4 })
+    expect(
+      await dexie
+        .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+        .findById(contour.id),
+    ).toMatchObject({ takeId: take.id, pointCount: 1 })
   })
 
-  it('keeps both voice stores out of cloud routing', () => {
+  it('upgrades v6 history without requiring a contour row', async () => {
+    await dexie.destroy()
+    const legacy = new Dexie('MercuryPitchDB')
+    legacy.version(6).stores({
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
+    })
+    await legacy.open()
+    await legacy.table('voiceTakes').put({
+      id: 'legacy-take',
+      createdAt: '2026-07-01T12:00:00.000Z',
+      updatedAt: '2026-07-01T12:00:00.000Z',
+      source: 'freeform',
+      comparisonKey: 'freeform:legacy:v1',
+      contextVersion: 1,
+      capturedAt: '2026-07-01T12:00:00.000Z',
+      durationMs: 1000,
+      mimeType: 'audio/webm',
+      sizeBytes: 2,
+      peaks: [0.2],
+      title: 'Legacy take',
+      favorite: false,
+      contextJson: '{}',
+    })
+    legacy.close()
+
+    dexie = new DexieAdapter()
+    expect(
+      await dexie
+        .getRepository<VoiceTakeRecord>('voiceTakes')
+        .findById('legacy-take'),
+    ).toMatchObject({ title: 'Legacy take' })
+    expect(
+      await dexie
+        .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+        .findAll(),
+    ).toEqual([])
+  })
+
+  it('keeps every voice store out of cloud routing', () => {
     expect(CLOUD_ENTITIES.has('voiceTakes')).toBe(false)
     expect(CLOUD_ENTITIES.has('voiceTakeAudio')).toBe(false)
+    expect(CLOUD_ENTITIES.has('voiceTakeContours')).toBe(false)
   })
 })
