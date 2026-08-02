@@ -4153,3 +4153,57 @@
     flex: 1 1 auto;
   }
 }
+
+/* ── Room tone ───────────────────────────────────────────────────── */
+/* The Community tab sits in the same world as the jam rooms, so it gets
+   the same treatment: one quiet backdrop, pinned behind the content, with
+   a 4K tier for hi-DPI screens (see image-sharpness-playbook.md).
+ *
+ * A pseudo-element rather than a markup change, and `isolation: isolate`
+ * so the negative z-index cannot escape behind the page background.
+ *
+ * The art earns its keep by being almost entirely empty on the left two
+ * thirds — where the cards are — so no dimming scrim is needed. A
+ * backdrop that has to be dimmed to be legible is the wrong backdrop, and
+ * the mask below only fades its bottom edge into the page rather than
+ * holding the art down. */
+.community-share-tab {
+  position: relative;
+  isolation: isolate;
+}
+
+.community-share-tab::before {
+  content: '';
+  position: absolute;
+  inset: -24px -24px auto;
+  height: min(560px, 72vh);
+  z-index: -1;
+  pointer-events: none;
+  background-image: url('/community/room-tone.webp');
+  background-size: cover;
+  background-position: center top;
+  opacity: 0.55;
+  /* Fades out downward so the grid does not end on a hard edge. */
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+}
+
+@media (min-width: 900px) {
+  .community-share-tab::before {
+    background-image: -webkit-image-set(
+      url('/community/room-tone.webp') 1x,
+      url('/community/room-tone-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/community/room-tone.webp') 1x,
+      url('/community/room-tone-4k.webp') 2x
+    );
+  }
+}
+
+/* Ambient art is decoration; anyone who asked for less motion and less
+   noise gets the plain surface. */
+@media (prefers-reduced-transparency: reduce) {
+  .community-share-tab::before {
+    display: none;
+  }
+}
