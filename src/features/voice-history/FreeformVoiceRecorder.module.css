@@ -209,32 +209,15 @@
 }
 
 .waveform {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 2px;
   width: 100%;
   height: 66px;
   overflow: hidden;
 }
 
-.waveform > span {
-  flex: 1 1 2px;
-  min-width: 1px;
-  max-width: 5px;
-  border-radius: 3px;
-  background: rgb(141 184 255 / 50%);
-}
-
-.waveform > i {
-  position: absolute;
-  inset: 0;
+.waveformCanvas {
+  display: block;
   width: 100%;
-  border-right: 2px solid #e2eeff;
-  background: rgb(141 184 255 / 8%);
-  transform-origin: left;
-  pointer-events: none;
-  transition: transform 120ms linear;
+  height: 66px;
 }
 
 .reviewActions {
@@ -319,11 +302,5 @@
   .reviewActions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .waveform > i {
-    transition: none;
   }
 }
