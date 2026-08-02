@@ -13,6 +13,8 @@ import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
+import type { JamSongParts } from '@/lib/jam/jam-song-parts'
+import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
@@ -266,6 +268,8 @@ export function selectJamSong(song: JamSong): boolean {
 
   setJamSong(song)
   setJamSongPositionSec(0)
+  // A new song is a new lyric sheet, so the old allocation means nothing.
+  setJamSongParts({})
   resetJamLineScores()
   setJamError(null)
   jamService?.sendSong({
@@ -312,9 +316,76 @@ export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
   })
 }
 
+// ── Who sings which line ─────────────────────────────────────────────
+// Host-authored, and broadcast with the song (lib/jam/jam-song-parts.ts).
+
+export const [jamSongParts, setJamSongParts] = createSignal<JamSongParts>({})
+
+/** Do I sing this line? True for unassigned lines -- they are everyone's. */
+export function jamLineIsMine(lineIndex: number): boolean {
+  return isMyLine(jamSongParts(), lineIndex, jamPeerId())
+}
+
+/**
+ * Host-only: give a run of lines to a singer, and tell the room.
+ *
+ * Re-sent as a whole manifest rather than a delta. The map is a few
+ * hundred bytes and a peer that missed one delta would be quietly singing
+ * the wrong part for the rest of the song -- which is exactly the class of
+ * bug that is impossible to diagnose from inside a room.
+ */
+export function assignJamSongLines(
+  fromLine: number,
+  toLine: number,
+  peerId: string,
+): void {
+  if (!jamIsHost()) return
+  const next = assignRange(jamSongParts(), fromLine, toLine, peerId)
+  setJamSongParts(next)
+  broadcastSongWithParts()
+}
+
+function broadcastSongWithParts(): void {
+  const song = jamSong()
+  if (song === null) return
+  jamService?.sendSong({
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    stems: song.stems,
+    lines: song.lines,
+    notes: song.notes,
+    durationSec: song.durationSec,
+    parts: jamSongParts(),
+  })
+}
+
+/**
+ * Hand a departed singer's lines to whoever is still here.
+ *
+ * Called when the peer list changes. A part that falls silent mid-song is
+ * indistinguishable from a bug to everyone in the room, so it never does:
+ * lines pass to the next singer, and to the room if there is nobody left.
+ */
+export function rehomeJamSongParts(): void {
+  if (!jamIsHost()) return
+  const parts = jamSongParts()
+  if (Object.keys(parts).length === 0) return
+  const mine = jamPeerId()
+  const present = [
+    ...jamConnectedPeers().map((p) => p.id),
+    ...(mine === null || mine === '' ? [] : [mine]),
+  ]
+  const next = rehomeDeparted(parts, present)
+  if (next === parts) return
+  setJamSongParts(next)
+  broadcastSongWithParts()
+}
+
 export function clearJamSong(): void {
   setJamSong(null)
   setJamSongPositionSec(0)
+  setJamSongParts({})
   resetJamLineScores()
   jamService?.sendSong(null)
 }
@@ -651,6 +722,10 @@ export function initJam() {
         delete next[peerId]
         return next
       })
+      // Their lines have to go somewhere. A part that falls silent because
+      // its singer closed a tab is indistinguishable, from inside the room,
+      // from the song being broken.
+      rehomeJamSongParts()
     },
     onPeerStream: (peerId, stream) => {
       const existing = remoteAudioNodes.get(peerId)
@@ -752,6 +827,7 @@ export function initJam() {
       if (msg.action === 'clear' || msg.song === undefined) {
         setJamSong(null)
         setJamSongPositionSec(0)
+        setJamSongParts({})
         return
       }
       // Peers trust the host's manifest but still resolve the audio
@@ -762,6 +838,9 @@ export function initJam() {
       stopPlaybackTimer()
       setJamSong({ ...msg.song, notes: msg.song.notes ?? [], origin: 'url' })
       setJamSongPositionSec(0)
+      // The allocation is the host's to author; a peer only ever adopts it.
+      setJamSongParts(msg.song.parts ?? {})
+      resetJamLineScores()
     },
     onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {
       // Every transport command is a tempo resync point (see

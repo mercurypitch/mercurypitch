@@ -14,7 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -76,6 +76,10 @@ export const JamSongStage: Component = () => {
         // Peers' trails are never scored here -- see the store's note on
         // why a score built from what somebody else reports is not evidence.
         if (mine === null || mine === '') return
+        // Not my line, not my score. Being marked down for staying quiet
+        // through somebody else's verse is the opposite of what assigning
+        // parts is for.
+        if (!jamLineIsMine(open.index)) return
         recordJamLineScore(
           scoreLiveLine(
             song.lines,

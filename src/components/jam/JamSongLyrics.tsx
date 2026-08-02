@@ -8,13 +8,15 @@
 // that the singer's eye can find the current line without hunting.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
+import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
+import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
-import { jamSong } from '@/stores/jam-store'
+import { assignJamSongLines, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
 import { JamLyricsFinder } from './JamLyricsFinder'
 import styles from './JamSongLyrics.module.css'
 
@@ -60,6 +62,30 @@ const RestDots: Component<{ total: number; left: number }> = (props) => (
 
 export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   let scrollRef: HTMLDivElement | undefined
+
+  /**
+   * Which line the host is currently assigning, if any.
+   *
+   * Assignment is a two-tap gesture -- tap a line, pick a singer -- rather
+   * than a mode you enter and leave. A mode would be one more piece of
+   * state to get stuck in, over a lyric sheet somebody is trying to sing.
+   */
+  const [assigning, setAssigning] = createSignal<number | null>(null)
+
+  const everyone = createMemo(() => {
+    const mine = jamPeerId()
+    const ids = jamPeers().map((p) => ({ id: p.id, name: p.displayName }))
+    return mine === null || mine === ''
+      ? ids
+      : [{ id: mine, name: 'You' }, ...ids]
+  })
+
+  const colors = createMemo(() =>
+    buildPeerColorMap(everyone().map((p) => p.id)),
+  )
+
+  const nameOf = (id: string) =>
+    everyone().find((p) => p.id === id)?.name ?? 'Someone'
 
   const currentIndex = () => lineIndexAt(props.lines, props.positionSec())
   const rests = createMemo(() => restsBetween(props.lines))
@@ -122,6 +148,16 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                   // song rather than only where they are in the bar.
                   [styles.linePast]:
                     currentIndex() >= 0 && i() < currentIndex(),
+                  // Somebody else's line: still readable, because following
+                  // the whole song is the point of a lyric sheet, but
+                  // visibly not yours to come in on.
+                  [styles.lineNotMine]:
+                    singerOfLine(jamSongParts(), i()) !== null &&
+                    !jamLineIsMine(i()),
+                }}
+                onClick={() => {
+                  if (!jamIsHost()) return
+                  setAssigning(assigning() === i() ? null : i())
                 }}
               >
                 {/* The count-in sits above the line it leads into, which
@@ -137,6 +173,18 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                     <RestDots
                       total={r().rest.dotCount}
                       left={r().secondsLeft}
+                    />
+                  )}
+                </Show>
+                {/* A colour bar rather than a name: at singing distance a
+                    name is unreadable and a colour is not, and the lanes
+                    on the right already use the same colour per person. */}
+                <Show when={singerOfLine(jamSongParts(), i())}>
+                  {(id) => (
+                    <span
+                      class={styles.singerBar}
+                      style={{ background: colors()[id()] ?? '#58a6ff' }}
+                      aria-label={`Sung by ${nameOf(id())}`}
                     />
                   )}
                 </Show>
@@ -157,6 +205,36 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                       {s().score}
                     </span>
                   )}
+                </Show>
+                <Show when={jamIsHost() && assigning() === i()}>
+                  <div class={styles.assign}>
+                    <For
+                      each={[{ id: EVERYONE, name: 'Everyone' }, ...everyone()]}
+                    >
+                      {(who) => (
+                        <button
+                          type="button"
+                          class={styles.assignItem}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            assignJamSongLines(i(), i(), who.id)
+                            setAssigning(null)
+                          }}
+                        >
+                          <span
+                            class={styles.assignDot}
+                            style={{
+                              background:
+                                who.id === EVERYONE
+                                  ? 'transparent'
+                                  : (colors()[who.id] ?? '#58a6ff'),
+                            }}
+                          />
+                          {who.name}
+                        </button>
+                      )}
+                    </For>
+                  </div>
                 </Show>
                 <Show when={props.showNotes}>
                   <span class={styles.lineTime}>
