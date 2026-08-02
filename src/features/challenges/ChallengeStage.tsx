@@ -9,27 +9,24 @@
 // the finished run flows through recordExerciseResult exactly like a drill,
 // so the armed weekly attempt, board write and badges are untouched.
 //
-// One take counts: there is no pause and no in-stage retry. Ending the run
-// early scores what was sung (the drill's "Stop & Score" semantic). The
-// after-run moment belongs to the Challenges tab: the weekly return path
-// presents the result card and navigates there itself (which unmounts this
-// stage); the stage keeps only a fallback hand-off for runs the weekly path
-// does not consume.
+// One armed take counts. Ending early scores what was sung (the drill's
+// "Stop & Score" semantic), then the canvas freezes under the app-level
+// result card. The singer can review that contour, practise the same line
+// without posting another attempt, or explicitly arm a scored retake.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { Play, Trophy, X } from '@/components/icons'
+import { Loop, Pause, Play, Trophy, Volume2, VolumeX, X, } from '@/components/icons'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
-import { TAB_CHALLENGES } from '@/features/tabs/constants'
+import { midiToFrequency } from '@/lib/frequency-to-note'
 import { midiToNote } from '@/lib/scale-data'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import type { ChallengeStageLaunch } from '@/stores/ui-store'
-import { setActiveTab } from '@/stores/ui-store'
 import type { ZenPitchRun } from '../zen/types'
 import { useZenPitchSession } from '../zen/useZenPitchSession'
 import type { ZenCanvasRenderModel } from '../zen/zen-canvas-renderer'
@@ -44,21 +41,18 @@ interface ChallengeStageProps {
   micActive: Accessor<boolean>
   startMic: () => Promise<boolean>
   stopMic: () => void
+  playTone: (frequency: number, durationMs: number) => Promise<void>
+  stopTone: () => void
   onClose: () => void
 }
 
 interface ChallengeOutcome {
-  /** The recorded pass's trace, frozen for the final lit-line view. */
+  /** The finished pass's trace, frozen for the final lit-line view. */
   points: ZenPitchRun['points']
+  kind: ChallengeRunKind
 }
 
-/**
- * Fallback hand-off delay. The weekly return path normally presents the
- * result card and navigates to the Challenges tab itself; this timer only
- * fires when that path did not (attempt disarmed, persistence failure, or
- * the stage was launched over the Challenges tab so no transition occurs).
- */
-const DONE_FALLBACK_MS = 1600
+type ChallengeRunKind = 'attempt' | 'practice'
 
 export function ChallengeStage(props: ChallengeStageProps) {
   // The launch object is immutable for this mount (keyed <Show>), so the
@@ -86,12 +80,23 @@ export function ChallengeStage(props: ChallengeStageProps) {
   }
 
   const [outcome, setOutcome] = createSignal<ChallengeOutcome | null>(null)
+  const launchRunKind: ChallengeRunKind =
+    launch.mode === 'practice' ? 'practice' : 'attempt'
+  const [runKind, setRunKind] = createSignal<ChallengeRunKind>(launchRunKind)
   const [startError, setStartError] = createSignal<string | null>(null)
+  const [previewError, setPreviewError] = createSignal<string | null>(null)
+  const [previewPlaying, setPreviewPlaying] = createSignal(false)
+  const [melodyGuideOn, setMelodyGuideOn] = createSignal(false)
+  const [practiceLoopOn, setPracticeLoopOn] = createSignal(false)
   // First full (or ended-early) pass of this attempt. Plain var: written from
   // the frame callback, read once on completion.
   let finishedRun: ZenPitchRun | null = null
   let completing = false
-  let doneTimer: ReturnType<typeof setTimeout> | undefined
+  let previewToken = 0
+  let previewTimers: ReturnType<typeof setTimeout>[] = []
+  let liveRunKind: ChallengeRunKind = launchRunKind
+  let loopPracticePlain = false
+  let playedGuideTargets = new Set<string>()
 
   const session = useZenPitchSession({
     ...(definition === null ? {} : { initialExerciseDefinition: definition }),
@@ -100,7 +105,11 @@ export function ChallengeStage(props: ChallengeStageProps) {
     startMic: () => props.startMic(),
     stopMic: () => props.stopMic(),
     onRunFinalized: (run) => {
-      finishedRun ??= run
+      if (liveRunKind === 'practice' && loopPracticePlain) {
+        finishedRun = run
+      } else {
+        finishedRun ??= run
+      }
     },
   })
 
@@ -112,15 +121,122 @@ export function ChallengeStage(props: ChallengeStageProps) {
     return session.status() === 'running' ? 'live' : 'ready'
   }
 
-  const finishToBoard = (): void => {
-    clearTimeout(doneTimer)
-    setActiveTab(TAB_CHALLENGES)
-    props.onClose()
+  const stopPreview = (): void => {
+    previewToken += 1
+    for (const timer of previewTimers) clearTimeout(timer)
+    previewTimers = []
+    if (previewPlaying()) props.stopTone()
+    setPreviewPlaying(false)
   }
+
+  const playPreview = (): void => {
+    if (definition === null || definition.targets.length === 0) return
+    if (previewPlaying()) {
+      stopPreview()
+      return
+    }
+
+    stopPreview()
+    setPreviewError(null)
+    setPreviewPlaying(true)
+    const token = previewToken
+    const beatMs = 60_000 / definition.bpm
+    const targets = definition.targets
+    const firstStartBeat = targets[0]!.startBeat
+
+    const playTarget = (index: number): void => {
+      if (token !== previewToken) return
+      const target = targets[index]!
+      const durationMs = Math.max(120, target.durationBeats * beatMs)
+      void props
+        .playTone(
+          midiToFrequency(definition.defaultRootMidi + target.semitone),
+          durationMs,
+        )
+        .catch(() => {
+          setTimeout(() => {
+            if (token !== previewToken) return
+            stopPreview()
+            setPreviewError(
+              'The melody could not play. Check your audio output and try again.',
+            )
+          }, 0)
+        })
+    }
+
+    // The first tone starts inside the click handler so mobile browsers can
+    // unlock audio. Remaining notes retain the authored rhythm from there.
+    playTarget(0)
+    for (let index = 1; index < targets.length; index += 1) {
+      const target = targets[index]!
+      previewTimers.push(
+        setTimeout(
+          () => playTarget(index),
+          (target.startBeat - firstStartBeat) * beatMs,
+        ),
+      )
+    }
+    const last = targets[targets.length - 1]!
+    const totalMs =
+      (last.startBeat - firstStartBeat + last.durationBeats) * beatMs
+    previewTimers.push(
+      setTimeout(() => {
+        if (token !== previewToken) return
+        previewTimers = []
+        setPreviewPlaying(false)
+      }, totalMs),
+    )
+  }
+
+  const toggleMelodyGuide = (): void => {
+    const next = !melodyGuideOn()
+    playedGuideTargets = new Set()
+    setMelodyGuideOn(next)
+    if (!next) props.stopTone()
+  }
+
+  const togglePracticeLoop = (): void => {
+    const next = !practiceLoopOn()
+    loopPracticePlain = next
+    setPracticeLoopOn(next)
+  }
+
+  // Optional guide-note playback for unscored practice. It follows the same
+  // target windows as the canvas and re-arms at every loop seam.
+  createEffect(() => {
+    const enabled = melodyGuideOn()
+    const kind = runKind()
+    const status = session.status()
+    const elapsed = session.elapsedSec()
+    if (!enabled || kind !== 'practice' || status !== 'running') return
+
+    for (const target of session.targets()) {
+      if (
+        playedGuideTargets.has(target.id) ||
+        elapsed < target.startSec ||
+        elapsed >= target.endSec
+      ) {
+        continue
+      }
+      playedGuideTargets.add(target.id)
+      void props
+        .playTone(
+          midiToFrequency(target.startMidi),
+          Math.min(1200, Math.max(300, (target.endSec - elapsed) * 1000)),
+        )
+        .catch(() => {
+          setTimeout(() => {
+            setMelodyGuideOn(false)
+            props.stopTone()
+          }, 0)
+        })
+    }
+  })
 
   const completeRun = (): void => {
     if (completing) return
     completing = true
+    if (melodyGuideOn()) props.stopTone()
     // finish() may finalize a trailing fragment of the next loop; the
     // onRunFinalized guard keeps the first (real) pass. A run with too few
     // voiced points finalizes to null — summarised as an unsung take.
@@ -133,24 +249,25 @@ export function ChallengeStage(props: ChallengeStageProps) {
       run?.durationSec ?? 0,
     )
 
-    // The single funnel every exercise uses — the armed weekly attempt
-    // consumes this entry, writes the board row, presents the result card
-    // and navigates to the Challenges tab. Metrics mirror the drill's
-    // result shape exactly.
-    recordExerciseResult({
-      type: EXERCISE_SIGHT_SINGING,
-      score: summary.score,
-      metrics: {
-        notesAttempted: summary.notesAttempted,
-        notesScored: summary.notesScored,
-        avgAccuracy: summary.avgAccuracy,
-        bestNote: summary.bestNote,
-      },
-      completedAt: Date.now(),
-    })
+    const kind = untrack(runKind)
+    if (kind === 'attempt') {
+      // The single funnel every scored exercise uses — the armed weekly
+      // attempt consumes this entry, writes the board row, and presents the
+      // app-level result card. Practice replays deliberately skip the funnel.
+      recordExerciseResult({
+        type: EXERCISE_SIGHT_SINGING,
+        score: summary.score,
+        metrics: {
+          notesAttempted: summary.notesAttempted,
+          notesScored: summary.notesScored,
+          avgAccuracy: summary.avgAccuracy,
+          bestNote: summary.bestNote,
+        },
+        completedAt: Date.now(),
+      })
+    }
 
-    setOutcome({ points: run?.points ?? [] })
-    doneTimer = setTimeout(finishToBoard, DONE_FALLBACK_MS)
+    setOutcome({ points: run?.points ?? [], kind })
   }
 
   // A pass ends when the session's loop wraps: elapsed snaps from the loop's
@@ -161,21 +278,35 @@ export function ChallengeStage(props: ChallengeStageProps) {
       if (completing || previous === undefined) return
       const loop = session.loopDurationSec()
       if (previous > loop - 1.5 && elapsed < 1.5 && previous - elapsed > 1) {
+        playedGuideTargets = new Set()
+        if (runKind() === 'practice' && practiceLoopOn()) return
         queueMicrotask(completeRun)
       }
     }),
   )
 
-  const begin = async (): Promise<void> => {
-    if (definition === null || completing) return
+  const begin = async (
+    kind: ChallengeRunKind = launchRunKind,
+  ): Promise<void> => {
+    if (definition === null || session.status() === 'running') return
+    const previousOutcome = outcome()
+    stopPreview()
     setStartError(null)
     finishedRun = null
+    playedGuideTargets = new Set()
+    liveRunKind = kind
+    setRunKind(kind)
+    completing = false
     const started = await session.start()
     if (!started) {
+      completing = previousOutcome !== null
+      if (previousOutcome !== null) setRunKind(previousOutcome.kind)
       setStartError(
         'Microphone access is needed to sing the challenge. Check the browser permission and try again.',
       )
+      return
     }
+    setOutcome(null)
   }
 
   const endAndScore = (): void => {
@@ -232,9 +363,11 @@ export function ChallengeStage(props: ChallengeStageProps) {
   const statusLabel = (): string => {
     switch (phase()) {
       case 'live':
-        return 'Listening'
+        return runKind() === 'practice' && practiceLoopOn()
+          ? 'Looping practice'
+          : 'Listening'
       case 'done':
-        return 'Recorded'
+        return outcome()?.kind === 'practice' ? 'Practice complete' : 'Recorded'
       default:
         return 'Ready'
     }
@@ -271,7 +404,8 @@ export function ChallengeStage(props: ChallengeStageProps) {
 
   onCleanup(() => {
     window.removeEventListener('keydown', onKeyDown)
-    clearTimeout(doneTimer)
+    stopPreview()
+    if (melodyGuideOn()) props.stopTone()
     // Abandoning mid-run (tab navigation unmounts the stage) records
     // nothing — parity with leaving a drill. The zen session releases a mic
     // it acquired in its own cleanup.
@@ -302,8 +436,16 @@ export function ChallengeStage(props: ChallengeStageProps) {
         mode="challenge"
         testId="challenge-stage"
         class={styles.stage}
-        ariaLabel="Weekly challenge performance stage"
-        eyebrow="This Week's Legend"
+        ariaLabel={
+          launch.mode === 'practice'
+            ? 'Past challenge practice stage'
+            : 'Weekly challenge performance stage'
+        }
+        eyebrow={
+          launch.mode === 'practice'
+            ? 'Past Legend · practice'
+            : "This Week's Legend"
+        }
         title={launch.title}
         icon={<Trophy />}
         referenceColor={PITCH_VISUAL_COLORS.reference}
@@ -315,44 +457,72 @@ export function ChallengeStage(props: ChallengeStageProps) {
         headerMeta={
           <>
             <span>{statusLabel()}</span>
-            <span>Target {launch.targetScore}%</span>
+            <span>
+              {launch.mode === 'practice' ? 'Benchmark' : 'Target'}{' '}
+              {launch.targetScore}%
+            </span>
           </>
         }
         primaryAction={
           <Show
-            when={phase() === 'live'}
+            when={phase() === 'done' || runKind() === 'practice'}
             fallback={
-              <Show
-                when={phase() === 'done'}
-                fallback={
-                  <button
-                    type="button"
-                    class={styles.closeButton}
-                    onClick={() => props.onClose()}
-                  >
-                    <X />
-                    Close
-                  </button>
-                }
-              >
+              <Show when={phase() === 'ready'}>
                 <button
                   type="button"
                   class={styles.closeButton}
-                  onClick={finishToBoard}
+                  onClick={() => props.onClose()}
                 >
-                  To the board
+                  <X />
+                  <span class={styles.controlLabel}>Close</span>
                 </button>
               </Show>
             }
           >
-            <button
-              type="button"
-              class={styles.endButton}
-              data-testid="challenge-end"
-              onClick={endAndScore}
-            >
-              End & score
-            </button>
+            <div class={styles.headerControls}>
+              <button
+                type="button"
+                class={styles.toggleButton}
+                classList={{ [styles.toggleActive]: melodyGuideOn() }}
+                data-testid="challenge-melody-toggle"
+                aria-pressed={melodyGuideOn()}
+                aria-label={
+                  melodyGuideOn()
+                    ? 'Turn melody guide off'
+                    : 'Turn melody guide on'
+                }
+                title={melodyGuideOn() ? 'Melody guide on' : 'Melody guide off'}
+                onClick={toggleMelodyGuide}
+              >
+                {melodyGuideOn() ? <Volume2 /> : <VolumeX />}
+                <span class={styles.controlLabel}>Melody</span>
+              </button>
+              <button
+                type="button"
+                class={styles.toggleButton}
+                classList={{ [styles.toggleActive]: practiceLoopOn() }}
+                data-testid="challenge-loop-toggle"
+                aria-pressed={practiceLoopOn()}
+                aria-label={
+                  practiceLoopOn()
+                    ? 'Turn continuous practice off'
+                    : 'Loop practice continuously'
+                }
+                title={practiceLoopOn() ? 'Continuous loop on' : 'Loop off'}
+                onClick={togglePracticeLoop}
+              >
+                <Loop />
+                <span class={styles.controlLabel}>Loop</span>
+              </button>
+              <button
+                type="button"
+                class={styles.closeButton}
+                onClick={() => props.onClose()}
+              >
+                <X />
+                <span class={styles.controlLabel}>Close</span>
+              </button>
+            </div>
           </Show>
         }
         canvas={<ZenPitchCanvas model={canvasModel} summary={canvasSummary} />}
@@ -366,26 +536,63 @@ export function ChallengeStage(props: ChallengeStageProps) {
               <Show
                 when={phase() === 'live'}
                 fallback={
-                  <span class={styles.footerHint}>
-                    {phase() === 'done'
-                      ? 'Take recorded — heading to the board'
-                      : 'One take counts'}
-                  </span>
+                  <Show
+                    when={phase() === 'done'}
+                    fallback={
+                      <span class={styles.footerHint}>
+                        {launch.mode === 'practice'
+                          ? 'Practice only — not added to the board'
+                          : 'One take counts'}
+                      </span>
+                    }
+                  >
+                    <div class={styles.transportStack}>
+                      <button
+                        type="button"
+                        class={styles.practiceButton}
+                        data-testid="challenge-practice"
+                        onClick={() => void begin('practice')}
+                      >
+                        <Play />
+                        {practiceLoopOn()
+                          ? 'Start looping'
+                          : 'Practise the line'}
+                      </button>
+                      <span class={styles.footerHint}>
+                        {outcome()?.kind === 'practice'
+                          ? 'Practice run — not added to the board'
+                          : 'Take recorded — review or practise the line'}
+                      </span>
+                    </div>
+                  </Show>
                 }
               >
-                <Show
-                  when={session.elapsedSec() >= leadInSec()}
-                  fallback={
-                    <span class={styles.footerHint}>
-                      Sing as the line reaches each note
+                <div class={styles.transportStack}>
+                  <button
+                    type="button"
+                    class={styles.endButton}
+                    data-testid="challenge-end"
+                    onClick={endAndScore}
+                  >
+                    {runKind() === 'attempt' ? 'End & score' : 'End practice'}
+                  </button>
+                  <Show
+                    when={session.elapsedSec() >= leadInSec()}
+                    fallback={
+                      <span class={styles.footerHint}>
+                        Sing as the line reaches each note
+                      </span>
+                    }
+                  >
+                    <span class={styles.timeReadout}>
+                      {session.elapsedSec().toFixed(1)} /{' '}
+                      {session.loopDurationSec().toFixed(1)} sec
+                      {runKind() === 'practice' && practiceLoopOn()
+                        ? ' · looping'
+                        : ''}
                     </span>
-                  }
-                >
-                  <span class={styles.timeReadout}>
-                    {session.elapsedSec().toFixed(1)} /{' '}
-                    {session.loopDurationSec().toFixed(1)} sec
-                  </span>
-                </Show>
+                  </Show>
+                </div>
               </Show>
             </div>
             <div class={styles.targetReadout}>
@@ -398,16 +605,38 @@ export function ChallengeStage(props: ChallengeStageProps) {
       <Show when={phase() === 'ready'}>
         <div class={styles.overlay}>
           <div class={styles.readyCard} data-testid="challenge-ready-card">
-            <p class={styles.cardEyebrow}>One take counts</p>
+            <p class={styles.cardEyebrow}>
+              {launch.mode === 'practice'
+                ? 'Unranked practice'
+                : 'One take counts'}
+            </p>
             <h3>{launch.title}</h3>
             <p class={styles.cardMeta}>
-              {definition?.targets.length ?? 0} notes · {noteRange()} · target{' '}
+              {definition?.targets.length ?? 0} notes · {noteRange()} ·{' '}
+              {launch.mode === 'practice' ? 'benchmark' : 'target'}{' '}
               {launch.targetScore}%
             </p>
+            <button
+              type="button"
+              class={styles.previewButton}
+              aria-pressed={previewPlaying()}
+              onClick={playPreview}
+            >
+              <Show when={previewPlaying()} fallback={<Play />}>
+                <Pause />
+              </Show>
+              {previewPlaying() ? 'Stop melody' : 'Hear the melody'}
+            </button>
             <p class={styles.cardHint}>
               The line travels the canvas once. Sing each note as the playhead
               reaches it — held, in-tune notes light up and stay shining.
             </p>
+            <Show when={launch.mode === 'practice'}>
+              <p class={styles.practiceNotice}>
+                This week has ended. Practise as often as you like — these runs
+                stay off the weekly board.
+              </p>
+            </Show>
             <Show when={outOfRange() !== null}>
               <p class={styles.cardRange}>
                 This Legend is written{' '}
@@ -420,6 +649,11 @@ export function ChallengeStage(props: ChallengeStageProps) {
             <Show when={startError()}>
               <p class={styles.error} role="alert">
                 {startError()}
+              </p>
+            </Show>
+            <Show when={previewError()}>
+              <p class={styles.error} role="alert">
+                {previewError()}
               </p>
             </Show>
             <Show
@@ -437,7 +671,9 @@ export function ChallengeStage(props: ChallengeStageProps) {
                 onClick={() => void begin()}
               >
                 <Play />
-                Begin the take
+                {launch.mode === 'practice'
+                  ? 'Begin practice'
+                  : 'Begin the take'}
               </button>
             </Show>
           </div>

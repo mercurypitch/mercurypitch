@@ -12,10 +12,9 @@ import { createSignal } from 'solid-js'
 import { checkAndGrantBadges, grantBadgeByRef, } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import type { ExerciseType } from '@/features/exercises/types'
-import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
-import { setActiveTab } from '@/stores/ui-store'
+import type { MelodyItem } from '@/types'
 import { presentChallengeResult } from './challenge-result-store'
 
 export interface WeeklyAttemptTarget {
@@ -26,6 +25,8 @@ export interface WeeklyAttemptTarget {
   targetScore: number
   rewardBadgeId?: string | null
   founderScore?: number | null
+  /** The authored line, retained so a miss can open as unscored Zen practice. */
+  targetItems?: MelodyItem[]
 }
 
 const [active, setActive] = createSignal<WeeklyAttemptTarget | null>(null)
@@ -133,11 +134,10 @@ export async function recordWeeklyAttempt(entry: {
     }
     await checkAndGrantBadges()
 
-    // The after-run moment belongs to the Challenges tab, not a toast
-    // over the exercise screen: publish the result and go there. The
-    // tab presents the pass/fail card with "go again" as the next step
-    // (owner flow — the exercise's own Try again is plain practice
-    // under the one-attempt rule and must never be the visible path).
+    // Publish the result without navigating away. The app-level result
+    // overlay sits above the frozen challenge canvas, so the singer can
+    // review the trace, practise the line without scoring, or explicitly
+    // arm another board attempt.
     presentChallengeResult({
       challengeId: a.challengeId,
       title: a.title,
@@ -145,8 +145,8 @@ export async function recordWeeklyAttempt(entry: {
       targetScore: a.targetScore,
       tier,
       badgeGranted,
+      targetItems: a.targetItems,
     })
-    setActiveTab(TAB_CHALLENGES)
   } catch {
     // The drill result stands even if persistence fails.
   }

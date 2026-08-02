@@ -12,7 +12,7 @@ import { midiToNote } from '@/lib/scale-data'
 import { isNarrow } from '@/lib/use-viewport'
 import { getZenExercise, zenExerciseCatalog } from './exercise-catalog'
 import { refreshGuidedContent } from './guided-content-store'
-import type { ZenExerciseCategory, ZenPitchRun, ZenTargetVisibility, } from './types'
+import type { ZenExerciseCategory, ZenExerciseDefinition, ZenPitchRun, ZenTargetVisibility, } from './types'
 import { useZenPitchSession } from './useZenPitchSession'
 import type { ZenCanvasRenderModel } from './zen-canvas-renderer'
 import { resolveZenTargets } from './zen-model'
@@ -34,6 +34,7 @@ import styles from './ZenPitchStage.module.css'
 interface ZenPitchStageProps {
   initialExerciseId?: string
   initialExerciseVersion?: number
+  initialExerciseDefinition?: ZenExerciseDefinition
   subscribeFrames: (listener: PracticeFrameListener) => () => void
   micActive: Accessor<boolean>
   startMic: () => Promise<boolean>
@@ -58,18 +59,22 @@ const runLabel = (run: ZenPitchRun | null, liveTake: number): string =>
 
 export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   const [guideOpen, setGuideOpen] = createSignal(
-    props.initialExerciseId !== undefined,
+    props.initialExerciseId !== undefined ||
+      props.initialExerciseDefinition !== undefined,
   )
   const [examplePlaying, setExamplePlaying] = createSignal(false)
   const [startError, setStartError] = createSignal<string | null>(null)
   let audio: HTMLAudioElement | undefined
   let resumeAfterExample = false
   let loadRequest = 0
-  let guideOpenPlain = props.initialExerciseId !== undefined
+  let guideOpenPlain =
+    props.initialExerciseId !== undefined ||
+    props.initialExerciseDefinition !== undefined
 
   const session = useZenPitchSession({
     initialExerciseId: props.initialExerciseId,
     initialExerciseVersion: props.initialExerciseVersion,
+    initialExerciseDefinition: props.initialExerciseDefinition,
     initialCenterMidi: props.initialCenterMidi,
     subscribeFrames: (listener: (frame: PracticeFrame) => void) =>
       props.subscribeFrames(listener),
@@ -392,6 +397,13 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           }
         >
           <option value="">Open pitch monitor</option>
+          <Show when={props.initialExerciseDefinition}>
+            {(custom) => (
+              <optgroup label="Challenge melody">
+                <option value={custom().id}>{custom().title}</option>
+              </optgroup>
+            )}
+          </Show>
           <For each={CATEGORIES}>
             {(category) => (
               <optgroup label={CATEGORY_LABELS[category]}>

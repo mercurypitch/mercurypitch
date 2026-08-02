@@ -1,0 +1,163 @@
+.section {
+  max-width: 640px;
+  margin: 0 0 22px;
+  scroll-margin-top: 18px;
+}
+
+.headingRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.headingIcon {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-tertiary));
+}
+
+.headingIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.headingRow h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.headingRow p {
+  max-width: 64ch;
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.itemBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.tag {
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  text-transform: capitalize;
+}
+
+.item h4 {
+  margin: 6px 0 0;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.item p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.unranked {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.practiceButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 104px;
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 9px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-tertiary));
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.practiceButton svg {
+  width: 13px;
+  height: 13px;
+}
+
+.practiceButton:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-tertiary));
+}
+
+.practiceButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.state {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--bg-card) 65%, transparent);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 600px) {
+  .section {
+    margin-bottom: 18px;
+  }
+
+  .item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .practiceButton {
+    width: 100%;
+    min-height: 44px;
+  }
+}

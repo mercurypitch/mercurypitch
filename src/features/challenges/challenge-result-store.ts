@@ -1,16 +1,14 @@
 // ============================================================
-// Challenge result — the after-run moment, owned by the Challenges tab
+// Challenge result — the after-run moment above the frozen challenge stage
 // ============================================================
 //
-// A consumed weekly Legend attempt no longer ends on the plain exercise
-// screen (whose "Try again" is ordinary practice under the one-attempt
-// rule and confused everyone): weekly-attempt records the run, publishes
-// the result here and navigates to the Challenges tab, which presents a
-// full pass/fail card — congratulations art and the badge on a pass,
-// encouragement on a miss — with "go again" as the one obvious next
-// step. Owner-designed flow, 2026-08-01.
+// A consumed weekly Legend attempt publishes here without changing tabs.
+// App.tsx owns the card so it can appear over the challenge stage whether
+// the singer launched from Home or Challenges. Dismissing it reveals the
+// frozen trace; another scored attempt must be armed explicitly.
 
 import { createSignal } from 'solid-js'
+import type { MelodyItem } from '@/types'
 import type { WeeklyTier } from './weekly-attempt'
 
 export interface ChallengeResult {
@@ -21,6 +19,8 @@ export interface ChallengeResult {
   tier: WeeklyTier
   /** True when this run granted the challenge's reward badge. */
   badgeGranted: boolean
+  /** Present for stage-launched attempts so the line can move into Zen. */
+  targetItems?: MelodyItem[]
 }
 
 const [lastChallengeResult, setLastChallengeResult] =

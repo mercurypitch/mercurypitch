@@ -20,7 +20,10 @@
 
 .closeButton,
 .endButton,
-.beginButton {
+.beginButton,
+.previewButton,
+.practiceButton,
+.toggleButton {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -44,9 +47,57 @@
   height: 14px;
 }
 
-.endButton {
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggleButton {
   min-height: 36px;
-  padding: 0 13px;
+  padding: 0 11px;
+  border: 1px solid var(--challenge-border);
+  border-radius: 9px;
+  color: var(--challenge-muted);
+  background: #111722;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.toggleButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.toggleActive {
+  border-color: color-mix(in srgb, var(--pitch-reference) 56%, #fff 6%);
+  color: #ffe0a6;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.practiceButton {
+  justify-content: center;
+  min-width: 148px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--pitch-user) 48%, #fff 6%);
+  border-radius: 9px;
+  color: #ddd4ff;
+  background: color-mix(in srgb, var(--pitch-user) 13%, #111722);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.practiceButton svg {
+  width: 13px;
+  height: 13px;
+}
+
+.endButton {
+  justify-content: center;
+  min-width: 132px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 1px solid color-mix(in srgb, var(--pitch-reference) 58%, #fff 8%);
   border-radius: 9px;
   color: #171109;
@@ -129,6 +180,23 @@
   line-height: 1.55;
 }
 
+.previewButton {
+  justify-self: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--pitch-reference) 40%, #fff 5%);
+  border-radius: 9px;
+  color: #ffe0a6;
+  background: rgba(245, 158, 11, 0.08);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.previewButton svg {
+  width: 13px;
+  height: 13px;
+}
+
 .beginButton {
   justify-content: center;
   min-height: 44px;
@@ -152,6 +220,17 @@
   color: #fca5a5;
   font-size: 0.68rem;
   line-height: 1.45;
+}
+
+.practiceNotice {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--pitch-user) 35%, transparent);
+  border-radius: 8px;
+  color: #ddd4ff;
+  background: color-mix(in srgb, var(--pitch-user) 9%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 /* ── Footer readouts ───────────────────────────────────────── */
@@ -178,6 +257,23 @@
 
 .transportReadout {
   justify-content: center;
+}
+
+.transportStack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.closeButton:focus-visible,
+.endButton:focus-visible,
+.beginButton:focus-visible,
+.previewButton:focus-visible,
+.practiceButton:focus-visible,
+.toggleButton:focus-visible {
+  outline: 2px solid #f6b94b;
+  outline-offset: 2px;
 }
 
 .timeReadout,
@@ -218,8 +314,41 @@
   }
 
   .closeButton,
-  .endButton {
+  .endButton,
+  .practiceButton,
+  .previewButton,
+  .toggleButton {
     min-height: 44px;
+  }
+
+  .headerControls {
+    gap: 5px;
+  }
+
+  .toggleButton,
+  .closeButton {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .controlLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .transportReadout {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+
+  .notesReadout {
+    grid-row: 2;
+    grid-column: 1 / -1;
   }
 }
 

@@ -96,8 +96,17 @@ function percentileRange(points: readonly ZenPitchPoint[]): number[] {
 export function useZenPitchSession(
   options: UseZenPitchSessionOptions,
 ): ZenPitchSession {
+  const launchedExercise = options.initialExerciseDefinition
+  const resolveExercise = (
+    exerciseId: string | null | undefined,
+  ): ZenExerciseDefinition | null => {
+    if (launchedExercise !== undefined && exerciseId === launchedExercise.id) {
+      return launchedExercise
+    }
+    return getZenExercise(exerciseId)
+  }
   const initialExercise =
-    options.initialExerciseDefinition ??
+    launchedExercise ??
     getZenExercise(options.initialExerciseId, options.initialExerciseVersion)
   const initialRoot = initialExercise?.defaultRootMidi ?? 60
   const initialTargets =
@@ -275,7 +284,7 @@ export function useZenPitchSession(
   }
 
   const selectExercise = (nextId: string | null): void => {
-    const nextExercise = getZenExercise(nextId)
+    const nextExercise = resolveExercise(nextId)
     const nextRoot = nextExercise?.defaultRootMidi ?? 60
     const nextTargets =
       nextExercise === null ? [] : resolveZenTargets(nextExercise, nextRoot)

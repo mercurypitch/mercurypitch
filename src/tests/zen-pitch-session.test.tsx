@@ -1,7 +1,7 @@
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeFrame } from '@/features/practice/usePracticeController'
-import type { ZenPitchRun } from '@/features/zen/types'
+import type { ZenExerciseDefinition, ZenPitchRun } from '@/features/zen/types'
 import type { ZenPitchSession } from '@/features/zen/useZenPitchSession'
 import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
 import type { PitchResult } from '@/types'
@@ -150,6 +150,59 @@ describe('Zen pitch session', () => {
 
     await expect(pendingStart).resolves.toBe(false)
     expect(stopMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a launch-scoped custom melody available in the exercise picker', () => {
+    const custom: ZenExerciseDefinition = {
+      id: 'weekly-challenge:custom',
+      version: 1,
+      title: 'Custom Legend line',
+      category: 'scales',
+      level: 'developing',
+      summary: 'A custom line.',
+      goal: 'Follow the notes.',
+      instructions: 'Sing with the playhead.',
+      bpm: 60,
+      countInBeats: 0,
+      loopBeats: 4,
+      defaultRootMidi: 60,
+      targets: [
+        {
+          id: 'note-1',
+          startBeat: 1,
+          durationBeats: 1,
+          semitone: 0,
+          cue: 'C4',
+          showCue: true,
+        },
+      ],
+      defaultTargetVisibility: 'on',
+      defaultProgressCue: 'playhead',
+      scoring: {
+        pitchWeight: 0.6,
+        coverageWeight: 0.3,
+        steadinessWeight: 0.1,
+        toleranceCents: 60,
+      },
+    }
+    let session: ZenPitchSession | null = null
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        initialExerciseDefinition: custom,
+        subscribeFrames: () => () => undefined,
+        micActive: () => false,
+        startMic: async () => true,
+        stopMic: () => undefined,
+      })
+      return disposeRoot
+    })
+
+    expect(session!.exercise()).toBe(custom)
+    session!.selectExercise(null)
+    expect(session!.exercise()).toBeNull()
+    session!.selectExercise(custom.id)
+    expect(session!.exercise()).toBe(custom)
+    dispose()
   })
 })
 

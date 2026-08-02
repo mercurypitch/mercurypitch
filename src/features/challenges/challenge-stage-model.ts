@@ -103,7 +103,7 @@ export function challengeToZenExercise(
     title: challenge.title,
     category: 'scales',
     level: 'developing',
-    summary: 'This week’s Legend line, one take on the zen canvas.',
+    summary: 'This week’s Legend line on the zen canvas.',
     goal: 'Light every note as the line passes.',
     instructions:
       'Sing each note as the playhead reaches it — held, in tune notes shine.',
