@@ -443,6 +443,9 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   lifecycle cleanup.
 - Stable freeform thread keys: nothing enters the vault until the first keep,
   and later takes in the same thread become eligible for Earlier/Later.
+- Multiple named freeform threads can coexist. Singers can start a different
+  thread from the direct-capture flow and rename a freeform thread without
+  changing its stable comparison key or separating its existing takes.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
