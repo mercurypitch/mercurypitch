@@ -73,6 +73,26 @@ export const JamSongStage: Component = () => {
   })
 
   /**
+   * Move the playhead.
+   *
+   * The host's element has to be seeked FIRST. Its timeupdate is what
+   * writes the store, so setting the store alone is overwritten by the
+   * next tick with the element's unchanged position -- which is exactly
+   * what made a scrub snap straight back to where it started. The element
+   * is the clock; a seek has to move the clock, not the readout.
+   *
+   * A guest broadcasts nothing and moves nothing: it is not their
+   * transport, and the drift effect will bring them to wherever the host
+   * ends up anyway.
+   */
+  const seekTo = (toSec: number): void => {
+    if (!jamIsHost()) return
+    const el = audioRef
+    if (el !== undefined) el.currentTime = toSec
+    jamSongSeek(toSec)
+  }
+
+  /**
    * Follow the room's transport.
    *
    * Split into two effects on purpose. The play/pause one must NOT depend
@@ -140,7 +160,7 @@ export const JamSongStage: Component = () => {
                   : song().durationSec
               }
               canSeek={jamIsHost()}
-              onSeek={(to) => jamSongSeek(to)}
+              onSeek={(to) => seekTo(to)}
             />
 
             <Show when={jamIsHost()}>
@@ -157,7 +177,15 @@ export const JamSongStage: Component = () => {
                     ? 'Pause'
                     : 'Play'}
                 </button>
-                <button class={styles.btn} onClick={() => jamSongStop()}>
+                <button
+                  class={styles.btn}
+                  onClick={() => {
+                    // Same reason as seekTo: stop rewinds the clock, and
+                    // the element IS the clock.
+                    if (audioRef !== undefined) audioRef.currentTime = 0
+                    jamSongStop()
+                  }}
+                >
                   Stop
                 </button>
               </div>
