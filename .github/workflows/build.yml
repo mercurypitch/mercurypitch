@@ -221,6 +221,22 @@ jobs:
             --config "$generated_db_config" \
             --file workers/db-worker/preview-weekly-seed.sql
 
+          # Challenge / badge / achievement definitions. Without these the
+          # Challenges tab renders completely empty on every preview — no
+          # cards, every category counter reading 0, no badges — which is
+          # indistinguishable from a broken feature and hid a real badge
+          # fix from review. Dev and prod get the same rows from
+          # scripts/seed-remote-db.mjs via the worker's admin API; CI has
+          # no admin key, so it applies the identical content as SQL.
+          # Upserts keyed on deterministic ids, so concurrent PR runs
+          # against this shared database converge instead of conflicting.
+          node scripts/gen-preview-definitions-sql.mjs \
+            > "$RUNNER_TEMP/preview-definitions.sql"
+          pnpm exec wrangler d1 execute "$preview_database_name" \
+            --remote \
+            --config "$generated_db_config" \
+            --file "$RUNNER_TEMP/preview-definitions.sql"
+
           preview_settings=$(
             curl --fail-with-body --silent --show-error \
               --request POST \
