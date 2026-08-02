@@ -119,3 +119,100 @@ describe('a room running a song', () => {
     expect(store.jamIsSongRoom()).toBe(false)
   })
 })
+
+describe('per-line scores', () => {
+  const scored = (lineIndex: number, score: number, noteCount = 2) => ({
+    lineIndex,
+    startSec: 0,
+    endSec: 1,
+    score,
+    voiced: true,
+    noteCount,
+  })
+
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+  })
+
+  it('keeps the latest attempt at a line, not both', () => {
+    // Scrubbing back to retake a line should replace the score, otherwise
+    // the run average is dragged down by an attempt you deliberately redid.
+    store.recordJamLineScore(scored(3, 40))
+    store.recordJamLineScore(scored(3, 95))
+    expect(store.jamSongLineScores()[3]?.score).toBe(95)
+    expect(Object.keys(store.jamSongLineScores())).toHaveLength(1)
+  })
+
+  it('does not record a line that had nothing to sing', () => {
+    // An empty badge on an instrumental bar reads as a zero you earned.
+    store.recordJamLineScore(scored(0, 0, 0))
+    expect(store.jamSongLineScores()[0]).toBeUndefined()
+    expect(store.jamSongRunScore()).toBeNull()
+  })
+
+  it('averages the run across scored lines', () => {
+    store.recordJamLineScore(scored(0, 100))
+    store.recordJamLineScore(scored(1, 50))
+    expect(store.jamSongRunScore()?.score).toBe(75)
+    expect(store.jamSongRunScore()?.totalLines).toBe(2)
+  })
+
+  it('starts a fresh take when a new song loads', () => {
+    store.recordJamLineScore(scored(0, 100))
+    store.selectJamSong(song())
+    expect(store.jamSongRunScore()).toBeNull()
+  })
+
+  it('clears on a play from the top but survives a resume', () => {
+    store.selectJamSong(song())
+    store.recordJamLineScore(scored(0, 100))
+    // Resuming after a breath must not cost you the lines you sang.
+    store.jamSongPlay(42)
+    expect(store.jamSongRunScore()?.score).toBe(100)
+    store.jamSongPlay(0)
+    expect(store.jamSongRunScore()).toBeNull()
+  })
+})
+
+describe('attaching lyrics to a loaded song', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+  })
+
+  it('gives the loaded song its words', () => {
+    store.selectJamSong(song({ lines: [] }))
+    store.attachJamSongLyrics([{ text: 'found', startSec: 1 }])
+    expect(store.jamSong()?.lines).toEqual([{ text: 'found', startSec: 1 }])
+  })
+
+  it('drops scores earned against the old words', () => {
+    // Line 0 meant something different before the lyrics arrived.
+    store.selectJamSong(song({ lines: [] }))
+    store.recordJamLineScore({
+      lineIndex: 0,
+      startSec: 0,
+      endSec: 1,
+      score: 90,
+      voiced: true,
+      noteCount: 2,
+    })
+    store.attachJamSongLyrics([{ text: 'found', startSec: 1 }])
+    expect(store.jamSongRunScore()).toBeNull()
+  })
+
+  it('ignores an empty result rather than blanking the column', () => {
+    store.selectJamSong(song())
+    const before = store.jamSong()?.lines
+    store.attachJamSongLyrics([])
+    expect(store.jamSong()?.lines).toEqual(before)
+  })
+
+  it('does nothing when no song is loaded', () => {
+    store.attachJamSongLyrics([{ text: 'x', startSec: 0 }])
+    expect(store.jamSong()).toBeNull()
+  })
+})

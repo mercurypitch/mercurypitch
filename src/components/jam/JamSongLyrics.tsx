@@ -10,8 +10,12 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, For, Show } from 'solid-js'
 import { formatClock } from '@/lib/format-time'
+import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
+import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
+import { jamSong } from '@/stores/jam-store'
+import { JamLyricsFinder } from './JamLyricsFinder'
 import styles from './JamSongLyrics.module.css'
 
 interface JamSongLyricsProps {
@@ -19,6 +23,21 @@ interface JamSongLyricsProps {
   positionSec: () => number
   /** Shows the note name under each line when the room wants pitch help. */
   showNotes: boolean
+  /** Your score per line, filled in as the playhead leaves each one. */
+  scores?: () => Record<number, JamLineScore>
+}
+
+/**
+ * Where a line's score sits on the good/close/missed scale.
+ *
+ * Three bands rather than a number's worth of precision: mid-song, a
+ * singer reads a colour, not a figure. The exact number is still there for
+ * anyone who wants it, and for the screen reader.
+ */
+function scoreBand(score: number): 'good' | 'close' | 'missed' {
+  if (score >= 80) return 'good'
+  if (score >= 50) return 'close'
+  return 'missed'
 }
 
 /** Dots that empty as the rest runs out -- the karaoke count-in idea. */
@@ -77,9 +96,17 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       <Show
         when={props.lines.length > 0}
         fallback={
-          <p class={styles.empty}>
-            No lyrics for this song — sing along by ear.
-          </p>
+          // The finder shows itself only when the song is one it can fix
+          // (a session of yours, with no words yet). Everything else --
+          // an instrumental, the demo -- falls through to the plain note.
+          <>
+            <JamLyricsFinder />
+            <Show when={!canAttachLyrics(jamSong())}>
+              <p class={styles.empty}>
+                No lyrics for this song — sing along by ear.
+              </p>
+            </Show>
+          </>
         }
       >
         <div class={styles.scroll} ref={scrollRef}>
@@ -114,6 +141,23 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                   )}
                 </Show>
                 <span class={styles.lineText}>{line.text}</span>
+                {/* Only on lines already sung: a score appearing beside the
+                    line you are singing would be judging a phrase that is
+                    not finished. */}
+                <Show when={props.scores?.()[i()]}>
+                  {(s) => (
+                    <span
+                      class={styles.lineScore}
+                      classList={{
+                        [styles[`lineScore_${scoreBand(s().score)}`] ?? '']:
+                          true,
+                      }}
+                      aria-label={`${s().score} out of 100`}
+                    >
+                      {s().score}
+                    </span>
+                  )}
+                </Show>
                 <Show when={props.showNotes}>
                   <span class={styles.lineTime}>
                     {formatClock(line.startSec)}

@@ -11,8 +11,10 @@
 // what keeps a room together across the join.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
-import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamSong, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongSeek, jamSongStop, setJamSongPositionSec, } from '@/stores/jam-store'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
+import { lineIndexAt } from '@/lib/jam/jam-song'
+import { jamConnectedPeers, jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -38,6 +40,55 @@ export const JamSongStage: Component = () => {
    * does not want the original singer in their ear.
    */
   const [guideVolume, setGuideVolume] = createSignal(0)
+
+  /**
+   * Score each line as the playhead leaves it.
+   *
+   * Live rather than at the end of the song, for two reasons. A singer who
+   * stops halfway still gets the lines they sang, instead of losing the
+   * take for not finishing. And the anchor stays honest: a line scored the
+   * moment it ends carries the wall-clock instant it STARTED, so mapping
+   * samples onto the song clock survives a seek, a pause, or a peer
+   * arriving mid-verse -- none of which a single run-wide anchor would.
+   */
+  let openLine: { index: number; atMs: number; positionSec: number } | null =
+    null
+
+  createEffect(() => {
+    const song = jamSong()
+    const pos = jamSongPositionSec()
+    if (song === null) {
+      openLine = null
+      return
+    }
+    const index = lineIndexAt(song.lines, pos)
+    const open = openLine
+    if (open !== null && open.index === index) return
+
+    if (open !== null) {
+      // Untracked: this effect fires on the PLAYHEAD, and the sample buffer
+      // updates twenty times a second. Reading it as a dependency would
+      // re-run the whole thing on every frame of singing, for a check that
+      // can only change when the line does.
+      untrack(() => {
+        const mine = jamPeerId()
+        // Nothing to score without an identity to look my samples up under.
+        // Peers' trails are never scored here -- see the store's note on
+        // why a score built from what somebody else reports is not evidence.
+        if (mine === null || mine === '') return
+        recordJamLineScore(
+          scoreLiveLine(
+            song.lines,
+            open.index,
+            song.notes,
+            jamPitchHistory()[mine],
+            { atMs: open.atMs, positionSec: open.positionSec },
+          ),
+        )
+      })
+    }
+    openLine = index < 0 ? null : { index, atMs: Date.now(), positionSec: pos }
+  })
 
   // The host's element drives the store; everyone else's follows it.
   onMount(() => {
@@ -199,6 +250,22 @@ export const JamSongStage: Component = () => {
                 <span class={styles.artist}> · {song().artist}</span>
               </Show>
             </span>
+            {/* Your take so far. Only yours: everyone scores themselves
+                from their own microphone, so this is not a scoreboard and
+                is deliberately not presented as one. */}
+            <Show when={jamSongRunScore()}>
+              {(run) => (
+                <span
+                  class={styles.runScore}
+                  aria-label={`Your score: ${run().score} out of 100, across ${run().sungLines} of ${run().totalLines} lines`}
+                >
+                  <strong>{run().score}</strong>
+                  <span class={styles.runLines}>
+                    {run().sungLines}/{run().totalLines} lines
+                  </span>
+                </span>
+              )}
+            </Show>
             {/* Everyone sees the position; only the host can move it.
                 Knowing where you are in the song is not a privilege, but a
                 room with two people dragging the playhead is a room nobody
@@ -250,6 +317,7 @@ export const JamSongStage: Component = () => {
 
           <div class={styles.split}>
             <JamSongLyrics
+              scores={jamSongLineScores}
               lines={song().lines}
               positionSec={jamSongPositionSec}
               showNotes={false}

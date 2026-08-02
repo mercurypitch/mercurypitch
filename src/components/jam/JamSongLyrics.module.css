@@ -110,3 +110,37 @@
 .restDotSpent {
   opacity: 0.2;
 }
+
+/* ── Per-line score ─────────────────────────────────────────────────
+   Sits at the line's trailing edge, so the words stay left-aligned and
+   the eye reading lyrics never has to step over a number to reach them. */
+.lineScore {
+  /* A flex item, not absolute: .line is already a flex row with
+     space-between, so the badge lands at the trailing edge on its own and
+     a long lyric reflows around it instead of underneath it. */
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 8%);
+  /* Never intercepts a tap: the line under it may be seekable. */
+  pointer-events: none;
+}
+
+.lineScore_good {
+  color: #6ee7a8;
+  background: rgb(110 231 168 / 14%);
+}
+
+.lineScore_close {
+  color: #f0d264;
+  background: rgb(240 210 100 / 14%);
+}
+
+.lineScore_missed {
+  color: #f09a9a;
+  background: rgb(240 154 154 / 14%);
+}
