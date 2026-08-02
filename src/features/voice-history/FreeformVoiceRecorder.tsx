@@ -29,6 +29,7 @@ interface FreeformVoiceRecorderProps {
   target: FreeformThreadTarget
   onClose: () => void
   onKept: (comparisonKey: string) => Promise<void> | void
+  onStartNewThread: () => void
 }
 
 const MIC_CONSUMER_ID = 'voice-history-freeform'
@@ -423,8 +424,19 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
             }}
           />
           <small id="freeform-prompt-help">
-            This name becomes the thread you can return to and compare later.
+            {props.target.title === ''
+              ? 'This name becomes the thread you can return to and compare later.'
+              : 'This take will join the same thread for comparison.'}
           </small>
+          <Show when={props.target.title !== '' && state() === 'idle'}>
+            <button
+              type="button"
+              class={styles.switchThread}
+              onClick={() => props.onStartNewThread()}
+            >
+              Start a different thread
+            </button>
+          </Show>
           <Show when={titleError()}>
             <strong class={styles.fieldError} role="alert">
               {titleError()}

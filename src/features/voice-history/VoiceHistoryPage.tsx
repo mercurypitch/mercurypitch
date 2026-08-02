@@ -18,9 +18,10 @@ surface seed 828675af; no challenger staging replaces the established shell.
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { IconMic } from '@/components/exercise-icons'
+import { Pencil } from '@/components/icons'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
-import { deleteVoiceTake, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { deleteVoiceTake, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
 import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
@@ -124,11 +125,17 @@ export function VoiceHistoryPage(): JSX.Element {
   const [playerError, setPlayerError] = createSignal<string | null>(null)
   const [recorderTarget, setRecorderTarget] =
     createSignal<FreeformThreadTarget | null>(null)
+  const [renamingKey, setRenamingKey] = createSignal<string | null>(null)
+  const [renameTitle, setRenameTitle] = createSignal('')
+  const [renameError, setRenameError] = createSignal<string | null>(null)
+  const [renameSaving, setRenameSaving] = createSignal(false)
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
   let recordLaunchButton: HTMLButtonElement | undefined
   let recorderReturnFocus: HTMLElement | null = null
+  let renameInput: HTMLInputElement | undefined
+  let renameButton: HTMLButtonElement | undefined
   let comparisonStarted = false
   let comparisonPendingComplete = false
 
@@ -413,6 +420,57 @@ export function VoiceHistoryPage(): JSX.Element {
     closeRecorder()
   }
 
+  function startRenaming(thread: VoiceThread): void {
+    setRenamingKey(thread.key)
+    setRenameTitle(thread.title)
+    setRenameError(null)
+    queueMicrotask(() => {
+      renameInput?.focus()
+      renameInput?.select()
+    })
+  }
+
+  function finishRenaming(): void {
+    setRenamingKey(null)
+    setRenameTitle('')
+    setRenameError(null)
+    setRenameSaving(false)
+    queueMicrotask(() => renameButton?.focus())
+  }
+
+  function submitRename(event: SubmitEvent): void {
+    event.preventDefault()
+    const thread = selectedThread()
+    const nextTitle = renameTitle().trim()
+    if (thread === null || thread.source !== 'freeform') return
+    if (nextTitle === '') {
+      setRenameError('Enter a name for this practice thread.')
+      renameInput?.focus()
+      return
+    }
+    const comparisonKey = thread.key
+    setRenameSaving(true)
+    setRenameError(null)
+    void (async () => {
+      if (await renameFreeformVoiceThread(comparisonKey, nextTitle)) {
+        try {
+          await refresh(comparisonKey)
+          finishRenaming()
+        } catch {
+          setRenameError(
+            'The thread was renamed, but the page could not refresh. Reload Hear Yourself to see it.',
+          )
+          setRenameSaving(false)
+        }
+      } else {
+        setRenameError(
+          'This practice thread could not be renamed. Try again without leaving the page.',
+        )
+        setRenameSaving(false)
+      }
+    })()
+  }
+
   return (
     <section class={styles.page} data-testid="voice-history-page">
       <div class={styles.header}>
@@ -433,7 +491,7 @@ export function VoiceHistoryPage(): JSX.Element {
             disabled={recorderTarget() !== null}
           >
             <IconMic size={18} />
-            Record a take
+            New practice thread
           </button>
           <div class={styles.storageBadge} aria-label="Local voice storage">
             <span class={styles.storageDot} aria-hidden="true" />
@@ -460,12 +518,13 @@ export function VoiceHistoryPage(): JSX.Element {
         </div>
       </Show>
 
-      <Show when={recorderTarget()}>
+      <Show when={recorderTarget()} keyed>
         {(target) => (
           <FreeformVoiceRecorder
-            target={target()}
+            target={target}
             onClose={closeRecorder}
             onKept={handleFreeformKept}
+            onStartNewThread={openNewRecorder}
           />
         )}
       </Show>
@@ -526,6 +585,8 @@ export function VoiceHistoryPage(): JSX.Element {
                     }}
                     onClick={() => {
                       disposeAudio()
+                      setRenamingKey(null)
+                      setRenameError(null)
                       comparisonStarted = false
                       comparisonPendingComplete = false
                       setSelectedKey(thread.key)
@@ -550,28 +611,92 @@ export function VoiceHistoryPage(): JSX.Element {
                 {(thread) => (
                   <>
                     <div class={styles.workspaceHead}>
-                      <div>
-                        <span>{thread().source} thread</span>
-                        <h2>{thread().title}</h2>
-                        <p>
-                          {formatDate(thread().takes[0]!.capturedAt)} to{' '}
-                          {formatDate(thread().takes.at(-1)!.capturedAt)}
-                        </p>
-                      </div>
-                      <div class={styles.workspaceActions}>
-                        <Show when={thread().source === 'freeform'}>
-                          <button
-                            type="button"
-                            class={styles.recordAnother}
-                            onClick={() => openThreadRecorder(thread())}
-                            disabled={recorderTarget() !== null}
-                          >
-                            <IconMic size={16} />
-                            Record another take
-                          </button>
-                        </Show>
-                        <span class={styles.localSeal}>Audio stays local</span>
-                      </div>
+                      <Show
+                        when={renamingKey() === thread().key}
+                        fallback={
+                          <div>
+                            <span>{thread().source} thread</span>
+                            <h2>{thread().title}</h2>
+                            <p>
+                              {formatDate(thread().takes[0]!.capturedAt)} to{' '}
+                              {formatDate(thread().takes.at(-1)!.capturedAt)}
+                            </p>
+                          </div>
+                        }
+                      >
+                        <form class={styles.renameForm} onSubmit={submitRename}>
+                          <label for="voice-thread-name">
+                            Practice thread name
+                          </label>
+                          <div class={styles.renameRow}>
+                            <input
+                              ref={renameInput}
+                              id="voice-thread-name"
+                              value={renameTitle()}
+                              maxlength={80}
+                              disabled={renameSaving()}
+                              aria-invalid={renameError() !== null}
+                              onInput={(event) => {
+                                setRenameTitle(event.currentTarget.value)
+                                if (event.currentTarget.value.trim() !== '') {
+                                  setRenameError(null)
+                                }
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') finishRenaming()
+                              }}
+                            />
+                            <button
+                              type="submit"
+                              class={styles.saveRename}
+                              disabled={renameSaving()}
+                            >
+                              {renameSaving() ? 'Saving…' : 'Save name'}
+                            </button>
+                            <button
+                              type="button"
+                              class={styles.cancelRename}
+                              onClick={finishRenaming}
+                              disabled={renameSaving()}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <Show when={renameError()}>
+                            <p class={styles.renameError} role="alert">
+                              {renameError()}
+                            </p>
+                          </Show>
+                        </form>
+                      </Show>
+                      <Show when={renamingKey() !== thread().key}>
+                        <div class={styles.workspaceActions}>
+                          <Show when={thread().source === 'freeform'}>
+                            <button
+                              ref={renameButton}
+                              type="button"
+                              class={styles.renameThread}
+                              onClick={() => startRenaming(thread())}
+                              disabled={recorderTarget() !== null}
+                            >
+                              <Pencil size={14} />
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              class={styles.recordAnother}
+                              onClick={() => openThreadRecorder(thread())}
+                              disabled={recorderTarget() !== null}
+                            >
+                              <IconMic size={16} />
+                              Record another take
+                            </button>
+                          </Show>
+                          <span class={styles.localSeal}>
+                            Audio stays local
+                          </span>
+                        </div>
+                      </Show>
                     </div>
 
                     <Show

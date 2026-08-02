@@ -141,6 +141,56 @@ export async function updateVoiceTake(
   }
 }
 
+/** Rename every take in one user-created thread without changing its identity. */
+export async function renameFreeformVoiceThread(
+  comparisonKey: string,
+  title: string,
+): Promise<boolean> {
+  const nextTitle = title.trim()
+  if (comparisonKey === '' || nextTitle === '') return false
+  try {
+    const db = await getDb()
+    await localTransaction(db, async (transactionDb) => {
+      const takeRepo =
+        transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
+      const takes = await takeRepo.findAll({ where: { comparisonKey } })
+      if (
+        takes.length === 0 ||
+        takes.some((take) => take.source !== 'freeform')
+      ) {
+        throw new Error('Freeform voice thread not found')
+      }
+
+      for (const take of takes) {
+        let context: Record<string, unknown> = {}
+        try {
+          const parsed = JSON.parse(take.contextJson) as unknown
+          if (
+            typeof parsed === 'object' &&
+            parsed !== null &&
+            !Array.isArray(parsed)
+          ) {
+            context = parsed as Record<string, unknown>
+          }
+        } catch {
+          // Preserve the usable take even if its optional context was corrupt.
+        }
+        await takeRepo.update(take.id, {
+          title: nextTitle,
+          contextJson: JSON.stringify({
+            ...context,
+            threadTitle: nextTitle,
+            prompt: nextTitle,
+          }),
+        })
+      }
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function deleteVoiceTake(takeId: string): Promise<boolean> {
   try {
     const db = await getDb()
