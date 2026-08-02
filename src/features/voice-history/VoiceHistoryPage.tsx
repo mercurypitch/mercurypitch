@@ -17,10 +17,14 @@ surface seed 828675af; no challenger staging replaces the established shell.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { IconMic } from '@/components/exercise-icons'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
+import type { FreeformThreadTarget } from './freeform-voice-take'
+import { createFreeformThreadTarget } from './freeform-voice-take'
+import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import styles from './VoiceHistoryPage.module.css'
 
 interface VoiceThread {
@@ -118,9 +122,13 @@ export function VoiceHistoryPage(): JSX.Element {
   const [playing, setPlaying] = createSignal(false)
   const [progress, setProgress] = createSignal(0)
   const [playerError, setPlayerError] = createSignal<string | null>(null)
+  const [recorderTarget, setRecorderTarget] =
+    createSignal<FreeformThreadTarget | null>(null)
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
+  let recordLaunchButton: HTMLButtonElement | undefined
+  let recorderReturnFocus: HTMLElement | null = null
   let comparisonStarted = false
   let comparisonPendingComplete = false
 
@@ -369,6 +377,42 @@ export function VoiceHistoryPage(): JSX.Element {
     })()
   }
 
+  function openNewRecorder(): void {
+    disposeAudio()
+    recorderReturnFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    setRecorderTarget(createFreeformThreadTarget())
+  }
+
+  function openThreadRecorder(thread: VoiceThread): void {
+    disposeAudio()
+    recorderReturnFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    setRecorderTarget({
+      comparisonKey: thread.key,
+      title: thread.title,
+    })
+  }
+
+  function closeRecorder(): void {
+    const previous = recorderReturnFocus
+    recorderReturnFocus = null
+    setRecorderTarget(null)
+    queueMicrotask(() => {
+      if (previous?.isConnected === true) previous.focus()
+      else recordLaunchButton?.focus()
+    })
+  }
+
+  async function handleFreeformKept(comparisonKey: string): Promise<void> {
+    await refresh(comparisonKey)
+    closeRecorder()
+  }
+
   return (
     <section class={styles.page} data-testid="voice-history-page">
       <div class={styles.header}>
@@ -380,18 +424,30 @@ export function VoiceHistoryPage(): JSX.Element {
             context over time.
           </p>
         </div>
-        <div class={styles.storageBadge} aria-label="Local voice storage">
-          <span class={styles.storageDot} aria-hidden="true" />
-          <strong>
-            {storage() === null
-              ? 'Checking local storage'
-              : `${storage()!.takeCount} kept · ${formatBytes(storage()!.voiceBytes)}`}
-          </strong>
-          <span>
-            {storage()?.persistent === true
-              ? 'Protected from browser cleanup'
-              : 'On this device'}
-          </span>
+        <div class={styles.headerActions}>
+          <button
+            ref={recordLaunchButton}
+            type="button"
+            class={styles.recordLaunch}
+            onClick={openNewRecorder}
+            disabled={recorderTarget() !== null}
+          >
+            <IconMic size={18} />
+            Record a take
+          </button>
+          <div class={styles.storageBadge} aria-label="Local voice storage">
+            <span class={styles.storageDot} aria-hidden="true" />
+            <strong>
+              {storage() === null
+                ? 'Checking local storage'
+                : `${storage()!.takeCount} kept · ${formatBytes(storage()!.voiceBytes)}`}
+            </strong>
+            <span>
+              {storage()?.persistent === true
+                ? 'Protected from automatic cleanup'
+                : 'On this device'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -402,6 +458,16 @@ export function VoiceHistoryPage(): JSX.Element {
             Dismiss
           </button>
         </div>
+      </Show>
+
+      <Show when={recorderTarget()}>
+        {(target) => (
+          <FreeformVoiceRecorder
+            target={target()}
+            onClose={closeRecorder}
+            onKept={handleFreeformKept}
+          />
+        )}
       </Show>
 
       <Show
@@ -420,13 +486,23 @@ export function VoiceHistoryPage(): JSX.Element {
               <div>
                 <h2>Your first thread starts with one kept take.</h2>
                 <p>
-                  Keep a useful replay from Glass, a repeatable Exercise, or a
-                  Weekly Legend result, then return here to hear it. A second
-                  matching take unlocks Earlier/Later comparison.
+                  Name something you want to repeat and record it here, or keep
+                  a useful replay from Glass, an Exercise, or a Weekly Legend
+                  result. A second matching take unlocks Earlier/Later.
                 </p>
-                <a class={styles.primaryAction} href="/glass">
-                  Try Glass
-                </a>
+                <div class={styles.emptyActions}>
+                  <button
+                    type="button"
+                    class={styles.primaryAction}
+                    onClick={openNewRecorder}
+                  >
+                    <IconMic size={18} />
+                    Record here
+                  </button>
+                  <a class={styles.secondaryAction} href="/glass">
+                    Try Glass instead
+                  </a>
+                </div>
               </div>
             </div>
           }
@@ -469,7 +545,7 @@ export function VoiceHistoryPage(): JSX.Element {
               </For>
             </aside>
 
-            <main class={styles.workspace}>
+            <div class={styles.workspace}>
               <Show when={selectedThread()}>
                 {(thread) => (
                   <>
@@ -482,7 +558,20 @@ export function VoiceHistoryPage(): JSX.Element {
                           {formatDate(thread().takes.at(-1)!.capturedAt)}
                         </p>
                       </div>
-                      <span class={styles.localSeal}>Audio stays local</span>
+                      <div class={styles.workspaceActions}>
+                        <Show when={thread().source === 'freeform'}>
+                          <button
+                            type="button"
+                            class={styles.recordAnother}
+                            onClick={() => openThreadRecorder(thread())}
+                            disabled={recorderTarget() !== null}
+                          >
+                            <IconMic size={16} />
+                            Record another take
+                          </button>
+                        </Show>
+                        <span class={styles.localSeal}>Audio stays local</span>
+                      </div>
                     </div>
 
                     <Show
@@ -738,7 +827,7 @@ export function VoiceHistoryPage(): JSX.Element {
                   </>
                 )}
               </Show>
-            </main>
+            </div>
           </div>
         </Show>
       </Show>

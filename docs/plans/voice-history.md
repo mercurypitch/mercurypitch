@@ -1,8 +1,9 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **local vault, Glass, repeatable Exercise, and Weekly Legend capture
-implemented on draft PR #364**, updated 2026-08-01. The remaining local-release
-gate is browser validation, especially the real iPhone Safari recording path.
+Status: **local vault, Glass, repeatable Exercise, Weekly Legend, and direct
+freeform capture implemented on draft PR #364**, updated 2026-08-02. The
+remaining local-release gate is browser validation, especially the real iPhone
+Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -161,8 +162,10 @@ feature from feeling like a generic voice-memo library.
    - Keep user voice separately from copyrighted source/stem media.
    - Comparison keys require a stable local session/song fingerprint.
 5. **Freeform recorder**
-   - A lightweight fallback capture inside the voice-history page, useful for
+   - Implemented as an in-place dry capture inside the voice-history page for
      recurring self-chosen prompts.
+   - A new thread is persisted only after its first take is explicitly kept;
+     **Record another take** reuses that thread's stable comparison key.
 
 Jam recording is deferred. Capturing a live room introduces participant
 consent, multi-party audio, and retention questions that do not belong in the
@@ -435,6 +438,11 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   title snapshot, target score, result score, and tier attached locally.
 - Authored Weekly Legend note sequences used exactly as launched so the saved
   voice take, scoring context, and comparison metadata describe the same run.
+- In-place freeform capture with a named recurring prompt, dry temporary
+  replay, explicit Keep/Discard/Record again, five-minute cap, and shared mic
+  lifecycle cleanup.
+- Stable freeform thread keys: nothing enters the vault until the first keep,
+  and later takes in the same thread become eligible for Earlier/Later.
 - Empty, overview, thread, playback, storage, export, and delete states.
 - Navigable mystery card and dedicated **Hear Yourself** tab.
 - Earlier/Later workspace for matching Glass target contexts.
@@ -449,12 +457,13 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   behavior.
 - Confirm same-challenge Weekly Legend takes compare directly and cross-week
   attempts remain in separate threads.
+- Confirm a direct take is absent after discard, survives reload after keep,
+  and unlocks Earlier/Later after **Record another take** in the same thread.
 - Open the beta only after the two-take flow passes on Chromium and Safari.
 
 ### PR 5 — source expansion
 
 - Karaoke take adapter.
-- Freeform threads if user demand justifies them.
 - Storage-management refinements from measured take sizes and failure rates.
 - Jam remains excluded until multi-party consent is designed.
 
