@@ -423,6 +423,28 @@ export function legendArt(name: string): LegendArt {
   return LEGENDS[name] ?? FALLBACK
 }
 
+/**
+ * The portrait sized for a thumbnail box, or undefined when the legend has
+ * no raster art.
+ *
+ * The full portraits are 928x1152. Handing one to a 30x37 box asks the
+ * browser for a 31x downscale, and at 125%/200% zoom it stops taking the
+ * high-quality path and the face turns to mush — the same failure the jam
+ * backdrops hit from the other direction (upscaling a 1x still onto a
+ * hi-DPI screen), solved the same way: ship the pixels the box actually
+ * needs. At 120px wide the worst case left is a 4x downscale, which is
+ * what the big card portrait already does and looks right at every zoom.
+ *
+ * Derived by convention rather than a second field per legend, so adding a
+ * legend only means generating its thumb — and a test asserts every
+ * imageSrc has one, so a missing file fails the suite instead of the page.
+ */
+export function legendThumbSrc(name: string): string | undefined {
+  const src = legendArt(name).imageSrc
+  if (src == null || src === '') return undefined
+  return src.replace('/legends/', '/legends/thumbs/')
+}
+
 export const LegendCaricature: Component<{
   legend: string
   /** Extra class for sizing / animation hooks. */

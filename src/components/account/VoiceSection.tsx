@@ -20,7 +20,7 @@ import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
 import { authVersion } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
-import { legendArt, LegendCaricature } from '@/features/mirror/LegendCaricature'
+import { legendArt, LegendCaricature, legendThumbSrc, } from '@/features/mirror/LegendCaricature'
 import { renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -124,11 +124,12 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
     return legendArt(twin).imageSrc
   }
 
-  /** Small twin portrait for a history chip, when that take has one. */
+  /** Small twin portrait for a history chip, when that take has one.
+   *  Deliberately the thumb asset, not the full portrait — see
+   *  legendThumbSrc for why a 31x downscale mushes at 125%/200% zoom. */
   const historyThumbSrc = (print: VoiceprintRecord): string | undefined => {
     if (print.twin == null || print.twin === '') return undefined
-    const src = legendArt(print.twin).imageSrc
-    return src == null || src === '' ? undefined : src
+    return legendThumbSrc(print.twin)
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -314,8 +315,8 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
                     <img
                       class={styles.historyThumb}
                       src={historyThumbSrc(print)}
-                      width="928"
-                      height="1152"
+                      width="120"
+                      height="149"
                       alt=""
                       loading="lazy"
                       decoding="async"
