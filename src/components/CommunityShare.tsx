@@ -11,7 +11,7 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
-import { accuracySeries, profileStats, scoreSeries, } from '@/features/community/profile-model'
+import { ProfileView } from '@/features/community/ProfileView'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare } from '@/lib/share-codec'
 import { storageGet, storageSet } from '@/lib/storage'
@@ -84,20 +84,6 @@ const IconUser = () => (
   </svg>
 )
 
-const IconStreak = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.4.5.7 1.3 1 2.3z" />
-  </svg>
-)
-
 const IconMic = () => (
   <svg
     viewBox="0 0 24 24"
@@ -112,21 +98,6 @@ const IconMic = () => (
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" x2="12" y1="19" y2="23" />
     <line x1="8" x2="16" y1="23" y2="23" />
-  </svg>
-)
-
-const IconGoal = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 6v6l4 2" />
   </svg>
 )
 
@@ -173,51 +144,6 @@ const IconEye = () => (
   >
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
     <circle cx="12" cy="12" r="3" />
-  </svg>
-)
-
-const IconMusic = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M9 18V5l12-2v13" />
-    <circle cx="6" cy="18" r="3" />
-    <circle cx="18" cy="16" r="3" />
-  </svg>
-)
-
-const IconBook = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-  </svg>
-)
-
-const IconStar = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    class="icon-svg"
-  >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 )
 
@@ -374,29 +300,6 @@ export const CommunityShare: Component = () => {
           : 0,
       accuracy: sessions.length > 0 ? avgScore : 0,
       joinDate: dbProf?.joinDate ?? Date.now() - 1000 * 60 * 60 * 24 * 30,
-    }
-  })
-
-  // Real recent-session series for the profile charts (oldest → newest).
-  // The arithmetic lives in profile-model so it can be tested without
-  // mounting this 1100-line component, and so the profile can be rebuilt
-  // around it without touching the rest of the Community tab.
-  const recentScores = createMemo(() => scoreSeries(getSessionHistory(), 8))
-  const recentAccuracy = createMemo(() =>
-    accuracySeries(getSessionHistory(), 8),
-  )
-
-  // Real personal records derived from session history (null if none yet).
-  // Null, not zeros: "best score 0%" reads as a bad result to someone who
-  // has simply not sung yet.
-  const personalRecords = createMemo(() => {
-    const stats = profileStats(getSessionHistory())
-    if (stats === null) return null
-    return {
-      best: stats.best,
-      sessions: stats.sessions,
-      recentAvg: stats.recentAverage,
-      firstDate: new Date(stats.firstAt).toLocaleDateString(),
     }
   })
 
@@ -826,199 +729,14 @@ export const CommunityShare: Component = () => {
         </Show>
 
         <Show when={activeTab() === 'profile'}>
-          <div class={profileStyles.profileContainer}>
-            {/* Profile Header */}
-            <div class={profileStyles.profileHeader}>
-              <div class={profileStyles.profileAvatar}>{IconUser()}</div>
-              <div class={profileStyles.profileInfo}>
-                <h2 class={profileStyles.profileName}>
-                  {currentProfile()?.displayName}
-                </h2>
-                <p class={profileStyles.profileBio}>{currentProfile()?.bio}</p>
-                <div class={profileStyles.profileStatsRow}>
-                  <div class={profileStyles.statCard}>
-                    <span class={profileStyles.statCardLabel}>Streak</span>
-                    <span
-                      class={`${profileStyles.statValue} ${profileStyles.statValueStreak}`}
-                    >
-                      {currentProfile()?.streak} <IconStreak />
-                    </span>
-                  </div>
-                  <div class={profileStyles.statCard}>
-                    <span class={profileStyles.statCardLabel}>Sessions</span>
-                    <span class={profileStyles.statValue}>
-                      {currentProfile()?.totalSessions}
-                    </span>
-                  </div>
-                  <div class={profileStyles.statCard}>
-                    <span class={profileStyles.statCardLabel}>Best Score</span>
-                    <span
-                      class={`${profileStyles.statValue} ${profileStyles.statValueScore}`}
-                    >
-                      {currentProfile()?.bestScore}%
-                    </span>
-                  </div>
-                  <div class={profileStyles.statCard}>
-                    <span class={profileStyles.statCardLabel}>Accuracy</span>
-                    <span
-                      class={`${profileStyles.statValue} ${profileStyles.statValueAccuracy}`}
-                    >
-                      {currentProfile()?.accuracy}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress charts — derived from your real practice history */}
-            <div class={profileStyles.profileCharts}>
-              <div class="chart-card">
-                <h3>Recent Scores</h3>
-                <Show
-                  when={recentScores().length > 0}
-                  fallback={
-                    <p class="chart-empty">
-                      Complete a practice session to see your progress.
-                    </p>
-                  }
-                >
-                  <div class="mini-chart">
-                    <For each={recentScores()}>
-                      {(score) => (
-                        <div class="mini-bar-wrapper">
-                          <div
-                            class="mini-bar"
-                            style={{
-                              height: `${score}%`,
-                              background: getBarColor(score),
-                            }}
-                          />
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-              </div>
-              <div class="chart-card">
-                <h3>Accuracy</h3>
-                <Show
-                  when={recentAccuracy().length > 0}
-                  fallback={<p class="chart-empty">No data yet.</p>}
-                >
-                  <div class="mini-chart">
-                    <For each={recentAccuracy()}>
-                      {(score) => (
-                        <div class="mini-bar-wrapper">
-                          <div
-                            class="mini-bar line-chart"
-                            style={{
-                              height: `${score}%`,
-                              background: getBarColor(score),
-                            }}
-                          />
-                        </div>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-              </div>
-            </div>
-
-            {/* Personal Records — real, derived from session history */}
-            <div class="personal-records">
-              <h3>Personal Records</h3>
-              <Show
-                when={personalRecords()}
-                fallback={
-                  <p class="chart-empty">
-                    Complete a practice session to start building records.
-                  </p>
-                }
-              >
-                {(rec) => (
-                  <div class="records-grid">
-                    <div class="record-item">
-                      <span class="record-icon">{IconStar()}</span>
-                      <div class="record-info">
-                        <span class="record-label">Best Score</span>
-                        <span class="record-value">{rec().best}%</span>
-                      </div>
-                    </div>
-                    <div class="record-item">
-                      <span class="record-icon">{IconSession()}</span>
-                      <div class="record-info">
-                        <span class="record-label">Sessions</span>
-                        <span class="record-value">{rec().sessions}</span>
-                      </div>
-                    </div>
-                    <div class="record-item">
-                      <span class="record-icon">{IconGoal()}</span>
-                      <div class="record-info">
-                        <span class="record-label">Recent Avg</span>
-                        <span class="record-value">{rec().recentAvg}%</span>
-                      </div>
-                    </div>
-                    <div class="record-item">
-                      <span class="record-icon">{IconMelody()}</span>
-                      <div class="record-info">
-                        <span class="record-label">First Session</span>
-                        <span class="record-value">{rec().firstDate}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </Show>
-            </div>
-
-            {/* Shared Content Preview */}
-            <div class="shared-content-preview">
-              <h3>Shared Content</h3>
-              <div class="preview-list">
-                <Show when={displayMelodies().length > 0}>
-                  <div class="preview-section">
-                    <h4>
-                      <IconMusic /> Shared Melodies
-                    </h4>
-                    <div class="preview-grid">
-                      <For each={displayMelodies().slice(0, 3)}>
-                        {(melody) => (
-                          <div class="preview-card">
-                            <span class="preview-name">{melody.name}</span>
-                            <span class="preview-date">
-                              {new Date(melody.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                      </For>
-                    </div>
-                  </div>
-                </Show>
-                <Show when={displaySessions().length > 0}>
-                  <div class="preview-section">
-                    <h4>
-                      <IconBook /> Shared Sessions
-                    </h4>
-                    <div class="preview-grid">
-                      <For each={displaySessions().slice(0, 3)}>
-                        {(session) => (
-                          <div class="preview-card">
-                            <span class="preview-name">{session.name}</span>
-                            <span class="preview-scores">
-                              <For each={session.results.slice(0, 2)}>
-                                {(s) => `${s}%`}
-                              </For>
-                              {session.results.length > 2 &&
-                                `+${session.results.length - 2}`}
-                            </span>
-                          </div>
-                        )}
-                      </For>
-                    </div>
-                  </div>
-                </Show>
-              </div>
-            </div>
-          </div>
+          <ProfileView
+            displayName={currentProfile().displayName}
+            bio={currentProfile().bio}
+            sessions={getSessionHistory()}
+            streak={currentProfile().streak}
+            sharedMelodies={displayMelodies().length}
+            sharedSessions={displaySessions().length}
+          />
         </Show>
       </div>
 
@@ -1159,12 +877,5 @@ export const CommunityShare: Component = () => {
     m: ReturnType<typeof melodyStore.currentMelody>,
   ): boolean {
     return m !== null && m !== undefined && m.items.length > 0
-  }
-
-  function getBarColor(score: number): string {
-    if (score >= 90) return 'var(--green)'
-    if (score >= 75) return 'var(--accent)'
-    if (score >= 60) return 'var(--teal)'
-    return 'var(--yellow)'
   }
 }

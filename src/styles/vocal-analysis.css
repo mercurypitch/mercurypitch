@@ -4051,3 +4051,35 @@
 .community-share-tab .empty-state .primary-btn svg {
   color: inherit;
 }
+
+/* The date sits beside the title, and baseline alignment dropped it: a
+   smaller font on a shared baseline centres lower than its neighbour
+   (measured 12px against the row's 10.4px middle). Giving both a line box
+   of the same height instead lets each string centre inside its own box,
+   so they read as one line — and a title that wraps still keeps the date
+   beside its FIRST line rather than drifting to the middle of two. */
+.community-share-tab .melody-header {
+  --row-line: 1.3rem;
+  align-items: flex-start;
+}
+
+.community-share-tab .melody-name {
+  line-height: var(--row-line);
+}
+
+.community-share-tab .melody-date {
+  line-height: var(--row-line);
+}
+
+/* Same shared line box for the session card's author and date: they are
+   different sizes, so a common baseline left the smaller one measurably
+   low (1.5px) against its neighbour. */
+.community-share-tab .session-info {
+  --row-line: 1.15rem;
+  align-items: flex-start;
+}
+
+.community-share-tab .session-author,
+.community-share-tab .session-date {
+  line-height: var(--row-line);
+}
