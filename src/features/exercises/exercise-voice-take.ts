@@ -79,6 +79,7 @@ export async function keepExerciseVoiceTake(input: {
     durationMs: input.take.durationMs,
     blob: input.take.blob,
     peaks: input.take.peaks,
+    contour: input.take.contour,
     title: threadTitle,
     context: {
       threadTitle,

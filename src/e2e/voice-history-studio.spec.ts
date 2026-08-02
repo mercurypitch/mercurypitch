@@ -1,5 +1,5 @@
 // ============================================================
-// Hear Yourself studio — live capture, room slider, and safe deletion
+// Hear Yourself studio — capture, Twin Trails, reflections, and safe deletion
 // ============================================================
 
 import { expect, test } from '@playwright/test'
@@ -13,7 +13,7 @@ test.use({
   permissions: ['microphone'],
 })
 
-test('records visibly, drags a room control, and confirms deletion in-app @smoke', async ({
+test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke', async ({
   page,
 }) => {
   test.setTimeout(90000)
@@ -48,17 +48,32 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
 
   await expect(page.getByText('Listening room')).toBeVisible({ timeout: 10000 })
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
+  await expect(page.getByText('Take Topography', { exact: true })).toBeVisible()
+  await expect(page.getByText('1 mapped', { exact: true })).toBeVisible()
   await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)
-  await page.getByRole('button', { name: 'Play take' }).click()
-  await page.getByRole('button', { name: 'Pause take' }).click()
+  await page.getByRole('button', { name: 'Play Earlier take' }).click()
+  await page.getByRole('button', { name: 'Pause Earlier take' }).click()
 
-  const seek = page
-    .getByRole('slider', { name: 'Seek Room and waveform check' })
-    .first()
+  await page.getByRole('button', { name: 'Record another take' }).click()
+  await page.getByRole('button', { name: 'Start recording' }).click()
+  await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
+  await page.waitForTimeout(900)
+  await page.getByRole('button', { name: 'Stop recording' }).click()
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
+    timeout: 15000,
+  })
+  await page.getByRole('button', { name: 'Keep Take' }).click()
+
+  await expect(page.getByText('2 / 2 mapped', { exact: true })).toBeVisible({
+    timeout: 10000,
+  })
+
+  const seek = page.getByTestId('voice-atlas-slider')
+  await seek.scrollIntoViewIfNeeded()
   const seekBounds = await seek.boundingBox()
-  if (seekBounds === null) throw new Error('Take waveform has no bounds')
+  if (seekBounds === null) throw new Error('Voice Atlas has no scrub bounds')
   const seekY = seekBounds.y + seekBounds.height / 2
   await page.mouse.move(seekBounds.x + seekBounds.width * 0.62, seekY)
   await page.mouse.down()
@@ -66,9 +81,13 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
     steps: 5,
   })
   await page.mouse.up()
+  const seekMaximum = Number(await seek.getAttribute('aria-valuemax'))
   await expect
-    .poll(async () => Number(await seek.getAttribute('aria-valuenow')))
-    .toBeGreaterThan(64)
+    .poll(
+      async () =>
+        Number(await seek.getAttribute('aria-valuenow')) / seekMaximum,
+    )
+    .toBeGreaterThan(0.64)
   const pointerProgress = Number(await seek.getAttribute('aria-valuenow'))
   await seek.focus()
   await seek.press('ArrowRight')
@@ -76,7 +95,17 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
     .poll(async () => Number(await seek.getAttribute('aria-valuenow')))
     .toBeGreaterThan(pointerProgress)
 
+  await page.getByLabel('Optional note').fill('The onset opens here.')
+  await page.getByTestId('reflection-beacon-curious').click()
+  const marker = page.locator('[data-testid^="voice-atlas-marker-"]').first()
+  await expect(marker).toBeVisible()
+  await marker.click()
+  await expect(page.getByText('The onset opens here.')).toBeVisible()
+  await page.getByTestId('reflection-beacon-remove').click()
+  await expect(marker).toHaveCount(0)
+
   const echo = page.getByTestId('voice-room-echo')
+  await echo.scrollIntoViewIfNeeded()
   const bounds = await echo.boundingBox()
   if (bounds === null) throw new Error('Echo room slider has no bounds')
   const y = bounds.y + bounds.height / 2
@@ -102,7 +131,10 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
   ).toBeEnabled()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
-  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Delete', exact: true })
+    .first()
+    .click()
   await expect(page.getByRole('alertdialog')).toContainText(
     'Delete Room and waveform check from this device?',
   )
@@ -136,7 +168,7 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
   )
   await page.getByTestId('confirm-phrase').fill('delete')
   await page.getByRole('button', { name: 'Delete thread' }).click()
-  await expect(page.getByText('1 kept')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText('2 kept')).toBeVisible({ timeout: 10000 })
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
 
   await page

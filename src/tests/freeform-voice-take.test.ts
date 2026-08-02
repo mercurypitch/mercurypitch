@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFreeformThreadTarget, keepFreeformVoiceTake, } from '@/features/voice-history/freeform-voice-take'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 const { saveVoiceTakeMock } = vi.hoisted(() => ({
   saveVoiceTakeMock: vi.fn(),
@@ -39,6 +40,9 @@ describe('freeform voice-take context', () => {
       durationMs: 4800,
       peaks: new Float32Array([0.2, 0.8]),
       capturedAt: '2026-08-02T12:00:00.000Z',
+      contour: encodeVoiceAtlasContour([], {
+        source: 'f0-stream-yin-v1',
+      }),
     }
 
     await keepFreeformVoiceTake({
@@ -55,6 +59,7 @@ describe('freeform voice-take context', () => {
       durationMs: take.durationMs,
       blob: take.blob,
       peaks: take.peaks,
+      contour: take.contour,
       title: 'First chorus after warm-up',
       context: {
         threadTitle: 'First chorus after warm-up',

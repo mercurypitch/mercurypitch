@@ -144,6 +144,13 @@ export interface VoiceTakeRecord extends DbEntity {
   contextJson: string
   metricsJson?: string
   metricsVersion?: number
+  /** Present when a separate local contour row can power Voice Atlas. */
+  contourVersion?: number
+  contourPointCount?: number
+  contourBytes?: number
+  /** Small subjective replay markers; the heavier contour remains separate. */
+  reflectionsJson?: string
+  reflectionsVersion?: number
   roomId?: string
 }
 
@@ -153,6 +160,15 @@ export interface VoiceTakeAudioRecord extends DbEntity {
   mimeType: string
   size: number
   data: ArrayBuffer
+}
+
+/** One-to-one compact F0/confidence/RMS payload for Voice Atlas rendering. */
+export interface VoiceTakeContourRecord extends DbEntity {
+  takeId: string
+  contourVersion: number
+  analysisSource: string
+  pointCount: number
+  payloadJson: string
 }
 
 // ── Voiceprints ─────────────────────────────────────────────────

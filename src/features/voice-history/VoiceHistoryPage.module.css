@@ -33,9 +33,7 @@
 
 .kicker,
 .threadSource,
-.sideLabel,
 .workspaceHead > div > span,
-.compareTopline span,
 .timelineHeading span {
   font-size: 0.72rem;
   font-weight: 700;
@@ -182,7 +180,6 @@
 }
 
 .threadButton:focus-visible,
-.playButton:focus-visible,
 .primaryAction:focus-visible,
 .secondaryAction:focus-visible,
 .recordLaunch:focus-visible,
@@ -226,7 +223,6 @@
 }
 
 .workspaceHead,
-.compareTopline,
 .timelineHeading {
   display: flex;
   align-items: end;
@@ -335,63 +331,6 @@
   color: #ffb5b5;
 }
 
-.compare {
-  margin-top: 26px;
-  padding: clamp(18px, 2.5vw, 30px);
-  border-radius: 15px;
-  background: #0c1320;
-  box-shadow: 0 15px 38px rgb(0 0 0 / 28%);
-}
-
-.compareTopline h3 {
-  max-width: 22ch;
-  margin: 5px 0 0;
-  font-size: clamp(1.35rem, 2.4vw, 2.15rem);
-  letter-spacing: -0.025em;
-}
-
-.progressTrack {
-  width: min(260px, 32%);
-  height: 3px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 10%);
-}
-
-.progressTrack span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: #8db8ff;
-  transform-origin: left;
-}
-
-.compareSides {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  margin-top: 25px;
-  background: var(--vh-line);
-}
-
-.compareSide {
-  display: grid;
-  gap: 7px;
-  min-width: 0;
-  padding: 22px;
-  background: #0c1320;
-  transition: background 180ms ease;
-}
-
-.sideActive {
-  background: #111c2e;
-}
-
-.compareSide > span:not(.sideLabel) {
-  font-size: 0.8rem;
-  color: var(--vh-muted);
-}
-
 .waveform {
   position: relative;
   display: block;
@@ -450,8 +389,6 @@
   transform: translateY(0);
 }
 
-.playButton,
-.oneTake button,
 .primaryAction {
   justify-self: start;
   min-height: 42px;
@@ -470,51 +407,6 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.takeSelectors {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  margin-top: 20px;
-}
-
-.takeSelectors label {
-  display: grid;
-  gap: 7px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--vh-muted);
-}
-
-.takeSelectors select {
-  width: 100%;
-  min-height: 42px;
-  padding: 8px 10px;
-  color: var(--vh-ink);
-  border: 1px solid var(--vh-line);
-  border-radius: 10px;
-  background: #080e18;
-}
-
-.oneTake {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.8fr) 1fr;
-  align-items: center;
-  gap: 28px;
-  margin-top: 26px;
-  padding: 26px;
-  border-radius: 15px;
-  background: #0c1320;
-}
-
-.oneTake h3 {
-  margin: 0 0 7px;
-}
-
-.oneTake p {
-  margin: 0 0 17px;
-  color: var(--vh-muted);
 }
 
 .timeline {
@@ -615,17 +507,6 @@
   color: #ffd3d3;
   border-radius: 12px;
   background: #2a151b;
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  border: 0;
-  clip-path: inset(50%);
 }
 
 .alert {
@@ -849,37 +730,6 @@
     min-width: 0;
   }
 
-  .takeSelectors,
-  .oneTake {
-    grid-template-columns: 1fr;
-  }
-
-  .compare {
-    margin-top: 12px;
-    padding: 15px 12px;
-  }
-
-  .compareTopline {
-    align-items: start;
-  }
-
-  .compareTopline h3 {
-    font-size: 1.28rem;
-  }
-
-  .compareSide {
-    padding: 12px 10px;
-  }
-
-  .compareSide .waveform {
-    height: 48px;
-  }
-
-  .playButton {
-    min-height: 40px;
-    padding: 8px 11px;
-  }
-
   .takeRow {
     grid-template-columns: 30px 1fr auto;
     padding: 12px 0;
@@ -907,10 +757,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .threadButton,
-  .compareSide,
   .waveformCanvas,
-  .waveformHint,
-  .progressTrack span {
+  .waveformHint {
     transition: none;
   }
 }

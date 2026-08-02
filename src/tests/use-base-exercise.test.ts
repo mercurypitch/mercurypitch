@@ -269,6 +269,15 @@ describe('useBaseExercise', () => {
   })
 
   it('captures a completed run in memory with the configuration from start', async () => {
+    let nextFrame: FrameRequestCallback | undefined
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        nextFrame = callback
+        return 1
+      }),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
     class MockMediaRecorder {
       static isTypeSupported = vi.fn().mockReturnValue(true)
       state: RecordingState = 'inactive'
@@ -291,7 +300,10 @@ describe('useBaseExercise', () => {
 
     const audioEngine = createMockAudioEngine()
     vi.mocked(audioEngine.getMicStream).mockReturnValue({} as MediaStream)
-    const practiceEngine = createMockPracticeEngine()
+    const practiceEngine = createMockPracticeEngine({
+      update: vi.fn().mockReturnValue(null),
+      getInputLevel: vi.fn().mockReturnValue(0.25),
+    } as unknown as Partial<PracticeEngine>)
     let targetNote = 'A3'
 
     await createRoot(async (dispose) => {
@@ -303,6 +315,7 @@ describe('useBaseExercise', () => {
 
       await expect(base.start()).resolves.toBe(true)
       expect(base.voiceCapture.state()).toBe('recording')
+      nextFrame?.(performance.now())
 
       // A setting changed after Start belongs to the next run, not this take.
       targetNote = 'B3'
@@ -319,6 +332,13 @@ describe('useBaseExercise', () => {
       expect(base.voiceCapture.take()?.config.targetNote).toBe('A3')
       expect(base.voiceCapture.take()?.blob.size).toBeGreaterThan(0)
       expect(base.voiceCapture.take()?.result.score).toBe(82)
+      expect(base.voiceCapture.take()?.contour.s).toBe('practice-engine-v1')
+      expect(base.voiceCapture.take()?.contour.p).toHaveLength(1)
+      expect(base.voiceCapture.take()?.contour.p[0]?.slice(1)).toEqual([
+        null,
+        0,
+        64,
+      ])
 
       base.voiceCapture.discard()
       expect(base.voiceCapture.state()).toBe('idle')

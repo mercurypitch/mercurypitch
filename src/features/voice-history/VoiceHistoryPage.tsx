@@ -7,32 +7,39 @@ THESIS: Voice history is a listening desk organised by recurring practice
 threads, never a generic voice-memo grid.
 OWN-WORLD: MercuryPitch's dark Pitch Studio surfaces, ruled waveform fields,
 quiet blue-violet accents, and compact native controls.
-STORY: The singer sees what is ready to compare, chooses Earlier and Later,
-hears one dry take at a time, and can inspect/export/delete every local file.
-FIRST VIEWPORT: A narrow thread rail sits beside one large comparison field;
-privacy and storage status stay in the header, not in a separate settings maze.
+STORY: The singer enters a practice thread, sees its Take Topography become
+Twin Trails, listens on one shared clock, and leaves subjective reflections.
+FIRST VIEWPORT: A narrow thread rail sits beside Voice Atlas as the central
+field; privacy and storage status stay in the header, with listening room
+controls following the map instead of displacing it.
 FORM: Context-first practice threads, the third grounded structure selected by
-surface seed 828675af; no challenger staging replaces the established shell.
+surface seed 828675af, extended through spectral cartography without replacing
+the established Pitch Studio shell.
 */
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconMic } from '@/components/exercise-icons'
 import { Pencil } from '@/components/icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
-import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { createMediaProgressLoop, isMediaPlaybackActive, mediaProgressFromPointer, } from '@/lib/media-progress-loop'
+import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
 import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
 import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import { bindListeningRoomSettings } from './listening-room-settings'
+import { buildVoiceAtlasRenderModel } from './voice-atlas-model'
+import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
+import { createVoiceReflection, parseVoiceReflections, } from './voice-reflections'
+import { VoiceAtlasPanel } from './VoiceAtlasPanel'
 import styles from './VoiceHistoryPage.module.css'
 import { VoiceRoomPanel } from './VoiceRoomPanel'
 
@@ -60,6 +67,22 @@ export function createPlaybackRequestGate(): {
     },
     cancel: () => {
       generation += 1
+    },
+  }
+}
+
+export function createTakeMutationQueue(): {
+  enqueue: (takeId: string, mutation: () => Promise<void>) => Promise<void>
+} {
+  const tails = new Map<string, Promise<void>>()
+  return {
+    enqueue: (takeId, mutation) => {
+      const previous = tails.get(takeId) ?? Promise.resolve()
+      const current = previous.catch(() => undefined).then(mutation)
+      tails.set(takeId, current)
+      return current.finally(() => {
+        if (tails.get(takeId) === current) tails.delete(takeId)
+      })
     },
   }
 }
@@ -206,6 +229,10 @@ export function VoiceHistoryPage(): JSX.Element {
   const [roomSettings, setRoomSettings] = createSignal<FxSettings>({
     ...FX_PRESETS[0].settings,
   })
+  const [contours, setContours] = createSignal<
+    Record<string, DecodedVoiceAtlasContour | null>
+  >({})
+  const [contoursLoading, setContoursLoading] = createSignal(false)
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
@@ -219,9 +246,11 @@ export function VoiceHistoryPage(): JSX.Element {
   let renameButton: HTMLButtonElement | undefined
   let comparisonStarted = false
   let comparisonPendingComplete = false
+  let contourLoadGeneration = 0
   let playbackTakeId: string | null = null
   let playbackIsCurrent = (): boolean => false
   const playbackRequests = createPlaybackRequestGate()
+  const reflectionMutations = createTakeMutationQueue()
   const playbackProgress = createMediaProgressLoop(setProgress)
 
   const threads = createMemo<VoiceThread[]>(() => {
@@ -266,6 +295,37 @@ export function VoiceHistoryPage(): JSX.Element {
   const later = createMemo(
     () => selectedThread()?.takes.find((take) => take.id === laterId()) ?? null,
   )
+  const atlasLater = createMemo(() =>
+    (selectedThread()?.takes.length ?? 0) >= 2 ? later() : null,
+  )
+  const contourSelectionKey = createMemo(() =>
+    [earlier()?.id, atlasLater()?.id]
+      .filter((id): id is string => id !== undefined)
+      .join('\n'),
+  )
+  const atlasModel = createMemo(() => {
+    const earlierTake = earlier()
+    const laterTake = atlasLater()
+    const loadedContours = contours()
+    return buildVoiceAtlasRenderModel({
+      earlier:
+        earlierTake === null
+          ? null
+          : {
+              contour: loadedContours[earlierTake.id] ?? null,
+              durationSeconds: earlierTake.durationMs / 1000,
+              analysisExpected: earlierTake.contourVersion !== undefined,
+            },
+      later:
+        laterTake === null
+          ? null
+          : {
+              contour: loadedContours[laterTake.id] ?? null,
+              durationSeconds: laterTake.durationMs / 1000,
+              analysisExpected: laterTake.contourVersion !== undefined,
+            },
+    })
+  })
 
   function ensureListeningContext(): AudioContext | null {
     if (listeningContext !== null && listeningContext.state !== 'closed') {
@@ -380,8 +440,45 @@ export function VoiceHistoryPage(): JSX.Element {
       setLaterId(null)
       return
     }
+    const currentEarlierIndex = thread.takes.findIndex(
+      (take) => take.id === earlierId(),
+    )
+    const currentLaterIndex = thread.takes.findIndex(
+      (take) => take.id === laterId(),
+    )
+    if (
+      currentEarlierIndex >= 0 &&
+      (thread.takes.length === 1
+        ? currentLaterIndex === currentEarlierIndex
+        : currentLaterIndex > currentEarlierIndex)
+    ) {
+      return
+    }
     setEarlierId(thread.takes[0]!.id)
     setLaterId(thread.takes.at(-1)!.id)
+  })
+
+  createEffect(() => {
+    const selectionKey = contourSelectionKey()
+    const ids =
+      selectionKey === '' ? [] : [...new Set(selectionKey.split('\n'))]
+    const generation = ++contourLoadGeneration
+    if (ids.length === 0) {
+      setContours({})
+      setContoursLoading(false)
+      return
+    }
+    setContoursLoading(true)
+    void Promise.all(
+      ids.map(async (id) => [id, await getVoiceTakeContour(id)] as const),
+    )
+      .then((loaded) => {
+        if (generation !== contourLoadGeneration) return
+        setContours(Object.fromEntries(loaded))
+      })
+      .finally(() => {
+        if (generation === contourLoadGeneration) setContoursLoading(false)
+      })
   })
 
   onMount(() => {
@@ -699,6 +796,63 @@ export function VoiceHistoryPage(): JSX.Element {
         )
       }
     })()
+  }
+
+  function mutateReflections(
+    takeId: string,
+    mutation: (current: readonly VoiceReflection[]) => VoiceReflection[],
+    failureMessage: string,
+  ): void {
+    void reflectionMutations
+      .enqueue(takeId, async () => {
+        // Read only after earlier writes settle; this is a snapshot, not a
+        // reactive subscription owned by the queued callback.
+        const take = untrack(takes).find((candidate) => candidate.id === takeId)
+        if (take === undefined) return
+        const current = parseVoiceReflections(
+          take.reflectionsJson,
+          take.reflectionsVersion,
+        )
+        const updated = await updateVoiceTakeReflections(
+          takeId,
+          mutation(current),
+        )
+        if (updated === null) throw new Error('Reflection update failed')
+        setTakes((items) =>
+          items.map((item) => (item.id === updated.id ? updated : item)),
+        )
+      })
+      .catch(() => {
+        setPlayerError(failureMessage)
+      })
+  }
+
+  function addReflection(
+    takeId: string,
+    kind: VoiceReflectionKind,
+    position: number,
+    note: string,
+  ): void {
+    const reflection = createVoiceReflection({
+      id: globalThis.crypto.randomUUID(),
+      kind,
+      position,
+      note,
+    })
+    mutateReflections(
+      takeId,
+      (current) => [...current, reflection],
+      'That reflection could not be saved on this device. Try again.',
+    )
+  }
+
+  function removeReflection(takeId: string, reflectionId: string): void {
+    mutateReflections(
+      takeId,
+      (current) =>
+        current.filter((reflection) => reflection.id !== reflectionId),
+      'That reflection could not be removed from this device. Try again.',
+    )
   }
 
   function chooseEarlier(id: string): void {
@@ -1105,142 +1259,31 @@ export function VoiceHistoryPage(): JSX.Element {
                       </Show>
                     </div>
 
-                    <VoiceRoomPanel
-                      settings={roomSettings()}
-                      onChange={setRoomSettings}
-                    />
-
-                    <Show
-                      when={thread.takes.length >= 2}
-                      fallback={
-                        <div class={styles.oneTake}>
-                          <Waveform
-                            take={thread.takes[0]!}
-                            active={activeId() === thread.takes[0]!.id}
-                            progress={progress()}
-                            playing={playing()}
-                            onSeek={(nextProgress) =>
-                              seekTake(thread.takes[0]!, nextProgress)
-                            }
-                          />
-                          <div>
-                            <h3>One more matching take unlocks comparison.</h3>
-                            <p>
-                              Replay this one now, then return to the same
-                              practice context later.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => void playTake(thread.takes[0]!)}
-                            >
-                              {activeId() === thread.takes[0]!.id && playing()
-                                ? 'Pause take'
-                                : 'Play take'}
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    >
-                      <section
-                        class={styles.compare}
-                        aria-label="Earlier and later comparison"
-                      >
-                        <div class={styles.compareTopline}>
-                          <div>
-                            <span>A/B listening</span>
-                            <h3>Then, now, and the space between.</h3>
-                          </div>
-                          <div
-                            class={styles.progressTrack}
-                            role="progressbar"
-                            aria-label="Active comparison take playback"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            aria-valuenow={Math.round(progress() * 100)}
-                          >
-                            <span
-                              style={{ transform: `scaleX(${progress()})` }}
-                            />
-                          </div>
-                        </div>
-                        <p class={styles.srOnly} aria-live="polite">
-                          {activeId() === earlier()?.id
-                            ? `Earlier take ${playing() ? 'playing' : 'selected'}`
-                            : activeId() === later()?.id
-                              ? `Later take ${playing() ? 'playing' : 'selected'}`
-                              : 'No comparison take selected'}
-                        </p>
-                        <div class={styles.compareSides}>
-                          <For
-                            each={[
-                              { label: 'Earlier', take: earlier() },
-                              { label: 'Later', take: later() },
-                            ]}
-                          >
-                            {(side) => (
-                              <div
-                                class={styles.compareSide}
-                                classList={{
-                                  [styles.sideActive]:
-                                    activeId() === side.take?.id,
-                                }}
-                                aria-label={`${side.label} take${
-                                  activeId() === side.take?.id ? ', active' : ''
-                                }`}
-                                role="group"
-                              >
-                                <span class={styles.sideLabel}>
-                                  {side.label}
-                                </span>
-                                <Show when={side.take}>
-                                  {(take) => (
-                                    <>
-                                      <strong>
-                                        {formatDate(take().capturedAt)}
-                                      </strong>
-                                      <span>
-                                        {formatDuration(take().durationMs)} ·{' '}
-                                        {formatBytes(take().sizeBytes)}
-                                      </span>
-                                      <Waveform
-                                        take={take()}
-                                        active={activeId() === take().id}
-                                        progress={progress()}
-                                        playing={playing()}
-                                        onSeek={(nextProgress) =>
-                                          seekTake(take(), nextProgress, true)
-                                        }
-                                      />
-                                      <button
-                                        type="button"
-                                        class={styles.playButton}
-                                        onClick={() =>
-                                          void playTake(take(), true)
-                                        }
-                                        aria-pressed={
-                                          activeId() === take().id && playing()
-                                        }
-                                      >
-                                        {activeId() === take().id && playing()
-                                          ? 'Pause'
-                                          : `Play ${side.label}`}
-                                      </button>
-                                    </>
-                                  )}
-                                </Show>
-                              </div>
-                            )}
-                          </For>
-                        </div>
-                        <div class={styles.takeSelectors}>
+                    <VoiceAtlasPanel
+                      loading={contoursLoading()}
+                      model={atlasModel()}
+                      earlier={earlier()}
+                      later={atlasLater()}
+                      activeId={activeId()}
+                      progress={progress()}
+                      playing={playing()}
+                      earlierReflections={parseVoiceReflections(
+                        earlier()?.reflectionsJson,
+                        earlier()?.reflectionsVersion,
+                      )}
+                      laterReflections={parseVoiceReflections(
+                        atlasLater()?.reflectionsJson,
+                        atlasLater()?.reflectionsVersion,
+                      )}
+                      earlierSelector={
+                        thread.takes.length < 2 ? undefined : (
                           <label>
                             Earlier take
                             <select
                               value={earlierId() ?? ''}
-                              onChange={(event) => {
-                                const id = event.currentTarget.value
-                                chooseEarlier(id)
-                              }}
+                              onChange={(event) =>
+                                chooseEarlier(event.currentTarget.value)
+                              }
                             >
                               <For each={thread.takes}>
                                 {(take, index) => (
@@ -1261,14 +1304,17 @@ export function VoiceHistoryPage(): JSX.Element {
                               </For>
                             </select>
                           </label>
+                        )
+                      }
+                      laterSelector={
+                        thread.takes.length < 2 ? undefined : (
                           <label>
                             Later take
                             <select
                               value={laterId() ?? ''}
-                              onChange={(event) => {
-                                const id = event.currentTarget.value
-                                chooseLater(id)
-                              }}
+                              onChange={(event) =>
+                                chooseLater(event.currentTarget.value)
+                              }
                             >
                               <For each={thread.takes}>
                                 {(take, index) => (
@@ -1289,9 +1335,32 @@ export function VoiceHistoryPage(): JSX.Element {
                               </For>
                             </select>
                           </label>
-                        </div>
-                      </section>
-                    </Show>
+                        )
+                      }
+                      onPlay={(takeId) => {
+                        const take = thread.takes.find(
+                          (candidate) => candidate.id === takeId,
+                        )
+                        if (take !== undefined) {
+                          void playTake(take, thread.takes.length >= 2)
+                        }
+                      }}
+                      onSeek={(takeId, nextProgress) => {
+                        const take = thread.takes.find(
+                          (candidate) => candidate.id === takeId,
+                        )
+                        if (take !== undefined) {
+                          seekTake(take, nextProgress, thread.takes.length >= 2)
+                        }
+                      }}
+                      onAddReflection={addReflection}
+                      onRemoveReflection={removeReflection}
+                    />
+
+                    <VoiceRoomPanel
+                      settings={roomSettings()}
+                      onChange={setRoomSettings}
+                    />
 
                     <section class={styles.timeline}>
                       <div class={styles.timelineHeading}>

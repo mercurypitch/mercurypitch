@@ -5,6 +5,7 @@
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
 import { generateId } from '@/lib/id'
+import type { VoiceAtlasContourPayloadV1 } from '@/lib/voice-contour'
 
 const FREEFORM_CONTEXT_VERSION = 1
 
@@ -18,6 +19,7 @@ export interface FreeformVoiceTakeCapture {
   durationMs: number
   peaks: Float32Array
   capturedAt: string
+  contour: VoiceAtlasContourPayloadV1
 }
 
 export function createFreeformThreadTarget(): FreeformThreadTarget {
@@ -41,6 +43,7 @@ export async function keepFreeformVoiceTake(input: {
     durationMs: input.take.durationMs,
     blob: input.take.blob,
     peaks: input.take.peaks,
+    contour: input.take.contour,
     title: threadTitle,
     context: {
       threadTitle,

@@ -78,10 +78,10 @@ These are the rules that break things when ignored.
 | `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 5.9k | _(no header comment)_ |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.5k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 4.2k | Voice History — local listening desk for kept voice takes |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.0k | _(no header comment)_ |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.3k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
-| `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.6k | Voice History — local listening desk for kept voice takes |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `onboarding` | [BeatVoiceprint.tsx](../../src/features/onboarding/beats/BeatVoiceprint.tsx) | 2.3k | Beat 4 — Voiceprint The Voice Mirror's three tasks, restaged in the sky: glide up, glide down, hold, then match five notes. |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.0k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
@@ -302,10 +302,10 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.7k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
+| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 1.5k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
-| [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |

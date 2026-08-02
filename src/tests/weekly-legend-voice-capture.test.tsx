@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { clearChallengeResult, lastChallengeResult, presentChallengeResult, } from '@/features/challenges/challenge-result-store'
 import { ChallengeResultCard } from '@/features/challenges/ChallengeResultCard'
 import type { ExerciseSessionVoiceTake } from '@/features/exercises/use-base-exercise'
+import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
   keepMock: vi.fn(),
@@ -34,6 +35,7 @@ const take: ExerciseSessionVoiceTake = {
   durationMs: 5200,
   peaks: new Float32Array([0.2, 0.8]),
   capturedAt: '2026-08-01T12:00:00.000Z',
+  contour: encodeVoiceAtlasContour([], { source: 'practice-engine-v1' }),
   config: {
     type: 'sight-singing',
     targetNotes: ['G4', 'A4', 'B4'],

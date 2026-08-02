@@ -5,8 +5,12 @@
 import { ensurePersistentStorage, getDb } from '@/db'
 import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite, hasRoomFor } from '@/db/durable-write'
-import type { VoiceTakeAudioRecord, VoiceTakeRecord, VoiceTakeSource, } from '@/db/entities'
+import type { VoiceTakeAudioRecord, VoiceTakeContourRecord, VoiceTakeRecord, VoiceTakeSource, } from '@/db/entities'
 import type { DatabaseAdapter } from '@/db/types'
+import type { VoiceReflection } from '@/features/voice-history/voice-reflections'
+import { serializeVoiceReflections, VOICE_REFLECTIONS_VERSION, } from '@/features/voice-history/voice-reflections'
+import type { DecodedVoiceAtlasContour, VoiceAtlasContourPayloadV1, } from '@/lib/voice-contour'
+import { decodeVoiceAtlasContour } from '@/lib/voice-contour'
 
 interface LocalTransactionAdapter extends DatabaseAdapter {
   transactionLocal: DatabaseAdapter['transaction']
@@ -42,6 +46,7 @@ export interface VoiceTakeDraft {
   context: Record<string, unknown>
   metrics?: Record<string, number | string | boolean | null>
   metricsVersion?: number
+  contour?: VoiceAtlasContourPayloadV1
   roomId?: string
   favorite?: boolean
 }
@@ -61,7 +66,11 @@ export type SaveVoiceTakeResult = DurableWriteResult<VoiceTakeRecord> & {
 export async function saveVoiceTake(
   draft: VoiceTakeDraft,
 ): Promise<SaveVoiceTakeResult> {
-  const roomAvailable = await hasRoomFor(draft.blob.size)
+  const contourJson =
+    draft.contour === undefined ? undefined : JSON.stringify(draft.contour)
+  const contourBytes =
+    contourJson === undefined ? 0 : new TextEncoder().encode(contourJson).length
+  const roomAvailable = await hasRoomFor(draft.blob.size + contourBytes)
   if (!roomAvailable) {
     return { ok: false, quotaExceeded: true, roomAvailable }
   }
@@ -74,6 +83,8 @@ export async function saveVoiceTake(
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
       const audioRepo =
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      const contourRepo =
+        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
       const created = await takeRepo.create({
         source: draft.source,
         comparisonKey: draft.comparisonKey,
@@ -94,6 +105,9 @@ export async function saveVoiceTake(
             : JSON.stringify(draft.metrics),
         metricsVersion:
           draft.metrics === undefined ? undefined : (draft.metricsVersion ?? 1),
+        contourVersion: draft.contour?.v,
+        contourPointCount: draft.contour?.p.length,
+        contourBytes: contourJson === undefined ? undefined : contourBytes,
         roomId: draft.roomId,
       })
       await audioRepo.create({
@@ -102,6 +116,15 @@ export async function saveVoiceTake(
         size: draft.blob.size,
         data: bytes,
       })
+      if (draft.contour !== undefined && contourJson !== undefined) {
+        await contourRepo.create({
+          takeId: created.id,
+          contourVersion: draft.contour.v,
+          analysisSource: draft.contour.s,
+          pointCount: draft.contour.p.length,
+          payloadJson: contourJson,
+        })
+      }
       return created
     })
   })
@@ -127,6 +150,23 @@ export async function getVoiceTakeBlob(takeId: string): Promise<Blob | null> {
   return row === undefined ? null : new Blob([row.data], { type: row.mimeType })
 }
 
+/** Load and validate one take's optional local Voice Atlas contour. */
+export async function getVoiceTakeContour(
+  takeId: string,
+): Promise<DecodedVoiceAtlasContour | null> {
+  try {
+    const db = await getDb()
+    const rows = await db
+      .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
+      .findAll({ where: { takeId }, limit: 1 })
+    return rows[0] === undefined
+      ? null
+      : decodeVoiceAtlasContour(rows[0].payloadJson)
+  } catch {
+    return null
+  }
+}
+
 export async function updateVoiceTake(
   takeId: string,
   patch: Pick<Partial<VoiceTakeRecord>, 'title' | 'favorite'>,
@@ -136,6 +176,24 @@ export async function updateVoiceTake(
     return await db
       .getRepository<VoiceTakeRecord>('voiceTakes')
       .update(takeId, patch)
+  } catch {
+    return null
+  }
+}
+
+/** Replace one take's bounded, subjective replay markers. */
+export async function updateVoiceTakeReflections(
+  takeId: string,
+  reflections: readonly VoiceReflection[],
+): Promise<VoiceTakeRecord | null> {
+  try {
+    const db = await getDb()
+    return await db
+      .getRepository<VoiceTakeRecord>('voiceTakes')
+      .update(takeId, {
+        reflectionsJson: serializeVoiceReflections(reflections),
+        reflectionsVersion: VOICE_REFLECTIONS_VERSION,
+      })
   } catch {
     return null
   }
@@ -197,8 +255,12 @@ export async function deleteVoiceTake(takeId: string): Promise<boolean> {
     await localTransaction(db, async (transactionDb) => {
       const audioRepo =
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      const contourRepo =
+        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
       const rows = await audioRepo.findAll({ where: { takeId } })
       for (const row of rows) await audioRepo.delete(row.id)
+      const contours = await contourRepo.findAll({ where: { takeId } })
+      for (const contour of contours) await contourRepo.delete(contour.id)
       await transactionDb
         .getRepository<VoiceTakeRecord>('voiceTakes')
         .delete(takeId)
@@ -221,6 +283,8 @@ export async function deleteVoiceThread(
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
       const audioRepo =
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      const contourRepo =
+        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
       const takes = await takeRepo.findAll({ where: { comparisonKey } })
       if (takes.length === 0) throw new Error('Voice thread not found')
 
@@ -229,6 +293,10 @@ export async function deleteVoiceThread(
           where: { takeId: take.id },
         })
         for (const row of audioRows) await audioRepo.delete(row.id)
+        const contourRows = await contourRepo.findAll({
+          where: { takeId: take.id },
+        })
+        for (const row of contourRows) await contourRepo.delete(row.id)
         await takeRepo.delete(take.id)
       }
     })
@@ -246,11 +314,15 @@ export async function wipeVoiceTakes(): Promise<boolean> {
         transactionDb.getRepository<VoiceTakeRecord>('voiceTakes')
       const audioRepo =
         transactionDb.getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      const contourRepo =
+        transactionDb.getRepository<VoiceTakeContourRecord>('voiceTakeContours')
       // Keep both store reads in an explicit sequence; deletion must not rely
       // on parallel jobs retaining the same active IndexedDB transaction.
       const takes = await takeRepo.findAll()
       const audioRows = await audioRepo.findAll()
+      const contourRows = await contourRepo.findAll()
       for (const row of audioRows) await audioRepo.delete(row.id)
+      for (const row of contourRows) await contourRepo.delete(row.id)
       for (const take of takes) await takeRepo.delete(take.id)
     })
     return true
@@ -277,7 +349,10 @@ export async function getVoiceStorageSnapshot(): Promise<VoiceStorageSnapshot> {
   }
   return {
     takeCount: takes.length,
-    voiceBytes: takes.reduce((total, take) => total + take.sizeBytes, 0),
+    voiceBytes: takes.reduce(
+      (total, take) => total + take.sizeBytes + (take.contourBytes ?? 0),
+      0,
+    ),
     browserUsage,
     browserQuota,
     persistent,

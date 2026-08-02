@@ -1,9 +1,11 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
 Status: **local vault, Glass, repeatable Exercise, Weekly Legend, direct
-freeform capture, and listening-studio polish implemented on draft PR #364**,
-updated 2026-08-02. The remaining local-release gate is browser validation,
-especially the real iPhone Safari recording path.
+freeform capture, listening-studio polish, and the first Voice Atlas layer are
+implemented on draft PR #364**, updated 2026-08-02. Voice Atlas v1 adds Take
+Topography, shared-scale Twin Trails, and subjective Reflection Beacons. The
+remaining local-release gate is browser validation, especially the real iPhone
+Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -116,6 +118,28 @@ feature from feeling like a generic voice-memo library.
 - The first version does not time-warp, pitch-correct, loudness-normalize, or
   claim improvement from unmatched recordings.
 
+### Voice Atlas v1: measured maps, not verdicts
+
+Voice Atlas is the analytical language inside Hear Yourself. It does not turn
+the vault into a scorecard and is not a separate product surface.
+
+- **Take Topography** maps one kept take on true time (x) and detected pitch
+  (y). Ribbon width is relative energy; the center line is confidence-filtered
+  F0; unvoiced or uncertain moments remain gaps.
+- **Twin Trails** places Earlier and Later in one real-seconds and pitch domain.
+  A shorter take ends earlier instead of being stretched to resemble its pair.
+- Earlier uses aqua and Later uses violet as equal identities. Gold belongs to
+  the selected playback position; none of these colors means good or bad.
+- Energy is normalized within each take because browser microphones are not
+  calibrated. The UI must not imply that ribbon width is comparable loudness
+  across devices or sessions.
+- Older takes without a stored contour remain playable and use their cached
+  waveform. A contour with no trustworthy pitch may show energy only; the UI
+  never invents a melody to fill silence or uncertainty.
+- **Reflection Beacons** are user-authored Keep, Curious, and Try next time
+  markers at a replay position, with an optional short note. They are
+  observations, not algorithmic classifications.
+
 ### Responsive and accessible behavior
 
 - Desktop may show Earlier and Later side by side; narrow screens stack them
@@ -206,6 +230,11 @@ interface VoiceTakeRecord extends DbEntity {
   contextJson: string
   metricsJson?: string
   metricsVersion?: number
+  contourVersion?: number
+  contourPointCount?: number
+  contourBytes?: number
+  reflectionsJson?: string
+  reflectionsVersion?: number
   roomId?: string
 }
 
@@ -215,19 +244,29 @@ interface VoiceTakeAudioRecord extends DbEntity {
   size: number
   data: ArrayBuffer
 }
+
+interface VoiceTakeContourRecord extends DbEntity {
+  takeId: string
+  contourVersion: number
+  analysisSource: string
+  pointCount: number
+  payloadJson: string
+}
 ```
 
-Proposed incremental Dexie version:
+Implemented incremental Dexie version (rebased after v6 introduced the audio
+stores):
 
 ```ts
-this.version(5).stores({
-  voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
-  voiceTakeAudio: 'id, &takeId',
+this.version(7).stores({
+  voiceTakeContours: 'id, &takeId',
 })
 ```
 
-The exact schema version must be rebased against `main` at implementation time.
-The current latest Dexie version is 4.
+The compact v1 payload stores bounded tuples of time, MIDI cents or a voiced
+gap, confidence, and level at a target 30 Hz. Metadata, audio, and the optional
+contour are committed in the same local transaction and removed together.
+Existing v6 records require no migration row and fall back to cached waveforms.
 
 ### Comparison keys
 

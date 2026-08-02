@@ -40,6 +40,7 @@ export async function keepWeeklyLegendVoiceTake(input: {
     durationMs: take.durationMs,
     blob: take.blob,
     peaks: take.peaks,
+    contour: take.contour,
     title: threadTitle,
     context: {
       threadTitle,
