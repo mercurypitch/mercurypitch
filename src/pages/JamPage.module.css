@@ -40,6 +40,15 @@
   /* Floating widgets (chat, camera, heatmap) stack over the canvas as well
      as the photo, so they keep more body -- they carry running text. */
   --jam-float: rgba(13, 17, 23, min(1, calc(var(--jam-alpha) + 0.28)));
+
+  /* Round icon controls (mic, camera, peers, invite, leave) sit directly on
+     the photo, and a bright backdrop swallowed them: their own colour tints
+     are 0.06-0.2 alpha, which is a state hint, not a surface. They get a
+     dark disc underneath that the slider drives across the FULL range --
+     opaque at the top so they read on any photo, and genuinely faint at the
+     bottom for anyone who wants the room bare. The 0.3 floor is deliberate:
+     a control you cannot find is not a style choice. */
+  --jam-control: rgba(13, 17, 23, min(1, calc(var(--jam-alpha) * 0.7 + 0.3)));
 }
 
 .backdrop {
