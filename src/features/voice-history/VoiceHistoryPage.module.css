@@ -196,6 +196,11 @@
   outline-offset: 2px;
 }
 
+.waveform:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 2px;
+}
+
 .threadButton strong {
   margin: 5px 0 8px;
   font-size: 0.98rem;
@@ -402,6 +407,8 @@
       rgb(160 111 255 / 4%)
     ),
     rgb(4 9 17 / 34%);
+  cursor: ew-resize;
+  touch-action: pan-y;
 }
 
 .waveformCanvas {
@@ -417,6 +424,30 @@
 .waveformActive .waveformCanvas {
   filter: saturate(1.14) brightness(1.08);
   opacity: 1;
+}
+
+.waveformHint {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  padding: 3px 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #d7e7ff;
+  pointer-events: none;
+  border-radius: 6px;
+  background: rgb(5 10 18 / 82%);
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.waveform:hover .waveformHint,
+.waveform:focus-visible .waveformHint {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .playButton,
@@ -488,6 +519,18 @@
 
 .timeline {
   margin-top: 38px;
+}
+
+.historyDangerActions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.historyDangerActions .dangerLink:first-child {
+  color: #c7d6ed;
 }
 
 .dangerLink,
@@ -781,6 +824,15 @@
     flex-wrap: wrap;
   }
 
+  .timelineHeading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .historyDangerActions {
+    justify-content: start;
+  }
+
   .renameForm {
     width: 100%;
     max-width: none;
@@ -857,6 +909,7 @@
   .threadButton,
   .compareSide,
   .waveformCanvas,
+  .waveformHint,
   .progressTrack span {
     transition: none;
   }

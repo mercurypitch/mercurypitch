@@ -52,6 +52,29 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)
   await page.getByRole('button', { name: 'Play take' }).click()
+  await page.getByRole('button', { name: 'Pause take' }).click()
+
+  const seek = page
+    .getByRole('slider', { name: 'Seek Room and waveform check' })
+    .first()
+  const seekBounds = await seek.boundingBox()
+  if (seekBounds === null) throw new Error('Take waveform has no bounds')
+  const seekY = seekBounds.y + seekBounds.height / 2
+  await page.mouse.move(seekBounds.x + seekBounds.width * 0.62, seekY)
+  await page.mouse.down()
+  await page.mouse.move(seekBounds.x + seekBounds.width * 0.68, seekY, {
+    steps: 5,
+  })
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await seek.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(64)
+  const pointerProgress = Number(await seek.getAttribute('aria-valuenow'))
+  await seek.focus()
+  await seek.press('ArrowRight')
+  await expect
+    .poll(async () => Number(await seek.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(pointerProgress)
 
   const echo = page.getByTestId('voice-room-echo')
   const bounds = await echo.boundingBox()
@@ -71,7 +94,7 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
   })
 
   await page
-    .getByRole('button', { name: 'Clear all voice history', exact: true })
+    .getByRole('button', { name: 'Clear entire voice history', exact: true })
     .click()
   await page.getByTestId('confirm-phrase').fill('delete')
   await expect(
@@ -95,8 +118,32 @@ test('records visibly, drags a room control, and confirms deletion in-app @smoke
   expect(horizontalOverflow).toBeLessThanOrEqual(1)
 
   await page.setViewportSize({ width: 1500, height: 1000 })
-  await page.getByRole('button', { name: 'Delete', exact: true }).click()
-  await page.getByRole('button', { name: 'Delete take', exact: true }).click()
+
+  await page.getByRole('button', { name: 'New practice thread' }).click()
+  await page.getByLabel(/what do you want to repeat/i).fill('Temporary thread')
+  await page.getByRole('button', { name: 'Start recording' }).click()
+  await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
+  await page.waitForTimeout(500)
+  await page.getByRole('button', { name: 'Stop recording' }).click()
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
+    timeout: 15000,
+  })
+  await page.getByRole('button', { name: 'Keep Take' }).click()
+
+  await page.getByRole('button', { name: 'Delete this thread' }).click()
+  await expect(page.getByRole('alertdialog')).toContainText(
+    'Delete Temporary thread and its 1 take from this device?',
+  )
+  await page.getByTestId('confirm-phrase').fill('delete')
+  await page.getByRole('button', { name: 'Delete thread' }).click()
+  await expect(page.getByText('1 kept')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText('Room and waveform check').first()).toBeVisible()
+
+  await page
+    .getByRole('button', { name: 'Clear entire voice history', exact: true })
+    .click()
+  await page.getByTestId('confirm-phrase').fill('delete')
+  await page.getByRole('button', { name: 'Clear history', exact: true }).click()
   await expect(page.getByText('0 kept · 0 B')).toBeVisible({ timeout: 10000 })
   await expect(
     page.getByRole('button', { name: 'New practice thread' }),

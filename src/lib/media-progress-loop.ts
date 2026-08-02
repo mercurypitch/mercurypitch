@@ -28,6 +28,18 @@ export function isMediaPlaybackActive(media: MediaProgressClock): boolean {
   return !media.paused && !media.ended
 }
 
+/** Convert a pointer position on a media timeline to a clamped 0–1 seek. */
+export function mediaProgressFromPointer(
+  clientX: number,
+  left: number,
+  width: number,
+): number {
+  if (!Number.isFinite(clientX) || !Number.isFinite(left) || width <= 0) {
+    return 0
+  }
+  return Math.max(0, Math.min(1, (clientX - left) / width))
+}
+
 const browserScheduler: MediaFrameScheduler = {
   request: (callback) => requestAnimationFrame(callback),
   cancel: (id) => cancelAnimationFrame(id),
