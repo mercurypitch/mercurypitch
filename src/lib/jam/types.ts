@@ -171,6 +171,13 @@ export interface LyricsLineTiming {
  * fetches the same URLs, and peer-to-peer transfer of a local song is a
  * later phase (docs/plans/jam-karaoke-songs.md).
  */
+/** One target note of the song's vocal line, on the song's own timeline. */
+export interface JamSongNote {
+  midi: number
+  startSec: number
+  endSec: number
+}
+
 export interface JamSongMessage {
   type: 'song'
   action: 'set' | 'clear'
@@ -181,6 +188,16 @@ export interface JamSongMessage {
     stems: { instrumental: string; vocal?: string }
     lines: LyricsLineTiming[]
     durationSec: number
+    /**
+     * The vocal line as notes, so every lane can draw what to sing rather
+     * than only what was sung.
+     *
+     * Sent with the manifest even though the AUDIO cannot be: notes are
+     * kilobytes, which is the whole reason this works for a song only the
+     * host holds -- peers get the target and the words, and only the
+     * backing track is missing.
+     */
+    notes?: JamSongNote[]
   }
 }
 

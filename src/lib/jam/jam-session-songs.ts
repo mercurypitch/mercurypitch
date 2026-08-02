@@ -11,10 +11,11 @@
 // that suddenly needs a db mock is a module nobody wants to test.
 
 import { loadLyricsFromDb } from '@/db/services/lyrics-db-service'
+import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getStemBlobUrl } from '@/db/services/uvr-service'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { lrcToSongLines, sessionToJamSong } from '@/lib/jam/jam-song-sources'
-import type { LyricsLineTiming } from '@/lib/jam/types'
+import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import type { UvrSession } from '@/stores/uvr-store'
 
@@ -53,6 +54,32 @@ export async function sessionSongLines(
 }
 
 /**
+ * The vocal line as target notes, or none.
+ *
+ * Prefers mergedNotes -- the cleaned, sustained version -- over the raw
+ * segmentation, because a lane wants the line a person would sing and not
+ * every frame the detector twitched on. Absent when the session was never
+ * analysed, which is legal: the room falls back to lyrics and your own
+ * trail, which is still a karaoke machine.
+ */
+export async function sessionSongNotes(
+  sessionId: string,
+): Promise<JamSongNote[]> {
+  try {
+    const data = await loadPitchAnalysisFromDb(sessionId)
+    const notes = data?.mergedNotes ?? data?.segmentedNotes ?? []
+    return notes.map((n) => ({
+      midi: n.midi,
+      startSec: n.startSec,
+      endSec: n.endSec,
+    }))
+  } catch {
+    // Same rule as lyrics: a nicety must not cost you the song.
+    return []
+  }
+}
+
+/**
  * Build one session into a room song, or null if it cannot be sung.
  *
  * Null when there is no instrumental: a session that separated badly, or
@@ -65,12 +92,16 @@ export async function sessionSong(
   const instrumental = await getStemBlobUrl(session.sessionId, 'instrumental')
   if (instrumental === null || instrumental === '') return null
   const vocal = await getStemBlobUrl(session.sessionId, 'vocal')
-  const lines = await sessionSongLines(session.sessionId)
+  const [lines, notes] = await Promise.all([
+    sessionSongLines(session.sessionId),
+    sessionSongNotes(session.sessionId),
+  ])
   return sessionToJamSong(
     session,
     { instrumental, ...(vocal === null ? {} : { vocal }) },
     lines,
     session.stemMeta?.instrumental?.duration ?? 0,
+    notes,
   )
 }
 

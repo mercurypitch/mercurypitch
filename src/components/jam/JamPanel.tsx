@@ -6,14 +6,14 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { MicInsightHint } from '@/components/MicInsightHint'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
-import { loadDemoSong } from '@/features/karaoke-night/demo-song'
+import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
-import { sessionSongs } from '@/lib/jam/jam-session-songs'
+import { sessionSongNotes, sessionSongs } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
@@ -192,7 +192,11 @@ export const JamPanel: Component = () => {
           .catch(() => '')
         if (text !== '') lines = lrcToSongLines(parseLrcFile(text))
       }
-      setDemoSong(demoSongToJamSong(manifest, lines))
+      // The demo is a normal session as far as analysis is concerned, so
+      // if it has been opened in the mixer once there is a vocal line to
+      // aim at; if not, the room still works on lyrics alone.
+      const notes = await sessionSongNotes(DEMO_SESSION_ID)
+      setDemoSong(demoSongToJamSong(manifest, lines, notes))
     })()
   })
 

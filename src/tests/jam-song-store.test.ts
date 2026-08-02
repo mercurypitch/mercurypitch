@@ -15,6 +15,7 @@ function song(over: Partial<JamSong> = {}): JamSong {
     title: 'Demo',
     stems: { instrumental: 'https://example.test/inst.m4a' },
     lines: [{ text: 'a line', startSec: 0 }],
+    notes: [],
     durationSec: 180,
     origin: 'url',
     ...over,

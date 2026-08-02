@@ -262,6 +262,9 @@ export function selectJamSong(song: JamSong): boolean {
     artist: song.artist,
     stems: song.stems,
     lines: song.lines,
+    // Notes travel even when the audio cannot: kilobytes, and they are
+    // what lets a peer see the target for a song only the host holds.
+    notes: song.notes,
     durationSec: song.durationSec,
   })
   return true
@@ -678,7 +681,7 @@ export function initJam() {
       setJamExercisePlaying(false)
       setJamExercisePaused(false)
       stopPlaybackTimer()
-      setJamSong({ ...msg.song, origin: 'url' })
+      setJamSong({ ...msg.song, notes: msg.song.notes ?? [], origin: 'url' })
       setJamSongPositionSec(0)
     },
     onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {

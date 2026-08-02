@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lineAt, lineIndexAt, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { lineAt, lineIndexAt, notesInWindow, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 
 const lines: LyricsLineTiming[] = [
@@ -21,6 +21,7 @@ function song(over: Partial<JamSong> = {}): JamSong {
     title: 'Test',
     stems: { instrumental: 'https://example.test/inst.mp4' },
     lines,
+    notes: [],
     durationSec: 200,
     origin: 'url',
     ...over,
@@ -167,5 +168,31 @@ describe('rests', () => {
   it('is null while someone is actually singing', () => {
     expect(restAt(restsBetween(sung), 1)).toBeNull()
     expect(restAt(restsBetween(sung), 13)).toBeNull()
+  })
+})
+
+describe('notesInWindow', () => {
+  const notes = [
+    { midi: 60, startSec: 0, endSec: 2 },
+    { midi: 62, startSec: 5, endSec: 7 },
+    { midi: 64, startSec: 20, endSec: 30 },
+  ]
+
+  it('keeps the notes the window can see', () => {
+    expect(notesInWindow(notes, 4, 8).map((n) => n.midi)).toEqual([62])
+  })
+
+  it('keeps a note that straddles the edge', () => {
+    // A ten-second note is on screen for most of its length; dropping it
+    // because it started before the window would blink the target out.
+    expect(notesInWindow(notes, 25, 28).map((n) => n.midi)).toEqual([64])
+  })
+
+  it('excludes a note that ends exactly as the window opens', () => {
+    expect(notesInWindow(notes, 2, 4)).toEqual([])
+  })
+
+  it('is empty for a song that was never analysed', () => {
+    expect(notesInWindow([], 0, 10)).toEqual([])
   })
 })

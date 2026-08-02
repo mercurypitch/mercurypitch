@@ -11,7 +11,7 @@
 // The two coordinates never mix. A room is running one or the other, and
 // jamSongPositionSec is only meaningful while a song is loaded.
 
-import type { LyricsLineTiming } from '@/lib/jam/types'
+import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 
 /** Where a song's audio lives, and what every peer must be able to reach. */
 export interface JamSongStems {
@@ -28,6 +28,8 @@ export interface JamSong {
   stems: JamSongStems
   /** Lyrics with start times in seconds; empty is legal (an instrumental). */
   lines: LyricsLineTiming[]
+  /** The vocal line to aim at; empty when the song was never analysed. */
+  notes: JamSongNote[]
   durationSec: number
   /**
    * Where the audio came from, which decides whether the room can run it
@@ -87,6 +89,21 @@ const MAX_FLIGHT_MS = 500
 export function secondsInFlight(rttMs: number): number {
   if (!Number.isFinite(rttMs) || rttMs <= 0) return 0
   return Math.min(rttMs, MAX_FLIGHT_MS) / 2 / 1000
+}
+
+/**
+ * The notes visible in a window around the playhead.
+ *
+ * Drawn every frame, so it filters rather than searching: a song is a few
+ * hundred notes and the window is seconds wide, which is cheaper than
+ * keeping a sorted index in step with a seek.
+ */
+export function notesInWindow(
+  notes: readonly JamSongNote[],
+  fromSec: number,
+  toSec: number,
+): JamSongNote[] {
+  return notes.filter((n) => n.endSec > fromSec && n.startSec < toSec)
 }
 
 /**
