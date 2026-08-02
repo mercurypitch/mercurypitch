@@ -136,6 +136,25 @@ describe('relay', () => {
     expect([...all].sort((a, b) => a - b)).toEqual(midis(m))
   })
 
+  it('never hands a singer an empty part', () => {
+    // Six singers on an eight-note melody used to fill only four phrases,
+    // leaving two people staring at a blank canvas scoring zero.
+    const m = cMajor() // 8 notes
+    for (let role = 0; role < 6; role++) {
+      expect(midis(targetForRole(m, 'relay', role, 6)).length).toBeGreaterThan(
+        0,
+      )
+    }
+  })
+
+  it('still covers every note when singers outnumber phrases', () => {
+    const m = cMajor()
+    const all = new Set(
+      [0, 1, 2, 3, 4, 5].flatMap((r) => midis(targetForRole(m, 'relay', r, 6))),
+    )
+    expect([...all].sort((a, b) => a - b)).toEqual(midis(m))
+  })
+
   it('drops the phrases that are not mine rather than silencing them', () => {
     // Scoring counts an unsung target note as zero, so leaving someone
     // else's phrase in my target would score me on their turn.

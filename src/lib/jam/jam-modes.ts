@@ -168,10 +168,22 @@ function relayItems(
   roleIndex: number,
   roleCount: number,
 ): MelodyItem[] {
-  if (roleCount <= 1) return items
-  const perPhrase = Math.max(1, Math.ceil(items.length / roleCount))
+  if (roleCount <= 1 || items.length === 0) return items
+  // Never more phrases than notes. Six singers on an eight-note melody at
+  // ceil(8/6)=2 notes a phrase only fills four phrases, and singers five
+  // and six were handed an empty part: blank canvas, zero score, nothing
+  // said. Capping the phrase count means two of them share a phrase
+  // instead, which is a relay, whereas silence is a bug.
+  const parts = Math.min(roleCount, items.length)
+  const mine = roleIndex % parts
+  // Distribute notes INTO `parts` buckets rather than cutting fixed-size
+  // phrases: with eight notes and six singers, phrases of ceil(8/6)=2 fill
+  // only four buckets however you cap them, and the last two singers get
+  // nothing. Scaling the index guarantees every bucket is non-empty, at the
+  // cost of uneven phrase lengths -- which a relay can carry, and silence
+  // cannot.
   return items.filter(
-    (_item, i) => Math.floor(i / perPhrase) % roleCount === roleIndex,
+    (_item, i) => Math.floor((i * parts) / items.length) === mine,
   )
 }
 
