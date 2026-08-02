@@ -447,10 +447,16 @@ export function advance(): void {
     // Reaching the summary IS "start to finish" — the singer got through
     // every song in the queue. Recorded here rather than on the summary
     // screen so closing it early still counts what they did.
-    void recordActivity('playlist_completed', {
-      refId: activePlaylistId() ?? undefined,
-      meta: { songs: queue().length },
-    })
+    //
+    // Guarded on a non-empty queue: advancing past a cleared one lands
+    // here too, and "finished a playlist of no songs" is not something
+    // anyone earned.
+    if (queue().length > 0) {
+      void recordActivity('playlist_completed', {
+        refId: activePlaylistId() ?? undefined,
+        meta: { songs: queue().length },
+      })
+    }
     setPhase('summary')
     return
   }
