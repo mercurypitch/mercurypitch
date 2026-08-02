@@ -4,6 +4,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Nothing in here is text to copy — the note names are targets. Without
+     this, a drag across the face selects the SVG labels on desktop and
+     raises the selection callout on a phone, both mid-gesture. */
+  -webkit-user-select: none;
+  user-select: none;
+  /* iOS shows its own tap-and-hold callout regardless of user-select. */
+  -webkit-touch-callout: none;
 }
 
 .label {
