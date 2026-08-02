@@ -1,0 +1,85 @@
+name: Deploy Jam Worker
+
+# Deploys the jam-worker (WebSocket signaling + the JamRoom Durable Object).
+#
+# - Push to main touching workers/jam-worker/** → dev
+#   (mercury-pitch-jam-dev, routed at dev.mercurypitch.com/api/jam*)
+# - Manual dispatch → dev or prod
+# - workflow_call from build.yml on a v* release tag → prod
+#
+# Added because this worker was the one piece of the stack that shipped only
+# by hand, and a worker silently behind main is invisible from the app: the
+# room still opens, the mesh still connects, and only the newest server
+# behaviour is missing. That cost a real debugging session -- rooms stopped
+# appearing under "your rooms" on dev, which looked like a client bug and was
+# a worker predating the ownerToken it hands out at room-created.
+#
+# No migrations step, unlike deploy-db. Durable Object class migrations are
+# declared in wrangler.jsonc and applied by `wrangler deploy` itself; there
+# is no database to bring forward and nothing to restore, because a JamRoom
+# holds only the live state of a room that ends when everyone leaves.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workers/jam-worker/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-jam-worker:
+    name: Deploy Jam Worker
+    runs-on: ubuntu-latest
+    env:
+      # `inputs` is populated by workflow_dispatch AND workflow_call; a plain
+      # push (main -> dev) has neither and falls through to dev. Same idiom as
+      # deploy-db.yml.
+      DEPLOY_ENV: ${{ inputs.environment || 'dev' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck worker
+        run: pnpm typecheck:jam
+
+      - name: Deploy worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/jam-worker
+          command: deploy --env ${{ env.DEPLOY_ENV }}
+          packageManager: 'pnpm'
