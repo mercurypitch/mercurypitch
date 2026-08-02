@@ -4083,3 +4083,73 @@
 .community-share-tab .session-date {
   line-height: var(--row-line);
 }
+
+/* ── Chrome before content ───────────────────────────────────────── */
+/* Title band, then a full-width search band, then a tabs band: three
+   stacked rows and roughly 430px before the first card. The header is
+   read once; the toolbar is used constantly. So the header gets smaller
+   and the two working rows merge into one. */
+.community-share-tab .community-header {
+  margin-bottom: 18px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.community-share-tab .community-header-content h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.community-share-tab .community-subtitle {
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  max-width: 46ch;
+}
+
+.community-share-tab .community-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* The tab bar keeps its own margin off, now that the toolbar owns it. */
+.community-share-tab .community-toolbar .community-tabs {
+  margin-bottom: 0;
+}
+
+/* Search sized to its job. Full width made it the loudest thing on the
+   page, above the content it filters. */
+.community-share-tab .search-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  margin: 0;
+}
+
+.community-share-tab .search-filter-bar input {
+  width: clamp(180px, 26vw, 280px);
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+}
+
+.community-share-tab .sort-select select {
+  padding: 8px 10px;
+  font-size: 0.8125rem;
+}
+
+/* Narrow: the toolbar stacks, and search takes the width it can get. */
+@media (max-width: 720px) {
+  .community-share-tab .search-filter-bar {
+    width: 100%;
+  }
+
+  .community-share-tab .search-filter-bar input {
+    width: auto;
+    flex: 1 1 auto;
+  }
+}
