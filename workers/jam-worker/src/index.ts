@@ -8,9 +8,11 @@
 //   GET  /api/jam/rooms/:id         — REST: room info
 
 import type { JamRoom } from './jam-room'
+import type { TurnEnv } from './turn'
+import { mintIceServers } from './turn'
 export { JamRoom } from './jam-room'
 
-interface Env {
+interface Env extends TurnEnv {
   JAM_ROOM: DurableObjectNamespace<JamRoom>
   /**
    * Optional comma-separated list of EXTRA origins allowed to connect, beyond
@@ -135,6 +137,16 @@ export default {
       const headers = new Headers(request.headers)
       headers.set('X-Jam-Room-Id', roomId)
       return stub.fetch(new Request(request, { headers }))
+    }
+
+    // ── REST: ICE servers ─────────────────────────────────────────
+    // POST on purpose: the Origin gate above covers POST, so this reuses the
+    // existing abuse control rather than inventing a second one. Minting is
+    // once per session, so the cost of a method nobody can trigger from a
+    // bare link is nil.
+    if (url.pathname === '/api/jam/ice' && request.method === 'POST') {
+      const { iceServers, source } = await mintIceServers(env)
+      return respond({ iceServers, source })
     }
 
     // ── REST: Create room ─────────────────────────────────────────
