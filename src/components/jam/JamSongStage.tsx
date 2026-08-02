@@ -72,24 +72,40 @@ export const JamSongStage: Component = () => {
     onCleanup(() => document.removeEventListener('keydown', onKey))
   })
 
-  // Follow the room's transport. A peer seeks only when it has drifted
-  // past the threshold, so ordinary jitter does not cause an audible jump.
+  /**
+   * Follow the room's transport.
+   *
+   * Split into two effects on purpose. The play/pause one must NOT depend
+   * on the position, or it re-runs on every timeupdate -- four times a
+   * second -- and each run calls play() or pause() again. That is what was
+   * stopping the audio mid-song: a pause() racing the play() that had not
+   * resolved yet, which the browser resolves by staying paused.
+   */
   createEffect(() => {
     const el = audioRef
-    const target = jamSongPositionSec()
     if (el === undefined) return
-    if (
-      !jamIsHost() &&
-      Math.abs(el.currentTime - target) > RESYNC_THRESHOLD_SEC
-    ) {
-      el.currentTime = target
-    }
     if (jamExercisePlaying() && !jamExercisePaused()) {
-      // Autoplay can still be refused; the room simply stays paused rather
-      // than pretending it is playing.
+      // Autoplay can still be refused; the room stays paused rather than
+      // pretending it is playing.
       void el.play().catch(() => {})
     } else {
       el.pause()
+    }
+  })
+
+  /**
+   * Correct drift, guests only, and only past the threshold -- a seek is
+   * audible, so chasing 50ms of jitter is worse than the jitter.
+   *
+   * The host is excluded because its element IS the clock: seeking it to
+   * the position it just reported is a feedback loop.
+   */
+  createEffect(() => {
+    const el = audioRef
+    const target = jamSongPositionSec()
+    if (el === undefined || jamIsHost()) return
+    if (Math.abs(el.currentTime - target) > RESYNC_THRESHOLD_SEC) {
+      el.currentTime = target
     }
   })
 

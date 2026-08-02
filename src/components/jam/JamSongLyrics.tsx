@@ -26,14 +26,30 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
 
   const currentIndex = () => lineIndexAt(props.lines, props.positionSec())
 
-  // Keep the sung line in view. Centring rather than scrolling it to the
-  // top: a singer needs the NEXT line as much as the current one, and a
-  // line pinned to the top edge hides everything coming.
+  /**
+   * Keep the sung line centred in THIS panel.
+   *
+   * Not scrollIntoView: it scrolls every scrollable ancestor, so following
+   * the song dragged the whole page down and the header, the picker and
+   * the transport all scrolled out of reach. Setting scrollTop moves only
+   * this element.
+   *
+   * Centring rather than pinning to the top because a singer needs the
+   * NEXT line as much as the current one. The clamp is what makes the
+   * first and last lines behave -- they simply stop at the ends instead of
+   * needing half a panel of padding to centre into.
+   */
   createEffect(() => {
     const i = currentIndex()
-    if (i < 0 || scrollRef === undefined) return
-    const el = scrollRef.querySelector<HTMLElement>(`[data-line="${i}"]`)
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const box = scrollRef
+    if (i < 0 || box === undefined) return
+    const el = box.querySelector<HTMLElement>(`[data-line="${i}"]`)
+    if (el === null) return
+    const target = el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2
+    box.scrollTo({
+      top: Math.max(0, Math.min(target, box.scrollHeight - box.clientHeight)),
+      behavior: 'smooth',
+    })
   })
 
   return (
