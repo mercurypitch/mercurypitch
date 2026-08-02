@@ -219,6 +219,7 @@ export interface JamCallbacks {
   // DataChannel events
   onPitchMessage?: (msg: JamPitchMessage) => void
   onMelodyMessage?: (msg: JamMelodyMessage) => void
+  onSongMessage?: (msg: JamSongMessage) => void
   /** fromPeerId lets the store charge the message its own flight time. */
   onPlaybackMessage?: (msg: JamPlaybackMessage, fromPeerId: string) => void
   onVideoState?: (peerId: string, enabled: boolean) => void
