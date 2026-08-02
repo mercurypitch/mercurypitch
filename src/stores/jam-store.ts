@@ -9,6 +9,8 @@ import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/ja
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
+import type { JamSong } from '@/lib/jam/jam-song'
+import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
 import { createJamService } from '@/lib/jam/service'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
@@ -209,6 +211,63 @@ export function setJamRoomAlpha(value: number): void {
   } catch {
     /* storage full or unavailable */
   }
+}
+
+// ── Song ─────────────────────────────────────────────────────────────
+// A room running a SONG rather than a drill. The two are mutually
+// exclusive: a song has lyrics pinned to seconds and no useful bar
+// number, a drill has a tempo and a grid, and mixing the coordinates is
+// how you get a playhead that is subtly wrong all the time. Loading one
+// clears the other.
+
+export const [jamSong, setJamSong] = createSignal<JamSong | null>(null)
+/** Position in the song's own timeline. Meaningless with no song loaded. */
+export const [jamSongPositionSec, setJamSongPositionSec] = createSignal(0)
+
+/** True when the room is on a song, which is what the layout switches on. */
+export const jamIsSongRoom = createRoot(() => {
+  const memo = createMemo(() => jamSong() !== null)
+  return memo
+})
+
+/**
+ * Load a song for the room, or refuse it with a reason.
+ *
+ * Refusing here rather than at play time is deliberate: a song only half
+ * the room can fetch would leave everyone else staring at a silent screen
+ * with nothing to explain it -- the same failure Relay's empty parts had.
+ */
+export function selectJamSong(song: JamSong): boolean {
+  const verdict = songPlayableInRoom(song)
+  if (!verdict.ok) {
+    setJamError(verdict.reason ?? 'That song cannot be played in a room.')
+    return false
+  }
+  // A room runs one thing at a time.
+  setJamExerciseMelody(null)
+  setJamExerciseTotalBeats(0)
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
+  stopPlaybackTimer()
+
+  setJamSong(song)
+  setJamSongPositionSec(0)
+  setJamError(null)
+  jamService?.sendSong({
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    stems: song.stems,
+    lines: song.lines,
+    durationSec: song.durationSec,
+  })
+  return true
+}
+
+export function clearJamSong(): void {
+  setJamSong(null)
+  setJamSongPositionSec(0)
+  jamService?.sendSong(null)
 }
 
 // ── Room mode ────────────────────────────────────────────────────────
@@ -604,10 +663,52 @@ export function initJam() {
         setJamPitchTab('exercise')
       }
     },
+    onSongMessage: (msg) => {
+      if (msg.action === 'clear' || msg.song === undefined) {
+        setJamSong(null)
+        setJamSongPositionSec(0)
+        return
+      }
+      // Peers trust the host's manifest but still resolve the audio
+      // themselves -- nothing but URLs and lyrics crossed the wire.
+      setJamExerciseMelody(null)
+      setJamExercisePlaying(false)
+      setJamExercisePaused(false)
+      stopPlaybackTimer()
+      setJamSong({ ...msg.song, origin: 'url' })
+      setJamSongPositionSec(0)
+    },
     onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {
       // Every transport command is a tempo resync point (see
       // JamPlaybackMessage.bpm), so adopt it before anything reads the bpm.
       if (msg.bpm !== undefined && msg.bpm > 0) setJamExerciseBpm(msg.bpm)
+
+      // A song carries positionSec INSTEAD of currentBeat. Same flight
+      // compensation, simpler units -- no tempo to convert through.
+      if (msg.positionSec !== undefined) {
+        const peer = jamPeers().find((p) => p.id === fromPeerId)
+        const ahead = secondsInFlight(peer?.latency ?? 0)
+        switch (msg.action) {
+          case 'play':
+            setJamExercisePlaying(true)
+            setJamExercisePaused(false)
+            setJamSongPositionSec(msg.positionSec + ahead)
+            break
+          case 'pause':
+            setJamExercisePaused(true)
+            setJamSongPositionSec(msg.positionSec)
+            break
+          case 'stop':
+            setJamExercisePlaying(false)
+            setJamExercisePaused(false)
+            setJamSongPositionSec(0)
+            break
+          case 'seek':
+            setJamSongPositionSec(msg.positionSec + ahead)
+            break
+        }
+        return
+      }
 
       switch (msg.action) {
         case 'play':
@@ -897,6 +998,38 @@ export function jamPlaybackSeek(beat: number): void {
   jamService?.sendPlaybackCommand('seek', beat, jamExerciseBpm())
 }
 
+// ── Song transport ───────────────────────────────────────────────────
+// Deliberately separate from the beat transport rather than a branch
+// inside it: a song is driven by its own <audio> element, whose
+// currentTime is the truth, so there is no rAF beat accumulator to run
+// and nothing to keep in step with a tempo.
+
+export function jamSongPlay(fromSec = 0): void {
+  if (jamSong() === null) return
+  setJamSongPositionSec(fromSec)
+  setJamExercisePlaying(true)
+  setJamExercisePaused(false)
+  jamService?.sendPlaybackCommandSec('play', fromSec)
+}
+
+export function jamSongPause(atSec: number): void {
+  setJamSongPositionSec(atSec)
+  setJamExercisePaused(true)
+  jamService?.sendPlaybackCommandSec('pause', atSec)
+}
+
+export function jamSongStop(): void {
+  setJamSongPositionSec(0)
+  setJamExercisePlaying(false)
+  setJamExercisePaused(false)
+  jamService?.sendPlaybackCommandSec('stop', 0)
+}
+
+export function jamSongSeek(toSec: number): void {
+  setJamSongPositionSec(toSec)
+  jamService?.sendPlaybackCommandSec('seek', toSec)
+}
+
 // ── Playback timer ───────────────────────────────────────────────────
 
 function startPlaybackTimer(): void {
@@ -999,6 +1132,8 @@ function cleanupJam(): void {
   setTakeTarget(null)
   setJamOwnRunScore(null)
   setJamRoomMode('unison')
+  setJamSong(null)
+  setJamSongPositionSec(0)
 }
 
 function waitForRoomId(): Promise<string> {

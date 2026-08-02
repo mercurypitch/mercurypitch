@@ -517,6 +517,9 @@ export function createJamService(callbacks: JamCallbacks) {
           case 'melody':
             callbacks.onMelodyMessage?.(data)
             break
+          case 'song':
+            callbacks.onSongMessage?.(data)
+            break
           case 'playback':
             callbacks.onPlaybackMessage?.(data, peerId)
             break
@@ -573,6 +576,15 @@ export function createJamService(callbacks: JamCallbacks) {
     broadcastData({ type: 'melody' as const, action: 'set', melody, mode })
   }
 
+  /** A song manifest -- URLs and lyrics, never audio. */
+  function sendSong(song: object | null): void {
+    broadcastData(
+      song === null
+        ? { type: 'song' as const, action: 'clear' }
+        : { type: 'song' as const, action: 'set', song },
+    )
+  }
+
   function sendClearMelody(): void {
     broadcastData({ type: 'melody' as const, action: 'clear' })
   }
@@ -588,6 +600,25 @@ export function createJamService(callbacks: JamCallbacks) {
       currentBeat,
       timestamp: Date.now(),
       ...(bpm === undefined ? {} : { bpm }),
+    })
+  }
+
+  /**
+   * Transport for a song, in seconds.
+   *
+   * A separate function rather than an extra argument, so positionSec and
+   * currentBeat can never both be set -- a receiver picks its branch on
+   * which one arrived, and "both" has no meaning.
+   */
+  function sendPlaybackCommandSec(
+    action: 'play' | 'pause' | 'stop' | 'seek',
+    positionSec: number,
+  ): void {
+    broadcastData({
+      type: 'playback' as const,
+      action,
+      positionSec,
+      timestamp: Date.now(),
     })
   }
 
@@ -722,6 +753,8 @@ export function createJamService(callbacks: JamCallbacks) {
     sendChat,
     sendPitch,
     sendMelody,
+    sendSong,
+    sendPlaybackCommandSec,
     sendClearMelody,
     sendPlaybackCommand,
     getLocalStream,
