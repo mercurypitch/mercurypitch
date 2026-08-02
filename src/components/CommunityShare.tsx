@@ -516,47 +516,54 @@ export const CommunityShare: Component = () => {
         </div>
       </div>
 
-      {/* Search & Filter */}
-      <div class="search-filter-bar">
-        <input
-          type="text"
-          class={modalStyles.searchInput}
-          placeholder="Search melodies, sessions..."
-          value={searchQuery()}
-          onInput={(e) => setSearchQuery(e.currentTarget.value)}
-        />
-        <div class="sort-select">
-          <SafeSelect
-            value={sortBy()}
-            onChange={(e) =>
-              setSortBy(
-                e.currentTarget.value as 'recent' | 'popular' | 'highest',
-              )
-            }
-          >
-            <option value="recent">Most Recent</option>
-            <option value="popular">Most Popular</option>
-            <option value="highest">Highest Scores</option>
-          </SafeSelect>
+      {/* One toolbar row: which list, then how to narrow it. Stacking
+          these as separate bands cost ~150px of chrome before any
+          content appeared. Search is hidden on Profile, which has
+          nothing to search. */}
+      <div class="community-toolbar">
+        {/* Tabs */}
+        <div class="community-tabs">
+          <For each={tabs()}>
+            {(tab) => (
+              <button
+                class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span class={tabStyles.tabIcon}>{tab.icon()}</span>
+                <span class="tab-name">{tab.name}</span>
+                {tab.count > 0 && (
+                  <span class={modalStyles.tabCount}>{tab.count}</span>
+                )}
+              </button>
+            )}
+          </For>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div class="community-tabs">
-        <For each={tabs()}>
-          {(tab) => (
-            <button
-              class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span class={tabStyles.tabIcon}>{tab.icon()}</span>
-              <span class="tab-name">{tab.name}</span>
-              {tab.count > 0 && (
-                <span class={modalStyles.tabCount}>{tab.count}</span>
-              )}
-            </button>
-          )}
-        </For>
+        <Show when={activeTab() !== 'profile'}>
+          {/* Search & Filter */}
+          <div class="search-filter-bar">
+            <input
+              type="text"
+              class={modalStyles.searchInput}
+              placeholder="Search melodies, sessions..."
+              value={searchQuery()}
+              onInput={(e) => setSearchQuery(e.currentTarget.value)}
+            />
+            <div class="sort-select">
+              <SafeSelect
+                value={sortBy()}
+                onChange={(e) =>
+                  setSortBy(
+                    e.currentTarget.value as 'recent' | 'popular' | 'highest',
+                  )
+                }
+              >
+                <option value="recent">Most Recent</option>
+                <option value="popular">Most Popular</option>
+                <option value="highest">Highest Scores</option>
+              </SafeSelect>
+            </div>
+          </div>
+        </Show>
       </div>
 
       {/* Content */}
