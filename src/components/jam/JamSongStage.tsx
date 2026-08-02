@@ -12,9 +12,10 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount, Show } from 'solid-js'
-import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamSong, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongStop, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamPeerId, jamSong, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongSeek, jamSongStop, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
+import { JamSongScrubber } from './JamSongScrubber'
 import styles from './JamSongStage.module.css'
 
 /**
@@ -38,6 +39,37 @@ export const JamSongStage: Component = () => {
     }
     el.addEventListener('timeupdate', onTime)
     onCleanup(() => el.removeEventListener('timeupdate', onTime))
+  })
+
+  /**
+   * Space toggles playback, so a practice run starts without hunting for
+   * a button. Host only -- it is the host's transport, and a guest hitting
+   * space would either do nothing or (worse) fight the room.
+   *
+   * Ignored while typing: the chat box is right there, and swallowing a
+   * space in a message is a much more annoying bug than a missing
+   * shortcut.
+   */
+  onMount(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || !jamIsHost()) return
+      const t = e.target as HTMLElement | null
+      const tag = t?.tagName
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'BUTTON' ||
+        t?.isContentEditable === true
+      ) {
+        return
+      }
+      e.preventDefault()
+      const at = audioRef?.currentTime ?? 0
+      if (jamExercisePlaying() && !jamExercisePaused()) jamSongPause(at)
+      else jamSongPlay(at)
+    }
+    document.addEventListener('keydown', onKey)
+    onCleanup(() => document.removeEventListener('keydown', onKey))
   })
 
   // Follow the room's transport. A peer seeks only when it has drifted
@@ -79,8 +111,22 @@ export const JamSongStage: Component = () => {
                 <span class={styles.artist}> · {song().artist}</span>
               </Show>
             </span>
-            {/* Host only: the same rule the drill transport follows, so a
-                room never has two people fighting over the playhead. */}
+            {/* Everyone sees the position; only the host can move it.
+                Knowing where you are in the song is not a privilege, but a
+                room with two people dragging the playhead is a room nobody
+                can sing in. */}
+            <JamSongScrubber
+              positionSec={jamSongPositionSec}
+              durationSec={() =>
+                audioRef?.duration !== undefined &&
+                Number.isFinite(audioRef.duration)
+                  ? audioRef.duration
+                  : song().durationSec
+              }
+              canSeek={jamIsHost()}
+              onSeek={(to) => jamSongSeek(to)}
+            />
+
             <Show when={jamIsHost()}>
               <div class={styles.buttons}>
                 <button
