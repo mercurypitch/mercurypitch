@@ -57,7 +57,7 @@ function renderRecorder() {
   const onClose = vi.fn()
   const onKept = vi.fn().mockResolvedValue(undefined)
   const onStartNewThread = vi.fn()
-  render(() => (
+  const rendered = render(() => (
     <FreeformVoiceRecorder
       target={target}
       onClose={onClose}
@@ -65,7 +65,7 @@ function renderRecorder() {
       onStartNewThread={onStartNewThread}
     />
   ))
-  return { onClose, onKept, onStartNewThread }
+  return { unmount: rendered.unmount, onClose, onKept, onStartNewThread }
 }
 
 describe('FreeformVoiceRecorder', () => {
@@ -132,7 +132,9 @@ describe('FreeformVoiceRecorder', () => {
 
     expect(discardMock).toHaveBeenCalled()
     expect(disposeMock).toHaveBeenCalled()
-    expect(releaseMock).toHaveBeenCalledWith('voice-history-freeform')
+    expect(releaseMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^voice-history-freeform:/),
+    )
     expect(onClose).toHaveBeenCalled()
     expect(keepMock).not.toHaveBeenCalled()
   })
@@ -141,10 +143,95 @@ describe('FreeformVoiceRecorder', () => {
     renderRecorder()
 
     expect(registerIndicatorMock).toHaveBeenCalledWith(
-      'voice-history-freeform',
+      expect.stringMatching(/^voice-history-freeform:/),
       expect.any(Function),
       expect.any(Function),
     )
+  })
+
+  it('reports the microphone off while a stopped take is being prepared', async () => {
+    let resolveStop: ((blob: Blob | null) => void) | undefined
+    stopMock.mockReturnValue(
+      new Promise<Blob | null>((resolve) => {
+        resolveStop = resolve
+      }),
+    )
+    const originalSetTimeout = globalThis.setTimeout
+    let stopAtLimit: (() => void) | undefined
+    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
+      callback: TimerHandler,
+      delay?: number,
+      ...args: unknown[]
+    ) => {
+      if (delay === 5 * 60 * 1000 && typeof callback === 'function') {
+        stopAtLimit = () => callback(...args)
+        return 1
+      }
+      return originalSetTimeout(callback, delay, ...args)
+    }) as typeof setTimeout)
+    renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'First chorus after warm-up' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+    await waitFor(() => expect(startMock).toHaveBeenCalled())
+
+    const micIsOn = registerIndicatorMock.mock.calls[0]?.[1] as () => boolean
+    expect(micIsOn()).toBe(true)
+
+    stopAtLimit?.()
+    expect(micIsOn()).toBe(false)
+    resolveStop?.(new Blob(['voice'], { type: 'audio/webm' }))
+    timeoutSpy.mockRestore()
+  })
+
+  it('uses a distinct microphone lease after the recorder is reopened', async () => {
+    let resolveFirstAcquire:
+      | ((stream: { getTracks: () => never[] }) => void)
+      | undefined
+    acquireMock
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstAcquire = resolve
+        }),
+      )
+      .mockResolvedValueOnce({ getTracks: () => [] })
+
+    const first = renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'First chorus after warm-up' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+    await waitFor(() => expect(acquireMock).toHaveBeenCalledTimes(1))
+    const firstLease = acquireMock.mock.calls[0]?.[0] as string
+    fireEvent.click(screen.getByRole('button', { name: 'Close recorder' }))
+    first.unmount()
+
+    renderRecorder()
+    fireEvent.input(screen.getByLabelText(/what do you want to repeat/i), {
+      target: { value: 'Second chorus after warm-up' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Start recording' }))
+    await waitFor(() => expect(startMock).toHaveBeenCalled())
+    const secondLease = acquireMock.mock.calls[1]?.[0] as string
+
+    expect(secondLease).not.toBe(firstLease)
+    const firstReleasesBefore = releaseMock.mock.calls.filter(
+      ([lease]) => lease === firstLease,
+    ).length
+    const secondReleasesBefore = releaseMock.mock.calls.filter(
+      ([lease]) => lease === secondLease,
+    ).length
+
+    resolveFirstAcquire?.({ getTracks: () => [] })
+    await waitFor(() =>
+      expect(
+        releaseMock.mock.calls.filter(([lease]) => lease === firstLease).length,
+      ).toBeGreaterThan(firstReleasesBefore),
+    )
+    expect(
+      releaseMock.mock.calls.filter(([lease]) => lease === secondLease),
+    ).toHaveLength(secondReleasesBefore)
   })
 
   it('offers a different thread while adding to an existing one', () => {

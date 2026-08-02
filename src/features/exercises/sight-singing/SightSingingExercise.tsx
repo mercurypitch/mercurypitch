@@ -185,8 +185,7 @@ const SightSingingExercise: Component<Props> = (props) => {
     const authored = weeklyVoiceHandoff
       ? launchedMidiSequence
       : (launchTargetNotes(EXERCISE_SIGHT_SINGING)?.map(noteToMidi) ?? [])
-    const minimumAuthoredNotes = weeklyVoiceHandoff ? 1 : 2
-    if (authored.length >= minimumAuthoredNotes) {
+    if (authored.length >= 2) {
       controller.setNotes(authored)
     } else {
       const scale = currentScale()
