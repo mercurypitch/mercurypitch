@@ -13,6 +13,7 @@ import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSongEntries,
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
+import { sessionSongs } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
@@ -22,6 +23,7 @@ import { parseLrcFile } from '@/lib/lyrics-service'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
+import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
 import { JamCameraWidget } from './JamCameraWidget'
@@ -158,6 +160,22 @@ export const JamPanel: Component = () => {
    */
   const [demoSong, setDemoSong] = createSignal<JamSong | null>(null)
 
+  /**
+   * Your own separated sessions. Resolved when the room goes live and
+   * again whenever the session list changes, because a separation that
+   * finishes while you are sitting in a room should appear without
+   * making you leave and come back.
+   */
+  const [mySongs, setMySongs] = createSignal<JamSong[]>([])
+
+  createEffect(() => {
+    if (jamState() !== 'active') return
+    const sessions = getAllUvrSessionsReactive()
+    void sessionSongs(sessions)
+      .then(setMySongs)
+      .catch(() => setMySongs([]))
+  })
+
   createEffect(() => {
     if (jamState() !== 'active') return
     void (async () => {
@@ -197,6 +215,7 @@ export const JamPanel: Component = () => {
     const weeklyEntry = jamWeeklyEntry(weekly())
     return [
       { label: 'Songs', entries: jamSongEntries([demoSong()]) },
+      { label: 'Your songs', entries: jamSongEntries(mySongs()) },
       {
         label: "This week's challenge",
         entries: weeklyEntry === null ? [] : [weeklyEntry],
