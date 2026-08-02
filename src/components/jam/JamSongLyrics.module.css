@@ -87,3 +87,26 @@
     padding: 35% 12px;
   }
 }
+
+/* Count-in dots before a line the singer has been waiting through. */
+.rest {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding-right: 8px;
+}
+
+.restDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: opacity 0.2s ease;
+}
+
+/* Spent dots fade rather than vanish, so the row does not reflow on every
+   tick and drag the eye off the words. */
+.restDotSpent {
+  opacity: 0.2;
+}

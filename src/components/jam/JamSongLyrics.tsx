@@ -8,9 +8,9 @@
 // that the singer's eye can find the current line without hunting.
 
 import type { Component } from 'solid-js'
-import { createEffect, For, Show } from 'solid-js'
+import { createEffect, createMemo, For, Show } from 'solid-js'
 import { formatClock } from '@/lib/format-time'
-import { lineIndexAt } from '@/lib/jam/jam-song'
+import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import styles from './JamSongLyrics.module.css'
 
@@ -21,10 +21,30 @@ interface JamSongLyricsProps {
   showNotes: boolean
 }
 
+/** Dots that empty as the rest runs out -- the karaoke count-in idea. */
+const RestDots: Component<{ total: number; left: number }> = (props) => (
+  <div class={styles.rest} aria-label={`${Math.ceil(props.left)} seconds`}>
+    <For each={Array.from({ length: props.total })}>
+      {(_dot, i) => (
+        <span
+          class={styles.restDot}
+          classList={{
+            // Dots go out from the left as time passes, so the number
+            // still lit IS the seconds remaining.
+            [styles.restDotSpent]: i() < props.total - Math.ceil(props.left),
+          }}
+        />
+      )}
+    </For>
+  </div>
+)
+
 export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   let scrollRef: HTMLDivElement | undefined
 
   const currentIndex = () => lineIndexAt(props.lines, props.positionSec())
+  const rests = createMemo(() => restsBetween(props.lines))
+  const activeRest = () => restAt(rests(), props.positionSec())
 
   /**
    * Keep the sung line centred in THIS panel.
@@ -77,6 +97,22 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                     currentIndex() >= 0 && i() < currentIndex(),
                 }}
               >
+                {/* The count-in sits above the line it leads into, which
+                    is where the singer's eye already is. */}
+                <Show
+                  when={
+                    activeRest()?.rest.beforeLine === i()
+                      ? activeRest()
+                      : undefined
+                  }
+                >
+                  {(r) => (
+                    <RestDots
+                      total={r().rest.dotCount}
+                      left={r().secondsLeft}
+                    />
+                  )}
+                </Show>
                 <span class={styles.lineText}>{line.text}</span>
                 <Show when={props.showNotes}>
                   <span class={styles.lineTime}>

@@ -90,6 +90,69 @@ export function secondsInFlight(rttMs: number): number {
 }
 
 /**
+ * A gap long enough to be worth counting into.
+ *
+ * Under this and the singer barely notices the pause; over it and they
+ * need to know when to come back in. The stem mixer arrived at the same
+ * idea for its karaoke countdown dots, but that derivation lives inside a
+ * three-thousand-line controller wired to block instances and edit
+ * layers, so this is the idea rather than the code.
+ */
+export const MIN_REST_SEC = 3
+
+export interface JamRest {
+  /** Index of the line the rest comes BEFORE. */
+  beforeLine: number
+  startSec: number
+  endSec: number
+  /** One dot a second, capped -- a 40-second intro is not 40 dots. */
+  dotCount: number
+}
+
+/**
+ * The silences between sung lines.
+ *
+ * A singer needs to know when to come back in as much as what to sing,
+ * and a lyric sheet alone does not say. Only gaps AFTER a line count: the
+ * time before the first line is an intro, which wants a count-in of its
+ * own rather than being treated as a rest in the middle of a song.
+ */
+export function restsBetween(lines: readonly LyricsLineTiming[]): JamRest[] {
+  const rests: JamRest[] = []
+  for (let i = 0; i < lines.length - 1; i++) {
+    const end = lines[i]!.endSec ?? lines[i + 1]!.startSec
+    const next = lines[i + 1]!.startSec
+    const gap = next - end
+    if (gap < MIN_REST_SEC) continue
+    rests.push({
+      beforeLine: i + 1,
+      startSec: end,
+      endSec: next,
+      dotCount: Math.min(8, Math.floor(gap)),
+    })
+  }
+  return rests
+}
+
+/**
+ * The rest currently running, if the song is inside one.
+ *
+ * Returns the countdown as well as the rest, because "four dots" is not
+ * the useful number -- "two left" is.
+ */
+export function restAt(
+  rests: readonly JamRest[],
+  positionSec: number,
+): { rest: JamRest; secondsLeft: number } | null {
+  for (const rest of rests) {
+    if (positionSec >= rest.startSec && positionSec < rest.endSec) {
+      return { rest, secondsLeft: rest.endSec - positionSec }
+    }
+  }
+  return null
+}
+
+/**
  * Can this room actually play this song?
  *
  * Phase 1 answers "only if every peer can fetch it". A local song needs the
