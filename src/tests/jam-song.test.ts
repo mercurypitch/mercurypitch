@@ -86,11 +86,26 @@ describe('songPlayableInRoom', () => {
     expect(songPlayableInRoom(song()).ok).toBe(true)
   })
 
-  it('refuses a device-local song, and says why', () => {
-    // Loading it would leave everyone else in silence with no explanation.
-    const verdict = songPlayableInRoom(song({ origin: 'local' }))
+  it('lets you sing your own song when you are alone', () => {
+    // Practising alone with your own material is the obvious thing to
+    // want; blocking it to protect a case that is not happening is just
+    // unhelpful.
+    const verdict = songPlayableInRoom(song({ origin: 'local' }), 0)
+    expect(verdict.ok).toBe(true)
+    expect(verdict.warning).toMatch(/only you can hear/i)
+  })
+
+  it('refuses a device-local song once somebody else is listening', () => {
+    const verdict = songPlayableInRoom(song({ origin: 'local' }), 1)
     expect(verdict.ok).toBe(false)
-    expect(verdict.reason).toMatch(/only on your device/i)
+    expect(verdict.reason).toMatch(/nobody else in the room could hear/i)
+  })
+
+  it('warns about a local song rather than staying silent about it', () => {
+    // Silence with no explanation is the failure Relay's empty parts
+    // taught us to avoid.
+    expect(songPlayableInRoom(song({ origin: 'local' })).warning).toBeTruthy()
+    expect(songPlayableInRoom(song()).warning).toBeUndefined()
   })
 
   it('refuses a song with no backing track', () => {
