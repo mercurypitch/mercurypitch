@@ -2,7 +2,6 @@ import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-l
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseShell } from '@/features/exercises/ExerciseShell'
-import type { ExerciseStatus } from '@/features/exercises/types'
 import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/features/exercises/use-base-exercise'
 
 const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
@@ -128,37 +127,37 @@ describe('ExerciseShell voice capture', () => {
       }),
     )
     const firstTake = makeVoiceTake()
-    const Harness = () => {
-      const [status, setStatus] = createSignal<ExerciseStatus>('complete')
-      const [take] = createSignal<ExerciseSessionVoiceTake | null>(firstTake)
-      const voiceCapture: ExerciseVoiceCaptureController = {
-        state: () => 'ready',
-        take,
-        awaitOutcome: async () => ({ state: 'ready', take: take()! }),
-        discard: vi.fn(),
-      }
-      return (
-        <ExerciseShell
-          type="long-note"
-          title="Long Note Practice"
-          status={status}
-          currentScore={() => 84}
-          resultScore={() => 84}
-          voiceCapture={voiceCapture}
-          onBack={() => {}}
-          onStart={() => {}}
-          activeContent={<div>active</div>}
-          onStop={() => {}}
-          resultSummary={<>Steady zone 78%</>}
-          onTryAgain={() => setStatus('active')}
-          onChangeTarget={() => {}}
-        />
-      )
+    const take = () => firstTake
+    const onTryAgain = vi.fn()
+    const voiceCapture: ExerciseVoiceCaptureController = {
+      state: () => 'ready',
+      take,
+      awaitOutcome: async () => ({ state: 'ready', take: take()! }),
+      discard: vi.fn(),
     }
-    render(() => <Harness />)
+    // Keep the result surface mounted after the restart callback so the
+    // shell's private generation guard remains observable through its label.
+    render(() => (
+      <ExerciseShell
+        type="long-note"
+        title="Long Note Practice"
+        status={() => 'complete'}
+        currentScore={() => 84}
+        resultScore={() => 84}
+        voiceCapture={voiceCapture}
+        onBack={() => {}}
+        onStart={() => {}}
+        activeContent={<div>active</div>}
+        onStop={() => {}}
+        resultSummary={<>Steady zone 78%</>}
+        onTryAgain={onTryAgain}
+        onChangeTarget={() => {}}
+      />
+    ))
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
     fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
+    expect(onTryAgain).toHaveBeenCalledOnce()
     resolveKeep?.({
       ok: true,
       quotaExceeded: false,
