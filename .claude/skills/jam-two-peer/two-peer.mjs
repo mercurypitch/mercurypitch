@@ -29,6 +29,12 @@ async function launch(name) {
   await ctx.addInitScript(() => {
     localStorage.setItem('pitchperfect_welcome_version', '99.0.0')
     localStorage.setItem('pitchperfect_survey_dismissed', '1')
+    // Mark the Jam page tour as already offered. It auto-closes for a real
+    // user so it is not a bug, but it sits exactly over the header's icon
+    // controls -- clicking it away afterwards is unreliable, and any
+    // screenshot of the mic/camera/leave buttons photographs the popup
+    // instead. usePageTourOffer reads this key and stays quiet.
+    localStorage.setItem('pitchperfect_page_tour_offered_jam', 'true')
   })
   const page = await ctx.newPage()
   page.on('console', (m) => {
@@ -64,5 +70,11 @@ console.log('guest:', await role(guest.page))
 
 await host.page.screenshot({ path: `${OUT}/host.png` })
 await guest.page.screenshot({ path: `${OUT}/guest.png` })
+// The header controls alone, which is what most polish questions are about.
+await host.page
+  .locator('#jam-panel')
+  .first()
+  .screenshot({ path: `${OUT}/host-header.png`, animations: 'disabled' })
+  .catch(() => {})
 await host.browser.close()
 await guest.browser.close()
