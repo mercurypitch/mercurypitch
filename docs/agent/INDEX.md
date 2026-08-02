@@ -386,6 +386,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm deploy:db:dev` | `cd workers/db-worker && pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:db:prod` | `cd workers/db-worker && pnpm exec wrangler deploy --env prod` |
 | `pnpm typecheck:db` | `tsc -p workers/db-worker` |
+| `pnpm typecheck:jam` | `tsc -p workers/jam-worker` |
 | `pnpm size` | `vite build && du -sh dist/assets/*.js dist/assets/*.css dist/assets/*.wasm 2>/dev/null | sort -rh` |
 <!-- END:GENERATED scripts -->
 
