@@ -58,7 +58,8 @@
 }
 
 .recordLaunch,
-.recordAnother {
+.recordAnother,
+.renameThread {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -67,6 +68,7 @@
   padding: 10px 14px;
   font: inherit;
   font-weight: 700;
+  white-space: nowrap;
   border-radius: 10px;
   cursor: pointer;
 }
@@ -79,7 +81,8 @@
 }
 
 .recordLaunch:disabled,
-.recordAnother:disabled {
+.recordAnother:disabled,
+.renameThread:disabled {
   cursor: default;
   opacity: 0.52;
 }
@@ -184,6 +187,10 @@
 .secondaryAction:focus-visible,
 .recordLaunch:focus-visible,
 .recordAnother:focus-visible,
+.renameThread:focus-visible,
+.renameForm input:focus-visible,
+.saveRename:focus-visible,
+.cancelRename:focus-visible,
 .takeRow button:focus-visible {
   outline: 2px solid #8db8ff;
   outline-offset: 2px;
@@ -247,13 +254,80 @@
   gap: 10px;
 }
 
-.recordAnother {
+.recordAnother,
+.renameThread {
   min-height: 44px;
   padding: 7px 10px;
   font-size: 0.78rem;
   color: #c2d7f7;
   border: 1px solid rgb(141 184 255 / 20%);
   background: transparent;
+}
+
+.renameForm {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  max-width: 620px;
+}
+
+.renameForm > label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8db8ff;
+}
+
+.renameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.renameRow input {
+  min-width: min(300px, 42vw);
+  min-height: 44px;
+  padding: 9px 11px;
+  font: inherit;
+  color: var(--vh-ink);
+  border: 1px solid rgb(141 184 255 / 32%);
+  border-radius: 10px;
+  background: #080e18;
+}
+
+.saveRename,
+.cancelRename {
+  min-height: 44px;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.saveRename {
+  color: #07101e;
+  border: 0;
+  background: #a9c9ff;
+}
+
+.cancelRename {
+  color: var(--vh-muted);
+  border: 1px solid var(--vh-line);
+  background: transparent;
+}
+
+.saveRename:disabled,
+.cancelRename:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.renameError {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #ffb5b5;
 }
 
 .compare {
@@ -678,6 +752,12 @@
     padding: 14px;
   }
 
+  .workspaceHead {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .workspaceHead > div > span {
     display: none;
   }
@@ -696,8 +776,23 @@
   }
 
   .workspaceActions {
-    align-items: end;
-    flex-direction: column-reverse;
+    flex-wrap: wrap;
+  }
+
+  .renameForm {
+    width: 100%;
+    max-width: none;
+  }
+
+  .renameRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .renameRow input {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
   }
 
   .takeSelectors,

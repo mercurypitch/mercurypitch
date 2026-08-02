@@ -56,10 +56,16 @@ const target = {
 function renderRecorder() {
   const onClose = vi.fn()
   const onKept = vi.fn().mockResolvedValue(undefined)
+  const onStartNewThread = vi.fn()
   render(() => (
-    <FreeformVoiceRecorder target={target} onClose={onClose} onKept={onKept} />
+    <FreeformVoiceRecorder
+      target={target}
+      onClose={onClose}
+      onKept={onKept}
+      onStartNewThread={onStartNewThread}
+    />
   ))
-  return { onClose, onKept }
+  return { onClose, onKept, onStartNewThread }
 }
 
 describe('FreeformVoiceRecorder', () => {
@@ -139,5 +145,23 @@ describe('FreeformVoiceRecorder', () => {
       expect.any(Function),
       expect.any(Function),
     )
+  })
+
+  it('offers a different thread while adding to an existing one', () => {
+    const onStartNewThread = vi.fn()
+    render(() => (
+      <FreeformVoiceRecorder
+        target={{ ...target, title: 'Heaven Can Wait' }}
+        onClose={vi.fn()}
+        onKept={vi.fn()}
+        onStartNewThread={onStartNewThread}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Start a different thread' }),
+    )
+
+    expect(onStartNewThread).toHaveBeenCalledTimes(1)
   })
 })

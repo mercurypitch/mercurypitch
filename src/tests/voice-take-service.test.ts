@@ -12,7 +12,7 @@ import { ensurePersistentStorage } from '@/db'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { CLOUD_ENTITIES } from '@/db/adapters/hybrid-adapter'
 import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '@/db/entities'
-import { deleteVoiceTake, getVoiceTakeBlob, listVoiceTakes, saveVoiceTake, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
+import { deleteVoiceTake, getVoiceTakeBlob, listVoiceTakes, renameFreeformVoiceThread, saveVoiceTake, updateVoiceTake, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { InMemoryAdapter } from './utils/in-memory-db'
 
 function draft(capturedAt = '2026-08-01T12:00:00.000Z') {
@@ -91,6 +91,54 @@ describe('voice take persistence', () => {
         favorite: true,
       }),
     ).toMatchObject({ title: 'My C4 baseline', favorite: true })
+  })
+
+  it('renames every take in a freeform thread without changing its identity', async () => {
+    const comparisonKey = 'freeform:chorus-thread:v1'
+    const first = await saveVoiceTake({
+      ...draft('2026-08-01T12:00:00.000Z'),
+      source: 'freeform',
+      comparisonKey,
+      title: 'Old chorus name',
+      context: {
+        threadTitle: 'Old chorus name',
+        prompt: 'Old chorus name',
+        preserved: true,
+      },
+    })
+    const second = await saveVoiceTake({
+      ...draft('2026-08-02T12:00:00.000Z'),
+      source: 'freeform',
+      comparisonKey,
+      title: 'Old chorus name',
+      context: { threadTitle: 'Old chorus name', prompt: 'Old chorus name' },
+    })
+
+    expect(
+      await renameFreeformVoiceThread(comparisonKey, '  New chorus name  '),
+    ).toBe(true)
+
+    const renamed = (await listVoiceTakes()).filter(
+      (take) => take.comparisonKey === comparisonKey,
+    )
+    expect(renamed).toHaveLength(2)
+    expect(renamed.map((take) => take.title)).toEqual([
+      'New chorus name',
+      'New chorus name',
+    ])
+    expect(
+      JSON.parse(
+        renamed.find((take) => take.id === first.value!.id)!.contextJson,
+      ),
+    ).toEqual({
+      threadTitle: 'New chorus name',
+      prompt: 'New chorus name',
+      preserved: true,
+    })
+    expect(renamed.map((take) => take.comparisonKey)).toEqual([
+      second.value!.comparisonKey,
+      first.value!.comparisonKey,
+    ])
   })
 
   it('deletes audio with its metadata and supports a full local wipe', async () => {
