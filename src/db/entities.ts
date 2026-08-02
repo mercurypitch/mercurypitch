@@ -544,6 +544,40 @@ export interface WhisperTranscriptionRecord extends DbEntity {
 
 // ── Onboarding Survey ─────────────────────────────────────────
 
+/**
+ * One thing a singer DID, appended and never edited.
+ *
+ * The profile can already describe scores — sessionRecords carries them.
+ * It cannot describe an act that leaves no practice session behind:
+ * making a playlist, finishing one start to finish, separating stems.
+ * That is what this is for, and only that. Anything derivable from
+ * sessionRecords stays derived from it, so there is one source of truth
+ * per question.
+ *
+ * Deliberately not mirrorEvents: that table is the growth funnel, keyed
+ * by device rather than person and read from the ops console. The two
+ * answer different questions and must not be collapsed.
+ */
+export type UserActivityKind =
+  | 'playlist_created'
+  | 'playlist_completed'
+  | 'song_completed'
+  | 'stems_separated'
+  | 'melody_created'
+  | 'ascent_week_completed'
+
+export interface UserActivity extends DbEntity {
+  userId: string
+  kind: UserActivityKind
+  /** What was acted on. Not a foreign key — deleting a playlist does not
+   *  un-make the act of having made it. */
+  refId?: string
+  /** Per-kind detail (song count, duration). Never queried structurally. */
+  metaJson?: string
+  /** When it happened, which is not always when it synced. */
+  at: string
+}
+
 export interface UserSurveyResponse extends DbEntity {
   userId: string
   /** JSON: { background?: string[], usage?: string[], featureRequest?: string } */

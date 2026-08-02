@@ -10,6 +10,7 @@
 import { createSignal } from 'solid-js'
 import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { getDb } from '@/db'
+import { recordActivity } from '@/db/services/user-activity-service'
 import { IS_DEV } from '@/lib/defaults'
 import { getAllUvrSessions, getGroupsReactive, getUvrSession, } from '@/stores/uvr-store'
 
@@ -178,6 +179,7 @@ export async function createPlaylist(
   } as any)
   _setPlaylists((prev) => [...prev, pl])
   bump()
+  void recordActivity('playlist_created', { refId: pl.id, meta: { songs: 0 } })
   return pl
 }
 
@@ -201,6 +203,10 @@ export async function createPlaylistWithItems(
   } as any)
   _setPlaylists((prev) => [...prev, pl])
   bump()
+  void recordActivity('playlist_created', {
+    refId: pl.id,
+    meta: { songs: pl.items.length },
+  })
   return pl
 }
 
@@ -438,6 +444,13 @@ export function reportSongScore(score: KaraokeSongScore | null): void {
 export function advance(): void {
   const next = currentIndex() + 1
   if (next >= queue().length) {
+    // Reaching the summary IS "start to finish" — the singer got through
+    // every song in the queue. Recorded here rather than on the summary
+    // screen so closing it early still counts what they did.
+    void recordActivity('playlist_completed', {
+      refId: activePlaylistId() ?? undefined,
+      meta: { songs: queue().length },
+    })
     setPhase('summary')
     return
   }

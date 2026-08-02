@@ -104,6 +104,8 @@ export const TABLES: Record<string, TableDef> = {
   // A singer's measured voice over time. Private per-user: the twin and the
   // numbers are yours, and nothing here is a leaderboard.
   voiceprints: { access: 'user', jsonCols: ['summary'] },
+  // Private per-user history: reads and writes always scoped to the token.
+  userActivity: { access: 'user' },
   // Pricing config: public reads (the pricing page), writes require the
   // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
   // ledger, entitlements, and billing events are deliberately NOT here: only
