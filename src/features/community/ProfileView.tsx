@@ -19,6 +19,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
+import { legendArt, legendThumbSrc } from '@/features/mirror/LegendCaricature'
 import styles from './ProfileView.module.css'
 
 export interface ProfileViewProps {
@@ -29,9 +30,10 @@ export interface ProfileViewProps {
   streak: number
   sharedMelodies: number
   sharedSessions: number
-  /** Portrait for the singer's voice twin, when one has been measured. */
+  /** The legend this singer's range overlaps with, once measured. The
+   *  portrait is resolved from it here rather than passed in, so art
+   *  lookup stays in one place. */
   twinName?: string | undefined
-  twinPortrait?: string | undefined
 }
 
 const CHART_W = 520
@@ -51,6 +53,18 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
   const accuracy = () => accuracySeries(props.sessions)
   const movement = () => trend(scores())
 
+  /** Thumb plus full portrait for the twin, when it has raster art. */
+  const portrait = (): { thumb: string; full: string } | undefined => {
+    const twin = props.twinName
+    if (twin === undefined || twin === '') return undefined
+    const thumb = legendThumbSrc(twin)
+    const full = legendArt(twin).imageSrc
+    if (thumb === undefined || full === undefined || full === '') {
+      return undefined
+    }
+    return { thumb, full }
+  }
+
   const since = () => {
     const at = stats()?.firstAt
     if (at === undefined) return ''
@@ -64,7 +78,7 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
     <div class={styles.profile}>
       <div class={styles.identity}>
         <Show
-          when={props.twinPortrait}
+          when={portrait()}
           fallback={
             /* A monogram rather than a generic user glyph: an empty
                rounded box reads as an image that failed to load, and the
@@ -75,13 +89,18 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
             </div>
           }
         >
-          {(src) => (
+          {(art) => (
+            /* The 120px thumb covers a 72px box at 1x; a hi-DPI screen or
+               a zoomed page gets the full portrait instead, because
+               upscaling the thumb is the one thing that would look worse
+               than either. See the image-sharpness playbook. */
             <img
               class={styles.avatar}
-              src={src()}
-              width="120"
-              height="149"
-              alt=""
+              src={art().thumb}
+              srcset={`${art().thumb} 1x, ${art().full} 2x`}
+              width="72"
+              height="89"
+              alt={`${props.twinName ?? ''} — your voice twin`}
               decoding="async"
             />
           )}
