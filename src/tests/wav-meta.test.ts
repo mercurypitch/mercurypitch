@@ -3,10 +3,14 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { wavDurationSeconds } from '@/lib/wav-meta'
+import { wavDurationSeconds, wavSampleRate } from '@/lib/wav-meta'
 
 /** Minimal RIFF/WAVE header: fmt (16 bytes) + data chunk header. */
-const wavHeader = (byteRate: number, dataBytes: number): ArrayBuffer => {
+const wavHeader = (
+  byteRate: number,
+  dataBytes: number,
+  sampleRate = 44100,
+): ArrayBuffer => {
   const buf = new ArrayBuffer(44)
   const view = new DataView(buf)
   const write = (off: number, text: string) => {
@@ -20,7 +24,7 @@ const wavHeader = (byteRate: number, dataBytes: number): ArrayBuffer => {
   view.setUint32(16, 16, true) // fmt chunk size
   view.setUint16(20, 1, true) // PCM
   view.setUint16(22, 2, true) // stereo
-  view.setUint32(24, 44100, true)
+  view.setUint32(24, sampleRate, true)
   view.setUint32(28, byteRate, true)
   view.setUint16(32, 4, true) // block align
   view.setUint16(34, 16, true) // bits
@@ -55,5 +59,29 @@ describe('wavDurationSeconds', () => {
     expect(
       wavDurationSeconds(wavHeader(176400, 176400).slice(0, 20)),
     ).toBeUndefined()
+  })
+})
+
+// ── wavSampleRate ──────────────────────────────────────────────────
+// Read before decoding, because decodeAudioData resamples to whatever
+// rate its context runs at -- so re-encoding without knowing the source
+// rate quietly converts 44.1k material to 48k for nothing.
+
+describe('wavSampleRate', () => {
+  it('reads the rate off the fmt chunk', () => {
+    expect(wavSampleRate(wavHeader(176400, 1000, 44100))).toBe(44100)
+    expect(wavSampleRate(wavHeader(192000, 1000, 48000))).toBe(48000)
+  })
+
+  it('is undefined for something that is not a WAV', () => {
+    expect(wavSampleRate(new ArrayBuffer(64))).toBeUndefined()
+  })
+
+  it('is undefined for a truncated header rather than guessing', () => {
+    expect(wavSampleRate(wavHeader(176400, 1000).slice(0, 16))).toBeUndefined()
+  })
+
+  it('is undefined for a zero rate, which would be a division trap later', () => {
+    expect(wavSampleRate(wavHeader(176400, 1000, 0))).toBeUndefined()
   })
 })

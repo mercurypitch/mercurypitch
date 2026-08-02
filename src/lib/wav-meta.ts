@@ -7,6 +7,42 @@
 // full decode (and a second in-memory copy) of a ~60 MB file.
 
 /**
+ * Sample rate of a RIFF/WAVE buffer, or undefined when unparseable.
+ *
+ * Wanted before decoding, not after: `decodeAudioData` resamples to
+ * whatever rate its AudioContext runs at, so re-encoding a stem without
+ * knowing the original rate quietly resamples 44.1k material to 48k for
+ * no reason. Reading it off the header costs a few bytes.
+ */
+export function wavSampleRate(header: ArrayBuffer): number | undefined {
+  const view = new DataView(header)
+  const tag = (off: number) =>
+    String.fromCharCode(
+      view.getUint8(off),
+      view.getUint8(off + 1),
+      view.getUint8(off + 2),
+      view.getUint8(off + 3),
+    )
+  try {
+    if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return undefined
+    let offset = 12
+    while (offset + 8 <= view.byteLength) {
+      const id = tag(offset)
+      const size = view.getUint32(offset + 4, true)
+      if (id === 'fmt ') {
+        // fmt body: audioFormat(2) numChannels(2) sampleRate(4) ...
+        const rate = view.getUint32(offset + 12, true)
+        return rate > 0 ? rate : undefined
+      }
+      offset += 8 + size + (size % 2)
+    }
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * Seconds of audio in a RIFF/WAVE buffer, or undefined when the header
  * is not parseable (non-WAV, truncated, or a zero byteRate). Only the
  * leading bytes are inspected, so passing a small slice is enough.
