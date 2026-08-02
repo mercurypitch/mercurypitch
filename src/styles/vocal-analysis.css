@@ -4229,3 +4229,53 @@
     display: none;
   }
 }
+
+/* ── The panel fills the window ──────────────────────────────────── */
+/* .community-panel is `justify-content: center` with min-height 400 and
+   no grow, so it sized to its content: on a 700px main it stopped at
+   438 and left a black band underneath. Worse, it centred that band
+   vertically, which is why the header sat away from the top.
+ *
+ * Filling it also fixes the stray scrollbar. The backdrop is an absolutely
+ * positioned pseudo-element up to 560px tall; in a 374px container it hung
+ * 149px past the bottom and extended the scroll height all by itself.
+ * Given room, it sits inside. */
+.community-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.community-share-tab {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Belt and braces: even in a container shorter than the art, the backdrop
+   must not invent scrollable space. */
+.community-share-tab::before {
+  max-height: 100%;
+}
+
+/* The search field carries a 12px bottom margin from the modal it was
+   built for. In a centred flex row it is the MARGIN box that gets
+   centred, so the field itself rode 6px high while the sort control sat
+   correctly — the two looked misaligned and neither was "wrong". The
+   margin has no job on this row. */
+.community-share-tab .search-filter-bar input {
+  margin: 0;
+}
+
+/* The sort control is wrapped in a plain block, so centring the row
+   aligned the WRAPPER rather than the select inside it. */
+.community-share-tab .sort-select {
+  display: flex;
+  align-items: stretch;
+}
+
+.community-share-tab .search-filter-bar input,
+.community-share-tab .sort-select select {
+  height: 36px;
+  box-sizing: border-box;
+}

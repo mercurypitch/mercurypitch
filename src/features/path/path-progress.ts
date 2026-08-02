@@ -35,10 +35,14 @@ export const ENDOWED_DAY = 'endowed'
 // so anyone can jump ahead and read/try a later week. When off, weeks
 // unlock one at a time as the one before them fills.
 //
-// Default follows the build: unlocked in dev (so we can skip through all
-// the content while authoring it), locked in prod. LAUNCH-DAY DECISION —
-// flip this one constant to ship prod unlocked, and/or leave the Settings
-// toggle (Settings › Guided Path) for users to choose per-device.
+// DECIDED (owner, 2026-08-02): prod ships LOCKED. Singers walk the
+// journey in order, and anyone who wants to roam turns it on themselves
+// in Settings › Guided Path. This constant already encodes that — dev is
+// unlocked only so the content can be skipped through while authoring it.
+//
+// It read as an open launch-day question for a while, which cost a round
+// of "is this decided?". It is not open. Changing prod to unlocked means
+// revisiting the decision, not flipping a default nobody chose.
 export const FREE_ROAM_DEFAULT = IS_DEV && !IS_TEST
 
 const [freeRoam, setFreeRoam] = createPersistedSignal<boolean>(

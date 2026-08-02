@@ -69,6 +69,10 @@ export interface UserBadge {
   description: string
   /** Icon */
   icon: Component | string
+  /** The seed's icon NAME, kept alongside the resolved component: the
+   *  medallion art is keyed by it, and iconForName throws the string
+   *  away. */
+  iconName: string
   /** Tier */
   tier: 'bronze' | 'silver' | 'gold' | 'platinum'
   /** Earned date */
@@ -245,6 +249,7 @@ export const VocalChallenges: Component = () => {
         name: def.name,
         description: def.description,
         icon: iconForName(def.icon),
+        iconName: def.icon,
         tier: def.tier,
         earned: !!userBadge,
         earnedDate: userBadge ? new Date(userBadge.earnedAt).getTime() : 0,
@@ -435,11 +440,7 @@ export const VocalChallenges: Component = () => {
                     lose their colour (see .badge-item.locked). */}
                 <div class="badge-icon">
                   <Show
-                    when={
-                      typeof badge.icon === 'string'
-                        ? badgeArtSrc(badge.icon)
-                        : undefined
-                    }
+                    when={badgeArtSrc(badge.iconName)}
                     fallback={renderIcon(badge.icon)}
                   >
                     {(src) => (
