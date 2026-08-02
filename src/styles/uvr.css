@@ -3914,10 +3914,29 @@
   letter-spacing: 0.04em;
 }
 
+/* Every other .rv-stem-btn variant paints its own background, colour and
+   border — the base rule sets `border: none` and nothing else, so a
+   variant that skips them falls through to the browser's default grey
+   button. These two were the only ones that did, which is why they were
+   the only ones that looked foreign to the app. */
 .rv-parts-split-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  background: var(--bg-tertiary);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border);
+}
+
+.rv-parts-split-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary);
+}
+
+.rv-parts-split-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .rv-split-cost {
@@ -4890,10 +4909,16 @@ button.server-cost-hint:hover {
   vertical-align: 2px;
 }
 
+/* The offer next to a blocked split ("Sign in", "Get credits"): an accent
+   outline, so it reads as the way forward without outshouting the split
+   itself. border-color alone did nothing here — the base rule is
+   `border: none`, so there was no border to colour. */
 .rv-parts-cta {
   margin-left: 6px;
-  border-color: var(--accent, #58a6ff);
+  background: transparent;
+  border: 1px solid var(--accent, #58a6ff);
   color: var(--accent, #58a6ff);
+  font-weight: 600;
 }
 
 .rv-parts-cta:hover:not(:disabled) {
