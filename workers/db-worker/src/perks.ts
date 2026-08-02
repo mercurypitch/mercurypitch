@@ -41,7 +41,14 @@ export async function getPerksForUser(
     )
       .bind(user.email)
       .all<{ perkId: string }>()
-    return (rows.results ?? []).map((r) => r.perkId)
+    // Filter to the catalog rather than returning whatever is in the
+    // row. Granting is a shell script typing a string by hand, so a typo
+    // would otherwise publish a perk id nothing can render — and the
+    // client would have no way to tell that from a real one.
+    const known = new Set<string>(PERK_IDS)
+    return (rows.results ?? [])
+      .map((r) => r.perkId)
+      .filter((id) => known.has(id))
   } catch {
     // Shared DB unreachable — cosmetic feature, degrade to none.
     return []
