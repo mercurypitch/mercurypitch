@@ -1,5 +1,14 @@
 import Worker from '@/workers/whisper-worker?worker'
 
+/**
+ * One recognized span of audio.
+ *
+ * In practice that is ONE WORD, not a sentence: the worker asks the pipeline
+ * for `return_timestamps: 'word'` because the pitch canvas aligns per word.
+ * Anything that wants sentences has to group them itself — treating a segment
+ * as a lyric line is what once turned the "From vocal" draft into one word per
+ * line. `whisper-lyrics.groupWhisperWordsIntoLines` does the grouping.
+ */
 export interface WhisperSegment {
   text: string
   timestamp: [number, number]

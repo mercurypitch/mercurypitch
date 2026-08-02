@@ -71,6 +71,18 @@ releases in `onCleanup` with no guard. Ask bug reporters for
 **Rule:** route every start through `activateAudioPlayback`.
 **See:** `src/features/playback/usePlaybackController.ts`
 
+### A WhisperSegment is a word, never a lyric line
+**Symptom:** the stem mixer's "Transcribe" gave a spot-on word alignment while
+"Generate lyrics from vocal" — same hook, same run — filled the editor with
+hundreds of one-word lines.
+**Cause:** the worker asks for `return_timestamps: 'word'`, so every segment is
+a single word. The alignment path knew that; the lyrics path emitted one LRC
+line per segment.
+**Rule:** group with `groupWhisperWordsIntoLines` before showing segments as
+lyrics. Per-transcription hallucination guards do not catch junk confined to
+one stretch of a song — judge a *line*, not the whole result.
+**See:** `src/lib/whisper-lyrics.ts`
+
 ## Framework
 
 ### Do not destructure props
