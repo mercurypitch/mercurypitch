@@ -18,7 +18,7 @@ import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import jamStyles from './Jam.module.css'
@@ -34,6 +34,7 @@ import { JamPeerList } from './JamPeerList'
 import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
+import { JamSongStage } from './JamSongStage'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -1018,33 +1019,39 @@ export const JamPanel: Component = () => {
               </Show>
             </div>
 
-            {/* ── Canvases: exercise (main) + shared pitch (strip) ─ */}
-            <div class={panelStyles.canvasArea}>
-              {/* Exercise — takes most space */}
-              <div
-                class={`${exerciseCanvasStyles.container} ${panelStyles.exerciseCanvas}`}
-              >
-                <JamExerciseCanvas myPeerId={jamPeerId} />
-                <JamActivityHeatmap />
-              </div>
+            {/* ── The room's stage: a song, or the drill canvases ── */}
+            <Show when={jamIsSongRoom()}>
+              <JamSongStage />
+            </Show>
 
-              {/* Shared pitch — compact strip below, toggleable */}
-              <div
-                class={panelStyles.pitchStrip}
-                classList={{
-                  [panelStyles.pitchStripCollapsed]: !showLivePitch(),
-                }}
-              >
-                <Show when={showLivePitch()}>
-                  <div class={panelStyles.pitchStripLabel}>
-                    Live Pitch Monitor
-                  </div>
-                  <div class={pitchCanvasStyles.container}>
-                    <JamSharedPitchCanvas myPeerId={jamPeerId} />
-                  </div>
-                </Show>
+            <Show when={!jamIsSongRoom()}>
+              <div class={panelStyles.canvasArea}>
+                {/* Exercise — takes most space */}
+                <div
+                  class={`${exerciseCanvasStyles.container} ${panelStyles.exerciseCanvas}`}
+                >
+                  <JamExerciseCanvas myPeerId={jamPeerId} />
+                  <JamActivityHeatmap />
+                </div>
+
+                {/* Shared pitch — compact strip below, toggleable */}
+                <div
+                  class={panelStyles.pitchStrip}
+                  classList={{
+                    [panelStyles.pitchStripCollapsed]: !showLivePitch(),
+                  }}
+                >
+                  <Show when={showLivePitch()}>
+                    <div class={panelStyles.pitchStripLabel}>
+                      Live Pitch Monitor
+                    </div>
+                    <div class={pitchCanvasStyles.container}>
+                      <JamSharedPitchCanvas myPeerId={jamPeerId} />
+                    </div>
+                  </Show>
+                </div>
               </div>
-            </div>
+            </Show>
 
             <Show when={jamError()}>
               <p class={jamStyles.error}>{jamError()}</p>

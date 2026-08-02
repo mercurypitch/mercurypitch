@@ -22,12 +22,31 @@ import type { LrcLine } from '@/lib/lyrics-service'
  */
 export function lrcToSongLines(lrc: readonly LrcLine[]): LyricsLineTiming[] {
   return lrc
-    .filter((l) => l.text.trim() !== '')
+    .map((l) => ({ ...l, text: stripWordTimings(l.text) }))
+    .filter((l) => l.text !== '')
     .map((l, i, arr) => ({
       text: l.text,
       startSec: l.time,
       ...(arr[i + 1] === undefined ? {} : { endSec: arr[i + 1]!.time }),
     }))
+}
+
+/**
+ * Strip enhanced-LRC word timings out of a line.
+ *
+ * The A2 format embeds per-word times INSIDE the line -- "Lay, [00:18.87]
+ * and [00:19.07] put ..." -- and parseLrcFile only pulls off the leading
+ * line timestamp, so the rest arrives as visible text. A singer reading
+ * along does not want to read the clock.
+ *
+ * Both bracket styles, because both are in the wild: `[mm:ss.xx]` and the
+ * `<mm:ss.xx>` spelling the enhanced spec actually prescribes.
+ */
+export function stripWordTimings(text: string): string {
+  return text
+    .replace(/[[<]\d{1,2}:\d{2}(?:[.:]\d{1,3})?[\]>]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 }
 
 /**
