@@ -102,6 +102,13 @@
   gap: 8px;
 }
 
+/* Create Room matches Join Room's full width. They are the two halves of
+   the same decision and sat at different widths, which read as a broken
+   layout rather than a deliberate hierarchy. */
+.actions .btn {
+  flex: 1;
+}
+
 .btn {
   display: flex;
   align-items: center;
@@ -267,8 +274,18 @@
   font-family:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   color: var(--accent);
-  background: rgba(88, 166, 255, 0.1);
-  border: 1px solid rgba(88, 166, 255, 0.2);
+  /* Same fix as the icon controls: a 0.1-alpha tint is a state hint, not a
+     surface, and the room code vanished against a bright backdrop. The
+     tint layers over a slider-driven disc rather than being the whole
+     background -- and this one is a code people read aloud, so it has to
+     stay legible at every slider position. */
+  background-color: var(--jam-control, rgba(13, 17, 23, 0.55));
+  background-image: linear-gradient(
+    rgba(88, 166, 255, 0.16),
+    rgba(88, 166, 255, 0.16)
+  );
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(88, 166, 255, 0.35);
   border-radius: 4px;
 }
 

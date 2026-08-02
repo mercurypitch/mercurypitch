@@ -1,0 +1,69 @@
+/* JamSongScrubber — position in the song; seekable for the host only. */
+
+.scrubber {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.time {
+  flex: none;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  /* The bar is 4px but the hit area is 14px: a 4px click target is a
+     miss most of the time, and a mis-seek in a shared room interrupts
+     everybody, not just the person who missed. */
+  height: 14px;
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+
+.track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.trackSeekable {
+  cursor: pointer;
+}
+
+.track:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.fill {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.knob {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(13, 17, 23, 0.7);
+  pointer-events: none;
+}

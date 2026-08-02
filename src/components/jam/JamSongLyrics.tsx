@@ -9,6 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, For, Show } from 'solid-js'
+import { formatClock } from '@/lib/format-time'
 import { lineIndexAt } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import styles from './JamSongLyrics.module.css'
@@ -63,7 +64,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                 <span class={styles.lineText}>{line.text}</span>
                 <Show when={props.showNotes}>
                   <span class={styles.lineTime}>
-                    {formatTime(line.startSec)}
+                    {formatClock(line.startSec)}
                   </span>
                 </Show>
               </div>
@@ -73,10 +74,4 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       </Show>
     </div>
   )
-}
-
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
 }
