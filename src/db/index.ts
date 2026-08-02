@@ -141,5 +141,6 @@ export type {
   ZenTakeRecord,
   VoiceTakeRecord,
   VoiceTakeAudioRecord,
+  VoiceTakeContourRecord,
   VoiceTakeSource,
 } from './entities'
