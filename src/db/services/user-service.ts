@@ -67,6 +67,23 @@ export function getUserId(): string {
 }
 
 /**
+ * This browser's persisted id, ignoring any token.
+ *
+ * Distinct from getUserId(), which prefers the JWT subject: an anonymous
+ * identity IS this id (the worker keys /api/auth/anonymous on it), so
+ * anything tagged with it was made by this device before it belonged to a
+ * real account — and stays claimable afterwards. Returns '' rather than
+ * minting one, because asking the question must never create an identity.
+ */
+export function getDeviceId(): string {
+  try {
+    return localStorage.getItem(USER_ID_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/**
  * Forget this browser's identity and mint a fresh one. Used after account
  * deletion: the device id is what /api/auth/anonymous keys on, so reusing it
  * would resurrect the same user id the erasure request just removed.

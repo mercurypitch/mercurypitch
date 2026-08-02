@@ -11,7 +11,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
   authed: false,
+  anonymousIdentity: false,
   userId: 'device-local-id',
+  deviceId: 'device-local-id',
   cloudRows: [] as Array<{
     id: string
     userId: string
@@ -25,9 +27,13 @@ const state = vi.hoisted(() => ({
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'https://api.test' }))
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
+  // Anonymous identities hold valid tokens too — the distinction the
+  // tagging bug turned on.
+  hasUpgradedAccount: () => state.authed && !state.anonymousIdentity,
 }))
 vi.mock('@/db/services/user-service', () => ({
   getUserId: () => state.userId,
+  getDeviceId: () => state.deviceId,
 }))
 vi.mock('@/db', () => ({
   getDb: async () => ({
@@ -63,7 +69,16 @@ function signIn(id: string): void {
 
 function signOut(): void {
   state.authed = false
+  state.anonymousIdentity = false
   state.userId = 'device-local-id'
+}
+
+/** A lazily provisioned anonymous identity: a real token, no real account.
+ *  Its user id IS the device id — the worker keys it on that. */
+function signInAnonymously(): void {
+  state.authed = true
+  state.anonymousIdentity = true
+  state.userId = state.deviceId
 }
 
 beforeEach(() => {
@@ -221,5 +236,76 @@ describe('adoption', () => {
     declineAdoption()
     signIn('user-b')
     expect(adoptionNoticeDue()).toBe(true)
+  })
+})
+
+// ── The anonymous-identity trap ──────────────────────────────────
+// A take made while an anonymous identity held a token used to be tagged
+// with that identity's id. It then matched neither MADE_ANONYMOUSLY (so
+// it was never offered for adoption) nor any real account's id (so it
+// never reappeared after signing in): stranded on the device, invisible.
+
+describe('takes made under an anonymous identity', () => {
+  it('are tagged anonymous, not with the throwaway identity', async () => {
+    signInAnonymously()
+    const record = await saveVoiceprint({
+      summary,
+      twin: 'David Bowie',
+      source: 'mirror',
+    })
+    expect(recordMadeBy(record)).toBe(MADE_ANONYMOUSLY)
+  })
+
+  it('are offered to a real account that signs in afterwards', async () => {
+    signInAnonymously()
+    await saveVoiceprint({ summary, twin: 'David Bowie', source: 'mirror' })
+
+    // A real account created elsewhere signs in on this device.
+    signIn('account-made-on-another-device')
+
+    expect(listAdoptableVoiceprints()).toHaveLength(1)
+    expect(adoptionNoticeDue()).toBe(true)
+  })
+
+  it('recovers takes already stranded by the old tagging', () => {
+    // Exactly what is sitting in a browser today: tagged with the device
+    // id, because that is what the anonymous identity's id is.
+    localStorage.setItem(
+      'mercurypitch.voiceprints.v1',
+      JSON.stringify([
+        {
+          id: 'stranded',
+          summary,
+          twin: 'David Bowie',
+          source: 'mirror',
+          takenAt: '2026-08-01T14:54:48.060Z',
+          madeBy: 'device-local-id',
+        },
+      ]),
+    )
+    signIn('account-made-on-another-device')
+
+    expect(listAdoptableVoiceprints().map((r) => r.id)).toEqual(['stranded'])
+  })
+
+  it('does not offer an upgraded account its own takes back', () => {
+    // Registering with the deviceId upgrades the anonymous user IN PLACE,
+    // so the account id is the device id. Those takes are already theirs.
+    localStorage.setItem(
+      'mercurypitch.voiceprints.v1',
+      JSON.stringify([
+        {
+          id: 'mine',
+          summary,
+          twin: 'David Bowie',
+          source: 'mirror',
+          takenAt: '2026-08-01T14:54:48.060Z',
+          madeBy: 'device-local-id',
+        },
+      ]),
+    )
+    signIn('device-local-id') // in-place upgrade: account id === device id
+
+    expect(listAdoptableVoiceprints()).toEqual([])
   })
 })
