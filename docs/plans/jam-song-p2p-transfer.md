@@ -32,12 +32,40 @@ piece of work is not the transport at all:
 | 4-minute song, both stems | To one peer |
 |---|---|
 | WAV, as stored | 100–400 MB — minutes, or never |
-| **AAC 128k** | **~15 MB — around 10 s** |
+| **AAC 128k** | **~7.6 MB — around 5 s** |
+
+(128 kbps over 240 seconds is 3.8 MB a stem, so both stems together are
+7.6 MB. Sending the guide vocal as well as the instrumental therefore costs
+nothing over instrumental-only — an earlier draft of this file double-counted
+and claimed 15 MB.)
 
 **There is no encoder in the codebase yet.** `take-recorder` picks a
 MediaRecorder MIME type and `guided-exercise-service` maps extensions to
 MIME strings, but nothing transcodes. This has to be built, and it is the
 bulk of the work here.
+
+### The encode/playback bind
+
+Checking WebCodecs *encode* support rather than playback support turns up
+the awkward part, and it points the opposite way to the decision that was
+already locked:
+
+| | Chrome | Firefox | Safari | Linux desktop |
+|---|---|---|---|---|
+| Encode Opus | yes | yes | yes | **yes** |
+| Encode AAC (`mp4a.40.2`) | yes | **no** | 26+ only | **no, in any browser** |
+| Play AAC | yes | yes | yes | yes |
+| Play Opus | yes | yes | patchy — CAF only before 18.4 | yes |
+
+The codec that encodes everywhere plays worst on Safari; the codec that
+plays everywhere cannot be encoded on Firefox or Linux. AAC encoding is
+missing on desktop Linux in *every* browser, which is an OS-level codec
+licensing matter and not something a library can argue with — so the
+development machine is one of the platforms that cannot encode natively.
+
+That rules out shipping bare WebCodecs, and rules out switching to Opus:
+a jam room's second device is usually a phone, and a silent iPhone is a
+worse failure than a slow encode.
 
 Encoding runs on the **sending** side, so a phone only ever decodes — the
 same rule device-sync sets, for the same reason.
@@ -47,7 +75,7 @@ same rule device-sync sets, for the same reason.
 | # | Decision | Why |
 |---|---|---|
 | Codec | **AAC-in-MP4, 128 kbps** | Locked in device-sync D2. AAC over Opus because Safari's Opus support is patchier, and a room that only plays on Chrome is a bad trade for a smaller file. |
-| Payload | **Instrumental + guide vocal** | ~15 MB and roughly double the time, and worth it: the guide-vocal slider is how somebody learns a song they do not know, and it is exactly the remote peer who needs it most. |
+| Payload | **Instrumental + guide vocal** | Both stems are the 7.6 MB above, so this is free. The guide-vocal slider is how somebody learns a song they do not know, and the remote peer needs it most. |
 | Relay peers | **Refuse, and say why** | Song audio never goes over TURN — it would eat the free 1,000 GB. A relay-only peer keeps lyrics, notes and lanes; they just cannot hear the backing track. |
 | Fan-out | **Host to each peer, sequentially** | Predictable, and kind to a phone uplink. Five peers is five uploads; doing them one at a time with visible progress beats saturating the link and making everyone wait. |
 
@@ -61,16 +89,29 @@ does not enter scoring at all.
 
 ### Phase 1 — Encode a stem (the real work)
 
-`OfflineAudioContext` to decode the WAV, `AudioEncoder` (WebCodecs) with
-`mp4a.40.2`, into an MP4 container. Faster than real time, which rules out
-the MediaRecorder trick — recording a four-minute song takes four minutes.
+**[mediabunny](https://mediabunny.dev/)** (MPL-2.0, zero dependencies,
+tree-shakes to a few kB) for both the encode and the MP4 muxing. It is by
+the author of `mp4-muxer`, which is now deprecated in its favour, and it
+wraps WebCodecs rather than reimplementing it — so hardware encoding where
+the platform has it.
 
-Capability-detect and fail honestly: where `AudioEncoder` is missing, the
-song stays local and says so, exactly as it does today. That is a worse
-outcome for that user and not a broken one.
+For the platforms in the table above that do not, it ships
+**`@mediabunny/aac-encoder`**, a wasm AAC encoder built for precisely this
+gap. That turns Firefox and Linux from a blocker into a slower path behind
+a dynamic import: the extra weight only loads where WebCodecs cannot do the
+job.
+
+Decode the stored WAV through an `AudioContext`, encode, mux to MP4. Faster
+than real time, which is what rules out the MediaRecorder approach —
+recording a four-minute song takes four minutes.
 
 Cache the encoded bundle against the session, so sharing the same song to a
 second room is instant.
+
+Rejected alternatives: **ffmpeg.wasm** (~8.5 MB and roughly 8x slower than
+WebCodecs, for one format we need), and **MP3** via `@mediabunny/mp3-encoder`
+(software everywhere and universally playable, but ~50% larger for matching
+quality and no upside over AAC once the AAC fallback exists).
 
 ### Phase 2 — Chunked transfer over the DataChannel
 
