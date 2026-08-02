@@ -5,10 +5,14 @@
  * Both components had near-identical whisper init, chunked transcription,
  * deduplication, and status management.
  *
- * The chunk planning, per-chunk segment offsetting, and hallucination
- * detection are exported pure functions so they can be unit-tested without
- * the model or the worker. Tests: src/tests/whisper-chunk-plan.test.ts and
- * src/tests/useWhisperTranscription-guard.test.ts.
+ * The chunk planning, the chunk run, per-chunk segment offsetting, and
+ * hallucination detection are exported standalone so they can be unit-tested
+ * without the model or the worker. Tests: src/tests/whisper-chunk-plan.test.ts
+ * and src/tests/useWhisperTranscription-guard.test.ts.
+ *
+ * The invariant worth keeping: a run that was torn down mid-flight reports
+ * `aborted`, and an aborted run is not a result — never judge it, cache it or
+ * surface it as a model failure.
  */
 
 import type { Accessor, Setter } from 'solid-js'
@@ -184,6 +188,96 @@ export function offsetWhisperSegments(
     })
   }
   return out
+}
+
+// ── Chunk run ──────────────────────────────────────────────────
+
+/** The subset of WhisperService the chunk runner needs. */
+export interface WhisperChunkTranscriber {
+  transcribe: (
+    audio: Float32Array,
+    language: string,
+  ) => Promise<{ chunks?: readonly unknown[] }>
+}
+
+export interface WhisperChunkRunOptions {
+  plan: readonly WhisperChunkPlanEntry[]
+  audioData: Float32Array
+  language: string
+  /**
+   * Re-read before every chunk. Returning null is how a caller aborts a run
+   * already in flight — its service was destroyed, or the run was superseded.
+   */
+  getTranscriber: () => WhisperChunkTranscriber | null
+  /** Progress through the plan, 0-100, before each chunk starts. */
+  onProgress?: (percent: number) => void
+  /** Log sinks; the caller supplies its own tag. */
+  log?: (message: string) => void
+  logError?: (message: string, error: unknown) => void
+}
+
+export interface WhisperChunkRunOutcome {
+  /** Segments from every chunk that succeeded, in absolute song time. */
+  segments: WhisperSegment[]
+  successes: number
+  failures: number
+  /**
+   * The run was torn down mid-flight. `segments` is then a truncated prefix of
+   * the song rather than a transcription of it, and callers must discard it
+   * whole: a two-chunk prefix of an eighteen-chunk song reads to the
+   * hallucination guard exactly like model junk, so treating it as a result
+   * reports a failure that never happened. An abort is not a result.
+   */
+  aborted: boolean
+}
+
+/**
+ * Transcribes a chunk plan, chunk by chunk, and reports how it ended.
+ *
+ * A failed chunk is survivable — its window is simply missing from the merged
+ * segments. A torn-down run is not: the outcome says `aborted` and everything
+ * in it is scrap.
+ */
+export async function runWhisperChunkPlan(
+  options: WhisperChunkRunOptions,
+): Promise<WhisperChunkRunOutcome> {
+  const { plan, audioData, language, getTranscriber } = options
+  const segments: WhisperSegment[] = []
+  let successes = 0
+  let failures = 0
+
+  for (let ci = 0; ci < plan.length; ci++) {
+    const transcriber = getTranscriber()
+    if (transcriber == null) {
+      options.log?.('Transcription aborted (service destroyed or stopped)')
+      return { segments, successes, failures, aborted: true }
+    }
+
+    const entry = plan[ci]
+    options.log?.(
+      `Transcribing chunk ${String(ci + 1)}/${String(plan.length)} (${entry.absoluteStartSec.toFixed(1)}s-${(entry.endSample / WHISPER_SAMPLE_RATE).toFixed(1)}s)...`,
+    )
+    options.onProgress?.(Math.round((ci / plan.length) * 100))
+
+    try {
+      const result = await transcriber.transcribe(
+        sliceWhisperChunk(audioData, entry),
+        language,
+      )
+      successes++
+      segments.push(
+        ...offsetWhisperSegments(result.chunks, entry.absoluteStartSec),
+      )
+    } catch (chunkErr) {
+      failures++
+      options.logError?.(
+        `Chunk ${String(ci + 1)}/${String(plan.length)} failed:`,
+        chunkErr,
+      )
+    }
+  }
+
+  return { segments, successes, failures, aborted: false }
 }
 
 // ── Pure hallucination detection ───────────────────────────────
@@ -411,48 +505,41 @@ export function useWhisperTranscription(
           `[${tag()}] Resampled to ${String(audioData.length)} samples, split into ${String(plan.length)} chunks`,
         )
 
-        const merged: WhisperSegment[] = []
-        let successes = 0
-        let failures = 0
-        let aborted = false
-        for (let ci = 0; ci < plan.length; ci++) {
-          if (serviceRef == null || !transcribing) {
-            console.log(
-              `[${tag()}] Transcription aborted (service destroyed or stopped)`,
-            )
-            aborted = true
-            break
-          }
-
-          const entry = plan[ci]
-          console.log(
-            `[${tag()}] Transcribing chunk ${ci + 1}/${plan.length} (${entry.absoluteStartSec.toFixed(1)}s-${(entry.endSample / WHISPER_SAMPLE_RATE).toFixed(1)}s)...`,
-          )
-          setProgress(Math.round((ci / plan.length) * 100))
-
-          try {
-            const result = await serviceRef.transcribe(
-              sliceWhisperChunk(audioData, entry),
-              selectedLanguage,
-            )
-            successes++
-            merged.push(
-              ...offsetWhisperSegments(result.chunks, entry.absoluteStartSec),
-            )
-          } catch (chunkErr) {
-            failures++
-            console.error(
-              `[${tag()}] Chunk ${String(ci + 1)}/${String(plan.length)} failed:`,
-              chunkErr,
-            )
-          }
-        }
+        const run = await runWhisperChunkPlan({
+          plan,
+          audioData,
+          language: selectedLanguage,
+          // destroy() nulls serviceRef — that is how an unmount stops a run
+          // that is already in flight.
+          getTranscriber: () => (transcribing ? serviceRef : null),
+          onProgress: (percent) => {
+            setProgress(percent)
+          },
+          log: (message) => {
+            console.log(`[${tag()}] ${message}`)
+          },
+          logError: (message, error) => {
+            console.error(`[${tag()}] ${message}`, error)
+          },
+        })
         console.log(
-          `[${tag()}] Chunk transcription: ${String(successes)}/${String(plan.length)} chunks succeeded, ${String(failures)} failed`,
+          `[${tag()}] Chunk transcription: ${String(run.successes)}/${String(plan.length)} chunks succeeded, ${String(run.failures)} failed`,
         )
+
+        // An abort is not a result: the run holds a truncated prefix of the
+        // song, and judging it would purge this session's cached
+        // transcription and report a model failure that never happened.
+        // Leave the cache, the segments and the status alone.
+        if (run.aborted) {
+          console.log(
+            `[${tag()}] Discarding partial result of an aborted run (${String(run.successes)}/${String(plan.length)} chunks) -- cache untouched`,
+          )
+          return
+        }
+
         setProgress(100)
 
-        if (!aborted && plan.length > 0 && successes === 0) {
+        if (plan.length > 0 && run.successes === 0) {
           console.error(
             `[${tag()}] Whisper transcription failed: every chunk errored`,
           )
@@ -463,7 +550,7 @@ export function useWhisperTranscription(
           return
         }
 
-        const deduped = deduplicateWhisperSegments(merged)
+        const deduped = deduplicateWhisperSegments(run.segments)
 
         // Guard against the Whisper failure mode where every chunk "succeeds"
         // but decodes to the same placeholder text with ~20ms spans (silent

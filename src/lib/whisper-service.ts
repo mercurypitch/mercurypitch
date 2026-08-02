@@ -14,14 +14,25 @@ export interface WhisperSegment {
   timestamp: [number, number]
 }
 
+/**
+ * Rejection reason for work that was still in flight when the service was
+ * destroyed, and for anything asked of it afterwards. Callers use it to tell a
+ * torn-down run apart from a model failure — a destroyed service is not a
+ * transcription result, and must not be reported as one.
+ */
+export const WHISPER_SERVICE_DESTROYED_MESSAGE = 'Whisper service destroyed'
+
 export class WhisperService {
   private worker: Worker
   private messageId = 0
+  private destroyed = false
   private resolves = new Map<
     number,
     (val: { text: string; chunks: WhisperSegment[] }) => void
   >()
   private rejects = new Map<number, (err: Error) => void>()
+  /** Cancels an `init()` still waiting on the worker (see `destroy`). */
+  private initAborts = new Set<(err: Error) => void>()
 
   public status: 'idle' | 'loading' | 'ready' | 'processing' | 'error' = 'idle'
   public progress = 0
@@ -60,6 +71,9 @@ export class WhisperService {
   }
 
   async init(): Promise<void> {
+    if (this.destroyed) {
+      throw new Error(WHISPER_SERVICE_DESTROYED_MESSAGE)
+    }
     if (this.status === 'ready' || this.status === 'processing') return
     if (this.status === 'idle') {
       this.status = 'loading'
@@ -91,8 +105,17 @@ export class WhisperService {
 
       const cleanup = () => {
         clearInterval(checkTimeout)
+        this.initAborts.delete(abort)
         this.worker.removeEventListener('message', onMessage)
       }
+
+      // Without this, destroying the service mid-load left the 1 Hz watchdog
+      // ticking for the full 300s before anyone learned the load was over.
+      const abort = (err: Error) => {
+        cleanup()
+        reject(err)
+      }
+      this.initAborts.add(abort)
 
       this.worker.addEventListener('message', onMessage)
     })
@@ -102,6 +125,9 @@ export class WhisperService {
     audioData: Float32Array,
     language: string = 'en',
   ): Promise<{ text: string; chunks: WhisperSegment[] }> {
+    if (this.destroyed) {
+      throw new Error(WHISPER_SERVICE_DESTROYED_MESSAGE)
+    }
     const id = this.messageId++
 
     return new Promise((resolve, reject) => {
@@ -129,8 +155,23 @@ export class WhisperService {
     })
   }
 
+  /**
+   * Terminating the worker does not settle the promises waiting on it, so a
+   * teardown mid-chunk used to leave the caller awaiting a reply that could
+   * never come — the whole song's PCM stayed alive until the 300s timeout
+   * finally rejected it. Reject them here instead: callers already treat a
+   * failed chunk as a failed chunk, and the abort lands immediately.
+   */
   destroy() {
+    this.destroyed = true
+    const pending = [...this.rejects.values(), ...this.initAborts]
+    this.resolves.clear()
+    this.rejects.clear()
+    this.initAborts.clear()
     this.worker.terminate()
+    for (const reject of pending) {
+      reject(new Error(WHISPER_SERVICE_DESTROYED_MESSAGE))
+    }
   }
 }
 
