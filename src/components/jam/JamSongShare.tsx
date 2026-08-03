@@ -11,9 +11,9 @@
 // wondering where the backing track went.
 
 import type { Component } from 'solid-js'
-import { Match, Switch } from 'solid-js'
+import { Match, Show, Switch } from 'solid-js'
 import { songPlayableInRoom } from '@/lib/jam/jam-song'
-import { jamConnectedPeers, jamIsHost, jamPeersMissingSong, jamShareState, jamSong, shareJamSongWithRoom, } from '@/stores/jam-store'
+import { jamConnectedPeers, jamIsHost, jamPeersMissingSong, jamShareState, jamSong, jamSongSentOnce, shareJamSongWithRoom, } from '@/stores/jam-store'
 import styles from './JamSongShare.module.css'
 
 /** A speaker with waves, for sending the song out to the room. */
@@ -36,7 +36,7 @@ const SendIcon: Component = () => (
 )
 
 export const JamSongShare: Component = () => {
-  /** Only the case the button exists for: my song, and people to send to. */
+  /** Whether the room would want the button, given who is here. */
   const needsShare = () => {
     const song = jamSong()
     if (song === null) return false
@@ -45,23 +45,44 @@ export const JamSongShare: Component = () => {
     )
   }
 
+  /** A song only this device holds, whoever else is in the room. */
+  const isLocalOnly = () => jamSong()?.origin === 'local'
+
   const state = () => jamShareState()
   const busy = () =>
     state().phase === 'encoding' ||
     state().phase === 'sending' ||
     state().phase === 'receiving'
 
+  /**
+   * Has this song already gone out once?
+   *
+   * NOT "does anybody have it": the person who reloaded re-reports no, and
+   * if they were the only peer that reads as an untouched room -- so the
+   * host would be told "only you can hear this" about a song they had just
+   * sent them.
+   */
+  const alreadySent = () => jamSongSentOnce()
+
   return (
     <Switch>
-      {/* Somebody in the room cannot hear this. The commonest cause is a
-          reload: they stay in the room and lose the audio silently, and
-          the host had no way to know or to put it right. */}
-      <Match when={jamIsHost() && jamPeersMissingSong().length > 0}>
+      {/* One control, two situations. Sending the first time and sending to
+          somebody who reloaded are the same action -- only the sentence
+          differs -- and splitting them into two arms meant the re-send case
+          shadowed the offer, so a host with a local song was told people
+          "cannot hear this" before they had ever been offered the chance
+          to send it. */}
+      <Match when={jamIsHost() && !busy() && jamPeersMissingSong().length > 0}>
         <div class={styles.share} role="status">
           <span class={styles.text}>
-            {jamPeersMissingSong().length === 1
-              ? `${jamPeersMissingSong()[0]?.displayName ?? 'Someone'} cannot hear this one.`
-              : `${jamPeersMissingSong().length} people cannot hear this one.`}
+            <Show
+              when={alreadySent()}
+              fallback="Only you can hear this one. The others see the words, the notes and everyone’s pitch."
+            >
+              {jamPeersMissingSong().length === 1
+                ? `${jamPeersMissingSong()[0]?.displayName ?? 'Someone'} cannot hear this one — they may have reloaded.`
+                : `${jamPeersMissingSong().length} people cannot hear this one.`}
+            </Show>
           </span>
           <button
             type="button"
@@ -69,26 +90,21 @@ export const JamSongShare: Component = () => {
             onClick={() => void shareJamSongWithRoom(true)}
           >
             <SendIcon />
-            Send it to them
+            <Show when={alreadySent()} fallback="Send to the room">
+              Send it to them
+            </Show>
           </button>
         </div>
       </Match>
 
-      {/* The offer. Host only: it is their song and their upload. */}
-      <Match when={needsShare() && jamIsHost() && !busy()}>
-        <div class={styles.share}>
+      {/* Alone with a song only this device holds: nothing to send to, so
+          just say what the room will be like when somebody arrives. */}
+      <Match when={needsShare() === false && isLocalOnly() && !busy()}>
+        <div class={styles.share} role="note">
           <span class={styles.text}>
-            Only you can hear this one. The others see the words, the notes and
-            everyone’s pitch.
+            Only you can hear this one — it is on your device. Anyone who joins
+            can be sent it.
           </span>
-          <button
-            type="button"
-            class={styles.button}
-            onClick={() => void shareJamSongWithRoom()}
-          >
-            <SendIcon />
-            Send to the room
-          </button>
         </div>
       </Match>
     </Switch>

@@ -308,6 +308,7 @@ export function selectJamSong(song: JamSong): boolean {
   setJamSongParts({})
   setJamAssignBrush(null)
   setJamSongHaves({})
+  setJamSongSentOnce(false)
   resetJamLineScores()
   setJamError(null)
   jamService?.sendSong({
@@ -488,6 +489,12 @@ export function applyReceivedStem(
   if (song === null) return
   const url = URL.createObjectURL(blob)
   receivedStemUrls.add(url)
+  // The element failed on the host's unreachable URL and paused this
+  // device to stop it claiming to play. That reason has just gone away,
+  // so clear it -- otherwise the audio arrives and sits silent until the
+  // host happens to press play again.
+  setJamExercisePaused(false)
+  setJamError(null)
   setJamSong({
     ...song,
     stems: { ...song.stems, [stem]: url },
@@ -539,6 +546,16 @@ export const [jamSongHaves, setJamSongHaves] = createSignal<
   Record<string, boolean>
 >({})
 
+/**
+ * Whether this host has already sent the loaded song out at least once.
+ *
+ * The distinction the prompt needs. Reading it off "does anybody have it"
+ * fails exactly when it matters: the person who reloaded re-reports NO,
+ * and if they were the only peer the room looks untouched again -- so the
+ * host is told "only you can hear this" about a song they just sent.
+ */
+export const [jamSongSentOnce, setJamSongSentOnce] = createSignal(false)
+
 /** Connected peers who cannot hear the loaded song. */
 export const jamPeersMissingSong = createRoot(() => {
   const memo = createMemo(() => {
@@ -549,15 +566,32 @@ export const jamPeersMissingSong = createRoot(() => {
   return memo
 })
 
+/**
+ * Can THIS device actually play the song it has been given?
+ *
+ * Not `origin`: onSongMessage stamps every incoming manifest 'url', so a
+ * guest holding the host's own blob URL would have reported yes and the
+ * host's re-send prompt would have vanished for the one person who needed
+ * it. The honest test is the URL itself -- a blob URL belongs to the
+ * document that made it, so unless this device minted it while receiving,
+ * it points at nothing here.
+ */
+export function songIsPlayableHere(song: JamSong | null): boolean {
+  if (song === null) return false
+  const url = song.stems.instrumental
+  if (url === '') return false
+  // Our own separation: this device made the URL, so of course it plays.
+  // Only a peer's manifest is ever stamped 'url', so this cannot let a
+  // guest claim somebody else's file.
+  if (song.origin === 'local') return true
+  return !url.startsWith('blob:') || receivedStemUrls.has(url)
+}
+
 /** Tell the room whether THIS device can play the song it has been given. */
 export function reportSongHave(): void {
   const song = jamSong()
   if (song === null) return
-  // Origin is the honest test: a manifest whose stems point at the host's
-  // own blob URLs is not something this device can play, however complete
-  // the rest of it looks.
-  const playable = song.origin === 'url' && song.stems.instrumental !== ''
-  jamService?.sendSongHave(song.id, playable)
+  jamService?.sendSongHave(song.id, songIsPlayableHere(song))
 }
 
 let shareAbort: { aborted: boolean } | null = null
@@ -669,6 +703,7 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
       for (const id of sent) next[id] = true
       return next
     })
+    if (sent.length > 0) setJamSongSentOnce(true)
     setJamShareState({
       phase: 'done',
       ratio: 1,
@@ -700,6 +735,7 @@ export function clearJamSong(): void {
   setJamSongParts({})
   setJamAssignBrush(null)
   setJamSongHaves({})
+  setJamSongSentOnce(false)
   resetJamLineScores()
   revokeReceivedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })

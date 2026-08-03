@@ -277,6 +277,87 @@ describe('who sings which line', () => {
   })
 })
 
+describe('who can actually hear the song', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(true)
+    store.setJamPeerId('me')
+  })
+
+  it('counts an ordinary fetchable song as playable', () => {
+    expect(
+      store.songIsPlayableHere(
+        song({ stems: { instrumental: 'https://example.test/i.m4a' } }),
+      ),
+    ).toBe(true)
+  })
+
+  it('refuses somebody else’s blob URL', () => {
+    // The bug this pins: onSongMessage stamps every incoming manifest
+    // 'url', so judging by origin made a guest holding the host's own blob
+    // URL report "I can hear it" -- and the host's re-send prompt vanished
+    // for the one person who needed it. A blob URL belongs to the document
+    // that made it.
+    expect(
+      store.songIsPlayableHere(
+        song({ stems: { instrumental: 'blob:https://x/1' } }),
+      ),
+    ).toBe(false)
+  })
+
+  it('counts our OWN separation as playable', () => {
+    // The host made that blob URL, so suppressing their genuine audio
+    // errors because it "looks like somebody else's" would hide real
+    // faults from the one person who can fix them.
+    expect(
+      store.songIsPlayableHere(
+        song({
+          origin: 'local',
+          stems: { instrumental: 'blob:https://x/mine' },
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('refuses a song with no backing track at all', () => {
+    expect(
+      store.songIsPlayableHere(song({ stems: { instrumental: '' } })),
+    ).toBe(false)
+    expect(store.songIsPlayableHere(null)).toBe(false)
+  })
+
+  it('lists connected peers who have not said they can hear it', () => {
+    store.selectJamSong(song())
+    store.setJamPeers([
+      {
+        id: 'ada',
+        displayName: 'Ada',
+        connectionState: 'connected',
+        latency: 0,
+        hasVideo: false,
+        hasAudio: true,
+      },
+    ])
+    expect(store.jamPeersMissingSong().map((p) => p.id)).toEqual(['ada'])
+    store.setJamSongHaves({ ada: true })
+    expect(store.jamPeersMissingSong()).toEqual([])
+  })
+
+  it('forgets who had it when a different song loads', () => {
+    store.selectJamSong(song())
+    store.setJamSongHaves({ ada: true })
+    store.selectJamSong(song({ id: 'other' }))
+    expect(store.jamSongHaves()).toEqual({})
+  })
+
+  it('nobody is missing a song that is not loaded', () => {
+    store.clearJamSong()
+    expect(store.jamPeersMissingSong()).toEqual([])
+  })
+})
+
 describe('attaching lyrics to a loaded song', () => {
   beforeEach(() => {
     store.clearJamSong()

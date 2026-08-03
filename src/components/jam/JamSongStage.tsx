@@ -14,7 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -40,6 +40,9 @@ const RESYNC_THRESHOLD_SEC = 0.35
  * device with no network between them: any gap here is a bug, not latency.
  */
 const GUIDE_DRIFT_SEC = 0.12
+
+/** Its own constant so the notice can be taken back without guessing. */
+const BUFFERING = 'Buffering — the backing track is not arriving smoothly.'
 
 export const JamSongStage: Component = () => {
   let audioRef: HTMLAudioElement | undefined
@@ -134,6 +137,11 @@ export const JamSongStage: Component = () => {
     if (el === undefined) return
 
     const onError = () => {
+      // A guest holding the host's own blob URL is EXPECTED to fail here:
+      // the room is working as designed and the share strip already says
+      // so. Shouting "the song stopped" at them would be a false alarm
+      // about the one case that is not a fault.
+      if (!songIsPlayableHere(jamSong())) return
       setJamError(explainMediaError(el.error))
       // Stop claiming to play. The host owns the room's transport, so it
       // pauses the room; a guest only stops itself, because one person's
@@ -145,9 +153,16 @@ export const JamSongStage: Component = () => {
     // A stall is not necessarily fatal -- it is the network catching up --
     // so it says so without stopping anything.
     const onStalled = () => {
-      if (jamExercisePlaying() && !jamExercisePaused()) {
-        setJamError('Buffering — the backing track is not arriving smoothly.')
-      }
+      if (jamExercisePlaying() && !jamExercisePaused()) setJamError(BUFFERING)
+    }
+
+    // ...and takes it back when the audio resumes. A transient condition
+    // that leaves a permanent banner is worse than saying nothing: the
+    // next real problem arrives to a message nobody trusts. Only its own
+    // notice is cleared, so a genuine error is never wiped by playback
+    // happening to recover elsewhere.
+    const onPlaying = () => {
+      if (jamError() === BUFFERING) setJamError(null)
     }
 
     // Reaching the end is a normal stop, but the room should still land in
@@ -159,10 +174,12 @@ export const JamSongStage: Component = () => {
 
     el.addEventListener('error', onError)
     el.addEventListener('stalled', onStalled)
+    el.addEventListener('playing', onPlaying)
     el.addEventListener('ended', onEnded)
     onCleanup(() => {
       el.removeEventListener('error', onError)
       el.removeEventListener('stalled', onStalled)
+      el.removeEventListener('playing', onPlaying)
       el.removeEventListener('ended', onEnded)
     })
   })
