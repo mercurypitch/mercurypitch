@@ -119,6 +119,20 @@ export interface JamMelodyMessage {
 export interface JamPlaybackMessage {
   type: 'playback'
   action: 'play' | 'pause' | 'stop' | 'seek'
+  /**
+   * What this command is about.
+   *
+   * A room runs a drill OR a song, and the two used to share one pair of
+   * transport signals with nothing on the wire to tell them apart. A
+   * drill's beat timer finishing broadcast a bare `stop`, which every peer
+   * applied to whatever it happened to be running -- so somebody's
+   * five-second scale ending killed the room's song, seconds after it
+   * started, with no explanation.
+   *
+   * Absent on messages from an older client; treated as 'drill', which is
+   * what those clients could only ever have meant.
+   */
+  scope?: 'drill' | 'song'
   currentBeat?: number
   /**
    * Position in the song's own timeline, for a room running a song rather

@@ -166,10 +166,48 @@ export async function sessionSong(
 }
 
 /**
+ * The picker's rows, without touching a single stem.
+ *
+ * Building the list used to call sessionSong for every session, and that
+ * reads the WHOLE stem record out of IndexedDB -- twice, instrumental and
+ * vocal -- then mints a blob URL for each and parses the stored pitch
+ * analysis. With ten sessions that is twenty multi-megabyte reads and
+ * twenty object URLs pinned in memory, to fill a dropdown. The picker sat
+ * empty until all of it finished.
+ *
+ * (Not a re-analysis, despite the "[PitchDB] Loaded pitch analysis" lines
+ * in the console -- that is a read of work already done. Nothing was being
+ * denoised twice.)
+ *
+ * Everything here comes off the session record, which is already in
+ * memory. The expensive part happens once, when somebody picks a song.
+ */
+export interface JamSessionRow {
+  session: UvrSession
+  title: string
+  durationSec: number
+}
+
+export function jammableSessionRows(
+  sessions: readonly UvrSession[],
+): JamSessionRow[] {
+  return jammableSessions(sessions).map((session) => ({
+    session,
+    title: (session.originalFile?.name ?? 'Untitled')
+      .replace(/\.[^.]+$/, '')
+      .trim(),
+    durationSec: session.stemMeta?.instrumental?.duration ?? 0,
+  }))
+}
+
+/**
  * Every session this device can sing, newest first.
  *
  * Resolved in parallel: each is a couple of IndexedDB reads, and doing
  * twenty in series is a visible pause on opening the picker.
+ *
+ * Kept for callers that genuinely want every song hydrated. The picker no
+ * longer does -- see jammableSessionRows.
  */
 export async function sessionSongs(
   sessions: readonly UvrSession[],

@@ -117,7 +117,10 @@
   padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  /* Room glass, not a fixed white wash. Copy link and its neighbours sat
+     at a constant 5% while every other surface followed the transparency
+     slider, so they stayed visibly opaque over a bare backdrop. */
+  background: var(--jam-control, rgba(255, 255, 255, 0.05));
   backdrop-filter: blur(8px);
   color: var(--text-primary);
   font-size: 0.85rem;

@@ -273,7 +273,27 @@ export const jamIsSongRoom = createRoot(() => {
  * the room can fetch would leave everyone else staring at a silent screen
  * with nothing to explain it -- the same failure Relay's empty parts had.
  */
+/**
+ * True while audio is being encoded or sent (rule R10).
+ *
+ * A function rather than a memo: jamShareState is declared further down,
+ * and a memo built at module scope would read it before it exists.
+ */
+export function jamSendInFlight(): boolean {
+  const phase = jamShareState().phase
+  return phase === 'encoding' || phase === 'sending'
+}
+
 export function selectJamSong(song: JamSong): boolean {
+  // R10: a transfer describes THIS song -- its length, its hash, its
+  // lyrics. Swapping underneath one would hand peers a file that does not
+  // match the manifest they are about to be given.
+  if (jamSendInFlight()) {
+    setJamError(
+      'Wait for the song to finish sending before choosing a different one.',
+    )
+    return false
+  }
   // Peer count matters: a song only this device holds is fine alone and a
   // problem once somebody is waiting to hear it. Passing 0 by omission
   // meant the refusal could never fire, whoever was in the room.
@@ -1272,73 +1292,7 @@ export function initJam() {
       // play -- and that silence is exactly what the host needs to see.
       reportSongHave()
     },
-    onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {
-      // Every transport command is a tempo resync point (see
-      // JamPlaybackMessage.bpm), so adopt it before anything reads the bpm.
-      if (msg.bpm !== undefined && msg.bpm > 0) setJamExerciseBpm(msg.bpm)
-
-      // A song carries positionSec INSTEAD of currentBeat. Same flight
-      // compensation, simpler units -- no tempo to convert through.
-      if (msg.positionSec !== undefined) {
-        const peer = jamPeers().find((p) => p.id === fromPeerId)
-        const ahead = secondsInFlight(peer?.latency ?? 0)
-        switch (msg.action) {
-          case 'play':
-            setJamExercisePlaying(true)
-            setJamExercisePaused(false)
-            setJamSongPositionSec(msg.positionSec + ahead)
-            setJamSongHostTarget(msg.positionSec + ahead)
-            break
-          case 'pause':
-            setJamExercisePaused(true)
-            setJamSongPositionSec(msg.positionSec)
-            setJamSongHostTarget(msg.positionSec)
-            break
-          case 'stop':
-            setJamExercisePlaying(false)
-            setJamExercisePaused(false)
-            setJamSongPositionSec(0)
-            setJamSongHostTarget(0)
-            break
-          case 'seek':
-            setJamSongPositionSec(msg.positionSec + ahead)
-            setJamSongHostTarget(msg.positionSec + ahead)
-            break
-        }
-        return
-      }
-
-      switch (msg.action) {
-        case 'play':
-          setJamExercisePlaying(true)
-          setJamExercisePaused(false)
-          if (msg.currentBeat !== undefined) {
-            setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
-          }
-          beginOwnRun()
-          startPlaybackTimer()
-          setJamPitchTab('exercise')
-          break
-        case 'pause':
-          setJamExercisePaused(true)
-          stopPlaybackTimer()
-          break
-        case 'stop':
-          setJamExercisePlaying(false)
-          setJamExercisePaused(false)
-          setJamExerciseBeat(0)
-          setJamExerciseNoteIndex(-1)
-          stopPlaybackTimer()
-          settleOwnRun()
-          creditOwnRun()
-          break
-        case 'seek':
-          if (msg.currentBeat !== undefined) {
-            setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
-          }
-          break
-      }
-    },
+    onPlaybackMessage: applyRemoteTransport,
     onRoomClosed: () => {
       cleanupJam()
     },
@@ -1563,21 +1517,21 @@ export function jamPlaybackPlay(startBeat?: number): void {
   setJamExercisePaused(false)
   beginOwnRun()
   startPlaybackTimer()
-  jamService?.sendPlaybackCommand('play', actualStart, jamExerciseBpm())
+  broadcastTransport('play', actualStart)
   setJamPitchTab('exercise')
 }
 
 export function jamPlaybackPause(): void {
   setJamExercisePaused(true)
   stopPlaybackTimer()
-  jamService?.sendPlaybackCommand('pause', jamExerciseBeat(), jamExerciseBpm())
+  broadcastTransport('pause', jamExerciseBeat())
 }
 
 export function jamPlaybackResume(): void {
   if (!jamExercisePlaying() || !jamExercisePaused()) return
   setJamExercisePaused(false)
   startPlaybackTimer()
-  jamService?.sendPlaybackCommand('play', jamExerciseBeat(), jamExerciseBpm())
+  broadcastTransport('play', jamExerciseBeat())
 }
 
 export function jamPlaybackStop(): void {
@@ -1588,12 +1542,12 @@ export function jamPlaybackStop(): void {
   stopPlaybackTimer()
   settleOwnRun()
   creditOwnRun()
-  jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
+  broadcastTransport('stop', 0)
 }
 
 export function jamPlaybackSeek(beat: number): void {
   setJamExerciseBeat(beat)
-  jamService?.sendPlaybackCommand('seek', beat, jamExerciseBpm())
+  broadcastTransport('seek', beat)
 }
 
 // ── Song transport ───────────────────────────────────────────────────
@@ -1610,28 +1564,151 @@ export function jamSongPlay(fromSec = 0): void {
   setJamSongPositionSec(fromSec)
   setJamExercisePlaying(true)
   setJamExercisePaused(false)
-  jamService?.sendPlaybackCommandSec('play', fromSec)
+  broadcastSongTransport('play', fromSec)
 }
 
 export function jamSongPause(atSec: number): void {
   setJamSongPositionSec(atSec)
   setJamExercisePaused(true)
-  jamService?.sendPlaybackCommandSec('pause', atSec)
+  broadcastSongTransport('pause', atSec)
 }
 
 export function jamSongStop(): void {
   setJamSongPositionSec(0)
   setJamExercisePlaying(false)
   setJamExercisePaused(false)
-  jamService?.sendPlaybackCommandSec('stop', 0)
+  broadcastSongTransport('stop', 0)
 }
 
 export function jamSongSeek(toSec: number): void {
   setJamSongPositionSec(toSec)
-  jamService?.sendPlaybackCommandSec('seek', toSec)
+  broadcastSongTransport('seek', toSec)
 }
 
 // ── Playback timer ───────────────────────────────────────────────────
+
+/**
+ * Broadcast a transport command, if this device is entitled to.
+ *
+ * Only the host drives the room. The drill timer runs on every peer so the
+ * playhead stays smooth locally, and its completion used to broadcast a
+ * stop from whoever finished first -- so a guest's five-second scale ending
+ * stopped the song the room was singing. Local state still updates; only
+ * the telling-everyone-else part is the host's.
+ */
+/** Same rule for the song's own transport: the host drives it. */
+/**
+ * Apply a transport command that arrived from the room.
+ *
+ * Exported so the rules can be tested directly: which commands this device
+ * obeys is the difference between a room that stays together and one where
+ * somebody else's drill ending stops the song.
+ */
+export function applyRemoteTransport(
+  msg: JamPlaybackMessage,
+  fromPeerId = '',
+): void {
+  // Only the host drives the room. A guest's own drill timer finishing
+  // used to broadcast a stop, which every peer obeyed -- so somebody
+  // else's five-second scale ending killed the song the room was
+  // singing. Transport is the host's, like the song and the tempo.
+  if (jamIsHost()) return
+  // And a command means nothing for a thing this device is not
+  // running. Without the scope tag a bare drill 'stop' was applied to
+  // whatever was playing, which is how a drill ending stopped a song.
+  const scope = msg.scope ?? 'drill'
+  const running = jamSong() !== null ? 'song' : 'drill'
+  if (scope !== running) {
+    console.info(
+      '[jam:store] ignoring',
+      scope,
+      'transport while running',
+      running,
+    )
+    return
+  }
+  // Every transport command is a tempo resync point (see
+  // JamPlaybackMessage.bpm), so adopt it before anything reads the bpm.
+  if (msg.bpm !== undefined && msg.bpm > 0) setJamExerciseBpm(msg.bpm)
+
+  // A song carries positionSec INSTEAD of currentBeat. Same flight
+  // compensation, simpler units -- no tempo to convert through.
+  if (msg.positionSec !== undefined) {
+    const peer = jamPeers().find((p) => p.id === fromPeerId)
+    const ahead = secondsInFlight(peer?.latency ?? 0)
+    switch (msg.action) {
+      case 'play':
+        setJamExercisePlaying(true)
+        setJamExercisePaused(false)
+        setJamSongPositionSec(msg.positionSec + ahead)
+        setJamSongHostTarget(msg.positionSec + ahead)
+        break
+      case 'pause':
+        setJamExercisePaused(true)
+        setJamSongPositionSec(msg.positionSec)
+        setJamSongHostTarget(msg.positionSec)
+        break
+      case 'stop':
+        setJamExercisePlaying(false)
+        setJamExercisePaused(false)
+        setJamSongPositionSec(0)
+        setJamSongHostTarget(0)
+        break
+      case 'seek':
+        setJamSongPositionSec(msg.positionSec + ahead)
+        setJamSongHostTarget(msg.positionSec + ahead)
+        break
+    }
+    return
+  }
+
+  switch (msg.action) {
+    case 'play':
+      setJamExercisePlaying(true)
+      setJamExercisePaused(false)
+      if (msg.currentBeat !== undefined) {
+        setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
+      }
+      beginOwnRun()
+      startPlaybackTimer()
+      setJamPitchTab('exercise')
+      break
+    case 'pause':
+      setJamExercisePaused(true)
+      stopPlaybackTimer()
+      break
+    case 'stop':
+      setJamExercisePlaying(false)
+      setJamExercisePaused(false)
+      setJamExerciseBeat(0)
+      setJamExerciseNoteIndex(-1)
+      stopPlaybackTimer()
+      settleOwnRun()
+      creditOwnRun()
+      break
+    case 'seek':
+      if (msg.currentBeat !== undefined) {
+        setJamExerciseBeat(msg.currentBeat + beatsInFlight(fromPeerId))
+      }
+      break
+  }
+}
+
+function broadcastSongTransport(
+  action: 'play' | 'pause' | 'stop' | 'seek',
+  positionSec: number,
+): void {
+  if (!jamIsHost()) return
+  jamService?.sendPlaybackCommandSec(action, positionSec)
+}
+
+function broadcastTransport(
+  action: 'play' | 'pause' | 'stop' | 'seek',
+  beat: number,
+): void {
+  if (!jamIsHost()) return
+  jamService?.sendPlaybackCommand(action, beat, jamExerciseBpm())
+}
 
 function startPlaybackTimer(): void {
   stopPlaybackTimer()
@@ -1661,7 +1738,7 @@ function startPlaybackTimer(): void {
         setJamExerciseNoteIndex(-1)
         playbackLastTick = now
         wrapOwnRun()
-        jamService?.sendPlaybackCommand('seek', 0, jamExerciseBpm())
+        broadcastTransport('seek', 0)
         playbackTimerId = requestAnimationFrame(tick)
       } else {
         // Finished — reset to start and broadcast
@@ -1672,7 +1749,7 @@ function startPlaybackTimer(): void {
         stopPlaybackTimer()
         settleOwnRun()
         creditOwnRun()
-        jamService?.sendPlaybackCommand('stop', 0, jamExerciseBpm())
+        broadcastTransport('stop', 0)
       }
       return
     }
