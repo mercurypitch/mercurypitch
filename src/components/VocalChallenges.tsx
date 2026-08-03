@@ -7,6 +7,7 @@ import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
 import modalStyles from '@/components/Modal.module.css'
+import { FancyDivider } from '@/components/shared/FancyDivider'
 import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
@@ -450,6 +451,7 @@ export const VocalChallenges: Component = () => {
         <h3 class="section-title">
           <IconBadge /> Badges Earned
         </h3>
+        <FancyDivider class="section-divider" />
         <div class="badges-grid">
           <For each={badges()}>
             {(badge) => {
@@ -494,10 +496,12 @@ export const VocalChallenges: Component = () => {
                     </span>
                   </Show>
 
+                  {/* Only the 'i' opens it. Hovering the whole tile fired
+                      on every pass of the mouse across a 16-tile grid,
+                      which is noise rather than help. */}
                   <InfoPopover
                     class="badge-hint-toggle"
                     label={`How to earn ${badge.name}`}
-                    hoverAnchor={() => tile}
                   >
                     {badge.unlockCondition || badge.description}
                     <Show when={badge.earned && badge.earnedDate > 0}>
@@ -523,6 +527,7 @@ export const VocalChallenges: Component = () => {
         <h3 class="section-title">
           <IconStarChallenge /> Achievements
         </h3>
+        <FancyDivider class="section-divider" />
         <div class="achievements-list">
           <For each={achievements()}>
             {(ach) => (

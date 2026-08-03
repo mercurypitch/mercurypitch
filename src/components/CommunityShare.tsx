@@ -6,11 +6,12 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, For, Show, } from 'solid-js'
 import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
-import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
+import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, unpublishShared, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
@@ -119,6 +120,22 @@ const IconShare = () => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
     <polyline points="7 10 12 15 17 10" />
     <line x1="12" x2="12" y1="15" y2="3" />
+  </svg>
+)
+
+const IconCloseSmall = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 )
 
@@ -491,6 +508,35 @@ export const CommunityShare: Component = () => {
    * exercises and challenges were unshareable and a singer who only did
    * those saw an empty picker forever.
    */
+  /** The share awaiting "yes, take it down". */
+  const [unpublishing, setUnpublishing] = createSignal<{
+    kind: 'melody' | 'session'
+    id: string
+    name: string
+  } | null>(null)
+
+  /**
+   * Take a share off the shelf. Removes the local copy first — that is
+   * what renders — then the DB row. A share that never reached the DB
+   * still disappears, which is the point: the singer asked for it gone.
+   */
+  const doUnpublish = (): void => {
+    const target = unpublishing()
+    if (target === null) return
+    if (target.kind === 'melody') {
+      const next = localMelodies().filter((m) => m.id !== target.id)
+      setLocalMelodies(next)
+      storageSet('pp_shared_melodies', next)
+    } else {
+      const next = localSessions().filter((x) => x.id !== target.id)
+      setLocalSessions(next)
+      storageSet('pp_shared_sessions', next)
+    }
+    void unpublishShared(target.kind, target.id)
+    showNotification(`"${target.name}" is no longer shared.`, 'info')
+    setUnpublishing(null)
+  }
+
   const [runRecords] = createResource(
     () => [authVersion(), sessionRecordVersion()] as const,
     async () => await loadSessionRecords(50),
@@ -756,6 +802,22 @@ export const CommunityShare: Component = () => {
                       </span>
                     </button>
                     <button
+                      class={`${modalStyles.actionBtn} unpublish-btn`}
+                      onClick={() =>
+                        setUnpublishing({
+                          kind: 'melody',
+                          id: melody.id,
+                          name: melody.name,
+                        })
+                      }
+                      aria-label={`Unpublish ${melody.name}`}
+                      title="Unpublish"
+                    >
+                      <span>
+                        <IconCloseSmall />
+                      </span>
+                    </button>
+                    <button
                       class={`${modalStyles.actionBtn} view-btn`}
                       onClick={() => openShared('melody', melody.id)}
                       aria-label={`Open ${melody.name}`}
@@ -879,6 +941,22 @@ export const CommunityShare: Component = () => {
                       </span>
                     </button>
                     <button
+                      class={`${modalStyles.actionBtn} unpublish-btn`}
+                      onClick={() =>
+                        setUnpublishing({
+                          kind: 'session',
+                          id: session.id,
+                          name: session.name,
+                        })
+                      }
+                      aria-label={`Unpublish ${session.name}`}
+                      title="Unpublish"
+                    >
+                      <span>
+                        <IconCloseSmall />
+                      </span>
+                    </button>
+                    <button
                       class={`${modalStyles.actionBtn} view-btn`}
                       onClick={() => openShared('session', session.id)}
                       aria-label={`Open ${session.name}`}
@@ -950,6 +1028,15 @@ export const CommunityShare: Component = () => {
           />
         </Show>
       </div>
+
+      <ConfirmDialog
+        open={unpublishing() !== null}
+        title="Unpublish this?"
+        message={`"${unpublishing()?.name ?? ''}" comes off your shelf and anyone holding its link stops being able to open it. You can share it again later.`}
+        confirmLabel="Unpublish"
+        onConfirm={doUnpublish}
+        onCancel={() => setUnpublishing(null)}
+      />
 
       {/* Share picker — choose which of your own melodies/sessions to share */}
       <Show when={pickerType() !== null}>
