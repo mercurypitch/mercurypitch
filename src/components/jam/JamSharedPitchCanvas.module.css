@@ -8,7 +8,7 @@
   border-radius: 6px;
   overflow: hidden;
   background: var(--bg-primary, #0d1117);
-  backdrop-filter: blur(1px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 1));
 }
 
 .container canvas {

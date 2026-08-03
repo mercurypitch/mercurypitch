@@ -9,7 +9,7 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
 }
 
 .btn {

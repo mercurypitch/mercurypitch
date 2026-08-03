@@ -37,7 +37,7 @@
   border-radius: 18px;
   background: rgba(10, 14, 21, 0.68);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 14));
 }
 
 .title {
@@ -121,7 +121,7 @@
      at a constant 5% while every other surface followed the transparency
      slider, so they stayed visibly opaque over a bare backdrop. */
   background: var(--jam-control, rgba(255, 255, 255, 0.05));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
   color: var(--text-primary);
   font-size: 0.85rem;
   font-weight: 500;
@@ -287,7 +287,7 @@
     rgba(88, 166, 255, 0.16),
     rgba(88, 166, 255, 0.16)
   );
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
   border: 1px solid rgba(88, 166, 255, 0.35);
   border-radius: 4px;
 }
@@ -305,7 +305,7 @@
    slider-driven surface, background-image is the tint. */
 .iconBtn {
   background-color: var(--jam-control, rgba(13, 17, 23, 0.55));
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
   display: inline-flex;
   align-items: center;
   justify-content: center;

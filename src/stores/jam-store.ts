@@ -718,7 +718,7 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
         setJamShareState({
           phase: 'encoding',
           ratio: p.ratio,
-          message: `Packing the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'}…`,
+          message: `Packing the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'} — ${Math.round(p.ratio * 100)}%`,
         }),
     )
     if (signal.aborted) {

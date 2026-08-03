@@ -49,6 +49,21 @@
      bottom for anyone who wants the room bare. The 0.3 floor is deliberate:
      a control you cannot find is not a style choice. */
   --jam-control: rgba(13, 17, 23, min(1, calc(var(--jam-alpha) * 0.7 + 0.3)));
+
+  /* Blur rides the same slider.
+     Fading a surface out while it still blurs what is behind it is the
+     worst of both: the backdrop is visible and smeared, so the room looks
+     out of focus rather than translucent. A song room felt heavier than a
+     drill room for exactly this reason -- its panels blurred 8px where the
+     exercise canvas blurred 1px, and the slider could do nothing about it.
+
+     One unit, multiplied at each use site: blur(calc(var(--jam-blur) * 8)).
+     At the slider's bottom every surface is a clean pane of glass; at the
+     top the blur is what it always was. Floating widgets carry running text
+     over a photo and keep a small floor of their own -- see --jam-blur-lift. */
+  --jam-blur: calc(var(--jam-alpha) * 1px);
+  /* A floor for anything with paragraphs on it. Legibility is not a taste. */
+  --jam-blur-lift: max(2px, calc(var(--jam-alpha) * 10px));
 }
 
 .backdrop {

@@ -36,7 +36,7 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.5px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 4));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -324,7 +324,7 @@
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
   border: 1px solid var(--border);
   border-radius: 8px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
 }
 
 .bpmStep {
@@ -389,7 +389,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
 }
 
 .modeBtn {
@@ -428,7 +428,7 @@
   border: 1px solid;
   border-radius: 8px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
   cursor: default;
 }
 
@@ -444,7 +444,7 @@
   border: 1px dashed rgba(227, 162, 33, 0.5);
   border-radius: 8px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
   cursor: default;
 }
 
@@ -458,7 +458,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
   cursor: default;
 }
 
@@ -516,7 +516,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
   color: var(--text-secondary);
   cursor: pointer;
 }
@@ -563,7 +563,7 @@
   .sidebarInner {
     width: min(280px, 82vw);
     background: rgba(13, 17, 23, 0.97);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(calc(var(--jam-blur, 1px) * 12));
   }
 
   .sidebarClose {
