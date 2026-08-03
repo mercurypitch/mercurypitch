@@ -17,6 +17,8 @@ export interface PathWeekGuideProps {
   currentOrder: number
   started: boolean
   themeLabel: string
+  /** The day the singer tapped, or null for the day they are actually on. */
+  selectedDay?: number | null
 }
 
 interface WeekZenExercise {
@@ -79,7 +81,14 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
         Week {props.week.order} · {props.themeLabel}
         <Show when={props.state === 'active'}>
           {' '}
-          · Day {ringFill(props.week.order)} of {DAYS_PER_WEEK}
+          {/* ringFill is the count of days COMPLETED, so this read
+              "Day 2 of 7" while day 3 was selected — it was never the
+              day being shown. Show the tapped day; fall back to the next
+              one to do, which is completed + 1. */}
+          · Day{' '}
+          {props.selectedDay ??
+            Math.min(DAYS_PER_WEEK, ringFill(props.week.order) + 1)}{' '}
+          of {DAYS_PER_WEEK}
         </Show>
       </div>
       <h3 class={styles.cardTitle}>{props.week.title}</h3>
