@@ -952,6 +952,9 @@ input:checked + .settings-slider:before {
 #settings-panel,
 .settings-panel,
 .library-tab,
+.session-editor-container {
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+}
 
 /* Settings panel must scroll independently on desktop because
    .main-content has overflow:hidden at >=768px. */
@@ -1041,13 +1044,34 @@ input:checked + .settings-slider:before {
 
 /* -- Tabs (leaderboard + category) -- */
 
-.leaderboard-tab .icon-svg,
 .tab-count {
   font-size: 0.65rem;
   opacity: 0.6;
 }
 
-.category-tab .icon-svg,
+/* SVGs ignore font-size, so every icon slot sizes its own child (see the
+   icon-sizing section below). These two lists used to do that; a CSS
+   refactor deleted their declaration blocks and left the selectors
+   dangling, so each one silently joined the NEXT rule — the category
+   pill's icon inherited `margin-bottom: 12px` from the search bar, and a
+   12px bottom margin on a flex item centres the margin box, which is why
+   the glyph sat half a line above its label. */
+.leaderboard-tab .icon-svg,
+.leaderboard-tab .tab-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  margin: 0;
+  flex: none;
+}
+
+.category-tab .icon-svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  margin: 0;
+  flex: none;
+}
 
 /* -- Search bar -- */
 .search-container {
