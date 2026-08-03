@@ -155,14 +155,22 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
           <div class="sm-mic-score-actions">
             <Show when={showKeepAction()}>
               <button
+                type="button"
                 class="sm-mic-score-keep-btn"
                 disabled={takeState() !== 'ready'}
+                aria-busy={
+                  takeState() === 'processing' || takeState() === 'saving'
+                }
                 onClick={() => props.onKeepVoiceTake?.()}
               >
                 {keepLabel()}
               </button>
             </Show>
-            <button class="sm-mic-score-ok-btn" onClick={() => props.onClose()}>
+            <button
+              type="button"
+              class="sm-mic-score-ok-btn"
+              onClick={() => props.onClose()}
+            >
               {takeState() === 'ready' ? 'Not now' : 'Close'}
             </button>
           </div>

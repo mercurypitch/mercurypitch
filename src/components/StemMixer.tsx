@@ -6170,6 +6170,7 @@ export const StemMixerStyles: string = `
   transition: opacity 0.15s, transform 0.15s, border-color 0.15s;
 }
 .sm-mic-score-keep-btn {
+  min-width: 13.75rem;
   background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
   color: #fff;
   border: none;
@@ -6188,7 +6189,7 @@ export const StemMixerStyles: string = `
   border-color: var(--fg-tertiary, #8b949e);
 }
 .sm-mic-score-keep-btn:disabled {
-  cursor: wait;
+  cursor: default;
   opacity: 0.55;
 }
 

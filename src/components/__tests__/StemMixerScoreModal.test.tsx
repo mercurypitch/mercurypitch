@@ -32,7 +32,27 @@ describe('StemMixerScoreModal voice keep action', () => {
     expect(
       screen.getByRole('button', { name: 'Preparing replay' }),
     ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Preparing replay' }),
+    ).toHaveAttribute('aria-busy', 'true')
     expect(screen.getByText('Private replay status')).toBeInTheDocument()
+  })
+
+  it('keeps the disabled keep action in place while saving', () => {
+    render(() => (
+      <StemMixerScoreModal
+        showScore={() => true}
+        score={score}
+        voiceTakeState="saving"
+        voiceTakeMessage="Saving locally"
+        onKeepVoiceTake={vi.fn()}
+        onClose={vi.fn()}
+      />
+    ))
+
+    const keep = screen.getByRole('button', { name: 'Keeping take' })
+    expect(keep).toBeDisabled()
+    expect(keep).toHaveAttribute('aria-busy', 'true')
   })
 
   it('requires an explicit keep after the replay is ready', async () => {
