@@ -6,6 +6,7 @@ import { z } from 'zod/v4'
 import { getDb } from '@/db'
 import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { getUserId } from '@/db/seed'
+import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { findOwnProfile } from '@/db/services/user-service'
 
 export interface SharedMelodyView {
@@ -109,12 +110,28 @@ function safeJsonParse(raw: string): unknown[] {
   }
 }
 
+/**
+ * Whether this singer may put something on the public Community shelf.
+ *
+ * A listing needs a name that outlives one browser's localStorage, so the
+ * board is account-only — the worker enforces it (tables.ts
+ * `requiresAccount`) and this is the same rule client-side, so the UI can
+ * say so before the press rather than swallowing a 403.
+ *
+ * Nothing else about sharing is gated: a share link carries the melody in
+ * its own URL, needs no account at either end, and never touches a row.
+ */
+export function canPostToCommunity(): boolean {
+  return hasUpgradedAccount()
+}
+
 export async function saveSharedMelody(data: {
   name: string
   items: unknown[]
   author: string
   tags?: string[]
 }): Promise<SharedMelodyView | null> {
+  if (!canPostToCommunity()) return null
   try {
     const db = await getDb()
     const repo = db.getRepository<SharedMelody>('sharedMelodies')
@@ -146,6 +163,7 @@ export async function saveSharedSession(data: {
   author: string
   results: number[]
 }): Promise<SharedSessionView | null> {
+  if (!canPostToCommunity()) return null
   try {
     const db = await getDb()
     const repo = db.getRepository<SharedSession>('sharedSessions')
