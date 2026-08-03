@@ -282,7 +282,7 @@
 
 .authorLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 276px;
+  grid-template-columns: minmax(0, 1fr) 220px;
   align-items: start;
   gap: 16px;
   max-width: 1560px;
@@ -1038,7 +1038,7 @@
  * The editor is nested inside both the Content Studio rail and the exercise
  * catalogue, so viewport breakpoints alone cannot describe its real space.
  */
-@container exercise-editor (max-width: 900px) {
+@container exercise-editor (max-width: 1160px) {
   .appBar {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -1171,6 +1171,19 @@
 }
 
 @container exercise-editor (max-width: 460px) {
+  .identity {
+    overflow: hidden;
+  }
+
+  .identity p {
+    display: none;
+  }
+
+  .identity h2 {
+    max-width: 100%;
+    margin-top: 0;
+  }
+
   .formGrid,
   .compactGrid,
   .scoringGrid {

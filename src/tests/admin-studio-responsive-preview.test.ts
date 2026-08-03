@@ -14,6 +14,10 @@ const EXERCISES_PAGE_CSS = readFileSync(
   resolve(__dirname, '../features/admin/AdminExercisesPage.module.css'),
   'utf-8',
 )
+const CONTENT_STUDIO_CSS = readFileSync(
+  resolve(__dirname, '../features/admin/AdminContentStudio.module.css'),
+  'utf-8',
+)
 const EXERCISE_EDITOR_CSS = readFileSync(
   resolve(__dirname, '../features/admin/exercises/ExerciseEditor.module.css'),
   'utf-8',
@@ -57,10 +61,27 @@ function extractRuleBlock(css: string, rule: RegExp): string {
 }
 
 describe('Content Studio constrained-width layout', () => {
+  it('allocates the authoring console most of the workspace', () => {
+    expect(CONTENT_STUDIO_CSS).toMatch(/container-type:\s*inline-size/)
+    const compactStudioBlock = extractRuleBlock(
+      CONTENT_STUDIO_CSS,
+      /@media\s*\(max-width:\s*1100px\)\s*\{/,
+    )
+    expect(compactStudioBlock).toMatch(
+      /\.body\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    )
+    expect(CONTENT_STUDIO_CSS).toMatch(
+      /\.workspaceWide\s*\{[^}]*max-width:\s*1800px/,
+    )
+    expect(EXERCISES_PAGE_CSS).toMatch(
+      /grid-template-columns:\s*clamp\(220px,\s*22%,\s*270px\)\s+minmax\(0,\s*1fr\)/,
+    )
+  })
+
   it('stacks the exercise catalogue before nested rails crush the editor', () => {
     const block = extractRuleBlock(
       EXERCISES_PAGE_CSS,
-      /@media\s*\(max-width:\s*1180px\)\s*\{/,
+      /@container\s*\(max-width:\s*1320px\)\s*\{/,
     )
 
     expect(block).toMatch(/\.page\s*\{[\s\S]*grid-template-columns:\s*1fr/)
@@ -87,6 +108,14 @@ describe('Content Studio constrained-width layout', () => {
     expect(narrowBlock).toMatch(
       /\.compactGrid,[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
     )
+
+    const consoleBlock = extractRuleBlock(
+      EXERCISE_EDITOR_CSS,
+      /@container\s+exercise-editor\s*\(max-width:\s*1160px\)\s*\{/,
+    )
+    expect(consoleBlock).toMatch(
+      /\.authorLayout\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    )
   })
 
   it('reflows timeline tools and precise rows from the timeline width', () => {
@@ -102,6 +131,17 @@ describe('Content Studio constrained-width layout', () => {
     expect(block).toMatch(/\.header,[\s\S]*flex-direction:\s*column/)
     expect(block).toMatch(
       /\.eventRow\s*\{[\s\S]*grid-template-columns:\s*1fr\s+1fr/,
+    )
+
+    const compactBlock = extractRuleBlock(
+      TIMELINE_EDITOR_CSS,
+      /@container\s+timeline-editor\s*\(max-width:\s*900px\)\s*\{/,
+    )
+    expect(compactBlock).toMatch(
+      /\.rowActions\s*\{[\s\S]*grid-column:\s*4\s*\/\s*-1[\s\S]*align-self:\s*center/,
+    )
+    expect(compactBlock).toMatch(
+      /\.showCueField\s*\{[\s\S]*grid-column:\s*3[\s\S]*align-self:\s*center/,
     )
   })
 })

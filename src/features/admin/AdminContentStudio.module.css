@@ -108,7 +108,7 @@
 .body {
   min-height: 0;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: clamp(216px, 15vw, 232px) minmax(0, 1fr);
 }
 
 .navigation {
@@ -321,10 +321,11 @@
   max-width: 1240px;
   margin: 0 auto;
   padding: 32px clamp(18px, 3vw, 42px) 56px;
+  container-type: inline-size;
 }
 
 .workspaceWide {
-  max-width: 1600px;
+  max-width: 1800px;
 }
 
 .contentHeader {
@@ -449,7 +450,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .header {
     min-height: 64px;
     padding: 10px 12px;
