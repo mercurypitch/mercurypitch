@@ -9,7 +9,7 @@
 // cage: completed weeks stay replayable and freeform practice counts.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import { ASCENT_WEEKS, DAYS_PER_WEEK, PATH_THEME_LABEL, } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { devMarkPracticeDay, pathComplete, pathFreeRoam, pathProgress, resetAscent, ringFill, setPathFreeRoam, startAscent, weekState, } from '@/features/path/path-progress'
@@ -36,15 +36,25 @@ const OFFSETS: Record<number, number> = {
 const DESCENDING = [...ASCENT_WEEKS].sort((a, b) => b.order - a.order)
 
 const PathPage: Component = () => {
-  const [expanded, setExpanded] = createSignal<number | null>(null)
   const [trailPath, setTrailPath] = createSignal('')
 
   let trailEl: HTMLDivElement | undefined
   let pageEl: HTMLDivElement | undefined
 
   const currentOrder = createMemo(() => pathProgress()?.currentWeek ?? 1)
-  // Nothing is expanded on load — the trail reads as an uninterrupted climb;
-  // tapping an orb opens its guidebook card.
+  // Arrive with this week's guidebook already open, the way the Plain Path
+  // view does. The trail used to load with nothing expanded so it read as an
+  // uninterrupted climb — but the whole reason to open the Ascent is to find
+  // out what today asks of you, and that cost a tap every single visit.
+  //
+  // untrack, and a plain signal rather than a memo, so tapping the open orb
+  // still closes it: progress comes from a localStorage-backed signal, so the
+  // week is already known here and nothing needs to re-open it later. The
+  // page remounts on every tab entry (App.tsx renders it under `Show`), so
+  // the next visit opens the current week again.
+  const [expanded, setExpanded] = createSignal<number | null>(
+    untrack(currentOrder),
+  )
   const openOrder = createMemo(() => expanded())
   const started = createMemo(() => pathProgress() !== null)
   const finished = createMemo(() => pathComplete())
@@ -104,16 +114,35 @@ const PathPage: Component = () => {
     })
 
     // Land the climber at their current orb (week 1 sits at the very foot).
-    const target = pageEl?.querySelector('.path-orb-current')
-    if (target) {
-      const reduce = window.matchMedia(
-        '(prefers-reduced-motion: reduce)',
-      ).matches
-      target.scrollIntoView({
-        block: 'center',
-        behavior: reduce ? 'auto' : 'smooth',
-      })
+    //
+    // Deferred, then checked again. This effect runs in the same tick the
+    // orbs and the open week guide are inserted, and drawTrail's retries
+    // just above exist precisely because the trail has no measurable height
+    // yet at this moment — so scrolling here aimed at a page that was still
+    // growing, which is why arriving from Home did not land on your week.
+    const reduce =
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    const currentOrb = (): Element | null =>
+      pageEl?.querySelector('.path-orb-current') ?? null
+    const land = (behavior: ScrollBehavior): void => {
+      currentOrb()?.scrollIntoView({ block: 'center', behavior })
     }
+
+    const frame = requestAnimationFrame(() => land(reduce ? 'auto' : 'smooth'))
+    // One corrective jump after the trail settles, and only when the orb has
+    // actually drifted off centre — re-issuing a smooth scroll that already
+    // arrived only fights the one in flight. 700ms clears that animation.
+    const settle = window.setTimeout(() => {
+      const orb = currentOrb()
+      if (orb === null) return
+      const box = orb.getBoundingClientRect()
+      const drift = Math.abs(box.top + box.height / 2 - window.innerHeight / 2)
+      if (drift > window.innerHeight / 4) land('auto')
+    }, 700)
+    onCleanup(() => {
+      cancelAnimationFrame(frame)
+      window.clearTimeout(settle)
+    })
   })
 
   const stateLabel = (state: WeekState, order: number): string => {
