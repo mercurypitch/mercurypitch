@@ -341,6 +341,24 @@ export function navigateTo(route: HashRoute): void {
 }
 
 /**
+ * Add a history entry for the route, without firing `hashchange`.
+ *
+ * The difference from navigateTo: setting `window.location.hash` fires
+ * hashchange, which re-enters the router's own dispatch. pushState does
+ * not, so this is safe to call from the state→URL sync effect.
+ *
+ * Back still works. Traversing between two entries that differ only in
+ * fragment fires BOTH popstate and hashchange, so the router's existing
+ * hashchange listener picks the old tab back up with nothing new to
+ * wire.
+ */
+export function pushHash(route: HashRoute): void {
+  const hash = `#${buildHash(route)}`
+  if (window.location.hash === hash) return
+  history.pushState(null, '', hash)
+}
+
+/**
  * Replace the current hash without creating a new history entry.
  * Used for syncing signal state → URL (e.g., tab changes from UI clicks).
  */
