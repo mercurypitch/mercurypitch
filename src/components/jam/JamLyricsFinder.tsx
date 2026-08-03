@@ -20,19 +20,30 @@ import { attachJamSongLyrics, jamSong } from '@/stores/jam-store'
 import styles from './JamLyricsFinder.module.css'
 
 /**
- * The title the automatic search has already been spent on.
+ * The last search and what it found, kept across mounts.
  *
  * Module-level rather than per-instance because the finder is mounted and
- * unmounted as the room's panels come and go, and LRCLIB is a free service
- * somebody else pays for: once per song, not once per render.
+ * unmounted as the room's panels come and go. Two reasons it holds the
+ * RESULTS and not just the query it has already spent: LRCLIB is a free
+ * service somebody else pays for, so the same question is not worth asking
+ * twice; and a remount that skipped the search but kept an empty list
+ * would put back the blank panel this exists to prevent.
  */
-let autoSearched: string | null = null
+let lastSearch: { title: string; results: LyricsSearchMatch[] } | null = null
 
 export const JamLyricsFinder: Component = () => {
+  const title = (jamSong()?.title ?? '').trim()
+  /** What is already known about this song, if this is not the first mount. */
+  const known = lastSearch?.title === title && title !== '' ? lastSearch : null
+
   const [query, setQuery] = createSignal(jamSong()?.title ?? '')
-  const [results, setResults] = createSignal<LyricsSearchMatch[]>([])
+  const [results, setResults] = createSignal<LyricsSearchMatch[]>(
+    known?.results ?? [],
+  )
   const [searching, setSearching] = createSignal(false)
-  const [searched, setSearched] = createSignal(false)
+  // Seeded true alongside restored results, so a song that genuinely has
+  // no matches says so on a remount instead of showing an empty panel.
+  const [searched, setSearched] = createSignal(known !== null)
   const [pasting, setPasting] = createSignal(false)
   const [paste, setPaste] = createSignal('')
   const [error, setError] = createSignal<string | null>(null)
@@ -43,8 +54,12 @@ export const JamLyricsFinder: Component = () => {
     setSearching(true)
     setError(null)
     try {
-      setResults(await searchLyricsMulti(q))
+      const found = await searchLyricsMulti(q)
+      setResults(found)
       setSearched(true)
+      // A refined query counts too: whatever is on screen when the panel
+      // goes away is what comes back when it returns.
+      lastSearch = { title: q, results: found }
     } catch {
       setError('Could not reach the lyrics service. Try again, or paste them.')
     } finally {
@@ -67,9 +82,8 @@ export const JamLyricsFinder: Component = () => {
     // same check a song that already HAS its words would spend a search on
     // a finder nobody can see.
     if (!canAttachLyrics(jamSong())) return
-    const title = query().trim()
-    if (title === '' || autoSearched === title) return
-    autoSearched = title
+    // Already asked for this song -- the answer was restored above.
+    if (known !== null || title === '') return
     void search()
   })
 

@@ -56,17 +56,33 @@ describe('jam lyrics finder — searching on open', () => {
     await waitFor(() => getByText('Ghosts'))
   })
 
-  it('spends the automatic search once per song, not once per mount', async () => {
-    // A different title from the test above on purpose: the guard is
-    // module-level, so reusing one would be answered by the first test.
+  it('remounts with the matches it already has, without asking again', async () => {
+    // A different title from the test above on purpose: what was found is
+    // remembered per song, so reusing one would be answered by that test.
     setJamSong(song('Tester - Second Song'))
     const first = render(() => <JamLyricsFinder />)
     await waitFor(() => expect(searchLyricsMulti).toHaveBeenCalledTimes(1))
     first.unmount()
 
-    render(() => <JamLyricsFinder />)
+    const again = render(() => <JamLyricsFinder />)
     await Promise.resolve()
     expect(searchLyricsMulti).toHaveBeenCalledTimes(1)
+    // The point of the cache: skipping the search must not put back the
+    // empty panel the search exists to fill.
+    again.getByText('Ghosts')
+  })
+
+  it('says so on a remount when the song genuinely has no matches', async () => {
+    searchLyricsMulti.mockResolvedValue([])
+    setJamSong(song('Tester - Nothing Out There'))
+    const first = render(() => <JamLyricsFinder />)
+    await waitFor(() => expect(searchLyricsMulti).toHaveBeenCalledTimes(1))
+    first.unmount()
+
+    const again = render(() => <JamLyricsFinder />)
+    await Promise.resolve()
+    expect(searchLyricsMulti).toHaveBeenCalledTimes(1)
+    again.getByText(/Nothing found/)
   })
 
   it('does not search when the song has no title to search for', async () => {
