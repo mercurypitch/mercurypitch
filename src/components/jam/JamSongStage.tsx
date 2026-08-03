@@ -14,8 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
-import { JamGuideVocal } from './JamGuideVocal'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -50,11 +49,9 @@ export const JamSongStage: Component = () => {
   /**
    * Guide-vocal level, per person and not room state -- see JamGuideVocal.
    *
-   * Held in the store rather than here because on a phone the control sits
-   * at the bottom of the screen beside the chat bubble, outside this
-   * component entirely: a position-fixed element nested under a
-   * backdrop-filtered ancestor is positioned against that ancestor, not
-   * the viewport, and this stage's transport bar is one.
+   * Read here, set elsewhere: the control lives in JamPanel now, in the
+   * transport row on a desktop and docked above the tab bar on a phone.
+   * This component only needs the number, to drive the vocal element.
    */
   const guideVolume = jamGuideVolume
 
@@ -452,20 +449,11 @@ export const JamSongStage: Component = () => {
                 (JamSongShare), beside the transfer chip -- under the
                 timeline it read as part of the player and went unnoticed. */}
 
-            {/* Desktop only. On a phone the same control is docked above
-                the tab bar beside the chat bubble (JamPanel), where a
-                thumb can reach it without crossing the lyrics -- and where
-                it is not competing with the timeline for this row. Both
-                read the same store signal, so there is no second state to
-                keep in step. */}
-            <Show when={song().stems.vocal}>
-              <div class={styles.guideInline}>
-                <JamGuideVocal
-                  volume={jamGuideVolume}
-                  onVolume={setJamGuideVolume}
-                />
-              </div>
-            </Show>
+            {/* The guide-vocal control is not here any more. After the
+                timeline it read as part of the scrubber, and its slider
+                expanded straight over the one thing in this row that must
+                not be covered. It lives with the transport controls now
+                (JamPanel) -- with play and stop, which is what it is. */}
 
             {/* Play, pause and stop live in the room's one transport bar
                 (JamTransport) rather than here. Two sets of buttons for

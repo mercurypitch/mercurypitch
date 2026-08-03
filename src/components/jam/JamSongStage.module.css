@@ -61,23 +61,14 @@
   min-height: 0;
 }
 
-/* The guide-vocal control, in the transport row where there is width for
-   it. `contents` rather than a wrapper with its own box: it exists only so
-   the phone can take this copy away, and it should not otherwise be part
-   of the layout. Declared above the phone block on purpose -- a media
-   query adds no specificity, so a base rule written after it wins. */
-.guideInline {
-  display: contents;
-}
-
 /* A phone cannot show two columns of anything useful. Lyrics on top,
    because that is what you are actually reading; lanes below at a fixed
    height so they never squeeze the words. */
 /* Phone: the row becomes two.
-   Title, lyric version and the guide-vocal control are all things that
-   shrink; the timeline is the one thing that must not, and squeezing it
-   between them left a scrub target a thumb could not hit -- with the
-   guide-vocal slider expanding straight over it. So it takes a line of
+   Title and lyric version are things that shrink; the timeline is the one
+   thing that must not, and squeezing it between them left a scrub target a
+   thumb could not hit -- with the guide-vocal slider, which used to live
+   in this row, expanding straight over it. So the timeline takes a line of
    its own underneath, full width. */
 @media (max-width: 640px) {
   .transport {
@@ -85,12 +76,6 @@
     row-gap: 8px;
     justify-content: flex-start;
     gap: 8px;
-  }
-
-  /* Docked above the tab bar instead (JamPanel's .guideDock), where a
-     thumb reaches it and its slider is not expanding over the timeline. */
-  .guideInline {
-    display: none;
   }
 
   .scrub {
