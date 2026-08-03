@@ -305,15 +305,25 @@
       repeat(3, minmax(84px, 0.8fr));
   }
 
-  .showCueField,
-  .rowActions,
-  .endPitchPlaceholder {
-    align-self: stretch;
+  .endPitchField {
+    grid-column: 1 / span 2;
+  }
+
+  .showCueField {
+    grid-column: 3;
+    align-self: center;
+    padding-block: 0;
   }
 
   .rowActions {
-    align-items: end;
+    grid-column: 4 / -1;
+    align-self: center;
+    align-items: center;
     justify-content: flex-end;
+  }
+
+  .rowActions button {
+    min-width: 0;
   }
 }
 
@@ -352,6 +362,11 @@
     grid-column: 1 / -1;
   }
 
+  .endPitchField,
+  .showCueField {
+    grid-column: auto;
+  }
+
   .eventRow input,
   .eventRow select,
   .rowActions button {
@@ -368,6 +383,14 @@
 }
 
 @container timeline-editor (max-width: 380px) {
+  .tools {
+    flex-direction: column;
+  }
+
+  .tools button {
+    width: 100%;
+  }
+
   .eventRow {
     grid-template-columns: minmax(0, 1fr);
   }

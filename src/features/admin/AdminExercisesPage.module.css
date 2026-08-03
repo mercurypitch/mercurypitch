@@ -2,7 +2,7 @@
   min-height: 0;
   height: 100%;
   display: grid;
-  grid-template-columns: 286px minmax(0, 1fr);
+  grid-template-columns: clamp(220px, 22%, 270px) minmax(0, 1fr);
   overflow: hidden;
   border-top: 1px solid var(--border);
 }
@@ -313,11 +313,11 @@
 }
 
 /*
- * Content Studio already owns a 248px navigation rail. Stack the catalogue
- * before the nested master/detail layout leaves the authoring pane unusably
- * narrow.
+ * Stack from the workspace's real width rather than the viewport. Content
+ * Studio owns its own rail, so viewport breakpoints otherwise leave the
+ * nested editor much narrower than they imply.
  */
-@media (max-width: 1180px) {
+@container (max-width: 1320px) {
   .page {
     height: auto;
     min-height: 100%;

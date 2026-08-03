@@ -855,13 +855,15 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                 <Show
                   when={target.endSemitone !== undefined}
                   fallback={
-                    <div class={styles.endPitchPlaceholder}>
+                    <div
+                      class={`${styles.endPitchField} ${styles.endPitchPlaceholder}`}
+                    >
                       <span>End pitch</span>
                       <small>Same as start</small>
                     </div>
                   }
                 >
-                  <label>
+                  <label class={styles.endPitchField}>
                     <span>End pitch</span>
                     <input
                       type="number"
