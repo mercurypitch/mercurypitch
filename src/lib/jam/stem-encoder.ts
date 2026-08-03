@@ -128,6 +128,25 @@ export class StemEncodeUnsupportedError extends Error {
 }
 
 /**
+ * The host pressed Stop.
+ *
+ * Its own error rather than a returned null, so every caller between here
+ * and the button is forced to decide what a cancellation means -- and none
+ * of them can mistake it for a failure worth reporting.
+ */
+export class StemEncodeAbortedError extends Error {
+  constructor() {
+    super('Packing was stopped.')
+    this.name = 'StemEncodeAbortedError'
+  }
+}
+
+/** A flag the caller can flip; the same shape the transfer already takes. */
+export interface EncodeAbort {
+  aborted: boolean
+}
+
+/**
  * Encode one WAV stem to AAC-in-MP4.
  *
  * Decoded through an OfflineAudioContext at the source's own sample rate,
@@ -135,12 +154,25 @@ export class StemEncodeUnsupportedError extends Error {
  * fed to mediabunny in slices, each await respecting encoder backpressure
  * -- which keeps a phone from holding the whole compressed output in
  * flight, and is what gives the caller a progress number to show.
+ *
+ * The slice loop is also where Stop takes effect. `decodeAudioData` is one
+ * uninterruptible call, so a cancellation arriving during the decode waits
+ * for it -- but everything after is checked per slice, which for a
+ * four-minute stem is a bail within a fraction of a second instead of at
+ * the end of the whole job.
  */
 export async function encodeStemToAac(
   wav: ArrayBuffer,
   onProgress?: (p: EncodeProgress) => void,
+  signal?: EncodeAbort,
 ): Promise<Uint8Array> {
   if (!(await ensureAacEncoder())) throw new StemEncodeUnsupportedError()
+  // Read through a call rather than touching the field directly. The flag
+  // is flipped from outside while this function is awaiting, which is
+  // exactly the thing narrowing assumes cannot happen -- check it inline
+  // and the second read is "unreachable" and the third is a type error.
+  const stopped = (): boolean => signal?.aborted === true
+  if (stopped()) throw new StemEncodeAbortedError()
 
   const rate = encodeRateFor(wavSampleRate(wav.slice(0, 4096)))
   // Decoding says nothing about its own progress, so the bar is estimated
@@ -159,6 +191,9 @@ export async function encodeStemToAac(
     stopCreep()
   }
   onProgress?.({ ratio: DECODE_SHARE })
+  // The first place a Stop pressed during the decode can be honoured --
+  // before an encoder is even started, so nothing needs tearing down.
+  if (stopped()) throw new StemEncodeAbortedError()
 
   const output = new Output({
     format: new Mp4OutputFormat(),
@@ -179,6 +214,14 @@ export async function encodeStemToAac(
   const step = Math.max(1, Math.floor(ENCODE_SLICE_SEC * decoded.sampleRate))
   const frames = decoded.length
   for (let from = 0; from < frames; from += step) {
+    if (stopped()) {
+      // Hand the encoder back rather than leaving it running behind a
+      // thrown error: an abandoned Output holds a hardware encoder open,
+      // and the next attempt to pack this song has to share the device
+      // with a job nobody is waiting for.
+      await output.cancel()
+      throw new StemEncodeAbortedError()
+    }
     const to = Math.min(frames, from + step)
     await source.add(sliceBuffer(decoded, from, to))
     onProgress?.({
