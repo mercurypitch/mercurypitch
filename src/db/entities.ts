@@ -205,6 +205,18 @@ export interface UserBadge extends DbEntity {
   earnedAt: string
 }
 
+/**
+ * Which shelf an achievement sits on.
+ *
+ * - `beginnings` — first-time acts. A new singer clears several in week one.
+ * - `building` — the weekly rhythm, for someone already practising.
+ * - `mastery` — the long haul, months rather than weeks.
+ *
+ * The point of the split is that there is always one within reach while
+ * the far ones stay visible.
+ */
+export type AchievementCategory = 'beginnings' | 'building' | 'mastery'
+
 export interface Achievement extends DbEntity {
   name: string
   description: string
@@ -213,6 +225,8 @@ export interface Achievement extends DbEntity {
   condition: string
   required: number
   sortOrder: number
+  /** Older rows predate the column — treat a missing value as 'beginnings'. */
+  category?: AchievementCategory
 }
 
 export interface UserAchievement extends DbEntity {
@@ -242,6 +256,8 @@ export interface LeaderboardEntry extends DbEntity {
   rank: number
   score: number
   streak: number
+  /** Best streak ever reached — what the "Longest Streak" board ranks on. */
+  longestStreak?: number
   totalSessions: number
   bestScore: number
   accuracy: number

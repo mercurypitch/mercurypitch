@@ -1780,6 +1780,28 @@
   overflow: hidden;
 }
 
+/* The board's empty state stands in for the podium AND the table, so it
+   needs the inset the table gets from its own cells — this container is
+   padding-less on purpose so the header row can run edge to edge. The
+   dashed frame says "a board goes here" rather than leaving the copy
+   floating in an otherwise blank panel. */
+.leaderboard-content > .board-empty {
+  margin: 16px;
+  padding: 32px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+}
+
+.leaderboard-content > .board-empty .empty-icon {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.leaderboard-content > .board-empty p {
+  max-width: 42ch;
+}
+
 .leaderboard-table-container {
   overflow-x: auto;
 }
@@ -2854,6 +2876,40 @@
    width of a 1400px screen with its text marooned in the middle and its
    progress bar a metre long. Cards hold the same information in a third
    of the vertical space. */
+/* Three shelves — Beginnings / Building / Mastery — instead of one flat
+   wall of sixty tiles. The head carries the band's name, how many of it
+   are done, and one line on what the band is for. */
+.achievement-group + .achievement-group {
+  margin-top: 22px;
+}
+
+.achievement-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.achievement-group-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.achievement-group-count {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.achievement-group-blurb {
+  margin: 2px 0 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .achievements-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));

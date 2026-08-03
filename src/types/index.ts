@@ -620,6 +620,8 @@ export interface LeaderboardUser {
   rank: number
   /** Streak count */
   streak: number
+  /** Best streak ever reached — what the "Longest Streak" board ranks on */
+  longestStreak: number
   /** Total sessions completed */
   totalSessions: number
   /** Best score percentage */

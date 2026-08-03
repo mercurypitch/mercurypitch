@@ -3,7 +3,10 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px 16px;
-  margin-bottom: 14px;
+  /* Sits directly inside .leaderboard-content, which carries no padding so
+     the table header can run edge to edge — so the inset is this panel's
+     own responsibility. */
+  margin: 16px 16px 0;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
   border-radius: 10px;
   background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
@@ -26,6 +29,35 @@
   font-size: 12px;
   color: var(--text-secondary, #9aa4b2);
   margin: 0;
+}
+
+/* Signed-out state: the reason on the left, the way out on the right, so
+   the button is the thing the eye lands on rather than the third line of
+   an explanation. Wraps to stacked on a phone. */
+.signin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.signinCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.signinTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #eee);
+}
+
+.signinWhy {
+  font-size: 12px;
+  color: var(--text-secondary, #9aa4b2);
 }
 
 .controls {
