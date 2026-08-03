@@ -25,6 +25,7 @@
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import { pathProgress } from '@/features/path/path-progress'
 import { CONTACT_EMAIL } from '@/lib/contact-links'
+import { storageGet, storageSet } from '@/lib/storage'
 import { exerciseHistory } from '@/stores/exercise-history-store'
 import { getSessionHistory } from '@/stores/practice-session-store'
 
@@ -129,15 +130,12 @@ export function progressHandoffMailto(
 type SeenMap = Record<string, number>
 
 function readSeen(): SeenMap {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return {}
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) return {}
-    return parsed as SeenMap
-  } catch {
-    return {}
-  }
+  // storageGet hands back the RAW STRING when the value will not parse, so
+  // the shape still has to be checked here — spreading a string into the
+  // next write would persist one key per character.
+  const raw = storageGet<unknown>(STORAGE_KEY)
+  if (typeof raw !== 'object' || raw === null) return {}
+  return raw as SeenMap
 }
 
 /** Keyed per account: signing in to a SECOND account earns its own telling. */
@@ -145,20 +143,16 @@ export function noticeSeen(accountId: string): boolean {
   return readSeen()[accountId] !== undefined
 }
 
+/**
+ * Blocked storage means the notice may repeat next sign-in — storageSet
+ * warns and moves on. That is the acceptable failure; the alternative is
+ * losing the dismissal AND showing an error about losing it.
+ */
 export function markNoticeSeen(
   accountId = getUserId(),
   now = Date.now(),
 ): void {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...readSeen(), [accountId]: now }),
-    )
-  } catch {
-    // Blocked storage means the notice may repeat next sign-in. That is
-    // the acceptable failure — the alternative is losing the dismissal
-    // and showing an error about losing it.
-  }
+  storageSet(STORAGE_KEY, { ...readSeen(), [accountId]: now })
 }
 
 // ── Wiring ───────────────────────────────────────────────────────

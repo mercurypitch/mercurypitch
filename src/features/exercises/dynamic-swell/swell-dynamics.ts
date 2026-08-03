@@ -36,20 +36,44 @@ export function levelFraction(db: number): number {
   return Math.min(1, Math.max(0, (db - DB_FLOOR) / span))
 }
 
+export interface LoudnessProfile {
+  /** Softest to loudest, in dB. */
+  rangeDb: number
+  avgDb: number
+  peakDb: number
+}
+
 /**
- * How far the singer travelled between their softest and loudest, in dB.
+ * What the singer actually did with their volume.
  *
- * Silent frames are dropped rather than clamped to the floor: a pause
- * between phrases is not a pianissimo, and counting it as one would hand
- * out dynamic range for stopping singing.
+ * Silent frames are dropped rather than clamped to a floor: a pause
+ * between phrases is not a pianissimo, and counting it as one hands out
+ * dynamic range for stopping singing. That is not hypothetical — the
+ * scorer used to floor silence at -120 dBFS, so a breath mid-hold
+ * measured as a 120 dB swell and, once tripled and capped, maxed the
+ * 35% of the score that dynamics are worth.
+ *
+ * The meter on screen and the score now read the same function, so they
+ * cannot tell the singer two different stories about the same run.
  */
-export function dynamicRangeDb(frames: readonly { rms?: number }[]): number {
+export function loudnessProfile(
+  frames: readonly { rms?: number }[],
+): LoudnessProfile {
   const dbs = frames
     .map((f) => f.rms ?? 0)
     .filter((r) => r > SILENCE_RMS)
     .map(rmsToDb)
-  if (dbs.length < 2) return 0
-  return Math.max(0, Math.max(...dbs) - Math.min(...dbs))
+  if (dbs.length === 0) return { rangeDb: 0, avgDb: 0, peakDb: 0 }
+  const peakDb = Math.max(...dbs)
+  const avgDb = dbs.reduce((a, b) => a + b, 0) / dbs.length
+  // One sung frame has a level but no travel.
+  const rangeDb = dbs.length < 2 ? 0 : Math.max(0, peakDb - Math.min(...dbs))
+  return { rangeDb, avgDb, peakDb }
+}
+
+/** How far the singer travelled between softest and loudest, in dB. */
+export function dynamicRangeDb(frames: readonly { rms?: number }[]): number {
+  return loudnessProfile(frames).rangeDb
 }
 
 /**

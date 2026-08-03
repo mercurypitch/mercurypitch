@@ -97,10 +97,15 @@ export function dialSeats(): Seat[] {
 
 /** Seat centre in a unit dial (origin at the hub, radius 1). */
 export function seatPoint(seat: Seat): { x: number; y: number } {
-  return {
-    x: Math.cos(seat.angle) * seat.radius,
-    y: Math.sin(seat.angle) * seat.radius,
-  }
+  return polarPoint(seat.angle, seat.radius)
+}
+
+/** A point on the dial, in unit-dial space (origin at the hub, radius 1). */
+export function polarPoint(
+  angle: number,
+  radius: number,
+): { x: number; y: number } {
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius }
 }
 
 /**
@@ -336,14 +341,6 @@ export function octaveArcPath(
     `${(cx + Math.cos(a) * r).toFixed(3)} ${(cy + Math.sin(a) * r).toFixed(3)}`
   const largeArc = arc.end - arc.start > Math.PI ? 1 : 0
   return `M ${at(arc.start)} A ${r} ${r} 0 ${largeArc} 1 ${at(arc.end)}`
-}
-
-/** A point on the dial, in unit-dial space (origin at the hub, radius 1). */
-export function polarPoint(
-  angle: number,
-  radius: number,
-): { x: number; y: number } {
-  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius }
 }
 
 /** Where the octave ring accepts a pointer, as fractions of the dial radius. */
