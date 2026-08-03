@@ -15,7 +15,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const state = vi.hoisted(() => ({
   authed: true,
+  upgraded: true,
   userId: 'singer-a',
+  deviceId: 'device-1',
   failReads: false,
   failWrites: false,
   rows: [] as Array<{ id: string; userId: string; key: string; value: string }>,
@@ -30,10 +32,14 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
 }))
 vi.mock('@/db/services/auth-service', () => ({
   hasValidToken: () => state.authed,
+  // A lazily provisioned anonymous identity holds a valid token too, so
+  // these two are not the same question — see the last describe block.
+  hasUpgradedAccount: () => state.authed && state.upgraded,
 }))
 vi.mock('@/db/services/user-service', () => ({
   authVersion: () => 0,
   getUserId: () => state.userId,
+  getDeviceId: () => state.deviceId,
 }))
 vi.mock('@/db', () => ({
   getDb: async () => ({
@@ -83,7 +89,9 @@ const settle = (): Promise<void> =>
 beforeEach(() => {
   localStorage.clear()
   state.authed = true
+  state.upgraded = true
   state.userId = 'singer-a'
+  state.deviceId = 'device-1'
   state.rows = []
   state.updates = []
   state.creates = []
@@ -246,6 +254,82 @@ describe('a second account on the same device', () => {
     state.rows = [
       { id: 'r1', userId: 'singer-a', key: KEY, value: climb(['2026-08-05']) },
     ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+  })
+})
+
+// ── Practising before there is an account ────────────────────────
+// The other side of the same guard, and the commoner path by far:
+// someone practises for a fortnight, likes it, and then makes an
+// account. Signing out is not what makes a device "signed out" — an
+// anonymous identity is provisioned on first write and holds a real
+// token, so the sync runs the whole time. Only an ACCOUNT may own the
+// device's copy; an anonymous identity IS the unowned state.
+
+describe('practising before there is an account', () => {
+  const OWNER_KEY = 'mp_sync_owner'
+  const DEVICE = 'device-1'
+
+  /** No account yet: the anonymous identity's id IS the device id. */
+  const signedOut = (): void => {
+    state.upgraded = false
+    state.userId = DEVICE
+  }
+
+  it('does not claim the device for an anonymous identity', async () => {
+    signedOut()
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(OWNER_KEY)).toBeNull()
+  })
+
+  it('merges the signed-out climb into the account signed in afterwards', async () => {
+    // Two weeks of practice with no account. The sync is live the whole
+    // time, so this pull happens — it just must not stake a claim.
+    signedOut()
+    localStorage.setItem(KEY, climb(['2026-08-01']))
+    await pullCloudSettings()
+    await settle()
+
+    // Now the account, made on a phone, signed in here.
+    state.upgraded = true
+    state.userId = 'singer-a'
+    state.rows = [
+      { id: 'r1', userId: 'singer-a', key: KEY, value: climb(['2026-08-05']) },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    const local = JSON.parse(localStorage.getItem(KEY)!) as {
+      weekDays: Record<number, string[]>
+    }
+    expect(local.weekDays[1]).toEqual(['2026-08-01', '2026-08-05'])
+    expect(localStorage.getItem(OWNER_KEY)).toBe('singer-a')
+  })
+
+  it('forgets a stamp its own anonymous identity left behind', async () => {
+    // Every device that ran the old claim is carrying one of these, and
+    // it would block the merge above for the rest of that device's life.
+    localStorage.setItem(OWNER_KEY, DEVICE)
+    signedOut()
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(OWNER_KEY)).toBeNull()
+  })
+
+  it('leaves a real account claim alone while signed out', async () => {
+    localStorage.setItem(OWNER_KEY, 'singer-a')
+    signedOut()
 
     await pullCloudSettings()
     await settle()

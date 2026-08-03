@@ -68,8 +68,14 @@ export const LocalProgressNotice: Component = () => {
           <p class={styles.body}>
             This account was created on another device, so it starts with its
             own history. The{' '}
-            <strong>{describeLocalProgress(progress())}</strong> you did on this
-            device before signing in belongs to the signed-out you.
+            <strong>{describeLocalProgress(progress())}</strong> you did here
+            are still on this device, and still on screen.
+          </p>
+
+          <p class={styles.body}>
+            What starts empty is the account's own record of it — your streak,
+            badges, achievements and practice calendar were all kept under the
+            signed-out you.
           </p>
 
           <p class={styles.keep}>

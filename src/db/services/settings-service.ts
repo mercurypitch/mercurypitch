@@ -17,8 +17,8 @@
 import { createEffect } from 'solid-js'
 import { getDb } from '@/db'
 import type { UserSetting } from '@/db/entities'
-import { hasValidToken } from '@/db/services/auth-service'
-import { authVersion, getUserId } from '@/db/services/user-service'
+import { hasUpgradedAccount, hasValidToken } from '@/db/services/auth-service'
+import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -79,7 +79,7 @@ const MERGE_ON_PULL: Record<
 }
 
 /**
- * Which account the device's merge-key values belong to.
+ * Which ACCOUNT the device's merge-key values belong to.
  *
  * Merging is only safe when the local side is the SAME person. Logout does
  * not clear localStorage (auth-service.ts `logout`), so on a shared computer
@@ -88,6 +88,12 @@ const MERGE_ON_PULL: Record<
  * practice days they never did. Unset means the local copy was made
  * signed-out: that IS the person now signing in, and merging is exactly
  * what they want (this is the "I practised before making an account" path).
+ *
+ * Account, emphatically — an anonymous identity is not one. It is lazily
+ * provisioned on the first write and holds a real token, so the sync runs
+ * long before anyone signs in; stamping its id here made the unowned state
+ * indistinguishable from a stranger's, and the commonest path in the app
+ * lost its climb to the account's copy on sign-in.
  *
  * Same rule the voiceprints take from decision D2, kept deliberately
  * conservative: when the owner does not match, the account's copy wins and
@@ -108,6 +114,14 @@ function claimMergeOwner(userId: string): void {
     localStorage.setItem(MERGE_OWNER_KEY, userId)
   } catch {
     /* private mode — merging simply stays conservative next time */
+  }
+}
+
+function forgetMergeOwner(): void {
+  try {
+    localStorage.removeItem(MERGE_OWNER_KEY)
+  } catch {
+    /* private mode — there was nothing stored to forget */
   }
 }
 
@@ -197,7 +211,19 @@ export async function pullCloudSettings(): Promise<void> {
 
     // From here the device's copy belongs to this account, so the next
     // signer-in gets the account's own data instead of inheriting ours.
-    if (me !== '') claimMergeOwner(me)
+    // Only a real account may say that; see MERGE_OWNER_KEY.
+    if (hasUpgradedAccount()) {
+      if (me !== '') claimMergeOwner(me)
+    } else if (owner !== null && owner === getDeviceId()) {
+      // An older build claimed on every pull, so devices are out there
+      // carrying their own id here — which would block the merge above
+      // for the rest of that device's life. It is safe to read as unset
+      // only from inside an anonymous session, which is the one place
+      // the stamp is unambiguous: an upgraded device cannot reach this
+      // line, because the server refuses it anonymous re-auth (403) and
+      // the pull returns early with no token at all.
+      forgetMergeOwner()
+    }
   } catch (err) {
     console.warn('[settings-sync] pull failed:', err)
   }

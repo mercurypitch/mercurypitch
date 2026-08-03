@@ -19,6 +19,12 @@
 // this says what happened, and offers a person to ask. A notice that
 // tells the truth beats a merge that guesses.
 //
+// One exception, and it is not visible here: the Ascent DOES cross over,
+// because settings sync unions it whenever the device's copy was made
+// signed out (settings-service.ts, MERGE_OWNER_KEY). The counts below
+// still name it — the days are on the device either way — but the copy
+// deliberately does not say the Ascent stayed behind.
+//
 // The predicate is pure so the "only once per account" rule is testable
 // without a Storage or a signed-in session.
 
