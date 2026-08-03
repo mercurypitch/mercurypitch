@@ -66,6 +66,18 @@ test.describe('Singing Zen pitch stage', () => {
     ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Dim' })).toBeVisible()
 
+    const example = page.locator('[data-example-audio-state]')
+    await expect(example.locator('canvas')).toHaveCount(1)
+    await example.click()
+    await expect(example).toHaveAttribute('data-example-audio-state', 'playing')
+    await expect
+      .poll(async () =>
+        Number(await example.getAttribute('data-example-audio-progress')),
+      )
+      .toBeGreaterThan(0)
+    await example.click()
+    await expect(example).toHaveAttribute('data-example-audio-state', 'paused')
+
     await page.screenshot({
       path: testInfo.outputPath('zen-exercise-desktop.png'),
       fullPage: true,
