@@ -8,6 +8,7 @@ import tabStyles from '@/components/AppNavTabs.module.css'
 import profileStyles from '@/components/CommunityShare.module.css'
 import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
 import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
@@ -453,6 +454,37 @@ export const CommunityShare: Component = () => {
   }
 
   // Share a specific practice session.
+  /**
+   * The badges this singer has actually earned, newest first.
+   *
+   * Definitions carry the name, tier and icon; the user rows carry when
+   * each was earned. Joined here so the profile shows medals rather than
+   * ids, and so a friend viewing the profile sees the same thing.
+   */
+  const [badgeData] = createResource(
+    () => [authVersion(), sessionRecordVersion()] as const,
+    async () => {
+      const [defs, mine] = await Promise.all([
+        loadBadgeDefinitions(),
+        loadUserBadges(),
+      ])
+      return { defs, mine }
+    },
+  )
+  const earnedBadges = createMemo(() => {
+    const data = badgeData()
+    if (data === undefined) return []
+    const byId = new Map(data.defs.map((d) => [d.id, d]))
+    return data.mine
+      .slice()
+      .sort((a, b) => (a.earnedAt < b.earnedAt ? 1 : -1))
+      .flatMap((ub) => {
+        const def = byId.get(ub.badgeId)
+        if (def === undefined) return []
+        return [{ iconName: def.icon, name: def.name, tier: def.tier }]
+      })
+  })
+
   /**
    * Runs a singer could share: every finished attempt, whatever produced
    * it. The picker used to read the local session-mode history, so
@@ -914,6 +946,7 @@ export const CommunityShare: Component = () => {
             sharedMelodies={displayMelodies().length}
             sharedSessions={displaySessions().length}
             twinName={latestTwin()}
+            badges={earnedBadges()}
           />
         </Show>
       </div>

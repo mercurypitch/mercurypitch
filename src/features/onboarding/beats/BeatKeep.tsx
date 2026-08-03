@@ -46,16 +46,19 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => (
     </Show>
 
     <p class={styles.sub}>
-      Keep them — and every voiceprint you make from here, so you can watch your
-      range grow.
+      Your voiceprint lives in this browser right now. Clearing your history
+      loses it.
     </p>
 
+    {/* The things an account actually buys, ordered by what someone
+        holding a fresh voiceprint would care about — see the account
+        value map in the owner's notes. Deliberately not led with "sync"
+        or "cloud": those name the mechanism, not the loss. */}
     <ul class={styles.keepList}>
-      <li>Your twin and your numbers, on every device you sing on</li>
-      <li>Make as many voiceprints as you like, and never lose one</li>
-      <li>
-        Watch your voice change over time — <em>+3 semitones since March</em>
-      </li>
+      <li>Your voice and practice history on any device</li>
+      <li>Badges and challenge progress that stick</li>
+      <li>A place on the leaderboard and the weekly Legend</li>
+      <li>Cloud karaoke separation, credits and supporter perks</li>
     </ul>
 
     <div class={styles.actions}>
@@ -64,7 +67,7 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => (
         class={styles.primary}
         onClick={() => props.onCreateAccount()}
       >
-        Create a free account
+        Keep my voiceprint
       </button>
       <button
         type="button"
@@ -76,8 +79,8 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => (
     </div>
 
     <p class={styles.keepFootnote}>
-      Your voiceprint is already saved on this device either way. An account is
-      what stops it disappearing with your browser history.
+      Free, takes a moment, and nothing you have already earned is locked behind
+      it — badges and progress keep working either way.
     </p>
   </div>
 )
