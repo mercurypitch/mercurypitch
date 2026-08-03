@@ -22,6 +22,7 @@ import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, } from '@/features/exercises/types'
 import type { PathWeek } from '@/features/path/path-content'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
+import type { JamSessionRow } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { MelodyData, MelodyItem, NoteName } from '@/types'
 
@@ -95,7 +96,14 @@ export type JamMelodyEntry = JamCatalogEntryBase & {
 
 export type JamSongEntry = JamCatalogEntryBase & {
   kind: 'song'
-  buildSong: () => JamSong
+  /**
+   * Hydrate the song when it is CHOSEN, not when it is listed.
+   *
+   * Async because one of these reads both stems out of IndexedDB and mints
+   * their blob URLs -- work worth doing once for the song somebody picked,
+   * and not at all for the nine they did not.
+   */
+  buildSong: () => JamSong | null | Promise<JamSong | null>
 }
 
 export type JamCatalogEntry = JamMelodyEntry | JamSongEntry
@@ -366,6 +374,29 @@ export function jamSongEntries(songs: Array<JamSong | null>): JamSongEntry[] {
         .join(' · '),
       buildSong: () => song,
     }))
+}
+
+/**
+ * Rows for your own separated sessions, listed without hydrating them.
+ *
+ * The detail line is deliberately thinner than a hydrated song's: lyric
+ * count needs a database read, and reading ten of those to decorate a
+ * dropdown is what made the picker sit empty for seconds.
+ */
+export function jamSessionRowEntries(
+  rows: readonly JamSessionRow[],
+  hydrate: (row: JamSessionRow) => Promise<JamSong | null>,
+): JamSongEntry[] {
+  return rows.map((row) => ({
+    id: `song:session:${row.session.sessionId}`,
+    kind: 'song' as const,
+    name: row.title,
+    detail:
+      row.durationSec > 0
+        ? `${Math.floor(row.durationSec / 60)}:${String(Math.round(row.durationSec % 60)).padStart(2, '0')}`
+        : 'your separation',
+    buildSong: () => hydrate(row),
+  }))
 }
 
 /** Saved melodies -- the room's original and only shelf. */

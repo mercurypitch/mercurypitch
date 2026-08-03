@@ -643,6 +643,7 @@ export function createJamService(callbacks: JamCallbacks) {
     broadcastData({
       type: 'playback' as const,
       action,
+      scope: 'drill' as const,
       currentBeat,
       timestamp: Date.now(),
       ...(bpm === undefined ? {} : { bpm }),
@@ -663,6 +664,7 @@ export function createJamService(callbacks: JamCallbacks) {
     broadcastData({
       type: 'playback' as const,
       action,
+      scope: 'song' as const,
       positionSec,
       timestamp: Date.now(),
     })

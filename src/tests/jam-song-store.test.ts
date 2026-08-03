@@ -277,6 +277,91 @@ describe('who sings which line', () => {
   })
 })
 
+// Rules R1-R6 in docs/plans/jam-room-transport-rules.md. These exist
+// because the room has two playback engines and one pair of signals: get
+// this wrong and somebody's five-second scale stops the song, which is
+// exactly what happened.
+describe('transport is scoped, and the host drives it', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(true)
+    store.setJamPeerId('me')
+  })
+
+  it('R10: a send in flight blocks a second send and a song swap', () => {
+    store.selectJamSong(song())
+    store.setJamShareState({ phase: 'sending', ratio: 0.4, message: 'x' })
+    expect(store.jamSendInFlight()).toBe(true)
+    // The song must not change under a transfer that is describing it.
+    expect(store.selectJamSong(song({ id: 'other' }))).toBe(false)
+    expect(store.jamSong()?.id).toBe('demo')
+    store.setJamShareState({ phase: 'idle', ratio: 0, message: '' })
+    expect(store.jamSendInFlight()).toBe(false)
+    expect(store.selectJamSong(song({ id: 'other' }))).toBe(true)
+  })
+
+  it('a drill ending does not stop a song', () => {
+    // The reported bug: a peer's five-second scale finishing broadcast a
+    // bare stop, every peer applied it to whatever it was running, and the
+    // room's song died seconds after it started.
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    expect(store.jamExercisePlaying()).toBe(true)
+    store.setJamIsHost(false)
+    store.applyRemoteTransport({
+      type: 'playback',
+      action: 'stop',
+      scope: 'drill',
+      currentBeat: 0,
+      timestamp: 0,
+    })
+    expect(store.jamExercisePlaying()).toBe(true)
+  })
+
+  it('a song command does not disturb a drill', () => {
+    store.clearJamSong()
+    store.setJamIsHost(false)
+    store.setJamExercisePlaying(true)
+    store.applyRemoteTransport({
+      type: 'playback',
+      action: 'stop',
+      scope: 'song',
+      positionSec: 0,
+      timestamp: 0,
+    })
+    expect(store.jamExercisePlaying()).toBe(true)
+  })
+
+  it('a command with no scope is treated as a drill, for older clients', () => {
+    store.clearJamSong()
+    store.setJamIsHost(false)
+    store.setJamExercisePlaying(true)
+    store.applyRemoteTransport({
+      type: 'playback',
+      action: 'stop',
+      currentBeat: 0,
+      timestamp: 0,
+    })
+    expect(store.jamExercisePlaying()).toBe(false)
+  })
+
+  it('the host ignores transport it is sent', () => {
+    // It is the driver; obeying somebody else would make the room fight.
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    store.applyRemoteTransport({
+      type: 'playback',
+      action: 'stop',
+      scope: 'song',
+      positionSec: 0,
+      timestamp: 0,
+    })
+    expect(store.jamExercisePlaying()).toBe(true)
+  })
+})
+
 describe('who can actually hear the song', () => {
   beforeEach(() => {
     store.clearJamSong()

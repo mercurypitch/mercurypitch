@@ -822,3 +822,30 @@
   font-size: 0.72rem;
   color: var(--text-secondary, #8b949e);
 }
+
+/* Shown on the one row being read out of IndexedDB. Hydrating a song is
+   two multi-megabyte stem reads, so the row says it is working rather
+   than looking like a dead tap. */
+.pickSpinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-left: 7px;
+  vertical-align: -1px;
+  border: 2px solid var(--border-color, rgb(255 255 255 / 25%));
+  border-top-color: var(--accent-color, #58a6ff);
+  border-radius: 50%;
+  animation: pickSpin 0.7s linear infinite;
+}
+
+@keyframes pickSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickSpinner {
+    animation-duration: 2.4s;
+  }
+}

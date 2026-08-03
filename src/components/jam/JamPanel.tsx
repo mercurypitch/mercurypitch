@@ -9,11 +9,11 @@ import { getActiveWeekly } from '@/features/challenges/weekly-service'
 import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
-import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
-import { sessionSongNotes, sessionSongs } from '@/lib/jam/jam-session-songs'
+import { jammableSessionRows, sessionSong, sessionSongNotes, } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
@@ -203,15 +203,14 @@ export const JamPanel: Component = () => {
    * finishes while you are sitting in a room should appear without
    * making you leave and come back.
    */
-  const [mySongs, setMySongs] = createSignal<JamSong[]>([])
+  const mySongRows = createMemo(() =>
+    jamState() === 'active'
+      ? jammableSessionRows(getAllUvrSessionsReactive())
+      : [],
+  )
 
-  createEffect(() => {
-    if (jamState() !== 'active') return
-    const sessions = getAllUvrSessionsReactive()
-    void sessionSongs(sessions)
-      .then(setMySongs)
-      .catch(() => setMySongs([]))
-  })
+  /** Which row is being read out of the database, for the spinner. */
+  const [hydrating, setHydrating] = createSignal<string | null>(null)
 
   createEffect(() => {
     if (jamState() !== 'active') return
@@ -256,7 +255,17 @@ export const JamPanel: Component = () => {
     const weeklyEntry = jamWeeklyEntry(weekly())
     return [
       { label: 'Songs', entries: jamSongEntries([demoSong()]) },
-      { label: 'Your songs', entries: jamSongEntries(mySongs()) },
+      {
+        label: 'Your songs',
+        entries: jamSessionRowEntries(mySongRows(), async (row) => {
+          setHydrating(row.session.sessionId)
+          try {
+            return await sessionSong(row.session)
+          } finally {
+            setHydrating(null)
+          }
+        }),
+      },
       {
         label: "This week's challenge",
         entries: weeklyEntry === null ? [] : [weeklyEntry],
@@ -1075,7 +1084,11 @@ export const JamPanel: Component = () => {
                                   // rather than a room that loads a song
                                   // and waits for a beat that never comes.
                                   if (entry.kind === 'song') {
-                                    selectJamSong(entry.buildSong())
+                                    void Promise.resolve(
+                                      entry.buildSong(),
+                                    ).then((s) => {
+                                      if (s !== null) selectJamSong(s)
+                                    })
                                   } else {
                                     selectJamExercise(entry.build())
                                   }
@@ -1084,6 +1097,17 @@ export const JamPanel: Component = () => {
                               >
                                 <span class={panelStyles.pickName}>
                                   {entry.name}
+                                  {/* Reading both stems out of the database
+                                      takes a moment; say so on the row that
+                                      is actually doing it. */}
+                                  <Show
+                                    when={
+                                      entry.id ===
+                                      `song:session:${hydrating() ?? '\u0000'}`
+                                    }
+                                  >
+                                    <span class={panelStyles.pickSpinner} />
+                                  </Show>
                                 </span>
                                 <span class={panelStyles.pickMeta}>
                                   {entry.detail}
