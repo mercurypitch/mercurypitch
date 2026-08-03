@@ -835,14 +835,19 @@ async function handleLeaderboard(
     .bind(...binds)
     .all<AggRow>()
 
-  const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; streak: number }): number => {
+  // The 'streak' category is labelled "Longest Streak" in the app, and it
+  // ranks on longestStreak to match — ranking on the CURRENT streak made the
+  // board look mis-sorted the moment anyone's record outlived their run.
+  // Safe for privacy: this handler already 400s on streak + global view, and
+  // the projection below zeroes strangers' streaks on the global board.
+  const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; longestStreak: number }): number => {
     switch (category) {
       case 'best-score':
         return row.bestScore
       case 'accuracy':
         return row.accuracy
       case 'streak':
-        return row.streak
+        return row.longestStreak
       case 'sessions':
         return row.totalSessions
       default:

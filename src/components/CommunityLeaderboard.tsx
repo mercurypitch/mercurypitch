@@ -183,6 +183,24 @@ const IconSearch = () => (
   </svg>
 )
 
+/** Two singers with the second still an outline — nobody there yet. */
+const IconFriendsEmpty = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+  >
+    <circle cx="9" cy="7.5" r="3.5" />
+    <path d="M2.5 20v-1.5A5.5 5.5 0 0 1 8 13h2a5.5 5.5 0 0 1 5.5 5.5V20" />
+    <circle cx="17.5" cy="7.5" r="2.75" stroke-dasharray="2.6 2.6" />
+    <path d="M15 13.4A4.6 4.6 0 0 1 21.5 17.6V20" stroke-dasharray="2.6 2.6" />
+  </svg>
+)
+
 // Helper to render icon: handles both Component functions and string values
 function renderIcon(icon: Component | string) {
   return typeof icon === 'function' ? (icon as () => JSX.Element)() : icon
@@ -296,6 +314,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
     score: number
     rank: number
     streak: number
+    longestStreak: number
     totalSessions: number
     bestScore: number
     accuracy: number
@@ -496,6 +515,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
   // your own sessionRecords otherwise. Never fabricated competitors.
   const allLeaderboardUsers = createMemo(() => dbLeaderboardUsers())
 
+  /** The number the table's streak column shows — see the header. */
+  const rowStreak = (user: LeaderboardUser): number =>
+    activeCategory() === 'streak' ? user.longestStreak : user.streak
+
   // Filter users based on search
   const filteredUsers = createMemo(() => {
     const query = searchQuery().toLowerCase()
@@ -505,6 +528,91 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         `#${u.userId}`.includes(query),
     )
   })
+
+  /**
+   * What stands in for a board with nobody on it.
+   *
+   * Four different situations produced the same nothing before: a build
+   * with no backend, friends added but yet to sing, no friends at all, and
+   * a global board where nobody has qualified. Saying which one it is
+   * costs one branch and is the difference between "broken" and "not yet".
+   */
+  const emptyBoard = (): JSX.Element => (
+    <div
+      class="empty-state empty-state-compact board-empty"
+      data-testid={activeView() === 'friends' ? 'friends-empty' : 'board-empty'}
+    >
+      <div class="empty-icon" aria-hidden="true">
+        <IconFriendsEmpty />
+      </div>
+      <Show
+        when={cloudConfigured}
+        fallback={
+          <>
+            <h3>Boards need the cloud</h3>
+            <p>
+              This build has no account backend, so there is nobody to compare
+              with here.
+            </p>
+          </>
+        }
+      >
+        <Show
+          when={activeView() === 'friends'}
+          fallback={
+            <>
+              <h3>Nobody on the board yet</h3>
+              <p>
+                The global board carries singers who opted in and have a scored
+                run behind them. Finish an exercise or a Legend and yours lands
+                here.
+              </p>
+              <Show when={props.onOpenChallenges !== undefined}>
+                <button
+                  type="button"
+                  class="primary-btn"
+                  onClick={() => props.onOpenChallenges?.()}
+                >
+                  <IconChallenge /> Take on a challenge
+                </button>
+              </Show>
+            </>
+          }
+        >
+          <Show
+            when={following().length > 0}
+            fallback={
+              <>
+                <h3>No friends yet</h3>
+                <p>
+                  Swap the code above, or open a singer on the Global board and
+                  follow them.
+                </p>
+                <button
+                  type="button"
+                  class="primary-btn"
+                  onClick={() => setActiveView('global')}
+                >
+                  <IconSearch /> Browse the Global board
+                </button>
+              </>
+            }
+          >
+            {/* An added friend with no ranked attempts yet produces no
+                board row, and "No friends yet" would read as though the
+                add had failed. */}
+            <h3>Waiting on their first run</h3>
+            <p>
+              {following().length === 1
+                ? 'Your friend is added.'
+                : `All ${following().length} friends are added.`}{' '}
+              The board fills in once they finish an exercise or a challenge.
+            </p>
+          </Show>
+        </Show>
+      </Show>
+    </div>
+  )
 
   // Podium: top 3 from the unified list
   const podiumData = createMemo(() => {
@@ -516,6 +624,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
       score: 0,
       rank: 0,
       streak: 0,
+      longestStreak: 0,
       totalSessions: 0,
       bestScore: 0,
       accuracy: 0,
@@ -939,150 +1048,150 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
               }}
             />
           </Show>
-          <Show
-            when={
-              activeView() === 'friends' && allLeaderboardUsers().length === 0
-            }
-          >
-            {/* An added friend with no ranked attempts yet produces no board
-                row, and "No friends yet" would read as though the add
-                failed — so distinguish "nobody added" from "nothing to rank". */}
-            <p class="weekly-challenges-desc" data-testid="friends-empty">
-              {!cloudConfigured
-                ? 'Friends leaderboards need a cloud account (not available in this build).'
-                : following().length > 0
-                  ? 'Your friends are added — this fills in once they finish an exercise or challenge.'
-                  : 'No friends yet — swap codes above, or open a player on the Global tab and hit Follow.'}
-            </p>
-          </Show>
-          {/* Top 3 Podium */}
-          <div class="podium-section">
-            <For each={podiumData()}>
-              {(user, index) => (
-                <div class={`podium-item podium-${index() + 1}`}>
-                  <div class="podium-rank">
-                    {index() === 0 && <TrophyIcon />}
-                    {index() === 1 && <IconTrophy />}
-                    {index() === 2 && <IconTrophy />}
-                    {index() >= 3 && `#${user.rank}`}
-                  </div>
-                  <div class="podium-avatar">
-                    {user.avatar !== undefined ? renderIcon(user.avatar) : null}
-                  </div>
-                  <div class="podium-info">
-                    <div class="podium-name">{user.displayName}</div>
-                    <div class="podard-score">
-                      {categoryMetric(user, activeCategory())}
+          {/* Everything below needs somebody on the board. The podium pads
+              itself to three with "—" placeholders, so an empty board used
+              to answer "no friends yet" with three ghost winners over an
+              empty table; the fallback is the state instead. */}
+          <Show when={allLeaderboardUsers().length > 0} fallback={emptyBoard()}>
+            {/* Top 3 Podium */}
+            <div class="podium-section">
+              <For each={podiumData()}>
+                {(user, index) => (
+                  <div class={`podium-item podium-${index() + 1}`}>
+                    <div class="podium-rank">
+                      {index() === 0 && <TrophyIcon />}
+                      {index() === 1 && <IconTrophy />}
+                      {index() === 2 && <IconTrophy />}
+                      {index() >= 3 && `#${user.rank}`}
                     </div>
-                  </div>
-                  <Show when={index() < 3}>
-                    <div class="podium-score-display">
-                      {categoryMetric(user, activeCategory())}
+                    <div class="podium-avatar">
+                      {user.avatar !== undefined
+                        ? renderIcon(user.avatar)
+                        : null}
                     </div>
-                  </Show>
-                </div>
-              )}
-            </For>
-          </div>
+                    <div class="podium-info">
+                      <div class="podium-name">{user.displayName}</div>
+                      <div class="podard-score">
+                        {categoryMetric(user, activeCategory())}
+                      </div>
+                    </div>
+                    <Show when={index() < 3}>
+                      <div class="podium-score-display">
+                        {categoryMetric(user, activeCategory())}
+                      </div>
+                    </Show>
+                  </div>
+                )}
+              </For>
+            </div>
 
-          {/* Leaderboard Table */}
-          <div class="leaderboard-table-container">
-            <table class="leaderboard-table">
-              <thead>
-                <tr>
-                  <th class="rank-th">#</th>
-                  <th class="user-th">Player</th>
-                  <th class="score-th">Score</th>
-                  <th class="streak-th">Streak</th>
-                  <th class="sessions-th">Sessions</th>
-                  <th class="best-th">Best</th>
-                </tr>
-              </thead>
-              <tbody>
-                <For each={filteredUsers()}>
-                  {(user) => (
-                    <tr
-                      class={`leaderboard-row ${user.userId === getUserId() || user.userId === 'me' ? 'is-me' : ''}`}
-                      data-rank={user.rank}
-                      data-user-id={user.userId}
-                      onClick={() => setSelectedUser(user)}
-                    >
-                      <td class="rank-td">
-                        {user.rank === 1 && <TrophyIcon />}
-                        {(user.rank === 2 || user.rank === 3) && <IconTrophy />}
-                        {user.rank > 3 && user.rank}
-                      </td>
-                      <td class="user-td">
-                        <div class="user-cell">
-                          <div class="user-avatar">
-                            {user.avatar !== undefined
-                              ? renderIcon(user.avatar)
-                              : null}
-                          </div>
-                          <div class="user-details">
-                            <div class="user-name">{user.displayName}</div>
-                            {/* The server only publishes streaks on the
+            {/* Leaderboard Table */}
+            <div class="leaderboard-table-container">
+              <table class="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th class="rank-th">#</th>
+                    <th class="user-th">Player</th>
+                    <th class="score-th">Score</th>
+                    {/* The column follows the ranking: under "Longest Streak"
+                      a column of current streaks would look shuffled. */}
+                    <th class="streak-th">
+                      {activeCategory() === 'streak' ? 'Longest' : 'Streak'}
+                    </th>
+                    <th class="sessions-th">Sessions</th>
+                    <th class="best-th">Best</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <For each={filteredUsers()}>
+                    {(user) => (
+                      <tr
+                        class={`leaderboard-row ${user.userId === getUserId() || user.userId === 'me' ? 'is-me' : ''}`}
+                        data-rank={user.rank}
+                        data-user-id={user.userId}
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <td class="rank-td">
+                          {user.rank === 1 && <TrophyIcon />}
+                          {(user.rank === 2 || user.rank === 3) && (
+                            <IconTrophy />
+                          )}
+                          {user.rank > 3 && user.rank}
+                        </td>
+                        <td class="user-td">
+                          <div class="user-cell">
+                            <div class="user-avatar">
+                              {user.avatar !== undefined
+                                ? renderIcon(user.avatar)
+                                : null}
+                            </div>
+                            <div class="user-details">
+                              <div class="user-name">{user.displayName}</div>
+                              {/* The server only publishes streaks on the
                                 friends view (your own row aside); a zero
                                 here means "not shared", not "zero days". */}
-                            <Show when={user.streak > 0}>
-                              <div class="user-streak-badge">
-                                {user.streak} day streak
-                              </div>
-                            </Show>
+                              <Show when={user.streak > 0}>
+                                <div class="user-streak-badge">
+                                  {user.streak} day streak
+                                </div>
+                              </Show>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td class="score-td">
-                        <span class="score-value">
-                          {user.score.toLocaleString()}
-                        </span>
-                      </td>
-                      <td class="streak-td">
-                        <Show
-                          when={user.streak > 0}
-                          fallback={<span class="streak-count">—</span>}
-                        >
-                          <div class="streak-bar">
-                            <div
-                              class="streak-fill"
-                              style={{
-                                width: `${Math.min(user.streak * 10, 100)}%`,
-                                '--streak-color': getStreakColor(user.streak),
-                              }}
-                            />
-                          </div>
-                          <span class="streak-count">{user.streak}</span>
-                        </Show>
-                      </td>
-                      <td class="sessions-td">{user.totalSessions}</td>
-                      <td class="best-td">{user.bestScore}%</td>
-                    </tr>
-                  )}
-                </For>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Load More (server-side pagination) */}
-          <Show
-            when={
-              cloudConfigured && dbLeaderboardUsers().length < totalEntries()
-            }
-          >
-            <div class="load-more-container">
-              <button
-                class="load-more-btn"
-                aria-label="Load more players"
-                title="Load more players"
-                disabled={loadingMore()}
-                onClick={() => void loadMore()}
-              >
-                <ChevronDown />
-                {loadingMore()
-                  ? 'Loading…'
-                  : `Load More Players (${dbLeaderboardUsers().length} of ${totalEntries()})`}
-              </button>
+                        </td>
+                        <td class="score-td">
+                          <span class="score-value">
+                            {user.score.toLocaleString()}
+                          </span>
+                        </td>
+                        <td class="streak-td">
+                          <Show
+                            when={rowStreak(user) > 0}
+                            fallback={<span class="streak-count">—</span>}
+                          >
+                            <div class="streak-bar">
+                              <div
+                                class="streak-fill"
+                                style={{
+                                  width: `${Math.min(rowStreak(user) * 10, 100)}%`,
+                                  '--streak-color': getStreakColor(
+                                    rowStreak(user),
+                                  ),
+                                }}
+                              />
+                            </div>
+                            <span class="streak-count">{rowStreak(user)}</span>
+                          </Show>
+                        </td>
+                        <td class="sessions-td">{user.totalSessions}</td>
+                        <td class="best-td">{user.bestScore}%</td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
             </div>
+
+            {/* Load More (server-side pagination) */}
+            <Show
+              when={
+                cloudConfigured && dbLeaderboardUsers().length < totalEntries()
+              }
+            >
+              <div class="load-more-container">
+                <button
+                  class="load-more-btn"
+                  aria-label="Load more players"
+                  title="Load more players"
+                  disabled={loadingMore()}
+                  onClick={() => void loadMore()}
+                >
+                  <ChevronDown />
+                  {loadingMore()
+                    ? 'Loading…'
+                    : `Load More Players (${dbLeaderboardUsers().length} of ${totalEntries()})`}
+                </button>
+              </div>
+            </Show>
           </Show>
         </div>
       </Show>
@@ -1223,7 +1332,10 @@ function categoryMetric(
     case 'best-score':
       return `${Math.round(user.bestScore)}%`
     case 'streak':
-      return `${user.streak} day${user.streak === 1 ? '' : 's'}`
+      // The category is "Longest Streak", so the number under a name has to
+      // be the longest one — showing the current streak here made the board
+      // look mis-sorted whenever someone's record outlived their run.
+      return `${user.longestStreak} day${user.longestStreak === 1 ? '' : 's'}`
     case 'sessions':
       return `${user.totalSessions} session${user.totalSessions === 1 ? '' : 's'}`
     case 'overall':

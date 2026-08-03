@@ -18,6 +18,7 @@ import { Copy, UserPlus } from '@/components/icons'
 import { formatFriendCode, friendInviteUrl, getMyFriendCode, redeemFriendCode, } from '@/db/services/follow-service'
 import { takePendingFriendCode } from '@/lib/pending-friend-code'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './FriendCodePanel.module.css'
 
 interface FriendCodePanelProps {
@@ -100,11 +101,27 @@ export const FriendCodePanel: Component<FriendCodePanelProps> = (props) => {
       <Show
         when={myCode() != null}
         fallback={
-          <p class={styles.hint} data-testid="friend-code-signin">
-            Create an account to add friends — codes need somewhere permanent to
-            live, and an anonymous profile disappears if this browser is
-            cleared.
-          </p>
+          /* This was one long sentence explaining why anonymous profiles
+             can't hold a friend code, and then left the reader to go find
+             the sign-in themselves. The reason is a footnote; the door is
+             the point. */
+          <div class={styles.signin} data-testid="friend-code-signin">
+            <div class={styles.signinCopy}>
+              <span class={styles.signinTitle}>
+                Friend codes need an account
+              </span>
+              <span class={styles.signinWhy}>
+                An anonymous profile goes when the browser is cleared.
+              </span>
+            </div>
+            <button
+              class={styles.primary}
+              onClick={() => openAuthModal('register')}
+              data-testid="friend-code-signin-cta"
+            >
+              <UserPlus /> Create an account
+            </button>
+          </div>
         }
       >
         <div class={styles.row}>

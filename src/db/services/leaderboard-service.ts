@@ -31,7 +31,15 @@ export interface LeaderboardUserView {
   displayName: string
   score: number
   rank: number
+  /** Streak running right now — the "N day streak" badge on each row. */
   streak: number
+  /**
+   * Best streak ever reached. The 'streak' category is called "Longest
+   * Streak" and ranks on this, so a week off costs you nothing you had
+   * already earned. Published on the friends view and your own row only —
+   * strangers see 0, same rule as `streak`.
+   */
+  longestStreak: number
   totalSessions: number
   bestScore: number
   accuracy: number
@@ -93,6 +101,11 @@ export async function loadLeaderboard(
         // Local mode is effectively single-user; the signed-in user's streak
         // comes from their profile, others (seed rows) report 0.
         streak: userId === selfId ? selfStreak : 0,
+        // The profile's own record, which can outlive the current run.
+        longestStreak:
+          userId === selfId
+            ? Math.max(profile?.longestStreak ?? 0, selfStreak)
+            : 0,
         rank: 0,
       })
     }
@@ -104,7 +117,8 @@ export async function loadLeaderboard(
         case 'accuracy':
           return u.accuracy
         case 'streak':
-          return u.streak
+          // "Longest Streak" — mirrors the worker's rankValue.
+          return u.longestStreak
         case 'sessions':
           return u.totalSessions
         default:
@@ -170,6 +184,10 @@ export async function loadLeaderboardPage(opts: {
           score: e.score,
           rank: e.rank,
           streak: e.streak,
+          // Older workers don't send it; fall back to the current streak so
+          // the Longest Streak board still ranks on something real rather
+          // than flattening every row to zero.
+          longestStreak: e.longestStreak ?? e.streak,
           totalSessions: e.totalSessions,
           bestScore: e.bestScore,
           accuracy: e.accuracy,
