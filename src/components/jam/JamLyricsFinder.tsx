@@ -12,12 +12,21 @@
 // where someone else is driving playback is not one.
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For, onMount, Show } from 'solid-js'
 import { canAttachLyrics, linesFromLrc, persistSongLyrics, sessionIdOfSong, } from '@/lib/jam/jam-lyrics-attach'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import { fetchLyricsById, searchLyricsMulti } from '@/lib/lyrics-service'
 import { attachJamSongLyrics, jamSong } from '@/stores/jam-store'
 import styles from './JamLyricsFinder.module.css'
+
+/**
+ * The title the automatic search has already been spent on.
+ *
+ * Module-level rather than per-instance because the finder is mounted and
+ * unmounted as the room's panels come and go, and LRCLIB is a free service
+ * somebody else pays for: once per song, not once per render.
+ */
+let autoSearched: string | null = null
 
 export const JamLyricsFinder: Component = () => {
   const [query, setQuery] = createSignal(jamSong()?.title ?? '')
@@ -42,6 +51,27 @@ export const JamLyricsFinder: Component = () => {
       setSearching(false)
     }
   }
+
+  /**
+   * Ask before being asked.
+   *
+   * The box arrives prefilled with the song's title, and then showed
+   * nothing until somebody pressed Search -- so the panel that exists to
+   * say "here are the lyrics" opened saying nothing at all, which reads as
+   * "there are none". The prefilled query is the one they would have sent
+   * anyway. Pressing Search on a corrected query still works, and Paste
+   * stays reachable while this runs.
+   */
+  onMount(() => {
+    // The panel below is gated on this, and onMount is not: without the
+    // same check a song that already HAS its words would spend a search on
+    // a finder nobody can see.
+    if (!canAttachLyrics(jamSong())) return
+    const title = query().trim()
+    if (title === '' || autoSearched === title) return
+    autoSearched = title
+    void search()
+  })
 
   /**
    * Take a match, and refuse the ones that cannot be sung along to.
