@@ -1925,3 +1925,64 @@
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+
+/* ── Dynamic Swell: the loudness the score already measures ─────────
+   35% of a swell result is dynamic range in dB, computed from real RMS,
+   and none of it was on screen — the only moving thing was a pitch dot,
+   which is about something else entirely. */
+.swell-dynamics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 88%;
+  max-width: 88%;
+  margin: 10px auto 0;
+}
+
+.swell-meter {
+  position: relative;
+  height: 10px;
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.swell-meter-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--green, #3fb950) 100%
+  );
+  transition: width 0.08s linear;
+}
+
+/* Where the swell is asking you to be right now — an arch through the
+   hold, not a fixed number, because the exercise is a shape. */
+.swell-meter-target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transition: left 0.12s linear;
+}
+
+.swell-dynamics-read {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.74rem;
+}
+
+.swell-range {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.swell-verdict {
+  color: var(--text-muted);
+}

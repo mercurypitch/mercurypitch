@@ -162,6 +162,86 @@ describe('useDynamicSwellController', () => {
     expect(result.score).toBeGreaterThan(40)
   })
 
+  it('each round keeps its own score, so a weak last round cannot redden the earlier dots', async () => {
+    // The progress dots were all painted from `lastRoundScore` — one value
+    // across every dot — so finishing badly turned rounds that went well red
+    // after the fact. Each round now publishes its own indexed score.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    let history: Array<{
+      freq: number
+      time: number
+      cents: number
+      clarity: number
+    }> = []
+    // Accumulated the way the real state store merges partial metric updates.
+    const metrics: Record<string, number> = {}
+    const base = createMockBase({
+      pitchHistory: () => history,
+      _getElapsed: () => performance.now(),
+      _updateMetrics: (m) => Object.assign(metrics, m),
+    })
+    let round = 0
+    const audioEngine = {
+      playTone: async (freq: number) => {
+        round++
+        // Round 1 dead on; every round after it a semitone flat, which the
+        // deviation penalty scores at zero.
+        const sung = round === 1 ? freq : freq * 2 ** (-1 / 12)
+        const nowMs = performance.now()
+        for (let i = 0; i < 16; i++) {
+          history = [
+            ...history,
+            {
+              freq: sung,
+              time: (nowMs + i * 100) / 1000,
+              cents: 0,
+              clarity: 80,
+            },
+          ]
+        }
+      },
+    }
+    const ctrl = useDynamicSwellController(base, audioEngine)
+
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.runAllTimersAsync()
+
+    expect(metrics.round1Score).toBeGreaterThan(80)
+    expect(metrics.round4Score).toBe(0)
+    // The good round survives the bad ones that follow it.
+    expect(metrics.lastRoundScore).toBe(0)
+    expect(metrics.round1Score).not.toBe(metrics.lastRoundScore)
+  })
+
+  it('publishes the real hold window so the view can place the swell target', async () => {
+    // The hold length is difficulty-scaled, so a view that assumed 8s would
+    // draw the target arch in the wrong place for anyone off level 5.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const phaseTwo: Array<Record<string, number>> = []
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      _updateMetrics: (m) => {
+        if (m.phase === 2) phaseTwo.push({ ...m })
+      },
+    })
+    const ctrl = useDynamicSwellController(base, { playTone: async () => {} })
+
+    ctrl.setBase(60)
+    ctrl.startRounds()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(phaseTwo.length).toBeGreaterThan(0)
+    expect(phaseTwo[0].holdMs).toBeGreaterThan(0)
+    expect(phaseTwo[0].holdStartMs).toBe(0)
+
+    // And the window it announced is the window it actually waits.
+    await vi.advanceTimersByTimeAsync(phaseTwo[0].holdMs - 1)
+    expect(phaseTwo.length).toBe(1) // still in the first hold
+  })
+
   it('stopRounds halts running and commits a result', () => {
     const committed: unknown[] = []
     const running: boolean[] = []

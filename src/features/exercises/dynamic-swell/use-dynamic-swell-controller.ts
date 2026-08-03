@@ -89,7 +89,15 @@ export function useDynamicSwellController(
     // absolute performance.now() here would make the hold window below select
     // zero samples → every round scores 0.
     holdStartTime = base._getElapsed()
-    batch(() => base._updateMetrics({ phase: 2 })) // hold phase
+    // holdMs is adaptive (difficulty scales it), so the view cannot assume
+    // 8s — it needs the real length to place the swell's target arch.
+    batch(() =>
+      base._updateMetrics({
+        phase: 2,
+        holdMs: holdDurationMs,
+        holdStartMs: holdStartTime,
+      }),
+    ) // hold phase
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
       evaluateRound()
@@ -130,6 +138,12 @@ export function useDynamicSwellController(
       base._updateMetrics({
         lastRoundScore: roundScore,
         roundsCompleted: roundScores.length,
+        // Each round keeps its OWN score. The progress dots were all
+        // painted from lastRoundScore — one value across every dot — so
+        // a weak final round turned rounds that went well red after the
+        // fact. `metrics` is Record<string, number>, hence indexed keys
+        // rather than the array that lives right here.
+        [`round${roundScores.length}Score`]: roundScore,
       })
     })
 

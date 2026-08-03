@@ -96,6 +96,11 @@ export interface ExerciseController {
     time: number
     cents: number
     clarity?: number
+    /** Linear RMS for the frame. use-base-exercise has always recorded it
+     *  (practiceEngine.getInputLevel) and the swell scorer has always read
+     *  it; the public type simply did not say so, which kept the value
+     *  invisible to the views that could show it. */
+    rms?: number
   }>
   currentPitch: () => { freq: number; clarity: number; noteName: string } | null
   frequencyData: () => Float32Array | null
