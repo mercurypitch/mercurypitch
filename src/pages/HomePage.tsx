@@ -19,7 +19,9 @@ import { AscentCard } from '@/features/path/AscentCard'
 import type { SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
+import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { exerciseHistory } from '@/stores/exercise-history-store'
+import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './HomePage.module.css'
 
@@ -212,6 +214,200 @@ const HomePage: Component = () => {
           {/* Earned moment: two days in a row is the point a streak
               starts being worth protecting. Asked once, then quiet for a
               week; never blocks anything. */}
+          {/* ── Today's session, folded into the streak card ─────
+              It was a separate card below, which pushed the rooms down
+              the page. Home now leads with one status card: streak, the
+              week's numbers, and what to do about it today. */}
+          <div class={`${styles.sessionInline} home-session-card`}>
+            <div class={styles.sessionHead}>
+              <h2 class={styles.cardTitle}>Today's session</h2>
+              <Show when={routine.template()}>
+                <span class={styles.sessionTime}>
+                  ~{Math.round(routine.totalDurationSec() / 60)} min
+                </span>
+              </Show>
+            </div>
+
+            <Show
+              when={routine.template()}
+              fallback={
+                <div class={styles.sessionEmpty}>
+                  {/* Four steps on one line instead of a 10-row paragraph.
+                    The sentence said what the steps are; the steps say it
+                    themselves, and the "picked for you" part — the only
+                    thing the list does not carry — moves to the info. */}
+                  <div class={styles.sessionSteps}>
+                    <span>Warm up</span>
+                    <span>Weak spot</span>
+                    <span>New skill</span>
+                    <span>A real phrase</span>
+                    <InfoPopover label="How today's session is chosen">
+                      Four short segments, picked from your practice history —
+                      the weak-spot drill targets whatever you have been missing
+                      most. Pick a length and it builds one for you.
+                    </InfoPopover>
+                  </div>
+                  <div class={styles.lengthRow}>
+                    <label>
+                      Length
+                      <select
+                        value={routinePrefs().length}
+                        onChange={(e) =>
+                          setRoutinePrefs((p) => ({
+                            ...p,
+                            length: e.currentTarget.value as RoutineLength,
+                          }))
+                        }
+                      >
+                        <option value="short">Short (~5 min)</option>
+                        <option value="standard">Standard (~8 min)</option>
+                        <option value="long">Long (~12 min)</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button
+                    class={styles.primaryBtn}
+                    onClick={() => routine.generate()}
+                  >
+                    Start today's session
+                  </button>
+                </div>
+              }
+            >
+              <div class={styles.progressBar}>
+                <div
+                  class={styles.progressFill}
+                  style={{ width: `${routine.progress()}%` }}
+                />
+              </div>
+
+              <ol class={styles.segments}>
+                <For each={routine.segmentStatuses()}>
+                  {(item, i) => (
+                    <li
+                      class={`${styles.segment} ${item.done ? styles.segDone : ''} ${
+                        item.current ? styles.segCurrent : ''
+                      }`}
+                    >
+                      <span class={styles.segIcon}>
+                        {item.done ? (
+                          <IconCheck size={15} />
+                        ) : item.seg.type === 'warmup' ||
+                          item.seg.type === 'cooldown' ? (
+                          <IconFire size={15} />
+                        ) : item.seg.type === 'challenge-prep' ? (
+                          <IconTrophy size={15} />
+                        ) : (
+                          <IconTarget size={15} />
+                        )}
+                      </span>
+                      <span class={styles.segBody}>
+                        <span class={styles.segName}>
+                          {segmentLabels[item.seg.type]}
+                          <Show when={item.seg.config.exercise}>
+                            <span class={styles.segExercise}>
+                              {' · '}
+                              {item.seg.config.exercise}
+                            </span>
+                          </Show>
+                        </span>
+                        <span class={styles.segDur}>
+                          {Math.max(1, Math.round(item.seg.durationSec / 60))}{' '}
+                          min
+                        </span>
+                      </span>
+                      <Show when={item.current && !item.done}>
+                        <button
+                          class={styles.segStart}
+                          onClick={() => launchRoutineSegment(item.seg)}
+                        >
+                          Start
+                        </button>
+                        <button
+                          class={styles.segSkip}
+                          title="Mark done"
+                          onClick={() => routine.completeSegment()}
+                        >
+                          <IconCheck size={13} />
+                        </button>
+                      </Show>
+                      <Show when={!item.current && !item.done}>
+                        <span class={styles.segStep}>{i() + 1}</span>
+                      </Show>
+                    </li>
+                  )}
+                </For>
+              </ol>
+
+              <Show
+                when={routine.isComplete()}
+                fallback={
+                  <div class={styles.sessionActions}>
+                    <button
+                      class={styles.linkBtn}
+                      onClick={() => routine.reset()}
+                    >
+                      Choose a different workout
+                    </button>
+                  </div>
+                }
+              >
+                <div class={styles.doneBlock}>
+                  <div class={styles.doneMsg}>
+                    Session complete — nice work today.
+                  </div>
+                  {/* The sidebar panel has offered these all along; Home
+                    showed the message and nothing to do next. */}
+                  <div class={styles.doneActions}>
+                    <button
+                      class={styles.doneBtn}
+                      onClick={() => {
+                        const first = routine.template()?.segments?.[0]
+                        if (first === undefined) return
+                        launchRoutineSegment(first)
+                      }}
+                    >
+                      Practise again
+                    </button>
+                    <button
+                      class={styles.doneBtn}
+                      onClick={() => routine.reset()}
+                    >
+                      New routine
+                    </button>
+                    <button
+                      class={styles.doneBtn}
+                      onClick={() => {
+                        const t = routine.template()
+                        if (!t) return
+                        const encoded = encodeRoutineForShare({
+                          id: t.id,
+                          name: t.name,
+                          description: t.description,
+                          segments: t.segments.map((seg) => ({
+                            type: seg.type,
+                            durationSec: seg.durationSec,
+                            config: seg.config as Record<string, unknown>,
+                          })),
+                        })
+                        void copyShareUrl(encoded).then((ok: boolean) => {
+                          showNotification(
+                            ok
+                              ? 'Routine link copied.'
+                              : 'Could not copy the link.',
+                            ok ? 'info' : 'error',
+                          )
+                        })
+                      }}
+                    >
+                      Share
+                    </button>
+                  </div>
+                </div>
+              </Show>
+            </Show>
+          </div>
+
           <Show when={showStreakNudge()}>
             <div class={styles.accountNudge}>
               <span>
@@ -252,138 +448,6 @@ const HomePage: Component = () => {
 
         {/* ── The Ascent (guided path bridge) ────────────────── */}
         <AscentCard />
-
-        {/* ── Today's session ────────────────────────────────── */}
-        <section
-          class={`${styles.card} ${styles.sessionCard} home-session-card`}
-        >
-          <div class={styles.sessionHead}>
-            <h2 class={styles.cardTitle}>Today's session</h2>
-            <Show when={routine.template()}>
-              <span class={styles.sessionTime}>
-                ~{Math.round(routine.totalDurationSec() / 60)} min
-              </span>
-            </Show>
-          </div>
-
-          <Show
-            when={routine.template()}
-            fallback={
-              <div class={styles.sessionEmpty}>
-                <p class={styles.sessionEmptyText}>
-                  A quick, guided workout picked for you: warm up, sharpen a
-                  weak spot, grow a skill, then sing a real phrase.
-                </p>
-                <div class={styles.lengthRow}>
-                  <label>
-                    Length
-                    <select
-                      value={routinePrefs().length}
-                      onChange={(e) =>
-                        setRoutinePrefs((p) => ({
-                          ...p,
-                          length: e.currentTarget.value as RoutineLength,
-                        }))
-                      }
-                    >
-                      <option value="short">Short (~5 min)</option>
-                      <option value="standard">Standard (~8 min)</option>
-                      <option value="long">Long (~12 min)</option>
-                    </select>
-                  </label>
-                </div>
-                <button
-                  class={styles.primaryBtn}
-                  onClick={() => routine.generate()}
-                >
-                  Start today's session
-                </button>
-              </div>
-            }
-          >
-            <div class={styles.progressBar}>
-              <div
-                class={styles.progressFill}
-                style={{ width: `${routine.progress()}%` }}
-              />
-            </div>
-
-            <ol class={styles.segments}>
-              <For each={routine.segmentStatuses()}>
-                {(item, i) => (
-                  <li
-                    class={`${styles.segment} ${item.done ? styles.segDone : ''} ${
-                      item.current ? styles.segCurrent : ''
-                    }`}
-                  >
-                    <span class={styles.segIcon}>
-                      {item.done ? (
-                        <IconCheck size={15} />
-                      ) : item.seg.type === 'warmup' ||
-                        item.seg.type === 'cooldown' ? (
-                        <IconFire size={15} />
-                      ) : item.seg.type === 'challenge-prep' ? (
-                        <IconTrophy size={15} />
-                      ) : (
-                        <IconTarget size={15} />
-                      )}
-                    </span>
-                    <span class={styles.segBody}>
-                      <span class={styles.segName}>
-                        {segmentLabels[item.seg.type]}
-                        <Show when={item.seg.config.exercise}>
-                          <span class={styles.segExercise}>
-                            {' · '}
-                            {item.seg.config.exercise}
-                          </span>
-                        </Show>
-                      </span>
-                      <span class={styles.segDur}>
-                        {Math.max(1, Math.round(item.seg.durationSec / 60))} min
-                      </span>
-                    </span>
-                    <Show when={item.current && !item.done}>
-                      <button
-                        class={styles.segStart}
-                        onClick={() => launchRoutineSegment(item.seg)}
-                      >
-                        Start
-                      </button>
-                      <button
-                        class={styles.segSkip}
-                        title="Mark done"
-                        onClick={() => routine.completeSegment()}
-                      >
-                        <IconCheck size={13} />
-                      </button>
-                    </Show>
-                    <Show when={!item.current && !item.done}>
-                      <span class={styles.segStep}>{i() + 1}</span>
-                    </Show>
-                  </li>
-                )}
-              </For>
-            </ol>
-
-            <Show
-              when={routine.isComplete()}
-              fallback={
-                <div class={styles.sessionActions}>
-                  <button
-                    class={styles.linkBtn}
-                    onClick={() => routine.reset()}
-                  >
-                    Choose a different workout
-                  </button>
-                </div>
-              }
-            >
-              <div class={styles.doneMsg}>
-                Session complete — nice work today.
-              </div>
-            </Show>
-          </Show>
-        </section>
       </div>
 
       <DestinationGallery />

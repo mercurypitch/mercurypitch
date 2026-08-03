@@ -324,6 +324,76 @@
 }
 
 /* ── Progress strip ──────────────────────────────────────── */
+/* Today's session, folded into the streak card. It was a card of its own
+   below, which pushed the rooms gallery down the page for no reason —
+   the streak and what to do about it today are one thought. */
+.sessionInline {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color, var(--border));
+}
+
+/* Four steps on one line, in place of a paragraph that ran to ten rows
+   in a narrow card and said the same thing. */
+.sessionSteps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sessionSteps > span {
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 550;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.doneBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doneActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.doneBtn {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    border-color 0.14s ease,
+    background 0.14s ease;
+}
+
+.doneBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.doneBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* The week's three figures, inside the streak card. Was a full-width
    card of its own below; the streak card had the room and the two of
    them printed the same longest-streak number. */
