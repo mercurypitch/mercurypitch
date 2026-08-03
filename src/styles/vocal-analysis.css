@@ -4808,6 +4808,52 @@
   max-height: 100%;
 }
 
+/* ── Challenges: the same room, one door along ────────────────────── */
+/* Community earned its backdrop; the Challenges hub was the last big tab
+   still opening onto flat black, which made it read as the utility page
+   next to the ones that had been dressed. Same mechanism exactly — a
+   pseudo-element, `isolation: isolate` so the negative z-index cannot
+   escape, and a downward fade so the card grid does not start on a hard
+   edge. Deliberately NOT a new invention: two tabs sharing one treatment
+   is the point.
+ *
+ * The art is the triumph piece already drawn for the result card, so the
+ * page and its payoff are the same world. It is 1376x768 — 1.79:1, much
+ * tighter than Community's 3.15:1 banner — so it carries a real subject
+ * rather than empty haze, and it gets a lower opacity to compensate
+ * instead of a scrim laid over the top.
+ *
+ * No 4K tier exists for this one. At 0.28 opacity behind text a soft
+ * upscale reads as atmosphere rather than as a blurry photograph, which
+ * is the one case the sharpness playbook says a tier can wait for. */
+.vocal-challenges {
+  position: relative;
+  isolation: isolate;
+}
+
+.vocal-challenges::before {
+  content: '';
+  position: absolute;
+  inset: -24px -24px auto;
+  height: min(480px, 60vh);
+  max-height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url('/challenges/challenge-triumph.webp');
+  background-size: cover;
+  /* Right of centre, like Community: the left is where the header copy
+     and the first row of cards live, and that side wants to stay quiet. */
+  background-position: 72% 42%;
+  opacity: 0.28;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .vocal-challenges::before {
+    display: none;
+  }
+}
+
 /* The search field carries a 12px bottom margin from the modal it was
    built for. In a centred flex row it is the MARGIN box that gets
    centred, so the field itself rode 6px high while the sort control sat
