@@ -153,3 +153,45 @@ describe('supports', () => {
     expect(supports(null, 'summary')).toBe(false)
   })
 })
+
+// ── Stems that outlive the page ────────────────────────────────
+//
+// Blob URLs die with the document, so `outputs.vocal` is live only for a
+// session separated during THIS page load. Reading it as the test for
+// "has audio" meant every older session dropped to capability 'notes'
+// and silently lost the analysis it is perfectly capable of — a freshly
+// uploaded song offered a spectrum, and the same song after a reload did
+// not. `stemMeta` is the durable signal.
+
+describe('a UVR session whose blob URL did not survive the reload', () => {
+  it('is still analysable when the stems are on disk', () => {
+    state.uvr = [
+      makeUvr({
+        outputs: undefined,
+        stemMeta: { vocal: { duration: 42 } },
+      } as Partial<UvrSession>),
+    ]
+    const take = listTakes().find((t) => t.source === 'uvr')!
+    expect(take.capability).toBe('audio')
+    expect(supports(take, 'audio')).toBe(true)
+  })
+
+  it('is analysable with a live URL and no stemMeta, as before', () => {
+    state.uvr = [makeUvr()]
+    expect(listTakes().find((t) => t.source === 'uvr')!.capability).toBe(
+      'audio',
+    )
+  })
+
+  it('falls back to notes only when there really are no stems', () => {
+    state.uvr = [
+      makeUvr({
+        outputs: undefined,
+        stemMeta: undefined,
+      } as Partial<UvrSession>),
+    ]
+    const take = listTakes().find((t) => t.source === 'uvr')!
+    expect(take.capability).toBe('notes')
+    expect(take.loadAudio).toBeUndefined()
+  })
+})
