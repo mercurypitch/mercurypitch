@@ -8,6 +8,7 @@
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
+import type { KaraokeVoiceCaptureState } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
 import type { MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 
@@ -15,6 +16,9 @@ interface StemMixerScoreModalProps {
   showScore: Accessor<boolean>
   score: Accessor<MicScore | null>
   onViewed?: (score: MicScore) => void
+  voiceTakeState?: KaraokeVoiceCaptureState
+  voiceTakeMessage?: string
+  onKeepVoiceTake?: () => void
   onClose: () => void
 }
 
@@ -42,6 +46,25 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
     viewedScore = score
     props.onViewed?.(score)
   })
+
+  const takeState = (): KaraokeVoiceCaptureState =>
+    props.voiceTakeState ?? 'idle'
+  const showTakeStatus = (): boolean =>
+    !['idle', 'recording', 'paused'].includes(takeState())
+  const showKeepAction = (): boolean =>
+    ['processing', 'ready', 'saving', 'saved'].includes(takeState())
+  const keepLabel = (): string => {
+    switch (takeState()) {
+      case 'processing':
+        return 'Preparing replay'
+      case 'saving':
+        return 'Keeping take'
+      case 'saved':
+        return 'Kept in Hear Yourself'
+      default:
+        return 'Keep in Hear Yourself'
+    }
+  }
 
   return (
     <Show when={props.showScore() && props.score()}>
@@ -138,9 +161,27 @@ export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
             </span>
           </div>
 
-          <button class="sm-mic-score-ok-btn" onClick={() => props.onClose()}>
-            OK
-          </button>
+          <Show when={showTakeStatus()}>
+            <div class="sm-mic-score-take" aria-live="polite">
+              <div class="sm-mic-score-take-kicker">Private voice history</div>
+              <p>{props.voiceTakeMessage}</p>
+            </div>
+          </Show>
+
+          <div class="sm-mic-score-actions">
+            <Show when={showKeepAction()}>
+              <button
+                class="sm-mic-score-keep-btn"
+                disabled={takeState() !== 'ready'}
+                onClick={() => props.onKeepVoiceTake?.()}
+              >
+                {keepLabel()}
+              </button>
+            </Show>
+            <button class="sm-mic-score-ok-btn" onClick={() => props.onClose()}>
+              {takeState() === 'ready' ? 'Not now' : 'Close'}
+            </button>
+          </div>
         </div>
       </div>
     </Show>

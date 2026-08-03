@@ -78,6 +78,9 @@ hear in their own recordings.
   attempt on one true-time and shared-pitch map. Its rows are scrub-ready and
   playable; it does not align phrases, rank takes, or collapse history into a
   trend score.
+- A scored Karaoke performance can prepare a dry microphone-only replay and
+  explicitly keep it in Hear Yourself. Repeated takes of the same local song
+  session share one thread; song stems are never copied into voice history.
 - Future cloud sync is opt-in portability for signed-in users. New users will
   receive a limited free storage allowance; additional cloud capacity will be
   paid. Allowance sizes, pricing, retention policy, and launch timing remain
