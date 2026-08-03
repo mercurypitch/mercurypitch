@@ -117,6 +117,7 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   const [dirty, setDirty] = createSignal(false)
   const [editorStatus, setEditorStatus] =
     createSignal<ExerciseEditorStatus>('idle')
+  const [editorInteractionBusy, setEditorInteractionBusy] = createSignal(false)
   const [serverIssues, setServerIssues] = createSignal<
     ExerciseEditorValidationIssue[]
   >([])
@@ -208,6 +209,13 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
     row: AdminGuidedExercise,
     version: AdminGuidedExerciseVersion,
   ): void => {
+    if (editorInteractionBusy()) {
+      showNotification(
+        'Finish or cancel the current audio action first.',
+        'info',
+      )
+      return
+    }
     if (dirty() && !confirm('Discard the unsaved exercise changes?')) return
     if (version?.exercise === null || version?.exercise === undefined) {
       setPageError(`Version ${version.version} of "${row.id}" is unreadable.`)
@@ -303,6 +311,13 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   }
 
   const beginNew = (): void => {
+    if (editorInteractionBusy()) {
+      showNotification(
+        'Finish or cancel the current audio action first.',
+        'info',
+      )
+      return
+    }
     if (dirty() && !confirm('Discard the unsaved exercise changes?')) return
     cancelExamplePreview()
     activeSelectionKey = 'new'
@@ -774,6 +789,7 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
                   setDirty(true)
                   setServerIssues([])
                 }}
+                onInteractionBusyChange={setEditorInteractionBusy}
                 onSave={lifecycle() === 'draft' ? saveFromEditor : undefined}
                 onPublish={lifecycle() === 'draft' ? publish : undefined}
                 onArchive={lifecycle() === 'archived' ? undefined : archive}

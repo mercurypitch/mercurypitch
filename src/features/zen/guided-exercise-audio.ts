@@ -2,7 +2,7 @@ const OUTPUT_SAMPLE_RATE = 44_100
 const WAV_HEADER_BYTES = 44
 
 export const GUIDED_EXAMPLE_CLIP_MS = 5_000
-export const MAX_GUIDED_EXAMPLE_SOURCE_BYTES = 100 * 1024 * 1024
+export const MAX_GUIDED_EXAMPLE_SOURCE_BYTES = 25 * 1024 * 1024
 export const GUIDED_EXAMPLE_ACCEPT =
   'audio/mpeg,audio/mp3,audio/mp4,audio/aac,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,audio/wave,.mp3,.m4a,.mp4,.aac,.webm,.ogg,.oga,.wav'
 export const GUIDED_EXAMPLE_FORMATS = 'MP3, M4A/MP4, AAC, WebM, Ogg, or WAV'
@@ -45,7 +45,7 @@ export async function decodeGuidedExerciseAudio(
   if (file.size === 0) throw new Error('The selected audio file is empty.')
   if (file.size > MAX_GUIDED_EXAMPLE_SOURCE_BYTES) {
     throw new Error(
-      'The source file is over 100 MiB. Export a shorter audio file and try again.',
+      'The source file is over 25 MiB. Export a shorter audio file and try again.',
     )
   }
   if (typeof OfflineAudioContext === 'undefined') {

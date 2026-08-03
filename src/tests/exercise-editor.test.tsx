@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExerciseEditor } from '@/features/admin/exercises/ExerciseEditor'
+import { ExerciseEditor, isExerciseEditorBusy, } from '@/features/admin/exercises/ExerciseEditor'
 import { ExercisePreview } from '@/features/admin/exercises/ExercisePreview'
 import { ExerciseTimelineEditor } from '@/features/admin/exercises/ExerciseTimelineEditor'
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '@/features/zen/types'
@@ -241,6 +241,11 @@ describe('ExerciseEditor', () => {
     expect(
       screen.getByText('Stops automatically at five seconds.'),
     ).toBeVisible()
+  })
+
+  it('treats an active recording as a blocking editor action', () => {
+    expect(isExerciseEditorBusy(false, false, true)).toBeTruthy()
+    expect(isExerciseEditorBusy(false, false, false)).toBeFalsy()
   })
 
   it('keeps superseded versions read-only while retaining preview access', () => {

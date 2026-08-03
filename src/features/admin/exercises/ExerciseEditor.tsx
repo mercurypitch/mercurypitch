@@ -37,6 +37,7 @@ export interface ExerciseEditorProps {
   validationIssues: readonly ExerciseEditorValidationIssue[]
   identityLocked?: boolean
   onChange: (value: ZenExerciseDefinition) => void
+  onInteractionBusyChange?: (busy: boolean) => void
   onSave?: (value: ZenExerciseDefinition) => Promise<void>
   onPublish?: (value: ZenExerciseDefinition) => Promise<void>
   onArchive?: (value: ZenExerciseDefinition) => Promise<void>
@@ -88,6 +89,12 @@ const EXTERNAL_BUSY_STATUSES: readonly ExerciseEditorStatus[] = [
   'restoring',
   'duplicating',
   'uploading',
+]
+
+const AUDIO_BUSY_ACTIONS: readonly LocalAction[] = [
+  'upload',
+  'preparing-audio',
+  'remove-audio',
 ]
 
 const STATUS_LABELS: Record<ExerciseEditorStatus, string> = {
@@ -164,6 +171,14 @@ const recordingExtension = (mimeType: string): string => {
 const recordingTimeLabel = (durationMs: number): string =>
   `${(durationMs / 1000).toFixed(1)} / 5.0 s`
 
+export function isExerciseEditorBusy(
+  hasLocalAction: boolean,
+  hasExternalAction: boolean,
+  recordingActive: boolean,
+): boolean {
+  return hasLocalAction || hasExternalAction || recordingActive
+}
+
 export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
   const [view, setView] = createSignal<'author' | 'preview'>('author')
   const [selectedTargetId, setSelectedTargetId] = createSignal<string | null>(
@@ -202,23 +217,22 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
     else runWithOwner(owner, callback)
   }
 
-  createEffect(() => {
-    const exerciseKey = `${props.value.id}:${props.value.version}`
-    if (exerciseKey === pendingExerciseKey) return
-    pendingExerciseKey = exerciseKey
-    fileSelectionRequest += 1
-    setPendingExampleAudioFile(null)
-    setAudioError(null)
-  })
-
-  const busy = createMemo(
-    () =>
-      localAction() !== null || EXTERNAL_BUSY_STATUSES.includes(props.status),
-  )
   const recordingBusy = createMemo(() => recordingPhase() !== 'idle')
-  const readOnly = createMemo(
-    () => props.lifecycle !== 'draft' || busy() || recordingBusy(),
+  const audioInteractionBusy = createMemo(() => {
+    const action = localAction()
+    return (
+      recordingBusy() ||
+      (action !== null && AUDIO_BUSY_ACTIONS.includes(action))
+    )
+  })
+  const busy = createMemo(() =>
+    isExerciseEditorBusy(
+      localAction() !== null,
+      EXTERNAL_BUSY_STATUSES.includes(props.status),
+      recordingBusy(),
+    ),
   )
+  const readOnly = createMemo(() => props.lifecycle !== 'draft' || busy())
   const directRecordingAvailable = (): boolean =>
     typeof navigator !== 'undefined' &&
     navigator.mediaDevices?.getUserMedia !== undefined &&
@@ -232,6 +246,10 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
       props.value.scoring.coverageWeight +
       props.value.scoring.steadinessWeight,
   )
+
+  createEffect(() => {
+    props.onInteractionBusyChange?.(audioInteractionBusy())
+  })
   const rootLabel = createMemo(() => {
     const note = midiToNote(props.value.defaultRootMidi)
     return `${note.name}${note.octave}`
@@ -531,17 +549,24 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
           recordingChunks = []
           discardRecording = false
           recorder.ondataavailable = (event) => {
-            if (event.data.size > 0) recordingChunks.push(event.data)
+            if (request === recordingRequest && event.data.size > 0) {
+              recordingChunks.push(event.data)
+            }
           }
           recorder.onerror = () =>
             inOwner(() => {
+              if (disposed || request !== recordingRequest) return
               discardRecording = true
               setAudioError(
                 'The microphone recording failed. Please try again.',
               )
               stopExampleRecording()
             })
-          recorder.onstop = () => inOwner(finishExampleRecording)
+          recorder.onstop = () =>
+            inOwner(() => {
+              if (disposed || request !== recordingRequest) return
+              finishExampleRecording()
+            })
           recordingStartedAt = performance.now()
           recorder.start()
           setRecordingPhase('recording')
@@ -579,16 +604,42 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
       )
   }
 
-  onCleanup(() => {
-    disposed = true
+  const cancelExampleRecording = (updateUi: boolean): void => {
     recordingRequest += 1
-    fileSelectionRequest += 1
     discardRecording = true
     recordingUploadContext = null
     clearRecordingTimers()
     const recorder = recordingRecorder
-    if (recorder !== null && recorder.state !== 'inactive') recorder.stop()
+    recordingRecorder = null
+    recordingChunks = []
+    if (recorder !== null && recorder.state !== 'inactive') {
+      recorder.ondataavailable = null
+      recorder.onerror = null
+      recorder.onstop = null
+      recorder.stop()
+    }
     releaseRecordingStream()
+    if (updateUi) {
+      setRecordingPhase('idle')
+      setRecordingElapsedMs(0)
+    }
+  }
+
+  createEffect(() => {
+    const exerciseKey = `${props.value.id}:${props.value.version}`
+    if (exerciseKey === pendingExerciseKey) return
+    pendingExerciseKey = exerciseKey
+    fileSelectionRequest += 1
+    setPendingExampleAudioFile(null)
+    setAudioError(null)
+    cancelExampleRecording(true)
+  })
+
+  onCleanup(() => {
+    disposed = true
+    fileSelectionRequest += 1
+    cancelExampleRecording(false)
+    props.onInteractionBusyChange?.(false)
   })
 
   const removeExampleAudio = (): void => {
@@ -1282,9 +1333,9 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                                 recordingPhase() === 'recording',
                             }}
                             disabled={
-                              recordingPhase() === 'acquiring' ||
                               recordingPhase() === 'preparing' ||
                               (recordingPhase() !== 'recording' &&
+                                recordingPhase() !== 'acquiring' &&
                                 (readOnly() ||
                                   audio().transcript.trim() === '' ||
                                   props.onExampleAudioFile === undefined))
@@ -1292,6 +1343,8 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                             onClick={() => {
                               if (recordingPhase() === 'recording') {
                                 stopExampleRecording()
+                              } else if (recordingPhase() === 'acquiring') {
+                                cancelExampleRecording(true)
                               } else {
                                 startExampleRecording()
                               }
@@ -1299,9 +1352,11 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                           >
                             {recordingPhase() === 'recording'
                               ? 'Stop and use recording'
-                              : audio().src.trim() === ''
-                                ? 'Record 5-second example'
-                                : 'Record replacement'}
+                              : recordingPhase() === 'acquiring'
+                                ? 'Cancel microphone request'
+                                : audio().src.trim() === ''
+                                  ? 'Record 5-second example'
+                                  : 'Record replacement'}
                           </button>
                           <small>
                             {!directRecordingAvailable()
