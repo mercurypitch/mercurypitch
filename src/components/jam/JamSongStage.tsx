@@ -14,7 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -249,15 +249,35 @@ export const JamSongStage: Component = () => {
    */
   const seekTo = (toSec: number): void => {
     if (!jamIsHost()) return
-    const el = audioRef
-    if (el !== undefined) el.currentTime = toSec
-    // The guide moves with it. The follow effect would catch this on the
-    // next position tick anyway, but "anyway" is up to a quarter of a
-    // second of the wrong words in your ear, and a scrub is precisely
-    // when you are listening for where you landed.
-    if (vocalRef !== undefined) vocalRef.currentTime = toSec
+    // jamSongSeek raises a seek request, which the effect below answers by
+    // moving both elements. Going through the store rather than touching
+    // the element here is what lets the transport bar live outside this
+    // component: anything can ask for the playhead to move.
     jamSongSeek(toSec)
   }
+
+  /**
+   * Move the clock when the room asks.
+   *
+   * The element IS the clock -- its timeupdate writes the store -- so a
+   * seek has to move the element or the next tick overwrites the store
+   * with the unchanged position, which is what made an early scrub snap
+   * straight back to where it started.
+   *
+   * The guide vocal moves with it. The follow effect would catch up on the
+   * next position tick anyway, but "anyway" is up to a quarter of a second
+   * of the wrong words in your ear, and a scrub is precisely when you are
+   * listening for where you landed.
+   */
+  createEffect(() => {
+    const req = jamSongSeekRequest()
+    // Token 0 is "nobody has asked yet" -- without this the effect would
+    // rewind a freshly opened song to zero on mount.
+    if (req.token === 0) return
+    const el = audioRef
+    if (el !== undefined) el.currentTime = req.toSec
+    if (vocalRef !== undefined) vocalRef.currentTime = req.toSec
+  })
 
   /**
    * Follow the room's transport.
@@ -428,36 +448,12 @@ export const JamSongStage: Component = () => {
               <JamGuideVocal volume={guideVolume} onVolume={setGuideVolume} />
             </Show>
 
-            <Show when={jamIsHost()}>
-              <div class={styles.buttons}>
-                <button
-                  class={styles.btn}
-                  onClick={() =>
-                    jamExercisePlaying() && !jamExercisePaused()
-                      ? jamSongPause(audioRef?.currentTime ?? 0)
-                      : jamSongPlay(audioRef?.currentTime ?? 0)
-                  }
-                >
-                  {jamExercisePlaying() && !jamExercisePaused()
-                    ? 'Pause'
-                    : 'Play'}
-                </button>
-                <button
-                  class={styles.btn}
-                  onClick={() => {
-                    // Same reason as seekTo: stop rewinds the clock, and
-                    // the element IS the clock. Both elements, or the
-                    // guide resumes mid-song against a backing track that
-                    // restarted from the top.
-                    if (audioRef !== undefined) audioRef.currentTime = 0
-                    if (vocalRef !== undefined) vocalRef.currentTime = 0
-                    jamSongStop()
-                  }}
-                >
-                  Stop
-                </button>
-              </div>
-            </Show>
+            {/* Play, pause and stop live in the room's one transport bar
+                (JamTransport) rather than here. Two sets of buttons for
+                two engines is how a room ended up asking which Play was
+                the real one. The store asks this stage to move its clock
+                (jamSongSeekRequest), so the controls no longer need to be
+                inside the component that owns the element. */}
           </div>
 
           <div class={styles.split}>

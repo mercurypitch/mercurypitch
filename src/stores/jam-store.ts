@@ -1657,6 +1657,31 @@ export function jamPlaybackSeek(beat: number): void {
 // currentTime is the truth, so there is no rAF beat accumulator to run
 // and nothing to keep in step with a tempo.
 
+/**
+ * A request to move the song's playhead, for whoever holds the element.
+ *
+ * The element is the clock, so a seek has to move the clock rather than
+ * the readout -- setting the position alone is overwritten by the next
+ * timeupdate. That used to mean only code INSIDE the song stage could
+ * seek, which is why the stage had to own its own transport buttons.
+ * Now anything can ask, the stage answers, and the controls can live
+ * wherever they read best.
+ *
+ * The token is what makes a repeat request land: seeking twice to the
+ * same second is a real thing to ask for (stop, stop again).
+ */
+export const [jamSongSeekRequest, setJamSongSeekRequest] = createSignal<{
+  toSec: number
+  token: number
+}>({ toSec: 0, token: 0 })
+
+let songSeekToken = 0
+
+function requestSongSeek(toSec: number): void {
+  songSeekToken += 1
+  setJamSongSeekRequest({ toSec, token: songSeekToken })
+}
+
 export function jamSongPlay(fromSec = 0): void {
   if (jamSong() === null) return
   // Only a play from the top is a new take. Resuming from a pause keeps
@@ -1676,13 +1701,18 @@ export function jamSongPause(atSec: number): void {
 
 export function jamSongStop(): void {
   setJamSongPositionSec(0)
-  setJamExercisePlaying(false)
+  setJamExercisePlaying(false, 'you pressed stop')
   setJamExercisePaused(false)
+  // Rewind the element as well as the readout. Stop means the top of the
+  // song, and without this the next play resumed from wherever the pause
+  // happened to leave the clock.
+  requestSongSeek(0)
   broadcastSongTransport('stop', 0)
 }
 
 export function jamSongSeek(toSec: number): void {
   setJamSongPositionSec(toSec)
+  requestSongSeek(toSec)
   broadcastSongTransport('seek', toSec)
 }
 
@@ -1802,14 +1832,20 @@ export function applyRemoteTransport(
         setJamSongHostTarget(msg.positionSec)
         break
       case 'stop':
-        setJamExercisePlaying(false)
+        setJamExercisePlaying(false, 'the host stopped the song')
         setJamExercisePaused(false)
         setJamSongPositionSec(0)
         setJamSongHostTarget(0)
+        // Move the element too, or a stopped guest resumes from wherever
+        // it was when the next play arrives.
+        requestSongSeek(0)
         break
       case 'seek':
         setJamSongPositionSec(msg.positionSec + ahead)
         setJamSongHostTarget(msg.positionSec + ahead)
+        // A deliberate jump is exact, not a drift to be eased into: the
+        // resync threshold would ignore anything shorter than it.
+        requestSongSeek(msg.positionSec + ahead)
         break
     }
     return
