@@ -74,6 +74,10 @@ hear in their own recordings.
   stay playable through their cached waveform. A thread can hold any number of
   takes while Twin Trails compares two explicitly chosen takes at a time; the
   default pair spans the earliest and latest take.
+- Practice Loom appears after three takes in one thread and presents every
+  attempt on one true-time and shared-pitch map. Its rows are scrub-ready and
+  playable; it does not align phrases, rank takes, or collapse history into a
+  trend score.
 - Future cloud sync is opt-in portability for signed-in users. New users will
   receive a limited free storage allowance; additional cloud capacity will be
   paid. Allowance sizes, pricing, retention policy, and launch timing remain
