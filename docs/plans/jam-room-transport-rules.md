@@ -32,6 +32,14 @@ Stated so they can be tested. Each has a test in
 - **R3.** Only the host may load a song, assign parts, change mode or
   tempo, or send the audio.
 
+### What counts as transport
+
+- **R3b.** A melody announcement is transport too. It carries "the room is
+  now doing this drill", and adopting one resets the playing state — so a
+  guest broadcasting its own melody stopped the host's song, with `recv
+  melody` the only trace in the log. Only the host announces one, and a
+  room already running a song ignores them.
+
 ### What a command refers to
 
 - **R4.** Every transport command carries a `scope`: `drill` or `song`.
@@ -68,6 +76,11 @@ Stated so they can be tested. Each has a test in
 - **R14.** Playback never stops without saying why. Reaching the end, a
   decode failure, a stall and a host command are four different things and
   the room is told which.
+- **R15.** Every stop names its cause in the console
+  (`[jam:transport] playback STOPPED — …`). Two separate root causes for
+  "the song just stops" reached the same signal from places that did not
+  look like playback at all; the next one should announce itself rather
+  than take a testing session to find.
 
 ## Still open
 
