@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
+import { Info } from '@/components/icons'
 import type { CharacterName } from '@/stores/settings-store'
 import { CHARACTER_INFO, selectedCharacter, setSelectedCharacter, } from '@/stores/settings-store'
 import { targetFocusEvent } from '@/stores/ui-store'
@@ -39,8 +40,17 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
       if (target?.closest(`.${styles.infoBadge}, .${styles.infoPanel}`)) return
       setInfoFor(null)
     }
+    // Escape closes it too, the same as every other panel in the app —
+    // a click-only dismissal strands keyboard users with it open.
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInfoFor(null)
+    }
     document.addEventListener('click', close)
-    onCleanup(() => document.removeEventListener('click', close))
+    document.addEventListener('keydown', onKeyDown)
+    onCleanup(() => {
+      document.removeEventListener('click', close)
+      document.removeEventListener('keydown', onKeyDown)
+    })
   })
 
   let gridRef!: HTMLDivElement
@@ -84,19 +94,7 @@ export const CharacterIcons: Component<CharacterIconsProps> = (props) => {
                 aria-expanded={infoFor() === name}
                 onClick={() => toggleInfo(name)}
               >
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="4" r="0.5" fill="currentColor" />
-                  <path d="M12 10v10" />
-                </svg>
+                <Info size={10} />
               </button>
             </div>
           )}
