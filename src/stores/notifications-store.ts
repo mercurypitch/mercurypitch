@@ -22,6 +22,20 @@ export interface Notification {
    * ever on screen. Notifications without a channel behave as before.
    */
   channel?: string
+  /**
+   * Grouping key. A notification pushed with the same key while this one is
+   * still on screen folds INTO it rather than stacking beside it or
+   * replacing it -- see `NotificationOptions.group`.
+   */
+  groupKey?: string
+  /** Every message folded in so far, in arrival order. */
+  groupParts?: string[]
+  /**
+   * The summariser from the FIRST of the group, kept so the wording stays
+   * put. Re-running the caller's summariser on each merge would re-roll a
+   * randomised phrase and the toast would rewrite itself mid-read.
+   */
+  groupSummarise?: (parts: string[]) => string
 }
 
 /** Shared channel for the one-at-a-time "take a tour" offer toasts. */
@@ -39,6 +53,16 @@ export interface NotificationOptions {
   /** Override how long the toast stays visible. Defaults are intentionally
    *  longer for warnings and errors so important feedback is not missed. */
   durationMs?: number
+  /**
+   * Fold into a live notification with the same key.
+   *
+   * The third behaviour, beside stacking and `channel`'s replacing. Some
+   * things arrive in bursts where every one is a fact worth keeping:
+   * three people joining a room is not "Cy joined", and it is not three
+   * toasts either. `summarise` is handed every message gathered so far and
+   * writes the single line they become.
+   */
+  group?: { key: string; summarise: (parts: string[]) => string }
 }
 
 const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
@@ -59,17 +83,72 @@ function pushNotification(notif: Notification): void {
   })
 }
 
+/**
+ * When each live toast is due to go away.
+ *
+ * Kept so a merge can extend a toast that was about to expire without
+ * granting it a whole fresh lifetime -- a steady trickle of arrivals would
+ * otherwise pin one on screen indefinitely.
+ */
+const deadlines = new Map<number, number>()
+const timers = new Map<number, ReturnType<typeof setTimeout>>()
+
+/** The shortest a merged toast gets to be read before it goes. */
+const MIN_AFTER_MERGE_MS = 2500
+
+function scheduleRemoval(id: number, inMs: number): void {
+  const existing = timers.get(id)
+  if (existing !== undefined) clearTimeout(existing)
+  deadlines.set(id, Date.now() + inMs)
+  timers.set(
+    id,
+    setTimeout(() => removeNotification(id), inMs),
+  )
+}
+
 export function showNotification(
   message: string,
   type: Notification['type'] = 'info',
   opts?: NotificationOptions,
 ): void {
+  const duration = opts?.durationMs ?? DEFAULT_DURATION_MS[type]
+  const group = opts?.group
+
+  if (group !== undefined) {
+    const live = notifications().find((n) => n.groupKey === group.key)
+    if (live !== undefined) {
+      const parts = [...(live.groupParts ?? [live.message]), message]
+      // The FIRST summariser, not this call's: a randomised phrase must
+      // not be re-rolled halfway through somebody reading it.
+      const write = live.groupSummarise ?? group.summarise
+      setNotifications((list) =>
+        list.map((n) =>
+          n.id === live.id
+            ? { ...n, message: write(parts), groupParts: parts }
+            : n,
+        ),
+      )
+      const left = (deadlines.get(live.id) ?? 0) - Date.now()
+      scheduleRemoval(live.id, Math.max(left, MIN_AFTER_MERGE_MS))
+      return
+    }
+  }
+
   const id = ++_notifId
-  pushNotification({ id, message, type, channel: opts?.channel })
-  setTimeout(
-    () => removeNotification(id),
-    opts?.durationMs ?? DEFAULT_DURATION_MS[type],
-  )
+  pushNotification({
+    id,
+    message: group === undefined ? message : group.summarise([message]),
+    type,
+    channel: opts?.channel,
+    ...(group === undefined
+      ? {}
+      : {
+          groupKey: group.key,
+          groupParts: [message],
+          groupSummarise: group.summarise,
+        }),
+  })
+  scheduleRemoval(id, duration)
 }
 
 /** Show a notification with an action button (e.g. "Undo"). */
@@ -87,6 +166,10 @@ export function showActionNotification(
 
 /** Remove a notification by id immediately. Called by action onClick to dismiss. */
 export function removeNotification(id: number): void {
+  const timer = timers.get(id)
+  if (timer !== undefined) clearTimeout(timer)
+  timers.delete(id)
+  deadlines.delete(id)
   setNotifications((n) => n.filter((x) => x.id !== id))
 }
 

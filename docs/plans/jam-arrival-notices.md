@@ -76,6 +76,20 @@ Announcing both would be worse than announcing neither. So:
 This is the rule that decides whether the feature feels alive or naggy,
 and it is worth building before the vocabulary.
 
+## Built
+
+All four steps, in that order. The store's `group` option is general —
+`{ key, summarise }`, where the summariser sees every message folded in so
+far — and the Jam tab supplies the words from `lib/jam/jam-arrivals.ts`.
+
+Two details worth keeping in mind for the next feature that groups:
+
+- **The first summariser wins.** A randomised phrase is chosen per burst
+  and stored on the live toast; re-running the newest caller's summariser
+  would re-roll the wording under somebody mid-read.
+- **A merge extends the deadline but does not reset it**, past a 2.5 s
+  floor. Otherwise a steady trickle of arrivals pins one toast forever.
+
 ## Order of work
 
 1. **Coalescing in the notifications store** — a `group` option with a key

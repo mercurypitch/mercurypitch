@@ -4,6 +4,7 @@
 
 import { batch, createMemo, createRoot, createSignal } from 'solid-js'
 import { getStemBlob } from '@/db/services/uvr-service'
+import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { overallLineScore } from '@/lib/jam/jam-line-scoring'
@@ -23,6 +24,7 @@ import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { showNotification } from '@/stores/notifications-store'
 import type { MelodyData } from '@/types'
 
 // ── SessionStorage keys for auto-rejoin on page reload ──────────────
@@ -1105,6 +1107,81 @@ export const jamHasActiveRoom = createRoot(() => {
 // ── Service instance ────────────────────────────────────────────────
 // Created once per session and wired to store signals.
 
+// ── Arrivals and departures ──────────────────────────────────────────
+// See lib/jam/jam-arrivals.ts for the words, and
+// docs/plans/jam-arrival-notices.md for why they are grouped.
+
+const ARRIVAL_GROUP = 'jam-arrivals'
+const DEPARTURE_GROUP = 'jam-departures'
+
+/**
+ * How long a departure waits before it is announced.
+ *
+ * A reconnect is not an arrival. WebRTC drops and re-establishes
+ * constantly on a phone changing networks, and the logs from testing show
+ * the pattern plainly: `peer left db47e7d0…` then `peer joined 0e8270c1…`
+ * seconds later -- the same person with a new id. Announcing both is worse
+ * than announcing neither, so a departure is held, and saying nothing at
+ * all is the right outcome when they come straight back.
+ */
+const RECONNECT_GRACE_MS = 6000
+
+const pendingDepartures = new Map<string, ReturnType<typeof setTimeout>>()
+const pickArrival = makePhrasePicker(ARRIVAL_PHRASES)
+const pickDeparture = makePhrasePicker(DEPARTURE_PHRASES)
+
+function announceArrival(displayName: string): void {
+  const phrase = pickArrival()
+  showNotification(displayName, 'info', {
+    durationMs: 4500,
+    group: {
+      key: ARRIVAL_GROUP,
+      summarise: (names) => fillPhrase(phrase, names),
+    },
+  })
+}
+
+function announceDeparture(displayName: string): void {
+  const phrase = pickDeparture()
+  showNotification(displayName, 'info', {
+    durationMs: 4500,
+    group: {
+      key: DEPARTURE_GROUP,
+      summarise: (names) => fillPhrase(phrase, names),
+    },
+  })
+}
+
+/** Someone is gone -- unless they are back within the grace period. */
+export function noteJamPeerLeft(displayName: string): void {
+  const existing = pendingDepartures.get(displayName)
+  if (existing !== undefined) clearTimeout(existing)
+  pendingDepartures.set(
+    displayName,
+    setTimeout(() => {
+      pendingDepartures.delete(displayName)
+      announceDeparture(displayName)
+    }, RECONNECT_GRACE_MS),
+  )
+}
+
+/** Someone is here. Silent if it is the same person coming straight back. */
+export function noteJamPeerJoined(displayName: string): void {
+  const pending = pendingDepartures.get(displayName)
+  if (pending !== undefined) {
+    clearTimeout(pending)
+    pendingDepartures.delete(displayName)
+    // They never really went, so nobody needs telling either way.
+    return
+  }
+  announceArrival(displayName)
+}
+
+function clearPendingDepartures(): void {
+  for (const [, timer] of pendingDepartures) clearTimeout(timer)
+  pendingDepartures.clear()
+}
+
 let jamService: ReturnType<typeof createJamService> | null = null
 const remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
 let audioContext: AudioContext | null = null
@@ -1149,6 +1226,7 @@ export function initJam() {
     onPeerJoined: (peer) => {
       console.info('[jam:store] onPeerJoined', peer.id, peer.displayName)
       setJamPeers((prev) => [...prev, peer])
+      noteJamPeerJoined(peer.displayName)
       // Tell them what the room is on. The DataChannel's onopen only sends
       // video-state, so somebody arriving mid-song saw an empty room and
       // no way to ask what everyone else was singing.
@@ -1160,6 +1238,8 @@ export function initJam() {
       if (jamIsHost() && jamSong() !== null) broadcastSongWithParts()
     },
     onPeerLeft: (peerId) => {
+      const gone = jamPeers().find((p) => p.id === peerId)
+      if (gone !== undefined) noteJamPeerLeft(gone.displayName)
       setJamPeers((prev) => prev.filter((p) => p.id !== peerId))
       // Clean up audio node
       const source = remoteAudioNodes.get(peerId)
@@ -1361,6 +1441,11 @@ export function initJam() {
     },
     onHostStatus: (isHost) => {
       console.info('[jam:store] host status from server:', isHost)
+      // Being handed the room mid-session is worth saying out loud: what
+      // you can do just changed, and nothing else on screen says so.
+      if (isHost && !jamIsHost() && jamState() === 'active') {
+        showNotification(HOST_RETURNED, 'info')
+      }
       setJamIsHost(isHost)
     },
     onError: (message) => {
@@ -1986,6 +2071,7 @@ export function disposeJam(): void {
 
 function cleanupJam(): void {
   stopJamPitchDetection()
+  clearPendingDepartures()
   stopPlaybackTimer()
   clearJamSession()
   // A share in flight is over, and a blob URL pins its data for the life
