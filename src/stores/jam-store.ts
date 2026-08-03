@@ -233,6 +233,22 @@ export const [jamSong, setJamSong] = createSignal<JamSong | null>(null)
 /** Position in the song's own timeline. Meaningless with no song loaded. */
 export const [jamSongPositionSec, setJamSongPositionSec] = createSignal(0)
 
+/**
+ * Where the HOST last said the song was.
+ *
+ * Separate from the position above, which every device now writes from its
+ * own audio element. Collapsing the two was a real bug: a guest's element
+ * played on while the store's position sat frozen at the last transport
+ * message, so guests watched a lyric column that never scrolled, lanes
+ * that never moved, and lines that never scored -- everything downstream
+ * reads the position, and on a guest it only ever changed when somebody
+ * pressed play.
+ *
+ * So the local element is the local clock, and this is the correction it
+ * is pulled towards.
+ */
+export const [jamSongHostTarget, setJamSongHostTarget] = createSignal(0)
+
 /** True when the room is on a song, which is what the layout switches on. */
 export const jamIsSongRoom = createRoot(() => {
   const memo = createMemo(() => jamSong() !== null)
@@ -1121,18 +1137,22 @@ export function initJam() {
             setJamExercisePlaying(true)
             setJamExercisePaused(false)
             setJamSongPositionSec(msg.positionSec + ahead)
+            setJamSongHostTarget(msg.positionSec + ahead)
             break
           case 'pause':
             setJamExercisePaused(true)
             setJamSongPositionSec(msg.positionSec)
+            setJamSongHostTarget(msg.positionSec)
             break
           case 'stop':
             setJamExercisePlaying(false)
             setJamExercisePaused(false)
             setJamSongPositionSec(0)
+            setJamSongHostTarget(0)
             break
           case 'seek':
             setJamSongPositionSec(msg.positionSec + ahead)
+            setJamSongHostTarget(msg.positionSec + ahead)
             break
         }
         return

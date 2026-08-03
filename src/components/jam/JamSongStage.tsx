@@ -14,7 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -104,13 +104,22 @@ export const JamSongStage: Component = () => {
     openLine = index < 0 ? null : { index, atMs: Date.now(), positionSec: pos }
   })
 
-  // The host's element drives the store; everyone else's follows it.
+  /**
+   * Every device's own element is its own clock.
+   *
+   * This used to be host-only, which left a guest's position frozen at
+   * whatever the last transport message said: their audio played on while
+   * the lyric column sat still, the lanes stopped scrolling and no line
+   * ever scored. Everything downstream reads this position, so on a guest
+   * it only moved when somebody pressed play.
+   *
+   * The host's broadcast is still authoritative -- it just arrives as a
+   * correction (jamSongHostTarget) rather than as the only source.
+   */
   onMount(() => {
     const el = audioRef
     if (el === undefined) return
-    const onTime = () => {
-      if (jamIsHost()) setJamSongPositionSec(el.currentTime)
-    }
+    const onTime = () => setJamSongPositionSec(el.currentTime)
     el.addEventListener('timeupdate', onTime)
     onCleanup(() => el.removeEventListener('timeupdate', onTime))
   })
@@ -250,7 +259,10 @@ export const JamSongStage: Component = () => {
    */
   createEffect(() => {
     const el = audioRef
-    const target = jamSongPositionSec()
+    // The HOST's number, not the local one. Comparing the element against
+    // a position the element itself writes is a loop that can only ever
+    // agree with itself.
+    const target = jamSongHostTarget()
     if (el === undefined || jamIsHost()) return
     if (Math.abs(el.currentTime - target) > RESYNC_THRESHOLD_SEC) {
       el.currentTime = target
