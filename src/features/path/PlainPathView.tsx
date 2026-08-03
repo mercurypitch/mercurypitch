@@ -44,6 +44,12 @@ export const PlainPathView: Component = () => {
   const currentOrder = createMemo(() => pathProgress()?.currentWeek ?? 1)
   const started = createMemo(() => pathProgress() !== null)
   const finished = createMemo(() => pathComplete())
+  // Which day's card is open. The day buttons all called
+  // setSelectedWeek(week.order) and ignored node.day entirely, so every
+  // one of the seven did the same thing and the panel never changed —
+  // which is exactly what "clicking on days, they are all the same"
+  // describes. null means "whatever day the singer is actually on".
+  const [selectedDay, setSelectedDay] = createSignal<number | null>(null)
   const [selectedWeek, setSelectedWeek] = createSignal<number | null>(
     untrack(currentOrder),
   )
@@ -116,9 +122,12 @@ export const PlainPathView: Component = () => {
                     class={styles.weekSummary}
                     aria-expanded={selected()}
                     aria-controls={`plain-path-week-${week.order}`}
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedWeek(selected() ? null : week.order)
-                    }
+                      // Reopening a week starts on the day the singer is
+                      // actually on, not whichever they last poked.
+                      setSelectedDay(null)
+                    }}
                   >
                     <span class={styles.weekOrder}>
                       <span>Week</span>
@@ -159,7 +168,10 @@ export const PlainPathView: Component = () => {
                               node.day,
                               node.state,
                             )}
-                            onClick={() => setSelectedWeek(week.order)}
+                            onClick={() => {
+                              setSelectedWeek(week.order)
+                              setSelectedDay(node.day)
+                            }}
                           >
                             <span class={styles.nodeOrb}>
                               <Show
@@ -206,6 +218,9 @@ export const PlainPathView: Component = () => {
                       currentOrder={currentOrder()}
                       started={started()}
                       themeLabel={PATH_THEME_LABEL[week.theme]}
+                      selectedDay={
+                        selectedWeek() === week.order ? selectedDay() : null
+                      }
                     />
                   </div>
                 </Show>
