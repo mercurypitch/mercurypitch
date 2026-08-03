@@ -44,10 +44,6 @@
 
 /* Session + progress span the full width. */
 .sessionCard,
-.progressCard {
-  grid-column: 1 / -1;
-}
-
 /* ── Streak card ─────────────────────────────────────────── */
 .streakTop {
   display: flex;
@@ -328,9 +324,16 @@
 }
 
 /* ── Progress strip ──────────────────────────────────────── */
-.stats {
-  display: flex;
-  gap: 24px;
+/* The week's three figures, inside the streak card. Was a full-width
+   card of its own below; the streak card had the room and the two of
+   them printed the same longest-streak number. */
+.weekStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color, var(--border));
 }
 .stat {
   display: flex;

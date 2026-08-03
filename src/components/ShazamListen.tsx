@@ -24,6 +24,7 @@ import type { SpeechRecognizer } from '@/lib/speech-recognition'
 import { createSpeechRecognizer } from '@/lib/speech-recognition'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { WhisperService } from '@/lib/whisper-service'
+import { showNotification } from '@/stores/notifications-store'
 import { FingerprintInspector } from './FingerprintInspector'
 import { LivePitchDebug } from './LivePitchDebug'
 import styles from './ShazamListen.module.css'
@@ -152,7 +153,22 @@ export function ShazamListen(props: ShazamListenProps) {
         if (!whisperService) {
           whisperService = new WhisperService()
           whisperService.onStatusChange = setWhisperStatus
-          whisperService.init()
+          // A bare init() left the rejection unhandled, so a model that
+          // cannot load — the CORS block on preview origins, or simply
+          // being offline — reached the global error handler and put the
+          // whole app behind the reload / reset-data crash screen. The
+          // stem mixer's copy of this call has always caught; this one
+          // did not. Words are an extra here: losing them turns speech
+          // off and says so, and the pitch matching carries on.
+          void whisperService.init().catch((err: unknown) => {
+            console.warn('[shazam] whisper unavailable:', err)
+            setWhisperStatus('error')
+            setSpeechEnabled(false)
+            showNotification(
+              'Speech-to-text could not load, so lyrics are off. Pitch matching still works.',
+              'warning',
+            )
+          })
         }
       } else if (speechSupported && listenState() === 'listening') {
         speechRecognizer = createSpeechRecognizer({
