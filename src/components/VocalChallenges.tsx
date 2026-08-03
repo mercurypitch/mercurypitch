@@ -590,91 +590,101 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
       onClick={() => props.onClose?.()}
     >
       <div
-        class={modalStyles.modalContent}
+        class={`${modalStyles.modalContent} challenge-modal-card`}
         role="dialog"
         aria-modal="true"
         aria-label={props.challenge.name}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          class={modalStyles.modalClose}
-          onClick={() => props.onClose?.()}
-        >
-          <IconCloseSimple />
-        </button>
-
-        <div class={modalStyles.modalHeader}>
+        {/* Header, scrolling body, pinned actions. The old markup put
+            every block straight into .modalContent, which carries no
+            padding — so everything sat flush to the edges, and the
+            module's .modalHeader (built for "title | X") threw the icon
+            out beside a centred title. */}
+        <header class="challenge-modal-head">
           <span class="modal-icon">{renderIcon(props.challenge.icon)}</span>
-          <div>
+          <div class="challenge-modal-heading">
             <h2 class="modal-title">{props.challenge.name}</h2>
             <p class="modal-desc">{props.challenge.description}</p>
           </div>
-        </div>
+          <button
+            class="challenge-modal-close"
+            onClick={() => props.onClose?.()}
+            aria-label="Close"
+            title="Close"
+          >
+            <IconCloseSimple />
+          </button>
+        </header>
 
-        <div class="modal-stats">
-          <div class="stat-card">
-            <span class="stat-label">Target Score</span>
-            <span class="stat-value">{props.challenge.targetScore}%</span>
+        <div class="challenge-modal-body">
+          <div class="modal-stats">
+            <div class="stat-card">
+              <span class="stat-label">Target Score</span>
+              <span class="stat-value">{props.challenge.targetScore}%</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Best Score</span>
+              <span class="stat-value">{props.challenge.bestScore}%</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Attempts</span>
+              <span class="stat-value">{props.challenge.attempts}</span>
+            </div>
           </div>
-          <div class="stat-card">
-            <span class="stat-label">Best Score</span>
-            <span class="stat-value">{props.challenge.bestScore}%</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-label">Attempts</span>
-            <span class="stat-value">{props.challenge.attempts}</span>
-          </div>
-        </div>
 
-        <div class="modal-instructions">
-          <h3>
-            <IconPaper /> How to Complete
-          </h3>
-          <Show
-            when={props.challenge.status !== 'completed'}
-            fallback={
+          <div class="modal-instructions">
+            <h3>
+              <IconPaper /> How to Complete
+            </h3>
+            <Show
+              when={props.challenge.status !== 'completed'}
+              fallback={
+                <ul class="instructions-list">
+                  <li>
+                    Completed
+                    {props.challenge.completedDate !== undefined
+                      ? ` on ${new Date(props.challenge.completedDate).toLocaleDateString()}`
+                      : ''}{' '}
+                    with a best score of {props.challenge.bestScore}%
+                  </li>
+                  <li>Run the drill again any time to beat your best.</li>
+                </ul>
+              }
+            >
               <ul class="instructions-list">
                 <li>
-                  Completed
-                  {props.challenge.completedDate !== undefined
-                    ? ` on ${new Date(props.challenge.completedDate).toLocaleDateString()}`
-                    : ''}{' '}
-                  with a best score of {props.challenge.bestScore}%
+                  <strong>Practice Drill</strong> opens the matching exercise.
+                  Your score is recorded for you.
                 </li>
-                <li>Run the drill again any time to beat your best</li>
+                <li>
+                  Hit <strong>{props.challenge.targetScore}%</strong> on one run
+                  to complete it.
+                </li>
+                <li>Retry as often as you like — your best score stands.</li>
+                <li>{drillTip()}</li>
               </ul>
-            }
-          >
-            <ul class="instructions-list">
-              <li>
-                Press <strong>Practice Drill</strong> to launch the matching
-                exercise — its score is recorded as an attempt automatically
-              </li>
-              <li>
-                Score {props.challenge.targetScore}% or higher on a single run
-                to complete the challenge
-              </li>
-              <li>Retry as often as you like — your best score is kept</li>
-              <li>{drillTip()}</li>
-            </ul>
-          </Show>
-        </div>
-
-        <div class="modal-progress-large">
-          <div class="progress-bar-large">
-            <div
-              class="progress-fill-large"
-              style={{
-                width: `${props.challenge.progress}%`,
-                background: getChallengeProgressColor(props.challenge.progress),
-              }}
-            />
+            </Show>
           </div>
-          <span class="progress-text-large">
-            {props.challenge.status === 'completed'
-              ? `Completed — best ${props.challenge.bestScore}%`
-              : `Best ${props.challenge.bestScore}% of ${props.challenge.targetScore}% target`}
-          </span>
+
+          <div class="modal-progress-large">
+            <div class="progress-bar-large">
+              <div
+                class="progress-fill-large"
+                style={{
+                  width: `${props.challenge.progress}%`,
+                  background: getChallengeProgressColor(
+                    props.challenge.progress,
+                  ),
+                }}
+              />
+            </div>
+            <span class="progress-text-large">
+              {props.challenge.status === 'completed'
+                ? `Completed — best ${props.challenge.bestScore}%`
+                : `Best ${props.challenge.bestScore}% of ${props.challenge.targetScore}% target`}
+            </span>
+          </div>
         </div>
 
         <div class="modal-actions">
