@@ -25,6 +25,13 @@
   backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
 }
 
+/* The timeline takes whatever the controls leave. */
+.scrub {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
 .title {
   font-size: 0.9rem;
   font-weight: 600;
@@ -57,6 +64,27 @@
 /* A phone cannot show two columns of anything useful. Lyrics on top,
    because that is what you are actually reading; lanes below at a fixed
    height so they never squeeze the words. */
+/* Phone: the row becomes two.
+   Title, lyric version and the guide-vocal control are all things that
+   shrink; the timeline is the one thing that must not, and squeezing it
+   between them left a scrub target a thumb could not hit -- with the
+   guide-vocal slider expanding straight over it. So it takes a line of
+   its own underneath, full width. */
+@media (max-width: 640px) {
+  .transport {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .scrub {
+    flex: 1 1 100%;
+    order: 10;
+    min-width: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .split {
     grid-template-columns: 1fr;

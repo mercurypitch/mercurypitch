@@ -588,6 +588,12 @@ const songInbox = new SongFileInbox({
   },
   onFailed: (_peerId, reason) =>
     setJamShareState({ phase: 'error', ratio: 0, message: reason }),
+  onStalled: (peerId) =>
+    setJamShareState({
+      phase: 'error',
+      ratio: 0,
+      message: `The song stopped arriving from ${peerName(peerId)}. It may pick up again — if not, ask them to send it once more.`,
+    }),
 })
 
 /**
@@ -648,6 +654,34 @@ export function reportSongHave(): void {
   const song = jamSong()
   if (song === null) return
   jamService?.sendSongHave(song.id, songIsPlayableHere(song))
+}
+
+/**
+ * Say it again when this device comes back to life.
+ *
+ * A phone that sleeps or backgrounds mid-transfer stops processing the
+ * channel, and its answer to "can you hear this yet" goes stale in the
+ * host's list -- which is the difference between a host who can see the
+ * problem and one staring at a room that looks fine. Coming back to the
+ * foreground is exactly the moment to re-answer, and it costs a few dozen
+ * bytes.
+ */
+let visibilityWatcher: (() => void) | null = null
+
+function watchVisibilityForSongHave(): void {
+  if (visibilityWatcher !== null) return
+  const onVisible = () => {
+    if (document.visibilityState !== 'visible') return
+    reportSongHave()
+  }
+  document.addEventListener('visibilitychange', onVisible)
+  visibilityWatcher = () =>
+    document.removeEventListener('visibilitychange', onVisible)
+}
+
+function unwatchVisibility(): void {
+  visibilityWatcher?.()
+  visibilityWatcher = null
 }
 
 let shareAbort: { aborted: boolean } | null = null
@@ -757,11 +791,13 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
     // Report the shortfall rather than a bare tick. Somebody who did not
     // get it is going to hear silence, and being told why beforehand is
     // the difference between a limitation and a bug.
-    setJamSongHaves((prev) => {
-      const next = { ...prev }
-      for (const id of sent) next[id] = true
-      return next
-    })
+    //
+    // Note what is NOT done here: marking the peers we sent to as having
+    // it. Finishing a send is not evidence that anybody received one --
+    // a phone that slept through the transfer stays silent, and the host
+    // was told everything was fine because the bytes had left. Only a
+    // peer's own song-have report counts, so a device that never got it
+    // keeps showing up in the re-send prompt until it says otherwise.
     if (sent.length > 0) setJamSongSentOnce(true)
     markShareDone(
       skipped.length === 0
@@ -1255,6 +1291,7 @@ function beatsInFlight(fromPeerId: string): number {
 
 export function initJam() {
   if (jamService) return
+  watchVisibilityForSongHave()
 
   jamService = createJamService({
     onPeerJoined: (peer) => {
@@ -2091,6 +2128,7 @@ export function disposeJam(): void {
 function cleanupJam(): void {
   stopJamPitchDetection()
   clearPendingDepartures()
+  unwatchVisibility()
   stopPlaybackTimer()
   clearJamSession()
   // A share in flight is over, and a blob URL pins its data for the life

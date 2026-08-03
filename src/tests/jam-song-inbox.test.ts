@@ -2,7 +2,7 @@
 // worth pinning are the ones where it lies or stops.
 
 import { describe, expect, it, vi } from 'vitest'
-import { SongFileInbox } from '@/lib/jam/jam-song-inbox'
+import { SongFileInbox, TRANSFER_STALL_MS } from '@/lib/jam/jam-song-inbox'
 import type { TransferHeader } from '@/lib/jam/jam-song-transfer'
 import { sha256Hex } from '@/lib/jam/jam-song-transfer'
 
@@ -144,5 +144,61 @@ describe('SongFileInbox', () => {
     const box = new SongFileInbox({ onStem })
     await box.done('nobody')
     expect(onStem).not.toHaveBeenCalled()
+  })
+
+  it('says so when the bytes stop arriving', async () => {
+    // A phone that sleeps mid-transfer stops reading the channel, and a
+    // transfer that quietly stops looks exactly like one that was never
+    // sent -- to the person waiting for it AND to the host, who had been
+    // told it was delivered because the bytes left.
+    vi.useFakeTimers()
+    try {
+      const onStalled = vi.fn()
+      const bytes = payload(600)
+      const box = new SongFileInbox({ onStalled })
+      box.offer('a', await header(bytes))
+      box.chunk('a', bytes.slice(0, 300))
+      vi.advanceTimersByTime(TRANSFER_STALL_MS - 1)
+      expect(onStalled).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(2)
+      expect(onStalled).toHaveBeenCalledWith('a', TRANSFER_STALL_MS)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a transfer that keeps arriving is never called stalled', async () => {
+    vi.useFakeTimers()
+    try {
+      const onStalled = vi.fn()
+      const bytes = payload(600)
+      const box = new SongFileInbox({ onStalled })
+      box.offer('a', await header(bytes))
+      for (let at = 0; at < 600; at += 100) {
+        vi.advanceTimersByTime(TRANSFER_STALL_MS - 500)
+        box.chunk('a', bytes.slice(at, at + 100))
+      }
+      vi.advanceTimersByTime(TRANSFER_STALL_MS - 500)
+      expect(onStalled).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops watching once the transfer finishes', async () => {
+    vi.useFakeTimers()
+    try {
+      const onStalled = vi.fn()
+      const bytes = payload(600)
+      const box = new SongFileInbox({ onStalled })
+      box.offer('a', await header(bytes))
+      box.chunk('a', bytes)
+      const finished = box.done('a')
+      await vi.runAllTimersAsync()
+      await finished
+      expect(onStalled).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
