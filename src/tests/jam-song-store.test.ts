@@ -302,6 +302,35 @@ describe('transport is scoped, and the host drives it', () => {
     expect(store.selectJamSong(song({ id: 'other' }))).toBe(true)
   })
 
+  it('a peer announcing a melody does not stop the host song', () => {
+    // The second root cause, and it hid behind a different message type:
+    // a guest broadcast its own melody, and onMelodyMessage set the very
+    // signal the song's audio reads. The only trace was 'recv melody'.
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    expect(store.jamExercisePlaying()).toBe(true)
+    store.applyRemoteMelody({
+      type: 'melody',
+      action: 'set',
+      melody: melody(),
+    })
+    expect(store.jamExercisePlaying()).toBe(true)
+    expect(store.jamSong()).not.toBeNull()
+  })
+
+  it('a guest running a song ignores a melody too', () => {
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    store.setJamIsHost(false)
+    store.applyRemoteMelody({
+      type: 'melody',
+      action: 'set',
+      melody: melody(),
+    })
+    expect(store.jamExercisePlaying()).toBe(true)
+    expect(store.jamExerciseMelody()).toBeNull()
+  })
+
   it('a drill ending does not stop a song', () => {
     // The reported bug: a peer's five-second scale finishing broadcast a
     // bare stop, every peer applied it to whatever it was running, and the

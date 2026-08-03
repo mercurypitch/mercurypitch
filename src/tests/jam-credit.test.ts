@@ -100,6 +100,10 @@ describe('crediting a room run', () => {
   beforeEach(() => {
     recordExerciseResult.mockClear()
     store.setJamOwnRunScore(null)
+    // Choosing the room's mode is a host action, and the store now says
+    // so rather than leaving it to the UI to remember. These tests drive
+    // the room, so they hold the room's controls.
+    store.setJamIsHost(true)
     vi.useRealTimers()
   })
 

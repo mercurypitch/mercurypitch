@@ -120,7 +120,27 @@ export const [jamPitchHistory, setJamPitchHistory] = createSignal<
 
 export const [jamExerciseMelody, setJamExerciseMelody] =
   createSignal<MelodyData | null>(null)
-export const [jamExercisePlaying, setJamExercisePlaying] = createSignal(false)
+const [_jamExercisePlaying, _setJamExercisePlaying] = createSignal(false)
+export const jamExercisePlaying = _jamExercisePlaying
+
+/**
+ * Every stop names itself.
+ *
+ * Playback stopping with no explanation cost two testing sessions and two
+ * separate root causes -- a drill timer's broadcast, then a peer's melody
+ * announcement -- both of which reached this one signal from somewhere
+ * that did not look like playback at all. The log line is the cheapest
+ * possible answer to "what stopped it".
+ */
+export function setJamExercisePlaying(
+  value: boolean,
+  because = 'unspecified',
+): void {
+  if (_jamExercisePlaying() && !value) {
+    console.info(`[jam:transport] playback STOPPED — ${because}`)
+  }
+  _setJamExercisePlaying(value)
+}
 export const [jamExercisePaused, setJamExercisePaused] = createSignal(false)
 export const [jamExerciseBeat, setJamExerciseBeat] = createSignal(0)
 export const [jamExerciseNoteIndex, setJamExerciseNoteIndex] = createSignal(-1)
@@ -313,7 +333,7 @@ export function selectJamSong(song: JamSong): boolean {
   // A room runs one thing at a time.
   setJamExerciseMelody(null)
   setJamExerciseTotalBeats(0)
-  setJamExercisePlaying(false)
+  setJamExercisePlaying(false, 'a song was loaded')
   setJamExercisePaused(false)
   stopPlaybackTimer()
 
@@ -806,6 +826,7 @@ export const [jamRoomMode, setJamRoomMode] = createSignal<JamRoomMode>('unison')
 
 /** Host-only: switch mode and re-broadcast the melody it reshapes. */
 export function selectJamRoomMode(mode: JamRoomMode): void {
+  if (!jamIsHost()) return
   setJamRoomMode(mode)
   const melody = jamExerciseMelody()
   if (melody !== null) jamService?.sendMelody(melody, mode)
@@ -1185,35 +1206,7 @@ export function initJam() {
         return next
       })
     },
-    onMelodyMessage: (msg: JamMelodyMessage) => {
-      if (msg.action === 'clear') {
-        setJamExerciseMelody(null)
-        setJamExerciseTotalBeats(0)
-        setJamExercisePlaying(false)
-        setJamExercisePaused(false)
-        setJamExerciseBeat(0)
-        setJamExerciseNoteIndex(-1)
-        stopPlaybackTimer()
-      } else if (msg.melody) {
-        if (msg.mode !== undefined) setJamRoomMode(msg.mode)
-        setJamExerciseMelody(msg.melody)
-        // Adopt the melody's tempo exactly as selectJamExercise does on the
-        // host. Without this a peer kept whatever bpm it last had (120 by
-        // default) and ran its playhead at a different speed from the room.
-        setJamExerciseBpm(msg.melody.bpm)
-        const total = msg.melody.items.reduce(
-          (max, item) => Math.max(max, item.startBeat + item.duration),
-          0,
-        )
-        setJamExerciseTotalBeats(total)
-        setJamExerciseBeat(0)
-        setJamExerciseNoteIndex(-1)
-        setJamExercisePlaying(false)
-        setJamExercisePaused(false)
-        stopPlaybackTimer()
-        setJamPitchTab('exercise')
-      }
-    },
+    onMelodyMessage: applyRemoteMelody,
     onSongFileMessage: (msg, fromPeerId) => {
       switch (msg.action) {
         case 'offer':
@@ -1279,7 +1272,7 @@ export function initJam() {
       // Peers trust the host's manifest but still resolve the audio
       // themselves -- nothing but URLs and lyrics crossed the wire.
       setJamExerciseMelody(null)
-      setJamExercisePlaying(false)
+      setJamExercisePlaying(false, 'the host loaded a song')
       setJamExercisePaused(false)
       stopPlaybackTimer()
       setJamSong({ ...msg.song, notes: msg.song.notes ?? [], origin: 'url' })
@@ -1494,14 +1487,16 @@ export function selectJamExercise(melody: MelodyData): void {
   setJamExercisePlaying(false)
   setJamExercisePaused(false)
   stopPlaybackTimer()
-  jamService?.sendMelody(melody, jamRoomMode())
+  // Host-only, like the song and the transport. A guest picking a drill
+  // locally must not retune the room.
+  if (jamIsHost()) jamService?.sendMelody(melody, jamRoomMode())
   setJamPitchTab('exercise')
 }
 
 export function clearJamExercise(): void {
   setJamExerciseMelody(null)
   setJamExerciseTotalBeats(0)
-  setJamExercisePlaying(false)
+  setJamExercisePlaying(false, 'a song was loaded')
   setJamExercisePaused(false)
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
@@ -1535,7 +1530,7 @@ export function jamPlaybackResume(): void {
 }
 
 export function jamPlaybackStop(): void {
-  setJamExercisePlaying(false)
+  setJamExercisePlaying(false, 'you pressed stop')
   setJamExercisePaused(false)
   setJamExerciseBeat(0)
   setJamExerciseNoteIndex(-1)
@@ -1604,6 +1599,58 @@ export function jamSongSeek(toSec: number): void {
  * obeys is the difference between a room that stays together and one where
  * somebody else's drill ending stops the song.
  */
+/**
+ * Adopt a melody the room announced.
+ *
+ * Exported for the same reason applyRemoteTransport is: which announcements
+ * this device obeys is exactly where two separate "the song stopped"
+ * bugs lived.
+ */
+export function applyRemoteMelody(msg: JamMelodyMessage): void {
+  // Same rule as transport: the host drives the room, so it never
+  // adopts what a peer announces. Without this a guest broadcasting
+  // its own melody set jamExercisePlaying(false) here -- the very
+  // signal the song's audio reads -- and the host's song stopped
+  // seconds in, with a 'recv melody' the only trace in the log.
+  if (jamIsHost()) {
+    console.info('[jam:store] ignoring melody from a peer (host drives)')
+    return
+  }
+  // And a melody means nothing to a room that is singing a song. One
+  // thing at a time: only the host can switch the room between them.
+  if (jamSong() !== null) {
+    console.info('[jam:store] ignoring melody while a song is loaded')
+    return
+  }
+  if (msg.action === 'clear') {
+    setJamExerciseMelody(null)
+    setJamExerciseTotalBeats(0)
+    setJamExercisePlaying(false, 'the host cleared the drill')
+    setJamExercisePaused(false)
+    setJamExerciseBeat(0)
+    setJamExerciseNoteIndex(-1)
+    stopPlaybackTimer()
+  } else if (msg.melody) {
+    if (msg.mode !== undefined) setJamRoomMode(msg.mode)
+    setJamExerciseMelody(msg.melody)
+    // Adopt the melody's tempo exactly as selectJamExercise does on the
+    // host. Without this a peer kept whatever bpm it last had (120 by
+    // default) and ran its playhead at a different speed from the room.
+    setJamExerciseBpm(msg.melody.bpm)
+    const total = msg.melody.items.reduce(
+      (max, item) => Math.max(max, item.startBeat + item.duration),
+      0,
+    )
+    setJamExerciseTotalBeats(total)
+    setJamExerciseBeat(0)
+    setJamExerciseNoteIndex(-1)
+    setJamExercisePlaying(false, 'the host loaded a different drill')
+    setJamExercisePaused(false)
+    stopPlaybackTimer()
+    setJamPitchTab('exercise')
+  }
+}
+
 export function applyRemoteTransport(
   msg: JamPlaybackMessage,
   fromPeerId = '',
@@ -1742,7 +1789,7 @@ function startPlaybackTimer(): void {
         playbackTimerId = requestAnimationFrame(tick)
       } else {
         // Finished — reset to start and broadcast
-        setJamExercisePlaying(false)
+        setJamExercisePlaying(false, 'the drill reached its last beat')
         setJamExercisePaused(false)
         setJamExerciseBeat(0)
         setJamExerciseNoteIndex(-1)
