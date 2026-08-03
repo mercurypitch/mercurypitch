@@ -445,6 +445,37 @@ describe('transport is scoped, and the host drives it', () => {
     expect(store.jamExercisePaused()).toBe(false)
   })
 
+  it('asks the element to rewind on stop, not just the readout', () => {
+    // The element IS the clock: its timeupdate writes the position, so
+    // setting the position alone is overwritten on the next tick. Going
+    // through a seek request is also what lets the transport controls live
+    // outside the component that owns the element.
+    store.selectJamSong(song())
+    const before = store.jamSongSeekRequest().token
+    store.jamSongSeek(42)
+    expect(store.jamSongSeekRequest()).toEqual({
+      toSec: 42,
+      token: before + 1,
+    })
+    store.jamSongStop()
+    expect(store.jamSongSeekRequest()).toEqual({ toSec: 0, token: before + 2 })
+  })
+
+  it('a guest told to stop rewinds too', () => {
+    store.selectJamSong(song())
+    store.setJamIsHost(false)
+    const before = store.jamSongSeekRequest().token
+    store.applyRemoteTransport({
+      type: 'playback',
+      action: 'stop',
+      scope: 'song',
+      positionSec: 0,
+      timestamp: 0,
+    })
+    expect(store.jamSongSeekRequest().token).toBe(before + 1)
+    expect(store.jamExercisePlaying()).toBe(false)
+  })
+
   it('the host ignores transport it is sent', () => {
     // It is the driver; obeying somebody else would make the room fight.
     store.selectJamSong(song())

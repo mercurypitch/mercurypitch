@@ -39,31 +39,10 @@
   color: var(--text-secondary);
 }
 
-.buttons {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.btn {
-  padding: 5px 14px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: var(--accent);
-}
+/* .buttons / .btn lived here for the stage's own Play and Stop. Those
+   moved into the room's single transport bar (JamTransport) -- two sets
+   of controls for two engines is how a room ended up with two Play
+   buttons, one of which stopped the song. */
 
 /* Lyrics get the larger share: they are read continuously, while the
    lanes are glanced at. */

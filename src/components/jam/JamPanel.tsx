@@ -30,7 +30,6 @@ import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
 import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
-import { JamExerciseControls } from './JamExerciseControls'
 import { JamInviteModal } from './JamInviteModal'
 import panelStyles from './JamPanel.module.css'
 import { JamPeerList } from './JamPeerList'
@@ -40,6 +39,7 @@ import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
 import { JamSongStage } from './JamSongStage'
 import { JamTransferChip } from './JamTransferDialog'
+import { JamTransport } from './JamTransport'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -69,7 +69,7 @@ export const JamPanel: Component = () => {
       const t = e.target as Node | null
       if (t === null) return
       if (pickerRef?.contains(t) === true) return
-      // The toggle marks itself (JamExerciseControls); letting this run on
+      // The toggle marks itself (JamTransport); letting this run on
       // it would close the picker here and reopen it on the button's own
       // click, so one tap would appear to do nothing.
       if (
@@ -934,7 +934,7 @@ export const JamPanel: Component = () => {
                   out of a song. Two play buttons writing one playing signal
                   is a room that stops for reasons nobody can see. */}
               <div class={panelStyles.exerciseBar}>
-                <JamExerciseControls
+                <JamTransport
                   onSelectExercise={() =>
                     setShowExercisePicker(!showExercisePicker())
                   }
