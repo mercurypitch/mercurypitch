@@ -11,8 +11,8 @@ import { createPersistedSignal } from '@/lib/storage'
  *                  user sings is heard or scored. Dismissible for good.
  * - `no-input`   — mic is on and playback is running, but we hear silence:
  *                  the user isn't singing / the mic isn't picking them up.
- * - `too-quiet`  — mic is on and we hear audible sound, but it's too faint for
- *                  the detector to read a pitch.
+ * - `too-quiet`  — mic is on during playback and we hear audible sound, but
+ *                  it's too faint for the detector to read a pitch.
  */
 export type MicInsight = 'none' | 'mic-off' | 'no-input' | 'too-quiet'
 
@@ -33,7 +33,8 @@ export interface MicInsightsOptions {
   isPlaying: () => boolean
   /** Current input level as RMS amplitude (0–1). */
   getLevel: () => number
-  /** The detector's current RMS amplitude gate. Defaults to 0.02. */
+  /** The detector's current RMS amplitude gate. When omitted, the hook keeps
+   *  the legacy audible-but-undetected warning policy for that consumer. */
   getMinAmplitude?: () => number
   /** Is the detector currently producing a pitch (the live "green line"). */
   isDetecting: () => boolean
@@ -50,8 +51,6 @@ export interface MicInsights {
 
 /** Below this RMS the signal is effectively silence (ambient room noise). */
 const NOISE_FLOOR = 0.01
-/** PitchDetector's default RMS gate when a consumer cannot expose its own. */
-const DEFAULT_MIN_AMPLITUDE = 0.02
 /** Sustained audible-but-undetected frames before warning (~0.75s @ 60fps). */
 const TOO_QUIET_FRAMES = 45
 /** Sustained silence-during-playback frames before warning (~1.5s @ 60fps),
@@ -78,28 +77,31 @@ export interface MicSignalSample {
 /**
  * Classify one already-smoothed active-mic sample before debounce. A strong
  * unpitched sound is not weak input: it may be breath, speech, percussion, or
- * a note outside the detector's range, so only levels below the detector's
- * real amplitude gate can produce `too-quiet`.
+ * a note outside the detector's range. Consumers that expose the detector's
+ * real amplitude gate therefore produce `too-quiet` only below that gate;
+ * older consumers retain their prior policy until they expose one.
  */
 export function classifyMicSignal(
   sample: MicSignalSample,
 ): Exclude<MicInsight, 'mic-off'> {
   if (!sample.isPlaying || sample.isDetecting) return 'none'
   if (sample.level <= NOISE_FLOOR) return 'no-input'
-  const minAmplitude = Math.max(
-    NOISE_FLOOR,
-    sample.minAmplitude ?? DEFAULT_MIN_AMPLITUDE,
-  )
+  // Not every existing consumer exposes its detector yet. Preserve their
+  // prior audible-but-undetected policy instead of guessing a threshold that
+  // may disagree with their user-configured detector.
+  if (sample.minAmplitude === undefined) return 'too-quiet'
+  const minAmplitude = Math.max(NOISE_FLOOR, sample.minAmplitude)
   return sample.level < minAmplitude ? 'too-quiet' : 'none'
 }
 
 /**
  * Derives a debounced {@link MicInsight} from raw mic state. The detector is the
  * ground truth: while a pitch is read the insight is `none`. Otherwise we
- * distinguish amplitude-gated input (`too-quiet`) from silence-while-playing
- * (`no-input`), each debounced. Recovery clears immediately so a live pitch or
- * healthy level can never sit behind a stale warning. Runs a single rAF loop
- * that lives only while the mic is on and the monitor is enabled.
+ * distinguish low input (`too-quiet`) from silence-while-playing (`no-input`),
+ * each debounced. Where supplied, the detector's active amplitude gate decides
+ * whether input is actually low. Recovery clears immediately so a live pitch
+ * or healthy level can never sit behind a stale warning. Runs a single rAF
+ * loop that lives only while the mic is on and the monitor is enabled.
  */
 export function useMicInsights(opts: MicInsightsOptions): MicInsights {
   const [insight, setInsight] = createSignal<MicInsight>('none')
