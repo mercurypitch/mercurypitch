@@ -1690,7 +1690,12 @@ export function jamGetInputLevel(): number {
 export function startJamPitchDetection(): void {
   if (pitchDetector) return
   const stream = jamService?.getLocalStream()
-  if (!stream) return
+  // A stream with no audio track is now the NORMAL state on entering a
+  // room: the microphone is not captured until somebody unmutes. Checking
+  // only that the stream exists took the whole Jam tab down with
+  // "MediaStream has no audio track" -- createMediaStreamSource throws on
+  // an empty one. toggleJamMute calls this again once there is a mic.
+  if (!stream || stream.getAudioTracks().length === 0) return
 
   pitchDetector = new JamPitchDetector()
 
