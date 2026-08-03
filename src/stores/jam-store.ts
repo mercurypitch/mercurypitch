@@ -1634,7 +1634,9 @@ export async function createJamRoom(
     saveJamSession(roomId, displayName)
     return roomId
   } catch (_err) {
-    setJamError('Failed to create room')
+    setJamError(
+      'Could not create the room — check your connection and try again.',
+    )
     setJamState('idle')
     return null
   }
@@ -1658,7 +1660,9 @@ export async function joinJamRoom(
       // overwriting made every failure look like an unreachable server
       // when the real one was usually the connection never opening.
       if (jamError() === null) {
-        setJamError('Failed to join room — no response from server')
+        setJamError(
+          'No answer from the room server — check the room code with the host, then try again.',
+        )
       }
       setJamState('idle')
       return false
@@ -1669,7 +1673,10 @@ export async function joinJamRoom(
     saveJamSession(roomId, displayName)
     return true
   } catch (_err) {
-    if (jamError() === null) setJamError('Failed to join room')
+    if (jamError() === null)
+      setJamError(
+        'Could not join that room — check the code with the host, then try again.',
+      )
     setJamState('idle')
     return false
   }
