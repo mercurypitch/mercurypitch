@@ -220,4 +220,81 @@ test.describe('Analysis Dashboard', () => {
     await expect(page.locator('[data-tour="analysis.timbre"]')).toHaveCount(0)
     await expect(page.locator('[data-tour="analysis.spectrum"]')).toHaveCount(0)
   })
+
+  // ── Switching takes must not rebuild the tab ────────────────────
+  //
+  // This tab is lazy-loaded inside a <Suspense>, and the note-analysis
+  // resource was read with `notes()`. Calling a LOADING resource inside
+  // that boundary re-suspends the whole tab, so picking a different take
+  // unmounted the dashboard root, flashed the tab skeleton, and rebuilt
+  // the page — "the page flicks and reloads". `.latest` keeps the last
+  // value on screen instead.
+  //
+  // Asserted through the DOM rather than by eye: the dashboard root must
+  // survive the click.
+  test('picking a take does not remount the dashboard @smoke', async ({
+    page,
+  }) => {
+    const seeded = await page.evaluate(() => {
+      const pp = (window as unknown as { __pp?: Record<string, never> })
+        .__pp as
+        | { appStore?: { importUvrSession?: (s: unknown) => void } }
+        | undefined
+      if (!pp?.appStore?.importUvrSession) return false
+      for (const n of [1, 2]) {
+        pp.appStore.importUvrSession({
+          sessionId: `flicker-${n}`,
+          status: 'completed',
+          progress: 100,
+          createdAt: Date.now() - n * 100000,
+          originalFile: {
+            name: `song-${n}.mp3`,
+            size: 1000,
+            mimeType: 'audio/mpeg',
+          },
+          stemMeta: { vocal: { duration: 30 + n } },
+          processingMode: 'local',
+        })
+      }
+      return true
+    })
+    test.skip(!seeded, 'session store not exposed on window.__pp')
+
+    // The seed lands before the tab mounts; switchTab renders the picker.
+    await switchTab(page, 'analysis')
+    await page.waitForTimeout(800)
+
+    const take = page.locator('[data-testid^="take-uvr:"]').first()
+    await expect(take).toBeVisible({ timeout: 10000 })
+
+    // Watch for the tab SKELETON appearing. That element is the
+    // <Suspense> fallback, so seeing it means the whole tab re-suspended
+    // — the thing being guarded against. Checking that the root node
+    // survives is not enough: it is re-added within the same tick, so a
+    // poll after the fact sees it back in place and reports success.
+    await page.evaluate(() => {
+      const w = window as unknown as { __sawSkeleton?: boolean }
+      w.__sawSkeleton = false
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          m.addedNodes.forEach((n) => {
+            if (n.nodeType !== 1) return
+            const cls = (n as HTMLElement).className
+            if (typeof cls === 'string' && cls.includes('skeletonTabContent')) {
+              w.__sawSkeleton = true
+            }
+          })
+        }
+      })
+      obs.observe(document.body, { childList: true, subtree: true })
+    })
+
+    await take.click()
+    await page.waitForTimeout(1500)
+
+    const reSuspended = await page.evaluate(
+      () => (window as unknown as { __sawSkeleton?: boolean }).__sawSkeleton,
+    )
+    expect(reSuspended).toBe(false)
+  })
 })
