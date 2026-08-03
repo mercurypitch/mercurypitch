@@ -47,13 +47,33 @@ export interface JamSong {
  * lines, this runs once per frame at most, and the obvious version is the
  * one that stays correct when someone adds a rest row.
  */
+/**
+ * How far before its start a line still counts as the one we are on.
+ *
+ * A seek does not land where it is asked to: setting `currentTime` snaps
+ * to a frame boundary, so jumping to a line's own start time arrives a few
+ * milliseconds short of it. Every line but the first hides that -- the
+ * previous line is still current, so something is highlighted -- but
+ * before the FIRST line there is nothing to fall back to, and clicking it
+ * highlighted no row at all while every other row worked.
+ *
+ * Deliberately applied only when no line has started yet, so no boundary
+ * between two lines moves and the per-line scoring windows are untouched.
+ */
+const SEEK_SNAP_SEC = 0.15
+
 export function lineAt(
   lines: readonly LyricsLineTiming[],
   positionSec: number,
 ): LyricsLineTiming | null {
   let current: LyricsLineTiming | null = null
   for (const line of lines) {
-    if (line.startSec > positionSec) break
+    if (line.startSec > positionSec) {
+      if (current === null && line.startSec - positionSec <= SEEK_SNAP_SEC) {
+        return line
+      }
+      break
+    }
     current = line
   }
   if (current === null) return null

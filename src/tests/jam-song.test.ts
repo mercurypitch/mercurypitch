@@ -51,6 +51,32 @@ describe('lineAt', () => {
     expect(lineAt([{ text: 'late', startSec: 3 }], 1)).toBeNull()
   })
 
+  it('counts the first line as started when a seek lands just short of it', () => {
+    // Clicking a lyric line seeks to its start time, and the element snaps
+    // to a frame boundary a few milliseconds earlier. Every other line
+    // hides that -- the previous one stays current, so a row is still
+    // highlighted -- but the first line had nothing behind it, so clicking
+    // it lit up nothing at all.
+    const one = [{ text: 'late', startSec: 3 }]
+    expect(lineAt(one, 2.99)?.text).toBe('late')
+    expect(lineIndexAt(one, 2.99)).toBe(0)
+    // Still an intro, though: a hair is not a lead-in.
+    expect(lineAt(one, 2.5)).toBeNull()
+  })
+
+  it('does not let the snap skip a line when two start close together', () => {
+    // The tolerance applies only where nothing has started yet, so no
+    // boundary between two lines moves -- and neither do the per-line
+    // scoring windows that read the same function.
+    const close = [
+      { text: 'a', startSec: 10 },
+      { text: 'b', startSec: 10.1 },
+    ]
+    expect(lineAt(close, 10)?.text).toBe('a')
+    expect(lineAt(close, 10.05)?.text).toBe('a')
+    expect(lineAt(close, 10.1)?.text).toBe('b')
+  })
+
   it('survives a song with no lyrics at all', () => {
     // An instrumental is a legal song; the lyrics column is just empty.
     expect(lineAt([], 10)).toBeNull()
