@@ -8,15 +8,16 @@
 // that the singer's eye can find the current line without hunting.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
+import { blockOfLine, groupLinesBySinger } from '@/lib/jam/jam-song-blocks'
 import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
-import { assignJamSongLines, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
+import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
 import { JamLyricsFinder } from './JamLyricsFinder'
 import styles from './JamSongLyrics.module.css'
 
@@ -80,13 +81,57 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   let scrollRef: HTMLDivElement | undefined
 
   /**
-   * Which line the host is currently assigning, if any.
+   * Which line the per-line menu is open on, if any.
    *
-   * Assignment is a two-tap gesture -- tap a line, pick a singer -- rather
-   * than a mode you enter and leave. A mode would be one more piece of
-   * state to get stuck in, over a lyric sheet somebody is trying to sing.
+   * Kept alongside the brush in the assign bar: the bar is for sweeping a
+   * verse, this is for fixing one line without arming anything.
    */
   const [assigning, setAssigning] = createSignal<number | null>(null)
+
+  /**
+   * The drag in progress while a singer is armed.
+   *
+   * Held as an anchor plus a moving end rather than a committed range, so
+   * the sheet can show what WILL be painted before the pointer comes up --
+   * and so an accidental drag can be abandoned by releasing off the list.
+   */
+  const [paintFrom, setPaintFrom] = createSignal<number | null>(null)
+  const [paintTo, setPaintTo] = createSignal<number | null>(null)
+
+  const painting = () => jamAssignBrush() !== null
+
+  const inPaintRange = (i: number) => {
+    const a = paintFrom()
+    const b = paintTo()
+    if (a === null || b === null) return false
+    return i >= Math.min(a, b) && i <= Math.max(a, b)
+  }
+
+  const commitPaint = () => {
+    const a = paintFrom()
+    const b = paintTo()
+    const brush = jamAssignBrush()
+    if (a !== null && b !== null && brush !== null) {
+      assignJamSongLines(a, b, brush)
+    }
+    setPaintFrom(null)
+    setPaintTo(null)
+  }
+
+  // A pointer released anywhere ends the sweep, including outside the
+  // list -- otherwise letting go over the pitch lanes leaves the sheet
+  // stuck mid-drag.
+  onMount(() => {
+    const onUp = () => {
+      if (paintFrom() !== null) commitPaint()
+    }
+    document.addEventListener('pointerup', onUp)
+    onCleanup(() => document.removeEventListener('pointerup', onUp))
+  })
+
+  const blocks = createMemo(() =>
+    groupLinesBySinger(props.lines, jamSongParts()),
+  )
 
   const everyone = createMemo(() => {
     const mine = jamPeerId()
@@ -151,12 +196,26 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
           </>
         }
       >
-        <div class={styles.scroll} ref={scrollRef}>
+        {/* The armed colour is set once here rather than per line: the
+            preview is the brush, and every row shows the same brush. */}
+        <div
+          class={styles.scroll}
+          ref={scrollRef}
+          style={{
+            '--brush-color':
+              colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
+          }}
+        >
           <For each={props.lines}>
             {(line, i) => (
               <div
                 data-line={i()}
                 class={styles.line}
+                style={{
+                  '--singer-color':
+                    colors()[singerOfLine(jamSongParts(), i()) ?? ''] ??
+                    'transparent',
+                }}
                 classList={{
                   [styles.lineCurrent]: i() === currentIndex(),
                   // Everything already sung dims rather than disappearing,
@@ -172,11 +231,34 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                     !jamLineIsMine(i()),
                   // Raised while its popover is open -- see the CSS note.
                   [styles.lineAssigning]: assigning() === i(),
+                  // Block shape: tint the whole run, round only its ends,
+                  // so a verse reads as one thing rather than as N rows
+                  // that happen to share a colour.
+                  [styles.lineOwned]:
+                    singerOfLine(jamSongParts(), i()) !== null,
+                  [styles.blockStart]:
+                    blockOfLine(blocks(), i())?.fromLine === i(),
+                  [styles.blockEnd]: blockOfLine(blocks(), i())?.toLine === i(),
+                  [styles.painting]: painting(),
+                  [styles.paintPreview]: inPaintRange(i()),
+                }}
+                onPointerDown={(e) => {
+                  if (!painting() || !jamIsHost()) return
+                  // Or the browser starts a text selection across the sheet
+                  // and the drag paints nothing.
+                  e.preventDefault()
+                  setPaintFrom(i())
+                  setPaintTo(i())
+                }}
+                onPointerEnter={() => {
+                  if (paintFrom() !== null) setPaintTo(i())
                 }}
                 onClick={() => {
-                  // Jump to the line. This is the gesture people reach for
-                  // first -- "take it from the chorus" -- so it gets the
-                  // whole row, and assigning a singer gets its own button.
+                  // While a singer is armed the row belongs to the brush;
+                  // the sweep has already handled it on pointer up.
+                  if (painting()) return
+                  // Otherwise: jump to the line. The gesture people reach
+                  // for first -- "take it from the chorus".
                   if (!jamIsHost()) return
                   setAssigning(null)
                   props.onSeek?.(line.startSec)
@@ -198,19 +280,21 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                     />
                   )}
                 </Show>
-                {/* A colour bar rather than a name: at singing distance a
-                    name is unreadable and a colour is not, and the lanes
-                    on the right already use the same colour per person. */}
-                <Show when={singerOfLine(jamSongParts(), i())}>
-                  {(id) => (
-                    <span
-                      class={styles.singerBar}
-                      style={{ background: colors()[id()] ?? '#58a6ff' }}
-                      aria-label={`Sung by ${nameOf(id())}`}
-                    />
-                  )}
-                </Show>
                 <span class={styles.lineText}>{line.text}</span>
+                {/* The name rides the FIRST line of a block and nothing
+                    else. Repeating it down a six-line verse is six times
+                    the ink for one fact, and the tint already says the run
+                    belongs together. */}
+                <Show
+                  when={
+                    blockOfLine(blocks(), i())?.fromLine === i() &&
+                    singerOfLine(jamSongParts(), i()) !== null
+                  }
+                >
+                  <span class={styles.singerName}>
+                    {nameOf(singerOfLine(jamSongParts(), i()) ?? '')}
+                  </span>
+                </Show>
                 {/* Only on lines already sung: a score appearing beside the
                     line you are singing would be judging a phrase that is
                     not finished. */}

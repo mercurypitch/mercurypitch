@@ -339,6 +339,25 @@ export function jamLineIsMine(lineIndex: number): boolean {
 }
 
 /**
+ * The singer currently being painted onto lines, or null for off.
+ *
+ * Person-first, because that is the order people think in: "Ada takes the
+ * chorus" is one decision and then a sweep, where line-first made it one
+ * decision per line. A brush has to persist across clicks, which is why
+ * this is a mode rather than a gesture -- and while it is armed a click on
+ * a line paints instead of seeking, so the two meanings never overlap.
+ */
+export const [jamAssignBrush, setJamAssignBrush] = createSignal<string | null>(
+  null,
+)
+
+/** Arm a singer, or disarm by picking the armed one again. */
+export function toggleJamAssignBrush(peerId: string): void {
+  if (!jamIsHost()) return
+  setJamAssignBrush((prev) => (prev === peerId ? null : peerId))
+}
+
+/**
  * Host-only: give a run of lines to a singer, and tell the room.
  *
  * Re-sent as a whole manifest rather than a delta. The map is a few

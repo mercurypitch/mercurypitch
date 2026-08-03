@@ -148,15 +148,66 @@
 }
 
 /* ── Who sings what ─────────────────────────────────────────────────
-   A colour bar down the leading edge, matching that person's pitch lane
-   on the right. Readable at singing distance, where a name is not. */
-.singerBar {
+   A tint across the whole block rather than a bar down one edge. A verse
+   is one thing, and a run of six bars reads as six rows that happen to
+   share a colour. The name rides the first line only. */
+.lineOwned {
+  background: color-mix(in srgb, var(--singer-color) 20%, transparent);
+  /* Square by default so consecutive lines fuse into one slab; the ends
+     round themselves below. */
+  border-radius: 0;
+}
+
+.blockStart {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--singer-color) 35%, transparent);
+}
+
+.blockEnd {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: inset 0 -1px 0
+    color-mix(in srgb, var(--singer-color) 25%, transparent);
+}
+
+/* Both ends at once: a one-line block needs both shadows, and the two
+   rules above would otherwise overwrite each other. */
+.blockStart.blockEnd {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--singer-color) 35%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--singer-color) 25%, transparent);
+}
+
+.singerName {
   flex-shrink: 0;
-  align-self: stretch;
-  width: 3px;
-  min-height: 1em;
-  margin-right: 2px;
-  border-radius: 2px;
+  align-self: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--singer-color) 30%, transparent);
+  color: var(--text-primary);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ── Painting ───────────────────────────────────────────────────────
+   While a singer is armed the whole sheet is a canvas, so say so with the
+   cursor and kill text selection -- a drag that selects words instead of
+   painting them is the whole gesture failing silently. */
+.painting {
+  cursor: crosshair;
+  user-select: none;
+}
+
+/* What WILL be painted when the pointer comes up. Deliberately louder
+   than the committed tint: it is a preview of a change, not a state. */
+.paintPreview {
+  background: color-mix(in srgb, var(--brush-color, #58a6ff) 30%, transparent);
+  outline: 1px solid var(--brush-color, #58a6ff);
+  outline-offset: -1px;
 }
 
 /* Somebody else's line: still readable, because following the whole song

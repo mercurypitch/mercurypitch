@@ -103,3 +103,14 @@
   font-size: 0.72rem;
   color: var(--text-tertiary, var(--text-secondary));
 }
+
+/* The words and the thing that edits who sings them, as one column. The
+   bar has to sit inside this box rather than above the split, or it
+   stretches across the pitch lanes it has nothing to do with. */
+.lyricsSide {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 0;
+}

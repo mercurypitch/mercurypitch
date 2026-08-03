@@ -39,3 +39,25 @@
   width: 100%;
   height: 100%;
 }
+
+/* ── Cued lane ──────────────────────────────────────────────────────
+   The singer due in within the lead-in. Their whole lane lifts, so the
+   signal is findable without hunting for one bright note among many. */
+.laneCued {
+  border-color: color-mix(in srgb, var(--lane-color) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lane-color) 35%, transparent);
+}
+
+.cue {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lane-color) 26%, transparent);
+  color: var(--text-primary);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  /* Never intercepts a pointer: the lane behind it is the target. */
+  pointer-events: none;
+}

@@ -1,0 +1,99 @@
+/* ── JamAssignBar ───────────────────────────────────────────────────
+   Sits above the words, because that is what it edits. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color, rgb(255 255 255 / 10%));
+}
+
+.label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.people {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.person:hover {
+  background: rgb(255 255 255 / 12%);
+  color: var(--text-primary);
+}
+
+/* Armed: the chip wears the person's own colour, so the brush you are
+   holding and the lines it paints are obviously the same thing. */
+.personArmed {
+  border-color: var(--person-color);
+  background: color-mix(in srgb, var(--person-color) 22%, transparent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--person-color);
+  flex-shrink: 0;
+}
+
+.dotHollow {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--person-color);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hint,
+.hintArmed {
+  font-size: 0.72rem;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.hintArmed {
+  color: var(--accent-color, #58a6ff);
+}
+
+.done {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--border-color, rgb(255 255 255 / 14%));
+  border-radius: 999px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.done:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 8%);
+}
