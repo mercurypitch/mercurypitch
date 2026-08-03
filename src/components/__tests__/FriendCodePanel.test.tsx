@@ -5,6 +5,7 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as FollowService from '@/db/services/follow-service'
+import type * as Defaults from '@/lib/defaults'
 
 const mocks = vi.hoisted(() => ({
   getMyFriendCode: vi.fn(async (): Promise<string | null> => 'K7QM2X4B'),
@@ -29,7 +30,13 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: mocks.showNotification,
 }))
 
-vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
+// Spread the real module rather than replacing it — same trap AccountSection
+// documents: the panel's sign-in CTA reaches ui-store, which reads IS_TEST at
+// import time, and a bare object fails the whole suite at collection.
+vi.mock('@/lib/defaults', async (importOriginal) => ({
+  ...(await importOriginal<typeof Defaults>()),
+  API_BASE_URL: 'http://api.test',
+}))
 
 import { FriendCodePanel } from '@/components/friends/FriendCodePanel'
 
