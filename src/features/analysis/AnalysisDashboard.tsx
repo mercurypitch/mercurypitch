@@ -60,8 +60,18 @@ export const AnalysisDashboard: Component = () => {
 
   const [streak] = createResource(getStreakState)
 
-  // Cached note analysis for the selected take — refetches on selection.
-  // The take itself is the resource source, so the fetcher reads no signals.
+  /**
+   * Cached note analysis for the selected take. The take itself is the
+   * resource source, so the fetcher reads no signals.
+   *
+   * Read via `.latest`, never `notes()`. This tab is lazy-loaded inside a
+   * <Suspense>, and calling a loading resource inside that boundary
+   * re-suspends the WHOLE tab: picking a different take unmounted the
+   * dashboard root, flashed the tab skeleton, and rebuilt the page —
+   * which is the "flicks and reloads" the owner saw. `.latest` keeps the
+   * previous value on screen while the next one loads, so only the parts
+   * that depend on it change.
+   */
   const [notes] = createResource<SessionPitchData | null, AnalysisTake>(
     selected,
     async (take) => {
@@ -75,7 +85,7 @@ export const AnalysisDashboard: Component = () => {
   )
 
   const detectedNotes = createMemo(() => {
-    const data = notes()
+    const data = notes.latest
     if (data === null || data === undefined) return []
     return data.segmentedNotes.length > 0
       ? data.segmentedNotes
@@ -83,7 +93,7 @@ export const AnalysisDashboard: Component = () => {
   })
 
   const noteSummary = createMemo(() => {
-    const data = notes()
+    const data = notes.latest
     return data === null || data === undefined
       ? null
       : buildMobileAnalysisSummary(data)
