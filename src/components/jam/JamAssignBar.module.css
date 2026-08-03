@@ -97,3 +97,27 @@
   color: var(--text-primary);
   background: rgb(255 255 255 / 8%);
 }
+
+/* A phone has no room for advice. The chips still say what to do by being
+   tappable, and the armed state is visible in colour -- prose costs a line
+   of lyrics, which is the thing people are actually here to read. */
+@media (max-width: 900px) {
+  .bar {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+
+  .hint,
+  .hintArmed {
+    display: none;
+  }
+
+  .label {
+    font-size: 0.62rem;
+  }
+
+  .person {
+    padding: 3px 8px;
+    font-size: 0.74rem;
+  }
+}

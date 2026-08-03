@@ -670,3 +670,26 @@
   flex: 1;
   background: var(--bg-tertiary);
 }
+
+/* ── Phone ──────────────────────────────────────────────────────────
+   The header is the one row with no escape hatch. The transport strip
+   next to it scrolls horizontally on mobile by design, but this does not,
+   and .mainArea clips overflow-x -- so with a peer in the room the Leave
+   button ran 23px past the edge and was clipped to about two thirds of
+   itself, under any sane touch target.
+
+   Wrapping is the trade worth making: the actions drop to their own line
+   at full size, and the pixels lost are the least valuable on the screen. */
+@media (max-width: 640px) {
+  .roomHeader {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+  }
+
+  .roomActions {
+    /* Takes the new line entirely, so the icons space out rather than
+       huddling against the right edge. */
+    flex: 1 0 100%;
+    justify-content: flex-end;
+  }
+}

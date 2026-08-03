@@ -85,8 +85,15 @@
     font-size: 0.92rem;
   }
 
+  /* NOT a percentage. The desktop rule above was fixed for exactly this
+     and the phone one was missed: 35% resolves against WIDTH, so on a
+     364px column it is 127px top AND bottom -- 255px of padding inside a
+     175px panel. Padding is the floor of a border-box, so the scroller
+     could not shrink, overflowed, and the panel's overflow:hidden clipped
+     every line. The lyric column showed nothing at all on a phone.
+     Centring is done by arithmetic in the component. */
   .scroll {
-    padding: 35% 12px;
+    padding: 10px 12px;
   }
 }
 
