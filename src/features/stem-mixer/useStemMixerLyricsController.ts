@@ -762,8 +762,14 @@ export function useStemMixerLyricsController(
     cancelSearch()
     setSongMatches([])
     const forced = extractTitle(deps.songTitle ?? deps.sessionId ?? '')
-    setSongPickerQuery(forced && forced !== 'Unknown' ? forced : '')
+    const seed = forced && forced !== 'Unknown' ? forced : ''
+    setSongPickerQuery(seed)
     setShowSongPicker(true)
+    // Open with answers rather than an empty box. The seeded query is the
+    // one the singer would have typed anyway -- the old finder made them
+    // press Search to ask it, which read as "we found nothing" when in
+    // fact nobody had looked yet. Refining and searching again still works.
+    if (seed !== '') await handleSongPickerRefine()
   }
 
   const loadLyrics = async () => {
