@@ -74,6 +74,52 @@ export interface EncodeProgress {
   ratio: number
 }
 
+/**
+ * How much of the bar decoding is allowed to claim.
+ *
+ * `decodeAudioData` has no progress of its own and a separation stem is
+ * hundreds of megabytes of PCM, so this stretch is genuinely slow and
+ * genuinely unmeasurable. It gets an estimate rather than a bar that sits
+ * at nothing -- see `creepTo`.
+ */
+const DECODE_SHARE = 0.2
+
+/** Audio per encode call: small enough to move the bar, big enough to be cheap. */
+const ENCODE_SLICE_SEC = 5
+
+/**
+ * An estimate that eases toward a ceiling it never reaches.
+ *
+ * Honest in the way that matters: it never claims to have finished, and it
+ * keeps moving, so a long decode reads as working rather than as hung. The
+ * real number takes over the moment there is one.
+ */
+function creepTo(cap: number, report: (ratio: number) => void): () => void {
+  let at = 0
+  const id = setInterval(() => {
+    at += (cap - at) * 0.08
+    report(at)
+  }, 150)
+  return () => clearInterval(id)
+}
+
+/** One slice of a decoded buffer, as its own AudioBuffer. */
+function sliceBuffer(
+  source: AudioBuffer,
+  from: number,
+  to: number,
+): AudioBuffer {
+  const slice = new AudioBuffer({
+    length: to - from,
+    numberOfChannels: source.numberOfChannels,
+    sampleRate: source.sampleRate,
+  })
+  for (let ch = 0; ch < source.numberOfChannels; ch++) {
+    slice.copyToChannel(source.getChannelData(ch).subarray(from, to), ch)
+  }
+  return slice
+}
+
 export class StemEncodeUnsupportedError extends Error {
   constructor() {
     super('This browser cannot encode audio, so the song cannot be shared.')
@@ -85,10 +131,10 @@ export class StemEncodeUnsupportedError extends Error {
  * Encode one WAV stem to AAC-in-MP4.
  *
  * Decoded through an OfflineAudioContext at the source's own sample rate,
- * so a 44.1k stem is not silently resampled to 48k on the way past. The
- * whole buffer is handed to mediabunny in one go and the returned promise
- * respects encoder backpressure, which is what keeps a phone from holding
- * the entire compressed output in flight at once.
+ * so a 44.1k stem is not silently resampled to 48k on the way past. Then
+ * fed to mediabunny in slices, each await respecting encoder backpressure
+ * -- which keeps a phone from holding the whole compressed output in
+ * flight, and is what gives the caller a progress number to show.
  */
 export async function encodeStemToAac(
   wav: ArrayBuffer,
@@ -97,13 +143,22 @@ export async function encodeStemToAac(
   if (!(await ensureAacEncoder())) throw new StemEncodeUnsupportedError()
 
   const rate = encodeRateFor(wavSampleRate(wav.slice(0, 4096)))
-  // A 1-frame context is only a decoder host; nothing is rendered through
-  // it, so its length does not matter.
-  const decoded = await new OfflineAudioContext(1, 1, rate).decodeAudioData(
-    // decodeAudioData detaches its input, and the caller may still want the
-    // original bytes (the WAV is the master copy).
-    wav.slice(0),
-  )
+  // Decoding says nothing about its own progress, so the bar is estimated
+  // until there is a real number to show.
+  const stopCreep = creepTo(DECODE_SHARE, (r) => onProgress?.({ ratio: r }))
+  let decoded: AudioBuffer
+  try {
+    // A 1-frame context is only a decoder host; nothing is rendered through
+    // it, so its length does not matter.
+    decoded = await new OfflineAudioContext(1, 1, rate).decodeAudioData(
+      // decodeAudioData detaches its input, and the caller may still want
+      // the original bytes (the WAV is the master copy).
+      wav.slice(0),
+    )
+  } finally {
+    stopCreep()
+  }
+  onProgress?.({ ratio: DECODE_SHARE })
 
   const output = new Output({
     format: new Mp4OutputFormat(),
@@ -115,8 +170,21 @@ export async function encodeStemToAac(
   })
   output.addAudioTrack(source)
   await output.start()
-  onProgress?.({ ratio: 0 })
-  await source.add(decoded)
+
+  // Fed in slices rather than in one go. Handing over the whole buffer was
+  // one await that took as long as the encode: the bar showed 0, then 100,
+  // for each stem in turn, which is a progress bar that reports only that
+  // something happened. Successive buffers are concatenated by mediabunny
+  // -- each one starts where the last ended -- so the output is identical.
+  const step = Math.max(1, Math.floor(ENCODE_SLICE_SEC * decoded.sampleRate))
+  const frames = decoded.length
+  for (let from = 0; from < frames; from += step) {
+    const to = Math.min(frames, from + step)
+    await source.add(sliceBuffer(decoded, from, to))
+    onProgress?.({
+      ratio: DECODE_SHARE + (1 - DECODE_SHARE) * (to / frames),
+    })
+  }
   onProgress?.({ ratio: 1 })
   await output.finalize()
 

@@ -15,7 +15,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   padding: 10px 12px 8px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(var(--jam-blur-lift, 10px));
   max-width: 300px;
   max-height: 200px;
   overflow: hidden;

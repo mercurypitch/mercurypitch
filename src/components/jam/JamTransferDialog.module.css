@@ -26,7 +26,7 @@
      running text over a photo. Still slider-driven. */
   background: var(--jam-float, rgba(13, 17, 23, 0.85));
   box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(var(--jam-blur-lift, 10px));
 }
 
 .head {

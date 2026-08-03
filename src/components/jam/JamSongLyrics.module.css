@@ -8,7 +8,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-primary, #0d1117);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 3));
   overflow: hidden;
 }
 

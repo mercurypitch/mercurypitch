@@ -160,7 +160,7 @@
   background: rgba(13, 17, 23, 0.75);
   border-radius: 4px;
   padding: 1px 6px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(var(--jam-blur-lift, 10px));
 }
 
 .chip.expanded .name {
