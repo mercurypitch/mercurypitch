@@ -51,13 +51,16 @@ These are the rules that break things when ignored.
    component instead.
 5. **Run `pnpm check` after every code change.** It is typecheck + lint --fix +
    format. CI runs `pnpm check:syntax` (non-mutating).
-6. **Schema changes ship as a `scripts/migrate-*.sql` file** applied with
-   `wrangler d1 execute`, plus the matching edit to
-   `workers/db-worker/schema.sql` (which is the current full schema, not a
-   historical log). There is no `wrangler d1 migrations` directory. Never edit
-   a `migrate-*.sql` that has already been applied to dev or prod — add a new
-   one. See [QUESTIONNAIRE.md](QUESTIONNAIRE.md) Q8: this is worth moving to
-   real numbered migrations.
+6. **Schema changes ship as a numbered migration** — a new
+   `workers/db-worker/migrations/NNNN_name.sql`, applied by
+   `wrangler d1 migrations apply` from `deploy-db.yml` (dev on merge, prod at
+   release). Never edit an already-applied file — add the next number.
+   `migrations_dir` must be set on **every** `d1_databases` block in
+   `workers/db-worker/wrangler.jsonc`; wrangler does not inherit it. The
+   `scripts/migrate-*.sql` files are
+   [legacy-only](../../scripts/README-legacy-migrations.md) — never add
+   another. Release pre-flight:
+   [the release handoff](../integration-2026-07-release-handoff.md) §7.
 7. **Never use `rg -r`** — it means `--replace`, not "recursive", and silently
    garbles output.
 
@@ -97,7 +100,7 @@ These are the rules that break things when ignored.
 | `mic-feedback` | [useMicInsights.ts](../../src/features/mic-feedback/useMicInsights.ts) | 267 | A single, debounced "what's happening with the mic" state, shared by every tab that listens to the mic (Singing, Karaoke, Piano, Guitar,... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
-| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 186 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
+| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 192 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
@@ -253,8 +256,8 @@ a bare state string. Use the `isPlaying` signal to detect pause/stop.
 | Change stem separation | `src/lib/uvr-processing-pipeline.ts`, `src/lib/uvr-api.ts`, `src/stores/uvr-store.ts` |
 | Change lyrics timing | `src/lib/canonical-lrc.ts`, `src/lib/lyrics-service.ts`, `src/features/stem-mixer/lrc-gen-engine.ts` |
 | Touch pitch detection | `src/lib/pitch-pipeline/` (live) and `src/lib/pitch-algorithms/` (detectors) |
-| Add an API endpoint | `workers/db-worker/src/index.ts` — **and** add the route to `assets.run_worker_first` in `wrangler.toml` |
-| Add a DB column | new `scripts/migrate-<what>.sql` + update `workers/db-worker/schema.sql` |
+| Add an API endpoint | `workers/db-worker/src/index.ts` — **and** add the route to `assets.run_worker_first` in `wrangler.jsonc` |
+| Add a DB column | new `workers/db-worker/migrations/NNNN_<what>.sql` — next number, never edit an applied one |
 
 ### Verification gates
 
@@ -289,8 +292,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.8k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 1.8k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
@@ -302,11 +305,12 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
-| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.3k |
+| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.2k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
+| [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->
 
 CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,
