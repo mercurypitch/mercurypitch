@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, For, Match, Show, Switch } from 'solid-js'
-import { cancelJamSongShare, dismissJamShareNotice, jamIsHost, jamPeersMissingSong, jamShareState, jamTransferMinimised, setJamTransferMinimised, shareJamSongWithRoom, } from '@/stores/jam-store'
+import { cancelJamSongShare, dismissJamShareNotice, jamIsHost, jamPeersMissingSong, jamShareState, jamShareStopping, jamTransferMinimised, setJamTransferMinimised, shareJamSongWithRoom, } from '@/stores/jam-store'
 import styles from './JamTransferDialog.module.css'
 
 /** A ring that spins. Not an emoji, and not a GIF: one element, one rule. */
@@ -158,12 +158,18 @@ export const JamTransferDialog: Component = () => {
                 Continue in background
               </button>
               <Show when={jamIsHost() && state().phase !== 'receiving'}>
+                {/* Says it heard you. A stop asked for during the decode
+                    cannot land until that call returns -- it is one
+                    uninterruptible operation -- so a button that stayed
+                    live and unchanged read as a button that did nothing,
+                    while both stems packed anyway. */}
                 <button
                   type="button"
                   class={styles.ghost}
+                  disabled={jamShareStopping()}
                   onClick={cancelJamSongShare}
                 >
-                  Stop
+                  {jamShareStopping() ? 'Stopping…' : 'Stop'}
                 </button>
               </Show>
             </Show>

@@ -57,6 +57,36 @@ const RELAY_REFUSAL =
   'You are connected through a relay, so the backing track cannot be sent to you — it would use the room’s shared bandwidth. You will still see the words, the notes and everyone’s pitch.'
 
 /**
+ * The last song packed, so sending it again is instant.
+ *
+ * One entry, not a map: the room plays one song at a time, and holding
+ * every song ever packed would be about 7.6 MB each on a phone that is
+ * also decoding audio. Picking a different song evicts this one.
+ *
+ * What makes the cache safe is that the input cannot change behind it. A
+ * separation's stems are written once and never edited, so the same key
+ * really does mean the same bytes -- and the only way to get new stems is
+ * a new separation, which gets a new session id.
+ */
+let packed: { key: string; stems: EncodedStem[] } | null = null
+
+/** Forget the packed copy -- a different song, or leaving the room. */
+export function forgetPackedStems(): void {
+  packed = null
+}
+
+/**
+ * This song's packed stems, if it is already packed.
+ *
+ * Worth asking BEFORE reading the source stems: those are hundreds of
+ * megabytes of PCM in IndexedDB, and loading them to discover the answer
+ * was cached is most of the cost of not having cached it.
+ */
+export function getPackedStems(key: string): EncodedStem[] | null {
+  return packed?.key === key ? packed.stems : null
+}
+
+/**
  * Encode both stems once.
  *
  * Both, because the guide vocal is how somebody learns a song they do not
@@ -64,11 +94,24 @@ const RELAY_REFUSAL =
  * -- who needs it most. Two stems at 128 kbps is about 7.6 MB for a
  * four-minute song, which is the same order as one, so this is close to
  * free.
+ *
+ * Cached against `key`. A late joiner, a re-send to somebody who reloaded
+ * and a retry after a dropped link are all the same bytes as the first
+ * send, and packing is the slow half of the job -- tens of seconds of
+ * decode and encode for a four-minute song, on a device that may also be
+ * playing one.
  */
 export async function encodeStemsForShare(
   stems: { instrumental: ArrayBuffer; vocal?: ArrayBuffer },
-  onProgress?: (p: { stem: ShareStem; ratio: number }) => void,
+  opts: {
+    key?: string
+    onProgress?: (p: { stem: ShareStem; ratio: number }) => void
+    signal?: { aborted: boolean }
+  } = {},
 ): Promise<EncodedStem[]> {
+  const { key, onProgress, signal } = opts
+  if (key !== undefined && packed?.key === key) return packed.stems
+
   const out: EncodedStem[] = []
   const jobs: Array<[ShareStem, ArrayBuffer]> = [
     ['instrumental', stems.instrumental],
@@ -76,8 +119,15 @@ export async function encodeStemsForShare(
   if (stems.vocal !== undefined) jobs.push(['vocal', stems.vocal])
 
   for (const [stem, wav] of jobs) {
+    // The signal goes all the way into the slice loop, so Stop lands
+    // within a slice rather than at the end of the stem -- and the next
+    // stem never starts, because the encoder checks on entry too.
     const bytes = (
-      await encodeStemToAac(wav, (p) => onProgress?.({ stem, ratio: p.ratio }))
+      await encodeStemToAac(
+        wav,
+        (p) => onProgress?.({ stem, ratio: p.ratio }),
+        signal,
+      )
     ).buffer as ArrayBuffer
     out.push({
       stem,
@@ -86,6 +136,9 @@ export async function encodeStemsForShare(
       mime: 'audio/mp4',
     })
   }
+  // Only a complete set is worth keeping. A run that was stopped throws
+  // before here, so a half-packed song can never be served as ready.
+  if (key !== undefined) packed = { key, stems: out }
   return out
 }
 
