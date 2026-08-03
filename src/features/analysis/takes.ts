@@ -13,6 +13,7 @@
 
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
+import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { getSessionHistory } from '@/stores'
 import type { UvrSession } from '@/stores/uvr-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -114,8 +115,20 @@ function uvrSubtitle(session: UvrSession): string {
 }
 
 function uvrTake(session: UvrSession): AnalysisTake {
-  const vocalUrl = session.outputs?.vocal
-  const hasAudio = vocalUrl !== undefined && vocalUrl !== ''
+  // Blob URLs do not survive a page reload, so `outputs.vocal` is live
+  // only for sessions separated during THIS page load. Reading it as the
+  // test for "has audio" meant every older session dropped to
+  // capability 'notes' and lost the analysis it is perfectly capable of
+  // — which is why a freshly uploaded song offered a spectrum and the
+  // same song, after a reload, did not.
+  //
+  // `stemMeta` is the durable signal that stems were stored; the mixer
+  // has always used it the same way, then re-minted the URLs on open.
+  // loadAudio does that here too.
+  const storedVocal = session.stemMeta?.vocal
+  const liveVocal = session.outputs?.vocal
+  const hasAudio =
+    (liveVocal !== undefined && liveVocal !== '') || storedVocal !== undefined
 
   return {
     id: `uvr:${session.sessionId}`,
@@ -126,7 +139,17 @@ function uvrTake(session: UvrSession): AnalysisTake {
     createdAt: session.createdAt,
     durationSec: session.stemMeta?.vocal?.duration,
     loadNotes: () => loadPitchAnalysisFromDb(session.sessionId),
-    loadAudio: hasAudio ? () => decodeStem(vocalUrl) : undefined,
+    loadAudio: hasAudio
+      ? async () => {
+          // Re-mint the object URL before decoding: the stored one is
+          // dead after a reload, and decoding a dead blob: URL fails in
+          // a way that looks like a corrupt take.
+          const fresh = await ensureSessionHydrated(session)
+          const url = fresh.outputs?.vocal
+          if (url === undefined || url === '') return null
+          return await decodeStem(url)
+        }
+      : undefined,
   }
 }
 
