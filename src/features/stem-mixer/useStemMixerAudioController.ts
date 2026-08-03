@@ -127,6 +127,12 @@ export interface StemMixerAudioDeps {
   onValidMicPitch?: () => void
   /** A score built from at least one judged reference/mic comparison frame. */
   onScoreCreated?: (score: MicScore) => void
+  /** Karaoke voice-history capture follows the transport without owning it. */
+  onPlaybackStarted?: () => void
+  onPlaybackPaused?: () => void
+  onPlaybackStopped?: (score: MicScore | null) => void
+  onPlaybackDiscarded?: () => void
+  onMicFrame?: (frame: { f0: number; conf: number; rms: number }) => void
 
   showNotification: (
     msg: string,
@@ -925,6 +931,7 @@ export const useStemMixerAudioController = (
     resetSmoothers()
     frameScheduler.reset()
     startRafLoop()
+    deps.onPlaybackStarted?.()
   }
 
   const handlePause = () => {
@@ -938,15 +945,21 @@ export const useStemMixerAudioController = (
     canvas.drawPitchCanvas()
     canvas.drawMidiCanvas()
     canvas.drawLiveWaveform()
+    deps.onPlaybackPaused?.()
   }
 
   const handleStop = () => {
+    let completedScore: MicScore | null = null
     if (deps.micActive() && deps.comparisonData().length > 0) {
       const s = deps.computeScore()
-      if (hasJudgedComparisons(s)) deps.onScoreCreated?.(s)
+      if (hasJudgedComparisons(s)) {
+        completedScore = s
+        deps.onScoreCreated?.(s)
+      }
       deps.setScore(s)
       deps.setShowScore(true)
     }
+    deps.onPlaybackStopped?.(completedScore)
     // The score modal holds the materialized result — drop the raw data so
     // the next run starts clean instead of averaging with this one.
     deps.clearComparisonData()
@@ -973,6 +986,7 @@ export const useStemMixerAudioController = (
   }
 
   const handleRestart = () => {
+    deps.onPlaybackDiscarded?.()
     deps.resetScore()
     setLoopCount(0)
     pauseOffset = 0
@@ -1157,6 +1171,15 @@ export const useStemMixerAudioController = (
                     octave: mp.octave,
                   })
                 }
+                let sumSquares = 0
+                for (const sample of micTimeData) {
+                  sumSquares += sample * sample
+                }
+                deps.onMicFrame?.({
+                  f0: micFreq,
+                  conf: mp?.clarity ?? 0,
+                  rms: Math.sqrt(sumSquares / micTimeData.length),
+                })
                 deps.pushComparison(elapsedTime, stemFreq, micFreq)
               }
             }
