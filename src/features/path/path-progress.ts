@@ -17,6 +17,7 @@
 // mergePathProgress rather than letting the cloud win — a device that
 // practised offline must never lose days to a staler copy.
 
+import { recordActivity } from '@/db/services/user-activity-service'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { PathWeek } from '@/features/path/path-content'
 import { ASCENT_ID, ASCENT_WEEKS, DAYS_PER_WEEK, getWeek, } from '@/features/path/path-content'
@@ -153,7 +154,17 @@ export function recordPathPracticeDay(date = todayStr()): void {
   const completedWeeks = [...p.completedWeeks]
 
   if (nextDays.length >= DAYS_PER_WEEK) {
-    if (!completedWeeks.includes(currentWeek)) completedWeeks.push(currentWeek)
+    if (!completedWeeks.includes(currentWeek)) {
+      completedWeeks.push(currentWeek)
+      // Finishing a week leaves no practice session of its own behind, so
+      // without this the act is invisible to anything downstream — the
+      // achievements that count weeks climbed included. Fire-and-forget by
+      // contract; it must never hold up the ring filling.
+      void recordActivity('ascent_week_completed', {
+        refId: `${ASCENT_ID}-w${currentWeek}`,
+        meta: { week: currentWeek },
+      })
+    }
     if (currentWeek < ASCENT_WEEKS.length) currentWeek += 1
   }
 

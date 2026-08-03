@@ -437,6 +437,20 @@ export function reportSongScore(score: KaraokeSongScore | null): void {
       return next
     })
   }
+  // Reaching the end of a song IS having sung it — recorded whether or not
+  // the mic was on, because "sang a karaoke song" is about getting through
+  // it, and a score only exists when the singer chose to be measured.
+  // Karaoke leaves no sessionRecord behind, so nothing else knows this
+  // happened.
+  const song = currentSong()
+  if (song) {
+    void recordActivity('song_completed', {
+      refId: song.sessionId,
+      meta: score
+        ? { accuracyPct: score.accuracyPct, grade: score.grade }
+        : undefined,
+    })
+  }
   setPhase('scoring')
 }
 

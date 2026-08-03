@@ -402,76 +402,164 @@
   ],
   "achievementDefinitions": [
     {
-      "name": "10 Notes",
-      "description": "Complete 10 practice sessions",
-      "icon": "paper",
-      "points": 10,
-      "condition": "Complete 10 practice sessions",
-      "required": 10,
-      "sortOrder": 1
-    },
-    {
-      "name": "50 Sessions",
-      "description": "Complete 50 practice sessions",
-      "icon": "chart",
-      "points": 25,
-      "condition": "Complete 50 practice sessions",
-      "required": 50,
-      "sortOrder": 2
-    },
-    {
-      "name": "3 Octaves",
-      "description": "Cover 3 octaves in one run",
-      "icon": "keyboard",
-      "points": 15,
-      "condition": "Cover 3 octaves in one session",
-      "required": 3,
-      "sortOrder": 3
-    },
-    {
-      "name": "High Note Master",
-      "description": "Hit C5 or higher 100 times",
-      "icon": "mic",
-      "points": 30,
-      "condition": "Hit C5 or higher 100 times",
-      "required": 100,
-      "sortOrder": 4
-    },
-    {
-      "name": "Perfect Run",
-      "description": "Get 100% accuracy on a run",
-      "icon": "target",
-      "points": 50,
-      "condition": "Get 100% accuracy on a session",
+      "name": "First Note",
+      "description": "Finish your very first practice run",
+      "icon": "leaf",
+      "points": 5,
+      "condition": "Finish your very first practice run",
       "required": 1,
-      "sortOrder": 5
+      "sortOrder": 1,
+      "category": "beginnings"
     },
     {
-      "name": "Speed Demon",
-      "description": "Hit 10 notes in 3 seconds",
+      "name": "Warmed Up",
+      "description": "Finish 3 practice runs",
+      "icon": "sun",
+      "points": 10,
+      "condition": "Finish 3 practice runs",
+      "required": 3,
+      "sortOrder": 2,
+      "category": "beginnings"
+    },
+    {
+      "name": "Two Days Running",
+      "description": "Practise on 2 different days",
+      "icon": "sunrise",
+      "points": 10,
+      "condition": "Practise on 2 different days",
+      "required": 2,
+      "sortOrder": 3,
+      "category": "beginnings"
+    },
+    {
+      "name": "Drill Sergeant",
+      "description": "Finish your first exercise drill",
+      "icon": "dumbbell",
+      "points": 10,
+      "condition": "Finish your first exercise drill",
+      "required": 1,
+      "sortOrder": 4,
+      "category": "beginnings"
+    },
+    {
+      "name": "Challenger",
+      "description": "Finish your first challenge",
+      "icon": "target",
+      "points": 15,
+      "condition": "Finish your first challenge",
+      "required": 1,
+      "sortOrder": 5,
+      "category": "beginnings"
+    },
+    {
+      "name": "Legend Attempt",
+      "description": "Take on the weekly Legend once",
       "icon": "bolt",
+      "points": 15,
+      "condition": "Take on the weekly Legend once",
+      "required": 1,
+      "sortOrder": 6,
+      "category": "beginnings"
+    },
+    {
+      "name": "Voice Print",
+      "description": "Measure your voice once",
+      "icon": "waveform",
+      "points": 15,
+      "condition": "Measure your voice once",
+      "required": 1,
+      "sortOrder": 7,
+      "category": "beginnings"
+    },
+    {
+      "name": "Composer",
+      "description": "Write your first melody",
+      "icon": "quill",
+      "points": 15,
+      "condition": "Write your first melody",
+      "required": 1,
+      "sortOrder": 8,
+      "category": "beginnings"
+    },
+    {
+      "name": "Set List",
+      "description": "Build your first karaoke playlist",
+      "icon": "listmusic",
+      "points": 10,
+      "condition": "Build your first karaoke playlist",
+      "required": 1,
+      "sortOrder": 9,
+      "category": "beginnings"
+    },
+    {
+      "name": "Stage Debut",
+      "description": "Sing your first karaoke song",
+      "icon": "microstand",
+      "points": 15,
+      "condition": "Sing your first karaoke song",
+      "required": 1,
+      "sortOrder": 10,
+      "category": "beginnings"
+    },
+    {
+      "name": "Sound Engineer",
+      "description": "Split your first song into stems",
+      "icon": "layersplit",
+      "points": 15,
+      "condition": "Split your first song into stems",
+      "required": 1,
+      "sortOrder": 11,
+      "category": "beginnings"
+    },
+    {
+      "name": "On the Path",
+      "description": "Finish your first week of the Ascent",
+      "icon": "flag",
       "points": 20,
-      "condition": "Hit 10 notes in 3 seconds",
-      "required": 10,
-      "sortOrder": 6
+      "condition": "Finish your first week of the Ascent",
+      "required": 1,
+      "sortOrder": 12,
+      "category": "beginnings"
     },
     {
-      "name": "Scale Explorer",
-      "description": "Practice 20 different scales",
-      "icon": "music",
-      "points": 25,
-      "condition": "Practice 20 different scales",
-      "required": 20,
-      "sortOrder": 7
+      "name": "Sharing Voice",
+      "description": "Put a melody or a run on the Community board",
+      "icon": "share",
+      "points": 10,
+      "condition": "Put a melody or a run on the Community board",
+      "required": 1,
+      "sortOrder": 13,
+      "category": "beginnings"
     },
     {
-      "name": "Well Rounded",
-      "description": "Practise all four ways: a session, a drill, a challenge and a Legend",
-      "icon": "sparkle",
-      "points": 30,
-      "condition": "Practise all four ways: a session, a drill, a challenge and a Legend",
-      "required": 4,
-      "sortOrder": 8
+      "name": "First Friend",
+      "description": "Add one singer to your friends",
+      "icon": "handshake",
+      "points": 10,
+      "condition": "Add one singer to your friends",
+      "required": 1,
+      "sortOrder": 14,
+      "category": "beginnings"
+    },
+    {
+      "name": "Hundred Notes",
+      "description": "Sing 100 notes on target",
+      "icon": "notecluster",
+      "points": 10,
+      "condition": "Sing 100 notes on target",
+      "required": 100,
+      "sortOrder": 15,
+      "category": "beginnings"
+    },
+    {
+      "name": "Solid Start",
+      "description": "Score 70% or better on a run",
+      "icon": "checkbadge",
+      "points": 10,
+      "condition": "Score 70% or better on a run",
+      "required": 1,
+      "sortOrder": 16,
+      "category": "beginnings"
     },
     {
       "name": "Ten Days In",
@@ -480,16 +568,58 @@
       "points": 25,
       "condition": "Practise on 10 different days",
       "required": 10,
-      "sortOrder": 9
+      "sortOrder": 17,
+      "category": "building"
     },
     {
-      "name": "Thousand Notes",
-      "description": "Sing 1000 notes on target",
-      "icon": "music",
+      "name": "Regular",
+      "description": "Practise on 25 different days",
+      "icon": "calendarcheck",
       "points": 35,
-      "condition": "Sing 1000 notes on target",
-      "required": 1000,
-      "sortOrder": 10
+      "condition": "Practise on 25 different days",
+      "required": 25,
+      "sortOrder": 18,
+      "category": "building"
+    },
+    {
+      "name": "Week Runner",
+      "description": "Practise on 7 days in a row",
+      "icon": "fire",
+      "points": 25,
+      "condition": "Practise on 7 days in a row",
+      "required": 7,
+      "sortOrder": 19,
+      "category": "building"
+    },
+    {
+      "name": "Fortnight",
+      "description": "Keep a 14-day streak",
+      "icon": "flame2",
+      "points": 40,
+      "condition": "Keep a 14-day streak",
+      "required": 14,
+      "sortOrder": 20,
+      "category": "building"
+    },
+    {
+      "name": "10 Notes",
+      "description": "Complete 10 practice sessions",
+      "icon": "paper",
+      "points": 10,
+      "condition": "Complete 10 practice sessions",
+      "required": 10,
+      "sortOrder": 21,
+      "category": "building"
+    },
+    {
+      "name": "50 Sessions",
+      "description": "Complete 50 practice sessions",
+      "icon": "chart",
+      "points": 25,
+      "condition": "Complete 50 practice sessions",
+      "required": 50,
+      "sortOrder": 22,
+      "category": "building"
     },
     {
       "name": "Dependable",
@@ -498,25 +628,368 @@
       "points": 30,
       "condition": "Score 80% or better on 10 runs",
       "required": 10,
-      "sortOrder": 11
+      "sortOrder": 23,
+      "category": "building"
+    },
+    {
+      "name": "Thousand Notes",
+      "description": "Sing 1000 notes on target",
+      "icon": "music",
+      "points": 35,
+      "condition": "Sing 1000 notes on target",
+      "required": 1000,
+      "sortOrder": 24,
+      "category": "building"
     },
     {
       "name": "Wide Repertoire",
       "description": "Practise 15 different melodies or drills",
-      "icon": "chart",
+      "icon": "shelf",
       "points": 25,
       "condition": "Practise 15 different melodies or drills",
       "required": 15,
-      "sortOrder": 12
+      "sortOrder": 25,
+      "category": "building"
     },
     {
-      "name": "Fortnight",
-      "description": "Keep a 14-day streak",
-      "icon": "fire",
-      "points": 40,
-      "condition": "Keep a 14-day streak",
-      "required": 14,
-      "sortOrder": 13
+      "name": "Well Rounded",
+      "description": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "icon": "sparkle",
+      "points": 30,
+      "condition": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "required": 4,
+      "sortOrder": 26,
+      "category": "building"
+    },
+    {
+      "name": "Perfect Run",
+      "description": "Get 100% accuracy on a run",
+      "icon": "target",
+      "points": 50,
+      "condition": "Get 100% accuracy on a run",
+      "required": 1,
+      "sortOrder": 27,
+      "category": "building"
+    },
+    {
+      "name": "Drill Habit",
+      "description": "Finish 25 exercise drills",
+      "icon": "dumbbell",
+      "points": 30,
+      "condition": "Finish 25 exercise drills",
+      "required": 25,
+      "sortOrder": 28,
+      "category": "building"
+    },
+    {
+      "name": "Challenge Streak",
+      "description": "Complete 10 challenges",
+      "icon": "trophy",
+      "points": 30,
+      "condition": "Complete 10 challenges",
+      "required": 10,
+      "sortOrder": 29,
+      "category": "building"
+    },
+    {
+      "name": "Legend Regular",
+      "description": "Take the weekly Legend 5 times",
+      "icon": "bolt",
+      "points": 30,
+      "condition": "Take the weekly Legend 5 times",
+      "required": 5,
+      "sortOrder": 30,
+      "category": "building"
+    },
+    {
+      "name": "Two Weeks Up",
+      "description": "Finish 2 weeks of the Ascent",
+      "icon": "flag",
+      "points": 30,
+      "condition": "Finish 2 weeks of the Ascent",
+      "required": 2,
+      "sortOrder": 31,
+      "category": "building"
+    },
+    {
+      "name": "Playlist Night",
+      "description": "Sing a karaoke playlist start to finish",
+      "icon": "listmusic",
+      "points": 25,
+      "condition": "Sing a karaoke playlist start to finish",
+      "required": 1,
+      "sortOrder": 32,
+      "category": "building"
+    },
+    {
+      "name": "Ten Songs Sung",
+      "description": "Sing 10 karaoke songs",
+      "icon": "microstand",
+      "points": 30,
+      "condition": "Sing 10 karaoke songs",
+      "required": 10,
+      "sortOrder": 33,
+      "category": "building"
+    },
+    {
+      "name": "Backing Band",
+      "description": "Split 5 songs into stems",
+      "icon": "layersplit",
+      "points": 25,
+      "condition": "Split 5 songs into stems",
+      "required": 5,
+      "sortOrder": 34,
+      "category": "building"
+    },
+    {
+      "name": "Songwriter",
+      "description": "Write 5 melodies of your own",
+      "icon": "quill",
+      "points": 25,
+      "condition": "Write 5 melodies of your own",
+      "required": 5,
+      "sortOrder": 35,
+      "category": "building"
+    },
+    {
+      "name": "Early Bird",
+      "description": "Practise before 8am on 5 days",
+      "icon": "sunrise",
+      "points": 20,
+      "condition": "Practise before 8am on 5 days",
+      "required": 5,
+      "sortOrder": 36,
+      "category": "building"
+    },
+    {
+      "name": "Night Owl",
+      "description": "Practise after 10pm on 5 days",
+      "icon": "moonstars",
+      "points": 20,
+      "condition": "Practise after 10pm on 5 days",
+      "required": 5,
+      "sortOrder": 37,
+      "category": "building"
+    },
+    {
+      "name": "Weekend Voice",
+      "description": "Practise on 5 weekend days",
+      "icon": "coffee",
+      "points": 20,
+      "condition": "Practise on 5 weekend days",
+      "required": 5,
+      "sortOrder": 38,
+      "category": "building"
+    },
+    {
+      "name": "Double Session",
+      "description": "Finish 3 runs in a single day",
+      "icon": "stack",
+      "points": 20,
+      "condition": "Finish 3 runs in a single day",
+      "required": 3,
+      "sortOrder": 39,
+      "category": "building"
+    },
+    {
+      "name": "Voice Diary",
+      "description": "Measure your voice 5 times",
+      "icon": "waveform",
+      "points": 25,
+      "condition": "Measure your voice 5 times",
+      "required": 5,
+      "sortOrder": 40,
+      "category": "building"
+    },
+    {
+      "name": "Small Circle",
+      "description": "Follow 5 singers",
+      "icon": "handshake",
+      "points": 20,
+      "condition": "Follow 5 singers",
+      "required": 5,
+      "sortOrder": 41,
+      "category": "building"
+    },
+    {
+      "name": "Century",
+      "description": "Complete 100 practice sessions",
+      "icon": "century",
+      "points": 60,
+      "condition": "Complete 100 practice sessions",
+      "required": 100,
+      "sortOrder": 42,
+      "category": "mastery"
+    },
+    {
+      "name": "Fifty Days",
+      "description": "Practise on 50 different days",
+      "icon": "calendarcheck",
+      "points": 60,
+      "condition": "Practise on 50 different days",
+      "required": 50,
+      "sortOrder": 43,
+      "category": "mastery"
+    },
+    {
+      "name": "Hundred Days",
+      "description": "Practise on 100 different days",
+      "icon": "mountain",
+      "points": 90,
+      "condition": "Practise on 100 different days",
+      "required": 100,
+      "sortOrder": 44,
+      "category": "mastery"
+    },
+    {
+      "name": "Month Unbroken",
+      "description": "Keep a 30-day streak",
+      "icon": "flame2",
+      "points": 70,
+      "condition": "Keep a 30-day streak",
+      "required": 30,
+      "sortOrder": 45,
+      "category": "mastery"
+    },
+    {
+      "name": "Season Unbroken",
+      "description": "Keep a 90-day streak",
+      "icon": "crown",
+      "points": 120,
+      "condition": "Keep a 90-day streak",
+      "required": 90,
+      "sortOrder": 46,
+      "category": "mastery"
+    },
+    {
+      "name": "Ten Thousand Notes",
+      "description": "Sing 10000 notes on target",
+      "icon": "notecluster",
+      "points": 80,
+      "condition": "Sing 10000 notes on target",
+      "required": 10000,
+      "sortOrder": 47,
+      "category": "mastery"
+    },
+    {
+      "name": "Consistent",
+      "description": "Score 80% or better on 50 runs",
+      "icon": "trending",
+      "points": 60,
+      "condition": "Score 80% or better on 50 runs",
+      "required": 50,
+      "sortOrder": 48,
+      "category": "mastery"
+    },
+    {
+      "name": "Immaculate",
+      "description": "Score 95% or better on 10 runs",
+      "icon": "diamond",
+      "points": 80,
+      "condition": "Score 95% or better on 10 runs",
+      "required": 10,
+      "sortOrder": 49,
+      "category": "mastery"
+    },
+    {
+      "name": "Deep Repertoire",
+      "description": "Practise 50 different melodies or drills",
+      "icon": "shelf",
+      "points": 70,
+      "condition": "Practise 50 different melodies or drills",
+      "required": 50,
+      "sortOrder": 50,
+      "category": "mastery"
+    },
+    {
+      "name": "Drill Master",
+      "description": "Finish 100 exercise drills",
+      "icon": "dumbbell",
+      "points": 70,
+      "condition": "Finish 100 exercise drills",
+      "required": 100,
+      "sortOrder": 51,
+      "category": "mastery"
+    },
+    {
+      "name": "Challenge Master",
+      "description": "Complete 30 challenges",
+      "icon": "trophy",
+      "points": 70,
+      "condition": "Complete 30 challenges",
+      "required": 30,
+      "sortOrder": 52,
+      "category": "mastery"
+    },
+    {
+      "name": "Legend Keeper",
+      "description": "Take the weekly Legend 20 times",
+      "icon": "eagle",
+      "points": 80,
+      "condition": "Take the weekly Legend 20 times",
+      "required": 20,
+      "sortOrder": 53,
+      "category": "mastery"
+    },
+    {
+      "name": "Summit",
+      "description": "Finish every week of the Ascent",
+      "icon": "mountain",
+      "points": 120,
+      "condition": "Finish every week of the Ascent",
+      "required": 6,
+      "sortOrder": 54,
+      "category": "mastery"
+    },
+    {
+      "name": "Headliner",
+      "description": "Sing 50 karaoke songs",
+      "icon": "microstand",
+      "points": 70,
+      "condition": "Sing 50 karaoke songs",
+      "required": 50,
+      "sortOrder": 55,
+      "category": "mastery"
+    },
+    {
+      "name": "Full Production",
+      "description": "Split 25 songs into stems",
+      "icon": "layersplit",
+      "points": 60,
+      "condition": "Split 25 songs into stems",
+      "required": 25,
+      "sortOrder": 56,
+      "category": "mastery"
+    },
+    {
+      "name": "Prolific",
+      "description": "Write 20 melodies of your own",
+      "icon": "quill",
+      "points": 60,
+      "condition": "Write 20 melodies of your own",
+      "required": 20,
+      "sortOrder": 57,
+      "category": "mastery"
+    },
+    {
+      "name": "Collector",
+      "description": "Earn 10 badges",
+      "icon": "medal",
+      "points": 70,
+      "condition": "Earn 10 badges",
+      "required": 10,
+      "sortOrder": 58,
+      "category": "mastery"
+    },
+    {
+      "name": "Full Set",
+      "description": "Earn 20 badges",
+      "icon": "crown",
+      "points": 100,
+      "condition": "Earn 20 badges",
+      "required": 20,
+      "sortOrder": 59,
+      "category": "mastery"
     }
   ]
 }
