@@ -183,6 +183,23 @@ const IconSearch = () => (
   </svg>
 )
 
+/** A podium place nobody has claimed: a question inside the avatar ring. */
+const IconUnclaimedPlace = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="icon-svg"
+    aria-hidden="true"
+  >
+    <path d="M9.2 9a2.9 2.9 0 1 1 3.85 2.74c-.7.25-1.05.86-1.05 1.6v.51" />
+    <circle cx="12" cy="17.1" r="0.9" fill="currentColor" stroke="none" />
+  </svg>
+)
+
 /** Two singers with the second still an outline — nobody there yet. */
 const IconFriendsEmpty = () => (
   <svg
@@ -1065,15 +1082,17 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                       {index() >= 3 && `#${user.rank}`}
                     </div>
                     <div class="podium-avatar">
-                      {user.avatar !== undefined
-                        ? renderIcon(user.avatar)
-                        : null}
+                      {/* An unclaimed place is not a person with no picture:
+                          the ring used to sit completely empty, which reads
+                          as a broken avatar rather than "nobody here yet". */}
+                      {user.avatar !== undefined ? (
+                        renderIcon(user.avatar)
+                      ) : (
+                        <IconUnclaimedPlace />
+                      )}
                     </div>
                     <div class="podium-info">
                       <div class="podium-name">{user.displayName}</div>
-                      <div class="podard-score">
-                        {categoryMetric(user, activeCategory())}
-                      </div>
                     </div>
                     <Show when={index() < 3}>
                       <div class="podium-score-display">

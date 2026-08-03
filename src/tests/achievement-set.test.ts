@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest'
 import { achievementCount } from '@/components/VocalChallenges'
 import seedData from '@/db/seed-data.json'
 import { measurableAchievements } from '@/db/services/badge-grant-engine'
+import { countActivity } from '@/db/services/user-activity-service'
 
 const CATEGORIES = ['beginnings', 'building', 'mastery'] as const
 
@@ -83,5 +84,42 @@ describe('achievementCount', () => {
   it('is safe on a broken target', () => {
     expect(achievementCount(50, 0)).toBe(0)
     expect(achievementCount(50, Number.NaN)).toBe(0)
+  })
+})
+
+describe('activity counting', () => {
+  it('counts a melody once however often it is refilled', () => {
+    // The 0 -> non-zero note transition is the only "this became a real
+    // melody" signal the store has, so clearing and rewriting one fires it
+    // again. "Write 20 melodies of your own" must not accept that.
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: 'm1' },
+        { kind: 'melody_created', refId: 'm1' },
+        { kind: 'melody_created', refId: 'm2' },
+      ]).melody_created,
+    ).toBe(2)
+  })
+
+  it('still counts every performance and every split', () => {
+    // Repeating these IS the achievement — another sing is another
+    // performance, another split is another paid job.
+    const counts = countActivity([
+      { kind: 'song_completed', refId: 's1' },
+      { kind: 'song_completed', refId: 's1' },
+      { kind: 'stems_separated', refId: 'u1' },
+      { kind: 'stems_separated', refId: 'u1' },
+    ])
+    expect(counts.song_completed).toBe(2)
+    expect(counts.stems_separated).toBe(2)
+  })
+
+  it('counts rows that carry no refId individually', () => {
+    expect(
+      countActivity([
+        { kind: 'melody_created', refId: undefined },
+        { kind: 'melody_created', refId: undefined },
+      ]).melody_created,
+    ).toBe(2)
   })
 })

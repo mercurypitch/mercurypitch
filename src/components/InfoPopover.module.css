@@ -14,9 +14,23 @@
   /* The glyph is the <Info /> SVG, not a typed "i" — see icons.tsx for why.
      Nothing here sets a font, so nothing can slant or mis-centre it. */
   cursor: pointer;
+  flex: none;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
+}
+
+/* Every icon slot sizes its own child — the base `.icon-svg` rule is 20px,
+   which is the whole button, so the glyph was overflowing an 18px content
+   box (20px minus the ring's 1px border on each side) and reading as
+   sitting high next to the step pills. */
+.trigger .icon-svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  vertical-align: baseline;
+  flex: none;
 }
 
 .trigger:hover,
