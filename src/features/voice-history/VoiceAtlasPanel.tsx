@@ -38,6 +38,8 @@ export interface VoiceAtlasPanelProps {
   model: VoiceAtlasRenderModel
   earlier: VoiceTakeRecord | null
   later: VoiceTakeRecord | null
+  /** Take currently targeted by the shared playhead and Reflection Beacons. */
+  selectedId: string | null
   activeId: string | null
   /** Normalized playback position for activeId. */
   progress: number
@@ -50,6 +52,10 @@ export interface VoiceAtlasPanelProps {
   earlierSelector?: JSX.Element
   /** Existing page-owned take selector, rendered in the Later trail card. */
   laterSelector?: JSX.Element
+  totalTakeCount: number
+  pairPreset: 'full-span' | 'latest' | 'custom'
+  onChoosePairPreset: (preset: 'full-span' | 'latest') => void
+  onSelect: (takeId: string) => void
   onPlay: (takeId: string) => void
   onSeek: (takeId: string, progress: number) => void
   onAddReflection: (
@@ -442,9 +448,11 @@ interface TrailCardProps {
   label: 'Earlier' | 'Later'
   take: VoiceTakeRecord | null
   trail: VoiceAtlasTrailModel
+  selected: boolean
   active: boolean
   playing: boolean
   selector?: JSX.Element
+  onSelect: (takeId: string) => void
   onPlay: (takeId: string) => void
 }
 
@@ -452,23 +460,50 @@ function TrailCard(props: TrailCardProps): JSX.Element {
   const lowerLabel = (): 'earlier' | 'later' =>
     props.label === 'Earlier' ? 'earlier' : 'later'
   return (
-    <div
+    <article
       classList={{
         [styles.trailCard]: true,
         [styles.earlierCard]: props.label === 'Earlier',
         [styles.laterCard]: props.label === 'Later',
-        [styles.activeCard]: props.active,
+        [styles.selectedCard]: props.selected,
+        [styles.playingCard]: props.active && props.playing,
+      }}
+      data-testid={`voice-atlas-card-${lowerLabel()}`}
+      data-selected={props.selected}
+      onClick={(event) => {
+        const target = event.target
+        if (
+          target instanceof Element &&
+          target.closest('button, select, input, textarea, a') !== null
+        ) {
+          return
+        }
+        const takeId = props.take?.id
+        if (takeId !== undefined) props.onSelect(takeId)
       }}
     >
-      <div class={styles.trailIdentity}>
+      <button
+        type="button"
+        class={styles.trailIdentity}
+        disabled={props.take === null}
+        aria-label={`Select ${props.label} take for the playhead and reflections`}
+        aria-pressed={props.selected}
+        onClick={() => {
+          const takeId = props.take?.id
+          if (takeId !== undefined) props.onSelect(takeId)
+        }}
+      >
         <span class={styles.trailSwatch} aria-hidden="true" />
         <div>
           <span class={styles.trailLabel}>{props.label}</span>
           <strong>
             {props.take?.title ?? `Choose an ${lowerLabel()} take`}
           </strong>
+          <small>
+            {props.selected ? 'Beacon target' : 'Select for playhead'}
+          </small>
         </div>
-      </div>
+      </button>
       <div class={styles.trailMeta}>
         <span>{stateLabel(props.trail)}</span>
         <Show when={props.take !== null}>
@@ -484,17 +519,19 @@ function TrailCard(props: TrailCardProps): JSX.Element {
         disabled={props.take === null}
         aria-label={`${props.active && props.playing ? 'Pause' : 'Play'} ${props.label} take`}
         aria-pressed={props.active && props.playing}
+        aria-keyshortcuts={props.active && props.playing ? 'Space' : undefined}
         onClick={() => {
           const takeId = props.take?.id
-          if (takeId !== undefined) props.onPlay(takeId)
+          if (takeId !== undefined) {
+            props.onSelect(takeId)
+            props.onPlay(takeId)
+          }
         }}
       >
         {props.active && props.playing ? <Pause /> : <Play />}
-        <span>
-          {props.active && props.playing ? 'Pause' : `Play ${props.label}`}
-        </span>
+        <span>{props.active && props.playing ? 'Pause' : 'Play'}</span>
       </button>
-    </div>
+    </article>
   )
 }
 
@@ -517,14 +554,15 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
     return null
   }
   const activeTake = (): VoiceTakeRecord | null => takeForId(props.activeId)
-  const seekTarget = (): VoiceTakeRecord | null =>
-    activeTake() ?? props.later ?? props.earlier
+  const selectedTake = (): VoiceTakeRecord | null =>
+    takeForId(props.selectedId) ?? props.earlier ?? props.later
+  const seekTarget = (): VoiceTakeRecord | null => selectedTake()
   const currentProgress = (): number =>
-    activeTake() === null ? 0 : clamp01(props.progress)
+    activeTake()?.id === selectedTake()?.id ? clamp01(props.progress) : 0
   const currentSeconds = (): number =>
-    currentProgress() * takeDurationSeconds(activeTake())
+    currentProgress() * takeDurationSeconds(selectedTake())
   const currentSharedProgress = (): number => {
-    const take = activeTake()
+    const take = selectedTake()
     if (take === null) return 0
     return sharedPositionForTake(
       take,
@@ -673,7 +711,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   }
 
   const addReflection = (kind: VoiceReflectionKind): void => {
-    const take = activeTake()
+    const take = selectedTake()
     if (take === null) return
     props.onAddReflection(take.id, kind, currentProgress(), note().trim())
     setNote('')
@@ -789,7 +827,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
             onKeyDown={handleSliderKey}
           />
 
-          <Show when={activeTake() !== null}>
+          <Show when={selectedTake() !== null}>
             <div
               class={styles.playhead}
               classList={{ [styles.playheadMoving]: props.playing }}
@@ -845,23 +883,57 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
         </Show>
       </div>
 
+      <Show when={props.totalTakeCount > 2}>
+        <div class={styles.pairBar}>
+          <div>
+            <span>Comparison pair</span>
+            <strong>Comparing 2 of {props.totalTakeCount} takes</strong>
+            <p>Choose any Earlier and Later take below.</p>
+          </div>
+          <div
+            class={styles.pairPresets}
+            role="group"
+            aria-label="Choose a comparison pair"
+          >
+            <button
+              type="button"
+              aria-pressed={props.pairPreset === 'full-span'}
+              onClick={() => props.onChoosePairPreset('full-span')}
+            >
+              Full span
+            </button>
+            <button
+              type="button"
+              aria-pressed={props.pairPreset === 'latest'}
+              onClick={() => props.onChoosePairPreset('latest')}
+            >
+              Latest two
+            </button>
+          </div>
+        </div>
+      </Show>
+
       <div class={styles.trailCards}>
         <TrailCard
           label="Earlier"
           take={props.earlier}
           trail={props.model.earlier}
+          selected={props.selectedId === props.earlier?.id}
           active={props.activeId === props.earlier?.id}
           playing={props.playing}
           selector={props.earlierSelector}
+          onSelect={props.onSelect}
           onPlay={props.onPlay}
         />
         <TrailCard
           label="Later"
           take={props.later}
           trail={props.model.later}
+          selected={props.selectedId === props.later?.id}
           active={props.activeId === props.later?.id}
           playing={props.playing}
           selector={props.laterSelector}
+          onSelect={props.onSelect}
           onPlay={props.onPlay}
         />
       </div>
@@ -870,11 +942,26 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
         <div class={styles.reflectionIntro}>
           <span>Reflection Beacons</span>
           <strong>Mark what you noticed, not what a score decided.</strong>
-          <p>
-            {activeTake() === null
-              ? 'Play or scrub a take before placing a beacon.'
-              : `${activeTake()?.title ?? 'Active take'} at ${formatClock(currentSeconds())}`}
-          </p>
+          <Show
+            when={selectedTake()}
+            keyed
+            fallback={<p>Select a take before placing a beacon.</p>}
+          >
+            {(take) => (
+              <div
+                class={styles.reflectionTarget}
+                data-testid="reflection-target"
+                aria-live="polite"
+              >
+                <span>Saving to</span>
+                <strong>
+                  {take.id === props.earlier?.id ? 'Earlier' : 'Later'} take
+                </strong>
+                <time>{formatClock(currentSeconds())}</time>
+                <p>Move the playhead to place this at another exact moment.</p>
+              </div>
+            )}
+          </Show>
         </div>
 
         <div class={styles.reflectionComposer}>
@@ -885,7 +972,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
               value={note()}
               maxlength={MAX_VOICE_REFLECTION_NOTE_LENGTH}
               placeholder="What did you hear here?"
-              disabled={activeTake() === null}
+              disabled={selectedTake() === null}
               onInput={(event) => setNote(event.currentTarget.value)}
             />
             <span class={styles.noteCount} aria-hidden="true">
@@ -916,7 +1003,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
                     [styles.tryAction]: kind === 'try-next',
                   }}
                   data-testid={`reflection-beacon-${kind}`}
-                  disabled={activeTake() === null}
+                  disabled={selectedTake() === null}
                   onClick={() => addReflection(kind)}
                 >
                   <i aria-hidden="true" />

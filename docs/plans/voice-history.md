@@ -109,6 +109,10 @@ feature from feeling like a generic voice-memo library.
 ### Comparison behavior
 
 - Default pair: earliest eligible take and latest eligible take in the thread.
+- Threads with three or more takes remain a focused two-trail comparison. The
+  user can switch between **Full span** and **Latest two**, or choose any valid
+  Earlier/Later pair directly; additional takes are not hidden or collapsed
+  into an unreadable third trail.
 - Labels are **Earlier** and **Later**, not “bad” and “good.”
 - Switching never overlaps both recordings by default.
 - Recordings remain dry. If room/FX playback is offered, the same chosen
@@ -138,14 +142,17 @@ the vault into a scorecard and is not a separate product surface.
   never invents a melody to fill silence or uncertainty.
 - **Reflection Beacons** are user-authored Keep, Curious, and Try next time
   markers at a replay position, with an optional short note. They are
-  observations, not algorithmic classifications.
+  observations, not algorithmic classifications. The first visible take is a
+  valid beacon target before playback; selecting either take card moves that
+  target, and the UI names the target take and exact timestamp before saving.
 
 ### Responsive and accessible behavior
 
 - Desktop may show Earlier and Later side by side; narrow screens stack them
   while keeping the A/B control and active side persistent.
 - Keyboard operation covers selecting takes, play/pause, switching sides,
-  favorite, export, and deletion.
+  favorite, export, and deletion. Space pauses active take playback outside
+  editable controls.
 - Recording, playback, selection, and storage states use text/icon feedback in
   addition to color.
 - Motion respects `prefers-reduced-motion`.

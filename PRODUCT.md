@@ -71,7 +71,9 @@ hear in their own recordings.
   time-warping either performance.
 - Reflection Beacons are singer-authored observations (Keep, Curious, and Try
   next time), not algorithmic judgements. Older takes without contour data
-  stay playable through their cached waveform.
+  stay playable through their cached waveform. A thread can hold any number of
+  takes while Twin Trails compares two explicitly chosen takes at a time; the
+  default pair spans the earliest and latest take.
 - Future cloud sync is opt-in portability for signed-in users. New users will
   receive a limited free storage allowance; additional cloud capacity will be
   paid. Allowance sizes, pricing, retention policy, and launch timing remain
