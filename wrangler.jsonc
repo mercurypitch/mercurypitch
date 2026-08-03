@@ -18,6 +18,11 @@
     }
   },
   "main": "src/worker.ts",
+  // Wrangler runs this on every deploy, so THIS is the bundle that ships --
+  // CI's earlier "Build app" step is a gate whose output is discarded. Both
+  // are deliberate; see docs/agent/MISTAKES.md, "Build-time env vars go on
+  // the wrangler step". Any VITE_* that must reach users belongs on the
+  // wrangler step, not on the gate.
   "build": {
     "command": "pnpm run build"
   },
