@@ -10,9 +10,12 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, IconWater, } from '@/components/exercise-icons'
 import { dailyRoutines } from '@/data/routine-templates'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
+import { manualCompletePrompt, segmentSelfReports, } from '@/features/routines/manual-complete'
+import type { RoutineSegment } from '@/features/routines/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { showNotification } from '@/stores/notifications-store'
@@ -41,6 +44,8 @@ export const DailyRoutinePanel: Component = () => {
   const [expanded, setExpanded] = createSignal(false)
   const [isSharing, setIsSharing] = createSignal(false)
   const [shareProgress, setShareProgress] = createSignal(0)
+  // The segment awaiting a "yes, I sang it elsewhere" confirmation.
+  const [confirmSeg, setConfirmSeg] = createSignal<RoutineSegment | null>(null)
 
   return (
     <div class={styles.panel}>
@@ -208,6 +213,10 @@ export const DailyRoutinePanel: Component = () => {
                                 class={styles.segmentDoneBtn}
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  if (segmentSelfReports(seg)) {
+                                    setConfirmSeg(seg)
+                                    return
+                                  }
                                   routine.completeSegment()
                                 }}
                                 title="Mark complete"
@@ -231,9 +240,16 @@ export const DailyRoutinePanel: Component = () => {
                             class={styles.segmentDoneBtn}
                             onClick={(e) => {
                               e.stopPropagation()
+                              // This branch always has an exercise, so it
+                              // always asks: the drill would have recorded
+                              // its own score.
+                              if (segmentSelfReports(seg)) {
+                                setConfirmSeg(seg)
+                                return
+                              }
                               routine.completeSegment()
                             }}
-                            title="Mark complete"
+                            title="Mark complete without singing"
                           >
                             <IconCheck size={10} />
                           </button>
@@ -349,6 +365,18 @@ export const DailyRoutinePanel: Component = () => {
           </Show>
         </div>
       </Show>
+
+      <ConfirmDialog
+        open={confirmSeg() !== null}
+        title={manualCompletePrompt(confirmSeg() ?? undefined).title}
+        message={manualCompletePrompt(confirmSeg() ?? undefined).message}
+        confirmLabel="Mark done"
+        onConfirm={() => {
+          routine.completeSegment()
+          setConfirmSeg(null)
+        }}
+        onCancel={() => setConfirmSeg(null)}
+      />
     </div>
   )
 }

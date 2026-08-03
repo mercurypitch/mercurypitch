@@ -8,6 +8,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
@@ -16,7 +17,8 @@ import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
 import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
 import { AscentCard } from '@/features/path/AscentCard'
-import type { SegmentKind } from '@/features/routines/types'
+import { manualCompletePrompt, segmentSelfReports, } from '@/features/routines/manual-complete'
+import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
@@ -96,6 +98,8 @@ const HomePage: Component = () => {
   // as persistently means it disappears immediately rather than on the
   // next mount.
   const [streakNudgeOpen, setStreakNudgeOpen] = createSignal(true)
+  // The segment awaiting a "yes, I sang it elsewhere" confirmation.
+  const [confirmSeg, setConfirmSeg] = createSignal<RoutineSegment | null>(null)
   const showStreakNudge = (): boolean =>
     streakNudgeOpen() &&
     (streak()?.currentStreak ?? 0) >= 2 &&
@@ -325,8 +329,23 @@ const HomePage: Component = () => {
                         </button>
                         <button
                           class={styles.segSkip}
-                          title="Mark done"
-                          onClick={() => routine.completeSegment()}
+                          title={
+                            segmentSelfReports(item.seg)
+                              ? 'Mark done without singing'
+                              : 'Mark done'
+                          }
+                          onClick={() => {
+                            // A scored drill records itself; ticking it by
+                            // hand credits the streak and the calendar for
+                            // a run that never happened. Ask first — but
+                            // only for those, so a guided warm-up (no
+                            // score to falsify) keeps its one click.
+                            if (segmentSelfReports(item.seg)) {
+                              setConfirmSeg(item.seg)
+                              return
+                            }
+                            routine.completeSegment()
+                          }}
                         >
                           <IconCheck size={13} />
                         </button>
@@ -449,6 +468,18 @@ const HomePage: Component = () => {
         {/* ── The Ascent (guided path bridge) ────────────────── */}
         <AscentCard />
       </div>
+
+      <ConfirmDialog
+        open={confirmSeg() !== null}
+        title={manualCompletePrompt(confirmSeg() ?? undefined).title}
+        message={manualCompletePrompt(confirmSeg() ?? undefined).message}
+        confirmLabel="Mark done"
+        onConfirm={() => {
+          routine.completeSegment()
+          setConfirmSeg(null)
+        }}
+        onCancel={() => setConfirmSeg(null)}
+      />
 
       <DestinationGallery />
     </div>
