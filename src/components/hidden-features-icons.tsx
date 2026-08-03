@@ -781,6 +781,7 @@ export const IconPlus = () => (
 // ── Icon name → component lookup ──────────────────────────────────
 
 import type { Component } from 'solid-js'
+import { ACHIEVEMENT_ICONS } from './achievement-icons'
 
 const iconMap: Record<string, Component> = {
   mic: IconMicChallenge,
@@ -811,6 +812,10 @@ const iconMap: Record<string, Component> = {
   refresh: IconRefreshSimple,
   piano: IconPiano,
   sheet: IconSheetMusic,
+  // The achievement set has its own glyph per entry; kept in a separate
+  // module so this one does not become a thousand lines of paths, and
+  // spread LAST so a name defined here would still win.
+  ...ACHIEVEMENT_ICONS,
 }
 
 /**
@@ -823,6 +828,15 @@ const iconMap: Record<string, Component> = {
  */
 export function iconByName(name: string): Component | string {
   return iconMap[name] ?? IconBadge
+}
+
+/**
+ * Every name `iconByName` resolves, sorted. The Content Studio picks from
+ * this rather than accepting free text, because a typo there is invisible
+ * until it reaches a user's Challenges page as a generic badge.
+ */
+export function iconNames(): string[] {
+  return Object.keys(iconMap).sort()
 }
 
 export function renderIcon(icon: Component | string) {

@@ -8,7 +8,7 @@ import { IconArrowUpDown, IconExpand, IconLayers, IconReply, IconSiren, IconZap,
 import { InfoPopover } from '@/components/InfoPopover'
 import modalStyles from '@/components/Modal.module.css'
 import { FancyDivider } from '@/components/shared/FancyDivider'
-import type { Achievement as DBAchievement, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
+import type { Achievement as DBAchievement, AchievementCategory, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
@@ -102,10 +102,12 @@ export interface UserAchievement {
   unlocked: boolean
   /** Unlocked date */
   unlockedDate?: number
-  /** Progress */
+  /** How far along, as a PERCENTAGE — what userAchievements.progress stores */
   progress: number
   /** Total required */
   required: number
+  /** Which shelf it sits on. */
+  category: AchievementCategory
 }
 
 // ============================================================
@@ -283,12 +285,31 @@ export const VocalChallenges: Component = () => {
             : undefined,
         progress: userAch?.progress ?? 0,
         required: def.required,
+        category: def.category ?? 'beginnings',
       }
     })
   }
 
   const badges = createMemo(() => getBadges())
   const achievements = createMemo(() => getAchievements())
+
+  /**
+   * The three shelves, in order, each with its own goals.
+   *
+   * Fifty-nine goals in one flat grid is a wall — a singer on day one and
+   * a singer on month six were reading the same undifferentiated list. Cut
+   * into "first week", "keep going" and "long haul", there is always a
+   * near one in view and the far ones stay visible as something to aim at.
+   *
+   * A band with nothing in it is dropped rather than rendered empty, so a
+   * seed that only defines one band still looks deliberate.
+   */
+  const achievementGroups = createMemo(() =>
+    ACHIEVEMENT_GROUPS.map((group) => ({
+      ...group,
+      items: achievements().filter((a) => a.category === group.id),
+    })).filter((group) => group.items.length > 0),
+  )
 
   // Category tabs with real definition counts (no hardcoded numbers, no
   // fake locks — every category has seeded, drill-backed content).
@@ -528,47 +549,65 @@ export const VocalChallenges: Component = () => {
           <IconStarChallenge /> Achievements
         </h3>
         <FancyDivider class="section-divider" />
-        <div class="achievements-list">
-          <For each={achievements()}>
-            {(ach) => (
-              <div
-                class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}
-              >
-                <div class="achievement-icon">{renderIcon(ach.icon)}</div>
-                <div class="achievement-content">
-                  <div class="achievement-header">
-                    <span class="achievement-name">{ach.name}</span>
-                    {ach.unlocked && (
-                      <span class="achievement-points">+{ach.points} pts</span>
-                    )}
-                  </div>
-                  <p class="achievement-desc">{ach.description}</p>
-                  <div class="achievement-progress">
-                    <div class="progress-label">
-                      <span class="current">{ach.progress}</span>
-                      <span class="separator">/</span>
-                      <span class="total">{ach.required}</span>
-                    </div>
-                    <div class="progress-bar">
-                      <div
-                        class="progress-fill"
-                        style={{
-                          width: `${(ach.progress / ach.required) * 100}%`,
-                          background: getAchievementColor(ach.progress),
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {ach.unlocked && (
-                  <span class="achievement-locked">
-                    <IconCheckSolid />
-                  </span>
-                )}
+        <For each={achievementGroups()}>
+          {(group) => (
+            <div class="achievement-group">
+              <div class="achievement-group-head">
+                <h4 class="achievement-group-name">{group.name}</h4>
+                <span class="achievement-group-count">
+                  {group.items.filter((a) => a.unlocked).length} /{' '}
+                  {group.items.length}
+                </span>
               </div>
-            )}
-          </For>
-        </div>
+              <p class="achievement-group-blurb">{group.blurb}</p>
+              <div class="achievements-list">
+                <For each={group.items}>
+                  {(ach) => (
+                    <div
+                      class={`achievement-item ${ach.unlocked ? 'unlocked' : 'locked'}`}
+                    >
+                      <div class="achievement-icon">{renderIcon(ach.icon)}</div>
+                      <div class="achievement-content">
+                        <div class="achievement-header">
+                          <span class="achievement-name">{ach.name}</span>
+                          {ach.unlocked && (
+                            <span class="achievement-points">
+                              +{ach.points} pts
+                            </span>
+                          )}
+                        </div>
+                        <p class="achievement-desc">{ach.description}</p>
+                        <div class="achievement-progress">
+                          <div class="progress-label">
+                            <span class="current">
+                              {achievementCount(ach.progress, ach.required)}
+                            </span>
+                            <span class="separator">/</span>
+                            <span class="total">{ach.required}</span>
+                          </div>
+                          <div class="progress-bar">
+                            <div
+                              class="progress-fill"
+                              style={{
+                                width: `${Math.min(100, ach.progress)}%`,
+                                background: getAchievementColor(ach.progress),
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {ach.unlocked && (
+                        <span class="achievement-locked">
+                          <IconCheckSolid />
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </For>
+              </div>
+            </div>
+          )}
+        </For>
       </div>
 
       {/* Challenge Modal */}
@@ -730,6 +769,53 @@ const ChallengeModal: Component<ChallengeModalProps> = (props) => {
       </div>
     </div>
   )
+}
+
+// ============================================================
+// Achievement shelves
+// ============================================================
+//
+// Order is the journey: first week, keep going, long haul. The names and
+// blurbs live here rather than in the seed because they describe the
+// SHELF, not any one goal — a new achievement joins a band without
+// needing to restate what the band is for.
+
+const ACHIEVEMENT_GROUPS: ReadonlyArray<{
+  id: AchievementCategory
+  name: string
+  blurb: string
+}> = [
+  {
+    id: 'beginnings',
+    name: 'Beginnings',
+    blurb: 'First times. Most of these fall in your first week.',
+  },
+  {
+    id: 'building',
+    name: 'Building',
+    blurb: 'The weekly rhythm — one of these should land most weeks.',
+  },
+  {
+    id: 'mastery',
+    name: 'Mastery',
+    blurb: 'The long haul. Months, not weeks.',
+  },
+]
+
+/**
+ * The raw count behind a percentage, for the "3 / 10" label.
+ *
+ * userAchievements.progress is stored as 0-100 (the grant engine writes a
+ * percentage), but the label and the bar were both reading it as a count:
+ * "Thousand Notes" at half way showed "50 / 1000" on a 5%-wide bar, and a
+ * finished "50 Sessions" showed "100 / 50" on a bar twice its track. The
+ * bar now takes the percentage directly and the label converts back.
+ * Lossy by one percent of the target, which is invisible at these sizes.
+ */
+export function achievementCount(progress: number, required: number): number {
+  if (!Number.isFinite(required) || required <= 0) return 0
+  const pct = Math.max(0, Math.min(100, progress))
+  return Math.min(required, Math.round((pct / 100) * required))
 }
 
 // ============================================================

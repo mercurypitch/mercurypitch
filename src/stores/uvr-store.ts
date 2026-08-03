@@ -18,6 +18,7 @@ import { getDb } from '@/db'
 import { durableWrite } from '@/db/durable-write'
 import { getUserId } from '@/db/seed'
 import { deleteAllLyricsFromDb, deleteLyricsFromDb, } from '@/db/services/lyrics-db-service'
+import { recordActivity } from '@/db/services/user-activity-service'
 import { deleteAllUvrSessionsFromDb, deleteSessionGroupFromDb, deleteUvrSessionFromDb, sessionHasPlayableStems, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
@@ -1235,6 +1236,17 @@ export async function completeUvrSession(
   }
   updateSessionCache(updated)
   setCurrentSessionIfActive(updated)
+  // Bringing a song in and splitting it is one of the two acts a karaoke
+  // singer performs that leave no practice session behind (singing one is
+  // the other). Fire-and-forget: the separation is what matters here, and a
+  // lost metric must never fail it.
+  void recordActivity('stems_separated', {
+    refId: sessionId,
+    meta: {
+      mode: session.processingMode,
+      bandSplit: session.bandSplit === true,
+    },
+  })
   return persistSessionDurable(updated)
 }
 

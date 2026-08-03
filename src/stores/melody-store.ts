@@ -3,6 +3,7 @@
 // ============================================================
 
 import { createSignal } from 'solid-js'
+import { recordActivity } from '@/db/services/user-activity-service'
 import { buildMultiOctaveScale } from '@/lib/scale-data'
 import type { MelodyData, MelodyItem, MelodyKind, MelodyNote, PlaybackSession, ScaleDegree, SessionItem, UnifiedLibrary, } from '@/types'
 import { addItemToSession, deleteSession as deleteSessionStore, deleteSessionItem, generateSessionItemId, getDefaultSession, getInternalSession, getItemsAtBeat, getSession, getSessionCount, getSessionItem, getSessionItems, getSessionItemsOrdered, getUserSessionCount, saveSession as saveSessionStore, updateSessionItem, } from './session-store'
@@ -960,6 +961,20 @@ export function updateMelody(
       meta: { ...prev.meta, lastUpdated: Date.now() },
     }))
     _saveLibraryToStorage()
+    // The moment a melody first holds a note is when it became a melody.
+    // Not createNewMelody: that fires for every blank the editor opens,
+    // including the one setMelodyKind makes just to have somewhere to put
+    // a toggle, and "wrote 20 melodies" should not mean "clicked New 20
+    // times". Once per melody, since 0 → non-zero happens once.
+    if (
+      (melody.items?.length ?? 0) === 0 &&
+      (updatedMelody.items?.length ?? 0) > 0
+    ) {
+      void recordActivity('melody_created', {
+        refId: key,
+        meta: { notes: updatedMelody.items?.length ?? 0 },
+      })
+    }
     return updatedMelody
   }
   return undefined

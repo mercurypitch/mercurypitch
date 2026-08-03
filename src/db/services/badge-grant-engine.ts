@@ -15,8 +15,13 @@ import { getDb } from '@/db'
 import type { Achievement, BadgeDefinition, UserAchievement, UserBadge, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
+import { getFollowing } from '@/db/services/follow-service'
 import { loadSessionRecords } from '@/db/services/session-service'
+import { loadSharedMelodies, loadSharedSessions, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
+import type { ActivityCounts } from '@/db/services/user-activity-service'
+import { loadActivityCounts } from '@/db/services/user-activity-service'
+import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { showNotification } from '@/stores/notifications-store'
 
@@ -38,16 +43,95 @@ interface GrantStats {
   notesHit: number
   /** Runs scoring 80 or better. */
   strongRuns: number
+  /** Runs scoring 95 or better — the "nearly flawless" band. */
+  immaculateRuns: number
+  /** Runs scoring 70 or better — the first "that worked" moment. */
+  decentRuns: number
   /** Distinct melody/drill names practised. */
   distinctMelodies: number
+  /** How many runs came from each surface (practice/exercise/challenge/weekly). */
+  bySource: Record<string, number>
+  /** Distinct local days whose first practice started before 08:00. */
+  earlyDays: number
+  /** Distinct local days with practice at or after 22:00. */
+  lateDays: number
+  /** Distinct Saturday/Sunday practice days. */
+  weekendDays: number
+  /** Most runs finished within one local day. */
+  busiestDay: number
+  /** Acts that leave no session behind — karaoke, stems, melodies, Ascent. */
+  activity: ActivityCounts
+  /** Voiceprints taken. */
+  voiceprints: number
+  /** Singers followed. */
+  friends: number
+  /** Badges already earned — the "collector" goals count these. */
+  badgesEarned: number
+  /** Melodies or runs published to the Community board. */
+  sharesPosted: number
 }
 
-async function computeStats(): Promise<GrantStats> {
-  const [records, streak, progress, challengeDefs] = await Promise.all([
+/** A brand-new singer: every measure at zero. Only used to enumerate names. */
+function emptyStats(): GrantStats {
+  return {
+    totalSessions: 0,
+    bestScore: 0,
+    hasPerfectSession: false,
+    currentStreak: 0,
+    challengesCompleted: 0,
+    completedCategories: new Set(),
+    longestStreak: 0,
+    distinctDays: 0,
+    sourcesUsed: new Set(),
+    notesHit: 0,
+    strongRuns: 0,
+    immaculateRuns: 0,
+    decentRuns: 0,
+    distinctMelodies: 0,
+    bySource: {},
+    earlyDays: 0,
+    lateDays: 0,
+    weekendDays: 0,
+    busiestDay: 0,
+    activity: {},
+    voiceprints: 0,
+    friends: 0,
+    badgesEarned: 0,
+    sharesPosted: 0,
+  }
+}
+
+/**
+ * Everything the goals are measured against, gathered once.
+ *
+ * All of it is either already-loaded data or a single cheap list call, and
+ * every field below backs at least one seeded achievement — a metric with
+ * nothing reading it is dead weight, and a goal with no metric behind it
+ * is decoration (see the four that sat permanently ungrantable before).
+ */
+async function computeStats(userBadgeCount: number): Promise<GrantStats> {
+  const [
+    records,
+    streak,
+    progress,
+    challengeDefs,
+    activity,
+    voiceprints,
+    friends,
+    sharedMelodies,
+    sharedSessions,
+  ] = await Promise.all([
     loadSessionRecords(200),
     getCurrentStreak(),
     loadChallengeProgress(),
     loadChallengeDefinitions(),
+    // Each of these resolves empty rather than throwing when signed out,
+    // which is the same contract the grant pass itself keeps.
+    loadActivityCounts(),
+    listVoiceprints().catch(() => []),
+    getFollowing().catch(() => []),
+    loadSharedMelodies().catch(() => []),
+    loadSharedSessions().catch(() => []),
   ])
 
   const scores = records.map((r) => r.score ?? 0)
@@ -67,21 +151,47 @@ async function computeStats(): Promise<GrantStats> {
   const days = new Set<string>()
   const sourcesUsed = new Set<string>()
   const melodies = new Set<string>()
+  const earlyDays = new Set<string>()
+  const lateDays = new Set<string>()
+  const weekendDays = new Set<string>()
+  const runsPerDay = new Map<string, number>()
+  const bySource: Record<string, number> = {}
   let notesHit = 0
   let strongRuns = 0
+  let immaculateRuns = 0
+  let decentRuns = 0
   for (const r of records) {
     const when = r.endedAt ?? r.startedAt
     if (typeof when === 'string' && when !== '') {
-      days.add(localDayKey(when))
+      const day = localDayKey(when)
+      days.add(day)
+      runsPerDay.set(day, (runsPerDay.get(day) ?? 0) + 1)
+      // Local hour and local weekday, for the same reason localDayKey works
+      // in local time: a 23:30 run is a late one wherever the singer is.
+      const at = new Date(when)
+      if (!Number.isNaN(at.getTime())) {
+        if (at.getHours() < 8) earlyDays.add(day)
+        if (at.getHours() >= 22) lateDays.add(day)
+        const dow = at.getDay()
+        if (dow === 0 || dow === 6) weekendDays.add(day)
+      }
     }
-    sourcesUsed.add(r.source ?? 'practice')
+    const source = r.source ?? 'practice'
+    sourcesUsed.add(source)
+    bySource[source] = (bySource[source] ?? 0) + 1
     if (typeof r.melodyName === 'string' && r.melodyName !== '') {
       melodies.add(r.melodyName)
     }
     notesHit += r.notesHit ?? 0
-    if ((r.score ?? 0) >= 80) strongRuns += 1
+    const score = r.score ?? 0
+    if (score >= 70) decentRuns += 1
+    if (score >= 80) strongRuns += 1
+    if (score >= 95) immaculateRuns += 1
   }
   days.delete('')
+  earlyDays.delete('')
+  lateDays.delete('')
+  weekendDays.delete('')
 
   return {
     totalSessions: records.length,
@@ -95,7 +205,19 @@ async function computeStats(): Promise<GrantStats> {
     sourcesUsed,
     notesHit,
     strongRuns,
+    immaculateRuns,
+    decentRuns,
     distinctMelodies: melodies.size,
+    bySource,
+    earlyDays: earlyDays.size,
+    lateDays: lateDays.size,
+    weekendDays: weekendDays.size,
+    busiestDay: Math.max(0, ...runsPerDay.values()),
+    activity,
+    voiceprints: voiceprints.length,
+    friends: friends.length,
+    badgesEarned: userBadgeCount,
+    sharesPosted: sharedMelodies.length + sharedSessions.length,
   }
 }
 
@@ -128,69 +250,116 @@ function isBadgeEarned(
 }
 
 /**
+ * What each achievement counts, keyed by its seeded name.
+ *
+ * One number per goal, compared against the definition's own `required` —
+ * so retuning a target is a seed edit rather than a code change, and a new
+ * achievement only needs code when it needs a new measurement.
+ *
+ * A name missing from here returns undefined and is left ungranted rather
+ * than falsely awarded, which is what keeps a half-built goal honest.
+ */
+function buildMeasures(stats: GrantStats): Record<string, number> {
+  const act = stats.activity
+  return {
+    // ── beginnings ────────────────────────────────────────────────
+    'First Note': stats.totalSessions,
+    'Warmed Up': stats.totalSessions,
+    'Two Days Running': stats.distinctDays,
+    'Drill Sergeant': stats.bySource.exercise ?? 0,
+    Challenger: stats.challengesCompleted,
+    'Legend Attempt': stats.bySource.weekly ?? 0,
+    'Voice Print': stats.voiceprints,
+    Composer: act.melody_created ?? 0,
+    'Set List': act.playlist_created ?? 0,
+    'Stage Debut': act.song_completed ?? 0,
+    'Sound Engineer': act.stems_separated ?? 0,
+    'On the Path': act.ascent_week_completed ?? 0,
+    'Sharing Voice': stats.sharesPosted,
+    'First Friend': stats.friends,
+    'Hundred Notes': stats.notesHit,
+    'Solid Start': stats.decentRuns,
+
+    // ── building ──────────────────────────────────────────────────
+    'Ten Days In': stats.distinctDays,
+    Regular: stats.distinctDays,
+    // Longest, not current: a streak that broke last week was still
+    // earned, and taking the achievement back would be mean.
+    'Week Runner': stats.longestStreak,
+    Fortnight: stats.longestStreak,
+    '10 Notes': stats.totalSessions,
+    '50 Sessions': stats.totalSessions,
+    Dependable: stats.strongRuns,
+    'Thousand Notes': stats.notesHit,
+    'Wide Repertoire': stats.distinctMelodies,
+    // The four practice surfaces: session mode, drills, challenges and the
+    // weekly Legend. Rewards trying the app, not grinding one part of it.
+    'Well Rounded': stats.sourcesUsed.size,
+    'Perfect Run': stats.hasPerfectSession ? 1 : 0,
+    'Drill Habit': stats.bySource.exercise ?? 0,
+    'Challenge Streak': stats.challengesCompleted,
+    'Legend Regular': stats.bySource.weekly ?? 0,
+    'Two Weeks Up': act.ascent_week_completed ?? 0,
+    'Playlist Night': act.playlist_completed ?? 0,
+    'Ten Songs Sung': act.song_completed ?? 0,
+    'Backing Band': act.stems_separated ?? 0,
+    Songwriter: act.melody_created ?? 0,
+    'Early Bird': stats.earlyDays,
+    'Night Owl': stats.lateDays,
+    'Weekend Voice': stats.weekendDays,
+    'Double Session': stats.busiestDay,
+    'Voice Diary': stats.voiceprints,
+    'Small Circle': stats.friends,
+
+    // ── mastery ───────────────────────────────────────────────────
+    Century: stats.totalSessions,
+    'Fifty Days': stats.distinctDays,
+    'Hundred Days': stats.distinctDays,
+    'Month Unbroken': stats.longestStreak,
+    'Season Unbroken': stats.longestStreak,
+    'Ten Thousand Notes': stats.notesHit,
+    Consistent: stats.strongRuns,
+    Immaculate: stats.immaculateRuns,
+    'Deep Repertoire': stats.distinctMelodies,
+    'Drill Master': stats.bySource.exercise ?? 0,
+    'Challenge Master': stats.challengesCompleted,
+    'Legend Keeper': stats.bySource.weekly ?? 0,
+    Summit: act.ascent_week_completed ?? 0,
+    Headliner: act.song_completed ?? 0,
+    'Full Production': act.stems_separated ?? 0,
+    Prolific: act.melody_created ?? 0,
+    Collector: stats.badgesEarned,
+    'Full Set': stats.badgesEarned,
+  }
+}
+
+/**
+ * Every achievement name this engine knows how to measure. A seeded
+ * achievement missing from here can never be granted, so the seed test
+ * checks the two lists against each other.
+ */
+export function measurableAchievements(): string[] {
+  return Object.keys(buildMeasures(emptyStats()))
+}
+
+/**
  * Progress (0-100) + unlocked flag for an achievement, or null when the
  * achievement depends on a metric we don't track yet (left ungranted rather
  * than falsely awarded).
  */
 function evalAchievement(
   ach: Achievement,
-  stats: GrantStats,
+  measures: Record<string, number>,
 ): { unlocked: boolean; progress: number } | null {
-  const pct = (value: number, target: number): number =>
-    Math.min(100, Math.round((value / target) * 100))
-  switch (ach.name) {
-    case '10 Notes':
-      return {
-        unlocked: stats.totalSessions >= 10,
-        progress: pct(stats.totalSessions, 10),
-      }
-    case '50 Sessions':
-      return {
-        unlocked: stats.totalSessions >= 50,
-        progress: pct(stats.totalSessions, 50),
-      }
-    case 'Perfect Run':
-      return {
-        unlocked: stats.hasPerfectSession,
-        progress: stats.hasPerfectSession ? 100 : 0,
-      }
-    case 'Well Rounded': {
-      // The four practice surfaces: session mode, drills, challenges and
-      // the weekly Legend. Rewards trying the app, not grinding one part.
-      const n = stats.sourcesUsed.size
-      return { unlocked: n >= 4, progress: pct(n, 4) }
-    }
-    case 'Ten Days In':
-      return {
-        unlocked: stats.distinctDays >= 10,
-        progress: pct(stats.distinctDays, 10),
-      }
-    case 'Thousand Notes':
-      return {
-        unlocked: stats.notesHit >= 1000,
-        progress: pct(stats.notesHit, 1000),
-      }
-    case 'Dependable':
-      return {
-        unlocked: stats.strongRuns >= 10,
-        progress: pct(stats.strongRuns, 10),
-      }
-    case 'Wide Repertoire':
-      return {
-        unlocked: stats.distinctMelodies >= 15,
-        progress: pct(stats.distinctMelodies, 15),
-      }
-    case 'Fortnight':
-      // Longest, not current: a streak that broke last week was still
-      // earned, and taking the badge back would be mean.
-      return {
-        unlocked: stats.longestStreak >= 14,
-        progress: pct(stats.longestStreak, 14),
-      }
-    default:
-      // '3 Octaves', 'High Note Master', 'Speed Demon', 'Scale Explorer'
-      // need per-note metrics we don't record yet — skip.
-      return null
+  const measured = measures[ach.name]
+  if (measured === undefined) return null
+  // A definition with a zero or missing target would divide by zero and
+  // hand out a NaN progress; treat it as unreachable instead.
+  const target = ach.required
+  if (!Number.isFinite(target) || target <= 0) return null
+  return {
+    unlocked: measured >= target,
+    progress: Math.min(100, Math.round((measured / target) * 100)),
   }
 }
 
@@ -229,16 +398,21 @@ export async function grantBadgeByRef(ref: string): Promise<void> {
  */
 export async function checkAndGrantBadges(): Promise<void> {
   try {
-    const [badges, userBadges, achievements, userAchievements, stats] =
+    const [badges, userBadges, achievements, userAchievements] =
       await Promise.all([
         loadBadgeDefinitions(),
         loadUserBadges(),
         loadAchievementDefinitions(),
         loadUserAchievements(),
-        computeStats(),
       ])
 
     if (badges.length === 0 && achievements.length === 0) return
+
+    // The collector goals count badges, so the stats need the badge list —
+    // which this pass has already loaded. Counting what was earned BEFORE
+    // this round, deliberately: a badge granted below should show up on
+    // the next completion, not race the loop that is granting it.
+    const stats = await computeStats(userBadges.length)
 
     const db = await getDb()
     const badgeRepo = db.getRepository<UserBadge>('userBadges')
@@ -264,8 +438,9 @@ export async function checkAndGrantBadges(): Promise<void> {
     }
 
     const achByDef = new Map(userAchievements.map((a) => [a.achievementId, a]))
+    const measures = buildMeasures(stats)
     for (const ach of achievements) {
-      const result = evalAchievement(ach, stats)
+      const result = evalAchievement(ach, measures)
       if (!result) continue
       const existing = achByDef.get(ach.id)
       if (existing?.unlocked === true) continue
