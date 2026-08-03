@@ -288,8 +288,14 @@ export function selectJamSong(song: JamSong): boolean {
 
   setJamSong(song)
   setJamSongPositionSec(0)
-  // A new song is a new lyric sheet, so the old allocation means nothing.
+  // Both clocks, or a guest carries the last song's correction target into
+  // the new one and gets yanked there on the first transport message.
+  setJamSongHostTarget(0)
+  // A new song is a new lyric sheet, so the old allocation means nothing --
+  // and neither does a brush still armed from editing the last one, which
+  // would turn the first click on the new words into a paint.
   setJamSongParts({})
+  setJamAssignBrush(null)
   resetJamLineScores()
   setJamError(null)
   jamService?.sendSong({
@@ -623,7 +629,9 @@ function peerName(peerId: string): string {
 export function clearJamSong(): void {
   setJamSong(null)
   setJamSongPositionSec(0)
+  setJamSongHostTarget(0)
   setJamSongParts({})
+  setJamAssignBrush(null)
   resetJamLineScores()
   revokeReceivedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
@@ -972,6 +980,10 @@ export function initJam() {
       })
       // Nothing more is coming from them.
       songInbox.forget(peerId)
+      // Disarm if they were the one being painted: assigning lines to a
+      // peer who has left creates parts that only get re-homed on the NEXT
+      // departure, and silently.
+      if (jamAssignBrush() === peerId) setJamAssignBrush(null)
       // Their lines have to go somewhere. A part that falls silent because
       // its singer closed a tab is indistinguishable, from inside the room,
       // from the song being broken.
@@ -1573,6 +1585,7 @@ function cleanupJam(): void {
   // of the document -- leaving a room should not keep somebody else's
   // song in memory until the tab closes.
   cancelJamSongShare()
+  setJamAssignBrush(null)
   songInbox.clear()
   revokeReceivedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })

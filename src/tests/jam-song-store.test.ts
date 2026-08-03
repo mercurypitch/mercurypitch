@@ -233,6 +233,42 @@ describe('who sings which line', () => {
     expect(store.jamSongParts()[1]).toBeDefined()
   })
 
+  it('disarms the brush when a different song loads', () => {
+    // A brush still armed from the last sheet would turn the first click
+    // on the new words into a paint instead of a seek.
+    store.toggleJamAssignBrush('ada')
+    expect(store.jamAssignBrush()).toBe('ada')
+    store.selectJamSong(song({ id: 'other' }))
+    expect(store.jamAssignBrush()).toBeNull()
+  })
+
+  it('disarms the brush when the song is cleared', () => {
+    store.toggleJamAssignBrush('ada')
+    store.clearJamSong()
+    expect(store.jamAssignBrush()).toBeNull()
+  })
+
+  it('only lets the host hold a brush', () => {
+    store.setJamIsHost(false)
+    store.toggleJamAssignBrush('ada')
+    expect(store.jamAssignBrush()).toBeNull()
+  })
+
+  it('picking the armed singer again puts the brush down', () => {
+    store.toggleJamAssignBrush('ada')
+    store.toggleJamAssignBrush('ada')
+    expect(store.jamAssignBrush()).toBeNull()
+  })
+
+  it('resets the host clock target with the song', () => {
+    // Otherwise a guest carries the last song's correction into the new
+    // one and gets yanked there on the first transport message.
+    store.selectJamSong(song({ id: 'a' }))
+    expect(store.jamSongHostTarget()).toBe(0)
+    store.clearJamSong()
+    expect(store.jamSongHostTarget()).toBe(0)
+  })
+
   it('forgets the allocation when a different song loads', () => {
     // A new song is a new lyric sheet; line 3 means something else now.
     store.assignJamSongLines(0, 2, 'ada')
