@@ -2,9 +2,9 @@
 // ChallengeResultCard — the after-run moment above the frozen zen canvas
 // ============================================================
 // Presented whenever a weekly Legend attempt was just recorded
-// (challenge-result-store): a full card instead of a toast — cosmic
-// celebration art and the badge on a pass, warm encouragement on a
-// miss — with explicit paths to a scored retake, the finished pitch line,
+// (challenge-result-store): a full card instead of a toast — art graded to
+// how the run actually went (see challenge-result-art) and the badge on a
+// pass — with explicit paths to a scored retake, the finished pitch line,
 // unscored Zen practice after a miss, or exit. Mounted once at app level so
 // Home and Challenges share the flow.
 
@@ -14,6 +14,7 @@ import { Portal } from 'solid-js/web'
 import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { showNotification } from '@/stores/notifications-store'
 import { closeChallengeStage, openChallengeStage, openSingingZen, } from '@/stores/ui-store'
+import { challengeResultArt } from './challenge-result-art'
 import type { ChallengeResult } from './challenge-result-store'
 import { clearChallengeResult, finalizingResult, lastChallengeResult, } from './challenge-result-store'
 import { challengeToZenExercise } from './challenge-stage-model'
@@ -146,11 +147,7 @@ export const ChallengeResultCard: Component = () => {
               <div class={styles.card} onClick={(e) => e.stopPropagation()}>
                 <img
                   class={styles.art}
-                  src={
-                    passed()
-                      ? '/challenges/challenge-triumph.webp'
-                      : '/challenges/challenge-again.webp'
-                  }
+                  src={challengeResultArt(result())}
                   alt=""
                 />
                 <div class={styles.body}>

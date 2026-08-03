@@ -4817,15 +4817,15 @@
    edge. Deliberately NOT a new invention: two tabs sharing one treatment
    is the point.
  *
- * The art is the triumph piece already drawn for the result card, so the
- * page and its payoff are the same world. It is 1376x768 — 1.79:1, much
- * tighter than Community's 3.15:1 banner — so it carries a real subject
- * rather than empty haze, and it gets a lower opacity to compensate
- * instead of a scrim laid over the top.
+ * The art is its own piece rather than a borrowed one. It used to be the
+ * result card's triumph image, which meant the hub wore the celebration
+ * every single visit and had nothing left to give on the day you actually
+ * passed. A backdrop and a payoff want opposite things: this one is a
+ * ring of sonar in the dark, quiet enough to look at daily.
  *
- * No 4K tier exists for this one. At 0.28 opacity behind text a soft
- * upscale reads as atmosphere rather than as a blurry photograph, which
- * is the one case the sharpness playbook says a tier can wait for. */
+ * 0.42, not the 0.28 the borrowed art needed. That piece was a busy
+ * starburst and had to be held down; rings on empty black can be let up,
+ * and at 0.28 they read as smudge rather than as structure. */
 .vocal-challenges {
   position: relative;
   isolation: isolate;
@@ -4839,13 +4839,29 @@
   max-height: 100%;
   z-index: -1;
   pointer-events: none;
-  background-image: url('/challenges/challenge-triumph.webp');
+  background-image: url('/challenges/challenge-hub.webp');
   background-size: cover;
   /* Right of centre, like Community: the left is where the header copy
      and the first row of cards live, and that side wants to stay quiet. */
   background-position: 72% 42%;
-  opacity: 0.28;
+  opacity: 0.42;
   mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 100%);
+}
+
+/* Concentric hairlines are exactly the content that aliases when the
+   scale ratio is wrong, so unlike the old art this one ships a 2x tier
+   rather than being upscaled on a dense display. */
+@media (min-width: 900px) {
+  .vocal-challenges::before {
+    background-image: -webkit-image-set(
+      url('/challenges/challenge-hub.webp') 1x,
+      url('/challenges/challenge-hub-4k.webp') 2x
+    );
+    background-image: image-set(
+      url('/challenges/challenge-hub.webp') 1x,
+      url('/challenges/challenge-hub-4k.webp') 2x
+    );
+  }
 }
 
 @media (prefers-reduced-transparency: reduce) {
