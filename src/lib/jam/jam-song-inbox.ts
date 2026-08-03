@@ -23,7 +23,13 @@ export interface ReceivedStem {
 }
 
 export interface InboxHandlers {
-  onProgress?: (peerId: string, p: TransferProgress) => void
+  /** The stem comes too: two arrive in turn, and a bar that refills with
+   *  no explanation reads as a transfer starting over. */
+  onProgress?: (
+    peerId: string,
+    p: TransferProgress,
+    stem: 'instrumental' | 'vocal',
+  ) => void
   onStem?: (received: ReceivedStem) => void
   /** Damaged, refused, or abandoned -- always with something to show. */
   onFailed?: (peerId: string, reason: string) => void
@@ -56,7 +62,7 @@ export class SongFileInbox {
     // them against, so accumulating would be accumulating anything.
     if (rx === undefined) return
     try {
-      this.handlers.onProgress?.(peerId, rx.accept(buffer))
+      this.handlers.onProgress?.(peerId, rx.accept(buffer), rx.header.stem)
     } catch (err) {
       this.open.delete(peerId)
       this.handlers.onFailed?.(

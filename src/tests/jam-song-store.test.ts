@@ -4,6 +4,7 @@
 // because getting either wrong produces a room that looks fine and is
 // subtly desynced.
 
+import { createComputed, createRoot } from 'solid-js'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
 import * as store from '@/stores/jam-store'
@@ -393,6 +394,31 @@ describe('transport is scoped, and the host drives it', () => {
     store.jamPlaybackPlay()
     expect(store.jamExerciseBeat()).toBe(0)
     expect(store.jamSongPositionSec()).toBe(12)
+  })
+
+  it('R7: nothing ever sees a room that is neither a drill nor a song', () => {
+    // How the drill kept coming back. Outside a batch every setter flushes
+    // its observers, so clearing the melody ran the panel's "pick a
+    // default melody if none is loaded" effect at a moment when the song
+    // had not been set yet: it saw an empty drill room and helpfully put a
+    // drill back. The room then had both, the drill owned the transport,
+    // and its beat timer stopped the song.
+    store.selectJamExercise(melody())
+    const halfLoaded: boolean[] = []
+    createRoot((dispose) => {
+      // createComputed, not createEffect: it runs synchronously on every
+      // write, which is exactly the observer the panel's effect was.
+      createComputed(() => {
+        halfLoaded.push(
+          store.jamSong() === null && store.jamExerciseMelody() === null,
+        )
+      })
+      store.selectJamSong(song())
+      dispose()
+    })
+    expect(halfLoaded.slice(1)).not.toContain(true)
+    expect(store.jamExerciseMelody()).toBeNull()
+    expect(store.jamSong()?.id).toBe('demo')
   })
 
   it('R7: picking a drill switches the room off the song', () => {
