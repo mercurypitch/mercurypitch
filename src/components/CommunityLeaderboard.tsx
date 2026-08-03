@@ -200,6 +200,17 @@ const IconUnclaimedPlace = () => (
   </svg>
 )
 
+/**
+ * The three podium places, in order. Deliberately NOT the league badges in
+ * `public/leagues/` — those denote ladder rungs, so a Bronze-league singer
+ * topping the board would wear gold here and bronze on their league card.
+ */
+const PODIUM_MEDALS: ReadonlyArray<{ src: string; alt: string }> = [
+  { src: '/leaderboard/place-1.webp', alt: 'First place' },
+  { src: '/leaderboard/place-2.webp', alt: 'Second place' },
+  { src: '/leaderboard/place-3.webp', alt: 'Third place' },
+]
+
 /** Two singers with the second still an outline — nobody there yet. */
 const IconFriendsEmpty = () => (
   <svg
@@ -1076,10 +1087,25 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
                 {(user, index) => (
                   <div class={`podium-item podium-${index() + 1}`}>
                     <div class="podium-rank">
-                      {index() === 0 && <TrophyIcon />}
-                      {index() === 1 && <IconTrophy />}
-                      {index() === 2 && <IconTrophy />}
-                      {index() >= 3 && `#${user.rank}`}
+                      {/* All three places drew the SAME trophy glyph, so gold,
+                          silver and bronze were told apart only by the card's
+                          background tint. podiumData() is always exactly three
+                          entries; the rank-number branch is the belt-and-braces
+                          case if that ever stops being true. */}
+                      <Show
+                        when={PODIUM_MEDALS[index()]}
+                        fallback={`#${user.rank}`}
+                      >
+                        {(medal) => (
+                          <img
+                            class="podium-medal"
+                            src={medal().src}
+                            alt={medal().alt}
+                            width="128"
+                            height="128"
+                          />
+                        )}
+                      </Show>
                     </div>
                     <div class="podium-avatar">
                       {/* An unclaimed place is not a person with no picture:
