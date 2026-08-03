@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
-import { buildVoiceAtlasRenderModel } from './voice-atlas-model'
+import { buildPracticeLoomRenderModel, buildVoiceAtlasRenderModel, } from './voice-atlas-model'
 
 interface TestPoint {
   timeMs: number
@@ -241,5 +241,78 @@ describe('Voice Atlas render model', () => {
     expect(model.later.points.map((point) => point.level)).toEqual([0.25, 1])
     expect(model.earlier.observedPeakLevel).toBe(0.4)
     expect(model.later.observedPeakLevel).toBe(0.4)
+  })
+})
+
+describe('Practice Loom render model', () => {
+  it('keeps every take on one real-time and pitch domain', () => {
+    const model = buildPracticeLoomRenderModel([
+      {
+        id: 'take-1',
+        durationSeconds: 4,
+        contour: contour([
+          { timeMs: 0, midiCents: 6_000 },
+          { timeMs: 4_000, midiCents: 6_200 },
+        ]),
+      },
+      {
+        id: 'take-2',
+        durationSeconds: 8,
+        contour: contour([
+          { timeMs: 0, midiCents: 6_800 },
+          { timeMs: 8_000, midiCents: 7_000 },
+        ]),
+      },
+      {
+        id: 'take-3',
+        durationSeconds: 6,
+        contour: contour([
+          { timeMs: 0, midiCents: 6_400 },
+          { timeMs: 6_000, midiCents: 6_600 },
+        ]),
+      },
+    ])
+
+    expect(model.durationSeconds).toBe(8)
+    expect(model.rows.map((row) => row.id)).toEqual([
+      'take-1',
+      'take-2',
+      'take-3',
+    ])
+    expect(model.rows.map((row) => row.points.at(-1)?.x)).toEqual([
+      0.5, 1, 0.75,
+    ])
+    expect(model.pitchDomain).toEqual({
+      minMidiCents: 5_800,
+      maxMidiCents: 7_200,
+    })
+    expect(model.voicedRowCount).toBe(3)
+  })
+
+  it('keeps legacy and unavailable rows visible without invented contours', () => {
+    const model = buildPracticeLoomRenderModel([
+      {
+        id: 'mapped',
+        durationSeconds: 2,
+        contour: contour([{ timeMs: 0, midiCents: 6_900 }]),
+      },
+      { id: 'legacy', durationSeconds: 3, contour: null },
+      {
+        id: 'unavailable',
+        durationSeconds: 4,
+        contour: null,
+        analysisExpected: true,
+      },
+    ])
+
+    expect(model.rows.map((row) => row.state)).toEqual([
+      'mapped',
+      'legacy',
+      'unavailable',
+    ])
+    expect(model.contourRowCount).toBe(1)
+    expect(model.voicedRowCount).toBe(1)
+    expect(model.rows[1].points).toEqual([])
+    expect(model.rows[2].segments).toEqual([])
   })
 })

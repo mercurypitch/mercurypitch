@@ -36,7 +36,8 @@ import type { FreeformThreadTarget } from './freeform-voice-take'
 import { createFreeformThreadTarget } from './freeform-voice-take'
 import { FreeformVoiceRecorder } from './FreeformVoiceRecorder'
 import { bindListeningRoomSettings } from './listening-room-settings'
-import { buildVoiceAtlasRenderModel } from './voice-atlas-model'
+import { PracticeLoomPanel } from './PracticeLoomPanel'
+import { buildPracticeLoomRenderModel, buildVoiceAtlasRenderModel, } from './voice-atlas-model'
 import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
 import { createVoiceReflection, parseVoiceReflections, } from './voice-reflections'
 import { VoiceAtlasPanel } from './VoiceAtlasPanel'
@@ -313,11 +314,17 @@ export function VoiceHistoryPage(): JSX.Element {
       return 'custom'
     },
   )
-  const contourSelectionKey = createMemo(() =>
-    [earlier()?.id, atlasLater()?.id]
-      .filter((id): id is string => id !== undefined)
-      .join('\n'),
-  )
+  const contourSelectionKey = createMemo(() => {
+    const thread = selectedThread()
+    const selectedIds = [earlier()?.id, atlasLater()?.id].filter(
+      (id): id is string => id !== undefined,
+    )
+    const ids =
+      thread !== null && thread.takes.length >= 3
+        ? thread.takes.map((take) => take.id)
+        : selectedIds
+    return [...new Set(ids)].join('\n')
+  })
   const atlasModel = createMemo(() => {
     const earlierTake = earlier()
     const laterTake = atlasLater()
@@ -340,6 +347,18 @@ export function VoiceHistoryPage(): JSX.Element {
               analysisExpected: laterTake.contourVersion !== undefined,
             },
     })
+  })
+  const loomModel = createMemo(() => {
+    const thread = selectedThread()
+    const loadedContours = contours()
+    return buildPracticeLoomRenderModel(
+      (thread?.takes ?? []).map((take) => ({
+        id: take.id,
+        contour: loadedContours[take.id] ?? null,
+        durationSeconds: take.durationMs / 1000,
+        analysisExpected: take.contourVersion !== undefined,
+      })),
+    )
   })
 
   function ensureListeningContext(): AudioContext | null {
@@ -494,7 +513,13 @@ export function VoiceHistoryPage(): JSX.Element {
     }
     setContoursLoading(true)
     void Promise.all(
-      ids.map(async (id) => [id, await getVoiceTakeContour(id)] as const),
+      ids.map(async (id) => {
+        try {
+          return [id, await getVoiceTakeContour(id)] as const
+        } catch {
+          return [id, null] as const
+        }
+      }),
     )
       .then((loaded) => {
         if (generation !== contourLoadGeneration) return
@@ -1435,6 +1460,35 @@ export function VoiceHistoryPage(): JSX.Element {
                       onAddReflection={addReflection}
                       onRemoveReflection={removeReflection}
                     />
+
+                    <Show when={thread.takes.length >= 3}>
+                      <PracticeLoomPanel
+                        loading={contoursLoading()}
+                        model={loomModel()}
+                        takes={thread.takes}
+                        activeId={activeId()}
+                        earlierId={earlierId()}
+                        laterId={laterId()}
+                        progress={progress()}
+                        playing={playing()}
+                        onPlay={(takeId) => {
+                          const take = thread.takes.find(
+                            (candidate) => candidate.id === takeId,
+                          )
+                          if (take !== undefined) {
+                            playTake(take, true)
+                          }
+                        }}
+                        onSeek={(takeId, nextProgress) => {
+                          const take = thread.takes.find(
+                            (candidate) => candidate.id === takeId,
+                          )
+                          if (take !== undefined) {
+                            seekTake(take, nextProgress, true)
+                          }
+                        }}
+                      />
+                    </Show>
 
                     <VoiceRoomPanel
                       settings={roomSettings()}

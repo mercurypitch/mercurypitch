@@ -1,5 +1,5 @@
 // ============================================================
-// Voice Atlas Render Model — honest shared coordinates for take comparison
+// Voice Atlas Render Models — honest shared coordinates across kept takes
 // ============================================================
 //
 // Earlier and Later always inhabit one real-time and pitch space. A shorter
@@ -99,6 +99,29 @@ export interface VoiceAtlasRenderModel {
   pitchTicks: readonly VoiceAtlasPitchTick[]
 }
 
+export interface PracticeLoomTakeInput extends VoiceAtlasTakeInput {
+  id: string
+}
+
+export interface PracticeLoomRowModel {
+  id: string
+  state: VoiceAtlasTrailState
+  durationSeconds: number
+  observedPeakLevel: number
+  points: readonly VoiceAtlasRenderPoint[]
+  segments: readonly VoiceAtlasRenderSegment[]
+}
+
+export interface PracticeLoomRenderModel {
+  durationSeconds: number
+  pitchDomain: VoiceAtlasPitchDomain | null
+  rows: readonly PracticeLoomRowModel[]
+  contourRowCount: number
+  voicedRowCount: number
+  timeTicks: readonly VoiceAtlasTimeTick[]
+  pitchTicks: readonly VoiceAtlasPitchTick[]
+}
+
 interface DecodedContourPointView {
   timeMs: number
   midiCents: number | null
@@ -113,12 +136,15 @@ interface PreparedPoint {
   rawLevel: number
 }
 
-interface PreparedTrail {
-  key: VoiceAtlasTrailKey
+interface PreparedTake {
   take: VoiceAtlasTakeInput | null
   points: readonly PreparedPoint[]
   peakLevel: number
   maxPitchGapSeconds: number
+}
+
+interface PreparedTrail extends PreparedTake {
+  key: VoiceAtlasTrailKey
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -135,12 +161,9 @@ function decodedPoints(
   return contour.points
 }
 
-function prepareTrail(
-  key: VoiceAtlasTrailKey,
-  take: VoiceAtlasTakeInput | null,
-): PreparedTrail {
+function prepareTake(take: VoiceAtlasTakeInput | null): PreparedTake {
   if (take?.contour === null || take === null) {
-    return { key, take, points: [], peakLevel: 0, maxPitchGapSeconds: 0 }
+    return { take, points: [], peakLevel: 0, maxPitchGapSeconds: 0 }
   }
 
   const points = decodedPoints(take.contour)
@@ -177,7 +200,6 @@ function prepareTrail(
       : expectedStep
 
   return {
-    key,
     take,
     points,
     peakLevel: points.reduce(
@@ -190,7 +212,14 @@ function prepareTrail(
   }
 }
 
-function sharedDurationSeconds(trails: readonly PreparedTrail[]): number {
+function prepareTrail(
+  key: VoiceAtlasTrailKey,
+  take: VoiceAtlasTakeInput | null,
+): PreparedTrail {
+  return { key, ...prepareTake(take) }
+}
+
+function sharedDurationSeconds(trails: readonly PreparedTake[]): number {
   let duration = 0
   for (const trail of trails) {
     duration = Math.max(
@@ -203,7 +232,7 @@ function sharedDurationSeconds(trails: readonly PreparedTrail[]): number {
 }
 
 function createPitchDomain(
-  trails: readonly PreparedTrail[],
+  trails: readonly PreparedTake[],
 ): VoiceAtlasPitchDomain | null {
   const voiced = trails.flatMap((trail) =>
     trail.points.flatMap((point) =>
@@ -234,14 +263,21 @@ function createPitchDomain(
   }
 }
 
-function renderTrail(
-  trail: PreparedTrail,
+interface RenderedTake {
+  state: VoiceAtlasTrailState
+  durationSeconds: number
+  observedPeakLevel: number
+  points: readonly VoiceAtlasRenderPoint[]
+  segments: readonly VoiceAtlasRenderSegment[]
+}
+
+function renderTake(
+  trail: PreparedTake,
   durationSeconds: number,
   pitchDomain: VoiceAtlasPitchDomain | null,
-): VoiceAtlasTrailModel {
+): RenderedTake {
   if (trail.take === null) {
     return {
-      key: trail.key,
       state: 'missing',
       durationSeconds: 0,
       observedPeakLevel: 0,
@@ -251,7 +287,6 @@ function renderTrail(
   }
   if (trail.take.contour === null) {
     return {
-      key: trail.key,
       state: trail.take.analysisExpected === true ? 'unavailable' : 'legacy',
       durationSeconds: finiteNonNegative(trail.take.durationSeconds),
       observedPeakLevel: 0,
@@ -261,7 +296,6 @@ function renderTrail(
   }
   if (trail.points.length === 0) {
     return {
-      key: trail.key,
       state: 'unavailable',
       durationSeconds: finiteNonNegative(trail.take.durationSeconds),
       observedPeakLevel: 0,
@@ -321,12 +355,22 @@ function renderTrail(
   finishRun()
 
   return {
-    key: trail.key,
     state: segments.length > 0 ? 'mapped' : 'energy-only',
     durationSeconds: finiteNonNegative(trail.take.durationSeconds),
     observedPeakLevel: trail.peakLevel,
     points,
     segments,
+  }
+}
+
+function renderTrail(
+  trail: PreparedTrail,
+  durationSeconds: number,
+  pitchDomain: VoiceAtlasPitchDomain | null,
+): VoiceAtlasTrailModel {
+  return {
+    key: trail.key,
+    ...renderTake(trail, durationSeconds, pitchDomain),
   }
 }
 
@@ -463,6 +507,34 @@ export function buildVoiceAtlasRenderModel(
     ).length,
     voicedTrailCount: rendered.filter((trail) => trail.state === 'mapped')
       .length,
+    timeTicks: createTimeTicks(durationSeconds),
+    pitchTicks: createPitchTicks(pitchDomain),
+  }
+}
+
+export function buildPracticeLoomRenderModel(
+  takes: readonly PracticeLoomTakeInput[],
+): PracticeLoomRenderModel {
+  const prepared = takes.map((take) => ({
+    id: take.id,
+    prepared: prepareTake(take),
+  }))
+  const preparedTakes = prepared.map((entry) => entry.prepared)
+  const durationSeconds = sharedDurationSeconds(preparedTakes)
+  const pitchDomain = createPitchDomain(preparedTakes)
+  const rows = prepared.map<PracticeLoomRowModel>((entry) => ({
+    id: entry.id,
+    ...renderTake(entry.prepared, durationSeconds, pitchDomain),
+  }))
+
+  return {
+    durationSeconds,
+    pitchDomain,
+    rows,
+    contourRowCount: rows.filter(
+      (row) => row.state === 'mapped' || row.state === 'energy-only',
+    ).length,
+    voicedRowCount: rows.filter((row) => row.state === 'mapped').length,
     timeTicks: createTimeTicks(durationSeconds),
     pitchTicks: createPitchTicks(pitchDomain),
   }

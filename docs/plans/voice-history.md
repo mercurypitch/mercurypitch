@@ -1,11 +1,11 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
 Status: **local vault, Glass, repeatable Exercise, Weekly Legend, direct
-freeform capture, listening-studio polish, and the first Voice Atlas layer are
-implemented on draft PR #364**, updated 2026-08-02. Voice Atlas v1 adds Take
-Topography, shared-scale Twin Trails, and subjective Reflection Beacons. The
-remaining local-release gate is browser validation, especially the real iPhone
-Safari recording path.
+freeform capture, listening-studio polish, and the first Voice Atlas layers are
+implemented on draft PR #364**, updated 2026-08-03. Voice Atlas v1 adds Take
+Topography, shared-scale Twin Trails, subjective Reflection Beacons, and a
+three-take Practice Loom. The remaining local-release gate is browser
+validation, especially the real iPhone Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -145,6 +145,28 @@ the vault into a scorecard and is not a separate product surface.
   observations, not algorithmic classifications. The first visible take is a
   valid beacon target before playback; selecting either take card moves that
   target, and the UI names the target take and exact timestamp before saving.
+
+### Practice Loom v1: history without a trend score
+
+Practice Loom unlocks when one thread contains at least three takes. It keeps
+Twin Trails as the focused A/B workspace and adds a longitudinal listening map:
+
+- Rows remain chronological takes on one true-seconds and shared-pitch domain;
+  a shorter take ends early and uncertain frames remain gaps.
+- Each mapped row shows confidence-filtered pitch with relative within-take
+  energy. Legacy or unavailable contours keep their stored waveform instead of
+  receiving a fabricated analytical trail.
+- Clicking, dragging, or using arrow keys on any row seeks that exact take.
+  The gold shuttle marks the active listening position, and Space pauses it.
+- Aqua and violet labels identify the rows currently selected as Earlier and
+  Later without ranking unselected takes.
+- Histories above eight rows initially show the earliest take plus the latest
+  seven, name the number of folded middle takes, and provide Show all/Fold
+  controls.
+
+V1 does not align phrases, infer improvement, or expose vibrato, tone texture,
+register, or device-sensitive spectral claims. Those remain later validated
+layers, not hidden scores in the initial Loom.
 
 ### Responsive and accessible behavior
 

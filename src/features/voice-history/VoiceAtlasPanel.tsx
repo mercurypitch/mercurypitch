@@ -830,7 +830,10 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
           <Show when={selectedTake() !== null}>
             <div
               class={styles.playhead}
-              classList={{ [styles.playheadMoving]: props.playing }}
+              classList={{
+                [styles.playheadMoving]:
+                  props.playing && props.activeId === selectedTake()?.id,
+              }}
               style={{
                 '--atlas-position': `${currentSharedProgress() * 100}%`,
               }}
