@@ -3001,15 +3001,37 @@
 
 /* Up to two rows, then scroll. One forced row meant a wide screen still
    hid categories off the right edge for no reason; unlimited wrap was
-   what pushed the first card 550px down. Two is the compromise. */
+   what pushed the first card 550px down. Two is the compromise.
+ *
+ * The cap has to add up to the whole box, not just the pills. Everything
+ * here is border-box, so this element's own padding-bottom comes OUT of
+ * the declared max-height — `2 * 40px + 8px` was several pixels short of
+ * two rows and sliced the underside off the second one.
+ *
+ * The row height is deliberately over-declared. A pill measures roughly
+ * 38-42px (10px padding twice, a 1px border twice, and whichever is
+ * taller of the icon and the line box) but that moves with the font, the
+ * zoom and the icon set — and guessing LOW is what clips. Guessing high
+ * costs nothing: this container has no background and no border, so the
+ * slack is invisible, while three rows still overflow the cap and
+ * scroll. Wrong in the harmless direction, on purpose.
+ *
+ * Wrapping also means there is never horizontal overflow, so whatever
+ * scrolling happens is vertical. */
 .challenges-main .category-tabs {
+  --cat-pill-h: 3rem;
+  --cat-pill-gap: 8px;
+  --cat-pill-pad: 4px;
   display: flex;
   flex-wrap: wrap;
-  max-height: calc(2 * var(--cat-pill-h, 40px) + 8px);
-  overflow-x: auto;
-  overflow-y: hidden;
-  gap: 8px;
-  padding-bottom: 4px;
+  max-height: calc(
+    2 * var(--cat-pill-h) + var(--cat-pill-gap) + var(--cat-pill-pad)
+  );
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  gap: var(--cat-pill-gap);
+  padding-bottom: var(--cat-pill-pad);
   scrollbar-width: thin;
 }
 
@@ -3024,22 +3046,16 @@
   gap: 12px;
 }
 
-/* The pill row scrolls; without this the last one just stops at the edge
-   with nothing saying there is more. */
-.challenges-main .category-tabs {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(100% - 28px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    #000 0,
-    #000 calc(100% - 28px),
-    transparent 100%
-  );
-}
+/* There was a right-edge fade here to say "the row continues". It never
+   could: the pills wrap, so nothing is ever cut off to the right, and it
+   was dimming a complete row for no reason.
+ *
+ * Nor does it belong on the bottom edge instead. A mask on a scroll
+ * container fades the viewport edge whether or not there is anything
+ * past it, so with the usual two rows it would put a soft grey band
+ * along the underside of row two — which is exactly what "the second row
+ * looks cut" describes. The thin scrollbar is the honest affordance, and
+ * it only shows up when a third row exists. */
 
 .challenge-modal-overlay {
   backdrop-filter: blur(4px);
