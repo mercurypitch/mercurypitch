@@ -33,6 +33,8 @@ export interface MicInsightsOptions {
   isPlaying: () => boolean
   /** Current input level as RMS amplitude (0–1). */
   getLevel: () => number
+  /** The detector's current RMS amplitude gate. Defaults to 0.02. */
+  getMinAmplitude?: () => number
   /** Is the detector currently producing a pitch (the live "green line"). */
   isDetecting: () => boolean
   /** Fired whenever the derived insight changes (event-style hook for consumers). */
@@ -48,13 +50,13 @@ export interface MicInsights {
 
 /** Below this RMS the signal is effectively silence (ambient room noise). */
 const NOISE_FLOOR = 0.01
+/** PitchDetector's default RMS gate when a consumer cannot expose its own. */
+const DEFAULT_MIN_AMPLITUDE = 0.02
 /** Sustained audible-but-undetected frames before warning (~0.75s @ 60fps). */
 const TOO_QUIET_FRAMES = 45
 /** Sustained silence-during-playback frames before warning (~1.5s @ 60fps),
  *  long enough not to fire in the gaps between sung notes. */
 const NO_INPUT_FRAMES = 90
-/** Keep a surfaced warning on screen at least this long so it's readable. */
-const MIN_DISPLAY_MS = 1300
 
 export const MIC_INSIGHT_MESSAGE: Record<MicInsight, string> = {
   none: '',
@@ -66,16 +68,38 @@ export const MIC_INSIGHT_MESSAGE: Record<MicInsight, string> = {
     'Input is too weak for pitch tracking. Move closer, check the input gain, and close other tabs or apps using this mic.',
 }
 
-const now = (): number =>
-  typeof performance !== 'undefined' ? performance.now() : Date.now()
+export interface MicSignalSample {
+  isPlaying: boolean
+  isDetecting: boolean
+  level: number
+  minAmplitude?: number
+}
+
+/**
+ * Classify one already-smoothed active-mic sample before debounce. A strong
+ * unpitched sound is not weak input: it may be breath, speech, percussion, or
+ * a note outside the detector's range, so only levels below the detector's
+ * real amplitude gate can produce `too-quiet`.
+ */
+export function classifyMicSignal(
+  sample: MicSignalSample,
+): Exclude<MicInsight, 'mic-off'> {
+  if (!sample.isPlaying || sample.isDetecting) return 'none'
+  if (sample.level <= NOISE_FLOOR) return 'no-input'
+  const minAmplitude = Math.max(
+    NOISE_FLOOR,
+    sample.minAmplitude ?? DEFAULT_MIN_AMPLITUDE,
+  )
+  return sample.level < minAmplitude ? 'too-quiet' : 'none'
+}
 
 /**
  * Derives a debounced {@link MicInsight} from raw mic state. The detector is the
  * ground truth: while a pitch is read the insight is `none`. Otherwise we
- * distinguish audible-but-unreadable (`too-quiet`) from silence-while-playing
- * (`no-input`), each debounced, and hold a surfaced warning for a readable
- * minimum so messages don't flicker away before they can be read. Runs a single
- * rAF loop that lives only while the mic is on and the monitor is enabled.
+ * distinguish amplitude-gated input (`too-quiet`) from silence-while-playing
+ * (`no-input`), each debounced. Recovery clears immediately so a live pitch or
+ * healthy level can never sit behind a stale warning. Runs a single rAF loop
+ * that lives only while the mic is on and the monitor is enabled.
  */
 export function useMicInsights(opts: MicInsightsOptions): MicInsights {
   const [insight, setInsight] = createSignal<MicInsight>('none')
@@ -106,40 +130,31 @@ export function useMicInsights(opts: MicInsightsOptions): MicInsights {
     let smoothed = 0
     let tooQuietFrames = 0
     let silentFrames = 0
-    let shownAt = 0 // when the current warning was first surfaced
 
     const tick = () => {
       smoothed = smoothed * 0.8 + opts.getLevel() * 0.2
 
-      // 1) Debounced target insight from the raw signal.
+      const candidate = classifyMicSignal({
+        isPlaying: opts.isPlaying(),
+        isDetecting: opts.isDetecting(),
+        level: smoothed,
+        minAmplitude: opts.getMinAmplitude?.(),
+      })
       let target: MicInsight = 'none'
-      if (opts.isDetecting()) {
-        tooQuietFrames = 0
-        silentFrames = 0
-      } else if (smoothed > NOISE_FLOOR) {
+      if (candidate === 'too-quiet') {
         silentFrames = 0
         tooQuietFrames += 1
         if (tooQuietFrames >= TOO_QUIET_FRAMES) target = 'too-quiet'
+      } else if (candidate === 'no-input') {
+        tooQuietFrames = 0
+        silentFrames += 1
+        if (silentFrames >= NO_INPUT_FRAMES) target = 'no-input'
       } else {
         tooQuietFrames = 0
-        if (opts.isPlaying()) {
-          silentFrames += 1
-          if (silentFrames >= NO_INPUT_FRAMES) target = 'no-input'
-        } else {
-          silentFrames = 0
-        }
+        silentFrames = 0
       }
 
-      // 2) Hold a surfaced warning for a readable minimum before clearing.
-      const current = insight()
-      const holding =
-        target === 'none' &&
-        current !== 'none' &&
-        now() - shownAt < MIN_DISPLAY_MS
-      if (!holding) {
-        if (target !== 'none' && target !== current) shownAt = now()
-        emit(target)
-      }
+      emit(target)
 
       raf = requestAnimationFrame(tick)
     }

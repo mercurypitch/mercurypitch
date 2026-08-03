@@ -369,6 +369,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     micActive: mic.micActive,
     isPlaying: audio.playing,
     getLevel: () => rmsOfAnalyser(mic.getMicAnalyserNode()),
+    getMinAmplitude: () =>
+      mic.getMicPitchDetector()?.getSettings().minAmplitude ?? 0.02,
     isDetecting: () => (mic.micPitch()?.frequency ?? 0) > 0,
   })
 
@@ -3217,6 +3219,8 @@ export const StemMixerStyles: string = `
   background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
   color: var(--fg-secondary, #8b949e);
   font-size: 0.68rem;
+  min-width: 6.25rem;
+  justify-content: center;
   cursor: pointer;
   transition:
     border-color 0.15s,
@@ -3230,7 +3234,7 @@ export const StemMixerStyles: string = `
 
 .sm-add-stem-pill:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: default;
 }
 
 .sm-add-stem-dot {
