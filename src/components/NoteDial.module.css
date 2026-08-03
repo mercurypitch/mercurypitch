@@ -1,4 +1,5 @@
-/* NoteDial — see NoteDial.tsx for why this replaced the pill row. */
+/* NoteDial — see NoteDial.tsx for why this replaced the pill row, and why
+   the rim carries the octave. */
 
 .dial {
   display: flex;
@@ -21,24 +22,25 @@
   color: var(--text-muted);
 }
 
+/* One column now the octave lives on the rim. The old two-column layout
+   spent ~190px on a chip row and a meter that both restated what the rim
+   was already showing. */
 .body {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  /* The prototype's breathing room. 18px had the two columns almost
-     touching, which is most of why the built version read as cramped
-     next to it. */
-  gap: 32px;
-  flex-wrap: wrap;
-  padding: 20px 22px;
+  gap: 16px;
+  padding: 22px 22px 20px;
   border: 1px solid var(--border-color, var(--border));
   border-radius: 16px;
   background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
 }
 
 /* Sized in one place. The exercise panels vary in width, so the dial
-   tracks the space it is given rather than fixing a pixel size. */
+   tracks the space it is given rather than fixing a pixel size — and it
+   can afford to be larger now that it is not sharing the row. */
 .face {
-  width: clamp(190px, 46vw, 250px);
+  width: clamp(232px, 68vw, 300px);
   height: auto;
   flex: none;
   display: block;
@@ -52,19 +54,68 @@
   outline-offset: 3px;
 }
 
+/* Drawn only when there is a single octave; otherwise the octave segments
+   below ARE the rim. */
 .rim {
   fill: none;
   stroke: var(--border);
   stroke-width: 1;
 }
 
-/* The range gauge riding the rim. */
+/* ── Octave segments ─────────────────────────────────────────
+   One arc per octave, sized by how much of the range it holds. The
+   generous stroke is the tap target as much as the paint. */
+.octaveArc {
+  fill: none;
+  /* Brighter than --border: at border weight the divisions read as a
+     hairline circle rather than as segments you can aim at. */
+  stroke: color-mix(in srgb, var(--text-primary) 17%, transparent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transition: stroke 0.15s ease;
+}
+
+/* The octave in play, before the sweep reaches it. A hint, not a shout —
+   the sweep and the numeral carry the actual signal. */
+.octaveArcOn {
+  stroke: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.octaveLabel {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition:
+    fill 0.15s ease,
+    font-weight 0.15s ease;
+}
+
+.octaveLabelOn {
+  fill: var(--accent);
+  font-weight: 700;
+}
+
+/* The range gauge riding the rim, over the octave divisions. */
 .sweep {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 2.5;
+  stroke-width: 3;
   stroke-linecap: round;
   transition: d 0.2s ease;
+}
+
+/* The head of the sweep — the exact note, not just how far up. */
+.marker {
+  fill: var(--accent);
+  stroke: var(--bg-primary);
+  stroke-width: 2;
+  transition:
+    cx 0.2s ease,
+    cy 0.2s ease;
 }
 
 .seat {
@@ -128,19 +179,8 @@
   stroke: var(--border);
 }
 
-/* Low / mid / high, under the frequency — the prototype put the word
-   where the eye already is rather than off in the side column. */
-.hubBand {
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  fill: var(--accent);
-  text-anchor: middle;
-  pointer-events: none;
-}
-
 .hubNote {
-  font-size: 26px;
+  font-size: 27px;
   font-weight: 650;
   letter-spacing: -0.03em;
   fill: var(--text-primary);
@@ -158,21 +198,26 @@
   pointer-events: none;
 }
 
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 190px;
-  flex: 1 1 190px;
+/* Low / mid / high, under the frequency — the word goes where the eye
+   already is rather than off in a side column. */
+.hubBand {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  fill: var(--accent);
+  text-anchor: middle;
+  pointer-events: none;
 }
 
+/* ── The chip fallback ───────────────────────────────────────
+   Only when there are more octaves than the rim can label. */
 .section {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 9px;
 }
 
-/* Same voice as the panel labels elsewhere in the exercise chrome. */
 .sectionLabel {
   margin: 0;
   font-size: 0.68rem;
@@ -186,6 +231,7 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .octave {
@@ -223,9 +269,12 @@
 
 .readout {
   margin: 0;
+  max-width: 34ch;
+  text-align: center;
   font-size: 0.82rem;
   line-height: 1.45;
   color: var(--text-muted);
+  text-wrap: balance;
 }
 
 .readoutNote {
@@ -234,38 +283,27 @@
   font-variant-numeric: tabular-nums;
 }
 
-.meter {
-  height: 5px;
-  width: 100%;
-  min-width: 96px;
-  border-radius: 99px;
-  background: var(--border);
+/* The octave radio group: real control, off screen. Kept focusable, so
+   Tab reaches it — clip-path alone would leave a focus ring nowhere. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-.meter i {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 99px;
-  transition: width 0.18s ease;
-}
-
-/* Narrow panels stack the octave row under the face rather than shrinking
-   the dial to something you cannot hit. */
 @media (max-width: 420px) {
   .body {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .side {
-    width: 100%;
-    flex-basis: auto;
-  }
-
-  .body {
-    gap: 22px;
+    gap: 14px;
     padding: 16px;
+  }
+
+  .face {
+    width: min(100%, 264px);
   }
 }

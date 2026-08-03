@@ -9,10 +9,12 @@
 // control in the app while being one of the most repeated (seventeen
 // call sites).
 //
-// The dial answers pitch class; a short row answers octave; the hub says
-// what the choice means — the note, its frequency, and where it falls in
-// the range this exercise offers, which is the actual question someone
-// opens this control to settle.
+// The dial answers pitch class. The RIM answers octave: it was already
+// a gauge showing where the selected note sits in the range, and octave
+// is the same axis, so the octave boundaries are ticks on that gauge
+// rather than a fact restated by a row of chips beside it. The hub says
+// what the choice means — the note, its frequency, and the band it
+// falls in.
 //
 // Geometry and hit-testing live in note-dial-model.ts so they can be
 // tested without a browser. The prototype's sharps were unclickable
@@ -24,7 +26,7 @@ import { createMemo, For, Show } from 'solid-js'
 import { midiToFrequency, noteToMidi } from '@/lib/frequency-to-note'
 import { useNotePreview } from '@/lib/use-note-preview'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
-import { arcPath, dialSeats, octavesIn, pitchClassAvailable, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from './note-dial-model'
+import { arcPath, dialSeats, HUB_RADIUS, octaveArcPath, octaveArcs, octaveAtPoint, octavesIn, pitchClassAvailable, polarPoint, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from './note-dial-model'
 import styles from './NoteDial.module.css'
 
 interface NoteDialProps {
@@ -40,9 +42,23 @@ interface NoteDialProps {
 }
 
 /** Viewbox is unitless; the CSS decides how big the dial actually is. */
-const VB = 200
+const VB = 224
 const HUB = VB / 2
-const R = VB / 2 - 10
+/** Leaves room outside the rim for the octave numerals. */
+const R = 90
+/** The rim, where both the range sweep and the octave segments live. */
+const RIM = R * 0.99
+/** How far outside the rim the octave numeral sits. */
+const OCTAVE_LABEL_OFFSET = 15
+/** Twelve o'clock, matching the model's arc convention. */
+const TOP = -Math.PI / 2
+
+/**
+ * Above this many octaves the segments get too thin to label, and the
+ * chip row is the honest fallback. Every shipped vocal preset spans
+ * three, so this is headroom for a caller passing its own note list.
+ */
+const MAX_RIM_OCTAVES = 6
 
 export const NoteDial: Component<NoteDialProps> = (props) => {
   const preview = useNotePreview(() => props.previewSound !== false)
@@ -57,6 +73,17 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
   const octaves = createMemo(() => octavesIn(selectable()))
   const position = createMemo(() =>
     rangePosition(props.selected, selectable(), noteToMidi),
+  )
+
+  /** Empty when there is one octave, or too many to label on the rim. */
+  const arcs = createMemo(() =>
+    octaves().length > MAX_RIM_OCTAVES
+      ? []
+      : octaveArcs(selectable(), noteToMidi),
+  )
+  /** The chip row only appears when the rim cannot carry the job. */
+  const showChips = createMemo(
+    () => octaves().length > 1 && arcs().length === 0,
   )
 
   const commit = (note: string | null): void => {
@@ -74,7 +101,7 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
     if (pc === undefined) return
     const candidate = `${pc}${octave}`
     // Fall back to the nearest class in that octave when the exact one is
-    // not offered, so the octave row never dead-ends.
+    // not offered, so an octave target never dead-ends.
     commit(
       selectable().includes(candidate)
         ? candidate
@@ -82,14 +109,27 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
     )
   }
 
-  /** Pointer → seat, in unit-dial space relative to the hub. */
-  const seatFromEvent = (event: PointerEvent): void => {
+  /**
+   * Pointer → octave segment or seat, in unit-dial space.
+   *
+   * The ring starts outside the outermost seat, so the two hit-tests
+   * never have to arbitrate between each other.
+   */
+  const onPointerDown = (event: PointerEvent): void => {
     const svg = event.currentTarget as SVGSVGElement
     const rect = svg.getBoundingClientRect()
     if (rect.width === 0) return
     const x = ((event.clientX - rect.left) / rect.width) * VB
     const y = ((event.clientY - rect.top) / rect.height) * VB
-    const seat = seatAtPoint((x - HUB) / R, (y - HUB) / R, seats)
+    const ux = (x - HUB) / R
+    const uy = (y - HUB) / R
+
+    const arc = octaveAtPoint(ux, uy, arcs())
+    if (arc !== null) {
+      pickOctave(arc.octave)
+      return
+    }
+    const seat = seatAtPoint(ux, uy, seats)
     if (seat !== null && pitchClassAvailable(seat.pitchClass, selectable())) {
       pickClass(seat.pitchClass)
     }
@@ -136,7 +176,12 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
   const voiceType = createMemo(() =>
     VOCAL_RANGES[vocalRangePreset()].label.toLowerCase(),
   )
-  const sweep = createMemo(() => arcPath(position(), HUB, HUB, R * 0.99))
+  const sweep = createMemo(() => arcPath(position(), HUB, HUB, RIM))
+  /** The head of the sweep — where the selected note actually sits. */
+  const marker = createMemo(() => {
+    const p = polarPoint(TOP + position() * Math.PI * 2, RIM)
+    return { x: HUB + p.x, y: HUB + p.y }
+  })
 
   return (
     <div class={`${styles.dial} ${props.class ?? ''}`}>
@@ -151,15 +196,58 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
           role="group"
           tabindex="0"
           aria-label={`${props.label ?? 'Note'}: ${props.selected}. Left and right arrows change note, up and down change octave.`}
-          onPointerDown={seatFromEvent}
+          onPointerDown={onPointerDown}
           onKeyDown={onKeyDown}
         >
-          <circle class={styles.rim} cx={HUB} cy={HUB} r={R * 0.99} />
-          {/* The rim doubles as the range gauge: 12 o'clock is the bottom
-              of the range and it fills clockwise to the selected note. */}
+          {/* One plain rim when there is a single octave; otherwise the rim
+              IS the octave control, divided in proportion to how much of
+              the range each octave holds. */}
+          <Show
+            when={arcs().length > 0}
+            fallback={<circle class={styles.rim} cx={HUB} cy={HUB} r={RIM} />}
+          >
+            <g aria-hidden="true">
+              <For each={arcs()}>
+                {(arc) => {
+                  const on = () => current()?.octave === arc.octave
+                  const label = polarPoint(arc.mid, RIM + OCTAVE_LABEL_OFFSET)
+                  return (
+                    <>
+                      <path
+                        classList={{
+                          [styles.octaveArc]: true,
+                          [styles.octaveArcOn]: on(),
+                        }}
+                        d={octaveArcPath(arc, HUB, HUB, RIM)}
+                      />
+                      <text
+                        classList={{
+                          [styles.octaveLabel]: true,
+                          [styles.octaveLabelOn]: on(),
+                        }}
+                        x={HUB + label.x}
+                        y={HUB + label.y}
+                      >
+                        {arc.octave}
+                      </text>
+                    </>
+                  )
+                }}
+              </For>
+            </g>
+          </Show>
+
+          {/* The gauge: 12 o'clock is the bottom of the range and it fills
+              clockwise to the selected note, over the octave divisions. */}
           <Show when={sweep() !== ''}>
             <path class={styles.sweep} d={sweep()} />
           </Show>
+          <circle
+            class={styles.marker}
+            cx={marker().x}
+            cy={marker().y}
+            r={4.2}
+          />
 
           <For each={seats}>
             {(seat) => {
@@ -202,62 +290,81 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
             }}
           </For>
 
-          <circle class={styles.hub} cx={HUB} cy={HUB} r={R * 0.34} />
-          <text class={styles.hubNote} x={HUB} y={HUB - 4}>
+          <circle class={styles.hub} cx={HUB} cy={HUB} r={R * HUB_RADIUS} />
+          <text class={styles.hubNote} x={HUB} y={HUB - 7}>
             {props.selected}
           </text>
           <Show when={hz()}>
             {(f) => (
-              <text class={styles.hubHz} x={HUB} y={HUB + 13}>
+              <text class={styles.hubHz} x={HUB} y={HUB + 14}>
                 {f().toFixed(1)} Hz
               </text>
             )}
           </Show>
-          <text class={styles.hubBand} x={HUB} y={HUB + 27}>
+          <text class={styles.hubBand} x={HUB} y={HUB + 28}>
             {rangeBand(position()).toUpperCase()}
           </text>
         </svg>
 
-        <div class={styles.side}>
-          <Show when={octaves().length > 1}>
-            <section class={styles.section}>
-              <h4 class={styles.sectionLabel}>Octave</h4>
-              <div class={styles.octaves} role="group" aria-label="Octave">
-                <For each={octaves()}>
-                  {(octave) => (
-                    <button
-                      type="button"
-                      class={styles.octave}
-                      aria-pressed={current()?.octave === octave}
-                      onClick={() => pickOctave(octave)}
-                    >
-                      {octave}
-                    </button>
-                  )}
-                </For>
-              </div>
-            </section>
-          </Show>
+        {/* A path is nothing to a screen reader, so the octave segments are
+            decoration and this is the real control. Sighted pointer users
+            get the rim; everyone else gets a native radio group. */}
+        <Show when={arcs().length > 0}>
+          <fieldset class={styles.srOnly}>
+            <legend>Octave</legend>
+            <For each={octaves()}>
+              {(octave) => (
+                <label>
+                  <input
+                    type="radio"
+                    name={`octave-${props.label ?? 'note'}`}
+                    checked={current()?.octave === octave}
+                    onChange={() => pickOctave(octave)}
+                  />
+                  Octave {octave}
+                </label>
+              )}
+            </For>
+          </fieldset>
+        </Show>
 
+        <Show when={showChips()}>
           <section class={styles.section}>
-            <h4 class={styles.sectionLabel}>Where it sits in your range</h4>
-            <div class={styles.meter} aria-hidden="true">
-              <i style={{ width: `${(position() * 100).toFixed(1)}%` }} />
-            </div>
-            <p class={styles.readout}>
-              <b class={styles.readoutNote}>{props.selected}</b>
-              <Show when={ends()} fallback={<> is the only note on offer.</>}>
-                {(e) => (
-                  <>
-                    {' '}
-                    — {Math.round(position() * 100)}% up your {voiceType()}{' '}
-                    range ({e().low}&ndash;{e().high}).
-                  </>
+            <h4 class={styles.sectionLabel}>Octave</h4>
+            <div
+              class={styles.octaves}
+              role="group"
+              aria-label="Octave"
+              data-testid="octave-chips"
+            >
+              <For each={octaves()}>
+                {(octave) => (
+                  <button
+                    type="button"
+                    class={styles.octave}
+                    aria-pressed={current()?.octave === octave}
+                    onClick={() => pickOctave(octave)}
+                  >
+                    {octave}
+                  </button>
                 )}
-              </Show>
-            </p>
+              </For>
+            </div>
           </section>
-        </div>
+        </Show>
+
+        <p class={styles.readout}>
+          <b class={styles.readoutNote}>{props.selected}</b>
+          <Show when={ends()} fallback={<> is the only note on offer.</>}>
+            {(e) => (
+              <>
+                {' '}
+                — {Math.round(position() * 100)}% up your {voiceType()} range (
+                {e().low}&ndash;{e().high}).
+              </>
+            )}
+          </Show>
+        </p>
       </div>
     </div>
   )

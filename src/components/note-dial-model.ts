@@ -55,6 +55,14 @@ export interface Seat {
 const NATURAL_RADIUS = 0.74
 const SHARP_RADIUS = 0.55
 
+/**
+ * The hub, as a fraction of the dial radius. It carries the readout and
+ * is not a target, so hit-testing and the drawn circle read it from here
+ * rather than each keeping its own number — they were 0.34 in two files,
+ * which is a dead zone that drifts the moment one of them is tuned.
+ */
+export const HUB_RADIUS = 0.37
+
 /** Twelve seats in chromatic order, positioned like keyboard keys. */
 export function dialSeats(): Seat[] {
   const naturalAngle = (pc: string): number =>
@@ -109,7 +117,7 @@ export function seatAtPoint(
 ): Seat | null {
   const fromHub = Math.hypot(x, y)
   // The hub carries the readout and is not a target.
-  if (fromHub < 0.34) return null
+  if (fromHub < HUB_RADIUS) return null
   let best: Seat | null = null
   let bestDistance = Infinity
   for (const seat of seats) {
@@ -236,6 +244,143 @@ export function arcPath(
   const end = start + p * Math.PI * 2
   const largeArc = p > 0.5 ? 1 : 0
   return `M ${at(start)} A ${r} ${r} 0 ${largeArc} 1 ${at(end)}`
+}
+
+// ── Octave segments on the rim ───────────────────────────────────
+//
+// Octave and range position are the same axis, so the rim can carry
+// both: the sweep fills to where the selected note sits, and the rim
+// beneath it is divided into one segment per octave. The octave
+// boundary becomes a tick on the gauge instead of a fact stated
+// separately by a row of chips.
+//
+// The segments are PROPORTIONAL to each octave's share of the range,
+// not equal slices. A comfortable range rarely starts on a C — split
+// C3-B5 into equal thirds and it happens to be right, but split
+// E2-G5 into equal quarters and the marker sits in the wrong segment,
+// which turns the one claim this design rests on into a lie.
+
+/** Twelve o'clock, in the absolute radians the arc helpers use. */
+const TOP = -Math.PI / 2
+
+export interface OctaveArc {
+  octave: number
+  /** Absolute radians, TOP is twelve o'clock, growing clockwise. */
+  start: number
+  end: number
+  /** Midpoint of the drawn arc — where the numeral goes. */
+  mid: number
+}
+
+/** Gap between neighbouring segments, so the boundary is visible. */
+const ARC_GAP = 0.055
+
+/**
+ * One arc per octave, sized by how much of the range that octave holds.
+ *
+ * Returns [] when there is no span to divide — a single note, or a list
+ * with one octave in it, has no boundary worth drawing.
+ */
+export function octaveArcs(
+  available: readonly string[],
+  toMidi: (note: string) => number,
+): OctaveArc[] {
+  const notes = available.filter((n) => Number.isFinite(toMidi(n)))
+  const octaves = octavesIn(notes)
+  if (octaves.length < 2) return []
+  const values = notes.map(toMidi)
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  if (hi === lo) return []
+
+  // Each octave's own notes, then the territory between them. A segment
+  // runs to the MIDPOINT of the semitone separating it from its
+  // neighbour, not to its own last note — B3 to C4 is a real step, and
+  // stopping short of it leaves a band of dead ring at every boundary
+  // where a tap resolves to nothing.
+  const held = octaves.map((octave) => {
+    const own = notes.filter((n) => splitNote(n)?.octave === octave).map(toMidi)
+    return { octave, min: Math.min(...own), max: Math.max(...own) }
+  })
+
+  const turn = Math.PI * 2
+  return held.map((h, i) => {
+    const below = held[i - 1]
+    const above = held[i + 1]
+    const fromMidi = below === undefined ? lo : (below.max + h.min) / 2
+    const toMidi_ = above === undefined ? hi : (h.max + above.min) / 2
+    const from = (fromMidi - lo) / (hi - lo)
+    const to = (toMidi_ - lo) / (hi - lo)
+    // A gap wider than the segment would invert it, so an octave holding
+    // a single note keeps a sliver rather than drawing backwards.
+    const gap = Math.min(ARC_GAP, (to - from) * turn * 0.3)
+    const start = TOP + from * turn + gap / 2
+    const end = TOP + to * turn - gap / 2
+    return {
+      octave: h.octave,
+      start,
+      end: Math.max(start, end),
+      mid: (start + end) / 2,
+    }
+  })
+}
+
+/** SVG path for one octave segment at radius `r`. */
+export function octaveArcPath(
+  arc: OctaveArc,
+  cx: number,
+  cy: number,
+  r: number,
+): string {
+  const at = (a: number): string =>
+    `${(cx + Math.cos(a) * r).toFixed(3)} ${(cy + Math.sin(a) * r).toFixed(3)}`
+  const largeArc = arc.end - arc.start > Math.PI ? 1 : 0
+  return `M ${at(arc.start)} A ${r} ${r} 0 ${largeArc} 1 ${at(arc.end)}`
+}
+
+/** A point on the dial, in unit-dial space (origin at the hub, radius 1). */
+export function polarPoint(
+  angle: number,
+  radius: number,
+): { x: number; y: number } {
+  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius }
+}
+
+/** Where the octave ring accepts a pointer, as fractions of the dial radius. */
+const RING_INNER = 0.92
+const RING_OUTER = 1.4
+
+/**
+ * The octave segment under a pointer, or null.
+ *
+ * Only the band outside the seats counts: the outermost natural reaches
+ * 0.9 of the radius, so a ring starting at 0.92 cannot steal a seat's
+ * tap. That separation is why the two hit-tests never have to arbitrate.
+ */
+export function octaveAtPoint(
+  x: number,
+  y: number,
+  arcs: readonly OctaveArc[],
+): OctaveArc | null {
+  const fromHub = Math.hypot(x, y)
+  if (fromHub < RING_INNER || fromHub > RING_OUTER) return null
+  // atan2 gives (-PI, PI] from three o'clock; the arcs run from TOP.
+  let angle = Math.atan2(y, x)
+  while (angle < TOP) angle += Math.PI * 2
+  while (angle >= TOP + Math.PI * 2) angle -= Math.PI * 2
+  let best: OctaveArc | null = null
+  let bestGap = Infinity
+  for (const arc of arcs) {
+    if (angle >= arc.start && angle <= arc.end) return arc
+    // Inside a gap between segments: give it to the nearer neighbour
+    // rather than swallowing the tap.
+    const gap = Math.min(Math.abs(angle - arc.start), Math.abs(angle - arc.end))
+    if (gap < bestGap) {
+      bestGap = gap
+      best = arc
+    }
+  }
+  return bestGap <= ARC_GAP ? best : null
 }
 
 /** The lowest and highest notes a list offers, by pitch. */
