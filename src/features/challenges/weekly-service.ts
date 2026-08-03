@@ -11,6 +11,7 @@
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
+import { isE2ETestMode } from '@/lib/test-utils'
 import type { MelodyItem, NoteName } from '@/types'
 
 export interface WeeklyChallenge {
@@ -188,6 +189,7 @@ export function setAdminKey(key: string): void {
 export async function listAllWeekly(
   adminKey: string,
 ): Promise<WeeklyAdminRow[] | null> {
+  if (base() === '' && isE2ETestMode()) return []
   if (base() === '') return null
   try {
     const res = await fetch(`${base()}/api/weekly/all`, {

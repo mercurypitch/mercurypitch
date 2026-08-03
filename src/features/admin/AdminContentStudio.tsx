@@ -1,11 +1,13 @@
 import type { Component, JSX } from 'solid-js'
 import { createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { X } from '@/components/icons'
 import { AdminWeeklyPage } from '@/features/challenges/AdminWeeklyPage'
 import { getAdminKey, listAllWeekly, setAdminKey, } from '@/features/challenges/weekly-service'
 import { refreshGuidedContent } from '@/features/zen/guided-content-store'
+import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import type { AdminSection } from '@/stores/ui-store'
+import type { AdminContentLeaveIntent, AdminSection } from '@/stores/ui-store'
 import { registerAdminContentCloseGuard } from '@/stores/ui-store'
 import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
@@ -25,6 +27,8 @@ interface SectionMeta {
   shortLabel: string
   description: string
 }
+
+type ContentStudioLeaveAction = AdminContentLeaveIntent | { type: 'change-key' }
 
 const SECTIONS: readonly SectionMeta[] = [
   {
@@ -73,6 +77,7 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
   )
   const [authMessage, setAuthMessage] = createSignal('')
   const [contentDirty, setContentDirty] = createSignal(false)
+  const discardConfirm = useConfirm()
   let authInput: HTMLInputElement | undefined
   let studio: HTMLElement | undefined
   let workspaceHeading: HTMLHeadingElement | undefined
@@ -82,17 +87,52 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
   const currentSection = (): SectionMeta =>
     SECTIONS.find((section) => section.id === props.section) ?? SECTIONS[0]
 
-  const confirmContentExit = (): boolean =>
-    !contentDirty() ||
-    confirm('Discard the unsaved Content Studio changes and leave?')
+  const performLeave = (action: ContentStudioLeaveAction): void => {
+    setContentDirty(false)
+    if (action.type === 'section') {
+      props.onNavigate(action.section)
+      return
+    }
+    if (action.type === 'close') {
+      props.onClose()
+      return
+    }
+    ++authRequest
+    setAdminKey('')
+    setVerifiedKey('')
+    setKeyInput('')
+    setAuthMessage('')
+    setAuthStatus('locked')
+    focusAuthInput()
+  }
+
+  const requestLeave = (action: ContentStudioLeaveAction): void => {
+    if (!contentDirty()) {
+      performLeave(action)
+      return
+    }
+    discardConfirm.request({
+      title: 'Leave unsaved changes?',
+      message:
+        'This Content Studio page has unsaved changes. Discard them and continue?',
+      confirmLabel: 'Discard changes',
+      onConfirm: () => performLeave(action),
+    })
+  }
+
+  const guardContentExit = (intent: AdminContentLeaveIntent): boolean => {
+    if (!contentDirty()) return true
+    requestLeave(intent)
+    return false
+  }
 
   const navigate = (section: AdminSection): void => {
     if (section === props.section) return
-    props.onNavigate(section)
+    requestLeave({ type: 'section', section })
   }
 
   const close = (): void => {
-    props.onClose()
+    requestLeave({ type: 'close' })
   }
 
   const focusAuthInput = (): void => {
@@ -146,20 +186,22 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
   }
 
   const changeKey = (): void => {
-    if (!confirmContentExit()) return
-    ++authRequest
-    setAdminKey('')
-    setVerifiedKey('')
-    setKeyInput('')
-    setAuthMessage('')
-    setAuthStatus('locked')
-    focusAuthInput()
+    requestLeave({ type: 'change-key' })
   }
 
   onMount(() => {
     const unregisterCloseGuard =
-      registerAdminContentCloseGuard(confirmContentExit)
+      registerAdminContentCloseGuard(guardContentExit)
     onCleanup(unregisterCloseGuard)
+    const warnBeforeTabExit = (event: BeforeUnloadEvent): void => {
+      if (!contentDirty()) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeTabExit)
+    onCleanup(() =>
+      window.removeEventListener('beforeunload', warnBeforeTabExit),
+    )
     previousBodyOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     if (storedKey !== '') {
@@ -361,6 +403,15 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
           </main>
         </div>
       </section>
+      <ConfirmDialog
+        open={discardConfirm.pending() !== null}
+        title={discardConfirm.pending()?.title ?? ''}
+        message={discardConfirm.pending()?.message ?? ''}
+        confirmLabel={discardConfirm.pending()?.confirmLabel}
+        confirmIcon={discardConfirm.pending()?.confirmIcon}
+        onConfirm={discardConfirm.accept}
+        onCancel={discardConfirm.cancel}
+      />
     </div>
   )
 }

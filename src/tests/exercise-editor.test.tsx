@@ -274,6 +274,83 @@ describe('ExerciseEditor', () => {
 })
 
 describe('ExerciseTimelineEditor keyboard access', () => {
+  it('adds a note at the clicked empty-grid beat and pitch', () => {
+    const source = exercise()
+    const onChange = vi.fn()
+    const onSelectedTargetIdChange = vi.fn()
+    render(() => (
+      <ExerciseTimelineEditor
+        value={source}
+        selectedTargetId={null}
+        onSelectedTargetIdChange={onSelectedTargetIdChange}
+        onChange={onChange}
+      />
+    ))
+
+    const timeline = screen.getByTestId('exercise-authoring-timeline')
+    const canvas = timeline.querySelector('canvas')
+    expect(canvas).not.toBeNull()
+    if (canvas === null) return
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 350,
+      width: 800,
+      height: 350,
+      toJSON: () => ({}),
+    })
+    Object.defineProperties(canvas, {
+      setPointerCapture: { configurable: true, value: vi.fn() },
+      releasePointerCapture: { configurable: true, value: vi.fn() },
+    })
+
+    const dispatchPointer = (type: 'pointerdown' | 'pointerup'): void => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperties(event, {
+        pointerId: { value: 7 },
+        clientX: { value: 515 },
+        clientY: { value: 117 },
+      })
+      fireEvent(canvas, event)
+    }
+    dispatchPointer('pointerdown')
+    dispatchPointer('pointerup')
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targets: [
+          source.targets[0],
+          expect.objectContaining({
+            id: 'note-2',
+            startBeat: 5,
+            semitone: 5,
+          }),
+        ],
+      }),
+    )
+    expect(onSelectedTargetIdChange).toHaveBeenLastCalledWith('note-2')
+  })
+
+  it('keeps pitch metadata in the field heading so inputs share one baseline', () => {
+    render(() => (
+      <ExerciseTimelineEditor
+        value={exercise()}
+        selectedTargetId="note-1"
+        onSelectedTargetIdChange={vi.fn()}
+        onChange={vi.fn()}
+      />
+    ))
+
+    const input = screen.getByLabelText('Start semitone for note-1')
+    const heading = input.previousElementSibling
+    expect(heading).toHaveTextContent('Start pitch')
+    expect(heading).toHaveTextContent('0 · A3')
+    expect(input.nextElementSibling).toBeNull()
+  })
+
   it('moves, retunes, resizes, and duplicates the selected target', () => {
     const source = exercise()
     const onChange = vi.fn()

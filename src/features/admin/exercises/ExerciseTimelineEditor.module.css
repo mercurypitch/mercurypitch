@@ -199,6 +199,26 @@
   font-weight: 620;
 }
 
+.pitchFieldHeading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pitchFieldHeading > span {
+  min-width: 0;
+  color: inherit;
+  font: inherit;
+}
+
+.pitchFieldHeading > small {
+  min-width: 0;
+  flex: 0 1 auto;
+  text-align: right;
+}
+
 .eventRow input,
 .eventRow select {
   width: 100%;

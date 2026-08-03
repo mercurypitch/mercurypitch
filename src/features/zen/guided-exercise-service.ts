@@ -7,6 +7,7 @@
 // catalogue as its offline and rollout fallback.
 
 import { API_BASE_URL } from '@/lib/defaults'
+import { isE2ETestMode } from '@/lib/test-utils'
 import type { ZenExampleAudio, ZenExerciseDefinition } from './types'
 import { parseZenExercise } from './validate-exercise'
 
@@ -224,6 +225,7 @@ export async function getPublishedGuidedExercise(
 export async function listAdminGuidedExercises(
   key: string,
 ): Promise<ApiResult<AdminGuidedExercise[]>> {
+  if (base() === '' && isE2ETestMode()) return { ok: true, data: [] }
   const result = await apiRequest<{ exercises: AdminGuidedExercise[] }>(
     '/api/admin/guided-exercises',
     { headers: adminHeaders(key) },
