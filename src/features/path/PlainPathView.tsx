@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
 import { ASCENT_WEEKS, DAYS_PER_WEEK, PATH_THEME_LABEL, } from '@/features/path/path-content'
 import type { WeekState } from '@/features/path/path-progress'
 import { pathComplete, pathProgress, ringFill, weekState, } from '@/features/path/path-progress'
@@ -53,6 +53,33 @@ export const PlainPathView: Component = () => {
   const [selectedWeek, setSelectedWeek] = createSignal<number | null>(
     untrack(currentOrder),
   )
+
+  /**
+   * Bring the open week's guide into view.
+   *
+   * selectedWeek already defaults to the week the singer is on, so the
+   * panel WAS open on arrival — it just sat below the fold with nothing
+   * scrolling to it, which is what "the info goes outside of the screen
+   * and it doesn't auto scroll in view" describes. Arriving from Home's
+   * "Begin your guided path" now glides to week 1 rather than landing
+   * above it.
+   *
+   * requestAnimationFrame because the panel renders in the same tick the
+   * signal changes; measuring before paint scrolls to the wrong place.
+   */
+  createEffect(() => {
+    const order = selectedWeek()
+    if (order === null) return
+    const reduced = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    requestAnimationFrame(() => {
+      document.getElementById(`plain-path-week-${order}`)?.scrollIntoView({
+        behavior: reduced === true ? 'auto' : 'smooth',
+        block: 'center',
+      })
+    })
+  })
 
   const totalDays = createMemo(() => {
     const progress = pathProgress()
