@@ -88,8 +88,9 @@ one stretch of a song — judge a *line*, not the whole result.
 an “input too weak” warning.
 **Cause:** every audible-but-unpitched frame was labelled weak, the meter used
 a visual 4× gain, and the warning lingered after detection recovered.
-**Rule:** only call input weak below the active detector RMS gate, only while
-playback expects singing, and clear immediately when the evidence recovers.
+**Rule:** compare raw RMS with the consumer's active detector gate when it can
+expose one, only warn while playback expects singing, and clear immediately
+when the evidence recovers. Never guess a gate for another detector.
 **See:** `src/features/mic-feedback/useMicInsights.ts`
 
 ## Framework
