@@ -463,6 +463,60 @@
       "condition": "Practice 20 different scales",
       "required": 20,
       "sortOrder": 7
+    },
+    {
+      "name": "Well Rounded",
+      "description": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "icon": "sparkle",
+      "points": 30,
+      "condition": "Practise all four ways: a session, a drill, a challenge and a Legend",
+      "required": 4,
+      "sortOrder": 8
+    },
+    {
+      "name": "Ten Days In",
+      "description": "Practise on 10 different days",
+      "icon": "moon",
+      "points": 25,
+      "condition": "Practise on 10 different days",
+      "required": 10,
+      "sortOrder": 9
+    },
+    {
+      "name": "Thousand Notes",
+      "description": "Sing 1000 notes on target",
+      "icon": "music",
+      "points": 35,
+      "condition": "Sing 1000 notes on target",
+      "required": 1000,
+      "sortOrder": 10
+    },
+    {
+      "name": "Dependable",
+      "description": "Score 80% or better on 10 runs",
+      "icon": "trending",
+      "points": 30,
+      "condition": "Score 80% or better on 10 runs",
+      "required": 10,
+      "sortOrder": 11
+    },
+    {
+      "name": "Wide Repertoire",
+      "description": "Practise 15 different melodies or drills",
+      "icon": "chart",
+      "points": 25,
+      "condition": "Practise 15 different melodies or drills",
+      "required": 15,
+      "sortOrder": 12
+    },
+    {
+      "name": "Fortnight",
+      "description": "Keep a 14-day streak",
+      "icon": "fire",
+      "points": 40,
+      "condition": "Keep a 14-day streak",
+      "required": 14,
+      "sortOrder": 13
     }
   ]
 }
