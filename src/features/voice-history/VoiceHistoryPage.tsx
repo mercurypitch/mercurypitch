@@ -210,6 +210,9 @@ export function VoiceHistoryPage(): JSX.Element {
   const [selectedKey, setSelectedKey] = createSignal<string | null>(null)
   const [earlierId, setEarlierId] = createSignal<string | null>(null)
   const [laterId, setLaterId] = createSignal<string | null>(null)
+  const [atlasSelectedId, setAtlasSelectedId] = createSignal<string | null>(
+    null,
+  )
   const [storage, setStorage] = createSignal<VoiceStorageSnapshot | null>(null)
   const [activeId, setActiveId] = createSignal<string | null>(null)
   const [playing, setPlaying] = createSignal(false)
@@ -297,6 +300,18 @@ export function VoiceHistoryPage(): JSX.Element {
   )
   const atlasLater = createMemo(() =>
     (selectedThread()?.takes.length ?? 0) >= 2 ? later() : null,
+  )
+  const comparisonPairPreset = createMemo<'full-span' | 'latest' | 'custom'>(
+    () => {
+      const thread = selectedThread()
+      if (thread === null || thread.takes.length < 2) return 'full-span'
+      const firstId = thread.takes[0]?.id
+      const penultimateId = thread.takes.at(-2)?.id
+      const lastId = thread.takes.at(-1)?.id
+      if (earlierId() === firstId && laterId() === lastId) return 'full-span'
+      if (earlierId() === penultimateId && laterId() === lastId) return 'latest'
+      return 'custom'
+    },
   )
   const contourSelectionKey = createMemo(() =>
     [earlier()?.id, atlasLater()?.id]
@@ -459,6 +474,15 @@ export function VoiceHistoryPage(): JSX.Element {
   })
 
   createEffect(() => {
+    const availableIds = [earlier()?.id, atlasLater()?.id].filter(
+      (id): id is string => id !== undefined,
+    )
+    if (!availableIds.includes(atlasSelectedId() ?? '')) {
+      setAtlasSelectedId(availableIds[0] ?? null)
+    }
+  })
+
+  createEffect(() => {
     const selectionKey = contourSelectionKey()
     const ids =
       selectionKey === '' ? [] : [...new Set(selectionKey.split('\n'))]
@@ -484,9 +508,11 @@ export function VoiceHistoryPage(): JSX.Element {
   onMount(() => {
     trackEvent('voice_history_open')
     uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
+    window.addEventListener('keydown', pausePlaybackWithSpace, true)
     void refresh()
   })
   onCleanup(() => {
+    window.removeEventListener('keydown', pausePlaybackWithSpace, true)
     uninstallAudioUnlock()
     disposeAudio()
     disposeListeningContext()
@@ -500,6 +526,24 @@ export function VoiceHistoryPage(): JSX.Element {
     unlockAudio(ensureListeningContext())
     const isCurrentTake = activeId() === take.id
     void playTakeAsync(take, fromComparison, isCurrentTake)
+  }
+
+  function pausePlaybackWithSpace(event: KeyboardEvent): void {
+    if (event.code !== 'Space' || event.repeat || !playing()) return
+    const target = event.target
+    if (
+      target instanceof Element &&
+      target.closest('input, textarea, select, [contenteditable]') !== null
+    ) {
+      return
+    }
+    if (audio === null) return
+    event.preventDefault()
+    event.stopPropagation()
+    playbackProgress.sample(audio)
+    playbackProgress.stop()
+    audio.pause()
+    setPlaying(false)
   }
 
   function applyPlaybackSeek(
@@ -863,6 +907,7 @@ export function VoiceHistoryPage(): JSX.Element {
     if (candidateIndex >= 0 && candidateIndex < laterIndex) {
       disposeAudio()
       setEarlierId(id)
+      setAtlasSelectedId(id)
     }
   }
 
@@ -876,7 +921,29 @@ export function VoiceHistoryPage(): JSX.Element {
     if (candidateIndex > earlierIndex) {
       disposeAudio()
       setLaterId(id)
+      setAtlasSelectedId(id)
     }
+  }
+
+  function selectAtlasTake(id: string): void {
+    if (atlasSelectedId() === id) return
+    const isVisibleTake = earlier()?.id === id || atlasLater()?.id === id
+    if (!isVisibleTake) return
+    if (activeId() !== null) disposeAudio()
+    setAtlasSelectedId(id)
+  }
+
+  function chooseComparisonPair(preset: 'full-span' | 'latest'): void {
+    const thread = selectedThread()
+    if (thread === null || thread.takes.length < 2) return
+    const nextEarlier =
+      preset === 'latest' ? thread.takes.at(-2) : thread.takes[0]
+    const nextLater = thread.takes.at(-1)
+    if (nextEarlier === undefined || nextLater === undefined) return
+    disposeAudio()
+    setEarlierId(nextEarlier.id)
+    setLaterId(nextLater.id)
+    setAtlasSelectedId(nextEarlier.id)
   }
 
   function wipeAll(): void {
@@ -919,6 +986,11 @@ export function VoiceHistoryPage(): JSX.Element {
     if (!(await refresh(comparisonKey))) {
       throw new Error('Voice history refresh failed')
     }
+    // A newly kept take becomes the new edge of the thread. Re-resolve the
+    // default pair so the Atlas keeps showing the full Earlier-to-Later span.
+    setEarlierId(null)
+    setLaterId(null)
+    setAtlasSelectedId(null)
     closeRecorder()
   }
 
@@ -1149,6 +1221,7 @@ export function VoiceHistoryPage(): JSX.Element {
                       setRenameError(null)
                       comparisonStarted = false
                       comparisonPendingComplete = false
+                      setAtlasSelectedId(null)
                       setSelectedKey(thread.key)
                     }}
                   >
@@ -1264,6 +1337,7 @@ export function VoiceHistoryPage(): JSX.Element {
                       model={atlasModel()}
                       earlier={earlier()}
                       later={atlasLater()}
+                      selectedId={atlasSelectedId()}
                       activeId={activeId()}
                       progress={progress()}
                       playing={playing()}
@@ -1275,6 +1349,9 @@ export function VoiceHistoryPage(): JSX.Element {
                         atlasLater()?.reflectionsJson,
                         atlasLater()?.reflectionsVersion,
                       )}
+                      totalTakeCount={thread.takes.length}
+                      pairPreset={comparisonPairPreset()}
+                      onChoosePairPreset={chooseComparisonPair}
                       earlierSelector={
                         thread.takes.length < 2 ? undefined : (
                           <label>
@@ -1350,9 +1427,11 @@ export function VoiceHistoryPage(): JSX.Element {
                           (candidate) => candidate.id === takeId,
                         )
                         if (take !== undefined) {
+                          selectAtlasTake(takeId)
                           seekTake(take, nextProgress, thread.takes.length >= 2)
                         }
                       }}
+                      onSelect={selectAtlasTake}
                       onAddReflection={addReflection}
                       onRemoveReflection={removeReflection}
                     />
