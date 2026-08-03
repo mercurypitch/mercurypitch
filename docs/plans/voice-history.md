@@ -1,11 +1,13 @@
 # Voice History / “Hear Yourself” — Product and Delivery Plan
 
-Status: **local vault, Glass, repeatable Exercise, Weekly Legend, direct
-freeform capture, listening-studio polish, and the first Voice Atlas layers are
-implemented on draft PR #364**, updated 2026-08-03. Voice Atlas v1 adds Take
-Topography, shared-scale Twin Trails, subjective Reflection Beacons, and a
-three-take Practice Loom. The remaining local-release gate is browser
-validation, especially the real iPhone Safari recording path.
+Status: **local vault, Glass, repeatable Exercise, Weekly Legend, Karaoke,
+direct freeform capture, listening-studio polish, and the first Voice Atlas
+layers are implemented on PR #364**, updated 2026-08-03. Voice Atlas v1 adds
+Take Topography, shared-scale Twin Trails, subjective Reflection Beacons, and a
+three-take Practice Loom. Karaoke now prepares dry mic-only replays beside its
+existing score and keeps them explicitly in stable per-song threads. The
+remaining local-release gate is browser validation, especially the real iPhone
+Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -212,8 +214,13 @@ layers, not hidden scores in the initial Loom.
    - Takes from the same weekly challenge compare directly. Cross-week Legend
      takes are browseable but not automatically treated as equivalent.
 4. **Karaoke**
-   - Keep user voice separately from copyrighted source/stem media.
-   - Comparison keys require a stable local session/song fingerprint.
+   - Implemented as dry mic-only capture alongside the existing scoring run;
+     copyrighted source/stem media never enters the voice take.
+   - The score card prepares the replay in memory and offers an explicit
+     **Keep in Hear Yourself** action. Closing it or ending without a score
+     discards the temporary replay.
+   - A stable local session ID groups repeated performances of one song.
+     Pitch-score metrics and the microphone contour remain attached locally.
 5. **Freeform recorder**
    - Implemented as an in-place dry capture inside the voice-history page for
      recurring self-chosen prompts.
@@ -507,6 +514,13 @@ Earlier/Later workspace into planning PR #364. Cloud work remains separate.
   title snapshot, target score, result score, and tier attached locally.
 - Authored Weekly Legend note sequences used exactly as launched so the saved
   voice take, scoring context, and comparison metadata describe the same run.
+- Karaoke scoring now records the dry microphone stream only while scored
+  playback is active, pauses the recorder with transport, and prepares a
+  temporary replay when the shared score card appears.
+- Karaoke score cards require **Keep in Hear Yourself** before writing audio,
+  explain recorder/decode failures without losing the score, and discard
+  unkept or unscored runs. Repeated performances of one local song session use
+  one comparison thread with score metrics and Voice Atlas contour attached.
 - In-place freeform capture with a named recurring prompt, dry temporary
   replay, explicit Keep/Discard/Record again, five-minute cap, and shared mic
   lifecycle cleanup.

@@ -9,7 +9,11 @@ const DEFAULT_PEAK_BUCKETS = 72
 
 export interface TakeRecorder {
   /** Begin a fresh take (drops any previous one). */
-  start: () => void
+  start: () => boolean
+  /** Pause without adding the transport break to the encoded take. */
+  pause: () => boolean
+  /** Resume a paused take. */
+  resume: () => boolean
   /** Stop and resolve the take's Blob (null when nothing was captured). */
   stop: () => Promise<Blob | null>
   /** Stop and discard without producing a Blob. */
@@ -62,8 +66,30 @@ export function createTakeRecorder(stream: MediaStream): TakeRecorder | null {
         }
         next.start()
         recorder = next
+        return true
       } catch {
         recorder = null
+        return false
+      }
+    },
+
+    pause: () => {
+      if (recorder === null || recorder.state !== 'recording') return false
+      try {
+        recorder.pause()
+        return true
+      } catch {
+        return false
+      }
+    },
+
+    resume: () => {
+      if (recorder === null || recorder.state !== 'paused') return false
+      try {
+        recorder.resume()
+        return true
+      } catch {
+        return false
       }
     },
 
