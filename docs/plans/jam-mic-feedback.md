@@ -114,8 +114,9 @@ a squeal, because the singer does not know why nobody can hear them.
 ## Order of work
 
 1. **Play remote audio through `<audio>`** — smallest change, unblocks AEC
-   on Chrome.
-2. **Split the streams** — transmit processed, analyse raw.
+   on Chrome. **Done.**
+2. **Split the streams** — transmit processed, analyse raw. *Next, and it
+   needs a decision — see below.*
 3. **Headphone prompt and reachable volume** — the honest fix for two
    devices in one room.
 4. **Howling detector** — with `PHPR`/`IPMP` so it does not mute singers,
@@ -123,6 +124,41 @@ a squeal, because the singer does not know why nobody can hear them.
 
 Steps 1 and 2 together should make this rare. 3 makes it avoidable. 4 is
 for when somebody does it anyway.
+
+### Step 1, and what it turned up
+
+Each peer now gets a hidden `<audio srcObject>` instead of a Web Audio
+node. Two things fell out of it beyond the AEC point:
+
+- **Everyone with a camera on was playing twice.** The peer video chips
+  render the whole `MediaStream`, microphone included, and only the local
+  one was muted — so a peer who turned their camera on was audible through
+  both their video chip and the Web Audio node. Twice the voice, and twice
+  the gain around any feedback loop. Video elements are muted now; sound
+  comes from one place.
+- **A suspended `AudioContext` can no longer silence the room.** The old
+  path needed a running context; an element does not.
+
+### Step 2 needs a call before it is written
+
+Turning `echoCancellation: true` on is not a one-line change, because the
+same capture feeds pitch detection, and AEC/NS/AGC all mangle what a
+detector needs. Two ways to split it, and they fail differently:
+
+| approach | cost |
+|---|---|
+| a second `getUserMedia` | iOS Safari has historically stopped the *first* stream when a second capture starts — on the iPad this could take the mic out entirely |
+| `track.clone()` + `applyConstraints` on the clone | one capture, no prompt; but per-clone processing is not honoured everywhere, and where it is not, pitch detection quietly degrades |
+
+Both want the two-device rig rather than a unit test, so this waits for a
+real room. What to measure there, in order:
+
+- Does the howl still happen at all now that the duplicate playback path
+  is gone? That alone may have been a large part of it.
+- Does it happen on Safari as well as Chrome? Safari and Firefox consider
+  all browser audio for AEC, so a Chrome-only howl confirms the diagnosis.
+- How close do two devices have to be? If a metre apart is fine, the
+  headphone prompt (step 3) matters more than the detector (step 4).
 
 ## Worth testing before building
 

@@ -46,6 +46,11 @@ const CamChip: Component<CamChipProps> = (props) => {
         }}
       >
         <Show when={props.stream !== null && props.videoOn !== false}>
+          {/* Always muted, local or remote. The stream carries the peer's
+              microphone as well as their camera, and the room already
+              plays that through its own element -- so an unmuted chip was
+              a SECOND copy of everyone who turned their camera on. Twice
+              the voice, and twice the gain around any feedback loop. */}
           <video
             ref={(el) => {
               if (props.stream !== null) {
@@ -53,7 +58,7 @@ const CamChip: Component<CamChipProps> = (props) => {
               }
             }}
             autoplay
-            muted={props.isLocal === true}
+            muted
             playsinline
             class={styles.video}
           />
