@@ -17,6 +17,7 @@
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { badgeArtSrc } from '@/features/challenges/badge-art'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
 import { legendArt, legendThumbSrc } from '@/features/mirror/LegendCaricature'
@@ -34,6 +35,17 @@ export interface ProfileViewProps {
    *  portrait is resolved from it here rather than passed in, so art
    *  lookup stays in one place. */
   twinName?: string | undefined
+  /** Badges earned, newest first. Shown beside the voice twin: they are
+   *  the other half of "who is this singer", and a friend looking at the
+   *  profile should see them too. */
+  badges?: readonly ProfileBadge[]
+}
+
+export interface ProfileBadge {
+  /** Seed icon NAME — the medallion art is keyed by it. */
+  iconName: string
+  name: string
+  tier: string
 }
 
 const CHART_W = 520
@@ -113,6 +125,42 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
           <p class={styles.bio}>{props.bio}</p>
         </div>
       </div>
+
+      {/* Earned badges, beside the twin. A profile that shows a voice
+          twin and a streak but not a single medal was hiding the most
+          collectable thing the singer has. */}
+      <Show when={(props.badges?.length ?? 0) > 0}>
+        <section class={styles.badgeSection}>
+          <h3 class={styles.sectionTitle}>Badges</h3>
+          <ul class={styles.badgeRow}>
+            <For each={props.badges}>
+              {(badge) => (
+                <li
+                  class={styles.badgeChip}
+                  title={`${badge.name} · ${badge.tier}`}
+                >
+                  <Show
+                    when={badgeArtSrc(badge.iconName)}
+                    fallback={<span class={styles.badgeChipFallback} />}
+                  >
+                    {(src) => (
+                      <img
+                        src={src()}
+                        width="40"
+                        height="40"
+                        alt={badge.name}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                  </Show>
+                  <span class={styles.badgeChipName}>{badge.name}</span>
+                </li>
+              )}
+            </For>
+          </ul>
+        </section>
+      </Show>
 
       <Show
         when={stats()}

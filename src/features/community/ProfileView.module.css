@@ -201,3 +201,52 @@
   line-height: 1.6;
   color: var(--text-muted);
 }
+
+/* ── Badges ─────────────────────────────────────────────────────────
+   Beside the voice twin, because they answer the same question: who is
+   this singer. A profile showing a twin and a streak but no medals was
+   hiding the most collectable thing they have — and friends looking at
+   the profile could not see them at all. */
+.badgeSection {
+  margin-top: 18px;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badgeChip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 99px;
+}
+
+.badgeChip img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.badgeChipFallback {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+}
+
+.badgeChipName {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
