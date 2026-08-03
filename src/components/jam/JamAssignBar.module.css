@@ -32,7 +32,10 @@
   padding: 4px 10px;
   border: 1px solid transparent;
   border-radius: 999px;
-  background: rgb(255 255 255 / 6%);
+  /* Room glass, not a fixed white wash: every other surface in the room
+     follows the transparency slider and these chips sat stubbornly opaque
+     over the backdrop. */
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
   color: var(--text-secondary);
   font-size: 0.78rem;
   cursor: pointer;
@@ -43,7 +46,7 @@
 }
 
 .person:hover {
-  background: rgb(255 255 255 / 12%);
+  background: var(--jam-float, rgba(13, 17, 23, 0.78));
   color: var(--text-primary);
 }
 
@@ -87,7 +90,7 @@
   padding: 3px 10px;
   border: 1px solid var(--border-color, rgb(255 255 255 / 14%));
   border-radius: 999px;
-  background: none;
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
   color: var(--text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
@@ -95,7 +98,7 @@
 
 .done:hover {
   color: var(--text-primary);
-  background: rgb(255 255 255 / 8%);
+  background: var(--jam-float, rgba(13, 17, 23, 0.78));
 }
 
 /* A phone has no room for advice. The chips still say what to do by being

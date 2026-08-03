@@ -2,7 +2,7 @@
 // WebSocket client that connects to the Cloudflare Durable Object
 // signaling relay for SDP/ICE exchange and room lifecycle.
 
-import { ownerTokenFor, rememberHostedRoom, touchHostedRoom } from './jam-rooms'
+import { forgetHostedRoom, ownerTokenFor, rememberHostedRoom, touchHostedRoom, } from './jam-rooms'
 import { createMockSignalingClient } from './signaling-mock'
 import type { JamCallbacks, SignalingMessage } from './types'
 
@@ -54,6 +54,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
   // memory so it survives WS reconnects (DO hibernation), the common re-grant
   // path; a full page reload intentionally drops it.
   let currentOwnerToken: string | null = null
+  /** The secret offered on the last join, so a refusal is detectable. */
+  let presentedToken: string | null = null
   let connecting = false
 
   function connect(roomId: string, displayName: string): void {
@@ -80,6 +82,9 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
       // reconnect but not a reload or a Leave, and without it the host
       // walks back into their own room as an ordinary peer.
       const token = currentOwnerToken ?? ownerTokenFor(roomId)
+      // Remembered so a refused claim can be told apart from an ordinary
+      // join, which never presented anything and expects to be a guest.
+      presentedToken = token ?? null
       ws?.send(
         JSON.stringify({
           type: 'join-room',
@@ -207,6 +212,21 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
           )
         } else if (msg.isHost) {
           touchHostedRoom(msg.roomId)
+        } else if (presentedToken !== null) {
+          // We walked in on "rejoin as host", presented the secret, and came
+          // back an ordinary peer. The token is dead: either the room was
+          // empty long enough for its Durable Object to be cleaned up and
+          // somebody else was adopted as owner, or this room predates the
+          // worker issuing tokens at all.
+          //
+          // Say so and forget the entry. Leaving it in the lobby offers a
+          // promise it cannot keep, and the silence was the actual
+          // complaint -- you end up in the room with no controls and no idea
+          // why.
+          forgetHostedRoom(msg.roomId)
+          callbacks.onError(
+            'You are back in the room, but not as host — somebody else holds it now. Controls stay with them until the room is empty again.',
+          )
         }
         callbacks.onHostStatus?.(msg.isHost)
         console.info(
