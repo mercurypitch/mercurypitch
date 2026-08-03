@@ -1120,10 +1120,6 @@ input:checked + .settings-slider:before {
   margin-bottom: 2px;
 }
 
-.podard-score {
-  font-size: 0.7rem;
-}
-
 .podium-score-display {
   font-size: 1rem;
 }

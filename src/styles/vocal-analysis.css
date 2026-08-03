@@ -1762,11 +1762,6 @@
   margin-bottom: 4px;
 }
 
-.podard-score {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
 .podium-score-display {
   font-size: 1.5rem;
   font-weight: 700;
@@ -2288,16 +2283,49 @@
   gap: 16px;
 }
 
+/* The page title gets the same treatment as the section titles below it
+   (`.badges-section .section-title`), one step larger so the hierarchy
+   reads: accent icon, left aligned, tight tracking.
+
+   It was centred because app.css puts `text-align: center` on
+   `.vocal-challenges-panel` — the later override there resets
+   justify-content and align-items but not the text alignment, so the
+   heading kept inheriting it while the rest of the page moved left. */
+.challenges-header-content {
+  min-width: 0;
+  text-align: left;
+}
+
 .challenges-header-content h2 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.65rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-align: left;
   color: var(--text-primary);
+}
+
+/* SVGs ignore font-size — the icon states its own box, like every other
+   icon slot in the app. */
+.challenges-header-content h2 svg,
+.challenges-header-content h2 .icon-svg {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  flex: none;
+  color: var(--accent);
 }
 
 .challenges-subtitle {
   margin: 8px 0 0 0;
   color: var(--text-muted);
   font-size: 0.875rem;
+  text-align: left;
 }
 
 .streak-card {

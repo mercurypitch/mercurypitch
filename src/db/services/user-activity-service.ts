@@ -60,6 +60,24 @@ export async function recordActivity(
 export type ActivityCounts = Partial<Record<UserActivityKind, number>>
 
 /**
+ * Kinds that count THINGS, not events — the same refId twice is the same
+ * thing, seen twice.
+ *
+ * `melody_created` fires when a melody's note count goes from zero to
+ * non-zero, which is the only signal the store has that a blank became a
+ * real melody. It is not a create hook: clear a melody and write into it
+ * again and it fires a second time for the same melody. "Write 20 melodies
+ * of your own" would then be satisfied by one melody and a lot of undo.
+ *
+ * Everything else counts every row on purpose. Singing a song again is
+ * another performance, and splitting a track again is another (paid) job —
+ * those are events, and repeating them is the achievement.
+ */
+const COUNTED_ONCE_PER_REF: ReadonlySet<UserActivityKind> = new Set([
+  'melody_created',
+])
+
+/**
  * The signed-in singer's activity totals. Empty signed out, and empty
  * rather than thrown on any failure — a profile that cannot reach the
  * account should show what it has, not an error.
@@ -70,14 +88,27 @@ export async function loadActivityCounts(): Promise<ActivityCounts> {
     const db = await getDb()
     const repo = db.getRepository<UserActivity>('userActivity')
     const rows = await repo.findAll({ where: { userId: getUserId() } })
-    const counts: ActivityCounts = {}
-    for (const row of rows) {
-      counts[row.kind] = (counts[row.kind] ?? 0) + 1
-    }
-    return counts
+    return countActivity(rows)
   } catch {
     return {}
   }
+}
+
+/** Exported for the test that pins the once-per-ref rule. */
+export function countActivity(
+  rows: ReadonlyArray<Pick<UserActivity, 'kind' | 'refId'>>,
+): ActivityCounts {
+  const counts: ActivityCounts = {}
+  const seen = new Set<string>()
+  for (const row of rows) {
+    if (COUNTED_ONCE_PER_REF.has(row.kind) && row.refId !== undefined) {
+      const key = `${row.kind}:${row.refId}`
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    counts[row.kind] = (counts[row.kind] ?? 0) + 1
+  }
+  return counts
 }
 
 /** The most recent acts, newest first — the profile's activity strip. */

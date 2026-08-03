@@ -200,8 +200,8 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
-| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 619 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 8.3k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 583 | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
 
@@ -293,15 +293,15 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
-| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 1.9k |
+| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 1.8k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.7k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
