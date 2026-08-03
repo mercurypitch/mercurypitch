@@ -2635,10 +2635,41 @@
   margin-bottom: 32px;
 }
 
-.section-title {
-  margin: 0 0 16px 0;
-  font-size: 1.25rem;
+/* Icon and title travel together on the LEFT, and at a readable size.
+   `.section-title` is a global class with two other owners, and both
+   were beating this one: uvr.css sets `display: flex; flex-direction:
+   column` for its own panel (which stacked the icon ABOVE the title and
+   centred both), and app.css pins `.badges-section .section-title` to
+   0.9rem. Scoped per section so it wins on specificity without touching
+   either — the UVR panel still needs its column. */
+.badges-section .section-title,
+.achievements-section .section-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  text-align: left;
   color: var(--text-primary);
+}
+
+.badges-section .section-title svg,
+.achievements-section .section-title svg,
+.badges-section .section-title .icon-svg,
+.achievements-section .section-title .icon-svg {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  flex: none;
+  color: var(--accent);
+}
+
+.section-divider {
+  margin: 0 0 18px;
 }
 
 /* ── Badge tiles ────────────────────────────────────────────────────
@@ -2844,8 +2875,20 @@
   background: linear-gradient(135deg, rgba(var(--accent), 0.1), transparent);
 }
 
+/* 0.5 opacity made every locked achievement look disabled next to the
+   badge tiles, which keep full contrast and only lose their colour. Same
+   treatment here: a locked one is legible, an unlocked one lights up. */
 .achievement-item.locked {
-  opacity: 0.5;
+  opacity: 0.88;
+}
+
+.achievement-item.locked .achievement-icon {
+  filter: grayscale(0.7) brightness(0.85);
+}
+
+.achievement-item.unlocked .achievement-icon {
+  filter: none;
+  color: var(--accent);
 }
 
 .achievement-icon {
@@ -2932,7 +2975,9 @@
 
 @media (min-width: 1080px) {
   .challenges-layout {
-    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    /* An even split. The Legend is the headline of the page and a 360px
+       rail made it the narrowest thing on screen. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .challenges-rail {
     position: sticky;
@@ -2954,11 +2999,15 @@
   min-width: 0;
 }
 
-/* One row that scrolls, rather than two rows of wrap eating the fold. */
+/* Up to two rows, then scroll. One forced row meant a wide screen still
+   hid categories off the right edge for no reason; unlimited wrap was
+   what pushed the first card 550px down. Two is the compromise. */
 .challenges-main .category-tabs {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  max-height: calc(2 * var(--cat-pill-h, 40px) + 8px);
   overflow-x: auto;
+  overflow-y: hidden;
   gap: 8px;
   padding-bottom: 4px;
   scrollbar-width: thin;
@@ -2969,8 +3018,10 @@
 }
 
 .challenges-main .challenges-grid {
-  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
-  gap: 14px;
+  /* An even split halves the room for cards, so the floor comes down to
+     keep three across on a wide screen instead of dropping to two. */
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 12px;
 }
 
 /* The pill row scrolls; without this the last one just stops at the edge
@@ -4761,4 +4812,12 @@
 .community-share-tab .sort-select select {
   height: 36px;
   box-sizing: border-box;
+}
+
+/* Unpublish — a share used to be one-way, with no way to take back a
+   wrong take or a duplicate. Quiet until hovered: destructive, so it
+   should not compete with copy-link and open. */
+.unpublish-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red, #f85149) 18%, transparent);
+  color: var(--red, #f85149);
 }

@@ -176,3 +176,29 @@ export async function saveSharedSession(data: {
     return null
   }
 }
+
+/**
+ * Unpublish a shared melody or session.
+ *
+ * A share was one-way: publish it and it stayed on the shelf forever,
+ * with no way to take back a wrong take or a duplicate. Anyone who can
+ * put something up should be able to pull it down.
+ *
+ * Deletes the row rather than flipping isPublic, because the shelf IS
+ * the row — a hidden one is only a leak waiting to happen.
+ */
+export async function unpublishShared(
+  kind: 'melody' | 'session',
+  id: string,
+): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const table = kind === 'melody' ? 'sharedMelodies' : 'sharedSessions'
+    await db.getRepository(table).delete(id)
+    return true
+  } catch {
+    // Local-only shares (never reached the DB) still disappear from the
+    // shelf — the caller drops them from its local list either way.
+    return false
+  }
+}
