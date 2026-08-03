@@ -1743,6 +1743,19 @@
   margin-bottom: 8px;
 }
 
+/* Medal art, not an icon — so it must size itself. app.css sets
+   `.podium-rank .icon-svg` to 18px, which is right for a glyph and far too
+   small for a rendered medal. Opaque with a soft corner, exactly like
+   `.league-strip-trophy`: the renders carry their own near-black ground and
+   sit on --bg-secondary, so no cut-out is needed. */
+.podium-medal {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
 .podium-avatar {
   width: 56px;
   height: 56px;
@@ -2249,6 +2262,10 @@
   .podium-rank {
     font-size: 1.05rem;
     margin-bottom: 4px;
+  }
+  .podium-medal {
+    width: 34px;
+    height: 34px;
   }
   .podium-name {
     font-size: 0.8rem;
