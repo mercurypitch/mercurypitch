@@ -128,4 +128,67 @@ describe('guided exercise service', () => {
     })
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('uploads an Opus browser recording with its playable content type', async () => {
+    const media = {
+      id: 'media-recorded',
+      status: 'ready' as const,
+      locale: 'en-GB' as const,
+      source: 'coach' as const,
+      transcript: 'NG',
+      durationMs: 4_800,
+      mimeType: 'audio/webm',
+      byteLength: 14,
+      createdAt: '2026-08-03T10:00:00.000Z',
+      updatedAt: '2026-08-03T10:00:01.000Z',
+      readyAt: '2026-08-03T10:00:01.000Z',
+      url: '/api/guided-media/media-recorded',
+    }
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            media: { ...media, status: 'uploading', url: null },
+            uploadUrl: '/api/admin/guided-media/media-recorded/content',
+            maxByteLength: 2 * 1024 * 1024,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ media }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+    const service = await loadService()
+    const file = new File(['recorded voice'], 'zen-example.webm', {
+      type: 'audio/webm;codecs=opus',
+    })
+
+    await expect(
+      service.uploadGuidedExerciseMedia(
+        file,
+        {
+          durationMs: 4_800,
+          source: 'coach',
+          transcript: 'NG',
+        },
+        'admin-key',
+      ),
+    ).resolves.toEqual({ ok: true, data: media })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${API}/api/admin/guided-media/media-recorded/content`,
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({
+          'Content-Type': 'audio/webm;codecs=opus',
+          'X-Admin-Key': 'admin-key',
+        }),
+        body: file,
+      }),
+    )
+  })
 })

@@ -14,6 +14,7 @@ import { App } from './App'
 
 import { setupConsent } from '@/components/ConsentBanner'
 import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/services/auth-service'
+import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 
@@ -26,6 +27,9 @@ setupConsent()
 consumeGoogleRedirect()
 // Likewise pick up the emailed confirm link's outcome (#everified=…).
 consumeEmailVerifyRedirect()
+// Friendly admin paths are canonicalized before App mounts so they open the
+// Content Studio directly instead of briefly booting the consumer surface.
+normalizeAdminEntryRoute()
 
 const root = document.getElementById('root')
 if (!root) {

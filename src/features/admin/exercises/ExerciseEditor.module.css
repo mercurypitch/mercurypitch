@@ -172,6 +172,7 @@
 .primaryAction,
 .secondaryAction,
 .noAudio button,
+.recordingActions button,
 .lifecycleActions button,
 .actionError button,
 .removeAudio {
@@ -193,6 +194,7 @@
 
 .secondaryAction,
 .noAudio button,
+.recordingActions button,
 .lifecycleActions button,
 .removeAudio {
   border: 1px solid #374258;
@@ -206,6 +208,7 @@
 
 .secondaryAction:hover:not(:disabled),
 .noAudio button:hover:not(:disabled),
+.recordingActions button:hover:not(:disabled),
 .lifecycleActions button:hover:not(:disabled),
 .removeAudio:hover:not(:disabled) {
   border-color: #596a86;
@@ -215,6 +218,7 @@
 .primaryAction:disabled,
 .secondaryAction:disabled,
 .noAudio button:disabled,
+.recordingActions button:disabled,
 .lifecycleActions button:disabled,
 .removeAudio:disabled {
   cursor: not-allowed;
@@ -225,6 +229,7 @@
 .primaryAction:focus-visible,
 .secondaryAction:focus-visible,
 .noAudio button:focus-visible,
+.recordingActions button:focus-visible,
 .lifecycleActions button:focus-visible,
 .actionError button:focus-visible,
 .removeAudio:focus-visible,
@@ -476,6 +481,127 @@
   color: #98a6ba;
   font-size: 0.7rem;
   line-height: 1.5;
+}
+
+.recordingTake {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #303b50;
+  border-radius: 9px;
+  background: #111824;
+}
+
+.recordingTake[data-phase='recording'] {
+  border-color: rgba(246, 169, 28, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(246, 169, 28, 0.08);
+}
+
+.recordingStatus {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.recordingStatus > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #68778d;
+  box-shadow: 0 0 0 4px rgba(104, 119, 141, 0.1);
+}
+
+.recordingTake[data-phase='recording'] .recordingStatus > span {
+  background: #f6a91c;
+  box-shadow: 0 0 0 4px rgba(246, 169, 28, 0.13);
+  animation: recordingPulse 1.2s ease-in-out infinite;
+}
+
+.recordingStatus strong {
+  overflow: hidden;
+  color: #dce5f2;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recordingStatus output {
+  color: #9facbf;
+  font:
+    0.62rem/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.recordingProgress {
+  overflow: hidden;
+  height: 4px;
+  border-radius: 999px;
+  background: #263044;
+}
+
+.recordingProgress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #dd8d12, #ffc454);
+  transition: width 100ms linear;
+}
+
+.recordingActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.recordingActions button {
+  flex: 0 0 auto;
+}
+
+.recordingActions small {
+  min-width: 0;
+  color: #8796ab;
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.recordingActions .stopRecording {
+  border-color: #d88a0a;
+  color: #1d1202;
+  background: #f6a91c;
+}
+
+.audioFileChoice {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audioFileChoice label {
+  min-width: 0;
+}
+
+@keyframes recordingPulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.84);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recordingTake[data-phase='recording'] .recordingStatus > span {
+    animation: none;
+  }
+
+  .recordingProgress > span {
+    transition: none;
+  }
 }
 
 .noAudio {
@@ -875,6 +1001,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .recordingActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recordingActions button {
+    width: 100%;
+  }
+
   .noAudio {
     align-items: stretch;
     flex-direction: column;
@@ -992,6 +1127,15 @@
 
   .audioUpload {
     grid-template-columns: 1fr;
+  }
+
+  .recordingActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recordingActions button {
+    width: 100%;
   }
 
   .noAudio {

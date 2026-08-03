@@ -435,13 +435,17 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   const uploadExample = async (
     file: File,
     value: ZenExerciseDefinition,
+    recordedDurationMs?: number,
   ): Promise<ZenExampleAudio> => {
     const adminKey = props.adminKey
     const metadata = value.exampleAudio
     if (metadata === undefined || metadata.transcript.trim() === '') {
       throw new Error('Add the example transcript before uploading audio.')
     }
-    const durationMs = await mediaDuration(file)
+    const durationMs =
+      recordedDurationMs === undefined
+        ? await mediaDuration(file)
+        : Math.max(1, Math.round(recordedDurationMs))
     const result = await uploadGuidedExerciseMedia(
       file,
       {

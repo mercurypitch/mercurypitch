@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseEditor } from '@/features/admin/exercises/ExerciseEditor'
 import { ExercisePreview } from '@/features/admin/exercises/ExercisePreview'
 import { ExerciseTimelineEditor } from '@/features/admin/exercises/ExerciseTimelineEditor'
@@ -37,6 +37,13 @@ const exercise = (): ZenExerciseDefinition => ({
     steadinessWeight: 0.2,
     toleranceCents: 100,
   },
+})
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+  Reflect.deleteProperty(globalThis, 'MediaRecorder')
 })
 
 describe('ExerciseEditor', () => {
@@ -228,6 +235,45 @@ describe('ExerciseEditor', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.getByText('Runtime canvas')).toBeInTheDocument()
+  })
+
+  it('offers a five-second microphone recording action for ready audio', () => {
+    const mediaRecorderStub = vi.fn() as unknown as typeof MediaRecorder
+    Object.defineProperty(mediaRecorderStub, 'isTypeSupported', {
+      value: () => true,
+    })
+    Object.defineProperty(globalThis, 'MediaRecorder', {
+      configurable: true,
+      value: mediaRecorderStub,
+    })
+    const readyAudio: ZenExampleAudio = {
+      src: '',
+      durationMs: 5000,
+      locale: 'en-GB',
+      source: 'coach',
+      transcript: 'NG',
+    }
+
+    render(() => (
+      <ExerciseEditor
+        value={{ ...exercise(), exampleAudio: readyAudio }}
+        lifecycle="draft"
+        status="idle"
+        validationIssues={[]}
+        onChange={vi.fn()}
+        onExampleAudioFile={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByRole('button', { name: 'Record 5-second example' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('progressbar', { name: 'Example recording duration' }),
+    ).toHaveAttribute('aria-valuemax', '5000')
+    expect(
+      screen.getByText('Stops automatically at five seconds.'),
+    ).toBeVisible()
   })
 
   it('keeps superseded versions read-only while retaining preview access', () => {
