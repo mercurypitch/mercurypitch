@@ -142,6 +142,38 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('Comparing 2 of 3 takes')).toBeVisible({
     timeout: 10000,
   })
+  await expect(
+    page.getByRole('heading', { name: 'Hear the pattern across attempts.' }),
+  ).toBeVisible()
+  await expect(page.getByText('3 takes woven')).toBeVisible()
+  const loomLanes = page.locator('[data-testid^="practice-loom-lane-"]')
+  await expect(loomLanes).toHaveCount(3)
+  const middleLane = loomLanes.nth(1)
+  await middleLane.scrollIntoViewIfNeeded()
+  const loomBounds = await middleLane.boundingBox()
+  if (loomBounds === null) throw new Error('Practice Loom has no scrub bounds')
+  const loomY = loomBounds.y + loomBounds.height / 2
+  await page.mouse.move(loomBounds.x + loomBounds.width * 0.58, loomY)
+  await page.mouse.down()
+  await page.mouse.move(loomBounds.x + loomBounds.width * 0.66, loomY, {
+    steps: 6,
+  })
+  await page.mouse.up()
+  const loomMaximum = Number(await middleLane.getAttribute('aria-valuemax'))
+  await expect
+    .poll(
+      async () =>
+        Number(await middleLane.getAttribute('aria-valuenow')) / loomMaximum,
+    )
+    .toBeGreaterThan(0.62)
+  await expect(
+    page.getByRole('button', { name: 'Pause Take 2 in Practice Loom' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Take 2 in Practice Loom' }),
+  ).toBeVisible()
+
   const earlierSelect = page.getByRole('combobox', { name: 'Earlier take' })
   const fullSpanEarlier = await earlierSelect.inputValue()
   await expect(page.getByRole('button', { name: 'Full span' })).toHaveAttribute(
