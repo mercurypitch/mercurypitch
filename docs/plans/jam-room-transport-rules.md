@@ -52,7 +52,20 @@ Stated so they can be tested. Each has a test in
 ### One thing at a time
 
 - **R7.** A room runs a drill **or** a song, never both. Loading one
-  clears the other, on every device.
+  clears the other, on every device — and nothing may put it back. The
+  panel's "pick a default melody if none is loaded" effect read the very
+  signal it wrote, so clearing the melody to load a song woke it up and
+  restored the drill one tick later. That gave a song room a second
+  transport wired to the same `jamExercisePlaying` signal, and a beat
+  timer whose ending stopped the song. Enforced in three places, because
+  the UI is not the only caller: the effect skips song rooms, the drill's
+  transport functions refuse while a song is loaded, and the beat timer
+  refuses to start.
+- **R7b.** A device that has just been given the audio does not decide for
+  itself whether to play. `playing` is a guest's *record of the host*, and
+  a stale record started the song on a peer while the host sat stopped —
+  so a stem arriving stops locally and asks (R13's `song-have`), and the
+  host answers with where the room actually is.
 - **R8.** A peer that has not been given the room's song does not pretend
   to play it. It follows the words, the target notes and everyone's pitch,
   and says plainly that it has no audio yet.

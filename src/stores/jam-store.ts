@@ -529,10 +529,17 @@ export function applyReceivedStem(
   if (song === null) return
   const url = URL.createObjectURL(blob)
   receivedStemUrls.add(url)
-  // The element failed on the host's unreachable URL and paused this
-  // device to stop it claiming to play. That reason has just gone away,
-  // so clear it -- otherwise the audio arrives and sits silent until the
-  // host happens to press play again.
+  // Land in an honest state and wait to be told.
+  //
+  // This used to clear `paused` so the arriving audio would not sit silent
+  // -- but `playing` is this device's record of what the HOST is doing, and
+  // it can be stale: a stop the host issued under the drill scope is
+  // ignored here (rule R5), so a guest can sit at playing=true while the
+  // host is stopped. Clearing `paused` on top of that started the song by
+  // itself the moment the file landed, on a device nobody had pressed play
+  // on. reportSongHave() below asks the host for the truth, which arrives
+  // in a round trip and is the only thing that starts playback.
+  setJamExercisePlaying(false, 'the audio arrived — waiting for the host')
   setJamExercisePaused(false)
   setJamError(null)
   setJamSong({
@@ -561,14 +568,11 @@ const songInbox = new SongFileInbox({
     applyReceivedStem(stem, blob)
     // The host is waiting to know whether that worked.
     reportSongHave()
-    setJamShareState({
-      phase: 'done',
-      ratio: 1,
-      message:
-        stem === 'instrumental'
-          ? 'Got the backing track — you can hear the song now.'
-          : 'Got the guide vocal too.',
-    })
+    markShareDone(
+      stem === 'instrumental'
+        ? 'Got the backing track — you can hear the song now.'
+        : 'Got the guide vocal too.',
+    )
   },
   onFailed: (_peerId, reason) =>
     setJamShareState({ phase: 'error', ratio: 0, message: reason }),
@@ -744,14 +748,11 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
       return next
     })
     if (sent.length > 0) setJamSongSentOnce(true)
-    setJamShareState({
-      phase: 'done',
-      ratio: 1,
-      message:
-        skipped.length === 0
-          ? `Sent to everyone (${sent.length}).`
-          : `Sent to ${sent.length}. ${skipped.length} could not receive it: ${skipped[0]?.reason ?? ''}`,
-    })
+    markShareDone(
+      skipped.length === 0
+        ? `Sent to everyone (${sent.length}).`
+        : `Sent to ${sent.length}. ${skipped.length} could not receive it: ${skipped[0]?.reason ?? ''}`,
+    )
   } catch (err) {
     setJamShareState({
       phase: 'error',
@@ -768,7 +769,33 @@ function peerName(peerId: string): string {
   return jamPeers().find((p) => p.id === peerId)?.displayName ?? 'them'
 }
 
+/** How long a finished transfer stays on screen before it clears itself. */
+const SHARE_DONE_LINGER_MS = 6000
+let shareDoneTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * A transfer that worked says so, then gets out of the way.
+ *
+ * Only the happy path expires. An error is something somebody has to act
+ * on -- a peer still cannot hear the song -- so it stays until the next
+ * attempt replaces it.
+ */
+function markShareDone(message: string): void {
+  setJamShareState({ phase: 'done', ratio: 1, message })
+  if (shareDoneTimer !== null) clearTimeout(shareDoneTimer)
+  shareDoneTimer = setTimeout(() => {
+    shareDoneTimer = null
+    if (jamShareState().phase !== 'done') return
+    setJamShareState({ phase: 'idle', ratio: 0, message: '' })
+  }, SHARE_DONE_LINGER_MS)
+}
+
 export function clearJamSong(): void {
+  // Nothing is loaded, so nothing is playing. Leaving the flag set left a
+  // room claiming to play a song it no longer had -- and the next thing to
+  // read it, whatever that turned out to be, believed it.
+  setJamExercisePlaying(false, 'the song was cleared')
+  setJamExercisePaused(false)
   setJamSong(null)
   setJamSongPositionSec(0)
   setJamSongHostTarget(0)
@@ -1240,9 +1267,15 @@ export function initJam() {
       // previous one would mark somebody as ready for a song nobody is on.
       if (jamSong()?.id !== msg.songId) return
       setJamSongHaves((prev) => ({ ...prev, [fromPeerId]: msg.have }))
+      // Somebody can suddenly hear the room. Tell them where it is, or
+      // they join the song at whatever their own stale state said -- which
+      // is how a peer ended up playing alone while the host sat stopped.
+      if (msg.have) announceSongTransport()
     },
     onSongMessage: (msg) => {
       if (msg.action === 'clear' || msg.song === undefined) {
+        setJamExercisePlaying(false, 'the host cleared the song')
+        setJamExercisePaused(false)
         setJamSong(null)
         setJamSongPositionSec(0)
         setJamSongParts({})
@@ -1473,7 +1506,33 @@ export function stopJamPitchDetection(): void {
 
 // ── Exercise actions ─────────────────────────────────────────────────
 
+/**
+ * Is the drill transport meaningless right now?
+ *
+ * The two engines share `jamExercisePlaying`, so a drill command reaching
+ * the signal while the room is on a song moves the SONG -- and the drill's
+ * beat timer, once running, ends and stops it. That is the whole of "the
+ * song stopped and nobody touched it": the room had a drill it should
+ * never have had, and a play button wired to the same signal.
+ *
+ * Rule R7, enforced where it cannot be routed around by a component.
+ */
+function drillIsIdleHere(what: string): boolean {
+  if (jamSong() === null) return false
+  console.info(`[jam:transport] ignoring drill ${what} — the room is on a song`)
+  return true
+}
+
 export function selectJamExercise(melody: MelodyData): void {
+  // A room runs one thing at a time, and picking a drill is a deliberate
+  // switch away from the song. Without this the two coexisted: the song
+  // kept playing under a drill that owned the transport.
+  if (jamSong() !== null) {
+    // ...and only the host switches the room (R3). A guest picking a drill
+    // locally would leave itself on a drill while everyone else sings.
+    if (!jamIsHost()) return
+    clearJamSong()
+  }
   // Update local state immediately (DataChannel only sends to remotes)
   setJamExerciseMelody(melody)
   setJamExerciseBpm(melody.bpm) // seed BPM override from melody default
@@ -1505,6 +1564,7 @@ export function clearJamExercise(): void {
 }
 
 export function jamPlaybackPlay(startBeat?: number): void {
+  if (drillIsIdleHere('start')) return
   const ci = 4 // 4 beats count-in
   const actualStart = startBeat ?? -ci
   setJamExerciseBeat(actualStart)
@@ -1517,12 +1577,14 @@ export function jamPlaybackPlay(startBeat?: number): void {
 }
 
 export function jamPlaybackPause(): void {
+  if (drillIsIdleHere('pause')) return
   setJamExercisePaused(true)
   stopPlaybackTimer()
   broadcastTransport('pause', jamExerciseBeat())
 }
 
 export function jamPlaybackResume(): void {
+  if (drillIsIdleHere('resume')) return
   if (!jamExercisePlaying() || !jamExercisePaused()) return
   setJamExercisePaused(false)
   startPlaybackTimer()
@@ -1530,6 +1592,7 @@ export function jamPlaybackResume(): void {
 }
 
 export function jamPlaybackStop(): void {
+  if (drillIsIdleHere('stop')) return
   setJamExercisePlaying(false, 'you pressed stop')
   setJamExercisePaused(false)
   setJamExerciseBeat(0)
@@ -1541,6 +1604,7 @@ export function jamPlaybackStop(): void {
 }
 
 export function jamPlaybackSeek(beat: number): void {
+  if (drillIsIdleHere('seek')) return
   setJamExerciseBeat(beat)
   broadcastTransport('seek', beat)
 }
@@ -1754,12 +1818,34 @@ function broadcastTransport(
   beat: number,
 ): void {
   if (!jamIsHost()) return
+  // Nothing drill-shaped goes on the wire while the room is on a song.
+  if (jamSong() !== null) return
   jamService?.sendPlaybackCommand(action, beat, jamExerciseBpm())
+}
+
+/**
+ * Say where the room's song is, for anybody who has just caught up.
+ *
+ * A guest holds `jamExercisePlaying` as its record of what the host is
+ * doing, and that record can go stale -- so the moment a peer reports it
+ * can hear the song, it gets told the truth rather than acting on what it
+ * happened to be holding.
+ */
+export function announceSongTransport(): void {
+  if (!jamIsHost() || jamSong() === null) return
+  const at = jamSongPositionSec()
+  if (!jamExercisePlaying()) broadcastSongTransport('stop', 0)
+  else if (jamExercisePaused()) broadcastSongTransport('pause', at)
+  else broadcastSongTransport('play', at)
 }
 
 function startPlaybackTimer(): void {
   stopPlaybackTimer()
   playbackLastTick = performance.now()
+  // Belt and braces on R7. Even if some path starts the beat accumulator
+  // during a song, it must not run: its finish branch writes the shared
+  // playing signal, which is the audio element's on/off switch.
+  if (jamSong() !== null) return
   const melody = jamExerciseMelody()
   if (!melody) return
 
@@ -1831,6 +1917,10 @@ function cleanupJam(): void {
   setJamAssignBrush(null)
   songInbox.clear()
   revokeReceivedStems()
+  if (shareDoneTimer !== null) {
+    clearTimeout(shareDoneTimer)
+    shareDoneTimer = null
+  }
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   for (const [, source] of remoteAudioNodes) {
     source.disconnect()

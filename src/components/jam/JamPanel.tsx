@@ -37,6 +37,7 @@ import { JamPeerList } from './JamPeerList'
 import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
+import { JamSongShare } from './JamSongShare'
 import { JamSongStage } from './JamSongStage'
 import { JamTransferChip } from './JamTransferDialog'
 
@@ -165,8 +166,16 @@ export const JamPanel: Component = () => {
   createEffect(() => {
     if (jamState() === 'active') {
       startJamPitchDetection()
-      // Auto-select the first available melody if none is loaded yet, prioritizing the vocal range default scale
-      if (jamExerciseMelody() === null) {
+      // Auto-select the first available melody if none is loaded yet,
+      // prioritizing the vocal range default scale.
+      //
+      // NOT while the room is on a song. This effect reads the very signal
+      // it writes, so loading a song -- which clears the melody, because a
+      // room runs one thing at a time -- woke it up and put the drill
+      // straight back. That gave the host a second transport wired to the
+      // same playing signal and a beat timer that ended and stopped the
+      // song, which is what "the music stopped and nobody touched it" was.
+      if (!jamIsSongRoom() && jamExerciseMelody() === null) {
         const lib = getMelodyLibrarySignal()()
         const defaultOctave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
         const defaultMelodyId = `scale-major-c${defaultOctave}`
@@ -668,8 +677,11 @@ export const JamPanel: Component = () => {
                   </button>
                   {/* A transfer pushed to the background keeps a live
                       readout here, beside the room's own controls -- so
-                      dismissing the dialog never means losing the thread. */}
+                      dismissing the dialog never means losing the thread.
+                      The share offer sits in the same place for the same
+                      reason: it is the room's state, not the player's. */}
                   <JamTransferChip />
+                  <JamSongShare />
                 </div>
               </div>
               <div
@@ -902,6 +914,11 @@ export const JamPanel: Component = () => {
             {/* Positioned wrapper so the picker below can overlay the
                 canvas rather than push it down the flex column. */}
             <div class={panelStyles.transportRow}>
+              {/* The drill's transport hides itself in a song room, because
+                  it only renders when a melody is loaded and a song room
+                  has none. What stays is the picker button -- the way back
+                  out of a song. Two play buttons writing one playing signal
+                  is a room that stops for reasons nobody can see. */}
               <div class={panelStyles.exerciseBar}>
                 <JamExerciseControls
                   onSelectExercise={() =>

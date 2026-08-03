@@ -150,8 +150,8 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
+| [jam-store.ts](../../src/stores/jam-store.ts) | 2.0k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
-| [jam-store.ts](../../src/stores/jam-store.ts) | 1.9k | ── Jam store Reactive state management for P2P jam sessions. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 657 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
@@ -291,8 +291,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.9k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 1.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |

@@ -193,9 +193,29 @@
   cursor: pointer;
 }
 
+/* A failure that arrives while the dialog is backgrounded has only this
+   chip to announce itself, so it breathes until somebody opens it. */
 .chipError {
   border-color: #f09a9a;
   color: #f09a9a;
+  animation: chipAlert 2.4s ease-in-out infinite;
+}
+
+@keyframes chipAlert {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(240 154 154 / 0%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgb(240 154 154 / 20%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chipError {
+    animation: none;
+  }
 }
 
 .chipText {

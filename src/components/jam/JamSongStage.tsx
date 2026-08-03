@@ -20,7 +20,6 @@ import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
-import { JamSongShare } from './JamSongShare'
 import styles from './JamSongStage.module.css'
 import { JamTransferDialog } from './JamTransferDialog'
 
@@ -421,9 +420,9 @@ export const JamSongStage: Component = () => {
 
             <JamLyricVersionPicker />
 
-            {/* The offer to send this song out, or the progress of it
-                arriving. Renders nothing when there is nothing to say. */}
-            <JamSongShare />
+            {/* The offer to send this song out lives in the room header
+                (JamSongShare), beside the transfer chip -- under the
+                timeline it read as part of the player and went unnoticed. */}
 
             <Show when={song().stems.vocal}>
               <JamGuideVocal volume={guideVolume} onVolume={setGuideVolume} />
