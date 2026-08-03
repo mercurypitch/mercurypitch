@@ -144,12 +144,13 @@ forward-looking plans, and retire `tests/ears/` by moving its contents into
 
 ---
 
-### Q8 — Move to real D1 migrations?
+### Q8 — Move to real D1 migrations? — SETTLED
 
-Schema changes today are ad-hoc `scripts/migrate-*.sql` files applied by hand
-with `wrangler d1 execute`, plus a parallel edit to
-`workers/db-worker/schema.sql`. There is no ordering, no record of what has been
-applied where, and nothing stops the two drifting apart. Six such files exist.
+As of 2026-07-28, schema changes were ad-hoc `scripts/migrate-*.sql` files
+applied by hand with `wrangler d1 execute`, plus a parallel edit to
+`workers/db-worker/schema.sql`. There was no ordering, no record of what had
+been applied where, and nothing stopped the two drifting apart. Six such files
+existed.
 
 **Recommendation:** adopt `wrangler d1 migrations` — a numbered
 `workers/db-worker/migrations/` directory with `migrations_dir` set in
@@ -159,7 +160,12 @@ generated snapshot, or drop it.
 
 Cost: one migration to bootstrap existing tables, plus a deploy-workflow change.
 
-**Answer:**
+**Answer:** Adopted. The 2026-07 integration train (#374) landed
+`workers/db-worker/migrations/0001_baseline.sql` onward, applied by
+`wrangler d1 migrations apply` from `deploy-db.yml`; `migrations_dir` is set on
+every `d1_databases` block. `schema.sql` is gone and the legacy scripts survive
+only as the pre-adoption record
+([README](../../scripts/README-legacy-migrations.md)). **Settled 2026-08-01.**
 
 ---
 

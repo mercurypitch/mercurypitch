@@ -197,16 +197,17 @@ badges and analytics.
 shell on GET.
 **Cause:** the Cloudflare asset layer answers everything not explicitly routed
 to the Worker, before the Worker sees it.
-**Rule:** adding an endpoint means editing `wrangler.toml` too.
+**Rule:** adding an endpoint means editing `wrangler.jsonc` too.
 
 ### Never edit an applied migration
 **Symptom:** a schema change that worked locally did nothing on dev.
-**Cause:** editing an already-applied `scripts/migrate-*.sql` — the file had
-already run, so the edit never executed anywhere.
-**Rule:** add a new `scripts/migrate-<what>.sql` and update
-`workers/db-worker/schema.sql` to match. Test against a replayed pre-change
-database. Note there is **no** `wrangler d1 migrations` directory in this repo
-despite the convention being common elsewhere — do not assume one exists.
+**Cause:** editing a migration that had already run — wrangler records applied
+files per database, so the edit never executed anywhere.
+**Rule:** add the next-numbered `workers/db-worker/migrations/NNNN_<what>.sql`.
+Test against a replayed pre-change database, not just a fresh one: a column add
+only surfaces on an existing table. The `scripts/migrate-*.sql` files predate
+the tracked chain and are legacy-only
+([README](../../scripts/README-legacy-migrations.md)) — never add another.
 
 ## Tooling and environment
 
