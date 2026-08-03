@@ -28,10 +28,36 @@ const [lastChallengeResult, setLastChallengeResult] =
 
 export { lastChallengeResult }
 
+/**
+ * True while a finished run is being written up.
+ *
+ * Between the last note and the result card there are three sequential
+ * round trips — the session record, the reward badge, then the grant
+ * engine re-reading 200 records. That is a second or two on a decent
+ * connection and longer on a phone, and the screen showed NOTHING: the
+ * stage sat frozen, so singers thought it had hung and left the
+ * exercise, only for the card to appear over whatever they opened next.
+ */
+const [finalizingResult, setFinalizingResult] = createSignal(false)
+
+export { finalizingResult }
+
+/** Wrap the after-run work so the UI can say it is happening. */
+export async function whileFinalizing<T>(work: () => Promise<T>): Promise<T> {
+  setFinalizingResult(true)
+  try {
+    return await work()
+  } finally {
+    setFinalizingResult(false)
+  }
+}
+
 export function presentChallengeResult(result: ChallengeResult): void {
+  setFinalizingResult(false)
   setLastChallengeResult(result)
 }
 
 export function clearChallengeResult(): void {
   setLastChallengeResult(null)
+  setFinalizingResult(false)
 }

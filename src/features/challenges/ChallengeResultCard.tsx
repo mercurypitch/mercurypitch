@@ -15,7 +15,7 @@ import { EXERCISE_SIGHT_SINGING } from '@/features/exercises/types'
 import { showNotification } from '@/stores/notifications-store'
 import { closeChallengeStage, openChallengeStage, openSingingZen, } from '@/stores/ui-store'
 import type { ChallengeResult } from './challenge-result-store'
-import { clearChallengeResult, lastChallengeResult, } from './challenge-result-store'
+import { clearChallengeResult, finalizingResult, lastChallengeResult, } from './challenge-result-store'
 import { challengeToZenExercise } from './challenge-stage-model'
 import styles from './ChallengeResultCard.module.css'
 import { beginWeeklyAttempt } from './weekly-attempt'
@@ -110,85 +110,111 @@ export const ChallengeResultCard: Component = () => {
   }
 
   return (
-    <Show when={lastChallengeResult()}>
-      {(result) => (
+    <>
+      {/* The gap between the last note and the card is three sequential
+          round trips — the session record, the reward badge, then the
+          grant engine re-reading 200 records. The stage sat frozen
+          through it, so singers thought it had hung and left, and the
+          card then appeared over whatever they opened next. This holds
+          the moment and says what is happening. */}
+      <Show when={finalizingResult()}>
         <Portal>
           <div
             class={styles.overlay}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Challenge result"
-            onClick={clearChallengeResult}
+            role="status"
+            aria-live="polite"
+            aria-label="Saving your run"
           >
-            <div class={styles.card} onClick={(e) => e.stopPropagation()}>
-              <img
-                class={styles.art}
-                src={
-                  passed()
-                    ? '/challenges/challenge-triumph.webp'
-                    : '/challenges/challenge-again.webp'
-                }
-                alt=""
-              />
-              <div class={styles.body}>
-                <p
-                  class={styles.eyebrow}
-                  classList={{ [styles.eyebrowWin]: passed() }}
-                >
-                  {passed() ? 'Challenge passed' : 'Challenge attempt'}
-                </p>
-                <h3 class={styles.headline}>
-                  {challengeResultCopy(result()).headline}
-                </h3>
-                <p class={styles.line}>{challengeResultCopy(result()).line}</p>
-                <Show when={result().badgeGranted}>
-                  <p class={styles.badgeLine}>
-                    A new badge is yours — find it with your achievements.
-                  </p>
-                </Show>
-                <div class={styles.actions}>
-                  <button
-                    type="button"
-                    class={styles.primary}
-                    ref={(element) => queueMicrotask(() => element.focus())}
-                    onClick={() => void goAgain()}
+            <div class={`${styles.card} ${styles.finalizing}`}>
+              <span class={styles.spinner} aria-hidden="true" />
+              <p class={styles.finalizingText}>Saving your run…</p>
+            </div>
+          </div>
+        </Portal>
+      </Show>
+
+      <Show when={lastChallengeResult()}>
+        {(result) => (
+          <Portal>
+            <div
+              class={styles.overlay}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Challenge result"
+              onClick={clearChallengeResult}
+            >
+              <div class={styles.card} onClick={(e) => e.stopPropagation()}>
+                <img
+                  class={styles.art}
+                  src={
+                    passed()
+                      ? '/challenges/challenge-triumph.webp'
+                      : '/challenges/challenge-again.webp'
+                  }
+                  alt=""
+                />
+                <div class={styles.body}>
+                  <p
+                    class={styles.eyebrow}
+                    classList={{ [styles.eyebrowWin]: passed() }}
                   >
-                    {passed() ? 'Sing it again' : 'Try the Legend again'}
-                  </button>
-                  <div class={styles.secondaryActions}>
-                    <Show
-                      when={!passed() && result().targetItems !== undefined}
+                    {passed() ? 'Challenge passed' : 'Challenge attempt'}
+                  </p>
+                  <h3 class={styles.headline}>
+                    {challengeResultCopy(result()).headline}
+                  </h3>
+                  <p class={styles.line}>
+                    {challengeResultCopy(result()).line}
+                  </p>
+                  <Show when={result().badgeGranted}>
+                    <p class={styles.badgeLine}>
+                      A new badge is yours — find it with your achievements.
+                    </p>
+                  </Show>
+                  <div class={styles.actions}>
+                    <button
+                      type="button"
+                      class={styles.primary}
+                      ref={(element) => queueMicrotask(() => element.focus())}
+                      onClick={() => void goAgain()}
                     >
+                      {passed() ? 'Sing it again' : 'Try the Legend again'}
+                    </button>
+                    <div class={styles.secondaryActions}>
+                      <Show
+                        when={!passed() && result().targetItems !== undefined}
+                      >
+                        <button
+                          type="button"
+                          class={styles.secondary}
+                          onClick={practiseInZen}
+                        >
+                          Practise in Zen
+                        </button>
+                      </Show>
                       <button
                         type="button"
                         class={styles.secondary}
-                        onClick={practiseInZen}
+                        onClick={clearChallengeResult}
                       >
-                        Practise in Zen
+                        Review pitch line
                       </button>
-                    </Show>
-                    <button
-                      type="button"
-                      class={styles.secondary}
-                      onClick={clearChallengeResult}
-                    >
-                      Review pitch line
-                    </button>
-                    <button
-                      type="button"
-                      class={styles.secondary}
-                      onClick={closeResultAndStage}
-                    >
-                      Close
-                    </button>
+                      <button
+                        type="button"
+                        class={styles.secondary}
+                        onClick={closeResultAndStage}
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Portal>
-      )}
-    </Show>
+          </Portal>
+        )}
+      </Show>
+    </>
   )
 }
 

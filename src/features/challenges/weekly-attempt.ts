@@ -15,7 +15,7 @@ import type { ExerciseType } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
-import { presentChallengeResult } from './challenge-result-store'
+import { presentChallengeResult, whileFinalizing, } from './challenge-result-store'
 
 export interface WeeklyAttemptTarget {
   challengeId: string
@@ -108,44 +108,48 @@ export async function recordWeeklyAttempt(entry: {
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
   try {
-    // Counts as a real practice session tagged to the weekly challenge — the
-    // board derives best-per-user from these rows.
-    await saveSessionRecord({
-      melodyName: `Legend: ${a.title}`,
-      score,
-      accuracy: score,
-      notesHit: 0,
-      notesTotal: 0,
-      weeklyChallengeId: a.challengeId,
-      source: 'weekly',
-    })
-    trackEvent('weekly_attempt')
+    // Wrapped so the stage can say "saving your run" instead of sitting
+    // frozen through three round trips.
+    await whileFinalizing(async () => {
+      // Counts as a real practice session tagged to the weekly challenge — the
+      // board derives best-per-user from these rows.
+      await saveSessionRecord({
+        melodyName: `Legend: ${a.title}`,
+        score,
+        accuracy: score,
+        notesHit: 0,
+        notesTotal: 0,
+        weeklyChallengeId: a.challengeId,
+        source: 'weekly',
+      })
+      trackEvent('weekly_attempt')
 
-    const tier = weeklyTier(score, a.targetScore, a.founderScore)
-    let badgeGranted = false
-    if (
-      tier !== 'attempted' &&
-      a.rewardBadgeId !== undefined &&
-      a.rewardBadgeId !== null &&
-      a.rewardBadgeId !== ''
-    ) {
-      await grantBadgeByRef(a.rewardBadgeId)
-      badgeGranted = true
-    }
-    await checkAndGrantBadges()
+      const tier = weeklyTier(score, a.targetScore, a.founderScore)
+      let badgeGranted = false
+      if (
+        tier !== 'attempted' &&
+        a.rewardBadgeId !== undefined &&
+        a.rewardBadgeId !== null &&
+        a.rewardBadgeId !== ''
+      ) {
+        await grantBadgeByRef(a.rewardBadgeId)
+        badgeGranted = true
+      }
+      await checkAndGrantBadges()
 
-    // Publish the result without navigating away. The app-level result
-    // overlay sits above the frozen challenge canvas, so the singer can
-    // review the trace, practise the line without scoring, or explicitly
-    // arm another board attempt.
-    presentChallengeResult({
-      challengeId: a.challengeId,
-      title: a.title,
-      score,
-      targetScore: a.targetScore,
-      tier,
-      badgeGranted,
-      targetItems: a.targetItems,
+      // Publish the result without navigating away. The app-level result
+      // overlay sits above the frozen challenge canvas, so the singer can
+      // review the trace, practise the line without scoring, or explicitly
+      // arm another board attempt.
+      presentChallengeResult({
+        challengeId: a.challengeId,
+        title: a.title,
+        score,
+        targetScore: a.targetScore,
+        tier,
+        badgeGranted,
+        targetItems: a.targetItems,
+      })
     })
   } catch {
     // The drill result stands even if persistence fails.

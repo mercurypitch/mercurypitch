@@ -22,6 +22,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { showNotification } from '@/stores/notifications-store'
+import { whileFinalizing } from './challenge-result-store'
 import { saveChallengeTrace } from './challenge-trace'
 
 export interface ChallengeAttemptTarget {
@@ -131,53 +132,61 @@ export async function recordChallengeAttempt(entry: {
   }
 
   try {
-    const allProgress = await loadChallengeProgress()
-    const prev =
-      allProgress.find((p) => p.challengeId === attempt.challengeId) ?? null
-    const outcome = computeAttemptOutcome(prev, score, attempt.targetScore)
+    // Same three-round-trip shape as the weekly path: progress read,
+    // session write, badge grant, grant engine. Hold the moment rather
+    // than freezing the stage through it.
+    await whileFinalizing(async () => {
+      const allProgress = await loadChallengeProgress()
+      const prev =
+        allProgress.find((p) => p.challengeId === attempt.challengeId) ?? null
+      const outcome = computeAttemptOutcome(prev, score, attempt.targetScore)
 
-    await saveChallengeProgress({
-      userId: getUserId(),
-      challengeId: attempt.challengeId,
-      progress: outcome.progress,
-      currentScore: score,
-      bestScore: outcome.bestScore,
-      status: outcome.status,
-      completed: outcome.completed,
-      attempts: outcome.attempts,
-      ...(outcome.newlyCompleted
-        ? { completedAt: new Date().toISOString() }
-        : {}),
-    })
+      await saveChallengeProgress({
+        userId: getUserId(),
+        challengeId: attempt.challengeId,
+        progress: outcome.progress,
+        currentScore: score,
+        bestScore: outcome.bestScore,
+        status: outcome.status,
+        completed: outcome.completed,
+        attempts: outcome.attempts,
+        ...(outcome.newlyCompleted
+          ? { completedAt: new Date().toISOString() }
+          : {}),
+      })
 
-    // The attempt counts as a real practice session: it feeds the
-    // server-derived leaderboard and the badge engine's session stats.
-    // A challenge is a fixed task, so it is one of the sources that rank.
-    await saveSessionRecord({
-      melodyName: `Challenge: ${attempt.title}`,
-      score,
-      accuracy: score,
-      notesHit: 0,
-      notesTotal: 0,
-      source: 'challenge',
-    })
+      // The attempt counts as a real practice session: it feeds the
+      // server-derived leaderboard and the badge engine's session stats.
+      // A challenge is a fixed task, so it is one of the sources that rank.
+      await saveSessionRecord({
+        melodyName: `Challenge: ${attempt.title}`,
+        score,
+        accuracy: score,
+        notesHit: 0,
+        notesTotal: 0,
+        source: 'challenge',
+      })
 
-    if (outcome.newlyCompleted) {
-      showNotification(
-        `Challenge complete: ${attempt.title} (${score}%)`,
-        'success',
-      )
-      if (attempt.rewardBadgeId !== undefined && attempt.rewardBadgeId !== '') {
-        await grantBadgeByRef(attempt.rewardBadgeId)
+      if (outcome.newlyCompleted) {
+        showNotification(
+          `Challenge complete: ${attempt.title} (${score}%)`,
+          'success',
+        )
+        if (
+          attempt.rewardBadgeId !== undefined &&
+          attempt.rewardBadgeId !== ''
+        ) {
+          await grantBadgeByRef(attempt.rewardBadgeId)
+        }
+      } else if (!outcome.completed) {
+        showNotification(
+          `${attempt.title}: ${score}% (target ${attempt.targetScore}%)`,
+          'info',
+        )
       }
-    } else if (!outcome.completed) {
-      showNotification(
-        `${attempt.title}: ${score}% (target ${attempt.targetScore}%)`,
-        'info',
-      )
-    }
 
-    await checkAndGrantBadges()
+      await checkAndGrantBadges()
+    })
   } catch {
     // The drill result stands even if persistence fails — never disrupt
     // the exercise flow.
