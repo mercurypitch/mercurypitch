@@ -87,6 +87,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # A GATE, not the deployed artifact. Wrangler re-builds from
+      # wrangler.jsonc's build.command and ships that bundle instead; this
+      # step exists so a broken build fails the run before anything reaches
+      # Cloudflare. Deliberate -- see docs/agent/MISTAKES.md, "Build-time env
+      # vars go on the wrangler step". VITE_* needed at runtime goes there.
       - name: Build app
         shell: bash
         env:

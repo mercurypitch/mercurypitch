@@ -187,6 +187,21 @@ two-viewport walk runs only in `/prod-upd`.
 **Rule:** check the hazard list in [INDEX.md](INDEX.md), grep for the symbol,
 read the surrounding range.
 
+### Build-time env vars go on the wrangler step, not on "Build app"
+**Symptom:** `VITE_JAM_MOCK_SIGNALING=1` was set on CI's "Build app" step and
+the deployed preview behaved as if it had never been set.
+**Cause:** CI builds **twice**, on purpose. `wrangler.jsonc` declares
+`build.command`, so `wrangler deploy` / `versions upload` runs its own build and
+ships THAT bundle; the earlier "Build app" step is a gate that fails the run
+before anything reaches Cloudflare, and its output is discarded. Keeping both is
+a decision: without the gate, a broken build would surface only as a failed
+deploy. Revisit if deploy-time feedback ever gets good enough to stand alone.
+**Rule:** anything that must reach the shipped bundle is exported immediately
+before the wrangler command. Do not "de-duplicate" the two builds without
+moving those vars first.
+**See:** `wrangler.jsonc:21` (top level), `:124` dev, `:134` preview;
+`.github/workflows/build.yml:90` gate, `:148` preview upload.
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked
