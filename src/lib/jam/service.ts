@@ -19,6 +19,27 @@ const AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   sampleRate: { ideal: 48000 },
 }
 
+/**
+ * What the peers get: the same microphone, processed for human ears.
+ *
+ * The capture above is right for a pitch detector and wrong for a voice
+ * room -- with cancellation off, one device's speaker feeds the other's
+ * microphone and the room howls. So the transmitted track is a CLONE with
+ * the processing turned back on, and the raw capture stays exactly as it
+ * was for analysis.
+ *
+ * A clone rather than a second getUserMedia deliberately: iOS Safari has
+ * historically answered a second capture by stopping the first, which
+ * would take the microphone out from under the whole room.
+ *
+ * See docs/plans/jam-mic-feedback.md.
+ */
+const TRANSMIT_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+}
+
 const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   width: { ideal: 640 },
   height: { ideal: 480 },
@@ -27,6 +48,8 @@ const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
 
 export function createJamService(callbacks: JamCallbacks) {
   let localStream: MediaStream | null = null
+  /** The processed clone the peers actually hear -- see makeTransmitTrack. */
+  let transmitAudio: MediaStreamTrack | null = null
   let localVideo: MediaStreamTrack | null = null
   const peerConnections = new Map<string, RTCPeerConnection>()
   const dataChannels = new Map<string, RTCDataChannel>()
@@ -141,6 +164,70 @@ export function createJamService(callbacks: JamCallbacks) {
 
   // ── Local audio ─────────────────────────────────────────────────
 
+  /**
+   * Make the processed track the peers hear, or decide not to.
+   *
+   * Two ways this can fail, and both end with sending the raw capture --
+   * which is exactly today's behaviour, so a refusal costs nothing:
+   *
+   * - the device will not enable cancellation on a clone at all;
+   * - the device applies the constraint to the shared SOURCE instead of
+   *   the clone, which would quietly hand the pitch detector cancelled,
+   *   noise-suppressed, gain-ridden audio. That one is checked for
+   *   explicitly, and undone, because a detector fed processed audio is
+   *   wrong in ways nobody would think to look for.
+   */
+  async function makeTransmitTrack(
+    raw: MediaStreamTrack,
+  ): Promise<MediaStreamTrack | null> {
+    let clone: MediaStreamTrack | null = null
+    try {
+      clone = raw.clone()
+      await clone.applyConstraints(TRANSMIT_CONSTRAINTS)
+      if (clone.getSettings().echoCancellation !== true) {
+        console.info(
+          '[jam:mic] this device would not cancel echo on a clone — sending the raw capture',
+        )
+        clone.stop()
+        return null
+      }
+      if (raw.getSettings().echoCancellation === true) {
+        console.info(
+          '[jam:mic] constraining the clone reconfigured the shared source — backing out to keep pitch analysis honest',
+        )
+        clone.stop()
+        await raw.applyConstraints(AUDIO_CONSTRAINTS)
+        return null
+      }
+      console.info('[jam:mic] transmitting with echo cancellation on')
+      return clone
+    } catch (err) {
+      console.info('[jam:mic] could not build a processed track', err)
+      clone?.stop()
+      return null
+    }
+  }
+
+  /**
+   * Give a peer connection this device's tracks.
+   *
+   * One place, because the audio a peer hears is NOT the audio this
+   * device analyses: the processed clone goes out, the raw capture stays
+   * here. Two copies of this loop is how they would drift apart.
+   */
+  function addLocalTracks(pc: RTCPeerConnection): void {
+    const stream = localStream
+    if (stream === null) return
+    for (const track of stream.getTracks()) {
+      pc.addTrack(
+        track.kind === 'audio' && transmitAudio !== null
+          ? transmitAudio
+          : track,
+        stream,
+      )
+    }
+  }
+
   async function startLocalStream(): Promise<void> {
     if (localStream) return
     // Request audio first — always required
@@ -156,6 +243,10 @@ export function createJamService(callbacks: JamCallbacks) {
       const blocked = (await micPermissionState()) === 'denied'
       callbacks.onError(micErrorMessage(err, blocked))
       throw err
+    }
+    const rawAudio = localStream.getAudioTracks()[0]
+    if (rawAudio !== undefined) {
+      transmitAudio = await makeTransmitTrack(rawAudio)
     }
     // Request video separately — failure is non-fatal
     if (videoEnabled) {
@@ -224,6 +315,8 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function stopLocalStream(): void {
     localStream?.getTracks().forEach((t) => t.stop())
+    transmitAudio?.stop()
+    transmitAudio = null
     localStream = null
     localVideo = null
     videoEnabled = false
@@ -232,6 +325,10 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function setMuted(muted: boolean): void {
     if (!localStream) return
+    // Both the raw capture and the processed clone. Muting one would
+    // either leave you audible to the room or leave your own pitch trail
+    // drawing while nobody can hear you -- and mute means neither.
+    if (transmitAudio !== null) transmitAudio.enabled = !muted
     localStream.getAudioTracks().forEach((t) => {
       t.enabled = !muted
     })
@@ -245,12 +342,7 @@ export function createJamService(callbacks: JamCallbacks) {
     console.info('[jam:service] initiating connection to', peer.id)
     const pc = new RTCPeerConnection({ iceServers: iceServers })
 
-    // Add local audio track
-    if (localStream) {
-      localStream.getTracks().forEach((t) => {
-        pc.addTrack(t, localStream!)
-      })
-    }
+    addLocalTracks(pc)
 
     setupPeerHandlers(pc, peer.id)
 
@@ -267,11 +359,7 @@ export function createJamService(callbacks: JamCallbacks) {
     let pc = peerConnections.get(from)
     if (!pc) {
       pc = new RTCPeerConnection({ iceServers: iceServers })
-      if (localStream) {
-        localStream.getTracks().forEach((t) => {
-          pc!.addTrack(t, localStream!)
-        })
-      }
+      addLocalTracks(pc)
       setupPeerHandlers(pc, from)
       peerConnections.set(from, pc)
     } else if (pc.signalingState === 'have-local-offer') {
