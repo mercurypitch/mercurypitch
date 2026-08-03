@@ -1,6 +1,6 @@
 import { createMemo } from 'solid-js'
 import { JamPanel } from '@/components/jam/JamPanel'
-import { jamRoomAlpha, jamRoomId, jamState } from '@/stores/jam-store'
+import { jamRoomAlpha, jamRoomId } from '@/stores/jam-store'
 import styles from './JamPage.module.css'
 
 // Generated rehearsal-room stills (public/jam/, 2K + 4K via image-set),
@@ -24,11 +24,14 @@ function backdropForRoom(roomId: string): string {
 
 /** Jam tab (TAB_JAM). JamPanel over an ambient rehearsal-room backdrop. */
 export function JamPage() {
+  // As soon as the room is NAMED, not once it is connected. A joiner has
+  // its room id before the handshake, so gating on 'active' meant landing
+  // in the lobby's stage first and being moved to the real room a second
+  // later -- which reads as having joined the wrong room and been
+  // corrected. Same room, same picture, from the first frame.
   const backdrop = createMemo(() => {
     const roomId = jamRoomId()
-    return jamState() === 'active' && roomId !== null
-      ? backdropForRoom(roomId)
-      : ROOM_BACKDROPS[0]
+    return roomId === null ? ROOM_BACKDROPS[0] : backdropForRoom(roomId)
   })
 
   return (

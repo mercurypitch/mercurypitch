@@ -684,15 +684,48 @@
    Wrapping is the trade worth making: the actions drop to their own line
    at full size, and the pixels lost are the least valuable on the screen. */
 @media (max-width: 640px) {
+  /* Two rows, and only two:
+
+       Jam moonlit-harbour          [mic] [menu] [leave]
+       [ROOM-CODE] [you] [ana] [sam] [2 can't hear this] →
+
+     It used to be one wrapping line of everything, which on a 390px
+     screen came out as four or five -- the actions took a whole row to
+     themselves, the badges took another, the code and its chips another
+     -- and the lyrics got what was left. The strip's own rules, and the
+     rest of the phone layout, are in JamPanel.module.css. */
   .roomHeader {
     flex-wrap: wrap;
     gap: 6px 8px;
+    align-items: center;
+  }
+
+  /* Dissolved. The title and the room strip are its children, and they
+     need to be ordered around .roomActions -- which is this element's
+     SIBLING, so no amount of ordering inside here could reach it.
+     `display: contents` promotes them both up a level, where they can. */
+  .roomInfo {
+    display: contents;
+  }
+
+  .title {
+    order: 1;
+    /* Takes the row, and gives it back: the actions are fixed-width, so
+       a long room name ellipsises instead of pushing them off screen. */
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+    font-size: 1rem;
   }
 
   .roomActions {
-    /* Takes the new line entirely, so the icons space out rather than
-       huddling against the right edge. */
-    flex: 1 0 100%;
-    justify-content: flex-end;
+    order: 2;
+    flex: 0 0 auto;
+    /* What the room menu hangs from. It asks for `top: 100%`, which only
+       means "under the buttons" if the buttons are the containing block. */
+    position: relative;
   }
 }

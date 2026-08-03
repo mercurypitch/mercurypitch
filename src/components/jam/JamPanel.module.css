@@ -2,22 +2,16 @@
 
 /* ── Room header shared helpers ────────────────────────────────────── */
 
-.roomIdRow {
+/* Everything that describes the room: its code, the copy-link button, who
+   is here, and the transfer and share chips. One container because on a
+   phone this becomes a single scrollable line -- see the phone block. */
+.roomStrip {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* The room's own status lives here -- code, copy link, transfer, share
-     offer. On a phone that is more than one line's worth, and a chip that
-     overflows the header is a chip nobody can press. */
   flex-wrap: wrap;
   row-gap: 6px;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .peerBadges {
@@ -536,9 +530,39 @@
   cursor: pointer;
 }
 
-/* The room menu holds one control that only exists on a phone. Hidden
-   everywhere else, where it lives in the transport row instead. */
+/* ── One control, two homes ──────────────────────────────────────────
+   The live-pitch toggle sits in the transport row on a desktop and in
+   the room menu on a phone, and exactly one of them may be visible.
+
+   Both defaults are declared HERE, above the phone media query, and the
+   reason is worth stating: a media query adds no specificity. The
+   .viewToggles base rule used to live further down the file, so on a
+   phone it won on source order alone and the toggle appeared twice --
+   once in the menu where it belongs and once in a row of its own, which
+   is the whole thing the menu copy exists to avoid. Anything the phone
+   block overrides must be declared before it. */
+
+/* Groups the view toggles beside the BPM control, matching its glass so
+   the two read as one bar of room settings rather than loose buttons. */
+.viewToggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  flex-shrink: 0;
+}
+
+/* The room menu's copy, hidden everywhere the transport row shows its. */
 .phoneOnlyAction {
+  display: none;
+}
+
+/* The guide-vocal control's phone home, beside the chat bubble. Hidden
+   here; the song's transport row carries it on anything wider. */
+.guideDock {
   display: none;
 }
 
@@ -596,11 +620,74 @@
     background: rgba(0, 0, 0, 0.45);
   }
 
-  /* Header: the hamburger replaces the row of icons. Mic and leave stay
-     out of it -- one is the control you reach for mid-take, the other is
-     the way out, and burying either behind a menu is hostile. */
+  /* ── Two rows, and only two ────────────────────────────────────────
+     Row 1: the room's name, then mic, menu and the way out.
+     Row 2: the code, who is here, and what they can hear -- one strip
+            that scrolls sideways.
+
+     The header used to be one wrapping line of everything, which on a
+     390px screen came out as four or five rows and left the lyrics with
+     what was left. `display: contents` on .roomInfo is what makes two
+     possible: it dissolves that wrapper so the title and the strip
+     become items of .roomHeader itself, and can therefore be ordered
+     around .roomActions -- which is their sibling's child, and so
+     otherwise unreachable without rebuilding the header for phones. */
   .roomMenuBtn {
     display: flex;
+  }
+
+  /* The mic leads. It is the one control here with a consequence. */
+  .micBtn {
+    order: -1;
+  }
+
+  /* Copying a link needs somewhere to paste it, which a phone in a room
+     rarely has. The invite button in the menu carries the same link, a
+     QR code and the room code -- so this is a duplicate, and the row is
+     worth more than the duplicate. The CODE itself stays: it is what
+     people read aloud, and it costs a pill in a strip that scrolls. */
+  .copyLinkBtn {
+    display: none;
+  }
+
+  /* Row 2, whole width, one line that scrolls. Nothing here wraps: a
+     room with five people would otherwise grow the header by a row per
+     two names, which is the failure this layout exists to end. */
+  .roomStrip {
+    order: 3;
+    flex: 0 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    /* Room to swipe past the last pill without catching the edge. */
+    padding-right: 2px;
+  }
+
+  .roomStrip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .peerBadges {
+    flex-wrap: nowrap;
+  }
+
+  /* Left of the chat bubble, on the same line above the tab bar. The
+     numbers are the bubble's: 56px wide, 12px clear of the edge, and the
+     same tab-bar offset -- so the two read as one row of controls rather
+     than two things that happen to be near each other.
+
+     One below the bubble's z-index, so an open chat window covers this
+     rather than having a mic button floating over its messages. */
+  .guideDock {
+    display: flex;
+    /* Centres the control against the 56px bubble beside it. */
+    align-items: center;
+    height: 56px;
+    position: fixed;
+    bottom: calc(var(--tabbar-total, 62px) + 16px);
+    right: calc(max(12px, var(--safe-right, 0px)) + 68px);
+    z-index: 999;
   }
 
   /* Everything except mic, leave and the hamburger folds away, and comes
@@ -716,19 +803,6 @@
   padding-top: 0;
   border-top: none;
   overflow: hidden;
-}
-
-/* Groups the view toggles beside the BPM control, matching its glass so
-   the two read as one bar of room settings rather than loose buttons. */
-.viewToggles {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  flex-shrink: 0;
 }
 
 .pitchToggleBtn {
