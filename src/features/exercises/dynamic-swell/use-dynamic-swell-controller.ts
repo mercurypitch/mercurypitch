@@ -2,11 +2,11 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { intensityFromPitchResults } from '@/lib/vocal-analyzer'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DYNAMIC_SWELL } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import { loudnessProfile } from './swell-dynamics'
 
 const NOTE_PLAY_DURATION_MS = 800
 const HOLD_DURATION_MS = 8000
@@ -180,19 +180,13 @@ export function useDynamicSwellController(
     )
     const bestRound = Math.max(...roundScores)
 
-    const history = base.pitchHistory()
-    const intensitySamples = history
-      .filter((p) => p.freq > 0 && p.clarity !== undefined)
-      .map((p) => ({
-        time: p.time,
-        clarity: p.clarity!,
-        midi: freqToExactMidi(p.freq),
-        // Real loudness when present → scores actual dynamics; falls back to
-        // clarity inside intensityFromPitchResults when absent (e.g. tests).
-        rms: p.rms,
-      }))
-    const intensity = intensityFromPitchResults(intensitySamples)
-    const dynamicRangeDb = Math.round(intensity.dynamicRange * 10) / 10
+    // The SAME function the live meter reads, so the score and the screen
+    // cannot tell two stories about one run. The shared envelope builder in
+    // vocal-analyzer floors silence at -120 dBFS, which measured a breath
+    // mid-hold as a 120 dB swell and maxed the 35% dynamics are worth.
+    const sung = base.pitchHistory().filter((p) => p.freq > 0)
+    const loudness = loudnessProfile(sung)
+    const dynamicRangeDb = Math.round(loudness.rangeDb * 10) / 10
     const dynamicScore = Math.min(100, dynamicRangeDb * 3)
 
     return {
@@ -205,8 +199,8 @@ export function useDynamicSwellController(
         avgAccuracy,
         bestRound,
         dynamicRangeDb,
-        avgDb: Math.round(intensity.avgDb * 10) / 10,
-        peakDb: Math.round(intensity.peakDb * 10) / 10,
+        avgDb: Math.round(loudness.avgDb * 10) / 10,
+        peakDb: Math.round(loudness.peakDb * 10) / 10,
       },
       completedAt: Date.now(),
     }

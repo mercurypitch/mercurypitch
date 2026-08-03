@@ -70,7 +70,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 11.1k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 11.2k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.9k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 5.1k | _(no header comment)_ |
@@ -97,7 +97,7 @@ These are the rules that break things when ignored.
 | `mic-feedback` | [useMicInsights.ts](../../src/features/mic-feedback/useMicInsights.ts) | 267 | A single, debounced "what's happening with the mic" state, shared by every tab that listens to the mic (Singing, Karaoke, Piano, Guitar,... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 216 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
-| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 192 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
+| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 186 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |

@@ -10,7 +10,7 @@
 // The judgement call worth pinning: a PAUSE is not a pianissimo.
 
 import { describe, expect, it } from 'vitest'
-import { DB_CEIL, DB_FLOOR, dynamicRangeDb, levelFraction, rangeVerdict, rmsToDb, targetFraction, } from '@/features/exercises/dynamic-swell/swell-dynamics'
+import { DB_CEIL, DB_FLOOR, dynamicRangeDb, levelFraction, loudnessProfile, rangeVerdict, rmsToDb, targetFraction, } from '@/features/exercises/dynamic-swell/swell-dynamics'
 
 describe('rmsToDb', () => {
   it('maps silence to the floor rather than -Infinity', () => {
@@ -111,5 +111,58 @@ describe('rangeVerdict', () => {
   it('escalates with range', () => {
     const words = [0, 5, 10, 20].map(rangeVerdict)
     expect(new Set(words).size).toBe(4)
+  })
+})
+
+describe('loudnessProfile', () => {
+  it('never lets a breath count as a swell', () => {
+    // THE BUG THIS EXISTS FOR. The scorer used to floor silence at
+    // -120 dBFS, so pausing mid-hold measured as a 120 dB range and,
+    // tripled and capped, maxed the 35% of the swell score that
+    // dynamics are worth. Singing at one steady level with a breath in
+    // it is a flat run, and has to score as one.
+    const steadyWithBreath = [
+      { rms: 0.05 },
+      { rms: 0.05 },
+      { rms: 0 },
+      { rms: 0.05 },
+    ]
+    expect(loudnessProfile(steadyWithBreath).rangeDb).toBe(0)
+    // For contrast: a real swell still measures.
+    expect(
+      loudnessProfile([{ rms: 0.01 }, { rms: 0.1 }]).rangeDb,
+    ).toBeGreaterThan(18)
+  })
+
+  it('averages what was sung, not the silence between', () => {
+    const withBreath = loudnessProfile([
+      { rms: 0.05 },
+      { rms: 0 },
+      { rms: 0.05 },
+    ])
+    const without = loudnessProfile([{ rms: 0.05 }, { rms: 0.05 }])
+    expect(withBreath.avgDb).toBeCloseTo(without.avgDb, 6)
+    expect(withBreath.peakDb).toBeCloseTo(without.peakDb, 6)
+  })
+
+  it('reports zeroes for a run with nothing sung in it', () => {
+    expect(loudnessProfile([])).toEqual({ rangeDb: 0, avgDb: 0, peakDb: 0 })
+    expect(loudnessProfile([{ rms: 0 }, { rms: 0 }])).toEqual({
+      rangeDb: 0,
+      avgDb: 0,
+      peakDb: 0,
+    })
+  })
+
+  it('gives one sung frame a level but no travel', () => {
+    const p = loudnessProfile([{ rms: 0.05 }])
+    expect(p.rangeDb).toBe(0)
+    expect(p.peakDb).toBeLessThan(0)
+    expect(p.peakDb).toBe(p.avgDb)
+  })
+
+  it("agrees with dynamicRangeDb, which is the meter's reading", () => {
+    const frames = [{ rms: 0.02 }, { rms: 0.2 }, { rms: 0.05 }]
+    expect(dynamicRangeDb(frames)).toBe(loudnessProfile(frames).rangeDb)
   })
 })
