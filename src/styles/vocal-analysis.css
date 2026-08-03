@@ -2641,37 +2641,131 @@
   color: var(--text-primary);
 }
 
+/* ── Badge tiles ────────────────────────────────────────────────────
+   The art fills the tile the way a voiceprint does, with the name on a
+   thin strip over the bottom edge. Before this the medallion was a 64px
+   thumbnail floating above a name, and the earned tick landed on top of
+   the 'i'. Hover anywhere on the tile explains the badge (see
+   InfoPopover's hoverAnchor); tap the 'i' on touch. */
 .badges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 12px;
 }
 
 .badge-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 62%
+    ),
+    var(--bg-secondary);
+  border: 1px solid var(--border-color, var(--border));
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.badge-item:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
+}
+
+.badge-art {
+  position: absolute;
+  inset: 0 0 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.badge-medal {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.badge-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52%;
+  height: 52%;
+  color: var(--text-muted);
+}
+
+.badge-glyph svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Locked badges keep the shape and lose the metal: you can see what is
+   there to earn without it looking earned. */
+.badge-item.locked .badge-medal,
+.badge-item.locked .badge-glyph {
+  filter: grayscale(0.85) brightness(0.72);
+}
+
+/* The thin strip: name and tier, over the bottom of the art. */
+.badge-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  gap: 1px;
+  padding: 5px 7px 6px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bg-primary) 94%, transparent),
+    color-mix(in srgb, var(--bg-primary) 72%, transparent)
+  );
+  backdrop-filter: blur(3px);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.badge-name {
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 620;
+  line-height: 1.2;
+  color: var(--text-primary);
   text-align: center;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ── How a badge is earned ──────────────────────────────────────────
-   The condition now lives in an InfoPopover, which portals to <body> —
-   so it cannot be clipped by the card and cannot be buried under the
-   sidebar, and it closes on outside click / Escape / scroll / nav. The
-   panel styling went with it; only the trigger's placement is ours. */
-.badge-item {
-  position: relative;
+.badge-tier {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  flex: none;
 }
 
+.badge-item.earned .badge-name {
+  color: var(--accent);
+}
+
+/* Top-LEFT. The tick used to sit where the 'i' is. */
+/* Top-right. The tick is top-LEFT, so the two no longer overlap. */
 .badge-hint-toggle {
   position: absolute;
   top: 6px;
   right: 6px;
+  z-index: 2;
 }
 
 .badge-hint-earned {
@@ -2681,45 +2775,24 @@
   color: var(--accent);
 }
 
-.badge-item.earned {
-  border: 2px solid var(--accent);
-  background: linear-gradient(135deg, rgba(var(--accent), 0.1), transparent);
-}
-
-.badge-item.locked {
-  opacity: 0.5;
-}
-
-/* 64px, not the old 32. The medallions carry a tier ring around an
-   emblem, and at 32px only the ring survived — sixteen badges read as
-   three. The number is the whole reason the art exists; see
-   challenge-badges/badge-size.html in dotfiles for the comparison. */
-.badge-icon {
-  font-size: 2rem;
+.badge-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--green, #3fb950);
+  color: var(--bg-primary);
 }
 
-.badge-medal {
-  width: 64px;
-  height: 64px;
-  display: block;
-}
-
-/* Locked badges keep the shape and lose the metal: you can see what is
-   there to earn without it looking earned. Opacity alone (on .locked)
-   left the gold still reading as gold. */
-.badge-item.locked .badge-medal {
-  filter: grayscale(0.85) brightness(0.72);
-}
-
-.badge-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.badge-check svg {
+  width: 12px;
+  height: 12px;
 }
 
 .badge-name {

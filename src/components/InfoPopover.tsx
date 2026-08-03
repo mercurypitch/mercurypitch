@@ -34,6 +34,15 @@ interface InfoPopoverProps {
   glyph?: string
   /** Extra class for the trigger, for per-surface placement. */
   class?: string
+  /**
+   * An element whose hover opens the panel, on pointer devices only.
+   *
+   * For cards where the whole tile is the affordance and the 'i' is just
+   * the visible marker: hovering anywhere on it explains the thing,
+   * leaving closes. Touch devices report `hover: none` and are left with
+   * tap, which is the only thing that works there anyway.
+   */
+  hoverAnchor?: () => HTMLElement | undefined
 }
 
 /** Clear of the viewport edge, so the panel never sits flush against it. */
@@ -100,6 +109,26 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
       document.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', place)
+    })
+  })
+
+  // Hover-to-open, for callers that pass a host element.
+  createEffect(() => {
+    const host = props.hoverAnchor?.()
+    if (host === undefined) return
+    if (!window.matchMedia?.('(hover: hover)').matches) return
+
+    const enter = (): void => {
+      setOpen(true)
+    }
+    const leave = (): void => {
+      setOpen(false)
+    }
+    host.addEventListener('mouseenter', enter)
+    host.addEventListener('mouseleave', leave)
+    onCleanup(() => {
+      host.removeEventListener('mouseenter', enter)
+      host.removeEventListener('mouseleave', leave)
     })
   })
 
