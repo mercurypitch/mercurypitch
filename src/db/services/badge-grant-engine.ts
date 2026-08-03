@@ -17,6 +17,7 @@ import { getUserId } from '@/db/seed'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
 import { loadSessionRecords } from '@/db/services/session-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
+import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { showNotification } from '@/stores/notifications-store'
 
 interface GrantStats {
@@ -27,6 +28,18 @@ interface GrantStats {
   challengesCompleted: number
   /** Categories of the challenges the user has completed. */
   completedCategories: Set<string>
+  /** Longest streak ever reached, for goals a broken streak should keep. */
+  longestStreak: number
+  /** Distinct LOCAL days with at least one record — showing up, not volume. */
+  distinctDays: number
+  /** Which of the four practice surfaces have been used. */
+  sourcesUsed: Set<string>
+  /** Notes landed on target across every record. */
+  notesHit: number
+  /** Runs scoring 80 or better. */
+  strongRuns: number
+  /** Distinct melody/drill names practised. */
+  distinctMelodies: number
 }
 
 async function computeStats(): Promise<GrantStats> {
@@ -48,6 +61,28 @@ async function computeStats(): Promise<GrantStats> {
     if (def) completedCategories.add(def.category)
   }
 
+  // All of the following come out of the records already loaded — no new
+  // capture and no new table. An achievement nobody can measure is
+  // decoration, so the metric comes first and the goal second.
+  const days = new Set<string>()
+  const sourcesUsed = new Set<string>()
+  const melodies = new Set<string>()
+  let notesHit = 0
+  let strongRuns = 0
+  for (const r of records) {
+    const when = r.endedAt ?? r.startedAt
+    if (typeof when === 'string' && when !== '') {
+      days.add(localDayKey(when))
+    }
+    sourcesUsed.add(r.source ?? 'practice')
+    if (typeof r.melodyName === 'string' && r.melodyName !== '') {
+      melodies.add(r.melodyName)
+    }
+    notesHit += r.notesHit ?? 0
+    if ((r.score ?? 0) >= 80) strongRuns += 1
+  }
+  days.delete('')
+
   return {
     totalSessions: records.length,
     bestScore: scores.length > 0 ? Math.max(...scores) : 0,
@@ -55,6 +90,12 @@ async function computeStats(): Promise<GrantStats> {
     currentStreak: streak,
     challengesCompleted: completed.length,
     completedCategories,
+    longestStreak: Math.max(streak, ...records.map((r) => r.streak ?? 0), 0),
+    distinctDays: days.size,
+    sourcesUsed,
+    notesHit,
+    strongRuns,
+    distinctMelodies: melodies.size,
   }
 }
 
@@ -112,6 +153,39 @@ function evalAchievement(
       return {
         unlocked: stats.hasPerfectSession,
         progress: stats.hasPerfectSession ? 100 : 0,
+      }
+    case 'Well Rounded': {
+      // The four practice surfaces: session mode, drills, challenges and
+      // the weekly Legend. Rewards trying the app, not grinding one part.
+      const n = stats.sourcesUsed.size
+      return { unlocked: n >= 4, progress: pct(n, 4) }
+    }
+    case 'Ten Days In':
+      return {
+        unlocked: stats.distinctDays >= 10,
+        progress: pct(stats.distinctDays, 10),
+      }
+    case 'Thousand Notes':
+      return {
+        unlocked: stats.notesHit >= 1000,
+        progress: pct(stats.notesHit, 1000),
+      }
+    case 'Dependable':
+      return {
+        unlocked: stats.strongRuns >= 10,
+        progress: pct(stats.strongRuns, 10),
+      }
+    case 'Wide Repertoire':
+      return {
+        unlocked: stats.distinctMelodies >= 15,
+        progress: pct(stats.distinctMelodies, 15),
+      }
+    case 'Fortnight':
+      // Longest, not current: a streak that broke last week was still
+      // earned, and taking the badge back would be mean.
+      return {
+        unlocked: stats.longestStreak >= 14,
+        progress: pct(stats.longestStreak, 14),
       }
     default:
       // '3 Octaves', 'High Note Master', 'Speed Demon', 'Scale Explorer'

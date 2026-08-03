@@ -2819,10 +2819,15 @@
   margin-bottom: 32px;
 }
 
+/* A grid, not a column. Each row was one achievement stretched the full
+   width of a 1400px screen with its text marooned in the middle and its
+   progress bar a metre long. Cards hold the same information in a third
+   of the vertical space. */
 .achievements-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .achievement-item {

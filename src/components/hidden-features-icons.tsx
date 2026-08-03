@@ -813,8 +813,16 @@ const iconMap: Record<string, Component> = {
   sheet: IconSheetMusic,
 }
 
+/**
+ * An unknown name falls back to a generic badge, NOT to the name itself.
+ *
+ * Returning the string meant renderIcon printed it: three seeded
+ * achievements briefly showed the words "layers", "calendar" and "check"
+ * across the page in 3rem grey, because those icons do not exist in the
+ * map. A missing icon should look like a missing icon, not like copy.
+ */
 export function iconByName(name: string): Component | string {
-  return iconMap[name] ?? name
+  return iconMap[name] ?? IconBadge
 }
 
 export function renderIcon(icon: Component | string) {
