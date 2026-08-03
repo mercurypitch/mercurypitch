@@ -78,7 +78,19 @@
 @media (max-width: 900px) {
   .split {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 140px;
+    /* Lyrics take what is left; the lanes get a share of the remainder
+       rather than a fixed 140px. On a 664px phone the chrome above already
+       eats half the screen, and a fixed lane strip left two lines of words
+       visible. minmax keeps the lanes readable without letting them win. */
+    grid-template-rows: minmax(0, 1.6fr) minmax(88px, 1fr);
+  }
+}
+
+/* Very short screens (a phone in landscape, or a small window): the lanes
+   become a glance rather than a display, so the words survive. */
+@media (max-height: 560px) {
+  .split {
+    grid-template-rows: minmax(0, 2.4fr) minmax(72px, 1fr);
   }
 }
 
@@ -102,15 +114,4 @@
 .runLines {
   font-size: 0.72rem;
   color: var(--text-tertiary, var(--text-secondary));
-}
-
-/* The words and the thing that edits who sings them, as one column. The
-   bar has to sit inside this box rather than above the split, or it
-   stretches across the pitch lanes it has nothing to do with. */
-.lyricsSide {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  flex: 1 1 0;
 }

@@ -15,7 +15,6 @@ import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from '
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
 import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
-import { JamAssignBar } from './JamAssignBar'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -373,16 +372,13 @@ export const JamSongStage: Component = () => {
           </div>
 
           <div class={styles.split}>
-            <div class={styles.lyricsSide}>
-              <JamAssignBar />
-              <JamSongLyrics
-                scores={jamSongLineScores}
-                onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
-                lines={song().lines}
-                positionSec={jamSongPositionSec}
-                showNotes={false}
-              />
-            </div>
+            <JamSongLyrics
+              scores={jamSongLineScores}
+              onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
+              lines={song().lines}
+              positionSec={jamSongPositionSec}
+              showNotes={false}
+            />
             <JamPeerLanes
               myPeerId={jamPeerId}
               notes={() => song().notes}

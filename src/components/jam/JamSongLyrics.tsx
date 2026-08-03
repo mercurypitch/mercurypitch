@@ -18,6 +18,7 @@ import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
+import { JamAssignBar } from './JamAssignBar'
 import { JamLyricsFinder } from './JamLyricsFinder'
 import styles from './JamSongLyrics.module.css'
 
@@ -180,6 +181,12 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
 
   return (
     <div class={styles.panel}>
+      {/* Inside the panel, not above it. An outer wrapper made the panel a
+          flex sibling of the bar, and the scroll box then sized itself
+          against the wrong box and overflowed -- on a phone that clipped
+          the words to nothing. The bar edits these lyrics, so this is also
+          where it belongs. */}
+      <JamAssignBar />
       <Show
         when={props.lines.length > 0}
         fallback={
