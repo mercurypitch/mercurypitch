@@ -9,6 +9,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
+import { InfoPopover } from '@/components/InfoPopover'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
 import { getStreakState, repairStreak } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
@@ -19,6 +20,7 @@ import type { SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { exerciseHistory } from '@/stores/exercise-history-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './HomePage.module.css'
 
 const DAILY_GOAL_MIN = Math.round(DAILY_GOAL_MS / 60_000)
@@ -152,11 +154,19 @@ const HomePage: Component = () => {
             <div class={styles.goalBar}>
               <div class={styles.goalFill} style={{ width: `${goalPct}%` }} />
             </div>
-            <span class={styles.goalText}>
-              {goalMet
-                ? `Daily goal met (${DAILY_GOAL_MIN} min)`
-                : `${minutesToday}/${DAILY_GOAL_MIN} min today`}
-            </span>
+            <div class={styles.goalTextRow}>
+              <span class={styles.goalText}>
+                {goalMet
+                  ? `Today counts — ${DAILY_GOAL_MIN} min sung`
+                  : `${minutesToday} of ${DAILY_GOAL_MIN} min today keeps the streak`}
+              </span>
+              <InfoPopover label="How the streak works">
+                Sing for {DAILY_GOAL_MIN} minutes and the day counts. Miss a day
+                and a banked freeze covers it; miss one with no freeze and the
+                streak goes back to zero. Anything you practise counts —
+                sessions, exercises and challenges alike.
+              </InfoPopover>
+            </div>
           </div>
 
           <div class={styles.streakMeta}>
@@ -181,16 +191,20 @@ const HomePage: Component = () => {
           <Show when={showStreakNudge()}>
             <div class={styles.accountNudge}>
               <span>
-                {streak()?.currentStreak} days in a row. Keep the streak on an
-                account so a new device doesn't reset it.
+                {streak()?.currentStreak} days in a row — and right now that
+                lives only in this browser. An account carries it to your phone,
+                and keeps it if you clear your history.
               </span>
               <div class={styles.accountNudgeRow}>
                 <button
                   class={styles.accountNudgeCta}
                   onClick={() => {
+                    /* The sign-in modal, not #/settings/account: that page
+                       has nothing to do for someone without an account, and
+                       for someone who has one it was a dead end. */
                     satisfyNudge('streak-day-2')
                     setStreakNudgeOpen(false)
-                    window.location.hash = '#/settings/account'
+                    openAuthModal('register')
                   }}
                 >
                   Create a free account
