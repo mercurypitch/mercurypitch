@@ -98,6 +98,7 @@ const VALID_ADMIN_SECTIONS: Set<string> = new Set([
   'exercises',
   'ascent',
   'weekly',
+  'achievements',
 ])
 
 function isValidTab(tab: string): tab is ActiveTab {

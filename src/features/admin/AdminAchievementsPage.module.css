@@ -1,0 +1,457 @@
+/* Studio console styling, matched to AdminAscentPage: dark instrument
+   shell, amber/accent action colour, compact technical type. */
+
+.root {
+  min-width: 0;
+  color: var(--text-primary, #f4f7fb);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.toolbar > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+
+.toolbar strong {
+  font-size: 0.9rem;
+}
+
+.toolbar span {
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.78rem;
+}
+
+.addButton,
+.editor button,
+.rowDelete {
+  min-height: 40px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary, #f4f7fb);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+/* The base .icon-svg is 20px and inline; inside a compact control it has to
+   be sized and blocked out or it drags the button's baseline. */
+.addButton :global(.icon-svg),
+.rowDelete :global(.icon-svg) {
+  width: 15px;
+  height: 15px;
+  display: block;
+  margin: 0;
+  flex: none;
+}
+
+.addButton:hover,
+.rowDelete:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 55%,
+    var(--border, rgba(255, 255, 255, 0.12))
+  );
+}
+
+.editor button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.primary {
+  border-color: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 60%,
+    transparent
+  ) !important;
+  background: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 18%,
+    var(--bg-card, #121821)
+  ) !important;
+  padding: 8px 16px;
+}
+
+.warning,
+.actionError,
+.loading,
+.bandEmpty {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.warning {
+  border: 1px solid color-mix(in srgb, var(--warning, #e3b341) 38%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--warning, #e3b341) 8%,
+    var(--bg-primary, #0c1017)
+  );
+  color: var(--text-secondary, #c4cad4);
+}
+
+.warning strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-primary, #f4f7fb);
+}
+
+.warning code {
+  font-size: 0.74rem;
+}
+
+.actionError {
+  border: 1px solid color-mix(in srgb, var(--bad, #e5534b) 40%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--bad, #e5534b) 9%,
+    var(--bg-primary, #0c1017)
+  );
+  color: var(--bad, #ed6a63);
+}
+
+.loading,
+.bandEmpty {
+  border: 1px dashed var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-secondary, #c4cad4);
+}
+
+/* ── Editor ─────────────────────────────────────────────── */
+
+.editor {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--accent, #6f73ff) 42%,
+      var(--border, rgba(255, 255, 255, 0.12))
+    );
+  border-radius: 14px;
+  background: var(--bg-card, #121821);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
+.editorHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.editorHeading span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent, #8b8eff);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.editorHeading h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+}
+
+.editorHeading button {
+  min-width: 62px;
+  padding: 7px 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 14px;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.grid label > span {
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grid input,
+.grid select {
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background: var(--bg-primary, #0c1017);
+  color: var(--text-primary, #f4f7fb);
+  font: inherit;
+  font-size: 0.82rem;
+  min-width: 0;
+}
+
+.grid input:focus-visible,
+.grid select:focus-visible {
+  outline: 2px solid var(--accent, #6f73ff);
+  outline-offset: 1px;
+}
+
+.grid small {
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.hintBad {
+  color: var(--warning, #e3b341) !important;
+}
+
+.iconRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconRow select {
+  flex: 1;
+}
+
+.iconPreview {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background: var(--bg-primary, #0c1017);
+  color: var(--accent, #8b8eff);
+}
+
+.iconPreview :global(.icon-svg) {
+  width: 20px;
+  height: 20px;
+  display: block;
+  margin: 0;
+}
+
+.editorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── Bands ──────────────────────────────────────────────── */
+
+.band {
+  margin-bottom: 22px;
+}
+
+.bandHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.bandHead h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+
+.bandHead > span {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 16%,
+    var(--bg-card, #121821)
+  );
+  color: var(--accent, #8b8eff);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bandHead small {
+  margin-left: auto;
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.72rem;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--bg-card, #121821);
+  overflow: hidden;
+}
+
+.rowActive {
+  border-color: var(--accent, #6f73ff);
+}
+
+/* An unmeasured row is the failure this page exists to catch — mark it in
+   the list, not only in the editor, so it is visible without clicking. */
+.rowUnmeasured {
+  border-left: 3px solid var(--warning, #e3b341);
+}
+
+.rowMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rowMain:hover {
+  background: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 8%,
+    var(--bg-card, #121821)
+  );
+}
+
+.rowIcon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  background: color-mix(
+    in srgb,
+    var(--accent, #6f73ff) 12%,
+    var(--bg-primary, #0c1017)
+  );
+  color: var(--accent, #8b8eff);
+}
+
+.rowIcon :global(.icon-svg) {
+  width: 17px;
+  height: 17px;
+  display: block;
+  margin: 0;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rowText strong {
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.rowText small {
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin-left: auto;
+  flex: none;
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowDelete {
+  min-height: 0;
+  width: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 0;
+  color: var(--text-muted, #8c96a7);
+}
+
+.rowDelete:hover {
+  background: color-mix(
+    in srgb,
+    var(--bad, #e5534b) 14%,
+    var(--bg-card, #121821)
+  );
+  color: var(--bad, #ed6a63);
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .list {
+    grid-template-columns: 1fr;
+  }
+}

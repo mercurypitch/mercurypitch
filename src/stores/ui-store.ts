@@ -268,7 +268,7 @@ export function dismissWelcome(): void {
 }
 
 // ── Owner-only Content Studio (#/admin/*) ───────────────────────
-export type AdminSection = 'exercises' | 'ascent' | 'weekly'
+export type AdminSection = 'exercises' | 'ascent' | 'weekly' | 'achievements'
 export type AdminContentLeaveIntent =
   | { type: 'section'; section: AdminSection }
   | { type: 'close' }

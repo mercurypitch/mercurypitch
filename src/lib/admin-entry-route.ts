@@ -4,6 +4,7 @@ const ADMIN_PATHS: Readonly<Record<string, AdminSection>> = {
   '/admin': 'exercises',
   '/admin/exercises': 'exercises',
   '/admin/weekly': 'weekly',
+  '/admin/achievements': 'achievements',
 }
 
 /** Convert a friendly path entry into the app's canonical hash route. */
