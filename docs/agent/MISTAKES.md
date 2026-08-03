@@ -83,6 +83,15 @@ lyrics. Per-transcription hallucination guards do not catch junk confined to
 one stretch of a song — judge a *line*, not the whole result.
 **See:** `src/lib/whisper-lyrics.ts`
 
+### Compare mic warnings with the detector's real amplitude gate
+**Symptom:** a nearly full input meter and working pitch trace appeared behind
+an “input too weak” warning.
+**Cause:** every audible-but-unpitched frame was labelled weak, the meter used
+a visual 4× gain, and the warning lingered after detection recovered.
+**Rule:** only call input weak below the active detector RMS gate, only while
+playback expects singing, and clear immediately when the evidence recovers.
+**See:** `src/features/mic-feedback/useMicInsights.ts`
+
 ## Framework
 
 ### Do not destructure props

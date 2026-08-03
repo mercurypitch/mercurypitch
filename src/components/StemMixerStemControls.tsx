@@ -249,6 +249,7 @@ export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
                   class="sm-add-stem-pill"
                   style={{ '--stem-color': part.color }}
                   disabled={props.addingStem?.() !== null}
+                  aria-busy={props.addingStem?.() === part.key}
                   onClick={() => props.onAddStem?.(part.key)}
                   title={`Add the ${part.label} stem to the mix`}
                 >
