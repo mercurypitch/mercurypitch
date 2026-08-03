@@ -1,0 +1,152 @@
+/* LocalProgressNotice — shown once after signing in to an account that was
+   made on another device. Same overlay family as AuthModal, one step
+   quieter: this is news, not a form. */
+
+@keyframes noticeIn {
+  from {
+    transform: translateY(6px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Sits with the auth dialog family (3200) — it follows one. */
+  z-index: 3200;
+  padding: 16px;
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  padding: 20px 22px 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  animation: noticeIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.headIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--accent, #58a6ff);
+}
+
+.headIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary, #e6edf3);
+}
+
+.body {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary, #8b949e);
+}
+
+.body strong {
+  color: var(--text-primary, #e6edf3);
+  font-weight: 600;
+}
+
+/* The reassurance, set apart so it is read rather than skimmed past. */
+.keep {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  background: rgba(45, 212, 191, 0.08);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-primary, #e6edf3);
+}
+
+.keepIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #2dd4bf;
+}
+
+.keepIcon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.primary {
+  flex: 1;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent, #58a6ff);
+  color: var(--bg-primary, #0d1117);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.primary:hover {
+  filter: brightness(1.08);
+}
+
+.secondary {
+  padding: 9px 14px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #8b949e);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.secondary:hover {
+  color: var(--text-primary, #e6edf3);
+  border-color: var(--accent, #58a6ff);
+}
