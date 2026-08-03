@@ -6,6 +6,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  /* The room's own status lives here -- code, copy link, transfer, share
+     offer. On a phone that is more than one line's worth, and a chip that
+     overflows the header is a chip nobody can press. */
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 
 .titleRow {

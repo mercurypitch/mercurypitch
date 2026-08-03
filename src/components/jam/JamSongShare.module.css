@@ -1,78 +1,96 @@
 /* ── JamSongShare ───────────────────────────────────────────────────
-   A strip under the transport. Only present when there is something to
-   say, so it must not reserve space when idle. */
+   A chip in the room header, beside the room code and the transfer
+   readout. Only present when there is something to say, so it must not
+   reserve space when idle. */
 
-.share {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 8px 12px;
-  border: 1px solid var(--border-color, rgb(255 255 255 / 12%));
-  border-radius: 8px;
-  /* Room glass, so the transparency slider carries it with everything
-     else instead of leaving an opaque band across the room. */
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-}
-
-.text {
-  flex: 1 1 12rem;
-  min-width: 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.error {
-  flex: 1 1 12rem;
-  min-width: 0;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: #f09a9a;
-}
-
-.button {
+.chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent-color, #58a6ff);
-  color: #04121f;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.button:hover {
-  filter: brightness(1.08);
-}
-
-.link {
-  flex-shrink: 0;
-  padding: 4px 6px;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.bar {
-  flex: 1 1 8rem;
-  min-width: 6rem;
-  height: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--warning, #e3b341);
   border-radius: 999px;
-  background: rgb(255 255 255 / 12%);
-  overflow: hidden;
+  /* Room glass, so the transparency slider carries it with everything
+     else instead of leaving an opaque pill across the header. */
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
+  color: var(--warning, #e3b341);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  /* The point of moving it here: something to act on should be findable
+     without hunting. A ring that breathes, not a colour that shouts. */
+  animation: chipPulse 2.4s ease-in-out infinite;
 }
 
-.fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-color, #58a6ff);
-  transition: width 0.2s ease;
+.chip:hover {
+  color: #f5d78a;
+  border-color: #f5d78a;
+}
+
+@keyframes chipPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(227 179 65 / 0%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgb(227 179 65 / 18%);
+  }
+}
+
+/* Nothing to act on: state the fact and stay out of the way. */
+.chipQuiet {
+  border-color: var(--border-color, rgb(255 255 255 / 14%));
+  color: var(--text-secondary);
+  font-weight: 500;
+  cursor: default;
+  animation: none;
+}
+
+.chipQuiet:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-color, rgb(255 255 255 / 14%));
+}
+
+.chipText {
+  white-space: nowrap;
+}
+
+/* ── The icon's waves ───────────────────────────────────────────────
+   Each arc fades in turn, so the speaker reads as throwing sound out
+   rather than as a static glyph. */
+.icon {
+  flex-shrink: 0;
+}
+
+.waveNear {
+  animation: waveOut 1.8s ease-in-out infinite;
+}
+
+.waveFar {
+  animation: waveOut 1.8s ease-in-out 0.25s infinite;
+}
+
+@keyframes waveOut {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+  }
+
+  35% {
+    opacity: 1;
+  }
+}
+
+/* A stated preference for less motion wins: the wording and the colour
+   already carry everything the animation adds. */
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .waveNear,
+  .waveFar {
+    animation: none;
+  }
 }

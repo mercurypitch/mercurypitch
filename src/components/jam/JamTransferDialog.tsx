@@ -44,15 +44,20 @@ export const JamTransferDialog: Component = () => {
     state().phase === 'receiving'
 
   /**
-   * A new transfer always shows itself.
+   * A NEW transfer shows itself. A running one never does again.
    *
-   * Minimising is about the CURRENT one; carrying that decision into the
-   * next means somebody presses Send and nothing appears to happen.
+   * This used to open on any encoding/receiving phase, and the phase does
+   * not change while a transfer runs -- it just reports progress. So the
+   * effect re-ran on every chunk and undid "Continue in background"
+   * immediately, then again for the guide vocal, then again at the end.
+   * Pushing something away has to mean something, so the trigger is the
+   * EDGE into a transfer, and the header chip carries the rest.
    */
+  let wasBusy = false
   createEffect(() => {
-    if (state().phase === 'encoding' || state().phase === 'receiving') {
-      setJamTransferMinimised(false)
-    }
+    const nowBusy = busy()
+    if (nowBusy && !wasBusy) setJamTransferMinimised(false)
+    wasBusy = nowBusy
   })
 
   const open = () => state().phase !== 'idle' && !jamTransferMinimised()

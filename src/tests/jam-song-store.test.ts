@@ -376,6 +376,49 @@ describe('transport is scoped, and the host drives it', () => {
     expect(store.jamExercisePlaying()).toBe(false)
   })
 
+  it('R7: the drill transport is inert while the room is on a song', () => {
+    // The third root cause of "the song stopped and nobody touched it".
+    // A song room had a drill in it -- the panel's auto-select put one
+    // back the moment loading a song cleared it -- so the host had a
+    // second play button wired to the same playing signal, and its beat
+    // timer ended and stopped the song.
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    expect(store.jamExercisePlaying()).toBe(true)
+
+    store.jamPlaybackStop()
+    expect(store.jamExercisePlaying()).toBe(true)
+
+    store.jamSongPause(12)
+    store.jamPlaybackPlay()
+    expect(store.jamExerciseBeat()).toBe(0)
+    expect(store.jamSongPositionSec()).toBe(12)
+  })
+
+  it('R7: picking a drill switches the room off the song', () => {
+    store.selectJamSong(song())
+    store.jamSongPlay(0)
+    store.selectJamExercise(melody())
+    expect(store.jamSong()).toBeNull()
+    expect(store.jamExerciseMelody()?.id).toBe('jam-exercise-long-note')
+    expect(store.jamIsSongRoom()).toBe(false)
+  })
+
+  it('the audio arriving does not start playing by itself', () => {
+    // What a tester saw: the guest began playing on its own while the
+    // host sat stopped. `playing` is this device's record of what the
+    // HOST is doing and it can be stale -- a stop issued under the drill
+    // scope is ignored here -- so clearing `paused` when the file landed
+    // was enough to start a song nobody had pressed play on.
+    store.selectJamSong(song({ origin: 'local' }))
+    store.setJamIsHost(false)
+    store.setJamExercisePlaying(true)
+    store.setJamExercisePaused(true)
+    store.applyReceivedStem('instrumental', new Blob(['x']))
+    expect(store.jamExercisePlaying()).toBe(false)
+    expect(store.jamExercisePaused()).toBe(false)
+  })
+
   it('the host ignores transport it is sent', () => {
     // It is the driver; obeying somebody else would make the room fight.
     store.selectJamSong(song())
