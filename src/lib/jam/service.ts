@@ -534,6 +534,9 @@ export function createJamService(callbacks: JamCallbacks) {
           case 'song-file':
             callbacks.onSongFileMessage?.(data, peerId)
             break
+          case 'song-have':
+            callbacks.onSongHaveMessage?.(data, peerId)
+            break
           case 'playback':
             callbacks.onPlaybackMessage?.(data, peerId)
             break
@@ -605,6 +608,14 @@ export function createJamService(callbacks: JamCallbacks) {
   /** The connection to one peer, so a transfer can ask about its route. */
   function connectionTo(peerId: string): RTCPeerConnection | null {
     return peerConnections.get(peerId) ?? null
+  }
+
+  /** Tell the room whether this device can hear the loaded song. */
+  function sendSongHave(songId: string, have: boolean): void {
+    const payload = JSON.stringify({ type: 'song-have', songId, have })
+    for (const [, dc] of dataChannels) {
+      if (dc.readyState === 'open') dc.send(payload)
+    }
   }
 
   function sendSongFileMessage(peerId: string, msg: object): void {
@@ -792,6 +803,7 @@ export function createJamService(callbacks: JamCallbacks) {
     channelTo,
     connectionTo,
     sendSongFileMessage,
+    sendSongHave,
     sendPlaybackCommandSec,
     sendClearMelody,
     sendPlaybackCommand,

@@ -38,6 +38,7 @@ import { JamPitchDisplay } from './JamPitchDisplay'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongStage } from './JamSongStage'
+import { JamTransferChip } from './JamTransferDialog'
 
 export const JamPanel: Component = () => {
   const [displayName, setDisplayName] = createSignal('')
@@ -656,6 +657,10 @@ export const JamPanel: Component = () => {
                   >
                     {linkCopied() ? 'Copied!' : 'Copy link'}
                   </button>
+                  {/* A transfer pushed to the background keeps a live
+                      readout here, beside the room's own controls -- so
+                      dismissing the dialog never means losing the thread. */}
+                  <JamTransferChip />
                 </div>
               </div>
               <div

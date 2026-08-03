@@ -16,7 +16,7 @@ import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
-import { jamPeers, jamPitchHistory, jamSong, jamSongParts, } from '@/stores/jam-store'
+import { jamPeers, jamPitchHistory, jamSong, jamSongParts, MIN_SUNG_CLARITY, } from '@/stores/jam-store'
 import styles from './JamPeerLanes.module.css'
 
 interface JamPeerLanesProps {
@@ -58,6 +58,15 @@ const WINDOW_SEC = 8
  * along and the next second or two is visible ahead of it.
  */
 const NOW_AT = 0.75
+/**
+ * A hole this wide means the singer stopped, not that they slid.
+ *
+ * Samples arrive about twenty times a second, so a quarter second is
+ * several missing frames -- comfortably past jitter, well short of a
+ * phrase.
+ */
+const GAP_BREAK_MS = 250
+
 /** The vocal range a lane spans, in MIDI. Roughly E2 to C6. */
 const MIDI_MIN = 40
 const MIDI_MAX = 84
@@ -231,15 +240,27 @@ const Lane: Component<{
       ctx.lineJoin = 'round'
       ctx.beginPath()
       let drawing = false
+      let prevTs = 0
       for (const s of samples) {
-        if (s.frequency <= 0 || s.midi <= 0) continue
+        // A skipped sample BREAKS the line. This used to `continue`
+        // without clearing the flag, so the next real sample drew a
+        // straight line back across the silence -- the trail appeared to
+        // hang in the air making shapes while nobody sang.
+        if (s.frequency <= 0 || s.midi <= 0 || s.clarity < MIN_SUNG_CLARITY) {
+          drawing = false
+          continue
+        }
         const age = now - s.timestamp
-        if (age > WINDOW_SEC * 1000) continue
+        if (age > WINDOW_SEC * 1000) {
+          drawing = false
+          continue
+        }
+        // And a hole in the buffer breaks it too: samples arrive ~20/s, so
+        // a gap several frames wide is a breath, not a slide.
+        if (prevTs !== 0 && s.timestamp - prevTs > GAP_BREAK_MS) drawing = false
+        prevTs = s.timestamp
         const x = w * NOW_AT - age * pxPerMs
         const y = midiToY(s.midi)
-        // Break the stroke across a gap rather than drawing a straight line
-        // through a breath -- a joined-up line implies a slide that was
-        // never sung.
         if (!drawing) {
           ctx.moveTo(x, y)
           drawing = true

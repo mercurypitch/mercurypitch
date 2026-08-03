@@ -93,6 +93,17 @@ export const [jamChatMessages, setJamChatMessages] = createSignal<
 
 // ── Pitch ────────────────────────────────────────────────────────────
 
+/**
+ * How sure the detector must be before a frame counts as singing.
+ *
+ * A detector hands back a frequency for room tone, a chair scrape and a
+ * breath -- all with a low clarity. Without this the trail wandered
+ * around the lane whenever nobody was singing, drawing shapes out of
+ * noise. The same threshold the zen session uses (useZenPitchSession),
+ * for the same reason and so the two feel alike.
+ */
+export const MIN_SUNG_CLARITY = 0.2
+
 export const [jamLocalPitch, setJamLocalPitch] = createSignal<{
   frequency: number
   noteName: string
@@ -296,6 +307,7 @@ export function selectJamSong(song: JamSong): boolean {
   // would turn the first click on the new words into a paint.
   setJamSongParts({})
   setJamAssignBrush(null)
+  setJamSongHaves({})
   resetJamLineScores()
   setJamError(null)
   jamService?.sendSong({
@@ -430,6 +442,16 @@ export interface JamShareState {
   message: string
 }
 
+/**
+ * Whether the transfer dialog has been pushed to the background.
+ *
+ * A transfer can take a while and the room is still usable during it, so
+ * the dialog is dismissible -- but dismissing must not mean losing the
+ * thread, which is what the header chip is for.
+ */
+export const [jamTransferMinimised, setJamTransferMinimised] =
+  createSignal(false)
+
 export const [jamShareState, setJamShareState] = createSignal<JamShareState>({
   phase: 'idle',
   ratio: 0,
@@ -490,6 +512,8 @@ const songInbox = new SongFileInbox({
     }),
   onStem: ({ stem, blob }) => {
     applyReceivedStem(stem, blob)
+    // The host is waiting to know whether that worked.
+    reportSongHave()
     setJamShareState({
       phase: 'done',
       ratio: 1,
@@ -502,6 +526,39 @@ const songInbox = new SongFileInbox({
   onFailed: (_peerId, reason) =>
     setJamShareState({ phase: 'error', ratio: 0, message: reason }),
 })
+
+/**
+ * Who can actually hear the loaded song.
+ *
+ * peerId -> true once they report having playable audio. A guest that
+ * reloads stays in the room and loses the audio silently; the host used to
+ * have no way to know, and no way to put it right. This is what they
+ * report, and what the re-send button reads.
+ */
+export const [jamSongHaves, setJamSongHaves] = createSignal<
+  Record<string, boolean>
+>({})
+
+/** Connected peers who cannot hear the loaded song. */
+export const jamPeersMissingSong = createRoot(() => {
+  const memo = createMemo(() => {
+    if (jamSong() === null) return []
+    const haves = jamSongHaves()
+    return jamConnectedPeers().filter((p) => haves[p.id] !== true)
+  })
+  return memo
+})
+
+/** Tell the room whether THIS device can play the song it has been given. */
+export function reportSongHave(): void {
+  const song = jamSong()
+  if (song === null) return
+  // Origin is the honest test: a manifest whose stems point at the host's
+  // own blob URLs is not something this device can play, however complete
+  // the rest of it looks.
+  const playable = song.origin === 'url' && song.stems.instrumental !== ''
+  jamService?.sendSongHave(song.id, playable)
+}
 
 let shareAbort: { aborted: boolean } | null = null
 
@@ -517,7 +574,7 @@ export function cancelJamSongShare(): void {
  * costs somebody's data, so it happens when asked rather than the moment
  * a local song is picked.
  */
-export async function shareJamSongWithRoom(): Promise<void> {
+export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
   const song = jamSong()
   if (song === null || !jamIsHost()) return
   const sessionId = sessionIdOfSong(song)
@@ -529,12 +586,17 @@ export async function shareJamSongWithRoom(): Promise<void> {
     })
     return
   }
-  const peers = jamConnectedPeers()
+  // Only the people who cannot hear it. Re-sending to somebody who already
+  // has it costs them their data and the host their uplink, and a reload is
+  // the common case: one person refreshes, everybody else is fine.
+  const peers = onlyMissing ? jamPeersMissingSong() : jamConnectedPeers()
   if (peers.length === 0) {
     setJamShareState({
       phase: 'error',
       ratio: 0,
-      message: 'Nobody else is in the room yet.',
+      message: onlyMissing
+        ? 'Everybody can already hear this one.'
+        : 'Nobody else is in the room yet.',
     })
     return
   }
@@ -602,6 +664,11 @@ export async function shareJamSongWithRoom(): Promise<void> {
     // Report the shortfall rather than a bare tick. Somebody who did not
     // get it is going to hear silence, and being told why beforehand is
     // the difference between a limitation and a bug.
+    setJamSongHaves((prev) => {
+      const next = { ...prev }
+      for (const id of sent) next[id] = true
+      return next
+    })
     setJamShareState({
       phase: 'done',
       ratio: 1,
@@ -632,6 +699,7 @@ export function clearJamSong(): void {
   setJamSongHostTarget(0)
   setJamSongParts({})
   setJamAssignBrush(null)
+  setJamSongHaves({})
   resetJamLineScores()
   revokeReceivedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
@@ -980,6 +1048,11 @@ export function initJam() {
       })
       // Nothing more is coming from them.
       songInbox.forget(peerId)
+      setJamSongHaves((prev) => {
+        const next = { ...prev }
+        delete next[peerId]
+        return next
+      })
       // Disarm if they were the one being painted: assigning lines to a
       // peer who has left creates parts that only get re-homed on the NEXT
       // departure, and silently.
@@ -1113,6 +1186,12 @@ export function initJam() {
     onSongFileChunk: (chunk, fromPeerId) => {
       songInbox.chunk(fromPeerId, chunk)
     },
+    onSongHaveMessage: (msg, fromPeerId) => {
+      // Only about the song currently loaded -- a late report about the
+      // previous one would mark somebody as ready for a song nobody is on.
+      if (jamSong()?.id !== msg.songId) return
+      setJamSongHaves((prev) => ({ ...prev, [fromPeerId]: msg.have }))
+    },
     onSongMessage: (msg) => {
       if (msg.action === 'clear' || msg.song === undefined) {
         setJamSong(null)
@@ -1152,6 +1231,10 @@ export function initJam() {
       // The allocation is the host's to author; a peer only ever adopts it.
       setJamSongParts(msg.song.parts ?? {})
       resetJamLineScores()
+      // Tell the host straight away. A guest that reloaded lands here with
+      // a manifest pointing at the host's own blob URLs, which it cannot
+      // play -- and that silence is exactly what the host needs to see.
+      reportSongHave()
     },
     onPlaybackMessage: (msg: JamPlaybackMessage, fromPeerId: string) => {
       // Every transport command is a tempo resync point (see
@@ -1366,7 +1449,7 @@ export function startJamPitchDetection(): void {
   pitchNetworkInterval = setInterval(() => {
     const p = jamLocalPitch()
     const age = Date.now() - lastPitchTime
-    if (p && p.frequency > 0 && age < 150) {
+    if (p && p.frequency > 0 && p.clarity >= MIN_SUNG_CLARITY && age < 150) {
       // Stamp the room beat, not just the wall clock: the beat is the only
       // coordinate every peer agrees on. Omitted when nothing is playing,
       // where there is no beat to speak of.

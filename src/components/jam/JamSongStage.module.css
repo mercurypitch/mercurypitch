@@ -1,6 +1,9 @@
 /* JamSongStage — lyrics left, per-peer pitch lanes right. */
 
+/* Anchors the floating transfer dialog, which must sit over the room
+   rather than inside its flow. */
 .stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;

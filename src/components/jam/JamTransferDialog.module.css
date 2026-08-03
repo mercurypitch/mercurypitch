@@ -1,0 +1,203 @@
+/* ── JamTransferDialog ──────────────────────────────────────────────
+   Floats over the room rather than sitting in the layout: a transfer is
+   an event, not a piece of furniture, and it must not reflow the words
+   somebody is reading while it runs. */
+
+.wrap {
+  position: absolute;
+  z-index: 40;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 24px));
+  /* Never blocks the room underneath -- only the card takes pointers. */
+  pointer-events: none;
+}
+
+.card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color, rgb(255 255 255 / 14%));
+  border-radius: 12px;
+  /* Floating widget, so it keeps more body than a flat panel -- it carries
+     running text over a photo. Still slider-driven. */
+  background: var(--jam-float, rgba(13, 17, 23, 0.85));
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(10px);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tick {
+  display: inline-flex;
+  color: #6ee7a8;
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────
+   A rotating arc, drawn from one circle with a dash gap. */
+.spinner {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  animation: spin 0.9s linear infinite;
+}
+
+.spinnerTrack {
+  fill: none;
+  stroke: rgb(255 255 255 / 14%);
+  stroke-width: 3;
+}
+
+.spinnerHead {
+  fill: none;
+  stroke: var(--accent-color, #58a6ff);
+  stroke-width: 3;
+  stroke-linecap: round;
+  /* A quarter of the circumference, so the head is clearly a head. */
+  stroke-dasharray: 14 42;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Respect a stated preference for less motion: the bar and the percentage
+   already carry the information, so the spin is decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-color, #58a6ff);
+  transition: width 0.2s ease;
+}
+
+.steps {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+.stepDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 20%);
+}
+
+.stepActive {
+  color: var(--text-primary);
+}
+
+.stepActive .stepDot {
+  background: var(--accent-color, #58a6ff);
+}
+
+.stepDone .stepDot {
+  background: #6ee7a8;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.messageError {
+  color: #f09a9a;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ghost,
+.primary {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ghost {
+  border: 1px solid var(--border-color, rgb(255 255 255 / 14%));
+  background: none;
+  color: var(--text-secondary);
+}
+
+.ghost:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 8%);
+}
+
+.primary {
+  border: none;
+  background: var(--accent-color, #58a6ff);
+  color: #04121f;
+  font-weight: 600;
+}
+
+/* ── Header chip ────────────────────────────────────────────────────
+   What is left once the dialog is pushed away. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-color, #58a6ff);
+  border-radius: 999px;
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.chipError {
+  border-color: #f09a9a;
+  color: #f09a9a;
+}
+
+.chipText {
+  white-space: nowrap;
+}

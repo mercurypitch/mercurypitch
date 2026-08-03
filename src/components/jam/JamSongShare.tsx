@@ -11,9 +11,9 @@
 // wondering where the backing track went.
 
 import type { Component } from 'solid-js'
-import { Match, Show, Switch } from 'solid-js'
+import { Match, Switch } from 'solid-js'
 import { songPlayableInRoom } from '@/lib/jam/jam-song'
-import { cancelJamSongShare, jamConnectedPeers, jamIsHost, jamShareState, jamSong, shareJamSongWithRoom, } from '@/stores/jam-store'
+import { jamConnectedPeers, jamIsHost, jamPeersMissingSong, jamShareState, jamSong, shareJamSongWithRoom, } from '@/stores/jam-store'
 import styles from './JamSongShare.module.css'
 
 /** A speaker with waves, for sending the song out to the room. */
@@ -53,53 +53,29 @@ export const JamSongShare: Component = () => {
 
   return (
     <Switch>
-      {/* Something is moving. Shown to sender and receiver alike -- the
-          person waiting for a song has more need of a progress bar than
-          the person sending it. */}
-      <Match when={busy()}>
+      {/* Somebody in the room cannot hear this. The commonest cause is a
+          reload: they stay in the room and lose the audio silently, and
+          the host had no way to know or to put it right. */}
+      <Match when={jamIsHost() && jamPeersMissingSong().length > 0}>
         <div class={styles.share} role="status">
-          <div class={styles.bar}>
-            <div
-              class={styles.fill}
-              style={{ width: `${Math.round(state().ratio * 100)}%` }}
-            />
-          </div>
-          <span class={styles.text}>{state().message}</span>
-          <Show when={state().phase !== 'receiving' && jamIsHost()}>
-            <button
-              type="button"
-              class={styles.link}
-              onClick={cancelJamSongShare}
-            >
-              Stop
-            </button>
-          </Show>
-        </div>
-      </Match>
-
-      <Match when={state().phase === 'error'}>
-        <div class={styles.share} role="alert">
-          <span class={styles.error}>{state().message}</span>
-          <Show when={jamIsHost() && needsShare()}>
-            <button
-              type="button"
-              class={styles.button}
-              onClick={() => void shareJamSongWithRoom()}
-            >
-              Try again
-            </button>
-          </Show>
-        </div>
-      </Match>
-
-      <Match when={state().phase === 'done'}>
-        <div class={styles.share} role="status">
-          <span class={styles.text}>{state().message}</span>
+          <span class={styles.text}>
+            {jamPeersMissingSong().length === 1
+              ? `${jamPeersMissingSong()[0]?.displayName ?? 'Someone'} cannot hear this one.`
+              : `${jamPeersMissingSong().length} people cannot hear this one.`}
+          </span>
+          <button
+            type="button"
+            class={styles.button}
+            onClick={() => void shareJamSongWithRoom(true)}
+          >
+            <SendIcon />
+            Send it to them
+          </button>
         </div>
       </Match>
 
       {/* The offer. Host only: it is their song and their upload. */}
-      <Match when={needsShare() && jamIsHost()}>
+      <Match when={needsShare() && jamIsHost() && !busy()}>
         <div class={styles.share}>
           <span class={styles.text}>
             Only you can hear this one. The others see the words, the notes and

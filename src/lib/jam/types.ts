@@ -185,6 +185,21 @@ export interface JamSongNote {
  * transfer, and only one runs at a time per peer, which is what lets a
  * chunk be matched to its transfer without a header on every frame.
  */
+/**
+ * A peer reporting whether it can actually hear the loaded song.
+ *
+ * Sent on joining a room that already has one, and after a reload. Without
+ * it the host has no way to know: a guest who refreshes stays in the room
+ * and silently loses the audio, and the host sees a full room happily
+ * playing to somebody hearing nothing.
+ */
+export interface JamSongHaveMessage {
+  type: 'song-have'
+  songId: string
+  /** False when this device has no playable audio for it. */
+  have: boolean
+}
+
 export interface JamSongFileMessage {
   type: 'song-file'
   action: 'offer' | 'done' | 'abort'
@@ -269,6 +284,8 @@ export interface JamCallbacks {
   onSongMessage?: (msg: JamSongMessage) => void
   /** Control frames for a stem transfer (offer / done / abort). */
   onSongFileMessage?: (msg: JamSongFileMessage, fromPeerId: string) => void
+  /** A peer telling us whether it can hear the song (see JamSongHaveMessage). */
+  onSongHaveMessage?: (msg: JamSongHaveMessage, fromPeerId: string) => void
   /**
    * A slice of stem audio. Binary, and deliberately NOT wrapped in JSON:
    * base64 would cost a third more bytes on the one message type where

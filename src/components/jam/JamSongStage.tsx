@@ -14,7 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lineIndexAt } from '@/lib/jam/jam-song'
-import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamSongPositionSec, } from '@/stores/jam-store'
+import { jamExercisePaused, jamExercisePlaying, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -22,6 +22,7 @@ import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
 import { JamSongShare } from './JamSongShare'
 import styles from './JamSongStage.module.css'
+import { JamTransferDialog } from './JamTransferDialog'
 
 /**
  * How far out of step a peer tolerates before correcting.
@@ -102,6 +103,68 @@ export const JamSongStage: Component = () => {
       })
     }
     openLine = index < 0 ? null : { index, atMs: Date.now(), positionSec: pos }
+  })
+
+  /**
+   * Why the audio stopped, when it stops by itself.
+   *
+   * Every one of these used to be silent. The element could fail to decode,
+   * lose its source, stall, or have playback refused outright, and the room
+   * carried on believing it was playing -- the song simply went quiet and
+   * nobody could say why. A room that stops without a reason is
+   * indistinguishable from a room that is broken.
+   */
+  const explainMediaError = (err: MediaError | null): string => {
+    switch (err?.code) {
+      case MediaError.MEDIA_ERR_ABORTED:
+        return 'Playback was cancelled.'
+      case MediaError.MEDIA_ERR_NETWORK:
+        return 'The song stopped: the backing track could not be fetched. If somebody shared it with you, ask them to send it again.'
+      case MediaError.MEDIA_ERR_DECODE:
+        return 'The song stopped: the audio would not decode. The file may have arrived damaged.'
+      case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        return 'The song stopped: this device cannot play that audio, or the track is no longer available on it.'
+      default:
+        return 'The song stopped and the browser did not say why.'
+    }
+  }
+
+  onMount(() => {
+    const el = audioRef
+    if (el === undefined) return
+
+    const onError = () => {
+      setJamError(explainMediaError(el.error))
+      // Stop claiming to play. The host owns the room's transport, so it
+      // pauses the room; a guest only stops itself, because one person's
+      // broken file is not everybody's.
+      if (jamIsHost()) jamSongPause(el.currentTime)
+      else setJamExercisePaused(true)
+    }
+
+    // A stall is not necessarily fatal -- it is the network catching up --
+    // so it says so without stopping anything.
+    const onStalled = () => {
+      if (jamExercisePlaying() && !jamExercisePaused()) {
+        setJamError('Buffering — the backing track is not arriving smoothly.')
+      }
+    }
+
+    // Reaching the end is a normal stop, but the room should still land in
+    // a state that matches: playing stays true otherwise, and the next
+    // press of Play does nothing visible.
+    const onEnded = () => {
+      if (jamIsHost()) jamSongStop()
+    }
+
+    el.addEventListener('error', onError)
+    el.addEventListener('stalled', onStalled)
+    el.addEventListener('ended', onEnded)
+    onCleanup(() => {
+      el.removeEventListener('error', onError)
+      el.removeEventListener('stalled', onStalled)
+      el.removeEventListener('ended', onEnded)
+    })
   })
 
   /**
@@ -193,9 +256,18 @@ export const JamSongStage: Component = () => {
     const el = audioRef
     if (el === undefined) return
     if (jamExercisePlaying() && !jamExercisePaused()) {
-      // Autoplay can still be refused; the room stays paused rather than
-      // pretending it is playing.
-      void el.play().catch(() => {})
+      // A refused play() used to be swallowed by an empty catch, which is
+      // how a room could sit there "playing" in total silence. Autoplay
+      // policy is the usual reason and the user can fix it in one tap, but
+      // only if somebody tells them.
+      void el.play().catch((err: unknown) => {
+        const why =
+          err instanceof Error && err.name === 'NotAllowedError'
+            ? 'Your browser blocked playback until you interact with the page — press Play again.'
+            : 'The song could not start on this device.'
+        setJamError(why)
+        if (!jamIsHost()) setJamExercisePaused(true)
+      })
     } else {
       el.pause()
     }
@@ -273,6 +345,7 @@ export const JamSongStage: Component = () => {
     <Show when={jamSong()}>
       {(song) => (
         <div class={styles.stage}>
+          <JamTransferDialog />
           <audio
             ref={audioRef}
             src={song().stems.instrumental}
