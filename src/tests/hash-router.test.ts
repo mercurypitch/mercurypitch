@@ -339,6 +339,28 @@ describe('parseHash', () => {
     const result = parseHash('#/uvr/session/some-id/mixer')
     expect(result.type).toBe('uvr-session-mixer')
   })
+
+  // Every Content Studio section needs a name in VALID_ADMIN_SECTIONS as
+  // well as in the AdminSection union; miss the set and the deep link
+  // silently falls through to the tab matcher instead of 404ing.
+  it('parses each Content Studio section', () => {
+    expect(parseHash('#/admin')).toEqual({
+      type: 'admin',
+      section: 'exercises',
+    })
+    for (const section of ['exercises', 'ascent', 'weekly', 'achievements']) {
+      expect(parseHash(`#/admin/${section}`)).toEqual({
+        type: 'admin',
+        section,
+      })
+    }
+  })
+
+  it('rejects an unknown admin section', () => {
+    expect(parseHash('#/admin/nonsense')).not.toEqual(
+      expect.objectContaining({ type: 'admin' }),
+    )
+  })
 })
 
 // ── buildHash ──────────────────────────────────────────────────

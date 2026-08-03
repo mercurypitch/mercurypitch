@@ -10,6 +10,7 @@ describe('admin entry routes', () => {
     ['/admin/exercises', '#/admin/exercises'],
     ['/admin/weekly', '#/admin/weekly'],
     ['/ADMIN/WEEKLY/', '#/admin/weekly'],
+    ['/admin/achievements', '#/admin/achievements'],
   ])('maps %s to %s', (pathname, hash) => {
     expect(adminHashForPath(pathname)).toBe(hash)
   })

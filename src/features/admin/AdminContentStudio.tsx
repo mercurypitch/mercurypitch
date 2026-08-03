@@ -9,6 +9,7 @@ import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { AdminContentLeaveIntent, AdminSection } from '@/stores/ui-store'
 import { registerAdminContentCloseGuard } from '@/stores/ui-store'
+import { AdminAchievementsPage } from './AdminAchievementsPage'
 import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
 import { AdminExercisesPage } from './AdminExercisesPage'
@@ -51,6 +52,13 @@ const SECTIONS: readonly SectionMeta[] = [
     shortLabel: 'Weekly',
     description:
       'Schedule the live challenge, scoring target, and reference material.',
+  },
+  {
+    id: 'achievements',
+    label: 'Achievements',
+    shortLabel: 'Achievements',
+    description:
+      'Shape the long-term goal ladder singers climb: bands, targets, icons.',
   },
 ] as const
 
@@ -394,6 +402,12 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                     <AdminExercisesPage
                       adminKey={verifiedKey()}
                       onPublished={refreshRuntimeContent}
+                      onDirtyChange={setContentDirty}
+                    />
+                  </Match>
+                  <Match when={props.section === 'achievements'}>
+                    <AdminAchievementsPage
+                      adminKey={verifiedKey()}
                       onDirtyChange={setContentDirty}
                     />
                   </Match>
