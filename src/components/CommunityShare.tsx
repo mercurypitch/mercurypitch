@@ -11,7 +11,7 @@ import modalStyles from '@/components/Modal.module.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
 import { loadSessionRecords, sessionRecordVersion, } from '@/db/services/session-service'
-import { loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, unpublishShared, } from '@/db/services/share-service'
+import { canPostToCommunity, loadSharedMelodies, loadSharedSessions, loadUserProfile, saveSharedMelody as saveSharedMelodyToDb, saveSharedSession as saveSharedSessionToDb, unpublishShared, } from '@/db/services/share-service'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
@@ -453,7 +453,8 @@ export const CommunityShare: Component = () => {
     const updated = [...localMelodies(), shareable]
     setLocalMelodies(updated)
     storageSet('pp_shared_melodies', updated)
-    // Dual-write to DB (fire-and-forget)
+    // Dual-write to DB (fire-and-forget). Without an account it is the
+    // shelf and the link only — see the notification below.
     saveSharedMelodyToDb({
       name: shareable.name,
       items: shareable.items,
@@ -463,9 +464,21 @@ export const CommunityShare: Component = () => {
     setPickerType(null)
     setActiveTab('melodies')
     void copyShareUrl(encoded).then((ok) => {
-      if (ok)
-        showNotification(`Shared "${shareable.name}" — link copied!`, 'info')
-      else showNotification(`Shared "${shareable.name}"`, 'info')
+      if (canPostToCommunity()) {
+        showNotification(
+          ok
+            ? `Shared "${shareable.name}" — link copied!`
+            : `Shared "${shareable.name}"`,
+          'info',
+        )
+        return
+      }
+      showNotification(
+        ok
+          ? `Saved "${shareable.name}" to your shelf and copied the link — anyone you send it to can sing it. Create an account to list it on the Community board.`
+          : `Saved "${shareable.name}" to your shelf. Create an account to list it on the Community board.`,
+        'info',
+      )
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -600,7 +613,12 @@ export const CommunityShare: Component = () => {
     })
     setPickerType(null)
     setActiveTab('sessions')
-    showNotification(`Shared "${shareable.name}"`, 'info')
+    showNotification(
+      canPostToCommunity()
+        ? `Shared "${shareable.name}"`
+        : `Saved "${shareable.name}" to your shelf. Create an account to list it on the Community board.`,
+      'info',
+    )
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 

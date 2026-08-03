@@ -14,14 +14,24 @@ vi.mock('@/db', () => ({
   getDb: async () => adapter,
 }))
 
+// Sharing to the Community board is account-only. Everything here that
+// is not about that rule runs as a real account; the one test that is
+// flips it. Partial mock — the rest of auth-service is left real.
+const account = vi.hoisted(() => ({ upgraded: true }))
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  hasUpgradedAccount: () => account.upgraded,
+}))
+
 import type { ChallengeDefinition, SessionSource, UserProfile, } from '@/db/entities'
 import { loadChallengeDefinitions, loadChallengeProgress, saveChallengeProgress, } from '@/db/services/challenges-service'
 import { loadCurrentUserEntry, loadLeaderboard, } from '@/db/services/leaderboard-service'
-import { loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, } from '@/db/services/share-service'
+import { canPostToCommunity, loadSharedMelodies, loadSharedSessions, saveSharedMelody, saveSharedSession, } from '@/db/services/share-service'
 import { getUserId } from '@/db/services/user-service'
 
 beforeEach(async () => {
   await adapter.destroy()
+  account.upgraded = true
 })
 
 const nowIso = (): string => new Date().toISOString()
@@ -250,6 +260,31 @@ describe('share flows', () => {
     const loaded = await loadSharedSessions()
     expect(loaded).toHaveLength(1)
     expect(loaded[0].results).toEqual([80, 90, 100])
+  })
+
+  it('keeps a post off the public board without an account', async () => {
+    // A listing everyone can see needs a name that outlives one browser's
+    // localStorage. The singer keeps their own shelf and their share link;
+    // what they do not get is a row on the board.
+    account.upgraded = false
+    expect(canPostToCommunity()).toBe(false)
+
+    const saved = await saveSharedMelody({
+      name: 'Anon Tune',
+      items: melodyItems,
+      author: 'Singer-1a2b',
+    })
+    const savedSession = await saveSharedSession({
+      name: 'Anon Session',
+      items: [],
+      author: 'Singer-1a2b',
+      results: [80],
+    })
+
+    expect(saved).toBeNull()
+    expect(savedSession).toBeNull()
+    expect(await loadSharedMelodies()).toHaveLength(0)
+    expect(await loadSharedSessions()).toHaveLength(0)
   })
 
   it('attributes shares to the persisted user id', async () => {

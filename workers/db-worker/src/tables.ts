@@ -34,6 +34,17 @@ export interface TableDef {
    */
   serverCols?: string[]
   /**
+   * Writes require a REAL account (password/Google), not merely a token.
+   *
+   * An anonymous identity is a UUID in one browser's localStorage: clearing
+   * site data mints a new one, so nothing published under it can be warned,
+   * rate limited across sessions, or traced back to anybody. That is fine
+   * for private rows and fine for reads; it is not fine for a listing
+   * everyone sees. Nothing else about sharing changes — a share link
+   * carries its content in the URL and touches no row here at all.
+   */
+  requiresAccount?: boolean
+  /**
    * For publicly readable per-user tables ('owner'): the only columns a
    * requester other than the row's owner (or an admin) may see. Everything
    * else — friend codes, opt-in state, league placement, streak/practice
@@ -41,6 +52,22 @@ export interface TableDef {
    * public, which is only acceptable for non-personal tables.
    */
   publicCols?: string[]
+}
+
+/**
+ * Refuse a write that would publish something under no real identity.
+ *
+ * Anonymous identities are provisioned lazily and hold ordinary tokens, so
+ * "authenticated" and "accountable" are different questions — see
+ * `requiresAccount` above. Deletes deliberately do not consult this: taking
+ * your own post down needs no more standing than putting it up did, and a
+ * post made before the rule existed must stay removable.
+ */
+export function blockedForAnonymous(
+  def: TableDef,
+  auth: { provider: string } | null,
+): boolean {
+  return def.requiresAccount === true && auth?.provider === 'anonymous'
 }
 
 /**
@@ -95,8 +122,8 @@ export const TABLES: Record<string, TableDef> = {
   // leaderboardEntries is intentionally NOT exposed: the leaderboard is now
   // server-derived from sessionRecords (see handleLeaderboard), so the table
   // is no longer client-readable or client-writable.
-  sharedMelodies: { access: 'shared', boolCols: ['isPublic'], jsonCols: ['tags'] },
-  sharedSessions: { access: 'shared', boolCols: ['isPublic'] },
+  sharedMelodies: { access: 'shared', boolCols: ['isPublic'], jsonCols: ['tags'], requiresAccount: true, },
+  sharedSessions: { access: 'shared', boolCols: ['isPublic'], requiresAccount: true, },
   featureFlags: { access: 'admin', boolCols: ['value'] },
   userSettings: { access: 'user' },
   follows: { access: 'user' },

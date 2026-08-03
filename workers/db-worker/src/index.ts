@@ -21,7 +21,7 @@ import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { getPerksForUser } from './perks'
 import type { TableDef } from './tables'
-import { maskPublicRow, TABLES } from './tables'
+import { blockedForAnonymous, maskPublicRow, TABLES } from './tables'
 import { validateWrite } from './validation'
 
 const CORS: Record<string, string> = {
@@ -218,6 +218,10 @@ function scopeRead(
   }
 }
 
+/** What a singer without an account is told when they try to publish. */
+const ACCOUNT_REQUIRED =
+  'Create an account to post to the Community — sharing a link works without one'
+
 /** Check whether an existing row may be written by this requester. */
 function canWriteRow(
   def: TableDef,
@@ -344,6 +348,9 @@ async function handleCreate(
   } else if (!auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
   }
+  if (blockedForAnonymous(def, auth)) {
+    return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
+  }
 
   let body: Row
   try {
@@ -422,6 +429,12 @@ async function handleUpdate(
   if (!row) return respond({ error: 'Not found' }, { status: 404 })
   if (!canWriteRow(def, row, auth, isAdmin(request, env))) {
     return respond({ error: 'Forbidden' }, { status: 403 })
+  }
+  // Rows that predate the rule stay editable by their owner in every way
+  // except this one: an anonymous singer can delete an old post, not
+  // re-word one that is still listed.
+  if (blockedForAnonymous(def, auth)) {
+    return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
   }
 
   let body: Row
