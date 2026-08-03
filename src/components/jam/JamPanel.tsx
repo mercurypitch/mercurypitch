@@ -20,7 +20,8 @@ import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { isMobile } from '@/lib/use-viewport'
+import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -30,6 +31,7 @@ import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
 import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
+import { JamGuideVocal } from './JamGuideVocal'
 import { JamInviteModal } from './JamInviteModal'
 import panelStyles from './JamPanel.module.css'
 import { JamPeerList } from './JamPeerList'
@@ -117,6 +119,10 @@ export const JamPanel: Component = () => {
   const [linkCopied, setLinkCopied] = createSignal(false)
   const [sidebarOpen, setSidebarOpen] = createSignal(false)
   const [showLivePitch, setShowLivePitch] = createSignal(true)
+  // Read once, not tracked: this is the starting position of a switch the
+  // user then owns. Reacting to it would snatch the tray back the moment a
+  // window crossed the breakpoint, undoing a choice they had just made.
+  const [showCameras, setShowCameras] = createSignal(!isMobile())
 
   // Mic feedback: "can't hear you" / "too quiet" during a jam exercise.
   const micInsights = useMicInsights({
@@ -638,8 +644,29 @@ export const JamPanel: Component = () => {
             {/* Top bar: room info + controls */}
             <div class={jamStyles.roomHeader}>
               <div class={jamStyles.roomInfo}>
-                <div class={panelStyles.titleRow}>
-                  <h2 class={jamStyles.title}>Jam {fancyRoomName()}</h2>
+                <h2 class={jamStyles.title}>Jam {fancyRoomName()}</h2>
+                {/* One strip for everything that describes the room rather
+                    than controls it: its code, who is in it, and what they
+                    can and cannot hear. Grouped because on a phone it
+                    becomes a single scrollable line under the title --
+                    three separate scrollers would be three things to
+                    discover. */}
+                <div class={panelStyles.roomStrip}>
+                  {/* The room code stays visible -- people read it aloud.
+                      Copying the link is the one action worth a button
+                      here; the invite modal has the rest, which is why the
+                      button folds away on a phone and the code does not. */}
+                  <span class={jamStyles.roomIdBadge}>{jamRoomId()}</span>
+                  <button
+                    class={`${jamStyles.btn} ${jamStyles.btnSm} ${panelStyles.copyLinkBtn}`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(roomLink()).catch(() => {})
+                      setLinkCopied(true)
+                      setTimeout(() => setLinkCopied(false), 2000)
+                    }}
+                  >
+                    {linkCopied() ? 'Copied!' : 'Copy link'}
+                  </button>
                   <div class={panelStyles.peerBadges}>
                     <span
                       class={panelStyles.peerBadge}
@@ -673,27 +700,12 @@ export const JamPanel: Component = () => {
                       }}
                     </For>
                   </div>
-                </div>
-                {/* The room code stays visible -- people read it aloud.
-                    Copying the link is the one action worth a button here;
-                    the invite modal (the icon on the right) has the rest. */}
-                <div class={panelStyles.roomIdRow}>
-                  <span class={jamStyles.roomIdBadge}>{jamRoomId()}</span>
-                  <button
-                    class={`${jamStyles.btn} ${jamStyles.btnSm}`}
-                    onClick={() => {
-                      navigator.clipboard.writeText(roomLink()).catch(() => {})
-                      setLinkCopied(true)
-                      setTimeout(() => setLinkCopied(false), 2000)
-                    }}
-                  >
-                    {linkCopied() ? 'Copied!' : 'Copy link'}
-                  </button>
                   {/* A transfer pushed to the background keeps a live
-                      readout here, beside the room's own controls -- so
+                      readout here, beside the people it concerns -- so
                       dismissing the dialog never means losing the thread.
                       The share offer sits in the same place for the same
-                      reason: it is the room's state, not the player's. */}
+                      reason: "two can't hear this" is about the names it
+                      is standing next to. */}
                   <JamTransferChip />
                   <JamSongShare />
                 </div>
@@ -756,10 +768,13 @@ export const JamPanel: Component = () => {
                   />
                 </label>
 
-                {/* Microphone toggle */}
+                {/* Microphone toggle. First in the row on a phone (see
+                    .micBtn) -- it is the control with a consequence, and
+                    the one people look for when someone says they can hear
+                    the room. */}
                 <button
-                  class={`${jamStyles.iconBtn} ${jamIsMuted() ? jamStyles.iconBtnOff : jamStyles.iconBtnOn}`}
-                  onClick={toggleJamMute}
+                  class={`${jamStyles.iconBtn} ${panelStyles.micBtn} ${jamIsMuted() ? jamStyles.iconBtnOff : jamStyles.iconBtnOn}`}
+                  onClick={() => void toggleJamMute()}
                   title={jamIsMuted() ? 'Unmute microphone' : 'Mute microphone'}
                 >
                   <Show
@@ -830,6 +845,30 @@ export const JamPanel: Component = () => {
                         stroke-linecap="round"
                         stroke-linejoin="round"
                       />
+                    </svg>
+                  </button>
+
+                  {/* Show or hide the camera tray -- phone only, where it
+                      has nowhere to float and starts out of the way. */}
+                  <button
+                    class={`${jamStyles.iconBtn} ${showCameras() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral} ${panelStyles.phoneOnlyAction}`}
+                    onClick={() => setShowCameras((v) => !v)}
+                    title={
+                      showCameras() ? 'Hide the cameras' : 'Show the cameras'
+                    }
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="2" y="6" width="12" height="12" rx="2" />
+                      <path d="M14 11l7-4v10l-7-4" />
                     </svg>
                   </button>
 
@@ -1238,7 +1277,34 @@ export const JamPanel: Component = () => {
       </Show>
 
       <Show when={jamState() === 'active'}>
-        <JamCameraWidget />
+        {/* Phone only: the guide-vocal level, docked above the tab bar
+            next to the chat bubble. It is the one control you reach for
+            mid-song, and in the song's own transport row it was competing
+            with the timeline for width on a 390px screen -- with a slider
+            that expands straight over it.
+
+            Mounted here rather than inside the song stage because it is
+            position-fixed, and a fixed element under a backdrop-filtered
+            ancestor is positioned against that ancestor rather than the
+            viewport. This is the same level the chat bubble sits at, for
+            the same reason. Both copies read one store signal. */}
+        <Show when={jamIsSongRoom() && jamSong()?.stems.vocal !== undefined}>
+          <div class={panelStyles.guideDock}>
+            <JamGuideVocal
+              volume={jamGuideVolume}
+              onVolume={setJamGuideVolume}
+            />
+          </div>
+        </Show>
+        {/* The camera tray is a floating, draggable thing, and a phone
+            has nowhere to float it: the bottom-right corner is already
+            the chat bubble and the guide-vocal dock, and dragging a tray
+            around 390px of screen is not a gesture worth having. So on a
+            phone it starts hidden and there is a switch for it in the room
+            menu -- the feature is a tap away rather than in the way. */}
+        <Show when={showCameras()}>
+          <JamCameraWidget />
+        </Show>
         <JamChatWidget />
       </Show>
     </div>

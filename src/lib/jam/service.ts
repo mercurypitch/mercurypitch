@@ -131,19 +131,16 @@ export function createJamService(callbacks: JamCallbacks) {
   async function createRoom(displayName: string): Promise<void> {
     if (disposed) return
     localDisplayName = displayName
-    // Alongside the mic, not after it: both are prerequisites for a usable
-    // connection and neither depends on the other, so serialising them would
-    // just add the slower one's latency to entering a room.
-    const [servers] = await Promise.all([getIceServers(), startLocalStream()])
-    iceServers = servers
+    openLocalStream()
+    iceServers = await getIceServers()
     signaling.createRoom(displayName)
   }
 
   async function joinRoom(roomId: string, displayName: string): Promise<void> {
     if (disposed) return
     localDisplayName = displayName
-    const [servers] = await Promise.all([getIceServers(), startLocalStream()])
-    iceServers = servers
+    openLocalStream()
+    iceServers = await getIceServers()
     signaling.connect(roomId, displayName)
   }
 
@@ -228,11 +225,39 @@ export function createJamService(callbacks: JamCallbacks) {
     }
   }
 
-  async function startLocalStream(): Promise<void> {
-    if (localStream) return
-    // Request audio first — always required
+  /**
+   * The container the local tracks go into, with nothing in it.
+   *
+   * Entering a room used to call getUserMedia, so the permission prompt was
+   * the first thing a room said to you -- before you knew who was there or
+   * whether you wanted to sing. Worse, the answer was "yes and live": mute
+   * defaulted off, so a tablet on a desk started transmitting the room it
+   * was sitting in.
+   *
+   * So the room opens silent and asks for nothing. The mic is captured by
+   * `startLocalAudio` when somebody unmutes, which is a moment they chose
+   * and can attach a meaning to. An empty MediaStream keeps every consumer
+   * -- the local video chip, the pitch detector, addLocalTracks -- working
+   * against one object whether or not it has tracks yet.
+   */
+  function openLocalStream(): void {
+    localStream ??= new MediaStream()
+  }
+
+  /**
+   * Capture the microphone and give it to everyone already connected.
+   *
+   * Adding a track to a live RTCPeerConnection fires negotiationneeded, and
+   * the handler set up in setupPeerHandlers turns that into an offer -- the
+   * same path enabling the camera mid-call has always used. Returns whether
+   * there is now a microphone.
+   */
+  async function startLocalAudio(): Promise<boolean> {
+    openLocalStream()
+    if (localStream!.getAudioTracks().length > 0) return true
+    let captured: MediaStream
     try {
-      localStream = await navigator.mediaDevices.getUserMedia({
+      captured = await navigator.mediaDevices.getUserMedia({
         audio: AUDIO_CONSTRAINTS,
         video: false,
       })
@@ -242,27 +267,26 @@ export function createJamService(callbacks: JamCallbacks) {
       // like a permission the user simply has not granted yet.
       const blocked = (await micPermissionState()) === 'denied'
       callbacks.onError(micErrorMessage(err, blocked))
-      throw err
+      return false
     }
-    const rawAudio = localStream.getAudioTracks()[0]
-    if (rawAudio !== undefined) {
-      transmitAudio = await makeTransmitTrack(rawAudio)
+    const rawAudio = captured.getAudioTracks()[0]
+    if (rawAudio === undefined) return false
+    localStream!.addTrack(rawAudio)
+    transmitAudio = await makeTransmitTrack(rawAudio)
+    const outgoing = transmitAudio ?? rawAudio
+    for (const [, pc] of peerConnections) {
+      // Only if this connection has no audio yet. A second sender would
+      // have the room hearing two copies of one voice.
+      const existing = pc.getSenders().find((s) => s.track?.kind === 'audio')
+      if (existing === undefined) pc.addTrack(outgoing, localStream!)
+      else void existing.replaceTrack(outgoing)
     }
-    // Request video separately — failure is non-fatal
-    if (videoEnabled) {
-      try {
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: VIDEO_CONSTRAINTS,
-        })
-        const vt = videoStream.getVideoTracks()[0]
-        if (vt !== undefined) {
-          localVideo = vt
-          localStream.addTrack(vt)
-        }
-      } catch {
-        videoEnabled = false
-      }
-    }
+    return true
+  }
+
+  /** Whether the microphone has actually been captured yet. */
+  function hasLocalAudio(): boolean {
+    return (localStream?.getAudioTracks().length ?? 0) > 0
   }
 
   async function startLocalVideo(): Promise<void> {
@@ -883,6 +907,8 @@ export function createJamService(callbacks: JamCallbacks) {
     joinRoom,
     leaveRoom,
     setMuted,
+    startLocalAudio,
+    hasLocalAudio,
     setVideoEnabled,
     startLocalVideo,
     stopLocalVideo,

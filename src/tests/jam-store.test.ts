@@ -8,7 +8,7 @@
 // state machine only.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { clearJamExercise, jamExerciseBeat, jamExerciseLoop, jamExerciseMelody, jamExerciseNoteIndex, jamExercisePaused, jamExercisePlaying, jamExerciseTotalBeats, jamPitchHistory, jamPlaybackPause, jamPlaybackPlay, jamPlaybackSeek, jamPlaybackStop, selectJamExercise, setJamExerciseBeat, setJamExerciseLoop, setJamExercisePlaying, setJamPitchHistory, } from '@/stores/jam-store'
+import { clearJamExercise, jamExerciseBeat, jamExerciseLoop, jamExerciseMelody, jamExerciseNoteIndex, jamExercisePaused, jamExercisePlaying, jamExerciseTotalBeats, jamIsMuted, jamPitchHistory, jamPlaybackPause, jamPlaybackPlay, jamPlaybackSeek, jamPlaybackStop, selectJamExercise, setJamExerciseBeat, setJamExerciseLoop, setJamExercisePlaying, setJamPitchHistory, } from '@/stores/jam-store'
 import type { MelodyData } from '@/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────
@@ -291,5 +291,18 @@ describe('jamPitchHistory signal', () => {
     expect(jamPitchHistory()['bob']).toHaveLength(1)
     expect(jamPitchHistory()['alice']![0]!.noteName).toBe('A4')
     expect(jamPitchHistory()['bob']![0]!.noteName).toBe('C5')
+  })
+})
+
+// ── Arriving silent ───────────────────────────────────────────────────
+
+describe('microphone default', () => {
+  it('starts muted, so entering a room is not the same as broadcasting', () => {
+    // The default is the whole fix. Unmuted-by-default meant a tablet left
+    // on a desk transmitted the room it was sitting in, and the permission
+    // prompt was the first thing a room said to you -- before you knew who
+    // was there. The mic is not even captured until this goes false; see
+    // toggleJamMute.
+    expect(jamIsMuted()).toBe(true)
   })
 })

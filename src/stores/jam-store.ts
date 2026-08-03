@@ -19,9 +19,10 @@ import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
 import { SongFileInbox } from '@/lib/jam/jam-song-inbox'
 import type { JamSongParts } from '@/lib/jam/jam-song-parts'
 import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
-import { encodeStemsForShare, shareStemsWithPeers, } from '@/lib/jam/jam-song-share'
+import { encodeStemsForShare, forgetPackedStems, getPackedStems, shareStemsWithPeers, } from '@/lib/jam/jam-song-share'
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
+import { StemEncodeAbortedError } from '@/lib/jam/stem-encoder'
 import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -75,7 +76,28 @@ export const [jamRoomId, setJamRoomId] = createSignal<string | null>(null)
 export const [jamPeerId, setJamPeerId] = createSignal<string | null>(null)
 export const [jamIsHost, setJamIsHost] = createSignal(false)
 export const [jamPeers, setJamPeers] = createSignal<JamPeer[]>([])
-export const [jamIsMuted, setJamIsMuted] = createSignal(false)
+/**
+ * Muted until you say otherwise.
+ *
+ * You arrive in a room, not a broadcast. The mic is not even captured
+ * until this goes false -- see toggleJamMute.
+ */
+export const [jamIsMuted, setJamIsMuted] = createSignal(true)
+
+/**
+ * How loud the original singer is, in YOUR ears only.
+ *
+ * Deliberately not room state: how much guide you need to learn a song is
+ * about you, not about what the room is doing. Off by default, because the
+ * room is karaoke and somebody who knows the song does not want the
+ * original in their ear.
+ *
+ * Here rather than inside JamSongStage because the control has two homes
+ * -- the song's transport bar on a desktop, a dock above the tab bar on a
+ * phone -- and two components reading one signal is the only version of
+ * that with no state to keep in step.
+ */
+export const [jamGuideVolume, setJamGuideVolume] = createSignal(0)
 export const [jamError, setJamError] = createSignal<string | null>(null)
 export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'
@@ -666,29 +688,41 @@ export function reportSongHave(): void {
  * foreground is exactly the moment to re-answer, and it costs a few dozen
  * bytes.
  */
+/** The listener itself, so it can be handed back to removeEventListener. */
 let visibilityWatcher: (() => void) | null = null
 
 function watchVisibilityForSongHave(): void {
   if (visibilityWatcher !== null) return
-  const onVisible = () => {
+  visibilityWatcher = () => {
     if (document.visibilityState !== 'visible') return
     reportSongHave()
   }
-  document.addEventListener('visibilitychange', onVisible)
-  visibilityWatcher = () =>
-    document.removeEventListener('visibilitychange', onVisible)
+  document.addEventListener('visibilitychange', visibilityWatcher)
 }
 
 function unwatchVisibility(): void {
-  visibilityWatcher?.()
+  if (visibilityWatcher === null) return
+  document.removeEventListener('visibilitychange', visibilityWatcher)
   visibilityWatcher = null
 }
 
 let shareAbort: { aborted: boolean } | null = null
 
+/**
+ * A Stop that has been asked for but has not landed yet.
+ *
+ * The button needs something to say. Cancellation is not instant -- a
+ * decode in flight is one uninterruptible call and has to finish before
+ * anything can look at the flag -- so without this the host clicks Stop,
+ * watches both stems pack anyway, and concludes the button does nothing.
+ */
+export const [jamShareStopping, setJamShareStopping] = createSignal(false)
+
 /** Stop a share in progress -- the host changed their mind, or left. */
 export function cancelJamSongShare(): void {
-  if (shareAbort !== null) shareAbort.aborted = true
+  if (shareAbort === null) return
+  shareAbort.aborted = true
+  setJamShareStopping(true)
 }
 
 /**
@@ -727,36 +761,47 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
 
   const signal = { aborted: false }
   shareAbort = signal
+  setJamShareStopping(false)
   try {
-    setJamShareState({
-      phase: 'encoding',
-      ratio: 0,
-      message: 'Packing the song…',
-    })
-    const [instrumental, vocal] = await Promise.all([
-      getStemBlob(sessionId, 'instrumental'),
-      getStemBlob(sessionId, 'vocal'),
-    ])
-    if (instrumental === null) {
+    // Ask the cache before touching IndexedDB. The source stems are
+    // hundreds of megabytes of PCM, so reading them only to find the
+    // packed copy already exists is most of the cost of not caching.
+    let encoded = getPackedStems(sessionId)
+    if (encoded === null) {
       setJamShareState({
-        phase: 'error',
+        phase: 'encoding',
         ratio: 0,
-        message: 'The backing track is missing from this device.',
+        message: 'Packing the song…',
       })
-      return
-    }
-    const encoded = await encodeStemsForShare(
-      {
-        instrumental: await instrumental.arrayBuffer(),
-        ...(vocal === null ? {} : { vocal: await vocal.arrayBuffer() }),
-      },
-      (p) =>
+      const [instrumental, vocal] = await Promise.all([
+        getStemBlob(sessionId, 'instrumental'),
+        getStemBlob(sessionId, 'vocal'),
+      ])
+      if (instrumental === null) {
         setJamShareState({
-          phase: 'encoding',
-          ratio: p.ratio,
-          message: `Packing the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'} — ${Math.round(p.ratio * 100)}%`,
-        }),
-    )
+          phase: 'error',
+          ratio: 0,
+          message: 'The backing track is missing from this device.',
+        })
+        return
+      }
+      encoded = await encodeStemsForShare(
+        {
+          instrumental: await instrumental.arrayBuffer(),
+          ...(vocal === null ? {} : { vocal: await vocal.arrayBuffer() }),
+        },
+        {
+          key: sessionId,
+          signal,
+          onProgress: (p) =>
+            setJamShareState({
+              phase: 'encoding',
+              ratio: p.ratio,
+              message: `Packing the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'} — ${Math.round(p.ratio * 100)}%`,
+            }),
+        },
+      )
+    }
     if (signal.aborted) {
       setJamShareState({ phase: 'idle', ratio: 0, message: '' })
       return
@@ -805,14 +850,21 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
         : `Sent to ${sent.length}. ${skipped.length} could not receive it: ${skipped[0]?.reason ?? ''}`,
     )
   } catch (err) {
-    setJamShareState({
-      phase: 'error',
-      ratio: 0,
-      message:
-        err instanceof Error ? err.message : 'The song could not be sent.',
-    })
+    // A stop is not a failure. Reporting it as one leaves "That did not
+    // work" on screen for something the host asked for on purpose.
+    if (err instanceof StemEncodeAbortedError) {
+      setJamShareState({ phase: 'idle', ratio: 0, message: '' })
+    } else {
+      setJamShareState({
+        phase: 'error',
+        ratio: 0,
+        message:
+          err instanceof Error ? err.message : 'The song could not be sent.',
+      })
+    }
   } finally {
     shareAbort = null
+    setJamShareStopping(false)
   }
 }
 
@@ -872,6 +924,8 @@ export function clearJamSong(): void {
     resetJamLineScores()
   })
   revokeReceivedStems()
+  // Several megabytes of packed audio for a song the room no longer has.
+  forgetPackedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   jamService?.sendSong(null)
 }
@@ -1577,8 +1631,31 @@ export function leaveJamRoom(): void {
   cleanupJam()
 }
 
-export function toggleJamMute(): void {
+/**
+ * Turn the microphone on or off.
+ *
+ * Asynchronous now, because the first unmute is where the microphone is
+ * actually captured -- the room is entered silent and asks for nothing.
+ * That makes the permission prompt an answer to something the person just
+ * did, rather than the room's opening question, and it means a device left
+ * on a desk cannot be transmitting a room nobody meant to share.
+ *
+ * A refusal leaves you muted. Setting the flag first and rolling it back
+ * would show an unmuted mic for as long as the prompt is on screen, which
+ * is the one moment it must not lie.
+ */
+export async function toggleJamMute(): Promise<void> {
   const muted = !jamIsMuted()
+  if (!muted && jamService?.hasLocalAudio() === false) {
+    const got = await jamService.startLocalAudio()
+    if (!got) return
+    // The stream object is the same one; its track list is not. Re-publish
+    // so the local video chip and anything else reading it sees the mic,
+    // and start listening to ourselves now that there is something to hear.
+    setJamLocalStream(null)
+    setJamLocalStream(jamService.getLocalStream())
+    startJamPitchDetection()
+  }
   setJamIsMuted(muted)
   jamService?.setMuted(muted)
 }
@@ -2135,6 +2212,7 @@ function cleanupJam(): void {
   // of the document -- leaving a room should not keep somebody else's
   // song in memory until the tab closes.
   cancelJamSongShare()
+  forgetPackedStems()
   setJamAssignBrush(null)
   songInbox.clear()
   revokeReceivedStems()
@@ -2154,6 +2232,10 @@ function cleanupJam(): void {
   setJamRemoteStreams({})
   setJamLocalStream(null)
   setJamChatMessages([])
+  // Back to silent. The next room captures its own microphone on its own
+  // first unmute, so carrying "unmuted" across would show a live mic over
+  // a room that has none.
+  setJamIsMuted(true)
   setJamVideoEnabled(false)
   setJamPitchHistory({})
   setJamLocalPitch(null)
