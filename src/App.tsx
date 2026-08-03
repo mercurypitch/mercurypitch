@@ -83,6 +83,7 @@ import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import { AuthModal } from '@/components/account/AuthModal'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
+import { LocalProgressNotice } from '@/components/account/LocalProgressNotice'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
 import { SessionCelebration } from '@/components/SessionCelebration'
@@ -3609,6 +3610,10 @@ const AppShell: Component<AppProps> = (props) => {
         </Show>
 
         <AuthModal />
+        {/* Follows a sign-in, so it lives beside the dialog that starts
+            one — and outside it, because Google's is a full-page redirect
+            and the dialog is gone by the time the account is held. */}
+        <LocalProgressNotice />
 
         <Notifications />
         <VerifyEmailBanner />
