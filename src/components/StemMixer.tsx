@@ -16,6 +16,7 @@ import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/p
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
+import { useKaraokeVoiceCaptureController } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -452,6 +453,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }),
   )
 
+  // Karaoke sessions are keyed-remounted per song, so these two identifiers
+  // intentionally snapshot the staged song for the lifetime of this mixer.
+  /* eslint-disable solid/reactivity */
+  const karaokeVoiceCapture = useKaraokeVoiceCaptureController({
+    sessionId: props.sessionId,
+    songTitle: props.songTitle,
+    getStream: mic.getMicStream,
+    getAudioContext: () => audioCtxForMic.getAudioCtx() ?? null,
+  })
+  /* eslint-enable solid/reactivity */
+
   // Mutable holders — backfilled after canvas/lyrics controllers are created.
   // Audio controller accesses these dynamically (not at construction time), so
   // the indirection through mutable refs resolves the circular dependency.
@@ -511,6 +523,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackEnded: () => handleSongEnded(),
     onValidMicPitch: () => props.onValidMicPitch?.(),
     onScoreCreated: (score) => props.onScoreCreated?.(score),
+    onPlaybackStarted: karaokeVoiceCapture.startPlayback,
+    onPlaybackPaused: karaokeVoiceCapture.pausePlayback,
+    onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
+    onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
+    onMicFrame: karaokeVoiceCapture.pushMicFrame,
     showNotification,
   })
 
@@ -525,6 +542,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       'karaoke-take',
       () => mic.micActive() && audio.playing(),
     ),
+  )
+
+  // A singer may enable the scoring mic after playback has already started.
+  // Join that run at the moment the mic becomes live; disabling it pauses the
+  // temporary replay without persisting anything.
+  createEffect(
+    on(mic.micActive, (active) => {
+      if (active && audio.playing()) karaokeVoiceCapture.startPlayback()
+      else if (!active) karaokeVoiceCapture.pausePlayback()
+    }),
   )
 
   // Mic feedback: "can't hear you" / "too quiet" while a song plays.
@@ -566,6 +593,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // True between a natural song end and the score modal being dismissed, so we
   // advance the playlist only after the user has seen their score.
   let pendingAdvance = false
+  let pendingLibraryAdvanceSessionId: string | null = null
+  // Phone playlists advance immediately and show the result on the next-song
+  // overlay; suppress the old song's late score modal after handleStop runs.
+  let suppressZenScore = false
   let playStarted = false
 
   // `preset` is fixed for the lifetime of a StemMixer instance (the studio
@@ -645,10 +676,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // it closes.
       pendingAdvance = true
     } else {
-      // The zen stage mounts no score modal, so score (comparison data is
-      // still intact — handleStop() clears it after this callback) and
-      // advance right away; the result surfaces on the next song's overlay
-      // and the summary instead.
+      // Phone playlists intentionally skip the old song's score modal: score
+      // while comparison data is still intact, advance right away, and show
+      // the result on the next song's overlay and in the summary instead.
+      suppressZenScore = true
       playlist.reportSongScore(
         action === 'advance-with-score' ? mic.computeScore() : null,
       )
@@ -656,13 +687,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
-  // Safety net: an advance must never wait on a score modal that is not
-  // mounted. If the zen stage is up (it renders no StemMixerScoreModal) while
-  // the end-of-song score signal is showing — e.g. zen was toggled while the
-  // modal was open — consume it here exactly like the modal's close would.
+  // Phone playlists advance immediately and surface scores on their own
+  // next-song/summary chrome, so suppress the old song's late modal. Manual
+  // stops and non-playlist natural ends still get the shared keep prompt.
   createEffect(() => {
-    if (!zenStage() || !mic.showScore()) return
+    if (
+      !zenStage() ||
+      !mic.showScore() ||
+      (!suppressZenScore && !pendingAdvance)
+    )
+      return
     mic.setShowScore(false)
+    karaokeVoiceCapture.dismiss()
+    suppressZenScore = false
     if (playlist.isPlaylistActive() && pendingAdvance) {
       pendingAdvance = false
       playlist.reportSongScore(mic.score())
@@ -764,7 +801,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       orderedLibraryIds(),
       props.sessionId,
     )
-    if (target !== null) props.onPickSession?.(target)
+    if (target === null) return
+    if (mic.micActive() && mic.comparisonData().length > 0) {
+      pendingLibraryAdvanceSessionId = target
+      return
+    }
+    props.onPickSession?.(target)
   }
 
   // Start playback once the countdown flips the phase to 'playing'. Wait for a
@@ -2166,83 +2208,120 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
+  const handleKeepKaraokeVoiceTake = (): void => {
+    void karaokeVoiceCapture.keep().then((kept) => {
+      if (kept) {
+        showNotification(
+          'Voice take kept in Hear Yourself on this device.',
+          'success',
+        )
+      }
+    })
+  }
+
+  const handleScoreClose = (): void => {
+    mic.setShowScore(false)
+    karaokeVoiceCapture.dismiss()
+    if (playlist.isPlaylistActive() && pendingAdvance) {
+      pendingAdvance = false
+      playlist.reportSongScore(mic.score())
+      playlist.advance()
+    }
+    const nextLibrarySessionId = pendingLibraryAdvanceSessionId
+    pendingLibraryAdvanceSessionId = null
+    if (nextLibrarySessionId !== null) {
+      props.onPickSession?.(nextLibrarySessionId)
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <Show
       when={!zenStage()}
       fallback={
-        <KaraokeMobileStage
-          songTitle={props.songTitle}
-          onBack={handleZenBack}
-          playing={audio.playing}
-          loading={audio.loading}
-          loadError={audio.loadError}
-          // The same byte-based progress the desktop card shows. On a phone
-          // this stage replaces that card entirely, so without these the whole
-          // download is one static line of text.
-          loadProgress={audio.loadProgress}
-          loadPhase={audio.loadPhase}
-          loadedBytes={audio.loadedBytes}
-          totalBytes={audio.totalBytes}
-          // The same retry the desktop card has carried all along. On a
-          // phone this stage IS the mixer, so without it a failed load had
-          // no door but the browser's reload button.
-          onRetryLoad={() => {
-            void audio.loadStems()
-          }}
-          elapsed={audio.elapsed}
-          lyricsElapsed={audio.audibleElapsed}
-          duration={audio.duration}
-          onPlay={audio.handlePlay}
-          onPause={audio.handlePause}
-          onSeekToStart={() => audio.seekTo(0)}
-          seekTo={audio.seekTo}
-          hasPrevItem={hasPrevItem}
-          hasNextItem={hasNextItem}
-          onPrevItem={goPrevItem}
-          onNextItem={goNextItem}
-          autoplayEnabled={autoplayEnabled}
-          onToggleAutoplay={() => setAutoplayEnabled((v) => !v)}
-          vocal={vocal}
-          onToggleVocal={() => toggleMute('Vocal')}
-          onVocalVolume={(v) => setTrackVolume('Vocal', v)}
-          parsedLyrics={stableParsedLyrics}
-          currentLineIdx={currentLineIdx}
-          lyricsLoading={lyricsLoading}
-          computeActiveWord={computeActiveWord}
-          onLineClick={handleLyricLineClick}
-          playlistOverlayActive={isCurrentPlaylistSong}
-          onPlaylistStart={handlePlaylistStart}
-          onPlaylistSkip={() => {
-            audio.handlePause()
-            playlist.advance()
-          }}
-          showStageSettings={props.showStageSettings !== false}
-          onPickSession={props.onPickSession}
-          onUploadLyrics={handleLyricsUpload}
-          lyricsSuggestion={() => props.songTitle}
-          lrclibSearchUrl={lrclibSearchUrl}
-          songMatches={songMatches}
-          songPickerQuery={songPickerQuery}
-          onSongPickerQuery={setSongPickerQuery}
-          onSongPickerRefine={() => void handleSongPickerRefine()}
-          onSongPick={(m) => void handleSongPick(m)}
-          alignedWords={() => alignmentResult().alignedWords}
-          onEnsureNotes={ensureZenNotes}
-          notesAnalyzing={pitchAnalysis.isAnalyzing}
-          notesProgress={pitchAnalysis.progress}
-          micActive={mic.micActive}
-          onToggleMic={toggleZenMic}
-          // Beside the mic, because the mic is what makes it necessary.
-          // The desktop mixer header carried this slider first and it was
-          // unreachable from the one surface that needs it — the phone shows
-          // only the zen stage.
-          musicLevel={audio.musicLevel}
-          onMusicLevel={audio.setMusicLevel}
-          musicLevelRange={audio.musicLevelRange}
-          micPitch={mic.micPitch}
-          ribbonNotes={pitchAnalysis.editableNotes}
-        />
+        <>
+          <KaraokeMobileStage
+            songTitle={props.songTitle}
+            onBack={handleZenBack}
+            playing={audio.playing}
+            loading={audio.loading}
+            loadError={audio.loadError}
+            // The same byte-based progress the desktop card shows. On a phone
+            // this stage replaces that card entirely, so without these the whole
+            // download is one static line of text.
+            loadProgress={audio.loadProgress}
+            loadPhase={audio.loadPhase}
+            loadedBytes={audio.loadedBytes}
+            totalBytes={audio.totalBytes}
+            // The same retry the desktop card has carried all along. On a
+            // phone this stage IS the mixer, so without it a failed load had
+            // no door but the browser's reload button.
+            onRetryLoad={() => {
+              void audio.loadStems()
+            }}
+            elapsed={audio.elapsed}
+            lyricsElapsed={audio.audibleElapsed}
+            duration={audio.duration}
+            onPlay={audio.handlePlay}
+            onPause={audio.handlePause}
+            onSeekToStart={() => audio.seekTo(0)}
+            seekTo={audio.seekTo}
+            hasPrevItem={hasPrevItem}
+            hasNextItem={hasNextItem}
+            onPrevItem={goPrevItem}
+            onNextItem={goNextItem}
+            autoplayEnabled={autoplayEnabled}
+            onToggleAutoplay={() => setAutoplayEnabled((v) => !v)}
+            vocal={vocal}
+            onToggleVocal={() => toggleMute('Vocal')}
+            onVocalVolume={(v) => setTrackVolume('Vocal', v)}
+            parsedLyrics={stableParsedLyrics}
+            currentLineIdx={currentLineIdx}
+            lyricsLoading={lyricsLoading}
+            computeActiveWord={computeActiveWord}
+            onLineClick={handleLyricLineClick}
+            playlistOverlayActive={isCurrentPlaylistSong}
+            onPlaylistStart={handlePlaylistStart}
+            onPlaylistSkip={() => {
+              audio.handlePause()
+              playlist.advance()
+            }}
+            showStageSettings={props.showStageSettings !== false}
+            onPickSession={props.onPickSession}
+            onUploadLyrics={handleLyricsUpload}
+            lyricsSuggestion={() => props.songTitle}
+            lrclibSearchUrl={lrclibSearchUrl}
+            songMatches={songMatches}
+            songPickerQuery={songPickerQuery}
+            onSongPickerQuery={setSongPickerQuery}
+            onSongPickerRefine={() => void handleSongPickerRefine()}
+            onSongPick={(m) => void handleSongPick(m)}
+            alignedWords={() => alignmentResult().alignedWords}
+            onEnsureNotes={ensureZenNotes}
+            notesAnalyzing={pitchAnalysis.isAnalyzing}
+            notesProgress={pitchAnalysis.progress}
+            micActive={mic.micActive}
+            onToggleMic={toggleZenMic}
+            // Beside the mic, because the mic is what makes it necessary.
+            // The desktop mixer header carried this slider first and it was
+            // unreachable from the one surface that needs it — the phone shows
+            // only the zen stage.
+            musicLevel={audio.musicLevel}
+            onMusicLevel={audio.setMusicLevel}
+            musicLevelRange={audio.musicLevelRange}
+            micPitch={mic.micPitch}
+            ribbonNotes={pitchAnalysis.editableNotes}
+          />
+          <StemMixerScoreModal
+            showScore={mic.showScore}
+            score={mic.score}
+            onViewed={(score) => props.onScorecardViewed?.(score)}
+            voiceTakeState={karaokeVoiceCapture.state()}
+            voiceTakeMessage={karaokeVoiceCapture.message()}
+            onKeepVoiceTake={handleKeepKaraokeVoiceTake}
+            onClose={handleScoreClose}
+          />
+        </>
       }
     >
       <div
@@ -2817,14 +2896,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           showScore={mic.showScore}
           score={mic.score}
           onViewed={(score) => props.onScorecardViewed?.(score)}
-          onClose={() => {
-            mic.setShowScore(false)
-            if (playlist.isPlaylistActive() && pendingAdvance) {
-              pendingAdvance = false
-              playlist.reportSongScore(mic.score())
-              playlist.advance()
-            }
-          }}
+          voiceTakeState={karaokeVoiceCapture.state()}
+          voiceTakeMessage={karaokeVoiceCapture.message()}
+          onKeepVoiceTake={handleKeepKaraokeVoiceTake}
+          onClose={handleScoreClose}
         />
 
         {/* Pitch Studio elevates the existing canvas instead of mounting a
@@ -7234,6 +7309,8 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   align-items: center;
   width: min(560px, 94%);
+  max-height: calc(100% - 2rem);
+  overflow: auto;
   padding: 2.25rem 2rem 2rem;
   border-radius: 20px;
   background: linear-gradient(
@@ -7362,21 +7439,67 @@ export const StemMixerStyles: string = `
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.sm-mic-score-take {
+  width: 100%;
+  margin: -0.35rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(110, 231, 220, 0.22);
+  border-radius: 0.8rem;
+  background: linear-gradient(135deg, rgba(21, 88, 94, 0.18), rgba(68, 46, 112, 0.16));
+  text-align: left;
+}
+.sm-mic-score-take-kicker {
+  margin-bottom: 0.25rem;
+  color: #7ee7dd;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sm-mic-score-take p {
+  margin: 0;
+  color: var(--fg-secondary, #a8b3bf);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.sm-mic-score-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+}
+.sm-mic-score-keep-btn,
 .sm-mic-score-ok-btn {
-  padding: 0.7rem 2.75rem;
-  background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
-  color: #fff;
-  border: none;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.4rem;
   border-radius: 999px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity 0.15s, transform 0.15s, border-color 0.15s;
 }
+.sm-mic-score-keep-btn {
+  background: linear-gradient(135deg, var(--accent, #58a6ff), var(--purple, #bc8cff));
+  color: #fff;
+  border: none;
+}
+.sm-mic-score-ok-btn {
+  background: transparent;
+  color: var(--fg-secondary, #a8b3bf);
+  border: 1px solid var(--border, #30363d);
+}
+.sm-mic-score-keep-btn:hover:not(:disabled),
 .sm-mic-score-ok-btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+.sm-mic-score-ok-btn:hover {
+  border-color: var(--fg-tertiary, #8b949e);
+}
+.sm-mic-score-keep-btn:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 /* Fixed 2-Column Layout */
