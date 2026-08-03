@@ -89,6 +89,14 @@
 .goalRow {
   margin-top: 14px;
 }
+
+/* The rule and the "what is this" sit on one line under the bar. */
+.goalTextRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
 .goalBar {
   height: 8px;
   border-radius: 6px;

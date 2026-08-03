@@ -124,6 +124,25 @@ flag every exit has to remember. Teardown must also settle what it cancels:
 `worker.terminate()` leaves pending promises hanging forever.
 **See:** `runWhisperChunkPlan` in `src/lib/useWhisperTranscription.ts`
 
+### Do not gate account UI on a fetch — the token answers synchronously
+**Symptom:** for the first second after load the app behaves as though nobody
+is signed in; a signed-in singer gets offered "Create a free account", and the
+button leads somewhere with nothing to do.
+**Cause:** the component waited on a profile/DB round trip to decide whether an
+account exists. It does not need to: the JWT is already in `localStorage` and
+decoding it is local work. `hasUpgradedAccount()` in `auth-service.ts` answers
+on the very first render, with no network.
+**Rule:** use `accountHeld()` (`auth-service.ts`) inside components. It reads
+`authVersion()` first, so it is both synchronous *and* reactive — right on the
+first paint, and self-correcting the moment someone signs in or out. Reserve
+async profile loads for profile CONTENT (display name, avatar, stats), never
+for the yes/no of "are they signed in".
+**Related:** put the check at the shared seam, not at each call site.
+`shouldShowNudge()` now refuses every account nudge when an account exists —
+the one call site that forgets is exactly the one that ships.
+**See:** `accountHeld` in `src/db/services/auth-service.ts`,
+`shouldShowNudge` in `src/features/onboarding/account-nudge.ts`
+
 ### An 'i' or '?' popover needs a portal and three closers
 **Symptom:** the info panel stays open after clicking elsewhere and after
 navigating to another tab, where it hangs over the new screen; the first card

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NudgeState } from '@/features/onboarding/account-nudge'
 import { isNudgeDue, NUDGE_QUIET_DAYS, } from '@/features/onboarding/account-nudge'
 
@@ -44,5 +44,44 @@ describe('isNudgeDue', () => {
     // elapsed" — the elapsed time is negative, which is < the window.
     const dismissed = state({ dismissedAt: NOW })
     expect(isNudgeDue(dismissed, NOW - 10 * DAY)).toBe(false)
+  })
+})
+
+// ── The account gate ─────────────────────────────────────────
+//
+// The streak card offered "Create a free account" to a singer who was
+// already signed in, and the button took them to a settings page with
+// nothing to do. The check belongs here, at the one seam every nudge
+// goes through, rather than at each call site — the call site that
+// forgets is exactly the one that ships.
+
+describe('shouldShowNudge respects an account that already exists', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.resetModules()
+  })
+
+  const withAccount = async (held: boolean) => {
+    vi.doMock('@/db/services/auth-service', () => ({
+      accountHeld: () => held,
+    }))
+    return await import('@/features/onboarding/account-nudge')
+  }
+
+  it('stays silent for someone who already holds an account', async () => {
+    const { shouldShowNudge } = await withAccount(true)
+    expect(shouldShowNudge('streak-day-2')).toBe(false)
+  })
+
+  it('still asks someone who does not', async () => {
+    const { shouldShowNudge } = await withAccount(false)
+    expect(shouldShowNudge('streak-day-2')).toBe(true)
+  })
+
+  it('silences every nudge, not just the streak one', async () => {
+    const { shouldShowNudge } = await withAccount(true)
+    for (const id of ['streak-day-2', 'onboarding-twin'] as const) {
+      expect(shouldShowNudge(id)).toBe(false)
+    }
   })
 })

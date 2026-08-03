@@ -18,7 +18,7 @@
 import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
-import { getAuthToken, getUserId, resetUserId, setAuthToken, } from './user-service'
+import { authVersion, getAuthToken, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
 // so account-aware UI (e.g. the verify-email banner) can re-check /me
@@ -91,6 +91,24 @@ export function hasUpgradedAccount(): boolean {
   if (!hasValidToken()) return false
   const payload = decodeToken(getAuthToken() ?? '')
   return payload != null && payload.provider !== 'anonymous'
+}
+
+/**
+ * hasUpgradedAccount, but reactive — use this one inside components.
+ *
+ * The answer is available synchronously on the very first render: the
+ * token is already in localStorage and decoding it is local work. Gating
+ * account UI on a profile FETCH instead is what made the app look like
+ * it did not know you were signed in for the first second after load,
+ * and it is why a signed-in singer was being offered an account.
+ *
+ * Reading authVersion() subscribes the caller, so the same UI corrects
+ * itself the moment someone signs in or out — without polling and
+ * without a round trip.
+ */
+export function accountHeld(): boolean {
+  authVersion()
+  return hasUpgradedAccount()
 }
 
 // ── HTTP helpers ────────────────────────────────────────────────

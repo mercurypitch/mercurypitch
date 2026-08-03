@@ -13,6 +13,8 @@
 // The predicate is pure so the quiet period is testable without
 // mocking a clock or a Storage.
 
+import { accountHeld } from '@/db/services/auth-service'
+
 export const NUDGE_QUIET_DAYS = 7
 const QUIET_MS = NUDGE_QUIET_DAYS * 24 * 60 * 60 * 1000
 
@@ -74,8 +76,20 @@ export function nudgeState(id: NudgeId): NudgeState {
   return readAll()[id] ?? { dismissedAt: null, satisfied: false }
 }
 
-/** Whether to show a given nudge right now. */
+/**
+ * Whether to show a given nudge right now.
+ *
+ * An account that already exists silences every ask — checked here
+ * rather than at each call site, because the one that forgot is exactly
+ * the one that shipped: the streak card offered "Create a free account"
+ * to a signed-in singer, and the button took them to a settings page
+ * that had nothing to do.
+ *
+ * accountHeld() is synchronous and reactive, so this is right on the
+ * first render and corrects itself on sign-in.
+ */
 export function shouldShowNudge(id: NudgeId, now = Date.now()): boolean {
+  if (accountHeld()) return false
   return isNudgeDue(nudgeState(id), now)
 }
 
