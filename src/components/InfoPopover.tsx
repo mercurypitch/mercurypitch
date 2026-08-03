@@ -23,6 +23,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { Info } from './icons'
 import styles from './InfoPopover.module.css'
 
 interface InfoPopoverProps {
@@ -30,8 +31,6 @@ interface InfoPopoverProps {
   children: JSX.Element
   /** Describes the thing being explained, for screen readers. */
   label: string
-  /** Glyph on the trigger. Default 'i'. */
-  glyph?: string
   /** Extra class for the trigger, for per-surface placement. */
   class?: string
   /**
@@ -151,7 +150,7 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
           setOpen((v) => !v)
         }}
       >
-        {props.glyph ?? 'i'}
+        <Info />
       </button>
       <Show when={open()}>
         <Portal>

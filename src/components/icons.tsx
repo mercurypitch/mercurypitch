@@ -1335,3 +1335,26 @@ export const PowerSymbol: Component<{ size?: number }> = (p) => (
     <line x1="12" y1="2" x2="12" y2="12" />
   </svg>
 )
+
+// The 'i' of an info affordance, drawn rather than typed. A text "i" is
+// centred by its line box, not its ink, so it sits off-centre in a round
+// button — and it inherits the UI font's italic if anything sets one. The
+// ink here spans y 4-20 around x 12, so it is centred by construction.
+//
+// aria-hidden, unlike its neighbours above: this glyph only ever appears
+// inside a button that already carries an aria-label saying what it opens.
+export const Info: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 12}
+    height={p.size ?? 12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="4" r="0.5" fill="currentColor" />
+    <path d="M12 10v10" />
+  </svg>
+)

@@ -11,13 +11,9 @@
   border: 1px solid var(--border-color, var(--border));
   background: var(--bg-primary);
   color: var(--text-muted);
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
+  /* The glyph is the <Info /> SVG, not a typed "i" — see icons.tsx for why.
+     Nothing here sets a font, so nothing can slant or mis-centre it. */
   cursor: pointer;
-  user-select: none;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
