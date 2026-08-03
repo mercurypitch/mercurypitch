@@ -42,9 +42,11 @@
   margin: 0 0 12px;
 }
 
-/* Session + progress span the full width. */
-.sessionCard,
 /* ── Streak card ─────────────────────────────────────────── */
+/* `.sessionCard` used to lead this list, left over from when the session
+   and progress cards spanned the grid; both classes went away with the
+   fold into the streak card, and the orphan selector was quietly handing
+   this rule's flex layout to a name nothing renders. */
 .streakTop {
   display: flex;
   align-items: center;
