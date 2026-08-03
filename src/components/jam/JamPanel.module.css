@@ -536,11 +536,29 @@
   cursor: pointer;
 }
 
+/* The room menu holds one control that only exists on a phone. Hidden
+   everywhere else, where it lives in the transport row instead. */
+.phoneOnlyAction {
+  display: none;
+}
+
 /* ── Phone layout ─────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
   /* The glass slider needs a pointer to be worth its width. */
   .glassControl {
+    display: none;
+  }
+
+  /* Fewer rows is the whole game on a 390px screen. The live-pitch
+     toggle moves into the room menu, where it sits with the other
+     things that fold away, instead of claiming a line of its own in a
+     transport row that wraps. */
+  .phoneOnlyAction {
+    display: flex;
+  }
+
+  .viewToggles {
     display: none;
   }
 

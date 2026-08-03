@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, For, Match, Show, Switch } from 'solid-js'
-import { cancelJamSongShare, dismissJamShareNotice, jamIsHost, jamShareState, jamTransferMinimised, setJamTransferMinimised, } from '@/stores/jam-store'
+import { cancelJamSongShare, dismissJamShareNotice, jamIsHost, jamPeersMissingSong, jamShareState, jamTransferMinimised, setJamTransferMinimised, shareJamSongWithRoom, } from '@/stores/jam-store'
 import styles from './JamTransferDialog.module.css'
 
 /** A ring that spins. Not an emoji, and not a GIF: one element, one rule. */
@@ -168,6 +168,20 @@ export const JamTransferDialog: Component = () => {
               </Show>
             </Show>
             <Show when={!busy()}>
+              {/* Reachable where the outcome is read. A send that finished
+                  is not proof anybody received one -- a phone asleep
+                  through the transfer says nothing -- so the host gets the
+                  retry in the same place they are told it is done, rather
+                  than having to find the header chip. */}
+              <Show when={jamIsHost() && jamPeersMissingSong().length > 0}>
+                <button
+                  type="button"
+                  class={styles.ghost}
+                  onClick={() => void shareJamSongWithRoom(true)}
+                >
+                  Send again to {jamPeersMissingSong().length}
+                </button>
+              </Show>
               {/* Closing a finished transfer puts it away for good --
                   minimising it would leave a "Song ready" chip in the
                   header with nothing left to say. */}

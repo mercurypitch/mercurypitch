@@ -426,17 +426,21 @@ export const JamSongStage: Component = () => {
                 Knowing where you are in the song is not a privilege, but a
                 room with two people dragging the playhead is a room nobody
                 can sing in. */}
-            <JamSongScrubber
-              positionSec={jamSongPositionSec}
-              durationSec={() =>
-                audioRef?.duration !== undefined &&
-                Number.isFinite(audioRef.duration)
-                  ? audioRef.duration
-                  : song().durationSec
-              }
-              canSeek={jamIsHost()}
-              onSeek={(to) => seekTo(to)}
-            />
+            {/* Wrapped so the phone layout can give it a whole row: it is
+                the one control in this bar that must not be squeezed. */}
+            <div class={styles.scrub}>
+              <JamSongScrubber
+                positionSec={jamSongPositionSec}
+                durationSec={() =>
+                  audioRef?.duration !== undefined &&
+                  Number.isFinite(audioRef.duration)
+                    ? audioRef.duration
+                    : song().durationSec
+                }
+                canSeek={jamIsHost()}
+                onSeek={(to) => seekTo(to)}
+              />
+            </div>
 
             <JamLyricVersionPicker />
 

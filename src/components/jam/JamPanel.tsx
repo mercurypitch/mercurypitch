@@ -802,6 +802,37 @@ export const JamPanel: Component = () => {
                 </button>
 
                 <div class={panelStyles.roomMenuItems}>
+                  {/* Live pitch monitor — phone only.
+                      On a desktop it sits with the other view controls in
+                      the transport row, but on a phone that row wraps and
+                      this one button claimed a whole line of a 390px
+                      screen. It belongs with the other things that fold
+                      into the menu. */}
+                  <button
+                    class={`${jamStyles.iconBtn} ${showLivePitch() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral} ${panelStyles.phoneOnlyAction}`}
+                    onClick={() => setShowLivePitch((v) => !v)}
+                    title={
+                      showLivePitch()
+                        ? 'Hide live pitch monitor'
+                        : 'Show live pitch monitor'
+                    }
+                  >
+                    <svg
+                      viewBox="0 0 16 16"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    >
+                      <path
+                        d="M2 8h2l2-4 2 8 2-5 2 3h2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+
                   {/* Sidebar toggle */}
                   <button
                     class={`${jamStyles.iconBtn} ${sidebarOpen() ? jamStyles.iconBtnOn : jamStyles.iconBtnNeutral}`}
@@ -997,7 +1028,11 @@ export const JamPanel: Component = () => {
                 {/* View toggles. Grouped beside the BPM control rather than
                     stranded at the far left: these shape what the room LOOKS
                     like, which is the same kind of decision as the tempo, and
-                    a lone button across the bar reads as unrelated. */}
+                    a lone button across the bar reads as unrelated.
+
+                    Hidden on a phone, where the same control lives in the
+                    room menu -- the bar wraps there and one button was
+                    taking a whole row. */}
                 <div class={panelStyles.viewToggles}>
                   <button
                     class={panelStyles.pitchToggleBtn}
