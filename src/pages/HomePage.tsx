@@ -169,15 +169,39 @@ const HomePage: Component = () => {
             </div>
           </div>
 
-          <div class={styles.streakMeta}>
-            <span>Best: {streak()?.longestStreak ?? 0} days</span>
-            <Show when={(streak()?.freezes ?? 0) > 0}>
+          {/* This week's numbers live here rather than in a card of
+              their own below. The streak card was half empty, that one
+              held three figures, and both printed the longest streak —
+              so merging reclaims a whole card's height AND drops a
+              duplicate. */}
+          <div class={styles.weekStats}>
+            <div class={styles.stat}>
+              <span class={styles.statValue}>{weekStats().runs}</span>
+              <span class={styles.statLabel}>drills this week</span>
+            </div>
+            <div class={styles.stat}>
+              <span class={styles.statValue}>
+                {weekStats().avgScore ?? '—'}
+                {weekStats().avgScore !== null ? '%' : ''}
+              </span>
+              <span class={styles.statLabel}>avg score</span>
+            </div>
+            <div class={styles.stat}>
+              <span class={styles.statValue}>
+                {streak()?.longestStreak ?? 0}
+              </span>
+              <span class={styles.statLabel}>best streak</span>
+            </div>
+          </div>
+
+          <Show when={(streak()?.freezes ?? 0) > 0}>
+            <div class={styles.streakMeta}>
               <span>
                 {streak()!.freezes} freeze
                 {streak()!.freezes === 1 ? '' : 's'} banked
               </span>
-            </Show>
-          </div>
+            </div>
+          </Show>
 
           <Show when={streak()?.canRepair}>
             <button class={styles.repairBtn} onClick={() => void onRepair()}>
@@ -359,30 +383,6 @@ const HomePage: Component = () => {
               </div>
             </Show>
           </Show>
-        </section>
-
-        {/* ── Progress strip ─────────────────────────────────── */}
-        <section class={`${styles.card} ${styles.progressCard} home-progress`}>
-          <h2 class={styles.cardTitle}>This week</h2>
-          <div class={styles.stats}>
-            <div class={styles.stat}>
-              <span class={styles.statValue}>{weekStats().runs}</span>
-              <span class={styles.statLabel}>drills</span>
-            </div>
-            <div class={styles.stat}>
-              <span class={styles.statValue}>
-                {weekStats().avgScore ?? '—'}
-                {weekStats().avgScore !== null ? '%' : ''}
-              </span>
-              <span class={styles.statLabel}>avg score</span>
-            </div>
-            <div class={styles.stat}>
-              <span class={styles.statValue}>
-                {streak()?.longestStreak ?? 0}
-              </span>
-              <span class={styles.statLabel}>best streak</span>
-            </div>
-          </div>
         </section>
       </div>
 

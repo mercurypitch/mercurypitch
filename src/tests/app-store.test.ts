@@ -5,18 +5,26 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { appStore, getBandRating, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
 import { deleteAllUvrSessions, getUvrSession, importUvrSession, updateUvrSessionOutputs, } from '@/stores/app-store'
+import { SENSITIVITY_PRESETS } from '@/stores/settings-store'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
   })
 
-  it('loads default settings when no localStorage', () => {
+  it('starts a fresh browser on the home profile, not the noisy one', () => {
+    // The default used to be 'noisy' — the strictest row in the table, a
+    // 0.7 confidence floor and 4x the amplitude gate — which reads as a
+    // dead mic in an ordinary room. Asserted against the preset rather
+    // than by repeating its numbers, so the label and the thresholds
+    // cannot drift apart.
     const s = appStore.settings()
-    expect(s.detectionThreshold).toBe(0.2)
-    expect(s.sensitivity).toBe(9)
-    expect(s.minConfidence).toBe(0.7)
-    expect(s.minAmplitude).toBe(4)
+    expect(s.detectionThreshold).toBe(
+      SENSITIVITY_PRESETS.home.detectionThreshold,
+    )
+    expect(s.sensitivity).toBe(SENSITIVITY_PRESETS.home.sensitivity)
+    expect(s.minConfidence).toBe(SENSITIVITY_PRESETS.home.minConfidence)
+    expect(s.minAmplitude).toBe(SENSITIVITY_PRESETS.home.minAmplitude)
     expect(s.bands).toHaveLength(5)
   })
 

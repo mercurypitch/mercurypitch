@@ -136,7 +136,14 @@ const ACCURACY_PRESETS: Record<
 }
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
-  ...SENSITIVITY_PRESETS.noisy, // Use noisy as default config values
+  // 'home', not 'noisy'. Nothing measures the room on first run — this
+  // literal IS the starting profile, so every fresh browser (and every
+  // preview origin, which is why it kept turning up there) began with the
+  // strictest thresholds in the table: a 0.7 confidence floor and 4x the
+  // amplitude gate. That reads as a dead mic in an ordinary room. Anyone
+  // who really is in a noisy one can pick it, or run auto-calibrate,
+  // which measures and chooses properly.
+  ...SENSITIVITY_PRESETS.home,
   bands: ACCURACY_PRESETS.learning,
   tonicAnchor: false,
 }
@@ -161,7 +168,10 @@ export const DEFAULT_REVERB: ReverbConfig = {
 export const [sensitivityPreset, _setSensitivityPreset] =
   createPersistedSignal<SensitivityPreset>(
     'pitchperfect_sensitivity_preset',
-    'noisy',
+    // Must match DEFAULT_SETTINGS above — the label and the thresholds
+    // are two halves of one choice, and disagreeing means the panel
+    // shows a preset the numbers do not reflect.
+    'home',
   )
 
 export const [settings, setSettings] = createPersistedSignal<SettingsConfig>(
