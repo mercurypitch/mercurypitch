@@ -148,7 +148,7 @@ These are the rules that break things when ignored.
 |---|---|---|
 | [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
-| [jam-store.ts](../../src/stores/jam-store.ts) | 1.6k | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 1.7k | ── Jam store Reactive state management for P2P jam sessions. |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 647 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 488 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
@@ -293,7 +293,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.6k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 1.7k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
