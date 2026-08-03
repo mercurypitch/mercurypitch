@@ -324,111 +324,125 @@ export const VocalChallenges: Component = () => {
       {/* Featured: the community weekly challenge — same card as Home, so it's
           discoverable here in the challenges hub too. Renders its own
           "coming soon" state when there is no active Legend. */}
-      <div class="challenges-weekly">
-        <WeeklyLegendHero />
-      </div>
+      {/* Two columns above 1080px: the weekly Legend and the past-weeks
+          archive become a rail, and the categories plus the challenge grid
+          take the space they were leaving empty. Both blocks were
+          full-width centred text with half the screen unused, and the
+          category pills wrapped onto two rows underneath. One column
+          below that, rail first. */}
+      <div class="challenges-layout">
+        <aside class="challenges-rail">
+          <div class="challenges-weekly">
+            <WeeklyLegendHero />
+          </div>
 
-      <PastWeeklyChallenges />
+          <PastWeeklyChallenges />
+        </aside>
 
-      {/* Category Tabs */}
-      <div class="category-tabs">
-        <For each={categories()}>
-          {(cat) => (
-            <button
-              class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat.id)}
-            >
-              <span class="cat-icon">{renderIcon(cat.icon)}</span>
-              <span class="cat-name">{cat.name}</span>
-              <span class="cat-count">{cat.count}</span>
-            </button>
-          )}
-        </For>
-      </div>
+        <div class="challenges-main">
+          {/* Category Tabs */}
+          <div class="category-tabs">
+            <For each={categories()}>
+              {(cat) => (
+                <button
+                  class={`category-tab ${activeCategory() === cat.id ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(cat.id)}
+                >
+                  <span class="cat-icon">{renderIcon(cat.icon)}</span>
+                  <span class="cat-name">{cat.name}</span>
+                  <span class="cat-count">{cat.count}</span>
+                </button>
+              )}
+            </For>
+          </div>
 
-      {/* Challenges Grid */}
-      <div class="challenges-grid">
-        <For each={challenges()}>
-          {(challenge) => (
-            <div
-              class={`challenge-card ${challenge.status}`}
-              data-challenge-id={challenge.id}
-              data-challenge-type={challenge.type}
-            >
-              <div class="challenge-header">
-                <div class="challenge-icon-large">
-                  {renderIcon(challenge.icon)}
-                </div>
-                <div class="challenge-status">
-                  {challenge.status === 'completed' && <IconCheckSolid />}
-                  {challenge.status === 'in-progress' && <IconRefreshSimple />}
-                </div>
-              </div>
-
-              <div class="challenge-body">
-                <h3 class="challenge-title">{challenge.name}</h3>
-                <p class="challenge-desc">{challenge.description}</p>
-
-                <div class="challenge-stats">
-                  <div class="stat-item" title="Target score">
-                    <span class="stat-icon">
-                      <IconTarget />
-                    </span>
-                    <span class="stat-value">{challenge.targetScore}%</span>
+          {/* Challenges Grid */}
+          <div class="challenges-grid">
+            <For each={challenges()}>
+              {(challenge) => (
+                <div
+                  class={`challenge-card ${challenge.status}`}
+                  data-challenge-id={challenge.id}
+                  data-challenge-type={challenge.type}
+                >
+                  <div class="challenge-header">
+                    <div class="challenge-icon-large">
+                      {renderIcon(challenge.icon)}
+                    </div>
+                    <div class="challenge-status">
+                      {challenge.status === 'completed' && <IconCheckSolid />}
+                      {challenge.status === 'in-progress' && (
+                        <IconRefreshSimple />
+                      )}
+                    </div>
                   </div>
-                  <div class="stat-item" title="Best score">
-                    <span class="stat-icon">
-                      <IconChart />
-                    </span>
-                    <span class="stat-value">{challenge.bestScore}%</span>
+
+                  <div class="challenge-body">
+                    <h3 class="challenge-title">{challenge.name}</h3>
+                    <p class="challenge-desc">{challenge.description}</p>
+
+                    <div class="challenge-stats">
+                      <div class="stat-item" title="Target score">
+                        <span class="stat-icon">
+                          <IconTarget />
+                        </span>
+                        <span class="stat-value">{challenge.targetScore}%</span>
+                      </div>
+                      <div class="stat-item" title="Best score">
+                        <span class="stat-icon">
+                          <IconChart />
+                        </span>
+                        <span class="stat-value">{challenge.bestScore}%</span>
+                      </div>
+                    </div>
                   </div>
+
+                  <div class="challenge-progress">
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill"
+                        style={{
+                          width: `${challenge.progress}%`,
+                          '--progress-color': getChallengeProgressColor(
+                            challenge.progress,
+                          ),
+                        }}
+                      />
+                    </div>
+                    <span class="progress-label">
+                      {challenge.status === 'completed'
+                        ? `Completed — best ${challenge.bestScore}%`
+                        : `Best ${challenge.bestScore}% of ${challenge.targetScore}% target`}
+                    </span>
+                  </div>
+
+                  <button
+                    class={`challenge-action-btn ${challenge.status}`}
+                    onClick={() => handleStartChallenge(challenge)}
+                  >
+                    {challenge.status === 'completed' && 'View Details'}
+                    {challenge.status === 'in-progress' && 'Continue'}
+                    {challenge.status === 'not-started' && 'Start Challenge'}
+                  </button>
+
+                  <button
+                    class="challenge-practice-btn"
+                    onClick={() => startChallengeDrill(challenge)}
+                    title={
+                      generateChallengeDrill(
+                        challenge.type,
+                        challenge.name,
+                        challenge.difficulty,
+                      ).tip
+                    }
+                  >
+                    Practice
+                  </button>
                 </div>
-              </div>
-
-              <div class="challenge-progress">
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    style={{
-                      width: `${challenge.progress}%`,
-                      '--progress-color': getChallengeProgressColor(
-                        challenge.progress,
-                      ),
-                    }}
-                  />
-                </div>
-                <span class="progress-label">
-                  {challenge.status === 'completed'
-                    ? `Completed — best ${challenge.bestScore}%`
-                    : `Best ${challenge.bestScore}% of ${challenge.targetScore}% target`}
-                </span>
-              </div>
-
-              <button
-                class={`challenge-action-btn ${challenge.status}`}
-                onClick={() => handleStartChallenge(challenge)}
-              >
-                {challenge.status === 'completed' && 'View Details'}
-                {challenge.status === 'in-progress' && 'Continue'}
-                {challenge.status === 'not-started' && 'Start Challenge'}
-              </button>
-
-              <button
-                class="challenge-practice-btn"
-                onClick={() => startChallengeDrill(challenge)}
-                title={
-                  generateChallengeDrill(
-                    challenge.type,
-                    challenge.name,
-                    challenge.difficulty,
-                  ).tip
-                }
-              >
-                Practice
-              </button>
-            </div>
-          )}
-        </For>
+              )}
+            </For>
+          </div>
+        </div>
       </div>
 
       {/* Badges Section */}

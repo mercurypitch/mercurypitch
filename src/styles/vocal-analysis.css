@@ -2840,6 +2840,78 @@
    an absolutely positioned .modal-backdrop SIBLING of the content — and
    the module's .modalContent carries no `position`, so the scrim painted
    over the dialog instead of behind it. Only the blur is kept, scoped. */
+/* ── Challenges: rail + main ────────────────────────────────────────
+   The Legend and the past-weeks archive were full-width centred blocks
+   with the right half of a wide screen empty, and the category pills
+   wrapped onto two rows below them. Side by side above 1080px; one
+   column, rail first, below. */
+.challenges-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1080px) {
+  .challenges-layout {
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  }
+  .challenges-rail {
+    position: sticky;
+    top: 12px;
+  }
+}
+
+.challenges-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.challenges-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* One row that scrolls, rather than two rows of wrap eating the fold. */
+.challenges-main .category-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.challenges-main .category-tab {
+  flex: none;
+}
+
+.challenges-main .challenges-grid {
+  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+  gap: 14px;
+}
+
+/* The pill row scrolls; without this the last one just stops at the edge
+   with nothing saying there is more. */
+.challenges-main .category-tabs {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+}
+
 .challenge-modal-overlay {
   backdrop-filter: blur(4px);
 }
