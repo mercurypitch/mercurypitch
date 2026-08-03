@@ -560,8 +560,20 @@
   display: none;
 }
 
-/* The guide-vocal control's phone home, beside the chat bubble. Hidden
-   here; the song's transport row carries it on anything wider. */
+/* ── The guide-vocal control's two homes ────────────────────────────
+   With the transport controls on a desktop; docked above the tab bar on a
+   phone, where this row scrolls sideways and a control that can scroll out
+   of sight is not one you can grab mid-song.
+
+   Both defaults declared HERE, above the phone block that swaps them. A
+   media query adds no specificity, so a base rule written below one wins
+   outright -- which is exactly how the live-pitch toggle ended up visible
+   in two places at once. */
+.guideInline {
+  display: flex;
+  align-items: center;
+}
+
 .guideDock {
   display: none;
 }
@@ -679,10 +691,16 @@
 
      One below the bubble's z-index, so an open chat window covers this
      rather than having a mic button floating over its messages. */
+  .guideInline {
+    display: none;
+  }
+
   .guideDock {
     display: flex;
-    /* Centres the control against the 56px bubble beside it. */
-    align-items: center;
+    /* Bottom-aligned, not centred: the pill grows UPWARD out of its
+       capsule while you drag, so pinning its base keeps the button under
+       your thumb instead of sliding it as the track slides out. */
+    align-items: flex-end;
     height: 56px;
     position: fixed;
     bottom: calc(var(--tabbar-total, 62px) + 16px);

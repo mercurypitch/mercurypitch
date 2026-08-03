@@ -1,57 +1,37 @@
-/* JamGuideVocal — collapsed button, expands to a slider. */
+/* JamGuideVocal — the karaoke pill, skinned for the jam room.
+   Placement is the consumer's (JamPanel); everything here is skin. */
 
-.control {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-  padding: 2px 6px 2px 2px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
+.pill {
+  /* Smaller than the karaoke stage's: that one is the star of a
+     full-screen performance view, this one sits in a row of room
+     controls next to a 36px icon button. */
+  --pill-width: 36px;
+  --pill-size: 36px;
+  --pill-base-size: 34px;
+  --pill-expanded: 104px;
+  --pill-radius: 18px;
+
+  /* The room's own glass, so the transparency slider carries this with
+     everything else rather than leaving an opaque capsule on the photo. */
+  --pill-bg: var(--jam-control, rgba(13, 17, 23, 0.55));
+  --pill-border: var(--border);
+  --pill-base-bg: transparent;
+
+  /* On: the room's blue, the same colour every other live control uses. */
+  --pill-fill: var(--accent);
+  --pill-base-color: var(--accent);
+
+  /* Off: red, and the icon is struck through. Two signals, because on a
+     phone at arm's length one of them is doing all the work. */
+  --pill-off-color: var(--red, #f85149);
+
+  flex-shrink: 0;
 }
 
-.btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  color: var(--accent);
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.btnMuted {
-  color: var(--text-secondary);
-}
-
-/* Collapsed by default. Width rather than display, so the expansion is a
-   slide rather than a jump and the transport bar does not reflow. */
-.slider {
-  width: 0;
-  opacity: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-  transition:
-    width 0.18s ease,
-    opacity 0.18s ease;
-}
-
-.controlOpen .slider {
-  width: 84px;
-  opacity: 1;
-}
-
-/* Touch has no hover, so it stays open -- a control that needs a hover to
-   reach is a control a phone cannot use. */
-@media (hover: none) {
-  .slider {
-    width: 84px;
-    opacity: 1;
-  }
+/* PillControl sets aria-pressed from its `off` prop, which is the only
+   handle this module has on that state -- its `.off` class belongs to
+   PillControl's own stylesheet and cannot be named from here. */
+.pill[aria-pressed='true'] {
+  --pill-border: rgba(248, 81, 73, 0.55);
+  --pill-fill: var(--red, #f85149);
 }

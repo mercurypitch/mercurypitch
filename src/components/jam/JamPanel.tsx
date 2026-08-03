@@ -1004,6 +1004,28 @@ export const JamPanel: Component = () => {
                   out of a song. Two play buttons writing one playing signal
                   is a room that stops for reasons nobody can see. */}
               <div class={panelStyles.exerciseBar}>
+                {/* The guide vocal, beside play and stop -- it belongs with
+                    the things that decide what you hear, not after the
+                    timeline where it read as part of the scrubber.
+
+                    OUTSIDE the host gate that JamTransport puts around its
+                    own buttons: the room's transport is the host's, but how
+                    loud the original singer is in your ears is yours.
+
+                    Hidden on a phone, where it is docked above the tab bar
+                    within reach of a thumb -- this row scrolls sideways
+                    there, and a control that can scroll out of sight is not
+                    one you can grab mid-song. */}
+                <Show
+                  when={jamIsSongRoom() && jamSong()?.stems.vocal !== undefined}
+                >
+                  <div class={panelStyles.guideInline}>
+                    <JamGuideVocal
+                      volume={jamGuideVolume}
+                      onVolume={setJamGuideVolume}
+                    />
+                  </div>
+                </Show>
                 <JamTransport
                   onSelectExercise={() =>
                     setShowExercisePicker(!showExercisePicker())

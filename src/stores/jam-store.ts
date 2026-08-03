@@ -586,6 +586,51 @@ export function applyReceivedStem(
 }
 
 /**
+ * Say what arrived, once, after the arrivals stop.
+ *
+ * The two stems come down one channel back to back, so announcing each on
+ * arrival put "Got the backing track" on screen for the few milliseconds
+ * before "Got the guide vocal too" replaced it. The first message existed
+ * and nobody could read it -- and the one that survived was the less
+ * important of the two.
+ *
+ * A settle window rather than "wait for both", because there is not
+ * always a second one: a song separated without a vocal stem sends one,
+ * and waiting for a stem that is never coming would say nothing at all.
+ */
+const ARRIVAL_SETTLE_MS = 700
+let arrivedStems = new Set<'instrumental' | 'vocal'>()
+let arrivalTimer: ReturnType<typeof setTimeout> | null = null
+
+function noteStemArrived(stem: 'instrumental' | 'vocal'): void {
+  arrivedStems.add(stem)
+  if (arrivalTimer !== null) clearTimeout(arrivalTimer)
+  arrivalTimer = setTimeout(() => {
+    arrivalTimer = null
+    const got = arrivedStems
+    arrivedStems = new Set()
+    markShareDone(arrivalMessage(got))
+  }, ARRIVAL_SETTLE_MS)
+}
+
+function arrivalMessage(got: ReadonlySet<'instrumental' | 'vocal'>): string {
+  const backing = got.has('instrumental')
+  const guide = got.has('vocal')
+  if (backing && guide) {
+    return 'Got the song and the guide vocal — you can hear it now.'
+  }
+  if (backing) return 'Got the backing track — you can hear the song now.'
+  return 'Got the guide vocal.'
+}
+
+/** Drop a pending announcement -- the room is gone, so it is moot. */
+function clearPendingArrivals(): void {
+  if (arrivalTimer !== null) clearTimeout(arrivalTimer)
+  arrivalTimer = null
+  arrivedStems = new Set()
+}
+
+/**
  * Inbound transfers, one per peer.
  *
  * Module-level rather than per-service so a reconnect does not lose a
@@ -602,11 +647,7 @@ const songInbox = new SongFileInbox({
     applyReceivedStem(stem, blob)
     // The host is waiting to know whether that worked.
     reportSongHave()
-    markShareDone(
-      stem === 'instrumental'
-        ? 'Got the backing track — you can hear the song now.'
-        : 'Got the guide vocal too.',
-    )
+    noteStemArrived(stem)
   },
   onFailed: (_peerId, reason) =>
     setJamShareState({ phase: 'error', ratio: 0, message: reason }),
@@ -688,22 +729,30 @@ export function reportSongHave(): void {
  * foreground is exactly the moment to re-answer, and it costs a few dozen
  * bytes.
  */
-/** The listener itself, so it can be handed back to removeEventListener. */
-let visibilityWatcher: (() => void) | null = null
+/**
+ * Declared rather than written inline at the addEventListener call, so the
+ * same reference comes back out for removeEventListener -- and so the
+ * reactivity lint can see this is a DOM listener reading a signal on
+ * purpose, not a tracked scope someone forgot to open.
+ */
+function answerSongHaveWhenVisible(): void {
+  if (document.visibilityState !== 'visible') return
+  reportSongHave()
+}
+
+/** Whether the listener above is currently attached. */
+let watchingVisibility = false
 
 function watchVisibilityForSongHave(): void {
-  if (visibilityWatcher !== null) return
-  visibilityWatcher = () => {
-    if (document.visibilityState !== 'visible') return
-    reportSongHave()
-  }
-  document.addEventListener('visibilitychange', visibilityWatcher)
+  if (watchingVisibility) return
+  watchingVisibility = true
+  document.addEventListener('visibilitychange', answerSongHaveWhenVisible)
 }
 
 function unwatchVisibility(): void {
-  if (visibilityWatcher === null) return
-  document.removeEventListener('visibilitychange', visibilityWatcher)
-  visibilityWatcher = null
+  if (!watchingVisibility) return
+  document.removeEventListener('visibilitychange', answerSongHaveWhenVisible)
+  watchingVisibility = false
 }
 
 let shareAbort: { aborted: boolean } | null = null
@@ -2218,6 +2267,7 @@ function cleanupJam(): void {
   // song in memory until the tab closes.
   cancelJamSongShare()
   forgetPackedStems()
+  clearPendingArrivals()
   setJamAssignBrush(null)
   songInbox.clear()
   revokeReceivedStems()

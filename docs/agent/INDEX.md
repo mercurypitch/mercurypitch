@@ -150,7 +150,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [jam-store.ts](../../src/stores/jam-store.ts) | 2.3k | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 2.4k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 1.9k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
@@ -288,8 +288,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.0k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.4k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.3k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.3k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
@@ -306,8 +306,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |
-| [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.3k |
+| [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.2k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |

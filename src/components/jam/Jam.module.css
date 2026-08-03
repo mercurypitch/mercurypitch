@@ -229,6 +229,8 @@
   letter-spacing: 0.05em;
 }
 
+/* The room's own bad news: "you cannot play this song", "the song
+   stopped", "wait for the send to finish". */
 .error {
   font-size: 0.85rem;
   color: var(--red, #f85149);
@@ -237,6 +239,24 @@
   background: rgba(248, 81, 73, 0.1);
   border: 1px solid rgba(248, 81, 73, 0.25);
   border-radius: 6px;
+
+  /* Above the room's floating controls, all of which sit in this same
+     stacking context (JamPage's .page is `isolation: isolate`): the
+     guide-vocal dock at 999 and the chat bubble at 1000. A message
+     explaining why the song will not play, printed underneath the thing
+     covering it, is a message that was never shown. */
+  position: relative;
+  z-index: 1001;
+}
+
+/* ...but not ON them. Winning the stacking order would otherwise mean
+   this note lies across the chat bubble and the guide pill and swallows
+   their taps, which trades an unreadable message for two dead buttons.
+   The corner they occupy is reserved instead. */
+@media (max-width: 640px) {
+  .error {
+    margin-right: 122px;
+  }
 }
 
 .connecting {
