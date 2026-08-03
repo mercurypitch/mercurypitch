@@ -15,7 +15,7 @@ import { SafeSelect } from '@/components/shared/SafeSelect'
 import { StreakCalendar } from '@/components/StreakCalendar'
 import { CalendarHeatmap } from '@/features/practice-intelligence/components/CalendarHeatmap'
 import { DailyRoutinePanel } from '@/features/routines/DailyRoutinePanel'
-import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab as appActiveTab, hasPageTour, showNotification, startPageTour, } from '@/stores'
 import { gridLinesVisible, keyName, scaleType, setGridLinesVisible, setKeyName, setScaleType, setShowPitchDisplay, setShowPlaybackBall, setShowPlayhead, setShowStats, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
@@ -82,20 +82,18 @@ export const AppSidebar: Component<AppSidebarProps> = (props) => {
   const isPracticeOrSettingsTab = () =>
     ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())
 
-  // Mic device + sensitivity controls apply to every tab that drives pitch
-  // detection through the shared practice engine (not just Singing). Karaoke
-  // and Jam use their own mic pipelines, so they're intentionally excluded.
-  const isMicTab = () =>
-    (
-      [
-        TAB_SINGING,
-        TAB_SETTINGS,
-        TAB_GUITAR,
-        TAB_PIANO,
-        TAB_EXERCISES,
-        TAB_KARAOKE,
-      ] as string[]
-    ).includes(activeTab())
+  // Mic device + sensitivity are available on EVERY tab.
+  //
+  // They used to be gated to a list of tabs that drive the shared practice
+  // engine, which left Home, the Path and Jam without them — so wanting to
+  // change a room preset meant navigating to a tab that happened to expose
+  // it. The sensitivity preset is one global setting
+  // (pitchperfect_sensitivity_preset) applied wherever pitch is next
+  // detected, so there is no tab where changing it is meaningless.
+  //
+  // The old comment claimed Karaoke was excluded while TAB_KARAOKE was in
+  // the list — the kind of drift that outlives whatever it described.
+  const isMicTab = (): boolean => true
 
   return (
     <aside
