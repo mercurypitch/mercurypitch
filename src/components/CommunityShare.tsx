@@ -529,9 +529,16 @@ export const CommunityShare: Component = () => {
   } | null>(null)
 
   /**
-   * Take a share off the shelf. Removes the local copy first — that is
-   * what renders — then the DB row. A share that never reached the DB
-   * still disappears, which is the point: the singer asked for it gone.
+   * Take a share off the shelf.
+   *
+   * The shelf is the MERGE of the DB list and the local one, with the DB
+   * copy winning — so dropping only the local entry took nothing off
+   * screen for anyone signed in, which is everyone who can publish. The
+   * card stayed put and the button looked broken even though the row was
+   * being deleted server-side. Both lists have to lose it.
+   *
+   * A share that never reached the DB still disappears, which is the
+   * point: the singer asked for it gone.
    */
   const doUnpublish = (): void => {
     const target = unpublishing()
@@ -540,10 +547,12 @@ export const CommunityShare: Component = () => {
       const next = localMelodies().filter((m) => m.id !== target.id)
       setLocalMelodies(next)
       storageSet('pp_shared_melodies', next)
+      setDbMelodies((prev) => prev.filter((m) => m.id !== target.id))
     } else {
       const next = localSessions().filter((x) => x.id !== target.id)
       setLocalSessions(next)
       storageSet('pp_shared_sessions', next)
+      setDbSessions((prev) => prev.filter((s) => s.id !== target.id))
     }
     void unpublishShared(target.kind, target.id)
     showNotification(`"${target.name}" is no longer shared.`, 'info')
