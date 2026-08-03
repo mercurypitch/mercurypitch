@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
-import { buildHash, navigateTo, parseHash, replaceHash, } from '@/lib/hash-router'
+import { buildHash, navigateTo, parseHash, pushHash, replaceHash, } from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
 
@@ -516,5 +516,50 @@ describe('replaceHash', () => {
 
     replaceHash({ type: 'tab', tab: 'settings' })
     expect(replaceStateSpy).not.toHaveBeenCalled()
+  })
+})
+
+// ── pushHash ───────────────────────────────────────────────────
+//
+// Every tab change synced the URL with replaceHash, which OVERWRITES the
+// current history entry. Ten tab changes left one entry, so Back walked
+// off the site instead of returning to the previous tab — the app looked
+// like it had no history at all.
+
+describe('pushHash', () => {
+  it('uses pushState, so the previous tab stays in history', () => {
+    // replaceHash OVERWRITES the entry: ten tab changes left one, and
+    // Back walked off the site instead of returning to the last tab.
+    const pushStateSpy = vi.fn()
+    vi.stubGlobal('history', { pushState: pushStateSpy })
+    vi.stubGlobal('location', { hash: '' })
+
+    pushHash({ type: 'tab', tab: 'challenges' })
+    expect(pushStateSpy).toHaveBeenCalledWith(null, '', '#/challenges')
+  })
+
+  it('skips the push when already at the target hash', () => {
+    // Otherwise every re-render stacks a duplicate entry and Back feels
+    // stuck — press it five times to leave one screen.
+    const pushStateSpy = vi.fn()
+    vi.stubGlobal('history', { pushState: pushStateSpy })
+    vi.stubGlobal('location', { hash: '#/challenges' })
+
+    pushHash({ type: 'tab', tab: 'challenges' })
+    expect(pushStateSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not fire hashchange, so the router cannot re-enter itself', () => {
+    // navigateTo sets location.hash and DOES fire it; that is why the
+    // sync effect cannot use navigateTo.
+    const pushStateSpy = vi.fn()
+    vi.stubGlobal('history', { pushState: pushStateSpy })
+    vi.stubGlobal('location', { hash: '' })
+    const onHashChange = vi.fn()
+    window.addEventListener('hashchange', onHashChange)
+
+    pushHash({ type: 'tab', tab: 'piano' })
+    window.removeEventListener('hashchange', onHashChange)
+    expect(onHashChange).not.toHaveBeenCalled()
   })
 })

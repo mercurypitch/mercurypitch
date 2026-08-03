@@ -5,7 +5,8 @@
 // The app has no file-system router. Adding a route is two edits: the shape
 // and parser in @/lib/hash-router.ts, then a handler pair here. This hook owns
 // the sync loop -- hash changes drive state, and state changes rewrite the
-// hash via `replaceHash` so back/forward and deep links both work.
+// hash so back/forward and deep links both work. A TAB change pushes a
+// history entry (it is a navigation); sub-state within a tab replaces.
 //
 // Deep links carry sub-state too (settings section, karaoke view, jam room),
 // which is why the deps object is wider than "which tab".
@@ -16,7 +17,7 @@ import type { UvrView } from '@/components/UvrPanel'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE, TAB_SETTINGS } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
-import { buildHash, parseHash, replaceHash } from '@/lib/hash-router'
+import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
@@ -184,6 +185,30 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     window.removeEventListener('hashchange', onHashChange)
   })
 
+  /**
+   * The tab the URL was last synced to.
+   *
+   * Every sync used replaceHash, which OVERWRITES the current history
+   * entry — so ten tab changes left one entry and Back walked straight
+   * off the site instead of returning to the previous tab. Changing tab
+   * is a navigation and gets its own entry; changing sub-state within a
+   * tab (a UVR view, a settings section) keeps replacing, so Back does
+   * not have to be pressed five times to leave one screen.
+   */
+  let lastSyncedTab: string | null = null
+
+  const syncHash = (route: HashRoute, tab: string): void => {
+    const expectedHash = `#${buildHash(route)}`
+    if (window.location.hash !== expectedHash) {
+      if (lastSyncedTab !== null && lastSyncedTab !== tab) {
+        pushHash(route)
+      } else {
+        replaceHash(route)
+      }
+    }
+    lastSyncedTab = tab
+  }
+
   // Sync activeTab + UvrPanel state → URL hash
   createEffect(() => {
     // Read every tracked signal BEFORE any early return: Solid re-collects
@@ -210,17 +235,11 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
         type: 'settings-section',
         section: settingsSection,
       }
-      const expectedHash = `#${buildHash(route)}`
-      if (window.location.hash !== expectedHash) {
-        replaceHash(route)
-      }
+      syncHash(route, tab)
       return
     }
     if (tab !== TAB_KARAOKE) {
-      const expectedHash = `#/${tab}`
-      if (window.location.hash !== expectedHash) {
-        replaceHash({ type: 'tab', tab })
-      }
+      syncHash({ type: 'tab', tab }, tab)
       return
     }
     let route: HashRoute
@@ -231,10 +250,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else {
       route = { type: 'uvr-upload' }
     }
-    const expectedHash = `#${buildHash(route)}`
-    if (window.location.hash !== expectedHash) {
-      replaceHash(route)
-    }
+    syncHash(route, tab)
   })
 
   // Sync walkthrough/guide state → URL hash
