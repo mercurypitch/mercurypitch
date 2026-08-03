@@ -53,8 +53,26 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)
-  await page.getByRole('button', { name: 'Play Earlier take' }).click()
-  await page.getByRole('button', { name: 'Pause Earlier take' }).click()
+  await expect(page.getByLabel('Optional note')).toBeEnabled()
+  await expect(page.getByTestId('reflection-target')).toContainText(
+    'Earlier take',
+  )
+  await expect(page.getByTestId('reflection-target')).toContainText('0:00')
+  await page.getByLabel('Optional note').fill('The first moment is clear.')
+  await page.getByTestId('reflection-beacon-keep').click()
+  const firstMarker = page
+    .locator('[data-testid^="voice-atlas-marker-"]')
+    .first()
+  await expect(firstMarker).toBeVisible()
+  await firstMarker.click()
+  await expect(
+    page.getByRole('button', { name: 'Pause Earlier take' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Earlier take' }),
+  ).toBeVisible()
+  await page.getByTestId('reflection-beacon-remove').click()
 
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
@@ -69,6 +87,13 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('2 / 2 mapped', { exact: true })).toBeVisible({
     timeout: 10000,
   })
+
+  const laterCard = page.getByTestId('voice-atlas-card-later')
+  await laterCard.click({ position: { x: 8, y: 8 } })
+  await expect(laterCard).toHaveAttribute('data-selected', 'true')
+  await expect(page.getByTestId('reflection-target')).toContainText(
+    'Later take',
+  )
 
   const seek = page.getByTestId('voice-atlas-slider')
   await seek.scrollIntoViewIfNeeded()
@@ -103,6 +128,33 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('The onset opens here.')).toBeVisible()
   await page.getByTestId('reflection-beacon-remove').click()
   await expect(marker).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Record another take' }).click()
+  await page.getByRole('button', { name: 'Start recording' }).click()
+  await expect(page.getByText('Recording now')).toBeVisible({ timeout: 10000 })
+  await page.waitForTimeout(900)
+  await page.getByRole('button', { name: 'Stop recording' }).click()
+  await expect(page.getByRole('button', { name: 'Keep Take' })).toBeEnabled({
+    timeout: 15000,
+  })
+  await page.getByRole('button', { name: 'Keep Take' }).click()
+
+  await expect(page.getByText('Comparing 2 of 3 takes')).toBeVisible({
+    timeout: 10000,
+  })
+  const earlierSelect = page.getByRole('combobox', { name: 'Earlier take' })
+  const fullSpanEarlier = await earlierSelect.inputValue()
+  await expect(page.getByRole('button', { name: 'Full span' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('button', { name: 'Latest two' }).click()
+  expect(await earlierSelect.inputValue()).not.toBe(fullSpanEarlier)
+  await expect(
+    page.getByRole('button', { name: 'Latest two' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Full span' }).click()
+  await expect(earlierSelect).toHaveValue(fullSpanEarlier)
 
   const echo = page.getByTestId('voice-room-echo')
   await echo.scrollIntoViewIfNeeded()
@@ -168,7 +220,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   )
   await page.getByTestId('confirm-phrase').fill('delete')
   await page.getByRole('button', { name: 'Delete thread' }).click()
-  await expect(page.getByText('2 kept')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText('3 kept')).toBeVisible({ timeout: 10000 })
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
 
   await page
