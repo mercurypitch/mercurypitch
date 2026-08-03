@@ -132,6 +132,27 @@ export const JamSongStage: Component = () => {
     }
   }
 
+  /**
+   * Why Play did nothing -- and what to do about it.
+   *
+   * The common case by far is a guest the file has not reached yet: the
+   * host presses Play, the room starts, and this device is holding a
+   * manifest pointing at a blob that only exists on the host's machine.
+   * "The song could not start on this device" was true and useless. Every
+   * branch here names the one action that fixes it.
+   */
+  const explainPlayFailure = (err: unknown): string => {
+    if (!songIsPlayableHere(jamSong())) {
+      return jamIsHost()
+        ? 'This device does not have the backing track — reload the song and try again.'
+        : 'You do not have this song yet — ask the host to send it, then press Play again.'
+    }
+    if (err instanceof Error && err.name === 'NotAllowedError') {
+      return 'Your browser blocked playback until you interact with the page — press Play again.'
+    }
+    return 'The song could not start on this device — ask the host to send it again, or reload the page.'
+  }
+
   onMount(() => {
     const el = audioRef
     if (el === undefined) return
@@ -298,10 +319,7 @@ export const JamSongStage: Component = () => {
       // policy is the usual reason and the user can fix it in one tap, but
       // only if somebody tells them.
       void el.play().catch((err: unknown) => {
-        const why =
-          err instanceof Error && err.name === 'NotAllowedError'
-            ? 'Your browser blocked playback until you interact with the page — press Play again.'
-            : 'The song could not start on this device.'
+        const why = explainPlayFailure(err)
         setJamError(why)
         if (!jamIsHost()) setJamExercisePaused(true)
       })
