@@ -53,11 +53,19 @@ interface TimelineDrag {
   pointerStartSemitone: number
 }
 
+interface EmptyTimelinePress {
+  pointerId: number
+  startX: number
+  startY: number
+  moved: boolean
+}
+
 const MIN_VISIBLE_SEMITONE = -12
 const MAX_VISIBLE_SEMITONE = 12
 const MIN_VISIBLE_ROWS = 25
 const HANDLE_HIT_PX = 11
 const TARGET_HIT_PX = 12
+const CLICK_MOVE_TOLERANCE_PX = 5
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, value))
@@ -202,6 +210,7 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
   let timelineSurface: HTMLDivElement | undefined
   let observer: ResizeObserver | null = null
   let drag: TimelineDrag | null = null
+  let emptyPress: EmptyTimelinePress | null = null
 
   const selectedTarget = createMemo(() =>
     findExerciseTarget(props.value, props.selectedTargetId),
@@ -463,15 +472,41 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
     return null
   }
 
+  const isInsidePlot = (
+    x: number,
+    y: number,
+    layout: TimelineLayout,
+  ): boolean =>
+    x >= layout.left &&
+    x <= layout.left + layout.plotWidth &&
+    y >= layout.top &&
+    y <= layout.top + layout.plotHeight
+
   const onPointerDown = (event: PointerEvent): void => {
     const position = pointerPosition(event)
     if (position === null || canvas === undefined) return
     const hit = hitTarget(position.x, position.y, position.layout)
     if (hit === null) {
       props.onSelectedTargetIdChange(null)
+      timelineSurface?.focus()
       redraw.queue()
+      if (
+        props.readOnly === true ||
+        !isInsidePlot(position.x, position.y, position.layout)
+      ) {
+        return
+      }
+      emptyPress = {
+        pointerId: event.pointerId,
+        startX: position.x,
+        startY: position.y,
+        moved: false,
+      }
+      canvas.setPointerCapture(event.pointerId)
+      event.preventDefault()
       return
     }
+    emptyPress = null
     props.onSelectedTargetIdChange(hit.target.id)
     timelineSurface?.focus()
     if (props.readOnly === true) return
@@ -487,6 +522,20 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
   }
 
   const onPointerMove = (event: PointerEvent): void => {
+    if (emptyPress !== null && emptyPress.pointerId === event.pointerId) {
+      const position = pointerPosition(event)
+      if (
+        position !== null &&
+        Math.hypot(
+          position.x - emptyPress.startX,
+          position.y - emptyPress.startY,
+        ) > CLICK_MOVE_TOLERANCE_PX
+      ) {
+        emptyPress.moved = true
+      }
+      event.preventDefault()
+      return
+    }
     if (
       drag === null ||
       drag.pointerId !== event.pointerId ||
@@ -547,14 +596,42 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
     event.preventDefault()
   }
 
-  const endPointerDrag = (event: PointerEvent): void => {
-    if (drag === null || drag.pointerId !== event.pointerId) return
-    drag = null
+  const releasePointer = (pointerId: number): void => {
     try {
-      canvas?.releasePointerCapture(event.pointerId)
+      canvas?.releasePointerCapture(pointerId)
     } catch {
       // The browser may already have released a cancelled pointer.
     }
+  }
+
+  const endPointerInteraction = (
+    event: PointerEvent,
+    cancelled = false,
+  ): void => {
+    if (emptyPress !== null && emptyPress.pointerId === event.pointerId) {
+      const press = emptyPress
+      emptyPress = null
+      releasePointer(event.pointerId)
+      if (cancelled || press.moved || props.readOnly === true) return
+      const position = pointerPosition(event)
+      if (
+        position === null ||
+        !isInsidePlot(position.x, position.y, position.layout)
+      ) {
+        return
+      }
+      selectCreatedTarget(
+        props.value,
+        createNoteTarget(props.value, {
+          atBeat: snapTimelineBeat(position.layout.xToBeat(position.x)),
+          semitone: position.layout.yToSemitone(position.y),
+        }),
+      )
+      return
+    }
+    if (drag === null || drag.pointerId !== event.pointerId) return
+    drag = null
+    releasePointer(event.pointerId)
   }
 
   const selectCreatedTarget = (
@@ -662,8 +739,8 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
         <div>
           <h3 id="exercise-timeline-heading">Pitch timeline</h3>
           <p>
-            Gaps are rests. Drag a target to move and retune it; drag either
-            handle to change timing.
+            Click empty grid space to add a note. Drag a target to move and
+            retune it; drag either handle to change timing.
           </p>
         </div>
         <div class={styles.tools} aria-label="Timeline target tools">
@@ -704,14 +781,14 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
           aria-hidden="true"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endPointerDrag}
-          onPointerCancel={endPointerDrag}
+          onPointerUp={endPointerInteraction}
+          onPointerCancel={(event) => endPointerInteraction(event, true)}
         />
       </div>
       <p id="exercise-timeline-help" class={styles.keyboardHelp}>
-        Arrow keys move a selected target; up and down retune it. Hold Shift
-        with left or right to resize. Delete removes and Control or Command D
-        duplicates.
+        Click empty grid space to add a note. Arrow keys move a selected target;
+        up and down retune it. Hold Shift with left or right to resize. Delete
+        removes and Control or Command D duplicates.
       </p>
       <p
         id="exercise-timeline-status"
@@ -831,8 +908,13 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                   />
                 </label>
 
-                <label>
-                  <span>Start pitch</span>
+                <label class={styles.pitchField}>
+                  <span class={styles.pitchFieldHeading}>
+                    <span>Start pitch</span>
+                    <small>
+                      {targetPitchLabel(props.value, target.semitone)}
+                    </small>
+                  </span>
                   <input
                     type="number"
                     step="1"
@@ -847,9 +929,6 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                       )
                     }
                   />
-                  <small>
-                    {targetPitchLabel(props.value, target.semitone)}
-                  </small>
                 </label>
 
                 <Show
@@ -858,13 +937,23 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                     <div
                       class={`${styles.endPitchField} ${styles.endPitchPlaceholder}`}
                     >
-                      <span>End pitch</span>
-                      <small>Same as start</small>
+                      <span class={styles.pitchFieldHeading}>
+                        <span>End pitch</span>
+                        <small>Same as start</small>
+                      </span>
                     </div>
                   }
                 >
-                  <label class={styles.endPitchField}>
-                    <span>End pitch</span>
+                  <label class={`${styles.endPitchField} ${styles.pitchField}`}>
+                    <span class={styles.pitchFieldHeading}>
+                      <span>End pitch</span>
+                      <small>
+                        {targetPitchLabel(
+                          props.value,
+                          target.endSemitone ?? target.semitone,
+                        )}
+                      </small>
+                    </span>
                     <input
                       type="number"
                       step="1"
@@ -879,12 +968,6 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                         )
                       }
                     />
-                    <small>
-                      {targetPitchLabel(
-                        props.value,
-                        target.endSemitone ?? target.semitone,
-                      )}
-                    </small>
                   </label>
                 </Show>
 

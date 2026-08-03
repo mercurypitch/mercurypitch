@@ -269,13 +269,18 @@ export function dismissWelcome(): void {
 
 // ── Owner-only Content Studio (#/admin/*) ───────────────────────
 export type AdminSection = 'exercises' | 'ascent' | 'weekly'
+export type AdminContentLeaveIntent =
+  | { type: 'section'; section: AdminSection }
+  | { type: 'close' }
 
 export const [adminContentSection, setAdminContentSection] =
   createSignal<AdminSection>('exercises')
 export const [showAdminContentStudio, setShowAdminContentStudio] =
   createSignal(false)
 
-let adminContentCloseGuard: (() => boolean) | null = null
+let adminContentCloseGuard:
+  | ((intent: AdminContentLeaveIntent) => boolean)
+  | null = null
 
 /**
  * Registers the currently mounted Content Studio's synchronous leave guard.
@@ -283,7 +288,7 @@ let adminContentCloseGuard: (() => boolean) | null = null
  * section navigation all consult the same guard before discarding an editor.
  */
 export function registerAdminContentCloseGuard(
-  guard: () => boolean,
+  guard: (intent: AdminContentLeaveIntent) => boolean,
 ): () => void {
   adminContentCloseGuard = guard
   return () => {
@@ -295,7 +300,7 @@ export function requestAdminContentSection(section: AdminSection): boolean {
   if (
     showAdminContentStudio() &&
     section !== adminContentSection() &&
-    adminContentCloseGuard?.() === false
+    adminContentCloseGuard?.({ type: 'section', section }) === false
   ) {
     return false
   }
@@ -305,7 +310,10 @@ export function requestAdminContentSection(section: AdminSection): boolean {
 }
 
 export function requestCloseAdminContentStudio(): boolean {
-  if (showAdminContentStudio() && adminContentCloseGuard?.() === false) {
+  if (
+    showAdminContentStudio() &&
+    adminContentCloseGuard?.({ type: 'close' }) === false
+  ) {
     return false
   }
   setShowAdminContentStudio(false)

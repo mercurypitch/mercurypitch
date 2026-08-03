@@ -72,8 +72,8 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 11.2k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 8.9k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
+| `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 5.2k | _(no header comment)_ |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.1k | Voice Mirror — the guided 3-task flow (spec §2). |
-| `admin` | [AdminAscentPage.tsx](../../src/features/admin/AdminAscentPage.tsx) | 5.1k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.0k | _(no header comment)_ |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.1k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
@@ -154,7 +154,7 @@ These are the rules that break things when ignored.
 | [settings-store.ts](../../src/stores/settings-store.ts) | 657 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 488 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 443 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 451 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
