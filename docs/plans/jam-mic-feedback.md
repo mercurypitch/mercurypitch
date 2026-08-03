@@ -115,8 +115,8 @@ a squeal, because the singer does not know why nobody can hear them.
 
 1. **Play remote audio through `<audio>`** — smallest change, unblocks AEC
    on Chrome. **Done.**
-2. **Split the streams** — transmit processed, analyse raw. *Next, and it
-   needs a decision — see below.*
+2. **Split the streams** — transmit processed, analyse raw. **Done**, by
+   cloning the track rather than capturing twice — see below.
 3. **Headphone prompt and reachable volume** — the honest fix for two
    devices in one room.
 4. **Howling detector** — with `PHPR`/`IPMP` so it does not mute singers,
@@ -139,7 +139,7 @@ node. Two things fell out of it beyond the AEC point:
 - **A suspended `AudioContext` can no longer silence the room.** The old
   path needed a running context; an element does not.
 
-### Step 2 needs a call before it is written
+### Step 2, as built
 
 Turning `echoCancellation: true` on is not a one-line change, because the
 same capture feeds pitch detection, and AEC/NS/AGC all mangle what a
@@ -150,15 +150,44 @@ detector needs. Two ways to split it, and they fail differently:
 | a second `getUserMedia` | iOS Safari has historically stopped the *first* stream when a second capture starts — on the iPad this could take the mic out entirely |
 | `track.clone()` + `applyConstraints` on the clone | one capture, no prompt; but per-clone processing is not honoured everywhere, and where it is not, pitch detection quietly degrades |
 
-Both want the two-device rig rather than a unit test, so this waits for a
-real room. What to measure there, in order:
+The clone won, because one of the test devices is an iPhone. Both of its
+failure modes end with sending the raw track — today's behaviour, so a
+refusal costs nothing — and both name themselves in the console:
 
-- Does the howl still happen at all now that the duplicate playback path
-  is gone? That alone may have been a large part of it.
-- Does it happen on Safari as well as Chrome? Safari and Firefox consider
-  all browser audio for AEC, so a Chrome-only howl confirms the diagnosis.
-- How close do two devices have to be? If a metre apart is fine, the
-  headphone prompt (step 3) matters more than the detector (step 4).
+- `would not cancel echo on a clone` — the device declined outright.
+- `reconfigured the shared source` — the constraint reached the source
+  instead of the clone, which would have handed the pitch detector
+  processed audio. Detected by reading the raw track's settings back, and
+  undone.
+
+### What the first round of testing said
+
+Measured on Android Chrome, an iPhone (Firefox skin, so WebKit) and a
+tablet, before step 2 existed:
+
+- Both unmuted in one room: feedback on any noise, building as the volume
+  rises. Mute kills it instantly.
+- A metre or two apart: very low, and it **rings out rather than
+  exploding** — loop gain below one at that distance.
+- Cameras on or off: no difference. The duplicate playback path is gone.
+- Same on every device, which fits: nothing was cancelling anywhere.
+
+### Still open
+
+Step 3 (headphone prompt) and step 4 (the detector) are unbuilt. The
+first-round numbers argue for doing 3 before 4 — a loop that rings out at
+a metre is one that a pair of headphones, or simply not sharing a desk,
+removes entirely. The detector is for a room that does it anyway, and it
+is the expensive one to get right, because a sung vowel and a howl are
+both loud sustained tones and only PHPR reliably tells them apart.
+
+What to measure on the next run, with step 2 in:
+
+- Does the console say cancellation is on, on each device?
+- Does the same close-range test still build, or does it now settle?
+- Is pitch detection unchanged? It should be untouched by construction —
+  but the "reconfigured the shared source" line in the log is the one to
+  look for if it is not.
 
 ## Worth testing before building
 
