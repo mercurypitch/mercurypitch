@@ -220,9 +220,12 @@
 }
 
 .exampleButton {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
+  overflow: hidden;
+  isolation: isolate;
   gap: 9px;
   width: 100%;
   min-height: 42px;
@@ -234,23 +237,83 @@
   font-size: 0.69rem;
   font-weight: 650;
   text-align: left;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.exampleButton svg {
+.exampleIcon,
+.exampleLabel,
+.exampleButton small {
+  position: relative;
+  z-index: 1;
+}
+
+.exampleIcon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+}
+
+.exampleIcon svg {
   width: 17px;
   height: 17px;
 }
 
+.exampleLabel {
+  min-width: 0;
+}
+
 .exampleButton small {
+  min-width: 52px;
   color: var(--zen-muted);
   font:
     0.58rem ui-monospace,
     monospace;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.exampleButton:hover {
+  border-color: rgba(167, 139, 250, 0.48);
+  background: rgba(167, 139, 250, 0.11);
+}
+
+.exampleButton:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.exampleWaveLayer,
+.exampleWaveCanvas,
+.exampleWaveProgress {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.exampleWaveLayer {
+  z-index: 0;
+}
+
+.exampleWaveCanvas {
+  width: 100%;
+  height: 100%;
+  opacity: 0.24;
+}
+
+.exampleWaveProgress {
+  right: auto;
+  width: 0;
+  opacity: 0.18;
 }
 
 .examplePlaying {
   border-color: rgba(167, 139, 250, 0.62);
-  box-shadow: 0 0 18px rgba(167, 139, 250, 0.08);
+  background: rgba(167, 139, 250, 0.12);
+  box-shadow: 0 8px 18px rgba(5, 3, 12, 0.2);
 }
 
 .scoreCard {
@@ -543,7 +606,8 @@
 @media (prefers-reduced-motion: reduce) {
   .finishButton,
   .transportButton,
-  .beginButton {
+  .beginButton,
+  .exampleButton {
     transition: none;
   }
 }

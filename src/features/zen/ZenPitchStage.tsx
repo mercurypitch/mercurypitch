@@ -1,6 +1,6 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { MusicNote, Pause, Play, Volume2, VolumeX, X } from '@/components/icons'
+import { Loader2, MusicNote, Pause, Play, Volume2, VolumeX, X, } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -8,7 +8,9 @@ import { deleteZenTake, listZenTakes, saveZenTake, } from '@/db/services/zen-tak
 import { playReferenceTone } from '@/features/mirror/tone-player'
 import type { PracticeFrame, PracticeFrameListener, } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
+import { createPreviewPlayer } from '@/lib/preview-player'
 import { midiToNote } from '@/lib/scale-data'
+import { drawStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
 import { isNarrow } from '@/lib/use-viewport'
 import { getZenExercise, zenExerciseCatalog } from './exercise-catalog'
 import { refreshGuidedContent } from './guided-content-store'
@@ -57,15 +59,87 @@ const LOOP_OPTIONS = [5, 8, 10, 15, 30] as const
 const runLabel = (run: ZenPitchRun | null, liveTake: number): string =>
   run === null ? `Live take ${liveTake}` : `Take ${run.takeNumber}`
 
+type ExamplePlaybackState =
+  | 'idle'
+  | 'loading'
+  | 'playing'
+  | 'paused'
+  | 'ended'
+  | 'error'
+
+const audioClock = (seconds: number): string => {
+  const whole = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
+/** The stem-results waveform/fill treatment, sized for the short example
+ *  pill. Decoding the guide's immutable URL also warms the browser cache
+ *  before the singer presses play. */
+const ExampleWaveformProgress: Component<{
+  url: string
+  color: string
+  progress: number
+}> = (props) => {
+  let canvasRef: HTMLCanvasElement | undefined
+
+  createEffect(() => {
+    const url = props.url
+    const color = props.color
+    const canvas = canvasRef
+    if (canvas === undefined) return
+    let alive = true
+    let peaks: Float32Array | null = null
+    const redraw = () => {
+      if (alive && peaks !== null && canvas.clientWidth > 0) {
+        drawStemPeaks(canvas, peaks, color)
+      }
+    }
+    const observer = new ResizeObserver(redraw)
+    observer.observe(canvas)
+    getStemPeaks(url)
+      .then((nextPeaks) => {
+        peaks = nextPeaks
+        redraw()
+      })
+      .catch(() => {
+        // The example remains playable if waveform decoding is unsupported.
+      })
+    onCleanup(() => {
+      alive = false
+      observer.disconnect()
+    })
+  })
+
+  return (
+    <div class={styles.exampleWaveLayer} aria-hidden="true">
+      <div
+        class={styles.exampleWaveProgress}
+        style={{
+          width: `${Math.min(100, Math.max(0, props.progress * 100))}%`,
+          background: props.color,
+        }}
+      />
+      <canvas ref={canvasRef} class={styles.exampleWaveCanvas} />
+    </div>
+  )
+}
+
 export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   const [guideOpen, setGuideOpen] = createSignal(
     props.initialExerciseId !== undefined ||
       props.initialExerciseDefinition !== undefined,
   )
-  const [examplePlaying, setExamplePlaying] = createSignal(false)
+  const [exampleState, setExampleState] =
+    createSignal<ExamplePlaybackState>('idle')
+  const [exampleProgress, setExampleProgress] = createSignal(0)
+  const [exampleElapsedSec, setExampleElapsedSec] = createSignal(0)
+  const [exampleDurationSec, setExampleDurationSec] = createSignal(0)
   const [startError, setStartError] = createSignal<string | null>(null)
-  let audio: HTMLAudioElement | undefined
+  let examplePreloader: HTMLAudioElement | undefined
   let resumeAfterExample = false
+  let exampleRaf = 0
+  let examplePlayRequest = 0
+  let preparedExampleUrl: string | null = null
   let loadRequest = 0
   let guideOpenPlain =
     props.initialExerciseId !== undefined ||
@@ -95,6 +169,36 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   })
 
   const persistedIdByRunId = new Map<string, string>()
+
+  const cancelExampleClock = (): void => {
+    cancelAnimationFrame(exampleRaf)
+    exampleRaf = 0
+  }
+
+  const resumePractice = (): void => {
+    const shouldResume = resumeAfterExample
+    resumeAfterExample = false
+    if (shouldResume && session.status() === 'paused') session.resume()
+  }
+
+  function onExampleEnded(): void {
+    ++examplePlayRequest
+    cancelExampleClock()
+    setExampleElapsedSec(exampleDurationSec())
+    setExampleProgress(1)
+    setExampleState('ended')
+    resumePractice()
+  }
+
+  const examplePlayer = createPreviewPlayer({
+    onEnded: onExampleEnded,
+    // A spoken five-second cue should answer the tap quickly while retaining
+    // a short pop-free envelope.
+    attackMs: 45,
+    releaseMs: 100,
+    errorMessage:
+      "Couldn't play this exercise example. Check your connection and try again.",
+  })
 
   const deleteSelectedRun = (): void => {
     const run = session.selectedRun()
@@ -255,38 +359,97 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     session.hydrateRuns(history)
   }
 
-  const stopExample = (): void => {
-    resumeAfterExample = false
-    setExamplePlaying(false)
-    if (audio === undefined) return
-    audio.pause()
-    audio.removeAttribute('src')
-    audio.load()
+  const stopExample = (resumeSession = false): void => {
+    ++examplePlayRequest
+    cancelExampleClock()
+    examplePlayer.stop()
+    setExampleState('idle')
+    setExampleProgress(0)
+    setExampleElapsedSec(0)
+    if (resumeSession) resumePractice()
+    else resumeAfterExample = false
   }
 
-  const onExampleEnded = (): void => {
-    setExamplePlaying(false)
-    if (resumeAfterExample) session.resume()
-    resumeAfterExample = false
-  }
-
-  const playExample = async (): Promise<void> => {
-    const example = session.exercise()?.exampleAudio
-    if (example === undefined || audio === undefined) return
-    const wasRunning = session.status() === 'running'
-    resumeAfterExample = wasRunning
-    if (wasRunning) session.pause()
-    setExamplePlaying(true)
-    audio.src = example.src
-    audio.load()
-    try {
-      await audio.play()
-    } catch {
-      setExamplePlaying(false)
-      if (resumeAfterExample) session.resume()
-      resumeAfterExample = false
+  const tickExample = (): void => {
+    const duration = examplePlayer.duration || exampleDurationSec()
+    const elapsed = examplePlayer.currentTime
+    if (duration > 0) {
+      setExampleDurationSec(duration)
+      setExampleElapsedSec(elapsed)
+      setExampleProgress(Math.min(1, Math.max(0, elapsed / duration)))
+    }
+    if (examplePlayer.playing) {
+      exampleRaf = requestAnimationFrame(tickExample)
     }
   }
+
+  const toggleExample = async (): Promise<void> => {
+    const example = session.exercise()?.exampleAudio
+    if (example === undefined) return
+
+    if (exampleState() === 'loading') {
+      stopExample(true)
+      return
+    }
+    if (exampleState() === 'playing') {
+      ++examplePlayRequest
+      examplePlayer.pause()
+      cancelExampleClock()
+      setExampleElapsedSec(examplePlayer.currentTime)
+      setExampleState('paused')
+      return
+    }
+
+    const resuming = exampleState() === 'paused'
+    if (!resuming) {
+      const wasRunning = session.status() === 'running'
+      resumeAfterExample = wasRunning
+      if (wasRunning) session.pause()
+      if (exampleState() === 'ended') {
+        examplePlayer.seekToFraction(0)
+        setExampleElapsedSec(0)
+        setExampleProgress(0)
+      }
+    }
+
+    const request = ++examplePlayRequest
+    setExampleState('loading')
+    const played = await examplePlayer.play(example.src)
+    if (request !== examplePlayRequest) return
+    if (!played) {
+      setExampleState('error')
+      resumePractice()
+      return
+    }
+    setExampleState('playing')
+    cancelExampleClock()
+    tickExample()
+  }
+
+  // The welcome guide is the lazy-load boundary. Preparing its tiny example
+  // clip while the singer reads the instructions removes the measured
+  // 0.4-1.0 second media-route wait from the eventual play tap. The shared
+  // waveform decoder uses the same immutable URL and browser cache.
+  createEffect(() => {
+    const example = session.exercise()?.exampleAudio
+    const url = example?.src ?? null
+    if (url === null) {
+      if (preparedExampleUrl !== null) stopExample()
+      preparedExampleUrl = null
+      setExampleDurationSec(0)
+      if (examplePreloader !== undefined) {
+        examplePreloader.removeAttribute('src')
+        examplePreloader.load()
+      }
+      return
+    }
+    if (isNarrow() && !guideOpen()) return
+    if (url === preparedExampleUrl) return
+    preparedExampleUrl = url
+    stopExample()
+    setExampleDurationSec((example?.durationMs ?? 0) / 1000)
+    if (examplePreloader !== undefined) examplePreloader.src = url
+  })
 
   const begin = async (): Promise<void> => {
     setStartError(null)
@@ -375,6 +538,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
               type="button"
               class={styles.iconButton}
               onClick={() => {
+                stopExample(true)
                 guideOpenPlain = false
                 setGuideOpen(false)
               }}
@@ -486,27 +650,69 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
                 </div>
               </div>
 
-              <Show when={current().exampleAudio !== undefined}>
-                <button
-                  type="button"
-                  class={styles.exampleButton}
-                  classList={{ [styles.examplePlaying]: examplePlaying() }}
-                  onClick={() => void playExample()}
-                  disabled={examplePlaying()}
-                >
-                  <Volume2 />
-                  <span>
-                    {examplePlaying()
-                      ? 'Playing example'
-                      : 'Hear pronunciation and tone'}
-                  </span>
-                  <small>
-                    {Math.round(
-                      (current().exampleAudio?.durationMs ?? 0) / 1000,
+              <Show when={current().exampleAudio}>
+                {(exampleAudio) => (
+                  <button
+                    type="button"
+                    class={styles.exampleButton}
+                    classList={{
+                      [styles.examplePlaying]:
+                        exampleState() === 'loading' ||
+                        exampleState() === 'playing' ||
+                        exampleState() === 'paused',
+                    }}
+                    data-example-audio-state={exampleState()}
+                    data-example-audio-progress={Math.round(
+                      exampleProgress() * 1000,
                     )}
-                    sec
-                  </small>
-                </button>
+                    aria-pressed={exampleState() === 'playing'}
+                    aria-label={
+                      exampleState() === 'loading'
+                        ? 'Cancel pronunciation and tone example'
+                        : exampleState() === 'playing'
+                          ? 'Pause pronunciation and tone example'
+                          : exampleState() === 'paused'
+                            ? 'Resume pronunciation and tone example'
+                            : 'Play pronunciation and tone example'
+                    }
+                    onClick={() => void toggleExample()}
+                  >
+                    <ExampleWaveformProgress
+                      url={exampleAudio().src}
+                      color={PITCH_VISUAL_COLORS.singer}
+                      progress={exampleProgress()}
+                    />
+                    <span class={styles.exampleIcon} aria-hidden="true">
+                      {exampleState() === 'loading' ? (
+                        <Loader2 />
+                      ) : exampleState() === 'playing' ? (
+                        <Pause />
+                      ) : (
+                        <Play />
+                      )}
+                    </span>
+                    <span class={styles.exampleLabel}>
+                      {exampleState() === 'loading'
+                        ? 'Preparing example…'
+                        : exampleState() === 'playing'
+                          ? 'Playing pronunciation and tone'
+                          : exampleState() === 'paused'
+                            ? 'Example paused'
+                            : exampleState() === 'ended'
+                              ? 'Play pronunciation again'
+                              : exampleState() === 'error'
+                                ? 'Try pronunciation example again'
+                                : 'Hear pronunciation and tone'}
+                    </span>
+                    <small>
+                      {exampleState() === 'idle' ||
+                      exampleState() === 'loading' ||
+                      exampleState() === 'error'
+                        ? `${Math.round(exampleDurationSec())} sec`
+                        : `${audioClock(exampleElapsedSec())} / ${audioClock(exampleDurationSec())}`}
+                    </small>
+                  </button>
+                )}
               </Show>
             </>
           )}
@@ -593,7 +799,12 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           type="button"
           class={styles.beginButton}
           onClick={() => void begin()}
-          disabled={examplePlaying() || session.status() === 'running'}
+          disabled={
+            exampleState() === 'loading' ||
+            exampleState() === 'playing' ||
+            exampleState() === 'paused' ||
+            session.status() === 'running'
+          }
         >
           <Play />
           {session.status() === 'paused'
@@ -752,6 +963,11 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     ++loadRequest
     window.removeEventListener('keydown', onKeyDown)
     stopExample()
+    examplePlayer.dispose()
+    if (examplePreloader !== undefined) {
+      examplePreloader.removeAttribute('src')
+      examplePreloader.load()
+    }
   })
 
   return (
@@ -808,16 +1024,12 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
         footer={footer}
       />
 
-      <audio
-        ref={audio}
-        preload="none"
-        onEnded={onExampleEnded}
-        onError={onExampleEnded}
-      />
+      <audio ref={examplePreloader} preload="auto" aria-hidden="true" />
 
       <Sheet
         isOpen={isNarrow() && guideOpen()}
         close={() => {
+          stopExample(true)
           guideOpenPlain = false
           setGuideOpen(false)
         }}

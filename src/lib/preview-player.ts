@@ -94,6 +94,8 @@ export function dipEnvelope(
 
 export interface PreviewPlayerOptions {
   onEnded?: () => void
+  /** Product-specific recovery copy for failed media. */
+  errorMessage?: string
   /** Envelope timings (ms); see ENVELOPE_DEFAULTS. Longer = softer
    *  transitions at the cost of start/stop latency. */
   attackMs?: number
@@ -241,7 +243,8 @@ export function createPreviewPlayer(
       // routine, not worth a toast.
       if (!aborted) {
         showNotification(
-          "Couldn't play this audio — the source may have expired or isn't supported here. Re-open the song to refresh it.",
+          options.errorMessage ??
+            "Couldn't play this audio — the source may have expired or isn't supported here. Re-open the song to refresh it.",
           'error',
         )
       }

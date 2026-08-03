@@ -253,6 +253,24 @@ describe('createPreviewPlayer', () => {
     )
   })
 
+  it('uses product-specific playback error copy when provided', async () => {
+    const player = createPreviewPlayer({
+      errorMessage:
+        "Couldn't play this exercise example. Check your connection and try again.",
+    })
+    void (await player.play('blob:warm-up'))
+    const element = lastElement()
+    element.play.mockImplementationOnce(() =>
+      Promise.reject(new DOMException('no source', 'NotSupportedError')),
+    )
+
+    expect(await player.play('blob:example')).toBe(false)
+    expect(showNotification).toHaveBeenCalledWith(
+      "Couldn't play this exercise example. Check your connection and try again.",
+      'error',
+    )
+  })
+
   it('a retry after a failed source re-assigns the src', async () => {
     const player = createPreviewPlayer()
     void (await player.play('blob:one'))
