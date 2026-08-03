@@ -452,61 +452,68 @@ export const VocalChallenges: Component = () => {
         </h3>
         <div class="badges-grid">
           <For each={badges()}>
-            {(badge) => (
-              <div class={`badge-item ${badge.earned ? 'earned' : 'locked'}`}>
-                {/* The drawn medallion when one exists, the old glyph
-                    otherwise — seeding a badge is never blocked on
-                    generating its art. Locked badges keep the art but
-                    lose their colour (see .badge-item.locked). */}
-                <div class="badge-icon">
-                  <Show
-                    when={badgeArtSrc(badge.iconName)}
-                    fallback={renderIcon(badge.icon)}
-                  >
-                    {(src) => (
-                      <img
-                        class="badge-medal"
-                        src={src()}
-                        width="64"
-                        height="64"
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
-                  </Show>
-                </div>
-                <div class="badge-info">
-                  <span class="badge-name">{badge.name}</span>
-                  <span class="badge-tier">{badge.tier}</span>
-                </div>
-                {/* How it is earned. Achievements already show their
-                    requirement and a progress bar; badges showed a name
-                    and a tier, so a locked one told the singer nothing
-                    about what to go and do.
-
-                    InfoPopover, not a hand-rolled panel: it portals to
-                    <body>, so the leftmost card in a row cannot clip it
-                    and the sidebar cannot draw over it, and it closes on
-                    outside click, Escape, scroll and navigation. */}
-                <InfoPopover
-                  class="badge-hint-toggle"
-                  label={`How to earn ${badge.name}`}
+            {(badge) => {
+              // The whole tile is the affordance: the art fills it the way
+              // a voiceprint does, the name sits on a thin strip over the
+              // bottom, and hovering anywhere on it explains the badge.
+              // The old card was a 64px medallion floating above a name,
+              // with the earned tick landing on top of the 'i'.
+              let tile: HTMLDivElement | undefined
+              return (
+                <div
+                  ref={tile}
+                  class={`badge-item ${badge.earned ? 'earned' : 'locked'}`}
                 >
-                  {badge.unlockCondition || badge.description}
-                  <Show when={badge.earned && badge.earnedDate > 0}>
-                    <span class="badge-hint-earned">
-                      Earned {new Date(badge.earnedDate).toLocaleDateString()}
+                  <div class="badge-art">
+                    <Show
+                      when={badgeArtSrc(badge.iconName)}
+                      fallback={
+                        <span class="badge-glyph">
+                          {renderIcon(badge.icon)}
+                        </span>
+                      }
+                    >
+                      {(src) => (
+                        <img
+                          class="badge-medal"
+                          src={src()}
+                          width="256"
+                          height="256"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
+                    </Show>
+                  </div>
+
+                  {/* Top-left, so it stops sitting on the 'i'. */}
+                  <Show when={badge.earned}>
+                    <span class="badge-check" title="Earned">
+                      <IconCheckSolid />
                     </span>
                   </Show>
-                </InfoPopover>
-                {badge.earned && (
-                  <span class="badge-check">
-                    <IconCheckSolid />
-                  </span>
-                )}
-              </div>
-            )}
+
+                  <InfoPopover
+                    class="badge-hint-toggle"
+                    label={`How to earn ${badge.name}`}
+                    hoverAnchor={() => tile}
+                  >
+                    {badge.unlockCondition || badge.description}
+                    <Show when={badge.earned && badge.earnedDate > 0}>
+                      <span class="badge-hint-earned">
+                        Earned {new Date(badge.earnedDate).toLocaleDateString()}
+                      </span>
+                    </Show>
+                  </InfoPopover>
+
+                  <div class="badge-strip">
+                    <span class="badge-name">{badge.name}</span>
+                    <span class="badge-tier">{badge.tier}</span>
+                  </div>
+                </div>
+              )
+            }}
           </For>
         </div>
       </div>
