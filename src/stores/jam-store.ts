@@ -1183,19 +1183,53 @@ function clearPendingDepartures(): void {
 }
 
 let jamService: ReturnType<typeof createJamService> | null = null
-const remoteAudioNodes = new Map<string, MediaStreamAudioSourceNode>()
-let audioContext: AudioContext | null = null
+
+// ── Hearing the room ─────────────────────────────────────────────────
+// One <audio> element per peer, rather than a Web Audio graph.
+//
+// Chrome's echo canceller only cancels audio coming from a peer
+// connection; anything rendered through Web Audio is invisible to it. So
+// the old createMediaStreamSource -> destination path could never be
+// cancelled, whatever the microphone was asked for -- which is half of
+// why two devices in one room scream at each other. An element is also
+// immune to a suspended AudioContext, and brings a per-peer volume for
+// free.
+//
+// See docs/plans/jam-mic-feedback.md.
+const remoteAudioEls = new Map<string, HTMLAudioElement>()
+
+function playPeerAudio(peerId: string, stream: MediaStream): void {
+  let el = remoteAudioEls.get(peerId)
+  if (el === undefined) {
+    el = document.createElement('audio')
+    el.autoplay = true
+    // Kept out of the layout entirely: it has no controls and nothing to
+    // show. display:none would stop some browsers playing it at all.
+    el.style.position = 'absolute'
+    el.style.width = '0'
+    el.style.height = '0'
+    el.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(el)
+    remoteAudioEls.set(peerId, el)
+  }
+  el.srcObject = stream
+  // Autoplay policy can still refuse; the room has been clicked through by
+  // the time anyone is in it, so this is a belt-and-braces retry.
+  void el.play().catch(() => {})
+}
+
+function stopPeerAudio(peerId: string): void {
+  const el = remoteAudioEls.get(peerId)
+  if (el === undefined) return
+  el.pause()
+  el.srcObject = null
+  el.remove()
+  remoteAudioEls.delete(peerId)
+}
 let pitchDetector: JamPitchDetector | null = null
 let pitchNetworkInterval: ReturnType<typeof setInterval> | null = null
 let playbackTimerId: ReturnType<typeof requestAnimationFrame> | null = null
 let playbackLastTick = 0
-
-function getAudioContext(): AudioContext {
-  if (!audioContext) {
-    audioContext = new AudioContext()
-  }
-  return audioContext
-}
 
 /**
  * How far the room moved on while a transport command was in the air.
@@ -1241,12 +1275,8 @@ export function initJam() {
       const gone = jamPeers().find((p) => p.id === peerId)
       if (gone !== undefined) noteJamPeerLeft(gone.displayName)
       setJamPeers((prev) => prev.filter((p) => p.id !== peerId))
-      // Clean up audio node
-      const source = remoteAudioNodes.get(peerId)
-      if (source) {
-        source.disconnect()
-        remoteAudioNodes.delete(peerId)
-      }
+      // Stop hearing them.
+      stopPeerAudio(peerId)
       // Clean up remote stream
       setJamRemoteStreams((prev) => {
         const next = { ...prev }
@@ -1276,18 +1306,7 @@ export function initJam() {
       rehomeJamSongParts()
     },
     onPeerStream: (peerId, stream) => {
-      const existing = remoteAudioNodes.get(peerId)
-      if (existing) {
-        try {
-          existing.disconnect()
-        } catch (_e) {
-          // ignore if already disconnected
-        }
-      }
-      const ctx = getAudioContext()
-      const source = ctx.createMediaStreamSource(stream)
-      source.connect(ctx.destination)
-      remoteAudioNodes.set(peerId, source)
+      playPeerAudio(peerId, stream)
       // Store remote stream for video display
       // (When tracks are added to the existing stream, the browser automatically updates video elements playing it)
       setJamRemoteStreams((prev) => ({ ...prev, [peerId]: stream }))
@@ -2086,12 +2105,8 @@ function cleanupJam(): void {
     shareDoneTimer = null
   }
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
-  for (const [, source] of remoteAudioNodes) {
-    source.disconnect()
-  }
-  remoteAudioNodes.clear()
-  audioContext?.close()
-  audioContext = null
+  for (const [peerId] of remoteAudioEls) stopPeerAudio(peerId)
+  remoteAudioEls.clear()
   setJamRoomId(null)
   setJamPeerId(null)
   setJamIsHost(false)
