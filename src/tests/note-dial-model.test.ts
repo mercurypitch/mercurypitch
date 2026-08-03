@@ -9,7 +9,7 @@
 // in a suite rather than be noticed by someone clicking C#.
 
 import { describe, expect, it } from 'vitest'
-import { arcPath, dialSeats, octavesIn, PITCH_CLASSES, pitchClassAvailable, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from '@/components/note-dial-model'
+import { arcPath, dialSeats, octaveArcPath, octaveArcs, octaveAtPoint, octavesIn, PITCH_CLASSES, pitchClassAvailable, polarPoint, rangeBand, rangeEnds, rangePosition, resolvePick, seatAtPoint, seatPoint, splitNote, } from '@/components/note-dial-model'
 
 const midiOf = (note: string): number => {
   const m = /^([A-G]#?)(-?\d+)$/.exec(note)
@@ -181,5 +181,177 @@ describe('reading the note list', () => {
   it('knows which classes the range can reach', () => {
     expect(pitchClassAvailable('C#', TENOR)).toBe(true)
     expect(pitchClassAvailable('C#', ['E3', 'F3'])).toBe(false)
+  })
+})
+
+// ============================================================
+// Octave segments on the rim
+// ============================================================
+//
+// The rim already showed range position. Dividing it by octave makes
+// the boundary a tick on that same gauge — but ONLY if the segments are
+// proportional to what each octave actually holds. Equal slices are
+// right for C3-B5 by coincidence and wrong for every range that does
+// not start on a C, and the failure is silent: the marker just sits in
+// the neighbouring segment and the design quietly stops being true.
+
+const TOP = -Math.PI / 2
+
+/** The fraction of a full turn an angle sits at, measured from the top. */
+const turnOf = (angle: number): number => {
+  let a = angle
+  while (a < TOP) a += Math.PI * 2
+  return (a - TOP) / (Math.PI * 2)
+}
+
+describe('octave arcs', () => {
+  it('gives every octave in the range a segment, in order', () => {
+    const arcs = octaveArcs(TENOR, midiOf)
+    expect(arcs.map((a) => a.octave)).toEqual([3, 4, 5])
+  })
+
+  it('draws nothing when there is no boundary to draw', () => {
+    expect(octaveArcs(['C4', 'D4', 'E4'], midiOf)).toEqual([])
+    expect(octaveArcs(['C4'], midiOf)).toEqual([])
+    expect(octaveArcs([], midiOf)).toEqual([])
+  })
+
+  it('tiles the whole ring, so no tap lands on nothing', () => {
+    // Segments run to the midpoint of the semitone between octaves. Ending
+    // each at its own last note instead left a semitone of dead ring at
+    // every boundary — 14 degrees of the tenor dial that did nothing.
+    const arcs = octaveArcs(TENOR, midiOf)
+    expect(turnOf(arcs[0].start)).toBeLessThan(0.02)
+    expect(turnOf(arcs[arcs.length - 1].end)).toBeGreaterThan(0.98)
+    for (let i = 1; i < arcs.length; i++) {
+      const gap = turnOf(arcs[i].start) - turnOf(arcs[i - 1].end)
+      // Only the cosmetic separator, never a semitone of nothing.
+      expect(gap).toBeGreaterThan(0)
+      expect(gap).toBeLessThan(0.02)
+    }
+  })
+
+  it('splits three whole octaves into near-thirds', () => {
+    const arcs = octaveArcs(TENOR, midiOf)
+    const spans = arcs.map((a) => turnOf(a.end) - turnOf(a.start))
+    for (const span of spans) expect(span).toBeCloseTo(1 / 3, 1)
+  })
+
+  it('sizes an UNEVEN range by what each octave actually holds', () => {
+    // A3-C5: octave 3 holds A3-B3 (3 notes), 4 holds C4-B4 (12), 5 holds
+    // C5 alone. Equal thirds would be a lie about all three.
+    const notes: string[] = []
+    for (let m = midiOf('A3'); m <= midiOf('C5'); m++) {
+      const pc = PITCH_CLASSES[m % 12]
+      notes.push(`${pc}${Math.floor(m / 12) - 1}`)
+    }
+    const arcs = octaveArcs(notes, midiOf)
+    const span = (o: number): number => {
+      const a = arcs.find((x) => x.octave === o)!
+      return turnOf(a.end) - turnOf(a.start)
+    }
+    expect(span(4)).toBeGreaterThan(span(3) * 2)
+    expect(span(3)).toBeGreaterThan(span(5))
+  })
+
+  it('puts the selected note inside its OWN octave segment', () => {
+    // The whole claim of the design, checked on a range that does not
+    // start on a C. Equal slices fail this.
+    const notes: string[] = []
+    for (let m = midiOf('E2'); m <= midiOf('G5'); m++) {
+      const pc = PITCH_CLASSES[m % 12]
+      notes.push(`${pc}${Math.floor(m / 12) - 1}`)
+    }
+    const arcs = octaveArcs(notes, midiOf)
+    for (const note of notes) {
+      const octave = splitNote(note)!.octave
+      const arc = arcs.find((a) => a.octave === octave)!
+      const at = rangePosition(note, notes, midiOf)
+      // Allow the gap that separates neighbouring segments.
+      expect(at).toBeGreaterThanOrEqual(turnOf(arc.start) - 0.02)
+      expect(at).toBeLessThanOrEqual(turnOf(arc.end) + 0.02)
+    }
+  })
+
+  it('never draws a segment backwards, however thin', () => {
+    // One octave holding a single note would go negative once the gap
+    // is trimmed off both ends.
+    const arcs = octaveArcs(['B3', 'C4', 'C#4', 'D4'], midiOf)
+    for (const arc of arcs) expect(arc.end).toBeGreaterThanOrEqual(arc.start)
+  })
+
+  it('leaves a visible gap between neighbours', () => {
+    const arcs = octaveArcs(TENOR, midiOf)
+    for (let i = 1; i < arcs.length; i++) {
+      expect(turnOf(arcs[i].start)).toBeGreaterThan(turnOf(arcs[i - 1].end))
+    }
+  })
+})
+
+describe('octave arc hit-testing', () => {
+  const arcs = octaveArcs(TENOR, midiOf)
+
+  /** A point on the ring at the midpoint of the given octave's segment. */
+  const onArc = (octave: number, radius = 1): { x: number; y: number } =>
+    polarPoint(arcs.find((a) => a.octave === octave)!.mid, radius)
+
+  it('resolves a pointer on the ring to the segment under it', () => {
+    for (const octave of [3, 4, 5]) {
+      const p = onArc(octave)
+      expect(octaveAtPoint(p.x, p.y, arcs)?.octave).toBe(octave)
+    }
+  })
+
+  it('ignores the seats, which own everything inside the ring', () => {
+    // The outermost natural reaches ~0.9 of the radius. If the ring
+    // reached in that far, tapping C would change the octave instead.
+    const p = onArc(4, 0.74)
+    expect(octaveAtPoint(p.x, p.y, arcs)).toBeNull()
+    expect(octaveAtPoint(0, 0, arcs)).toBeNull()
+  })
+
+  it('ignores a pointer well outside the dial', () => {
+    const p = onArc(4, 2.0)
+    expect(octaveAtPoint(p.x, p.y, arcs)).toBeNull()
+  })
+
+  it('hands a tap in the boundary gap to the nearer segment', () => {
+    const lower = arcs.find((a) => a.octave === 3)!
+    const upper = arcs.find((a) => a.octave === 4)!
+    const justAfter = polarPoint(lower.end + 0.01, 1)
+    const justBefore = polarPoint(upper.start - 0.01, 1)
+    expect(octaveAtPoint(justAfter.x, justAfter.y, arcs)?.octave).toBe(3)
+    expect(octaveAtPoint(justBefore.x, justBefore.y, arcs)?.octave).toBe(4)
+  })
+
+  it('resolves every angle on the ring to some octave', () => {
+    // No dead zones: a full sweep of the ring must always land somewhere.
+    let misses = 0
+    for (let i = 0; i < 360; i++) {
+      const p = polarPoint(TOP + (i / 360) * Math.PI * 2, 1)
+      if (octaveAtPoint(p.x, p.y, arcs) === null) misses++
+    }
+    expect(misses).toBe(0)
+  })
+})
+
+describe('octave arc paths', () => {
+  it('draws an arc between the segment ends', () => {
+    const [arc] = octaveArcs(TENOR, midiOf)
+    const d = octaveArcPath(arc, 100, 100, 90)
+    expect(d.startsWith('M ')).toBe(true)
+    expect(d).toContain(' A 90 90 ')
+  })
+
+  it('flags the large-arc case so a two-octave range still draws', () => {
+    // Two octaves means each segment is nearly half the circle; one of
+    // them crosses the 180-degree threshold where the flag matters.
+    const notes: string[] = []
+    for (const octave of [3, 4]) {
+      for (const pc of PITCH_CLASSES) notes.push(`${pc}${octave}`)
+    }
+    const arcs = octaveArcs(notes, midiOf)
+    const flags = arcs.map((a) => octaveArcPath(a, 100, 100, 90).split(' ')[7])
+    expect(flags.every((f) => f === '0' || f === '1')).toBe(true)
   })
 })
