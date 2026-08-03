@@ -3,7 +3,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { Plus, Search } from '@/components/icons'
 import { ZEN_EXERCISES } from '@/features/zen/exercise-catalog'
 import type { AdminGuidedExercise, AdminGuidedExerciseDraft, AdminGuidedExerciseVersion, ApiResult, } from '@/features/zen/guided-exercise-service'
-import { archiveGuidedExercise, cloneGuidedExerciseDraft, createGuidedExercise, listAdminGuidedExercises, publishGuidedExercise, saveGuidedExerciseDraft, uploadGuidedExerciseMedia, validateGuidedExerciseDraft, } from '@/features/zen/guided-exercise-service'
+import { archiveGuidedExercise, cloneGuidedExerciseDraft, createGuidedExercise, downloadAdminGuidedExerciseMedia, listAdminGuidedExercises, publishGuidedExercise, saveGuidedExerciseDraft, uploadGuidedExerciseMedia, validateGuidedExerciseDraft, } from '@/features/zen/guided-exercise-service'
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '@/features/zen/types'
 import { validateZenExercise } from '@/features/zen/validate-exercise'
 import { showNotification } from '@/stores/notifications-store'
@@ -65,11 +65,7 @@ function preferredVersion(
 
 function resultError<T>(result: ApiResult<T>): Error {
   if (result.ok) return new Error('Unexpected successful result')
-  return new Error(
-    result.status === 409
-      ? 'This draft changed elsewhere. Reload it before saving again.'
-      : result.error,
-  )
+  return new Error(result.error)
 }
 
 function mediaDuration(file: File): Promise<number> {
@@ -121,10 +117,13 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   const [dirty, setDirty] = createSignal(false)
   const [editorStatus, setEditorStatus] =
     createSignal<ExerciseEditorStatus>('idle')
+  const [editorInteractionBusy, setEditorInteractionBusy] = createSignal(false)
   const [serverIssues, setServerIssues] = createSignal<
     ExerciseEditorValidationIssue[]
   >([])
   let examplePreviewObjectUrl: string | null = null
+  let examplePreviewRequest = 0
+  let activeSelectionKey = ''
 
   const revokeExamplePreview = (): void => {
     if (examplePreviewObjectUrl === null) return
@@ -132,12 +131,17 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
     examplePreviewObjectUrl = null
   }
 
+  const cancelExamplePreview = (): void => {
+    examplePreviewRequest += 1
+    revokeExamplePreview()
+  }
+
   createEffect(() => {
     props.onDirtyChange?.(dirty())
   })
 
   onCleanup(() => {
-    revokeExamplePreview()
+    cancelExamplePreview()
     props.onDirtyChange?.(false)
   })
 
@@ -205,15 +209,30 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
     row: AdminGuidedExercise,
     version: AdminGuidedExerciseVersion,
   ): void => {
+    if (editorInteractionBusy()) {
+      showNotification(
+        'Finish or cancel the current audio action first.',
+        'info',
+      )
+      return
+    }
     if (dirty() && !confirm('Discard the unsaved exercise changes?')) return
     if (version?.exercise === null || version?.exercise === undefined) {
       setPageError(`Version ${version.version} of "${row.id}" is unreadable.`)
       return
     }
-    revokeExamplePreview()
+    cancelExamplePreview()
+    const exercise = structuredClone(version.exercise)
+    const privateDraftMediaId =
+      version.lifecycle === 'draft' ? version.exampleMediaId : null
+    const selectionKey = `${row.id}:${version.version}`
+    activeSelectionKey = selectionKey
+    if (privateDraftMediaId !== null && exercise.exampleAudio !== undefined) {
+      exercise.exampleAudio.src = ''
+    }
     setSelectedId(row.id)
     setSelectedVersionNumber(version.version)
-    setWorking(structuredClone(version.exercise))
+    setWorking(exercise)
     setServerDraft(
       version.lifecycle === 'draft'
         ? {
@@ -229,6 +248,39 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
     setDirty(false)
     setServerIssues(version.issues)
     setPageError(null)
+    if (privateDraftMediaId !== null) {
+      const request = ++examplePreviewRequest
+      const adminKey = props.adminKey
+      void downloadAdminGuidedExerciseMedia(privateDraftMediaId, adminKey).then(
+        (result) => {
+          if (
+            request !== examplePreviewRequest ||
+            activeSelectionKey !== selectionKey
+          ) {
+            return
+          }
+          if (!result.ok) {
+            setPageError(
+              `Saved example audio could not be loaded: ${result.error}`,
+            )
+            return
+          }
+          revokeExamplePreview()
+          examplePreviewObjectUrl = URL.createObjectURL(result.data)
+          setWorking((current) =>
+            current?.exampleAudio === undefined
+              ? current
+              : {
+                  ...current,
+                  exampleAudio: {
+                    ...current.exampleAudio,
+                    src: examplePreviewObjectUrl ?? '',
+                  },
+                },
+          )
+        },
+      )
+    }
   }
 
   const selectRow = (row: AdminGuidedExercise): void => {
@@ -259,8 +311,16 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   }
 
   const beginNew = (): void => {
+    if (editorInteractionBusy()) {
+      showNotification(
+        'Finish or cancel the current audio action first.',
+        'info',
+      )
+      return
+    }
     if (dirty() && !confirm('Discard the unsaved exercise changes?')) return
-    revokeExamplePreview()
+    cancelExamplePreview()
+    activeSelectionKey = 'new'
     setSelectedId(null)
     setSelectedVersionNumber(null)
     setWorking(blankExercise())
@@ -299,8 +359,6 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
         setSelectedId(result.data.exercise.id)
         setIsNew(false)
         setDirty(false)
-        revokeExamplePreview()
-        setWorking(result.data.draft.exercise)
         await load(result.data.exercise.id)
         showNotification('Exercise draft created', 'success')
         return {
@@ -324,8 +382,11 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
         throw resultError(result)
       }
       setServerDraft(result.data.draft)
-      revokeExamplePreview()
-      setWorking(result.data.draft.exercise)
+      const savedExercise = structuredClone(result.data.draft.exercise)
+      if (savedExercise.exampleAudio !== undefined && mediaId !== null) {
+        savedExercise.exampleAudio.src = examplePreviewObjectUrl ?? ''
+      }
+      setWorking(savedExercise)
       setDirty(false)
       setServerIssues([])
       showNotification('Draft saved', 'success')
@@ -435,13 +496,17 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
   const uploadExample = async (
     file: File,
     value: ZenExerciseDefinition,
+    recordedDurationMs?: number,
   ): Promise<ZenExampleAudio> => {
     const adminKey = props.adminKey
     const metadata = value.exampleAudio
     if (metadata === undefined || metadata.transcript.trim() === '') {
       throw new Error('Add the example transcript before uploading audio.')
     }
-    const durationMs = await mediaDuration(file)
+    const durationMs =
+      recordedDurationMs === undefined
+        ? await mediaDuration(file)
+        : Math.max(1, Math.round(recordedDurationMs))
     const result = await uploadGuidedExerciseMedia(
       file,
       {
@@ -724,6 +789,7 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
                   setDirty(true)
                   setServerIssues([])
                 }}
+                onInteractionBusyChange={setEditorInteractionBusy}
                 onSave={lifecycle() === 'draft' ? saveFromEditor : undefined}
                 onPublish={lifecycle() === 'draft' ? publish : undefined}
                 onArchive={lifecycle() === 'archived' ? undefined : archive}
@@ -732,7 +798,7 @@ export const AdminExercisesPage: Component<AdminExercisesPageProps> = (
                 }
                 onExampleAudioFile={uploadExample}
                 onRemoveExampleAudio={() => {
-                  revokeExamplePreview()
+                  cancelExamplePreview()
                   setExampleMediaId(null)
                   setDirty(true)
                   return Promise.resolve()

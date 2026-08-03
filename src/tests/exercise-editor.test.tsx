@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
-import { ExerciseEditor } from '@/features/admin/exercises/ExerciseEditor'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ExerciseEditor, isExerciseEditorBusy, } from '@/features/admin/exercises/ExerciseEditor'
 import { ExercisePreview } from '@/features/admin/exercises/ExercisePreview'
 import { ExerciseTimelineEditor } from '@/features/admin/exercises/ExerciseTimelineEditor'
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '@/features/zen/types'
@@ -37,6 +37,13 @@ const exercise = (): ZenExerciseDefinition => ({
     steadinessWeight: 0.2,
     toleranceCents: 100,
   },
+})
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+  Reflect.deleteProperty(globalThis, 'MediaRecorder')
 })
 
 describe('ExerciseEditor', () => {
@@ -144,7 +151,7 @@ describe('ExerciseEditor', () => {
     ).toBeInTheDocument()
   })
 
-  it('requires audio metadata before file selection', () => {
+  it('allows audio selection before its transcript is ready', () => {
     const incompleteAudio: ZenExampleAudio = {
       src: '',
       durationMs: 5000,
@@ -166,58 +173,25 @@ describe('ExerciseEditor', () => {
         onExampleAudioFile={vi.fn()}
       />
     ))
-    expect(screen.getByLabelText(/Choose recording/)).toBeDisabled()
+    const fileInput = screen.getByLabelText(/Choose audio file/)
+    expect(fileInput).toBeEnabled()
+    expect(fileInput).toHaveAttribute('accept', expect.stringContaining('.wav'))
+    expect(
+      screen.getByText(/or drop audio anywhere in this box/i),
+    ).toBeVisible()
+    expect(
+      screen.getByText(/longer songs get a clip-start control/i),
+    ).toBeVisible()
   })
 
-  it('uploads returned example metadata and renders the production preview', async () => {
-    const readyAudio: ZenExampleAudio = {
-      src: '',
-      durationMs: 5000,
+  it('renders uploaded example metadata in the production preview', () => {
+    const uploaded: ZenExampleAudio = {
+      src: '/media/ng-example.mp3',
+      durationMs: 4200,
       locale: 'en-GB',
       source: 'coach',
       transcript: 'NG',
     }
-    const uploaded: ZenExampleAudio = {
-      ...readyAudio,
-      src: '/media/ng-example.mp3',
-      durationMs: 4200,
-    }
-    const exerciseWithReadyAudio = { ...exercise(), exampleAudio: readyAudio }
-    const onExampleAudioFile = vi.fn(async () => uploaded)
-    const onChange = vi.fn()
-    render(() => (
-      <ExerciseEditor
-        value={exerciseWithReadyAudio}
-        lifecycle="draft"
-        status="idle"
-        validationIssues={[]}
-        onChange={onChange}
-        onExampleAudioFile={onExampleAudioFile}
-      />
-    ))
-    const fileInput = screen.getByLabelText(/Choose recording/)
-    expect(fileInput).toBeEnabled()
-
-    const file = new File(['audio'], 'ng.mp3', { type: 'audio/mpeg' })
-    fireEvent.change(fileInput, {
-      target: { files: [file] },
-    })
-
-    await waitFor(() =>
-      expect(onExampleAudioFile).toHaveBeenCalledWith(
-        file,
-        expect.objectContaining({
-          exampleAudio: readyAudio,
-        }),
-      ),
-    )
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith({
-        ...exercise(),
-        exampleAudio: uploaded,
-      }),
-    )
-    cleanup()
     render(() => (
       <ExercisePreview value={{ ...exercise(), exampleAudio: uploaded }} />
     ))
@@ -228,6 +202,50 @@ describe('ExerciseEditor', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.getByText('Runtime canvas')).toBeInTheDocument()
+  })
+
+  it('offers a five-second microphone recording action for ready audio', () => {
+    const mediaRecorderStub = vi.fn() as unknown as typeof MediaRecorder
+    Object.defineProperty(mediaRecorderStub, 'isTypeSupported', {
+      value: () => true,
+    })
+    Object.defineProperty(globalThis, 'MediaRecorder', {
+      configurable: true,
+      value: mediaRecorderStub,
+    })
+    const readyAudio: ZenExampleAudio = {
+      src: '',
+      durationMs: 5000,
+      locale: 'en-GB',
+      source: 'coach',
+      transcript: 'NG',
+    }
+
+    render(() => (
+      <ExerciseEditor
+        value={{ ...exercise(), exampleAudio: readyAudio }}
+        lifecycle="draft"
+        status="idle"
+        validationIssues={[]}
+        onChange={vi.fn()}
+        onExampleAudioFile={vi.fn()}
+      />
+    ))
+
+    expect(
+      screen.getByRole('button', { name: 'Record 5-second example' }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('progressbar', { name: 'Example recording duration' }),
+    ).toHaveAttribute('aria-valuemax', '5000')
+    expect(
+      screen.getByText('Stops automatically at five seconds.'),
+    ).toBeVisible()
+  })
+
+  it('treats an active recording as a blocking editor action', () => {
+    expect(isExerciseEditorBusy(false, false, true)).toBeTruthy()
+    expect(isExerciseEditorBusy(false, false, false)).toBeFalsy()
   })
 
   it('keeps superseded versions read-only while retaining preview access', () => {

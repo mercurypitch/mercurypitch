@@ -98,7 +98,17 @@ const ALLOWED_PLAYBACK_TYPES = new Set([
   'audio/mp4',
   'audio/aac',
   'audio/x-m4a',
+  'audio/webm',
+  'audio/ogg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/wave',
 ])
+
+export function isAllowedGuidedPlaybackType(contentType: string): boolean {
+  const mimeType = contentType.split(';', 1)[0]!.trim().toLowerCase()
+  return ALLOWED_PLAYBACK_TYPES.has(mimeType)
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -1085,9 +1095,12 @@ async function uploadMedia(
     .split(';', 1)[0]!
     .trim()
     .toLowerCase()
-  if (!ALLOWED_PLAYBACK_TYPES.has(mimeType)) {
+  if (!isAllowedGuidedPlaybackType(mimeType)) {
     return respond(
-      { error: 'Playback must be MP3, MP4/M4A, or AAC audio' },
+      {
+        error:
+          'Playback must be MP3, MP4/M4A, AAC, WebM, Ogg, or WAV audio',
+      },
       { status: 415 },
     )
   }
