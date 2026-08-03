@@ -31,6 +31,14 @@ export interface ShareProgress {
   stem: ShareStem
   /** 0-1 across THIS stem to THIS peer. */
   ratio: number
+  /**
+   * 0-1 across the whole job: every stem, to everybody.
+   *
+   * What a progress bar should read. Per-stem it ran 0-100 twice and then
+   * again for the next person, so a send to two peers filled the bar four
+   * times and meant nothing.
+   */
+  overall: number
 }
 
 /**
@@ -118,12 +126,23 @@ export async function shareStemsWithPeers(
   const sent: string[] = []
   const skipped: ShareSkip[] = []
 
+  // One bar for the whole job. Every peer gets every stem, so the work is
+  // known up front, and a peer who is skipped still counts as its share
+  // done -- otherwise a room where one person is behind a relay leaves the
+  // bar permanently short of the end.
+  const bytesPerPeer = stems.reduce((n, s) => n + s.bytes.byteLength, 0)
+  const totalBytes = bytesPerPeer * targets.length
+  let doneBytes = 0
+  const overallAt = (extra: number) =>
+    totalBytes <= 0 ? 1 : Math.min(1, (doneBytes + extra) / totalBytes)
+
   for (const target of targets) {
     if (opts.signal?.aborted === true) break
     const { peerId, channel, connection } = target
 
     if (channel === null || channel.readyState !== 'open') {
       skipped.push({ peerId, reason: 'They are not connected right now.' })
+      doneBytes += bytesPerPeer
       continue
     }
     if (connection === null || (await isRelayedConnection(connection))) {
@@ -134,6 +153,7 @@ export async function shareStemsWithPeers(
         reason: RELAY_REFUSAL,
       })
       skipped.push({ peerId, reason: RELAY_REFUSAL })
+      doneBytes += bytesPerPeer
       continue
     }
 
@@ -154,8 +174,14 @@ export async function shareStemsWithPeers(
         await sendInChunks(channel, stem.bytes, {
           ...(opts.signal === undefined ? {} : { signal: opts.signal }),
           onProgress: (p) =>
-            opts.onProgress?.({ peerId, stem: stem.stem, ratio: p.ratio }),
+            opts.onProgress?.({
+              peerId,
+              stem: stem.stem,
+              ratio: p.ratio,
+              overall: overallAt(p.received),
+            }),
         })
+        doneBytes += stem.bytes.byteLength
         transport.sendMessage(peerId, {
           type: 'song-file',
           action: 'done',
@@ -173,6 +199,8 @@ export async function shareStemsWithPeers(
         reason,
       })
       skipped.push({ peerId, reason })
+      // Whatever was left of this peer's share is not going to happen.
+      doneBytes = Math.min(totalBytes, doneBytes + bytesPerPeer)
     }
   }
 

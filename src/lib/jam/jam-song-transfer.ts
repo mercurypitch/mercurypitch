@@ -28,8 +28,31 @@ export const TRANSFER_CHUNK_BYTES = 16 * 1024
  * it can copy it, and the buffer -- which is memory -- grows to the size
  * of the song. A phone notices.
  */
-export const SEND_HIGH_WATER = 1024 * 1024
-export const SEND_LOW_WATER = 256 * 1024
+export const SEND_HIGH_WATER = 256 * 1024
+export const SEND_LOW_WATER = 64 * 1024
+
+/**
+ * How often the send loop hands the thread back.
+ *
+ * The loop is otherwise synchronous until the buffer fills, so on a fast
+ * link a whole megabyte went out between two paints and the progress bar
+ * showed nothing and then everything. Yielding costs a fraction of the
+ * transfer and buys a bar that moves -- and a room whose UI still responds
+ * while a song is going out.
+ */
+const YIELD_EVERY_CHUNKS = 8
+
+/** How often the tail of a transfer is checked once everything is queued. */
+const DRAIN_POLL_MS = 50
+
+function sleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
+
+/** A real task, not a microtask: only this lets the page paint. */
+function yieldToPage(): Promise<void> {
+  return sleep(0)
+}
 
 /** What the receiver is told before the bytes arrive. */
 export interface TransferHeader {
@@ -192,6 +215,39 @@ export async function sendInChunks(
   const count = chunkCount(total, size)
   channel.bufferedAmountLowThreshold = SEND_LOW_WATER
 
+  /**
+   * Progress means "left this device", not "was handed to the stack".
+   *
+   * Enqueueing is instant next to the wire, so counting queued bytes drew
+   * a bar that hit 100% while megabytes were still in the send buffer --
+   * which is why the other end kept arriving long after this end said it
+   * was done.
+   */
+  let reported = -1
+  const report = (queuedThrough: number) => {
+    const inFlight = Math.max(0, channel.bufferedAmount)
+    const gone = Math.max(0, Math.min(total, queuedThrough - inFlight))
+    // Draining polls, so the same number would otherwise be announced
+    // several times over -- and a progress bar that repeats itself makes a
+    // stalled link and a finished one look identical.
+    if (gone === reported) return
+    reported = gone
+    opts.onProgress?.({
+      received: gone,
+      total,
+      ratio: total <= 0 ? 1 : gone / total,
+    })
+  }
+
+  const waitForDrain = () =>
+    new Promise<void>((resolve) => {
+      const onLow = () => {
+        channel.removeEventListener('bufferedamountlow', onLow)
+        resolve()
+      }
+      channel.addEventListener('bufferedamountlow', onLow)
+    })
+
   for (let i = 0; i < count; i++) {
     if (opts.signal?.aborted === true) {
       throw new TransferAbortedError('The transfer was cancelled.')
@@ -199,23 +255,29 @@ export async function sendInChunks(
     if (channel.readyState !== 'open') {
       throw new TransferAbortedError('The connection closed mid-transfer.')
     }
-    if (channel.bufferedAmount > SEND_HIGH_WATER) {
-      await new Promise<void>((resolve) => {
-        const onLow = () => {
-          channel.removeEventListener('bufferedamountlow', onLow)
-          resolve()
-        }
-        channel.addEventListener('bufferedamountlow', onLow)
-      })
-    }
+    if (channel.bufferedAmount > SEND_HIGH_WATER) await waitForDrain()
     const { start, end } = chunkRange(i, total, size)
     channel.send(bytes.slice(start, end))
-    opts.onProgress?.({
-      received: end,
-      total,
-      ratio: total <= 0 ? 1 : end / total,
-    })
+    report(end)
+    // Hand the page back the thread now and then, or none of the above is
+    // ever painted.
+    if (i > 0 && i % YIELD_EVERY_CHUNKS === 0) await yieldToPage()
   }
+
+  // Everything is queued; not everything has gone. Follow the buffer down
+  // rather than declaring victory over it -- this tail is exactly the gap
+  // between "sent" here and "receiving" over there.
+  while (channel.bufferedAmount > 0 && channel.readyState === 'open') {
+    if (opts.signal?.aborted === true) {
+      throw new TransferAbortedError('The transfer was cancelled.')
+    }
+    report(total)
+    // Polled rather than waiting on bufferedamountlow: that event fires
+    // once at the threshold, and the last stretch below it would sit
+    // there with nothing to wake it.
+    await sleep(DRAIN_POLL_MS)
+  }
+  report(total)
 }
 
 /** Just enough of a peer connection to ask about its route. */

@@ -12,7 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, For, Match, Show, Switch } from 'solid-js'
-import { cancelJamSongShare, jamIsHost, jamShareState, jamTransferMinimised, setJamTransferMinimised, } from '@/stores/jam-store'
+import { cancelJamSongShare, dismissJamShareNotice, jamIsHost, jamShareState, jamTransferMinimised, setJamTransferMinimised, } from '@/stores/jam-store'
 import styles from './JamTransferDialog.module.css'
 
 /** A ring that spins. Not an emoji, and not a GIF: one element, one rule. */
@@ -168,10 +168,13 @@ export const JamTransferDialog: Component = () => {
               </Show>
             </Show>
             <Show when={!busy()}>
+              {/* Closing a finished transfer puts it away for good --
+                  minimising it would leave a "Song ready" chip in the
+                  header with nothing left to say. */}
               <button
                 type="button"
                 class={styles.primary}
-                onClick={() => setJamTransferMinimised(true)}
+                onClick={dismissJamShareNotice}
               >
                 Close
               </button>

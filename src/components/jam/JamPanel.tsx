@@ -163,29 +163,43 @@ export const JamPanel: Component = () => {
     }
   })
 
+  /**
+   * Seeded a starting drill for THIS visit to the room?
+   *
+   * Once, on arrival -- not "whenever no melody is loaded". The effect
+   * below writes the very signal it read, so as a standing rule it fought
+   * everything that legitimately clears the drill: loading a song put one
+   * straight back (a second transport wired to the same playing signal,
+   * and a beat timer whose ending stopped the song), and the trash button
+   * looked broken because the drill reappeared before the click finished.
+   */
+  let seededDrill = false
+
   createEffect(() => {
-    if (jamState() === 'active') {
-      startJamPitchDetection()
-      // Auto-select the first available melody if none is loaded yet,
-      // prioritizing the vocal range default scale.
-      //
-      // NOT while the room is on a song. This effect reads the very signal
-      // it writes, so loading a song -- which clears the melody, because a
-      // room runs one thing at a time -- woke it up and put the drill
-      // straight back. That gave the host a second transport wired to the
-      // same playing signal and a beat timer that ended and stopped the
-      // song, which is what "the music stopped and nobody touched it" was.
-      if (!jamIsSongRoom() && jamExerciseMelody() === null) {
-        const lib = getMelodyLibrarySignal()()
-        const defaultOctave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
-        const defaultMelodyId = `scale-major-c${defaultOctave}`
-        const defaultMelody =
-          lib.melodies[defaultMelodyId] ??
-          lib.melodies['scale-major-c3'] ??
-          melodyOptions()[0]
-        if (defaultMelody !== undefined) selectJamExercise(defaultMelody)
-      }
+    if (jamState() !== 'active') {
+      seededDrill = false
+      return
     }
+    startJamPitchDetection()
+    if (seededDrill) return
+    // A song room does not want a drill at all, and adopting the host's
+    // melody counts as seeded -- there is nothing to pick.
+    if (jamIsSongRoom() || jamExerciseMelody() !== null) {
+      seededDrill = true
+      return
+    }
+    // Pick the default scale for this voice, so an empty room has
+    // something to sing rather than an empty canvas.
+    const lib = getMelodyLibrarySignal()()
+    const defaultOctave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
+    const defaultMelodyId = `scale-major-c${defaultOctave}`
+    const defaultMelody =
+      lib.melodies[defaultMelodyId] ??
+      lib.melodies['scale-major-c3'] ??
+      melodyOptions()[0]
+    if (defaultMelody === undefined) return
+    seededDrill = true
+    selectJamExercise(defaultMelody)
   })
 
   const melodyOptions = createMemo(() => {

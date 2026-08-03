@@ -2,7 +2,7 @@
 // Reactive state management for P2P jam sessions.
 // Wires together jam-service callbacks with SolidJS signals.
 
-import { createMemo, createRoot, createSignal } from 'solid-js'
+import { batch, createMemo, createRoot, createSignal } from 'solid-js'
 import { getStemBlob } from '@/db/services/uvr-service'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
@@ -331,26 +331,36 @@ export function selectJamSong(song: JamSong): boolean {
     return false
   }
   // A room runs one thing at a time.
-  setJamExerciseMelody(null)
-  setJamExerciseTotalBeats(0)
-  setJamExercisePlaying(false, 'a song was loaded')
-  setJamExercisePaused(false)
-  stopPlaybackTimer()
+  //
+  // In ONE batch, and the song first. Outside a batch every setter flushes
+  // effects synchronously, so clearing the melody ran the panel's
+  // "pick a default melody if none is loaded" effect at a moment when the
+  // song had not been set yet -- it saw an empty drill room, put a drill
+  // back, and the room ended up with both. That is where the second play
+  // button came from, and the beat timer that stopped the song.
+  batch(() => {
+    setJamSong(song)
+    setJamExerciseMelody(null)
+    setJamExerciseTotalBeats(0)
+    setJamExercisePlaying(false, 'a song was loaded')
+    setJamExercisePaused(false)
 
-  setJamSong(song)
-  setJamSongPositionSec(0)
-  // Both clocks, or a guest carries the last song's correction target into
-  // the new one and gets yanked there on the first transport message.
-  setJamSongHostTarget(0)
-  // A new song is a new lyric sheet, so the old allocation means nothing --
-  // and neither does a brush still armed from editing the last one, which
-  // would turn the first click on the new words into a paint.
-  setJamSongParts({})
-  setJamAssignBrush(null)
-  setJamSongHaves({})
-  setJamSongSentOnce(false)
-  resetJamLineScores()
-  setJamError(null)
+    setJamSongPositionSec(0)
+    // Both clocks, or a guest carries the last song's correction target
+    // into the new one and gets yanked there on the first transport
+    // message.
+    setJamSongHostTarget(0)
+    // A new song is a new lyric sheet, so the old allocation means nothing
+    // -- and neither does a brush still armed from editing the last one,
+    // which would turn the first click on the new words into a paint.
+    setJamSongParts({})
+    setJamAssignBrush(null)
+    setJamSongHaves({})
+    setJamSongSentOnce(false)
+    resetJamLineScores()
+    setJamError(null)
+  })
+  stopPlaybackTimer()
   jamService?.sendSong({
     id: song.id,
     title: song.title,
@@ -558,11 +568,11 @@ export function applyReceivedStem(
  * transfer mid-flight, and cleared explicitly on leaving.
  */
 const songInbox = new SongFileInbox({
-  onProgress: (peerId, p) =>
+  onProgress: (peerId, p, stem) =>
     setJamShareState({
       phase: 'receiving',
       ratio: p.ratio,
-      message: `Getting the song from ${peerName(peerId)}…`,
+      message: `Getting the ${stem === 'vocal' ? 'guide vocal' : 'backing track'} from ${peerName(peerId)} — ${Math.round(p.ratio * 100)}%`,
     }),
   onStem: ({ stem, blob }) => {
     applyReceivedStem(stem, blob)
@@ -733,8 +743,11 @@ export async function shareJamSongWithRoom(onlyMissing = false): Promise<void> {
         onProgress: (p) =>
           setJamShareState({
             phase: 'sending',
-            ratio: p.ratio,
-            message: `Sending to ${peerName(p.peerId)}…`,
+            // The whole job, not this stem to this person: per-stem the
+            // bar filled once for the backing track, again for the guide
+            // vocal, and again for the next peer.
+            ratio: p.overall,
+            message: `Sending the ${p.stem === 'vocal' ? 'guide vocal' : 'backing track'} to ${peerName(p.peerId)} — ${Math.round(p.ratio * 100)}%`,
           }),
       },
     )
@@ -776,9 +789,11 @@ let shareDoneTimer: ReturnType<typeof setTimeout> | null = null
 /**
  * A transfer that worked says so, then gets out of the way.
  *
- * Only the happy path expires. An error is something somebody has to act
- * on -- a peer still cannot hear the song -- so it stays until the next
- * attempt replaces it.
+ * Only the happy path expires, and only while it is a chip nobody has
+ * opened. Tapping the chip to read the outcome used to start a countdown
+ * the reader could not see, so the panel they had just opened vanished
+ * from under them -- on both devices, which made it look like a fault.
+ * An error never expires: somebody still cannot hear the song.
  */
 function markShareDone(message: string): void {
   setJamShareState({ phase: 'done', ratio: 1, message })
@@ -786,24 +801,38 @@ function markShareDone(message: string): void {
   shareDoneTimer = setTimeout(() => {
     shareDoneTimer = null
     if (jamShareState().phase !== 'done') return
+    // Opened for reading: it is now the reader's to dismiss.
+    if (!jamTransferMinimised()) return
     setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   }, SHARE_DONE_LINGER_MS)
 }
 
+/** Put a finished or failed transfer away for good. */
+export function dismissJamShareNotice(): void {
+  if (shareDoneTimer !== null) {
+    clearTimeout(shareDoneTimer)
+    shareDoneTimer = null
+  }
+  if (jamSendInFlight()) return
+  setJamShareState({ phase: 'idle', ratio: 0, message: '' })
+}
+
 export function clearJamSong(): void {
-  // Nothing is loaded, so nothing is playing. Leaving the flag set left a
-  // room claiming to play a song it no longer had -- and the next thing to
-  // read it, whatever that turned out to be, believed it.
-  setJamExercisePlaying(false, 'the song was cleared')
-  setJamExercisePaused(false)
-  setJamSong(null)
-  setJamSongPositionSec(0)
-  setJamSongHostTarget(0)
-  setJamSongParts({})
-  setJamAssignBrush(null)
-  setJamSongHaves({})
-  setJamSongSentOnce(false)
-  resetJamLineScores()
+  batch(() => {
+    // Nothing is loaded, so nothing is playing. Leaving the flag set left a
+    // room claiming to play a song it no longer had -- and the next thing
+    // to read it, whatever that turned out to be, believed it.
+    setJamExercisePlaying(false, 'the song was cleared')
+    setJamExercisePaused(false)
+    setJamSong(null)
+    setJamSongPositionSec(0)
+    setJamSongHostTarget(0)
+    setJamSongParts({})
+    setJamAssignBrush(null)
+    setJamSongHaves({})
+    setJamSongSentOnce(false)
+    resetJamLineScores()
+  })
   revokeReceivedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   jamService?.sendSong(null)
@@ -1304,15 +1333,23 @@ export function initJam() {
       }
       // Peers trust the host's manifest but still resolve the audio
       // themselves -- nothing but URLs and lyrics crossed the wire.
-      setJamExerciseMelody(null)
-      setJamExercisePlaying(false, 'the host loaded a song')
-      setJamExercisePaused(false)
+      //
+      // Batched, song first: a bare setter flushes effects, so clearing
+      // the melody on its own let the panel's auto-select see an empty
+      // drill room and put a drill back before the song landed.
+      const incoming = msg.song
+      batch(() => {
+        setJamSong({ ...incoming, notes: incoming.notes ?? [], origin: 'url' })
+        setJamExerciseMelody(null)
+        setJamExercisePlaying(false, 'the host loaded a song')
+        setJamExercisePaused(false)
+        setJamSongPositionSec(0)
+        // The allocation is the host's to author; a peer only ever adopts
+        // it.
+        setJamSongParts(incoming.parts ?? {})
+        resetJamLineScores()
+      })
       stopPlaybackTimer()
-      setJamSong({ ...msg.song, notes: msg.song.notes ?? [], origin: 'url' })
-      setJamSongPositionSec(0)
-      // The allocation is the host's to author; a peer only ever adopts it.
-      setJamSongParts(msg.song.parts ?? {})
-      resetJamLineScores()
       // Tell the host straight away. A guest that reloaded lands here with
       // a manifest pointing at the host's own blob URLs, which it cannot
       // play -- and that silence is exactly what the host needs to see.
@@ -1533,18 +1570,23 @@ export function selectJamExercise(melody: MelodyData): void {
     if (!jamIsHost()) return
     clearJamSong()
   }
-  // Update local state immediately (DataChannel only sends to remotes)
-  setJamExerciseMelody(melody)
-  setJamExerciseBpm(melody.bpm) // seed BPM override from melody default
   const total = melody.items.reduce(
     (max, item) => Math.max(max, item.startBeat + item.duration),
     0,
   )
-  setJamExerciseTotalBeats(total)
-  setJamExerciseBeat(0)
-  setJamExerciseNoteIndex(-1)
-  setJamExercisePlaying(false)
-  setJamExercisePaused(false)
+  // One batch, for the same reason selectJamSong uses one: a bare setter
+  // flushes effects immediately, and the panel's auto-select would see a
+  // half-applied room in between.
+  batch(() => {
+    // Update local state immediately (DataChannel only sends to remotes)
+    setJamExerciseMelody(melody)
+    setJamExerciseBpm(melody.bpm) // seed BPM override from melody default
+    setJamExerciseTotalBeats(total)
+    setJamExerciseBeat(0)
+    setJamExerciseNoteIndex(-1)
+    setJamExercisePlaying(false)
+    setJamExercisePaused(false)
+  })
   stopPlaybackTimer()
   // Host-only, like the song and the transport. A guest picking a drill
   // locally must not retune the room.
