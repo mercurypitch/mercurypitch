@@ -1,6 +1,5 @@
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
-import { For } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconExpand, IconMic, IconMusic } from '@/components/exercise-icons'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
@@ -15,6 +14,7 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_DYNAMIC_SWELL } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
+import { dynamicRangeDb, levelFraction, rangeVerdict, rmsToDb, targetFraction, } from './swell-dynamics'
 import { useDynamicSwellController } from './use-dynamic-swell-controller'
 
 interface DynamicSwellExerciseProps {
@@ -88,6 +88,37 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 4
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
+
+  /** Hue for a completed round's dot, from THAT round's own score. */
+  const roundHue = (index: number): number => {
+    const own = base.state().metrics[`round${index + 1}Score`]
+    // Rounds recorded before per-round scores existed fall back to the
+    // average rather than to red, which would misreport them.
+    const score = own ?? lastRoundScore()
+    return Math.max(0, score * 1.2)
+  }
+
+  // ── Live dynamics ────────────────────────────────────────────
+  const recentFrames = () => base.pitchHistory()
+
+  const liveLevel = () => {
+    const h = recentFrames()
+    const last = h[h.length - 1]
+    return last === undefined ? 0 : levelFraction(rmsToDb(last.rms ?? 0))
+  }
+
+  /** The arch the swell is asking for, positioned through the hold. */
+  const targetLevel = () => {
+    const holdMs = base.state().metrics.holdMs ?? 0
+    if (holdMs <= 0) return 0
+    // The hold length is difficulty-scaled, so both ends come from the
+    // controller rather than a constant the view guesses at.
+    const startMs = base.state().metrics.holdStartMs ?? 0
+    const through = (base.state().elapsedMs - startMs) / holdMs
+    return targetFraction(phase(), through)
+  }
+
+  const rangeDb = () => dynamicRangeDb(recentFrames())
 
   const pitch = () => base.currentPitch()
   const currentCents = () => {
@@ -166,8 +197,12 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
                   style={
                     i() < roundsCompleted()
                       ? {
-                          background: `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
-                          'border-color': `hsl(${Math.max(0, lastRoundScore() * 1.2)}, 70%, 50%)`,
+                          // That round's OWN score. This used to read
+                          // lastRoundScore() for every dot, so one weak
+                          // final round turned rounds that went well red
+                          // after the fact.
+                          background: `hsl(${roundHue(i())}, 70%, 50%)`,
+                          'border-color': `hsl(${roundHue(i())}, 70%, 50%)`,
                         }
                       : undefined
                   }
@@ -192,6 +227,29 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
                 {midiToNoteName(currentMidi())}
               </div>
             )}
+          </div>
+
+          {/* The loudness the score is already measuring. 35% of a swell
+              result is dynamic range in dB, and none of it was on screen
+              — the only moving thing was a pitch dot, which is about
+              something else. */}
+          <div class="swell-dynamics">
+            <div class="swell-meter" aria-hidden="true">
+              <div
+                class="swell-meter-fill"
+                style={{ width: `${(liveLevel() * 100).toFixed(1)}%` }}
+              />
+              <Show when={phase() === 2}>
+                <div
+                  class="swell-meter-target"
+                  style={{ left: `${(targetLevel() * 100).toFixed(1)}%` }}
+                />
+              </Show>
+            </div>
+            <div class="swell-dynamics-read">
+              <span class="swell-range">{rangeDb().toFixed(1)} dB range</span>
+              <span class="swell-verdict">{rangeVerdict(rangeDb())}</span>
+            </div>
           </div>
 
           {roundsCompleted() > 0 && lastRoundScore() > 0 && (
