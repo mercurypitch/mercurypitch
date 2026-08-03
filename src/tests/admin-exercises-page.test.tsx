@@ -6,6 +6,7 @@ const serviceMocks = vi.hoisted(() => ({
   archiveGuidedExercise: vi.fn(),
   cloneGuidedExerciseDraft: vi.fn(),
   createGuidedExercise: vi.fn(),
+  downloadAdminGuidedExerciseMedia: vi.fn(),
   listAdminGuidedExercises: vi.fn(),
   publishGuidedExercise: vi.fn(),
   saveGuidedExerciseDraft: vi.fn(),
@@ -25,6 +26,10 @@ describe('AdminExercisesPage starter publication', () => {
     serviceMocks.listAdminGuidedExercises.mockResolvedValue({
       ok: true,
       data: [],
+    })
+    serviceMocks.downloadAdminGuidedExerciseMedia.mockResolvedValue({
+      ok: true,
+      data: new Blob(['saved voice'], { type: 'audio/wav' }),
     })
   })
 

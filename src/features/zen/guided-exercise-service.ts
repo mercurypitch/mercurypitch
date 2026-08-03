@@ -339,14 +339,47 @@ export async function archiveGuidedExercise(
 }
 
 function playbackMime(file: File): string {
-  if (file.type !== '') return file.type
+  if (file.type !== '') return file.type.split(';', 1)[0]!.toLowerCase()
   const lower = file.name.toLowerCase()
   if (lower.endsWith('.mp3')) return 'audio/mpeg'
   if (lower.endsWith('.m4a') || lower.endsWith('.mp4')) return 'audio/mp4'
   if (lower.endsWith('.aac')) return 'audio/aac'
   if (lower.endsWith('.webm')) return 'audio/webm'
   if (lower.endsWith('.ogg') || lower.endsWith('.oga')) return 'audio/ogg'
+  if (lower.endsWith('.wav')) return 'audio/wav'
   return 'application/octet-stream'
+}
+
+export async function downloadAdminGuidedExerciseMedia(
+  mediaId: string,
+  key: string,
+): Promise<ApiResult<Blob>> {
+  if (base() === '') {
+    return { ok: false, error: 'No API configured', status: 0 }
+  }
+  try {
+    const response = await fetch(
+      `${base()}/api/admin/guided-media/${encodeURIComponent(mediaId)}`,
+      { headers: adminHeaders(key) },
+    )
+    if (!response.ok) {
+      let message = `Playback request failed (${response.status})`
+      try {
+        const body = (await response.json()) as ErrorBody
+        if (typeof body.error === 'string') message = body.error
+      } catch {
+        // Non-JSON proxy and network error responses still retain their status.
+      }
+      return { ok: false, error: message, status: response.status }
+    }
+    return { ok: true, data: await response.blob() }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      status: 0,
+    }
+  }
 }
 
 export async function uploadGuidedExerciseMedia(

@@ -173,6 +173,8 @@
 .secondaryAction,
 .noAudio button,
 .recordingActions button,
+.pendingAudioFile button,
+.audioError button,
 .lifecycleActions button,
 .actionError button,
 .removeAudio {
@@ -195,6 +197,8 @@
 .secondaryAction,
 .noAudio button,
 .recordingActions button,
+.pendingAudioFile button,
+.audioError button,
 .lifecycleActions button,
 .removeAudio {
   border: 1px solid #374258;
@@ -209,6 +213,8 @@
 .secondaryAction:hover:not(:disabled),
 .noAudio button:hover:not(:disabled),
 .recordingActions button:hover:not(:disabled),
+.pendingAudioFile button:hover:not(:disabled),
+.audioError button:hover:not(:disabled),
 .lifecycleActions button:hover:not(:disabled),
 .removeAudio:hover:not(:disabled) {
   border-color: #596a86;
@@ -219,6 +225,8 @@
 .secondaryAction:disabled,
 .noAudio button:disabled,
 .recordingActions button:disabled,
+.pendingAudioFile button:disabled,
+.audioError button:disabled,
 .lifecycleActions button:disabled,
 .removeAudio:disabled {
   cursor: not-allowed;
@@ -230,6 +238,8 @@
 .secondaryAction:focus-visible,
 .noAudio button:focus-visible,
 .recordingActions button:focus-visible,
+.pendingAudioFile button:focus-visible,
+.audioError button:focus-visible,
 .lifecycleActions button:focus-visible,
 .actionError button:focus-visible,
 .removeAudio:focus-visible,
@@ -587,6 +597,140 @@
   min-width: 0;
 }
 
+.audioDropZone {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  border: 1px dashed #3c4960;
+  border-radius: 9px;
+  background: rgba(20, 28, 40, 0.72);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.audioDropZone[data-dragging='true'] {
+  border-color: #f6a91c;
+  background: rgba(112, 71, 7, 0.24);
+}
+
+.audioDropZone > span {
+  color: #8998ad;
+  font-size: 0.64rem;
+  text-align: center;
+}
+
+.pendingAudioFile {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px 10px;
+  padding: 9px 10px;
+  border: 1px dashed rgba(234, 161, 22, 0.42);
+  border-radius: 8px;
+  background: rgba(89, 57, 7, 0.13);
+}
+
+.pendingAudioFile[hidden] {
+  display: none;
+}
+
+.pendingAudioFile strong {
+  overflow: hidden;
+  min-width: 0;
+  color: #e5ecf7;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pendingAudioActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pendingAudioIdentity {
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pendingAudioIdentity span {
+  color: #8f9eb2;
+  font-size: 0.62rem;
+}
+
+.pendingAudioFile button {
+  min-height: 31px;
+  padding: 5px 9px;
+  font-size: 0.65rem;
+}
+
+.pendingAudioFile small {
+  grid-column: 1 / -1;
+  color: #a7b3c5;
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.clipStart {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+
+.clipStart span {
+  color: #c8d2e1;
+  font-size: 0.66rem;
+}
+
+.clipStart input[type='range'] {
+  width: 100%;
+  accent-color: #f6a91c;
+}
+
+.audioError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid rgba(239, 107, 115, 0.48);
+  border-radius: 9px;
+  color: #ffd4d7;
+  background: rgba(127, 35, 44, 0.2);
+}
+
+.audioError > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.audioError strong {
+  font-size: 0.7rem;
+}
+
+.audioError span {
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.audioError button {
+  flex: 0 0 auto;
+  min-height: 31px;
+  padding: 5px 9px;
+  font-size: 0.65rem;
+}
+
 @keyframes recordingPulse {
   50% {
     opacity: 0.45;
@@ -599,6 +743,7 @@
     animation: none;
   }
 
+  .audioDropZone,
   .recordingProgress > span {
     transition: none;
   }
@@ -1034,6 +1179,23 @@
 
   .wideField {
     grid-column: auto;
+  }
+
+  .pendingAudioFile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pendingAudioActions {
+    justify-content: flex-start;
+  }
+
+  .audioError {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .audioError button {
+    align-self: flex-start;
   }
 }
 

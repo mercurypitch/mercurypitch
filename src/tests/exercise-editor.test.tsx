@@ -151,7 +151,7 @@ describe('ExerciseEditor', () => {
     ).toBeInTheDocument()
   })
 
-  it('requires audio metadata before file selection', () => {
+  it('allows audio selection before its transcript is ready', () => {
     const incompleteAudio: ZenExampleAudio = {
       src: '',
       durationMs: 5000,
@@ -173,58 +173,25 @@ describe('ExerciseEditor', () => {
         onExampleAudioFile={vi.fn()}
       />
     ))
-    expect(screen.getByLabelText(/Choose recording/)).toBeDisabled()
+    const fileInput = screen.getByLabelText(/Choose audio file/)
+    expect(fileInput).toBeEnabled()
+    expect(fileInput).toHaveAttribute('accept', expect.stringContaining('.wav'))
+    expect(
+      screen.getByText(/or drop audio anywhere in this box/i),
+    ).toBeVisible()
+    expect(
+      screen.getByText(/longer songs get a clip-start control/i),
+    ).toBeVisible()
   })
 
-  it('uploads returned example metadata and renders the production preview', async () => {
-    const readyAudio: ZenExampleAudio = {
-      src: '',
-      durationMs: 5000,
+  it('renders uploaded example metadata in the production preview', () => {
+    const uploaded: ZenExampleAudio = {
+      src: '/media/ng-example.mp3',
+      durationMs: 4200,
       locale: 'en-GB',
       source: 'coach',
       transcript: 'NG',
     }
-    const uploaded: ZenExampleAudio = {
-      ...readyAudio,
-      src: '/media/ng-example.mp3',
-      durationMs: 4200,
-    }
-    const exerciseWithReadyAudio = { ...exercise(), exampleAudio: readyAudio }
-    const onExampleAudioFile = vi.fn(async () => uploaded)
-    const onChange = vi.fn()
-    render(() => (
-      <ExerciseEditor
-        value={exerciseWithReadyAudio}
-        lifecycle="draft"
-        status="idle"
-        validationIssues={[]}
-        onChange={onChange}
-        onExampleAudioFile={onExampleAudioFile}
-      />
-    ))
-    const fileInput = screen.getByLabelText(/Choose recording/)
-    expect(fileInput).toBeEnabled()
-
-    const file = new File(['audio'], 'ng.mp3', { type: 'audio/mpeg' })
-    fireEvent.change(fileInput, {
-      target: { files: [file] },
-    })
-
-    await waitFor(() =>
-      expect(onExampleAudioFile).toHaveBeenCalledWith(
-        file,
-        expect.objectContaining({
-          exampleAudio: readyAudio,
-        }),
-      ),
-    )
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith({
-        ...exercise(),
-        exampleAudio: uploaded,
-      }),
-    )
-    cleanup()
     render(() => (
       <ExercisePreview value={{ ...exercise(), exampleAudio: uploaded }} />
     ))

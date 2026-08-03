@@ -129,6 +129,31 @@ describe('guided exercise service', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('downloads private draft playback with the admin key', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(new TextEncoder().encode('voice'), {
+        status: 200,
+        headers: { 'Content-Type': 'audio/wav' },
+      }),
+    )
+    const service = await loadService()
+
+    const result = await service.downloadAdminGuidedExerciseMedia(
+      'media-private',
+      'admin-key',
+    )
+
+    expect(result.ok).toBeTruthy()
+    if (result.ok) {
+      expect(result.data.size).toBe(5)
+      expect(result.data.type).toBe('audio/wav')
+    }
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API}/api/admin/guided-media/media-private`,
+      { headers: { 'X-Admin-Key': 'admin-key' } },
+    )
+  })
+
   it('uploads an Opus browser recording with its playable content type', async () => {
     const media = {
       id: 'media-recorded',
@@ -184,7 +209,7 @@ describe('guided exercise service', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: expect.objectContaining({
-          'Content-Type': 'audio/webm;codecs=opus',
+          'Content-Type': 'audio/webm',
           'X-Admin-Key': 'admin-key',
         }),
         body: file,

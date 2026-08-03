@@ -100,6 +100,9 @@ const ALLOWED_PLAYBACK_TYPES = new Set([
   'audio/x-m4a',
   'audio/webm',
   'audio/ogg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/wave',
 ])
 
 export function isAllowedGuidedPlaybackType(contentType: string): boolean {
@@ -1094,7 +1097,10 @@ async function uploadMedia(
     .toLowerCase()
   if (!isAllowedGuidedPlaybackType(mimeType)) {
     return respond(
-      { error: 'Playback must be MP3, MP4/M4A, AAC, WebM, or Ogg audio' },
+      {
+        error:
+          'Playback must be MP3, MP4/M4A, AAC, WebM, Ogg, or WAV audio',
+      },
       { status: 415 },
     )
   }

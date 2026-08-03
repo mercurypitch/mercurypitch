@@ -10,6 +10,8 @@ describe('guided exercise playback types', () => {
     expect(
       isAllowedGuidedPlaybackType('audio/mp4;codecs=mp4a.40.2'),
     ).toBeTruthy()
+    expect(isAllowedGuidedPlaybackType('audio/wav')).toBeTruthy()
+    expect(isAllowedGuidedPlaybackType('audio/x-wav')).toBeTruthy()
   })
 
   it('rejects non-audio uploads', () => {
