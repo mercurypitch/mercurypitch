@@ -4,7 +4,8 @@
 
 import { describe, expect, it } from 'vitest'
 import { APPLY_PHRASES, pickApplyPhrase } from '@/data/apply-melodies'
-import { buildDailySession } from '@/features/routines/use-daily-routine'
+import type { RoutineTemplate } from '@/features/routines/types'
+import { buildDailySession, materializeRoutine, } from '@/features/routines/use-daily-routine'
 
 describe('pickApplyPhrase', () => {
   it('is deterministic and wraps the pool', () => {
@@ -100,5 +101,53 @@ describe('buildDailySession', () => {
       warmupPattern: 'lip-trill',
     })
     expect(s.segments[0].config.pattern).toBe('lip-trill')
+  })
+})
+
+describe('materializeRoutine', () => {
+  const withChallenge: RoutineTemplate = {
+    id: 'test',
+    name: 'Test',
+    description: '',
+    segments: [
+      { type: 'warmup', durationSec: 90, config: { pattern: 'sirens' } },
+      { type: 'exercise', durationSec: 180, config: { exercise: 'vibrato' } },
+      {
+        type: 'challenge-prep',
+        durationSec: 120,
+        config: { challengeCategory: 'perfect' },
+      },
+      { type: 'cooldown', durationSec: 60, config: { mode: 'free-sing' } },
+    ],
+  }
+
+  // The Challenges tab has no idea it is servicing a routine and offers no way
+  // back, so a routine containing one was abandoned at that step.
+  it('drops the challenge detour at every length', () => {
+    for (const length of ['short', 'standard', 'long'] as const) {
+      const kinds = materializeRoutine(withChallenge, length).segments.map(
+        (s) => s.type,
+      )
+      expect(kinds).toEqual(['warmup', 'exercise', 'cooldown'])
+    }
+  })
+
+  it('leaves a standard-length routine otherwise untouched', () => {
+    const out = materializeRoutine(withChallenge, 'standard')
+    expect(out.segments.map((s) => s.durationSec)).toEqual([90, 180, 60])
+    expect(out.name).toBe('Test')
+  })
+
+  it('scales durations, with a 30-second floor', () => {
+    expect(
+      materializeRoutine(withChallenge, 'short').segments.map(
+        (s) => s.durationSec,
+      ),
+    ).toEqual([60, 105, 30])
+    expect(
+      materializeRoutine(withChallenge, 'long').segments.map(
+        (s) => s.durationSec,
+      ),
+    ).toEqual([120, 255, 90])
   })
 })
