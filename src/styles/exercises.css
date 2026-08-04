@@ -729,6 +729,45 @@
   color: var(--bg-primary);
 }
 
+/* The toggle and its slider are one control, so they stack as one column.
+   `.exercise-timer-toggle` itself is shared with the arpeggio's mode switch
+   and stays untouched. */
+.exercise-timer-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Six segments is a wide row on a phone; letting it wrap beats a scrollbar
+   or a squeezed label. */
+.exercise-timer-field .exercise-timer-toggle {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.exercise-timer-custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(320px, 100%);
+}
+
+.exercise-timer-custom input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent);
+  min-width: 0;
+}
+
+.exercise-timer-custom-value {
+  min-width: 3.2em;
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .exercise-target-selector {
   display: flex;
   gap: 8px;
