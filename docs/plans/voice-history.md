@@ -2,12 +2,13 @@
 
 Status: **local vault, Glass, repeatable Exercise, Weekly Legend, Karaoke,
 direct freeform capture, listening-studio polish, and the first Voice Atlas
-layers are implemented on PR #364**, updated 2026-08-03. Voice Atlas v1 adds
+layers are implemented on PR #364**, updated 2026-08-05. Voice Atlas v1 adds
 Take Topography, shared-scale Twin Trails, subjective Reflection Beacons, and a
-three-take Practice Loom. Karaoke now prepares dry mic-only replays beside its
-existing score and keeps them explicitly in stable per-song threads. The
-remaining local-release gate is browser validation, especially the real iPhone
-Safari recording path.
+three-take Practice Loom. The next Atlas layer adds neutral contour and tone
+traits by reusing Vocal Analysis DSP. Karaoke prepares dry mic-only replays
+beside its existing score and keeps them explicitly in stable per-song threads.
+The remaining local-release gate is browser validation, especially the real
+iPhone Safari recording path.
 
 This plan starts from the mystery teaser in PR #359. **Hear Yourself** and
 **Voice Mystery** are working language, not a locked public name. The internal
@@ -166,6 +167,27 @@ the vault into a scorecard and is not a separate product surface.
   valid beacon target before playback; selecting either take card moves that
   target, and the UI names the target take and exact timestamp before saving.
 
+### Voice Atlas traits: richer evidence, same listening language
+
+Atlas traits extend the map without creating a new scorecard or duplicating
+the Vocal Analysis engine:
+
+- **Vibrato pulse** and **Held centre** come from confidence-filtered,
+  continuous held regions in the stored pitch contour. Silence, uncertain
+  frames, and note changes split regions before the existing Vocal Analysis
+  vibrato and stability algorithms run.
+- **Air and ring**, **Harmonic bloom**, and **Resonance compass** use the same
+  offline take-analysis worker, HNR, harmonic-richness, and resonance routines
+  as the Analysis page. Audio decoding is shared too.
+- Pitch traits are available as soon as a contour is loaded. The heavier tone
+  pass remains an explicit on-device action for the visible take or pair, with
+  progress and retry states.
+- Earlier and Later remain equal identities. Trait names describe measured
+  tendencies; they never infer improvement or combine into a master score.
+- Tone readings name their device sensitivity because microphone, distance,
+  and room can change them. No audio or trait result is uploaded or written
+  back into the dry saved take.
+
 ### Practice Loom v1: history without a trend score
 
 Practice Loom unlocks when one thread contains at least three takes. It keeps
@@ -184,9 +206,10 @@ Twin Trails as the focused A/B workspace and adds a longitudinal listening map:
   seven, name the number of folded middle takes, and provide Show all/Fold
   controls.
 
-V1 does not align phrases, infer improvement, or expose vibrato, tone texture,
-register, or device-sensitive spectral claims. Those remain later validated
-layers, not hidden scores in the initial Loom.
+The initial map does not align phrases or infer improvement. Atlas traits add
+vibrato and tone texture only as independently measured, explicitly
+device-sensitive facets; register claims and hidden trend scores remain out of
+scope.
 
 ### Responsive and accessible behavior
 
@@ -200,6 +223,8 @@ layers, not hidden scores in the initial Loom.
 - Motion respects `prefers-reduced-motion`.
 - Waveforms use stored peak buckets. Rendering must not scan raw audio inside
   animation frames.
+- Reflection and Room tools use the shared draggable bottom sheet on narrow
+  screens and remain a contextual inspector rail on desktop.
 
 ## 4. Scope
 

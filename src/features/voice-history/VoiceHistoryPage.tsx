@@ -347,6 +347,14 @@ export function VoiceHistoryPage(): JSX.Element {
             },
     })
   })
+  const earlierContour = createMemo(() => {
+    const take = earlier()
+    return take === null ? null : (contours()[take.id] ?? null)
+  })
+  const laterContour = createMemo(() => {
+    const take = atlasLater()
+    return take === null ? null : (contours()[take.id] ?? null)
+  })
   const loomModel = createMemo(() => {
     const thread = selectedThread()
     const loadedContours = contours()
@@ -1626,6 +1634,8 @@ export function VoiceHistoryPage(): JSX.Element {
                               model={atlasModel()}
                               earlier={earlier()}
                               later={atlasLater()}
+                              earlierContour={earlierContour()}
+                              laterContour={laterContour()}
                               selectedId={atlasSelectedId()}
                               activeId={activeId()}
                               progress={progress()}
