@@ -19,7 +19,9 @@ import { MicButton } from '@/components/MicButton'
 import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { EngineContext } from '@/contexts/EngineContext'
 import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
+import { holdMicForRoutine, releaseRoutineMicHold, } from '@/features/routines/routine-mic-hold'
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
+import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
@@ -185,6 +187,26 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       setMicOn(true)
     }
   }
+
+  // ── Routine mic hold ──
+  // A routine is a sequence, but each drill opens and closes the device on its
+  // own, so the singer paid a fresh getUserMedia between every segment. Taking
+  // a routine-scoped hold once a routine run is genuinely under way keeps the
+  // mic open across the gap; the hold expires on its own, so nothing here can
+  // leave it on. See routine-mic-hold.ts for why it never opens the device.
+  const routine = useDailyRoutine()
+  const runsCurrentSegment = (): boolean => {
+    const seg = routine.currentSegment()
+    return seg !== null && segmentRunsExercise(seg, props.type)
+  }
+  createEffect(
+    on(status, (s) => {
+      if (s === 'active' && runsCurrentSegment()) holdMicForRoutine()
+      // The last segment is done: there is no next drill to bridge to, and a
+      // mic still open on the results screen is just a light left on.
+      if (routine.isComplete()) releaseRoutineMicHold()
+    }),
+  )
 
   // ── Auto-timer: count down once the run is active, then auto-stop ──
   let timerHandle: ReturnType<typeof setInterval> | undefined
