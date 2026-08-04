@@ -142,14 +142,40 @@ describe('flushGrants', () => {
     expect(recorded[0]?.keepalive).toBe(true)
   })
 
-  it('posts badges separately — they are rare, and there is no bulk for them', async () => {
+  it('sends badges as their own single request', async () => {
     queueAchievement({ achievementId: 'ach-1', progress: 100, unlocked: true })
+    queueBadge('badge-1', '2026-08-04T10:00:00.000Z')
+    queueBadge('badge-2', '2026-08-04T10:00:00.000Z')
+    await flushGrants()
+
+    // Two requests for the whole flush, not one per badge.
+    expect(recorded.map((r) => r.url)).toEqual([
+      'http://api.test/api/userAchievements/bulk',
+      'http://api.test/api/userBadges/bulk',
+    ])
+    expect(recorded[1]?.body).toEqual({
+      rows: [
+        { badgeId: 'badge-1', earnedAt: '2026-08-04T10:00:00.000Z' },
+        { badgeId: 'badge-2', earnedAt: '2026-08-04T10:00:00.000Z' },
+      ],
+    })
+  })
+
+  it('does not send a userId — the token already says who this is', async () => {
     queueBadge('badge-1', '2026-08-04T10:00:00.000Z')
     await flushGrants()
 
-    expect(recorded.map((r) => r.url)).toEqual([
-      'http://api.test/api/userAchievements/bulk',
-      'http://api.test/api/userBadges',
-    ])
+    const body = recorded[0]?.body as { rows: Array<Record<string, unknown>> }
+    expect(Object.keys(body.rows[0] ?? {})).toEqual(['badgeId', 'earnedAt'])
+  })
+
+  it('re-queues badges when their write fails', async () => {
+    // The old loop ignored the response entirely, so a badge that never
+    // landed was simply gone. Now the failure is visible and it goes back.
+    respondWith = () => new Response('nope', { status: 500 })
+    queueBadge('badge-1', '2026-08-04T10:00:00.000Z')
+    await flushGrants()
+
+    expect(pendingCount()).toBe(1)
   })
 })

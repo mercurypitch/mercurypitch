@@ -430,6 +430,22 @@ export async function checkAndGrantBadges(): Promise<void> {
       const existing = queued ?? stored
       if (existing?.unlocked === true) continue
 
+      // Never write a row that says nothing. "0%, locked" and "no row at all"
+      // are the same statement — every surface reads a missing row as zero —
+      // so storing the first is pure cost.
+      //
+      // It is also the guard that makes a bad read harmless. Every service
+      // under `loadGrantContext` answers a failure with `[]`, so a pass that
+      // fires while the API is briefly unreachable evaluates against nothing
+      // and concludes, reasonably, that the singer has achieved nothing. Under
+      // the old code that queued `unlocked: false` for goals they earned weeks
+      // ago, and the flush a minute later — by which time the API is fine —
+      // wrote it. A pass on an empty context can only produce zeros, and zeros
+      // are exactly what this refuses to write.
+      if (existing === undefined && result.progress === 0 && !result.unlocked) {
+        continue
+      }
+
       // Nothing to write when the number has not moved. Without this, every
       // pass PATCHed EVERY still-locked achievement — 47 of 63 on a real
       // account — one serial request each. That is the three-to-five second

@@ -98,6 +98,7 @@ interface PassCost {
   gets: number
   writes: number
   queued: number
+  storedRows: number
   lockedRows: number
 }
 
@@ -124,6 +125,7 @@ async function costOfOneMoreRun(priorRuns: number): Promise<PassCost> {
     gets: calls.filter((c) => c === 'GET').length,
     writes: calls.filter((c) => c === 'WRITE').length,
     queued,
+    storedRows: rows.length,
     lockedRows: rows.filter((r) => r.unlocked !== true).length,
   }
 }
@@ -149,7 +151,8 @@ describe('one grant pass', () => {
 
   it('writes nothing on the save path, at every account age', async () => {
     for (const priorRuns of [5, 30, 100, 300]) {
-      const { gets, writes, lockedRows } = await costOfOneMoreRun(priorRuns)
+      const { gets, writes, storedRows, lockedRows } =
+        await costOfOneMoreRun(priorRuns)
 
       // The whole point of the split: finishing a run no longer waits on a
       // single achievement write. If this is ever non-zero, persistence has
@@ -158,9 +161,15 @@ describe('one grant pass', () => {
       expect(gets + writes).toBeLessThanOrEqual(13)
 
       // A pass that quietly stopped evaluating would also write nothing, so
-      // pin that the rows exist and most goals are still locked — otherwise
-      // this test passes for the wrong reason.
-      expect(lockedRows).toBeGreaterThan(20)
+      // pin that it produced rows and that some goals are still ahead of the
+      // singer — otherwise this test passes for the wrong reason.
+      //
+      // Not the whole catalogue: a goal sitting at 0% gets no row at all,
+      // because "0%, locked" and "no row" say the same thing and only one of
+      // them costs a write. And on a mature account most rows are unlocked,
+      // so `lockedRows` falls as the history grows.
+      expect(storedRows).toBeGreaterThan(DEFINITIONS.length / 4)
+      expect(lockedRows).toBeGreaterThan(0)
     }
   })
 
@@ -175,6 +184,21 @@ describe('one grant pass', () => {
       expect(queued).toBeLessThanOrEqual(12)
       expect(queued).toBeLessThan(lockedRows)
     }
+  })
+
+  it('writes nothing at all when it can see nothing at all', async () => {
+    // The dangerous pass: everything under `loadGrantContext` answers a
+    // failure with `[]`, so a pass that fires while the API is unreachable
+    // evaluates against an empty history and concludes the singer has done
+    // nothing. It must not turn that into 59 rows of "0%, locked" — a minute
+    // later the flush lands on a healthy API and those rows are what it
+    // writes over goals they earned weeks ago.
+    await seedCatalogue()
+    calls.length = 0
+
+    await checkAndGrantBadges()
+
+    expect(pendingCount()).toBe(0)
   })
 
   it('coalesces a burst of runs into one flush', async () => {

@@ -17,7 +17,7 @@
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
-import { handleAchievementBulk, handleGrantContext } from './grants'
+import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { getPerksForUser } from './perks'
@@ -1693,6 +1693,19 @@ async function handleRequest(
     )
     if (!rl.allowed) return rateLimited(rl)
     return handleAchievementBulk(request, auth, env, respond)
+  }
+
+  // Same shape, same reason, same ordering constraint: "bulk" must not reach
+  // the generic /api/<entity>/<id> route below.
+  if (url.pathname === '/api/userBadges/bulk' && request.method === 'POST') {
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'achievement-write',
+    )
+    if (!rl.allowed) return rateLimited(rl)
+    return handleBadgeBulk(request, auth, env, respond)
   }
 
   if (url.pathname === '/api/friends/code' && request.method === 'GET') {
