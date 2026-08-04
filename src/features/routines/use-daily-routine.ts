@@ -211,20 +211,36 @@ const LENGTH_FACTOR: Record<RoutineLength, number> = {
   long: 1.4,
 }
 
-/** Scale a template to the preferred session length. */
-function applyLength(
+/**
+ * Turn a stored template into the routine the singer will actually run: drop
+ * the challenge detour, then scale to the preferred session length.
+ *
+ * `challenge-prep` sent them to the Challenges tab, which has no idea it is
+ * servicing a routine and offers no way back — the ribbon disappears, the
+ * segment cannot tick itself off, and the session is effectively abandoned at
+ * step three. A routine that leaves the routine is not a routine, and the
+ * Challenges tab already earns its own visit. The segment kind stays in the
+ * schema so shared links and half-finished routines from before this change
+ * still decode and still render.
+ */
+export function materializeRoutine(
   template: RoutineTemplate,
   length: RoutineLength,
 ): RoutineTemplate {
-  if (length === 'standard') return template
   const factor = LENGTH_FACTOR[length]
   const segments = template.segments
-    // A short session keeps the core work and drops the challenge detour.
-    .filter((s) => length !== 'short' || s.type !== 'challenge-prep')
-    .map((s) => ({
-      ...s,
-      durationSec: Math.max(30, Math.round((s.durationSec * factor) / 15) * 15),
-    }))
+    .filter((s) => s.type !== 'challenge-prep')
+    .map((s) =>
+      length === 'standard'
+        ? s
+        : {
+            ...s,
+            durationSec: Math.max(
+              30,
+              Math.round((s.durationSec * factor) / 15) * 15,
+            ),
+          },
+    )
   return { ...template, segments }
 }
 
@@ -253,9 +269,13 @@ export function loadSharedRoutine(routine: RoutineTemplate): boolean {
 
 /**
  * Launch a routine segment the way the Home session card does: exercise
- * segments start their drill, warm-up/cool-down run the guided warmup with
- * the segment's pattern, and challenge-prep jumps to the Challenges tab.
- * Shared by the Home card and the guided path's week card.
+ * segments start their drill, and warm-up/cool-down run the guided warmup with
+ * the segment's pattern. Shared by the Home card and the guided path's week
+ * card.
+ *
+ * Generated routines no longer contain a `challenge-prep` segment (see
+ * materializeRoutine), but shared links and routines started before that
+ * change still can, so the jump to Challenges stays.
  */
 export function launchRoutineSegment(seg: RoutineSegment): void {
   if (seg.type === 'challenge-prep') {
@@ -393,7 +413,7 @@ export function useDailyRoutine() {
         [base.id, ...prev.filter((id) => id !== base.id)].slice(0, 4),
       )
     }
-    const routine = applyLength(base, prefs.length)
+    const routine = materializeRoutine(base, prefs.length)
     setPersisted({
       templateId: routine.id,
       date: todayStr(),
