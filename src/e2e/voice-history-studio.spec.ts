@@ -56,8 +56,36 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByText('Take Topography', { exact: true })).toBeVisible()
   await expect(page.getByText('1 mapped', { exact: true })).toBeVisible()
   await expect(
+    page.getByRole('heading', { name: 'The shape behind the trail.' }),
+  ).toBeVisible()
+  await expect(page.getByText('Vibrato pulse', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Map tone traits' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Remap tone traits' }),
+  ).toBeVisible({ timeout: 15000 })
+  await expect(page.getByText('Air and ring', { exact: true })).toBeVisible()
+  await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page
+    .getByRole('button', { name: 'Add reflection', exact: true })
+    .click()
+  const mobileListeningTools = page.getByRole('dialog', {
+    name: 'Listening tools',
+  })
+  await expect(mobileListeningTools).toBeVisible()
+  const mobileSheetBounds = await mobileListeningTools.boundingBox()
+  if (mobileSheetBounds === null) {
+    throw new Error('Listening tools bottom sheet has no bounds')
+  }
+  expect(mobileSheetBounds.y).toBeGreaterThan(120)
+  expect(
+    Math.abs(mobileSheetBounds.y + mobileSheetBounds.height - 844),
+  ).toBeLessThanOrEqual(2)
+  await page.getByRole('button', { name: 'Close listening tools' }).click()
+  await page.setViewportSize({ width: 1280, height: 900 })
   await page
     .getByRole('button', { name: 'Add reflection', exact: true })
     .click()
@@ -373,9 +401,9 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     name: 'Listening tools',
   })
   await expect(mobileInspector).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: 'Close listening tools' }),
-  ).toBeFocused()
+  // Shared Sheet intentionally focuses its panel rather than the first
+  // control so mobile browsers do not activate nested controls on open.
+  await expect(mobileInspector).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   await expect
     .poll(() =>
