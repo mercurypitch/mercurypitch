@@ -658,6 +658,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenWordIdx,
     lrcGenInputMode,
     setLrcGenInputMode,
+    lrcGenPass,
+    setLrcGenPass,
+    wordPassProgress,
+    previewLineIdx,
+    previewActiveWord,
+    toggleLinePreview,
     lrcTimingOffsetMs,
     setLrcTimingOffsetMs,
     blocks,
@@ -1263,6 +1269,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenWordIdx,
     lrcGenInputMode,
     setLrcGenInputMode,
+    lrcGenPass,
+    setLrcGenPass,
+    wordPassProgress,
+    previewLineIdx,
+    previewActiveWord,
+    toggleLinePreview,
     lrcTimingOffsetMs,
     setLrcTimingOffsetMs,
     blocks,
@@ -4972,6 +4984,174 @@ export const StemMixerStyles: string = `
   border: 1px solid var(--border, #30363d);
   border-radius: 0.25rem;
   font: 0.6rem/1 monospace;
+}
+
+.sm-lyrics-gen-calib-btn {
+  height: 1.45rem;
+  padding: 0 0.4rem;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  font: 600 0.58rem/1 inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-calib-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: #f4d35e;
+}
+
+.sm-lyrics-gen-loop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--fg-tertiary, #8b949e);
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-loop input {
+  width: 0.75rem;
+  height: 0.75rem;
+  accent-color: #f4d35e;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.3rem;
+  padding: 0;
+  color: var(--fg-tertiary, #8b949e);
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-preview-btn:hover:not(:disabled) {
+  color: #f4d35e;
+  border-color: #f4d35e;
+}
+
+.sm-lyrics-gen-preview-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.sm-lyrics-gen-preview-btn--on {
+  color: #17140a;
+  background: #f4d35e;
+  border-color: #f4d35e;
+}
+
+/* ── Reaction calibration ─────────────────────────── */
+
+.sm-lyrics-calib {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(244, 211, 94, 0.08);
+  border-bottom: 1px solid rgba(244, 211, 94, 0.22);
+}
+
+.sm-lyrics-calib-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.sm-lyrics-calib-title {
+  color: var(--fg-primary, #c9d1d9);
+  font: 600 0.65rem/1 inherit;
+}
+
+.sm-lyrics-calib-close {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 0.15rem;
+  color: var(--fg-tertiary, #8b949e);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.sm-lyrics-calib-copy {
+  flex: 1 1 14rem;
+  margin: 0;
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.sm-lyrics-calib-start,
+.sm-lyrics-calib-apply,
+.sm-lyrics-calib-tap {
+  height: 1.6rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-primary, #c9d1d9);
+  font: 600 0.62rem/1 inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-calib-tap {
+  min-width: 5rem;
+  height: 2rem;
+}
+
+.sm-lyrics-calib-apply {
+  background: #f4d35e;
+  border-color: #f4d35e;
+  color: #17140a;
+}
+
+.sm-lyrics-calib-dots {
+  display: inline-flex;
+  gap: 0.22rem;
+}
+
+.sm-lyrics-calib-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--border, #30363d);
+}
+
+.sm-lyrics-calib-dot--hit {
+  background: #f4d35e;
+}
+
+.sm-lyrics-calib-count,
+.sm-lyrics-calib-was,
+.sm-lyrics-calib-spread {
+  color: var(--fg-tertiary, #8b949e);
+  font: 0.58rem/1 monospace;
+}
+
+.sm-lyrics-calib-result {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.7rem;
+}
+
+.sm-lyrics-calib-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-left: auto;
 }
 
 .sm-lyrics-gen-guidance {
