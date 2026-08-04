@@ -23,6 +23,11 @@ export type DestinationVisual =
   | 'exercises'
   | 'analysis'
   | 'jam'
+  // Not a Home card — the Ascent lives on its own tab. The artwork
+  // exists because the onboarding Map shows it beside five rooms that
+  // all have cover art, and the one card without a picture reads as
+  // unfinished rather than as a different kind of thing.
+  | 'ascent'
 
 type DestinationTarget =
   | { kind: 'tab'; tab: ActiveTab }
@@ -491,6 +496,76 @@ function AnalysisVisual(): JSX.Element {
   )
 }
 
+/** Seven weeks as a climb, with only the first orb lit. */
+function AscentVisual(): JSX.Element {
+  const orbs = [
+    { x: 32, y: 214 },
+    { x: 115, y: 196 },
+    { x: 198, y: 172 },
+    { x: 281, y: 144 },
+    { x: 364, y: 114 },
+    { x: 447, y: 80 },
+    { x: 530, y: 42 },
+  ]
+
+  return (
+    <div class={styles.ascentVisual} aria-hidden="true">
+      <div class={styles.ascentHorizon} />
+      <svg viewBox="0 0 560 250" fill="none">
+        <defs>
+          <linearGradient id="ascent-climb" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#58a6ff" />
+            <stop offset=".55" stop-color="#2dd4bf" />
+            <stop offset="1" stop-color="#bc8cff" />
+          </linearGradient>
+        </defs>
+        <path
+          class={styles.ascentClimb}
+          d="M32 214 C 60 209 87 202 115 196 C 143 190 170 180 198 172 C 226 163 253 153 281 144 C 309 134 336 124 364 114 C 392 103 419 91 447 80 C 475 68 502 55 530 42"
+          stroke="url(#ascent-climb)"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+        <For each={orbs}>
+          {(orb, index) => (
+            <Show
+              when={index() === 0}
+              fallback={
+                <circle
+                  class={styles.ascentOrb}
+                  cx={orb.x}
+                  cy={orb.y}
+                  r="7"
+                  stroke="#c5d0dc"
+                  stroke-opacity=".38"
+                />
+              }
+            >
+              <>
+                <circle
+                  cx={orb.x}
+                  cy={orb.y}
+                  r="17"
+                  fill="#58a6ff"
+                  fill-opacity=".16"
+                />
+                <circle
+                  class={styles.ascentOrbLit}
+                  cx={orb.x}
+                  cy={orb.y}
+                  r="8"
+                  fill="#58a6ff"
+                />
+              </>
+            </Show>
+          )}
+        </For>
+      </svg>
+      <div class={styles.visualNugget}>Seven weeks · one orb at a time</div>
+    </div>
+  )
+}
+
 function JamVisual(): JSX.Element {
   return (
     <div class={styles.jamVisual} aria-hidden="true">
@@ -542,6 +617,9 @@ export function DestinationArtwork(props: {
         </Match>
         <Match when={props.visual === 'jam'}>
           <JamVisual />
+        </Match>
+        <Match when={props.visual === 'ascent'}>
+          <AscentVisual />
         </Match>
       </Switch>
     </div>
