@@ -93,12 +93,17 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
       </div>
       <h3 class={styles.cardTitle}>{props.week.title}</h3>
 
+      {/* No direction in the locked line below: the card is shared by both
+          path views, and they run opposite ways — the plain view's day rail
+          reads left to right, the Ascent climbs bottom to top. "One at a
+          time" is the rule; which way the row points is decoration, and it
+          was wrong on whichever view you were not looking at. */}
       <Show
         when={props.state !== 'locked'}
         fallback={
           <p class={styles.focus}>
-            Unlocks after Week {props.week.order - 1}. Each day opens from left
-            to right as your practice goal is met.
+            Unlocks after Week {props.week.order - 1}. One day opens at a time,
+            each as your practice goal is met.
           </p>
         }
       >

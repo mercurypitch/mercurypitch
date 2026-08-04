@@ -18,6 +18,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { Mascot } from '@/components/Mascot'
+import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { VoiceSession } from '@/lib/voice-session'
@@ -196,6 +197,14 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
             style={{ width: `${Math.min(100, level() * 1200)}%` }}
           />
         </div>
+        {/* The hardest mic failure is the one that does NOT error: another
+            tab holding the device leaves us a granted stream that carries
+            almost no signal, so the meter sits flat and nothing here can
+            say why. Until we detect that, put the recovery steps where the
+            singer is actually stuck — next to the meter they are watching. */}
+        <div class={styles.micHelp}>
+          <MicTroubleshooting />
+        </div>
       </Show>
 
       <Show when={phase() === 'heard'}>
@@ -229,6 +238,10 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
         <p class={styles.eyebrow}>No microphone</p>
         <h1 class={styles.headline}>We can carry on without it</h1>
         <p class={styles.sub}>{error()}</p>
+
+        <div class={styles.micHelp}>
+          <MicTroubleshooting />
+        </div>
 
         <Show when={devices().length > 1}>
           <div class={styles.deviceList}>
