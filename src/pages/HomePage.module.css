@@ -106,9 +106,12 @@
   background: var(--green);
   transition: width 0.3s ease;
 }
+/* No margin-top here: this used to be a standalone block under the bar, and
+   the leftover 6px pushed the text down inside `.goalTextRow` while the info
+   button stayed put — which read as the "i" floating above its own sentence.
+   The row owns the spacing now. Its only user is HomePage's goal line. */
 .goalText {
   display: block;
-  margin-top: 6px;
   font-size: 0.78rem;
   color: var(--text-muted);
 }
