@@ -10,18 +10,20 @@
 // userBadges / userAchievements are cloud entities, so grants only persist
 // when signed in; every DB call is wrapped so a signed-out user (or any
 // failure) silently no-ops — this must never throw into a completion path.
+//
+// Reading and writing both live elsewhere now, and for the same reason: a
+// pass was sixty HTTPS round trips on the critical path of finishing a run.
+// `loadGrantContext()` gathers the inputs in one request; `queueAchievement`
+// buffers the outputs and writes them a window later. What stays here is the
+// part that was never slow — deciding what was earned.
 
-import { getDb } from '@/db'
-import type { Achievement, BadgeDefinition, UserAchievement, UserBadge, } from '@/db/entities'
-import { getUserId } from '@/db/seed'
-import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
-import { getFollowing } from '@/db/services/follow-service'
-import { loadSessionRecords } from '@/db/services/session-service'
-import { loadSharedMelodies, loadSharedSessions, } from '@/db/services/share-service'
-import { getCurrentStreak } from '@/db/services/streak-service'
+import type { Achievement, BadgeDefinition } from '@/db/entities'
+import { loadBadgeDefinitions, loadUserBadges, } from '@/db/services/challenges-service'
+import type { GrantContext } from '@/db/services/grant-context'
+import { loadGrantContext } from '@/db/services/grant-context'
+import { isBadgePending, pendingAchievement, queueAchievement, queueBadge, } from '@/db/services/grant-flush'
 import type { ActivityCounts } from '@/db/services/user-activity-service'
-import { loadActivityCounts } from '@/db/services/user-activity-service'
-import { listVoiceprints } from '@/db/services/voiceprint-service'
+import { countActivity } from '@/db/services/user-activity-service'
 import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { showNotification } from '@/stores/notifications-store'
 
@@ -102,37 +104,25 @@ function emptyStats(): GrantStats {
 }
 
 /**
- * Everything the goals are measured against, gathered once.
+ * Everything the goals are measured against, from a context already loaded.
  *
- * All of it is either already-loaded data or a single cheap list call, and
- * every field below backs at least one seeded achievement — a metric with
+ * Every field below backs at least one seeded achievement — a metric with
  * nothing reading it is dead weight, and a goal with no metric behind it
  * is decoration (see the four that sat permanently ungrantable before).
+ *
+ * Synchronous on purpose. This is the part of a grant pass that has to be
+ * fast, and it is: pure arithmetic over at most 200 records. Everything that
+ * touches the network happens before it is called.
  */
-async function computeStats(userBadgeCount: number): Promise<GrantStats> {
-  const [
-    records,
-    streak,
-    progress,
-    challengeDefs,
-    activity,
-    voiceprints,
-    friends,
-    sharedMelodies,
-    sharedSessions,
-  ] = await Promise.all([
-    loadSessionRecords(200),
-    getCurrentStreak(),
-    loadChallengeProgress(),
-    loadChallengeDefinitions(),
-    // Each of these resolves empty rather than throwing when signed out,
-    // which is the same contract the grant pass itself keeps.
-    loadActivityCounts(),
-    listVoiceprints().catch(() => []),
-    getFollowing().catch(() => []),
-    loadSharedMelodies().catch(() => []),
-    loadSharedSessions().catch(() => []),
-  ])
+export function computeStats(
+  ctx: GrantContext,
+  userBadgeCount: number,
+): GrantStats {
+  const records = ctx.records
+  const streak = ctx.currentStreak
+  const progress = ctx.challengeProgress
+  const challengeDefs = ctx.challengeDefs
+  const activity = countActivity(ctx.activityRows)
 
   const scores = records.map((r) => r.score ?? 0)
   const defById = new Map(challengeDefs.map((d) => [d.id, d]))
@@ -214,10 +204,10 @@ async function computeStats(userBadgeCount: number): Promise<GrantStats> {
     weekendDays: weekendDays.size,
     busiestDay: Math.max(0, ...runsPerDay.values()),
     activity,
-    voiceprints: voiceprints.length,
-    friends: friends.length,
+    voiceprints: ctx.voiceprintCount,
+    friends: ctx.followingCount,
     badgesEarned: userBadgeCount,
-    sharesPosted: sharedMelodies.length + sharedSessions.length,
+    sharesPosted: ctx.sharesPosted,
   }
 }
 
@@ -378,14 +368,9 @@ export async function grantBadgeByRef(ref: string): Promise<void> {
     const badge = badges.find((b) => b.id === ref || b.name === ref)
     if (badge === undefined) return
     if (userBadges.some((ub) => ub.badgeId === badge.id)) return
+    if (isBadgePending(badge.id)) return
 
-    const db = await getDb()
-    const repo = db.getRepository<UserBadge>('userBadges')
-    await repo.create({
-      userId: getUserId(),
-      badgeId: badge.id,
-      earnedAt: new Date().toISOString(),
-    })
+    queueBadge(badge.id, new Date().toISOString())
     showNotification(`Badge unlocked: ${badge.name}`, 'success')
   } catch {
     // Signed out or transient failure — ignore.
@@ -395,31 +380,31 @@ export async function grantBadgeByRef(ref: string): Promise<void> {
 /**
  * Evaluate all badges + achievements and grant any newly-earned ones.
  * Safe to call after any completion event; never throws.
+ *
+ * One request in, zero requests out. The writes are queued and flushed a
+ * window later (grant-flush.ts), so finishing a run no longer waits on the
+ * achievements API at all — the toast fires from the evaluation above it.
  */
 export async function checkAndGrantBadges(): Promise<void> {
   try {
-    const [badges, userBadges, achievements, userAchievements] =
-      await Promise.all([
-        loadBadgeDefinitions(),
-        loadUserBadges(),
-        loadAchievementDefinitions(),
-        loadUserAchievements(),
-      ])
+    const ctx = await loadGrantContext()
+    const { badges, userBadges, achievements, userAchievements } = ctx
 
     if (badges.length === 0 && achievements.length === 0) return
 
-    // The collector goals count badges, so the stats need the badge list —
-    // which this pass has already loaded. Counting what was earned BEFORE
-    // this round, deliberately: a badge granted below should show up on
-    // the next completion, not race the loop that is granting it.
-    const stats = await computeStats(userBadges.length)
+    // The collector goals count badges. Counting what was earned BEFORE this
+    // round, deliberately: a badge granted below should show up on the next
+    // completion, not race the loop that is granting it.
+    const stats = computeStats(ctx, userBadges.length)
 
-    const db = await getDb()
-    const badgeRepo = db.getRepository<UserBadge>('userBadges')
-    const achRepo = db.getRepository<UserAchievement>('userAchievements')
-    const userId = getUserId()
     const now = new Date().toISOString()
+    // Queued-but-unwritten grants count as earned. Without this, a pass that
+    // reloads its context before the flush would see the stored rows, decide
+    // the goal was still locked, and announce the same unlock a second time.
     const earnedBadgeIds = new Set(userBadges.map((b) => b.badgeId))
+    for (const badge of badges) {
+      if (isBadgePending(badge.id)) earnedBadgeIds.add(badge.id)
+    }
 
     // Two passes so the meta "All Star" badge can see badges granted this
     // round (e.g. the bronze badge that completes the set).
@@ -427,13 +412,9 @@ export async function checkAndGrantBadges(): Promise<void> {
       for (const badge of badges) {
         if (earnedBadgeIds.has(badge.id)) continue
         if (!isBadgeEarned(badge, stats, earnedBadgeIds, badges)) continue
-        try {
-          await badgeRepo.create({ userId, badgeId: badge.id, earnedAt: now })
-          earnedBadgeIds.add(badge.id)
-          showNotification(`Badge unlocked: ${badge.name}`, 'success')
-        } catch {
-          // Already granted (race) or signed out — ignore.
-        }
+        earnedBadgeIds.add(badge.id)
+        queueBadge(badge.id, now)
+        showNotification(`Badge unlocked: ${badge.name}`, 'success')
       }
     }
 
@@ -442,7 +423,11 @@ export async function checkAndGrantBadges(): Promise<void> {
     for (const ach of achievements) {
       const result = evalAchievement(ach, measures)
       if (!result) continue
-      const existing = achByDef.get(ach.id)
+
+      // Pending beats stored, for the same reason as the badges above.
+      const queued = pendingAchievement(ach.id)
+      const stored = achByDef.get(ach.id)
+      const existing = queued ?? stored
       if (existing?.unlocked === true) continue
 
       // Nothing to write when the number has not moved. Without this, every
@@ -460,22 +445,14 @@ export async function checkAndGrantBadges(): Promise<void> {
         continue
       }
 
-      const fields = {
+      queueAchievement({
+        achievementId: ach.id,
         progress: result.progress,
         unlocked: result.unlocked,
         ...(result.unlocked ? { unlockedAt: now } : {}),
-      }
-      try {
-        if (existing) {
-          await achRepo.update(existing.id, fields)
-        } else {
-          await achRepo.create({ userId, achievementId: ach.id, ...fields })
-        }
-        if (result.unlocked) {
-          showNotification(`Achievement unlocked: ${ach.name}`, 'success')
-        }
-      } catch {
-        // Signed out or transient failure — ignore.
+      })
+      if (result.unlocked) {
+        showNotification(`Achievement unlocked: ${ach.name}`, 'success')
       }
     }
   } catch {

@@ -10,6 +10,7 @@ import modalStyles from '@/components/Modal.module.css'
 import { FancyDivider } from '@/components/shared/FancyDivider'
 import type { Achievement as DBAchievement, AchievementCategory, BadgeDefinition as DBBadgeDefinition, ChallengeCategory, ChallengeDefinition as DBChallengeDefinition, ChallengeProgress as DBChallengeProgress, UserAchievement as DBUserAchievement, UserBadge as DBUserBadge, } from '@/db/entities'
 import { loadAchievementDefinitions, loadBadgeDefinitions, loadChallengeDefinitions, loadChallengeProgress, loadUserAchievements, loadUserBadges, } from '@/db/services/challenges-service'
+import { flushGrants } from '@/db/services/grant-flush'
 import { getCurrentStreak } from '@/db/services/streak-service'
 import { authVersion } from '@/db/services/user-service'
 import { badgeArtSrc } from '@/features/challenges/badge-art'
@@ -182,6 +183,11 @@ export const VocalChallenges: Component = () => {
     authVersion()
     challengeAttemptVersion()
     void (async () => {
+      // Achievement progress is written on a delay, so opening the page that
+      // displays it is one of the moments worth paying the write for —
+      // otherwise a singer who finishes a run and comes straight here sees
+      // the numbers from before it.
+      await flushGrants()
       const [defs, prog, badgeDefs, userBadges, achDefs, userAchs, streak] =
         await Promise.all([
           loadChallengeDefinitions(),

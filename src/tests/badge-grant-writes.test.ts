@@ -6,6 +6,10 @@
 // covers its COST: a pass used to PATCH every still-locked achievement, one
 // serial request each, which is what made "Saving your run…" take three to
 // five seconds and what tripped the worker's 120/min crud-write cap.
+//
+// A pass now queues rather than writes, so each case here flushes explicitly
+// before counting. What is being pinned is unchanged — that an unmoved
+// number costs nothing — it just costs nothing a window later.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { InMemoryAdapter } from './utils/in-memory-db'
@@ -39,6 +43,7 @@ vi.mock('@/db', () => ({
 
 import type { UserAchievement } from '@/db/entities'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
+import { discardPendingGrants, flushGrants } from '@/db/services/grant-flush'
 import { getUserId } from '@/db/services/user-service'
 
 /** Three goals nothing in an empty account has moved yet. */
@@ -46,6 +51,7 @@ const LOCKED = ['Ten Days In', 'Regular', 'Thousand Notes'] as const
 
 beforeEach(async () => {
   await adapter.destroy()
+  discardPendingGrants()
   updates.length = 0
   creates.length = 0
 })
@@ -80,6 +86,7 @@ describe('checkAndGrantBadges write cost', () => {
     creates.length = 0
 
     await checkAndGrantBadges()
+    await flushGrants()
 
     expect(updates.filter((t) => t === 'userAchievements')).toEqual([])
   })
@@ -109,6 +116,7 @@ describe('checkAndGrantBadges write cost', () => {
     creates.length = 0
 
     await checkAndGrantBadges()
+    await flushGrants()
 
     const rows = await adapter
       .getRepository<UserAchievement>('userAchievements')
