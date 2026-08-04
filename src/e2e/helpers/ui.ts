@@ -10,9 +10,16 @@ export async function dismissOverlays(page: Page) {
 
   // Force hide any overlays and reset focus mode via hash and localStorage
   await page.evaluate((version) => {
-    // Hide all overlays including focus mode in DOM immediately
+    // Hide all overlays including focus mode in DOM immediately.
+    //
+    // `[data-onboarding-flow]` is the First Light flow. It used to be
+    // reachable through the welcome screen's own class, but the welcome
+    // screen is gone and the flow now opens straight away for a first-time
+    // visitor — which every spec is. Its class is a CSS-module hash, so it
+    // has to announce itself with an attribute or nothing here can match
+    // it, and an aria-modal dialog over the app swallows every click.
     const overlays = document.querySelectorAll(
-      '[class*="welcomeOverlay"], [class*="walkthroughOverlay"], [class*="welcome-overlay"], [class*="walkthrough-overlay"], .overlay, .focus-mode-backdrop, [class*="welcome-screen"]',
+      '[class*="welcomeOverlay"], [class*="walkthroughOverlay"], [class*="welcome-overlay"], [class*="walkthrough-overlay"], .overlay, .focus-mode-backdrop, [class*="welcome-screen"], [data-onboarding-flow]',
     )
     for (let i = 0; i < overlays.length; i++) {
       const el = overlays[i] as HTMLElement
@@ -22,6 +29,7 @@ export async function dismissOverlays(page: Page) {
 
     // Set localStorage to prevent overlays from reappearing on next load
     localStorage.setItem('pitchperfect_welcome_version', version)
+    localStorage.setItem('pitchperfect_onboarding_done', '1')
     localStorage.setItem('pitchperfect_active_tab', 'singing')
     localStorage.setItem('pitchperfect_focus_mode', 'false')
 
