@@ -57,8 +57,16 @@ const isTimerPreference = (value: unknown): value is TimerPreference => {
   return modeOk && typeof candidate.customSec === 'number'
 }
 
+/**
+ * The `pitchperfect_` prefix is not decoration: settings-service syncs exactly
+ * the keys that carry it, so a key named anything else is silently
+ * device-local, and the run length someone chose would not follow them to a
+ * second device the way every other preference does.
+ */
+export const TIMER_STORAGE_KEY = 'pitchperfect_exercise_timer'
+
 const [preference, setPreference] = createPersistedSignal<TimerPreference>(
-  'mp_exercise_timer',
+  TIMER_STORAGE_KEY,
   DEFAULT_PREFERENCE,
   { validator: isTimerPreference },
 )
