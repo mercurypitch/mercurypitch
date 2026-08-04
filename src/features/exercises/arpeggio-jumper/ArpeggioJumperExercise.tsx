@@ -207,6 +207,7 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
+        upcomingTargets: () => controller.getUpcomingMidi(),
       }}
       activeContent={
         <>

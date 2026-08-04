@@ -235,5 +235,15 @@ export function useCallResponseController(
     finish()
   }
 
-  return { setBase, startRounds, stopRounds, computeResult }
+  /**
+   * The phrase for this round, in full. Unlike the note-at-a-time drills the
+   * singer echoes the WHOLE phrase back, so every note of it is upcoming from
+   * the moment the call starts — which is the one thing `currentMidi` cannot
+   * say (during the response it still holds the call's last note).
+   */
+  function getUpcomingMidi(): number[] {
+    return (phrases[roundIndex] ?? []).map((n) => n.midi)
+  }
+
+  return { setBase, startRounds, stopRounds, computeResult, getUpcomingMidi }
 }

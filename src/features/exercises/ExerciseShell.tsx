@@ -49,6 +49,13 @@ export interface ExerciseTrackerConfig {
   targetNoteMidi?: () => number | undefined
   /** Guide frequency (Hz) that moves over time — glides, sirens, vibrato. */
   movingTarget?: () => number | null
+  /**
+   * The targets after the current one, nearest first (MIDI). Supplied by the
+   * drills that know their sequence, so the singer can prepare the next
+   * interval; drills with one held target (Long Note, Pitch Hold, Drone) leave
+   * it out — for them the flat line is already the whole truth.
+   */
+  upcomingTargets?: () => number[]
   /** Extra gate for drills that only track part of the run (Warmup's sing
    *  steps — breathing and hums have no pitch to plot). */
   when?: () => boolean
@@ -431,6 +438,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                   isActive={isActive}
                   targetNoteMidi={tracker().targetNoteMidi}
                   movingTarget={tracker().movingTarget}
+                  upcomingTargets={tracker().upcomingTargets}
                 />
               </Show>
             )}

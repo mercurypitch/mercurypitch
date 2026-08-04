@@ -236,6 +236,10 @@ const SightSingingExercise: Component<Props> = (props) => {
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: targetMidi,
+        upcomingTargets: () =>
+          sequence()
+            .slice(currentIdx() + 1)
+            .map((n) => n.midi),
       }}
       activeContent={
         <>

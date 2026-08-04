@@ -300,5 +300,16 @@ export function useArpeggioJumperController(
     finish()
   }
 
-  return { setArpeggio, startArpeggio, stopArpeggio, computeResult }
+  /** Notes still to come after the one being asked for, nearest first. */
+  function getUpcomingMidi(): number[] {
+    return arpeggioNotes.slice(noteIndex + 1)
+  }
+
+  return {
+    setArpeggio,
+    startArpeggio,
+    stopArpeggio,
+    computeResult,
+    getUpcomingMidi,
+  }
 }

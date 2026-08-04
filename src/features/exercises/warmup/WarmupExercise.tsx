@@ -164,6 +164,12 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => metrics().currentMidi,
+        // The whole pattern for this step, since the singer sings all of it
+        // back — `currentMidi` only ever names the reference note last played.
+        upcomingTargets: () =>
+          (currentStep()?.offsets ?? []).map(
+            (offset) => noteToMidi(comfortNote()) + offset,
+          ),
         when: () => currentStep()?.kind === 'sing',
       }}
       activeContent={

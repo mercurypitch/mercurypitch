@@ -22,12 +22,13 @@ function buildScaleNotes(
   direction: 'up' | 'down',
 ): number[] {
   const degrees = getScaleDegrees(scaleType)
-  let notes = [baseMidi]
-  for (const deg of degrees.slice(1)) {
-    notes.push(baseMidi + deg)
-  }
-  // Add octave
-  notes.push(baseMidi + 12)
+  let notes = degrees.map((deg) => baseMidi + deg)
+  // Close on the octave — but only if the scale definition did not already.
+  // Every definition in scale-data does, so appending it unconditionally made
+  // the run ask for the top note twice in a row; invisible when the target was
+  // one flat line, obvious the moment the upcoming ladder drew it as two rungs
+  // at the same pitch.
+  if (notes[notes.length - 1] !== baseMidi + 12) notes.push(baseMidi + 12)
   if (direction === 'down') {
     notes = [...notes].reverse()
   }
@@ -213,5 +214,10 @@ export function useScaleRunnerController(
     finish()
   }
 
-  return { setScale, startScale, stopScale, computeResult }
+  /** Notes still to come after the one being asked for, nearest first. */
+  function getUpcomingMidi(): number[] {
+    return scaleNotes.slice(noteIndex + 1)
+  }
+
+  return { setScale, startScale, stopScale, computeResult, getUpcomingMidi }
 }

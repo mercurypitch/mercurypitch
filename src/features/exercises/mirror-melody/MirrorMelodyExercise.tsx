@@ -121,6 +121,7 @@ const MirrorMelodyExercise: Component<MirrorMelodyExerciseProps> = (props) => {
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
+        upcomingTargets: () => controller.getUpcomingMidi(),
       }}
       activeContent={
         <>
