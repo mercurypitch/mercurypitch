@@ -94,7 +94,8 @@ export interface StemMixerLyricsPanelBodyProps {
   previewActiveWord: Accessor<
     (PreviewWordHighlight & { lineIdx: number }) | null
   >
-  toggleLinePreview: (idx: number, loop: boolean) => void
+  toggleLinePreview: (idx: number, loop: boolean) => boolean
+  setPreviewLoop: (loop: boolean) => void
 
   // Actions
   handleNextLine: () => void
@@ -641,13 +642,22 @@ export const StemMixerLyricsPanelBody: Component<
                 Words
               </button>
             </div>
-            <label class="sm-lyrics-gen-loop" title="Repeat previewed lines">
+            <label
+              class="sm-lyrics-gen-loop"
+              title="When you preview a line with its play button, repeat it instead of stopping at the end"
+            >
               <input
                 type="checkbox"
                 checked={loopPreview()}
-                onChange={(e) => setLoopPreview(e.currentTarget.checked)}
+                onChange={(e) => {
+                  const on = e.currentTarget.checked
+                  setLoopPreview(on)
+                  // Apply to a preview that is already running, so the toggle
+                  // is never a control that appears to do nothing.
+                  props.setPreviewLoop(on)
+                }}
               />
-              <span>Loop preview</span>
+              <span>Repeat previewed line</span>
             </label>
             <div
               class="sm-lyrics-gen-mode-switch"
@@ -984,7 +994,14 @@ export const StemMixerLyricsPanelBody: Component<
                       }
                       onClick={(e) => {
                         e.stopPropagation()
-                        props.toggleLinePreview(item.index, loopPreview())
+                        // The controller can seek but owns no transport, so
+                        // starting playback is the caller's job — without this
+                        // a preview from a paused song silently does nothing.
+                        if (
+                          props.toggleLinePreview(item.index, loopPreview())
+                        ) {
+                          if (!props.playing()) props.handlePlay()
+                        }
                       }}
                     >
                       <svg viewBox="0 0 24 24" width="10" height="10">

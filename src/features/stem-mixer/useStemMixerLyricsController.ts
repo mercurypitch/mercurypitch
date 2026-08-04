@@ -96,8 +96,9 @@ export interface StemMixerLyricsController {
   wordPassProgress: () => { done: number; total: number }
   previewLineIdx: () => number | null
   previewLoop: () => boolean
+  setPreviewLoop: (loop: boolean) => void
   previewActiveWord: () => (PreviewWordHighlight & { lineIdx: number }) | null
-  toggleLinePreview: (idx: number, loop: boolean) => void
+  toggleLinePreview: (idx: number, loop: boolean) => boolean
   stopLinePreview: () => void
   lrcTimingOffsetMs: () => number
   setLrcTimingOffsetMs: Setter<number>
@@ -1894,21 +1895,27 @@ export function useStemMixerLyricsController(
    * being edited rather than the saved ones — so what plays here is what will
    * ship, without leaving the mapper to check it.
    */
-  const startLinePreview = (idx: number, loop: boolean) => {
+  /** Returns whether a preview is now running, so the caller can start
+   *  playback — the controller can seek but has no transport of its own. */
+  const startLinePreview = (idx: number, loop: boolean): boolean => {
     const lines = getGenLines()
-    if (!isMappableLine(lines[idx])) return
-    if (genLineStart(idx) === undefined) return
+    if (!isMappableLine(lines[idx])) return false
+    if (genLineStart(idx) === undefined) return false
     setPreviewLineIdx(idx)
     setPreviewLoop(loop)
     seekToLinePreRoll(idx)
+    return true
   }
 
-  const toggleLinePreview = (idx: number, loop: boolean) => {
-    if (previewLineIdx() === idx && previewLoop() === loop) {
+  const toggleLinePreview = (idx: number, loop: boolean): boolean => {
+    // Loop is a property of the running preview, not a separate target, so
+    // re-pressing the same line always stops it rather than restarting it
+    // under a different loop setting.
+    if (previewLineIdx() === idx) {
       stopLinePreview()
-      return
+      return false
     }
-    startLinePreview(idx, loop)
+    return startLinePreview(idx, loop)
   }
 
   /** Where the previewed line stops sounding. */
@@ -3056,6 +3063,7 @@ export function useStemMixerLyricsController(
     wordPassProgress,
     previewLineIdx,
     previewLoop,
+    setPreviewLoop,
     previewActiveWord,
     toggleLinePreview,
     stopLinePreview,

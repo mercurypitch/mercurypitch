@@ -148,8 +148,11 @@ export function TapCalibrationPanel(props: TapCalibrationPanelProps) {
 
       <Show when={phase() === 'idle'}>
         <p class="sm-lyrics-calib-copy">
-          Tap along with {CALIBRATION_CLICK_COUNT} clicks — space, enter, or the
-          button. Your median lateness becomes the reaction offset.
+          Tap once on each of {CALIBRATION_CLICK_COUNT} clicks — space, enter,
+          or the button. Everyone taps a little after the sound they are
+          reacting to; this measures by how much, and the mapper then subtracts
+          it so your marks land on the word instead of just after it. There is
+          no good or bad score.
         </p>
         <button class="sm-lyrics-calib-start" onClick={start}>
           Start
@@ -193,15 +196,23 @@ export function TapCalibrationPanel(props: TapCalibrationPanelProps) {
         >
           <p class="sm-lyrics-calib-result">
             <strong>{result()} ms</strong>
-            <Show when={spread() !== null}>
-              <span class="sm-lyrics-calib-spread">
-                spread {spread()} ms
-                {(spread() ?? 0) > 80 ? ' — loose, worth repeating' : ''}
-              </span>
-            </Show>
+            <span class="sm-lyrics-calib-spread">
+              your reaction time — 150-250 ms is typical
+            </span>
           </p>
+          <Show when={spread() !== null}>
+            <span class="sm-lyrics-calib-was">
+              {/* The warning belongs to consistency, not to the offset itself:
+                  a 150ms reaction is perfectly normal, ten scattered taps are
+                  what make the median untrustworthy. */}
+              taps varied by {spread()} ms
+              {(spread() ?? 0) > 80
+                ? ' — scattered, so this median is shaky; worth another run'
+                : ' — consistent'}
+            </span>
+          </Show>
           <span class="sm-lyrics-calib-was">
-            now {props.currentOffsetMs} ms
+            replaces {props.currentOffsetMs} ms
           </span>
         </Show>
         <div class="sm-lyrics-calib-actions">
