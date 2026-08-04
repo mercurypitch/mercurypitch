@@ -87,8 +87,11 @@ export const NoteDial: Component<NoteDialProps> = (props) => {
   )
 
   const commit = (note: string | null): void => {
-    if (note === null || note === props.selected) return
-    props.onChange(note)
+    if (note === null) return
+    // Re-picking the note you are already on is not a no-op. Half the point
+    // of the dial is hearing what you are aiming at, so the tap still plays
+    // it — there is just no selection change to report upward.
+    if (note !== props.selected) props.onChange(note)
     preview(note)
   }
 
