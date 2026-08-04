@@ -891,6 +891,22 @@
   }
 }
 
+/* The same shelves inside the mobile sheet. The sheet brings its own
+   surface, padding and scrolling, so this only supplies the column and a
+   thumb-sized row — 8px of padding is a desk target, not a phone one. */
+.pickSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px 8px;
+}
+
+.pickSheet .pickItem {
+  min-height: 48px;
+  justify-content: center;
+  padding: 10px 12px;
+}
+
 .pickShelf {
   display: flex;
   flex-direction: column;

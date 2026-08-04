@@ -4,6 +4,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { MicInsightHint } from '@/components/MicInsightHint'
+import { Sheet } from '@/components/mobile/Sheet'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
 import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-song'
@@ -68,6 +69,10 @@ export const JamPanel: Component = () => {
   onMount(() => {
     const onDown = (e: PointerEvent) => {
       if (!showExercisePicker()) return
+      // On a phone the picker is a Sheet, which owns its own backdrop tap
+      // and drag-to-dismiss. Left running, this would see a tap INSIDE the
+      // sheet as outside the (unrendered) popover and close it instantly.
+      if (isMobile()) return
       const t = e.target as Node | null
       if (t === null) return
       if (pickerRef?.contains(t) === true) return
@@ -409,6 +414,58 @@ export const JamPanel: Component = () => {
     const name = displayName().trim() || getRandomName()
     joinJamRoom(roomId, name).finally(() => setJoining(false))
   }
+
+  /** The picker's shelves, rendered into the desktop overlay or the
+   *  mobile sheet — one list, two containers. */
+  const pickerBody = () => (
+    <For each={pickerShelves()}>
+      {(shelf) => (
+        <Show when={shelf.entries.length > 0}>
+          <div class={panelStyles.pickShelf}>
+            <div class={panelStyles.pickShelfLabel}>{shelf.label}</div>
+            <For each={shelf.entries}>
+              {(entry) => (
+                <button
+                  class={panelStyles.pickItem}
+                  onClick={() => {
+                    // A song and a drill run on different
+                    // timelines and go through different
+                    // store actions; the catalogue union
+                    // makes forgetting this a compile error
+                    // rather than a room that loads a song
+                    // and waits for a beat that never comes.
+                    if (entry.kind === 'song') {
+                      void Promise.resolve(entry.buildSong()).then((s) => {
+                        if (s !== null) selectJamSong(s)
+                      })
+                    } else {
+                      selectJamExercise(entry.build())
+                    }
+                    setShowExercisePicker(false)
+                  }}
+                >
+                  <span class={panelStyles.pickName}>
+                    {entry.name}
+                    {/* Reading both stems out of the database
+                                      takes a moment; say so on the row that
+                                      is actually doing it. */}
+                    <Show
+                      when={
+                        entry.id === `song:session:${hydrating() ?? '\u0000'}`
+                      }
+                    >
+                      <span class={panelStyles.pickSpinner} />
+                    </Show>
+                  </span>
+                  <span class={panelStyles.pickMeta}>{entry.detail}</span>
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
+      )}
+    </For>
+  )
 
   return (
     <div class={jamStyles.panel}>
@@ -1188,66 +1245,28 @@ export const JamPanel: Component = () => {
                 </Show>
               </div>
 
-              {/* Exercise picker — an overlay, so opening it does not shove
-                the canvas and the pitch strip down the page. */}
-              <Show when={showExercisePicker()}>
+              {/* Exercise picker.
+                  On a desk it is an overlay, so opening it does not shove
+                  the canvas and the pitch strip down the page. On a phone
+                  that same overlay was unreachable: absolutely positioned
+                  against the transport row, inside a flex column whose
+                  canvas area is `overflow: hidden` — the host tapped the
+                  picker and nothing appeared. Same shelves, in the mobile
+                  kit's sheet, which is also where Karaoke Night keeps its
+                  song list, so it is a gesture already learned. */}
+              <Show when={showExercisePicker() && !isMobile()}>
                 <div class={panelStyles.exercisePicker} ref={pickerRef}>
-                  <For each={pickerShelves()}>
-                    {(shelf) => (
-                      <Show when={shelf.entries.length > 0}>
-                        <div class={panelStyles.pickShelf}>
-                          <div class={panelStyles.pickShelfLabel}>
-                            {shelf.label}
-                          </div>
-                          <For each={shelf.entries}>
-                            {(entry) => (
-                              <button
-                                class={panelStyles.pickItem}
-                                onClick={() => {
-                                  // A song and a drill run on different
-                                  // timelines and go through different
-                                  // store actions; the catalogue union
-                                  // makes forgetting this a compile error
-                                  // rather than a room that loads a song
-                                  // and waits for a beat that never comes.
-                                  if (entry.kind === 'song') {
-                                    void Promise.resolve(
-                                      entry.buildSong(),
-                                    ).then((s) => {
-                                      if (s !== null) selectJamSong(s)
-                                    })
-                                  } else {
-                                    selectJamExercise(entry.build())
-                                  }
-                                  setShowExercisePicker(false)
-                                }}
-                              >
-                                <span class={panelStyles.pickName}>
-                                  {entry.name}
-                                  {/* Reading both stems out of the database
-                                      takes a moment; say so on the row that
-                                      is actually doing it. */}
-                                  <Show
-                                    when={
-                                      entry.id ===
-                                      `song:session:${hydrating() ?? '\u0000'}`
-                                    }
-                                  >
-                                    <span class={panelStyles.pickSpinner} />
-                                  </Show>
-                                </span>
-                                <span class={panelStyles.pickMeta}>
-                                  {entry.detail}
-                                </span>
-                              </button>
-                            )}
-                          </For>
-                        </div>
-                      </Show>
-                    )}
-                  </For>
+                  {pickerBody()}
                 </div>
               </Show>
+              <Sheet
+                isOpen={showExercisePicker() && isMobile()}
+                close={() => setShowExercisePicker(false)}
+                ariaLabel="Choose a song or a drill"
+                snap="tall"
+              >
+                <div class={panelStyles.pickSheet}>{pickerBody()}</div>
+              </Sheet>
             </div>
 
             {/* ── The room's stage: a song, or the drill canvases ── */}
