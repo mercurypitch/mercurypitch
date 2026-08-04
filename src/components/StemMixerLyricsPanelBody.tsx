@@ -91,9 +91,9 @@ export interface StemMixerLyricsPanelBodyProps {
   setLrcGenPass: (pass: LrcGenPass) => void
   wordPassProgress: Accessor<{ done: number; total: number }>
   previewLineIdx: Accessor<number | null>
-  previewActiveWord: Accessor<
-    (PreviewWordHighlight & { lineIdx: number }) | null
-  >
+  liveHighlight: Accessor<boolean>
+  setLiveHighlight: (on: boolean) => void
+  highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
   setPreviewLoop: (loop: boolean) => void
 
@@ -559,235 +559,280 @@ export const StemMixerLyricsPanelBody: Component<
         {/* ── LRC Generator toolbar ─────────────────────── */}
         <Show when={props.lrcGenMode()}>
           <div class="sm-lyrics-gen-toolbar">
-            <Show when={!props.playing()}>
-              <button
-                class="sm-lyrics-gen-play-btn"
-                onClick={() => props.handlePlay()}
-                title="Play"
-              >
-                <svg viewBox="0 0 24 24" width="12" height="12">
-                  <path fill="currentColor" d="M8 5v14l11-7z" />
-                </svg>
-              </button>
-            </Show>
-            <Show when={props.playing()}>
-              <button
-                class="sm-lyrics-gen-pause-btn"
-                onClick={() => props.handlePause()}
-                title="Pause"
-              >
-                <svg viewBox="0 0 24 24" width="12" height="12">
-                  <path
-                    fill="currentColor"
-                    d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
-                  />
-                </svg>
-              </button>
-            </Show>
-            <span class="sm-lyrics-gen-progress">
+            {/* Row 1 — what you press while mapping. Row 2 is how it behaves.
+                Splitting them keeps the buttons that take a tap-accurate press
+                away from the settings that only get touched once a session. */}
+            <div class="sm-lyrics-gen-row">
+              <Show when={!props.playing()}>
+                <button
+                  class="sm-lyrics-gen-play-btn"
+                  onClick={() => props.handlePlay()}
+                  title="Play"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12">
+                    <path fill="currentColor" d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+              </Show>
+              <Show when={props.playing()}>
+                <button
+                  class="sm-lyrics-gen-pause-btn"
+                  onClick={() => props.handlePause()}
+                  title="Pause"
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12">
+                    <path
+                      fill="currentColor"
+                      d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                    />
+                  </svg>
+                </button>
+              </Show>
+              <span class="sm-lyrics-gen-progress">
+                {(() => {
+                  // The word pass only stops on lines that have words to
+                  // place, so counting every line there would understate it.
+                  if (props.lrcGenPass() === 'words') {
+                    const { done, total } = props.wordPassProgress()
+                    return `${Math.min(done, total)}/${total}`
+                  }
+                  return `${Math.min(
+                    props.lrcGenLineIdx(),
+                    props.getGenLines().length,
+                  )}/${props.getGenLines().length}`
+                })()}
+                {(() => {
+                  const lines = props.getGenLines()
+                  const idx = props.lrcGenLineIdx()
+                  if (idx < lines.length) {
+                    const wc = lines[idx]
+                      .split(/\s+/)
+                      .filter((w: string) => w.length > 0).length
+                    return (
+                      <>
+                        {' '}
+                        w{Math.min(props.lrcGenWordIdx(), wc)}/{wc}
+                      </>
+                    )
+                  }
+                  return null
+                })()}
+              </span>
               {(() => {
-                // Pass 2 only stops on lines that have words to place, so
-                // counting every line there would understate the progress.
-                if (props.lrcGenPass() === 2) {
-                  const { done, total } = props.wordPassProgress()
-                  return `${Math.min(done, total)}/${total}`
-                }
-                return `${Math.min(
-                  props.lrcGenLineIdx(),
-                  props.getGenLines().length,
-                )}/${props.getGenLines().length}`
-              })()}
-              {(() => {
-                const lines = props.getGenLines()
                 const idx = props.lrcGenLineIdx()
+                const lines = props.getGenLines()
                 if (idx < lines.length) {
-                  const wc = lines[idx]
-                    .split(/\s+/)
-                    .filter((w: string) => w.length > 0).length
-                  return (
-                    <>
-                      {' '}
-                      w{Math.min(props.lrcGenWordIdx(), wc)}/{wc}
-                    </>
-                  )
+                  const bi = props.getBlockForLine(idx)
+                  if (bi) {
+                    const block = props.getBlockById(bi.blockId)
+                    const total =
+                      props.blockInstances()[bi.blockId]?.length ?? 1
+                    if (block) {
+                      return (
+                        <span class="sm-lyrics-gen-instance-badge">
+                          {block.label} ({bi.instanceIdx + 1}/{total})
+                        </span>
+                      )
+                    }
+                  }
                 }
                 return null
               })()}
-            </span>
-            <div
-              class="sm-lyrics-gen-mode-switch"
-              role="group"
-              aria-label="Mapping pass"
-            >
+              <Show when={props.lrcGenInputMode() === 'tap'}>
+                <button
+                  class="sm-lyrics-gen-nextword-btn"
+                  onClick={() => props.handleNextWord()}
+                  title="Stamp the next word onset [W]"
+                >
+                  Next Word
+                </button>
+                <button
+                  class="sm-lyrics-gen-nextline-btn"
+                  onClick={() => props.handleNextLine()}
+                  title="Stamp the next line onset [L]"
+                >
+                  Next Line
+                </button>
+              </Show>
               <button
-                classList={{
-                  'sm-lyrics-gen-mode-btn': true,
-                  'sm-lyrics-gen-mode-btn--active': props.lrcGenPass() === 1,
-                }}
-                aria-pressed={props.lrcGenPass() === 1}
-                onClick={() => props.setLrcGenPass(1)}
-                title="Pass 1 — place the start of each line"
+                class="sm-lyrics-gen-redo-btn"
+                onClick={() => props.handleRedoCurrentLine()}
+                title="Clear and replay the current line"
               >
-                Lines
+                Redo line
+              </button>
+              <span class="sm-lyrics-gen-row-gap" />
+              <button
+                class="sm-lyrics-gen-finish-btn"
+                onClick={() => props.handleLrcGenFinish()}
+                title="Save LRC"
+              >
+                Finish
               </button>
               <button
-                classList={{
-                  'sm-lyrics-gen-mode-btn': true,
-                  'sm-lyrics-gen-mode-btn--active': props.lrcGenPass() === 2,
-                }}
-                aria-pressed={props.lrcGenPass() === 2}
-                onClick={() => props.setLrcGenPass(2)}
-                title="Pass 2 — line starts are frozen; place the words inside each line"
+                class="sm-lyrics-gen-reset-btn"
+                onClick={() => props.handleLrcGenReset()}
+                title="Restore the lyrics and timings from before this mapping session"
               >
-                Words
-              </button>
-            </div>
-            <label
-              class="sm-lyrics-gen-loop"
-              title="When you preview a line with its play button, repeat it instead of stopping at the end"
-            >
-              <input
-                type="checkbox"
-                checked={loopPreview()}
-                onChange={(e) => {
-                  const on = e.currentTarget.checked
-                  setLoopPreview(on)
-                  // Apply to a preview that is already running, so the toggle
-                  // is never a control that appears to do nothing.
-                  props.setPreviewLoop(on)
-                }}
-              />
-              <span>Repeat previewed line</span>
-            </label>
-            <div
-              class="sm-lyrics-gen-mode-switch"
-              role="group"
-              aria-label="Lyric mapping input"
-            >
-              <button
-                classList={{
-                  'sm-lyrics-gen-mode-btn': true,
-                  'sm-lyrics-gen-mode-btn--active':
-                    props.lrcGenInputMode() === 'marker',
-                }}
-                aria-pressed={props.lrcGenInputMode() === 'marker'}
-                onClick={() => props.setLrcGenInputMode('marker')}
-              >
-                Marker
-              </button>
-              <button
-                classList={{
-                  'sm-lyrics-gen-mode-btn': true,
-                  'sm-lyrics-gen-mode-btn--active':
-                    props.lrcGenInputMode() === 'tap',
-                }}
-                aria-pressed={props.lrcGenInputMode() === 'tap'}
-                onClick={() => props.setLrcGenInputMode('tap')}
-              >
-                Tap
+                Discard changes
               </button>
             </div>
-            <label class="sm-lyrics-gen-speed">
-              <span>Speed</span>
-              <SafeSelect
-                class="sm-lyrics-gen-speed-select"
-                value={String(props.playbackSpeed())}
-                onChange={(e) =>
-                  props.setPlaybackSpeed(Number(e.currentTarget.value))
-                }
-                aria-label="Mapping playback speed"
+
+            <div class="sm-lyrics-gen-row sm-lyrics-gen-row--settings">
+              <div class="sm-lyrics-gen-field">
+                <span class="sm-lyrics-gen-field-label">Map</span>
+                <div
+                  class="sm-lyrics-gen-mode-switch"
+                  role="group"
+                  aria-label="Mapping pass"
+                >
+                  <button
+                    classList={{
+                      'sm-lyrics-gen-mode-btn': true,
+                      'sm-lyrics-gen-mode-btn--active':
+                        props.lrcGenPass() === 'all',
+                    }}
+                    aria-pressed={props.lrcGenPass() === 'all'}
+                    onClick={() => props.setLrcGenPass('all')}
+                    title="Everything in one go — each tap places the next word, and a line's first word places its start"
+                  >
+                    All
+                  </button>
+                  <button
+                    classList={{
+                      'sm-lyrics-gen-mode-btn': true,
+                      'sm-lyrics-gen-mode-btn--active':
+                        props.lrcGenPass() === 'lines',
+                    }}
+                    aria-pressed={props.lrcGenPass() === 'lines'}
+                    onClick={() => props.setLrcGenPass('lines')}
+                    title="Place the start of each line only"
+                  >
+                    Lines
+                  </button>
+                  <button
+                    classList={{
+                      'sm-lyrics-gen-mode-btn': true,
+                      'sm-lyrics-gen-mode-btn--active':
+                        props.lrcGenPass() === 'words',
+                    }}
+                    aria-pressed={props.lrcGenPass() === 'words'}
+                    onClick={() => props.setLrcGenPass('words')}
+                    title="Line starts are frozen; place the words inside each line"
+                  >
+                    Words
+                  </button>
+                </div>
+              </div>
+              <div class="sm-lyrics-gen-field">
+                <span class="sm-lyrics-gen-field-label">Input</span>
+                <div
+                  class="sm-lyrics-gen-mode-switch"
+                  role="group"
+                  aria-label="Lyric mapping input"
+                >
+                  <button
+                    classList={{
+                      'sm-lyrics-gen-mode-btn': true,
+                      'sm-lyrics-gen-mode-btn--active':
+                        props.lrcGenInputMode() === 'marker',
+                    }}
+                    aria-pressed={props.lrcGenInputMode() === 'marker'}
+                    onClick={() => props.setLrcGenInputMode('marker')}
+                  >
+                    Marker
+                  </button>
+                  <button
+                    classList={{
+                      'sm-lyrics-gen-mode-btn': true,
+                      'sm-lyrics-gen-mode-btn--active':
+                        props.lrcGenInputMode() === 'tap',
+                    }}
+                    aria-pressed={props.lrcGenInputMode() === 'tap'}
+                    onClick={() => props.setLrcGenInputMode('tap')}
+                  >
+                    Tap
+                  </button>
+                </div>
+              </div>
+              <label
+                class="sm-lyrics-gen-toggle"
+                title="While the song plays, light the words from the timings you have mapped so far — the same highlighting you get outside the mapper"
               >
-                <For each={STEM_MIXER_PLAYBACK_SPEEDS}>
-                  {(speed) => (
-                    <option value={speed}>{formatPlaybackSpeed(speed)}</option>
-                  )}
-                </For>
-              </SafeSelect>
-            </label>
-            <label class="sm-lyrics-gen-offset">
-              <span>Reaction</span>
-              <input
-                type="number"
-                min="0"
-                max="500"
-                step="10"
-                value={props.lrcTimingOffsetMs()}
-                onChange={(e) => {
-                  const value = Number(e.currentTarget.value)
-                  props.setLrcTimingOffsetMs(
-                    Number.isFinite(value)
-                      ? Math.max(0, Math.min(500, value))
-                      : 0,
-                  )
-                }}
-                aria-label="Reaction correction in milliseconds"
-              />
-              <span>ms</span>
-              <button
-                class="sm-lyrics-gen-calib-btn"
-                onClick={() => setShowCalibration((prev) => !prev)}
-                aria-expanded={showCalibration()}
-                title="Measure your reaction time instead of guessing it"
-              >
-                Calibrate
-              </button>
-            </label>
-            {(() => {
-              const idx = props.lrcGenLineIdx()
-              const lines = props.getGenLines()
-              if (idx < lines.length) {
-                const bi = props.getBlockForLine(idx)
-                if (bi) {
-                  const block = props.getBlockById(bi.blockId)
-                  const total = props.blockInstances()[bi.blockId]?.length ?? 1
-                  if (block) {
-                    return (
-                      <span class="sm-lyrics-gen-instance-badge">
-                        {block.label} ({bi.instanceIdx + 1}/{total})
-                      </span>
-                    )
+                <input
+                  type="checkbox"
+                  checked={props.liveHighlight()}
+                  onChange={(e) =>
+                    props.setLiveHighlight(e.currentTarget.checked)
                   }
-                }
-              }
-              return null
-            })()}
-            <Show when={props.lrcGenInputMode() === 'tap'}>
-              <button
-                class="sm-lyrics-gen-nextword-btn"
-                onClick={() => props.handleNextWord()}
-                title="Stamp the next word onset [W]"
+                />
+                <span>Live highlight</span>
+              </label>
+              <label
+                class="sm-lyrics-gen-toggle"
+                title="When you preview a line with its play button, repeat it instead of stopping at the end"
               >
-                Next Word
-              </button>
-              <button
-                class="sm-lyrics-gen-nextline-btn"
-                onClick={() => props.handleNextLine()}
-                title="Stamp the next line onset [L]"
-              >
-                Next Line
-              </button>
-            </Show>
-            <button
-              class="sm-lyrics-gen-redo-btn"
-              onClick={() => props.handleRedoCurrentLine()}
-              title="Clear and replay the current line"
-            >
-              Redo line
-            </button>
-            <button
-              class="sm-lyrics-gen-finish-btn"
-              onClick={() => props.handleLrcGenFinish()}
-              title="Save LRC"
-            >
-              Finish
-            </button>
-            <button
-              class="sm-lyrics-gen-reset-btn"
-              onClick={() => props.handleLrcGenReset()}
-              title="Restore the lyrics and timings from before this mapping session"
-            >
-              Discard changes
-            </button>
+                <input
+                  type="checkbox"
+                  checked={loopPreview()}
+                  onChange={(e) => {
+                    const on = e.currentTarget.checked
+                    setLoopPreview(on)
+                    // Apply to a preview that is already running, so the toggle
+                    // is never a control that appears to do nothing.
+                    props.setPreviewLoop(on)
+                  }}
+                />
+                <span>Repeat line</span>
+              </label>
+              <label class="sm-lyrics-gen-speed">
+                <span>Speed</span>
+                <SafeSelect
+                  class="sm-lyrics-gen-speed-select"
+                  value={String(props.playbackSpeed())}
+                  onChange={(e) =>
+                    props.setPlaybackSpeed(Number(e.currentTarget.value))
+                  }
+                  aria-label="Mapping playback speed"
+                >
+                  <For each={STEM_MIXER_PLAYBACK_SPEEDS}>
+                    {(speed) => (
+                      <option value={speed}>
+                        {formatPlaybackSpeed(speed)}
+                      </option>
+                    )}
+                  </For>
+                </SafeSelect>
+              </label>
+              <label class="sm-lyrics-gen-offset">
+                <span>Reaction</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="500"
+                  step="10"
+                  value={props.lrcTimingOffsetMs()}
+                  onChange={(e) => {
+                    const value = Number(e.currentTarget.value)
+                    props.setLrcTimingOffsetMs(
+                      Number.isFinite(value)
+                        ? Math.max(0, Math.min(500, value))
+                        : 0,
+                    )
+                  }}
+                  aria-label="Reaction correction in milliseconds"
+                />
+                <span>ms</span>
+                <button
+                  class="sm-lyrics-gen-calib-btn"
+                  onClick={() => setShowCalibration((prev) => !prev)}
+                  aria-expanded={showCalibration()}
+                  title="Measure your reaction time instead of guessing it"
+                >
+                  Calibrate
+                </button>
+              </label>
+            </div>
           </div>
           <Show when={showCalibration()}>
             <TapCalibrationPanel
@@ -798,27 +843,35 @@ export const StemMixerLyricsPanelBody: Component<
           </Show>
           <div class="sm-lyrics-gen-guidance" role="note">
             <Show
-              when={props.lrcGenPass() === 1}
+              when={props.lrcGenPass() === 'lines'}
               fallback={
-                <Show
-                  when={props.lrcGenInputMode() === 'marker'}
-                  fallback={
-                    <>
-                      Tap at the first audible sound of each word, not after the
-                      singer finishes it. Use Next Line only to skip the
-                      remaining words.
-                    </>
-                  }
-                >
-                  Press the highlighted word when its first sound begins, then
-                  drag through the text as it is sung. Hold still on long vowels
-                  and lift at a pause or after the final sound.
-                </Show>
+                <>
+                  <Show
+                    when={props.lrcGenInputMode() === 'marker'}
+                    fallback={
+                      <>
+                        Tap at the first audible sound of each word, not after
+                        the singer finishes it. Use Next Line only to skip the
+                        remaining words.
+                      </>
+                    }
+                  >
+                    Press the highlighted word when its first sound begins, then
+                    drag through the text as it is sung. Hold still on long
+                    vowels and lift at a pause or after the final sound.
+                  </Show>
+                  <Show when={props.lrcGenPass() === 'words'}>
+                    {' '}
+                    Line starts are frozen, so the cursor begins at the second
+                    word and single-word lines are skipped.
+                  </Show>
+                </>
               }
             >
-              Pass 1 — place only the start of each line. Fetched lyrics usually
+              Lines — place only the start of each line. Fetched lyrics usually
               have these already, so play through and re-tap only the lines that
-              drift, then switch to Words.
+              drift, then switch to Words. Map everything in one stream with
+              All.
             </Show>
             <span class="sm-lyrics-gen-guidance-performance">
               Pitch and live monitors pause for smoother input; the vocal
@@ -935,19 +988,20 @@ export const StemMixerLyricsPanelBody: Component<
                     </div>
                   )
                 }
-                // During a preview the highlight follows the audio against the
-                // timings being edited, not the mapping cursor — so the line
-                // renders exactly as it will at runtime.
-                const previewHit = () => {
-                  const hit = props.previewActiveWord()
+                // While previewing a line — or with Live highlight on — the
+                // highlight follows the audio against the timings being
+                // edited, not the mapping cursor, so the line renders exactly
+                // as it will at runtime.
+                const highlightHit = () => {
+                  const hit = props.highlightWord()
                   return hit !== null && hit.lineIdx === item.index ? hit : null
                 }
                 const activeWordIdx = () =>
-                  previewHit()?.wordIdx ?? item.activeWordIdx
+                  highlightHit()?.wordIdx ?? item.activeWordIdx
                 const isPreviewing = () => props.previewLineIdx() === item.index
                 return (
                   <div
-                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}`}
+                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}${highlightHit() !== null ? ' sm-lyrics-gen-line-lit' : ''}`}
                     data-lyrics-index={item.index}
                     style={
                       item.blockInfo?.isTemplate === true
@@ -1028,11 +1082,11 @@ export const StemMixerLyricsPanelBody: Component<
                         ? item.line
                         : item.words.map((word: string, wi: number) => {
                             const progress = () => {
-                              const preview = previewHit()
-                              if (preview !== null) {
-                                return preview.wordIdx === wi
-                                  ? preview.progress
-                                  : preview.wordIdx > wi
+                              const lit = highlightHit()
+                              if (lit !== null) {
+                                return lit.wordIdx === wi
+                                  ? lit.progress
+                                  : lit.wordIdx > wi
                                     ? 1
                                     : 0
                               }
@@ -1059,8 +1113,12 @@ export const StemMixerLyricsPanelBody: Component<
                                     ? ' sm-lyrics-gen-word-done'
                                     : ''
                                 }${
+                                  highlightHit() !== null
+                                    ? ' sm-lyrics-gen-word-lit'
+                                    : ''
+                                }${
                                   item.isCurrent &&
-                                  !isPreviewing() &&
+                                  highlightHit() === null &&
                                   props.lrcGenInputMode() === 'marker'
                                     ? ' sm-lyrics-gen-word-marker'
                                     : ''

@@ -662,7 +662,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLrcGenPass,
     wordPassProgress,
     previewLineIdx,
-    previewActiveWord,
+    liveHighlight,
+    setLiveHighlight,
+    highlightWord,
     toggleLinePreview,
     setPreviewLoop,
     lrcTimingOffsetMs,
@@ -1274,7 +1276,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLrcGenPass,
     wordPassProgress,
     previewLineIdx,
-    previewActiveWord,
+    liveHighlight,
+    setLiveHighlight,
+    highlightWord,
     toggleLinePreview,
     setPreviewLoop,
     lrcTimingOffsetMs,
@@ -4896,11 +4900,47 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-gen-toolbar {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
   padding: 0.4rem 0.5rem;
   border-bottom: 1px solid var(--border, #30363d);
+}
+
+.sm-lyrics-gen-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+/* Settings sit visually behind the mapping buttons: same row rhythm, quieter
+   weight, so the eye lands on the controls that need a timed press. */
+.sm-lyrics-gen-row--settings {
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border-subtle, rgba(139, 148, 158, 0.18));
+}
+
+/* Pushes Finish / Discard to the far end when there is room, and collapses to
+   nothing once the row wraps. */
+.sm-lyrics-gen-row-gap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.sm-lyrics-gen-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.sm-lyrics-gen-field-label {
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-tertiary, #8b949e);
+  opacity: 0.75;
 }
 
 .sm-lyrics-gen-play-btn,
@@ -5004,20 +5044,25 @@ export const StemMixerStyles: string = `
   border-color: #f4d35e;
 }
 
-.sm-lyrics-gen-loop {
+.sm-lyrics-gen-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   color: var(--fg-tertiary, #8b949e);
   font-size: 0.58rem;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.sm-lyrics-gen-loop input {
+.sm-lyrics-gen-toggle input {
   width: 0.75rem;
   height: 0.75rem;
   accent-color: #f4d35e;
   cursor: pointer;
+}
+
+.sm-lyrics-gen-toggle:has(input:checked) {
+  color: var(--fg-primary, #c9d1d9);
 }
 
 .sm-lyrics-gen-preview-btn {
@@ -5433,6 +5478,36 @@ export const StemMixerStyles: string = `
 
 .sm-lyrics-gen-word-done .sm-lyrics-gen-word-text {
   color: var(--fg-secondary, #8b949e);
+}
+
+/* The line the playhead is inside, which is not necessarily the line the
+   mapping cursor is standing on — that is the whole point of watching
+   playback from in here. */
+.sm-lyrics-gen-line-lit {
+  background: rgba(88, 166, 255, 0.07);
+  box-shadow: inset 2px 0 0 var(--accent, #58a6ff);
+}
+
+/* Playback highlighting inside the mapper — Live highlight, and the per-line
+   preview. Deliberately mirrors the runtime renderer
+   (.sm-lyrics-line-active .sm-lyrics-word-current) instead of the marker's
+   highlighter-pen fill: the whole point is to show what the timings will look
+   like once they ship. It also has to render in Tap mode, where no marker fill
+   exists at all — which is why it is its own class and not a marker variant.
+
+   Last in the cascade on purpose: every rule it overrides
+   (--word-current green, --word-done grey) has the same specificity, so source
+   order is what decides. */
+.sm-lyrics-gen-word-lit .sm-lyrics-gen-word-text {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--accent-lighter, #79c0ff) 0 var(--marker-progress, 0%),
+    var(--fg-secondary, #8b949e) var(--marker-progress, 0%) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  text-decoration: none;
 }
 
 /* Block placeholders in gen view */

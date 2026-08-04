@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countWordPassLines, isMappableLine, lineEndTime, lineWordCount, needsWordPass, nextWordPassLine, PRE_ROLL_SEC, preRollTarget, previewWordAt, seedWordPassTimings, wordPassLinesBefore, } from '@/features/stem-mixer/lrc-gen-passes'
+import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, lineWordCount, needsWordPass, nextWordPassLine, normalizePass, PRE_ROLL_SEC, preRollTarget, previewWordAt, seedWordPassTimings, wordPassLinesBefore, } from '@/features/stem-mixer/lrc-gen-passes'
 
 const LINES = [
   'Hello darkness my old friend', // 0 — 5 words
@@ -186,5 +186,66 @@ describe('previewWordAt', () => {
 
   it('returns null when the line has no word timings', () => {
     expect(previewWordAt(undefined, undefined, 14, 12)).toBeNull()
+  })
+})
+
+describe('normalizePass', () => {
+  it('passes the three modes through', () => {
+    expect(normalizePass('all')).toBe('all')
+    expect(normalizePass('lines')).toBe('lines')
+    expect(normalizePass('words')).toBe('words')
+  })
+
+  it('decodes the numeric passes written by the first split', () => {
+    expect(normalizePass(1)).toBe('lines')
+    expect(normalizePass(2)).toBe('words')
+  })
+
+  it('falls back to the all-in-one flow, never to a split pass', () => {
+    // A session saved before the split has no pass field at all. Resuming it
+    // into 'lines' would silently stop every tap from placing words.
+    expect(normalizePass(undefined)).toBe('all')
+    expect(normalizePass(null)).toBe('all')
+    expect(normalizePass('garbage')).toBe('all')
+    expect(normalizePass(7)).toBe('all')
+  })
+})
+
+describe('activeLineAt', () => {
+  const times = [10, undefined, 20, undefined, 30]
+
+  it('returns -1 before the first mapped line', () => {
+    expect(activeLineAt(LINES, times, 0)).toBe(-1)
+    expect(activeLineAt(LINES, times, 9.99)).toBe(-1)
+  })
+
+  it('lights the line whose start has passed', () => {
+    expect(activeLineAt(LINES, times, 10)).toBe(0)
+    expect(activeLineAt(LINES, times, 19.9)).toBe(0)
+    expect(activeLineAt(LINES, times, 20)).toBe(2)
+    expect(activeLineAt(LINES, times, 31)).toBe(4)
+  })
+
+  it('keeps a line lit through the gap after it', () => {
+    // Matches the runtime renderer: nothing goes dark between lines.
+    expect(activeLineAt(LINES, times, 25)).toBe(2)
+  })
+
+  it('never lands on a blank or a rest', () => {
+    const dense = [10, 12, 20, 22, 30]
+    expect(activeLineAt(LINES, dense, 12.5)).toBe(0)
+    expect(activeLineAt(LINES, dense, 23)).toBe(2)
+  })
+
+  it('survives out-of-order times instead of blanking', () => {
+    // Redoing line 0 late leaves the array non-monotonic; an early exit on the
+    // first future start would return -1 for the whole rest of the song.
+    const messy = [99, undefined, 20, undefined, 30]
+    expect(activeLineAt(LINES, messy, 31)).toBe(4)
+    expect(activeLineAt(LINES, messy, 100)).toBe(0)
+  })
+
+  it('ignores unmapped lines', () => {
+    expect(activeLineAt(LINES, [undefined, undefined, undefined], 50)).toBe(-1)
   })
 })
