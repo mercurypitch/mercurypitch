@@ -955,6 +955,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
                         '--atlas-position': `${markerSharedPosition(marker) * 100}%`,
                       }}
                       data-testid={`voice-atlas-marker-${marker.reflection.id}`}
+                      data-voice-playback-seek
                       aria-label={`Seek to ${voiceReflectionLabel(marker.reflection.kind)} reflection at ${formatClock(marker.reflection.position * takeDurationSeconds(takeForId(marker.takeId)))}${marker.reflection.note === '' ? '' : `: ${marker.reflection.note}`}`}
                       aria-pressed={selectedMarkerId() === marker.reflection.id}
                       onClick={() => {
