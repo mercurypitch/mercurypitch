@@ -69,6 +69,21 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   const [step, setStep] = createSignal(1)
 
   /**
+   * The countdown ring sweeps once, across the whole take, rather than
+   * stepping with the number.
+   *
+   * Stepping it per second could never close the circle: each step targeted
+   * the fill for the START of that second while the 1s transition spent the
+   * whole second getting there, so the ring ran a step behind and stalled a
+   * third short on a 3-2-1. The last tick could not rescue it either — the
+   * take resolves and the stage unmounts on the same beat as remaining
+   * hitting zero. So: mount empty, arm on the next frame, and let one
+   * transition of exactly the take's length carry it 0 to 360.
+   */
+  const [ringArmed, setRingArmed] = createSignal(false)
+  let ringFrame = 0
+
+  /**
    * Live feedback for the take being recorded — the Mirror's own canvas
    * (trace for glides, tightening ring for the hold, target line for
    * matches). Null outside a take. The singer watching their pitch draw
@@ -132,6 +147,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     unregisterIndicator()
     cancelled = true
     clearInterval(timer)
+    cancelAnimationFrame(ringFrame)
     // Without this an unmount during an intro leaves run() parked on a
     // promise nobody will ever resolve, holding the session with it.
     releaseGate()
@@ -189,6 +205,11 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     setVizReset((k) => k + 1)
     setRecordTotal(seconds)
     setRemaining(seconds)
+    // Empty this frame, full the next: the browser needs to paint the empty
+    // ring once before it has anything to transition from.
+    setRingArmed(false)
+    cancelAnimationFrame(ringFrame)
+    ringFrame = requestAnimationFrame(() => setRingArmed(true))
     clearInterval(timer)
     timer = window.setInterval(() => {
       setRemaining((r) => Math.max(0, r - 1))
@@ -439,9 +460,8 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
               cy="36"
               r="31"
               stroke-dasharray={`${RING_CIRCUMFERENCE}`}
-              stroke-dashoffset={`${
-                RING_CIRCUMFERENCE * (remaining() / Math.max(1, recordTotal()))
-              }`}
+              stroke-dashoffset={ringArmed() ? '0' : `${RING_CIRCUMFERENCE}`}
+              style={{ 'transition-duration': `${recordTotal()}s` }}
             />
           </svg>
           <span class={styles.countdownNum}>{remaining()}</span>
