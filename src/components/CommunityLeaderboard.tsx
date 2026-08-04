@@ -204,6 +204,9 @@ const IconUnclaimedPlace = () => (
  * The three podium places, in order. Deliberately NOT the league badges in
  * `public/leagues/` — those denote ladder rungs, so a Bronze-league singer
  * topping the board would wear gold here and bronze on their league card.
+ *
+ * Each render is the whole card, not a thumbnail above it — see
+ * `.podium-item` in vocal-analysis.css for why the art is full-bleed.
  */
 const PODIUM_MEDALS: ReadonlyArray<{ src: string; alt: string }> = [
   { src: '/leaderboard/place-1.webp', alt: 'First place' },
@@ -1084,49 +1087,67 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
             {/* Top 3 Podium */}
             <div class="podium-section">
               <For each={podiumData()}>
-                {(user, index) => (
-                  <div class={`podium-item podium-${index() + 1}`}>
-                    <div class="podium-rank">
-                      {/* All three places drew the SAME trophy glyph, so gold,
-                          silver and bronze were told apart only by the card's
-                          background tint. podiumData() is always exactly three
-                          entries; the rank-number branch is the belt-and-braces
-                          case if that ever stops being true. */}
-                      <Show
-                        when={PODIUM_MEDALS[index()]}
-                        fallback={`#${user.rank}`}
-                      >
+                {(user, index) => {
+                  // podiumData() pads to three with a blank row, and a blank
+                  // row is not a singer with no picture — it is an open
+                  // place. It carries an empty userId, which is the only
+                  // field that says so; `avatar` is `''` on it, so the old
+                  // `!== undefined` test never fired and places 2 and 3 sat
+                  // as empty grey rings.
+                  const claimed = user.userId !== ''
+                  return (
+                    <div
+                      class={`podium-item podium-${index() + 1} ${
+                        claimed ? '' : 'podium-open'
+                      }`}
+                    >
+                      {/* The medal is the card. It used to be a 44px
+                          thumbnail stacked above an avatar, a name and a
+                          score — four rows in which the one thing worth
+                          looking at was the smallest. */}
+                      <Show when={PODIUM_MEDALS[index()]}>
                         {(medal) => (
                           <img
-                            class="podium-medal"
+                            class="podium-art"
                             src={medal().src}
                             alt={medal().alt}
-                            width="128"
-                            height="128"
+                            width="384"
+                            height="384"
                           />
                         )}
                       </Show>
-                    </div>
-                    <div class="podium-avatar">
-                      {/* An unclaimed place is not a person with no picture:
-                          the ring used to sit completely empty, which reads
-                          as a broken avatar rather than "nobody here yet". */}
-                      {user.avatar !== undefined ? (
-                        renderIcon(user.avatar)
-                      ) : (
-                        <IconUnclaimedPlace />
-                      )}
-                    </div>
-                    <div class="podium-info">
-                      <div class="podium-name">{user.displayName}</div>
-                    </div>
-                    <Show when={index() < 3}>
-                      <div class="podium-score-display">
-                        {categoryMetric(user, activeCategory())}
+                      <div class="podium-veil" aria-hidden="true" />
+                      <div class="podium-strip">
+                        <div class="podium-avatar">
+                          {/* Accounts carry no picture yet — this is the
+                              slot one goes in. */}
+                          {claimed ? (
+                            renderIcon(user.avatar ?? IconUser)
+                          ) : (
+                            <IconUnclaimedPlace />
+                          )}
+                        </div>
+                        <div class="podium-ident">
+                          <span class="podium-name">
+                            {claimed ? user.displayName : 'Open place'}
+                          </span>
+                          <Show
+                            when={claimed}
+                            fallback={
+                              <span class="podium-score-display podium-score-open">
+                                Yours to take
+                              </span>
+                            }
+                          >
+                            <span class="podium-score-display">
+                              {categoryMetric(user, activeCategory())}
+                            </span>
+                          </Show>
+                        </div>
                       </div>
-                    </Show>
-                  </div>
-                )}
+                    </div>
+                  )
+                }}
               </For>
             </div>
 
