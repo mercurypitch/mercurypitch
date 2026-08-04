@@ -163,7 +163,7 @@ export async function flushGrants(unloading = false): Promise<void> {
   inFlight = (async () => {
     try {
       if (cloud) {
-        await writeCloud(achievements, badges, { headers, userId, unloading })
+        await writeCloud(achievements, badges, { headers, unloading })
       } else {
         await writeLocal(achievements, badges, userId)
       }
@@ -178,10 +178,21 @@ export async function flushGrants(unloading = false): Promise<void> {
 
 interface CloudWriteOptions {
   headers: Record<string, string>
-  userId: string
+  /** No userId: both endpoints take the caller's identity from the token, and
+   *  a userId in the body would be a claim rather than a fact. */
   unloading: boolean
 }
 
+/**
+ * Both halves of the write, each one request, each one checked.
+ *
+ * Both endpoints are idempotent upserts keyed on (userId, definitionId), which
+ * is what makes the retry in {@link flushGrants} safe: re-sending a batch that
+ * partly landed rewrites the rows that landed with the same values and inserts
+ * the ones that did not. So this does not track which half succeeded — it
+ * throws, and the whole batch goes back on the queue. Getting that wrong is
+ * how the badge loop this replaced ended up writing a once-only badge twice.
+ */
 async function writeCloud(
   achievements: PendingAchievement[],
   badges: Array<[string, string]>,
@@ -196,16 +207,16 @@ async function writeCloud(
     })
     if (!res.ok) throw new Error(`bulk achievements: ${res.status}`)
   }
-  // Badges are rare — a pass grants one only on an actual unlock, and there
-  // are sixteen in total — so they stay ordinary creates rather than earning
-  // an endpoint of their own.
-  for (const [badgeId, earnedAt] of badges) {
-    await fetch(`${API_BASE_URL}/api/userBadges`, {
+  if (badges.length > 0) {
+    const res = await fetch(`${API_BASE_URL}/api/userBadges/bulk`, {
       method: 'POST',
       headers: opts.headers,
-      body: JSON.stringify({ userId: opts.userId, badgeId, earnedAt }),
+      body: JSON.stringify({
+        rows: badges.map(([badgeId, earnedAt]) => ({ badgeId, earnedAt })),
+      }),
       keepalive: opts.unloading,
     })
+    if (!res.ok) throw new Error(`bulk badges: ${res.status}`)
   }
 }
 

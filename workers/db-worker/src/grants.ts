@@ -148,6 +148,24 @@ function parseBulkRow(v: unknown): BulkRow | null {
  *
  * D1 runs a batch as one implicit transaction, so a failure part-way leaves
  * nothing half-written.
+ *
+ * Two properties this endpoint has to guarantee, because the client cannot:
+ *
+ * **One row per goal.** Every write is an upsert onto the unique index added
+ * in migration 0015, so there is no read-then-write gap for two tabs to race
+ * in. A second flush landing in the same instant updates the row the first one
+ * inserted instead of inserting a rival.
+ *
+ * **Unlocks only ever go one way.** A grant pass evaluates from a context it
+ * read a moment earlier, and that read can come back empty — every service
+ * behind it answers a failure with `[]`. A pass on an empty context concludes,
+ * correctly given what it was told, that nothing is unlocked, and queues
+ * `unlocked: false` for goals the singer earned weeks ago. So the SQL refuses
+ * to take an unlock back: `MAX(unlocked)` keeps a 1, and `COALESCE` keeps the
+ * original `unlockedAt`. `progress` stays last-write-wins on purpose — a stale
+ * percentage is a bar in the wrong place and the next pass corrects it, while
+ * a monotonic percentage would freeze a broken streak at its historical best
+ * and never come down.
  */
 export async function handleAchievementBulk(
   request: Request,
@@ -180,16 +198,11 @@ export async function handleAchievementBulk(
   if (parsed.length === 0) return respond({ written: 0, skipped: 0 })
 
   const uid = auth.userId
-  const [defs, mine] = await env.DB.batch<Row>([
-    env.DB.prepare('SELECT id FROM achievements'),
-    env.DB.prepare(
-      'SELECT id, achievementId FROM userAchievements WHERE userId = ?',
-    ).bind(uid),
-  ])
+  // The singer's own rows are no longer read: the upsert below resolves them
+  // by (userId, achievementId) inside SQLite. Only the definition list is
+  // needed, and only to drop ids that name nothing.
+  const defs = await env.DB.prepare('SELECT id FROM achievements').all<Row>()
   const known = new Set((defs.results ?? []).map((r) => String(r.id)))
-  const existing = new Map(
-    (mine.results ?? []).map((r) => [String(r.achievementId), String(r.id)]),
-  )
 
   const now = new Date().toISOString()
   const stmts: D1PreparedStatement[] = []
@@ -200,34 +213,115 @@ export async function handleAchievementBulk(
       continue
     }
     const unlockedAt = row.unlocked ? (row.unlockedAt ?? now) : null
-    const id = existing.get(row.achievementId)
-    if (id !== undefined) {
-      stmts.push(
-        env.DB.prepare(
-          `UPDATE userAchievements
-             SET progress = ?, unlocked = ?, unlockedAt = ?, updatedAt = ?
-           WHERE id = ? AND userId = ?`,
-        ).bind(row.progress, row.unlocked ? 1 : 0, unlockedAt, now, id, uid),
-      )
-    } else {
-      stmts.push(
-        env.DB.prepare(
-          `INSERT INTO userAchievements
-             (id, createdAt, updatedAt, userId, achievementId, progress,
-              unlocked, unlockedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).bind(
-          crypto.randomUUID(),
-          now,
-          now,
-          uid,
-          row.achievementId,
-          row.progress,
-          row.unlocked ? 1 : 0,
-          unlockedAt,
-        ),
-      )
+    stmts.push(
+      env.DB.prepare(
+        `INSERT INTO userAchievements
+           (id, createdAt, updatedAt, userId, achievementId, progress,
+            unlocked, unlockedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(userId, achievementId) DO UPDATE SET
+           progress   = excluded.progress,
+           unlocked   = MAX(userAchievements.unlocked, excluded.unlocked),
+           unlockedAt = COALESCE(userAchievements.unlockedAt,
+                                 excluded.unlockedAt),
+           updatedAt  = excluded.updatedAt`,
+      ).bind(
+        crypto.randomUUID(),
+        now,
+        now,
+        uid,
+        row.achievementId,
+        row.progress,
+        row.unlocked ? 1 : 0,
+        unlockedAt,
+      ),
+    )
+  }
+
+  if (stmts.length > 0) await env.DB.batch(stmts)
+  return respond({ written: stmts.length, skipped })
+}
+
+interface BulkBadge {
+  badgeId: string
+  earnedAt: string
+}
+
+function parseBulkBadge(v: unknown): BulkBadge | null {
+  if (typeof v !== 'object' || v === null) return null
+  const r = v as Record<string, unknown>
+  if (typeof r.badgeId !== 'string' || r.badgeId === '') return null
+  if (typeof r.earnedAt !== 'string' || r.earnedAt === '') return null
+  return { badgeId: r.badgeId, earnedAt: r.earnedAt }
+}
+
+/**
+ * Record every newly-earned badge for the calling user, idempotently.
+ *
+ * Badges used to go through the generic create route, one request each, and
+ * the client did not read the responses — so a failed badge write was silent,
+ * and because a failed flush re-queues its whole batch, the retry re-POSTed
+ * the ones that had succeeded. With no constraint on the table that produced
+ * duplicate rows for a badge you can only earn once.
+ *
+ * `ON CONFLICT DO NOTHING` against the unique index from migration 0015 makes
+ * a retry free instead of dangerous: writing the same badge twice is a no-op,
+ * so the client can re-send a batch it is unsure about without checking what
+ * landed. `earnedAt` is deliberately not updated on conflict — the first time
+ * they earned it is the true one.
+ *
+ * Ownership is structural, exactly as in {@link handleAchievementBulk}: the
+ * caller sends definition ids, and the userId comes from the token.
+ */
+export async function handleBadgeBulk(
+  request: Request,
+  auth: AuthUser,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  let body: { rows?: unknown }
+  try {
+    body = await request.json<{ rows?: unknown }>()
+  } catch {
+    return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  if (!Array.isArray(body.rows)) {
+    return respond({ error: 'Expected { rows: [] }' }, { status: 400 })
+  }
+  if (body.rows.length > MAX_BULK_ROWS) {
+    return respond(
+      { error: `Too many rows (max ${MAX_BULK_ROWS})` },
+      { status: 413 },
+    )
+  }
+
+  const parsed: BulkBadge[] = []
+  for (const raw of body.rows) {
+    const row = parseBulkBadge(raw)
+    if (!row) return respond({ error: 'Malformed row' }, { status: 400 })
+    parsed.push(row)
+  }
+  if (parsed.length === 0) return respond({ written: 0, skipped: 0 })
+
+  const defs = await env.DB.prepare('SELECT id FROM badgeDefinitions').all<Row>()
+  const known = new Set((defs.results ?? []).map((r) => String(r.id)))
+
+  const now = new Date().toISOString()
+  const stmts: D1PreparedStatement[] = []
+  let skipped = 0
+  for (const row of parsed) {
+    if (!known.has(row.badgeId)) {
+      skipped += 1
+      continue
     }
+    stmts.push(
+      env.DB.prepare(
+        `INSERT INTO userBadges
+           (id, createdAt, updatedAt, userId, badgeId, earnedAt)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(userId, badgeId) DO NOTHING`,
+      ).bind(crypto.randomUUID(), now, now, auth.userId, row.badgeId, row.earnedAt),
+    )
   }
 
   if (stmts.length > 0) await env.DB.batch(stmts)
