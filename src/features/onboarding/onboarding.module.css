@@ -337,6 +337,13 @@
   overflow: hidden;
 }
 
+/* Wrapper for the shared MicTroubleshooting note. It brings its own look;
+   this only gives it the beat's column width and a little air. */
+.micHelp {
+  width: min(360px, 92%);
+  margin-top: 18px;
+}
+
 .meterFill {
   height: 100%;
   border-radius: 3px;
