@@ -462,10 +462,17 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'forgot-password': { max: 3, windowMs: 600_000 },     // 3/10min per IP
   'forgot-email': { max: 3, windowMs: 3_600_000 },      // 3/h per address
   'reset-password': { max: 10, windowMs: 300_000 },     // 10/5min
-  // Generic per-IP cap for CRUD mutations (POST/PATCH/DELETE), enforced by
-  // index.ts. Generous for normal use (session saves, settings, follows) but
-  // bounds scripted spam / unbounded row creation. Tunable.
+  // Generic cap for CRUD mutations (POST/PATCH/DELETE), enforced by index.ts,
+  // keyed per USER when the caller is authenticated and per IP otherwise —
+  // see rateLimitSubject. Generous for normal use (session saves, settings,
+  // follows) but bounds scripted spam / unbounded row creation. Tunable.
   'crud-write': { max: 120, windowMs: 60_000 }, // 120/min
+  // Achievement persistence gets its own bucket so a grant burst cannot eat
+  // the budget a session save needs. One flush writes every changed row in a
+  // single request (POST /api/userAchievements/bulk), so 60/min is far more
+  // than the client can legitimately produce — it is a runaway-loop backstop,
+  // not a throttle anyone should ever meet.
+  'achievement-write': { max: 60, windowMs: 60_000 },
   // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
   // 60/min per IP is roomy for humans and cheap to spam-bound.
   'mirror-event': { max: 60, windowMs: 60_000 },
@@ -481,6 +488,29 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'friend-code': { max: 10, windowMs: 300_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
+}
+
+/**
+ * Which bucket a request's writes count against.
+ *
+ * Keying purely by IP punishes shared connections, and our audience is full of
+ * them: a choir rehearsal room, a school music lab, a household. At roughly
+ * eleven writes per finished run, a 120/min cap is ten runs a minute for the
+ * WHOLE building — thirty singers get four runs a minute between them, and the
+ * 429s land on whoever happens to finish last. Meanwhile the one thing the cap
+ * exists to stop, a scripted loop, just rotates IPs.
+ *
+ * An authenticated request carries a better identity than its network path, so
+ * use it. The IP stays the key for anonymous callers, where it is the only
+ * identity there is, and stays the key for the auth endpoints themselves —
+ * you cannot bucket a login by the user it has not proven yet.
+ */
+export function rateLimitSubject(
+  request: Request,
+  auth: { userId: string } | null,
+): string {
+  if (auth) return `user:${auth.userId}`
+  return request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
 }
 
 export async function checkRateLimit(
