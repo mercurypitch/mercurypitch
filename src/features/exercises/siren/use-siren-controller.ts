@@ -12,6 +12,49 @@ const ROUNDS = 6
 const NOTE_PLAY_DURATION_MS = 600
 const GAP_BETWEEN_NOTES_MS = 400
 const MATCH_WINDOW_MS = 4000
+
+/**
+ * A counted beat between hearing the pair and having to sing it.
+ *
+ * The glide window used to open 400ms after the second reference note,
+ * so a singer went from listening to "follow the dot" with no breath and
+ * no warning, six times in a row (owner testing). Three seconds is also
+ * the rest between rounds that a siren drill needs and did not have —
+ * the old gap was 600ms.
+ *
+ * Fixed for now. Making it a choice ("straight on" vs a pause) is a
+ * settings question, deliberately left for later.
+ */
+const READY_SEC = 3
+const READY_TICK_MS = 1000
+
+/** Metric values for `phase`, shared with SirenExercise. */
+export const SIREN_PHASE_LISTEN = 1
+export const SIREN_PHASE_GLIDE = 2
+export const SIREN_PHASE_READY = 3
+
+/** How long the guide dot takes to travel start → end → start. */
+export const SIREN_GUIDE_PERIOD_MS = 2500
+
+/**
+ * Where the guide dot sits, `sinceMs` into the glide window.
+ *
+ * `sinceMs` is measured from the moment the window OPENED, which is the
+ * whole point: driven off the run's elapsed clock instead, the dot
+ * picked the triangle up wherever it happened to be — often already at
+ * the far end, or travelling back down — under a caption reading
+ * "follow the dot". It now always leaves from the start note.
+ */
+export function sirenGuideMidi(
+  from: number,
+  to: number,
+  sinceMs: number,
+): number {
+  const ph =
+    (Math.max(0, sinceMs) % SIREN_GUIDE_PERIOD_MS) / SIREN_GUIDE_PERIOD_MS
+  const tri = ph < 0.5 ? ph * 2 : (1 - ph) * 2
+  return from + (to - from) * tri
+}
 // Baseline cents-deviation slope: roundScore = 100 - avgBestCents * K.
 const SCORE_SLOPE_K = 1.5
 
@@ -108,7 +151,8 @@ export function useSirenController(
         startMidi: round.startMidi,
         endMidi: round.endMidi,
         currentMidi: round.startMidi,
-        phase: 1, // listening
+        phase: SIREN_PHASE_LISTEN,
+        readyIn: 0,
       })
     })
 
@@ -125,10 +169,27 @@ export function useSirenController(
             if (_cancelled) return
             phaseTimer = setTimeout(() => {
               if (_cancelled) return
-              startMatching()
+              beginReady()
             }, GAP_BETWEEN_NOTES_MS)
           })
       })
+  }
+
+  /** "Get ready — 3, 2, 1", then the glide window opens. */
+  function beginReady(): void {
+    let left = READY_SEC
+    base._updateMetrics({ phase: SIREN_PHASE_READY, readyIn: left })
+    const tick = (): void => {
+      if (_cancelled) return
+      left -= 1
+      if (left <= 0) {
+        startMatching()
+        return
+      }
+      base._updateMetrics({ readyIn: left })
+      phaseTimer = setTimeout(tick, READY_TICK_MS)
+    }
+    phaseTimer = setTimeout(tick, READY_TICK_MS)
   }
 
   function startMatching(): void {
@@ -136,7 +197,16 @@ export function useSirenController(
     const round = rounds[roundIndex]
     batch(() => {
       base._setTargetPitch(midiToFreq(round.endMidi))
-      base._updateMetrics({ phase: 2 }) // siren phase
+      base._updateMetrics({
+        phase: SIREN_PHASE_GLIDE,
+        readyIn: 0,
+        // Anchor the guide dot to THIS window. It is drawn from the
+        // run's elapsed clock, so with no anchor every round picked the
+        // triangle up wherever it happened to be — the dot could appear
+        // halfway along, travelling the wrong way, under a caption that
+        // says "follow the dot".
+        glideFromMs: base.state().elapsedMs,
+      })
     })
     phaseTimer = setTimeout(() => {
       if (_cancelled) return

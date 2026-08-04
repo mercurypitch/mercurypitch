@@ -1413,6 +1413,20 @@
   color: #22c55e;
 }
 
+/* The counted beat before a siren's glide window opens. Amber, so it
+   reads as "not yet" rather than as either of the other two states. */
+.mirror-melody-phase .ready {
+  color: #f59e0b;
+}
+
+.mirror-melody-count {
+  display: inline-block;
+  min-width: 1.1em;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25em;
+  font-weight: 800;
+}
+
 .mirror-melody-current-note {
   font-size: 2rem;
   font-weight: 800;
