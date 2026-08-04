@@ -26,6 +26,8 @@ import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
+import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
+import { countWordPassLines, isMappableLine, lineEndTime, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassLinesBefore, } from './lrc-gen-passes'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -89,6 +91,14 @@ export interface StemMixerLyricsController {
   lrcGenMode: () => boolean
   lrcGenInputMode: () => LrcGenInputMode
   setLrcGenInputMode: Setter<LrcGenInputMode>
+  lrcGenPass: () => LrcGenPass
+  setLrcGenPass: (pass: LrcGenPass) => void
+  wordPassProgress: () => { done: number; total: number }
+  previewLineIdx: () => number | null
+  previewLoop: () => boolean
+  previewActiveWord: () => (PreviewWordHighlight & { lineIdx: number }) | null
+  toggleLinePreview: (idx: number, loop: boolean) => void
+  stopLinePreview: () => void
   lrcTimingOffsetMs: () => number
   setLrcTimingOffsetMs: Setter<number>
   lrcGenLineIdx: () => number
@@ -345,6 +355,13 @@ export function useStemMixerLyricsController(
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenInputMode, setLrcGenInputMode] =
     createSignal<LrcGenInputMode>('marker')
+  // Pass 1 places line starts, pass 2 the words inside them. See
+  // ./lrc-gen-passes.ts for why the two jobs are separated.
+  const [lrcGenPass, setLrcGenPassSignal] = createSignal<LrcGenPass>(1)
+  // Line being auditioned with the runtime highlighter. Independent of the
+  // mapping cursor: you can preview a line you are not standing on.
+  const [previewLineIdx, setPreviewLineIdx] = createSignal<number | null>(null)
+  const [previewLoop, setPreviewLoop] = createSignal(false)
   const [lrcTimingOffsetMs, setPersistedLrcTimingOffsetMs] =
     createPersistedSignal<number>('pitchperfect_lyrics_timing_offset_ms', 180)
   const clampTimingOffset = (value: number) => Math.max(0, Math.min(500, value))
@@ -616,6 +633,9 @@ export function useStemMixerLyricsController(
     setTextEditMode(false)
     setEditBuffer({})
     setLrcGenMode(false)
+    setLrcGenPassSignal(1)
+    setPreviewLineIdx(null)
+    setPreviewLoop(false)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
@@ -981,8 +1001,16 @@ export function useStemMixerLyricsController(
         targetIdx++
       }
       if (targetIdx >= genLines.length) targetIdx = genLines.length
-      setLrcGenLineIdx(targetIdx)
-      setLrcGenWordIdx(0)
+      if (lrcGenPass() === 2) {
+        // Pass 2 only stops where there are words to place, and starts at
+        // word 1 because word 0 is the frozen line start.
+        targetIdx = nextWordPassLine(genLines, targetIdx)
+        setLrcGenLineIdx(targetIdx)
+        setLrcGenWordIdx(targetIdx < genLines.length ? 1 : 0)
+      } else {
+        setLrcGenLineIdx(targetIdx)
+        setLrcGenWordIdx(0)
+      }
       saveLrcGenProgress()
     }
 
@@ -1575,6 +1603,8 @@ export function useStemMixerLyricsController(
     lineIdx: number
     wordIdx: number
     inputMode: LrcGenInputMode
+    /** Absent in sessions saved before two-pass mapping — treated as pass 1. */
+    pass?: LrcGenPass
     touchedLines: number[]
     lyricsIdentity: string
     timestamp: number
@@ -1607,6 +1637,7 @@ export function useStemMixerLyricsController(
       lineIdx: lrcGenLineIdx(),
       wordIdx: lrcGenWordIdx(),
       inputMode: lrcGenInputMode(),
+      pass: lrcGenPass(),
       touchedLines: [...touchedLines].sort((a, b) => a - b),
       lyricsIdentity: getGenProgressIdentity(),
       timestamp: Date.now(),
@@ -1648,6 +1679,7 @@ export function useStemMixerLyricsController(
 
     let resumeLineIdx = 0
     let resumeWordIdx = 0
+    let resumePass: LrcGenPass = 1
     try {
       const saved = localStorage.getItem(genKey())
       if (saved !== null) {
@@ -1673,6 +1705,7 @@ export function useStemMixerLyricsController(
           if (data.inputMode === 'marker' || data.inputMode === 'tap') {
             setLrcGenInputMode(data.inputMode)
           }
+          resumePass = data.pass === 2 ? 2 : 1
           resumeLineIdx =
             typeof data.lineIdx === 'number' && Number.isInteger(data.lineIdx)
               ? Math.max(0, Math.min(data.lineIdx, lines.length))
@@ -1749,6 +1782,9 @@ export function useStemMixerLyricsController(
       setLrcGenWordSweepTimings(mappedSweeps)
     }
 
+    setLrcGenPassSignal(resumePass)
+    setPreviewLineIdx(null)
+    setPreviewLoop(false)
     setLrcGenLineIdx(resumeLineIdx)
     setLrcGenWordIdx(resumeWordIdx)
     setEditMode(false)
@@ -1778,6 +1814,139 @@ export function useStemMixerLyricsController(
   const correctedTime = (elapsedTime: number) =>
     Math.max(0, Math.round((elapsedTime - timingOffsetSec) * 1000) / 1000)
   const tapTime = () => correctedTime(deps.elapsed())
+
+  // ── Two-pass mapping ─────────────────────────────────────────────
+
+  /** Best known start for a line: this session's mark, else the fetched LRC. */
+  const genLineStart = (idx: number): number | undefined =>
+    lrcGenLineTimes()[idx] ?? canonicalLrcLines()[idx]?.time
+
+  /** Jump so the line arrives after a run-in instead of starting mid-word. */
+  const seekToLinePreRoll = (idx: number) => {
+    const start = genLineStart(idx)
+    if (start === undefined) return
+    deps.seekToWithWindow(preRollTarget(start))
+  }
+
+  /**
+   * Move the pass-2 cursor to the next line that has words to place, seeking
+   * so it is heard from its run-in. Finishing the last one ends the session.
+   */
+  const advanceWordPass = (fromLineIdx: number) => {
+    const lines = getGenLines()
+    const next = nextWordPassLine(lines, fromLineIdx)
+    if (next >= lines.length) {
+      setLrcGenLineIdx(lines.length)
+      setLrcGenWordIdx(0)
+      handleLrcGenFinish()
+      return
+    }
+    setLrcGenLineIdx(next)
+    setLrcGenWordIdx(1)
+    seekToLinePreRoll(next)
+    saveLrcGenProgress()
+  }
+
+  /**
+   * Switch passes. Entering pass 2 freezes the line starts by seeding them as
+   * word 0 of every line, so the word cursor can begin at word 1 and the line
+   * times are never re-stamped by a word tap.
+   */
+  const setLrcGenPass = (pass: LrcGenPass) => {
+    if (pass === lrcGenPass()) return
+    stopLinePreview()
+    setLrcGenPassSignal(pass)
+    if (pass === 2) {
+      const lines = getGenLines()
+      setLrcGenWordTimings((prev) =>
+        seedWordPassTimings(lines, lrcGenLineTimes(), prev),
+      )
+      advanceWordPass(0)
+      return
+    }
+    const lines = getGenLines()
+    let idx = lrcGenLineIdx()
+    while (idx < lines.length && !isMappableLine(lines[idx])) idx++
+    setLrcGenLineIdx(Math.min(idx, lines.length))
+    setLrcGenWordIdx(0)
+    saveLrcGenProgress()
+  }
+
+  /** Pass-2 progress readout — lines that actually need words, not all lines. */
+  const wordPassProgress = (): { done: number; total: number } => {
+    const lines = getGenLines()
+    return {
+      done: wordPassLinesBefore(lines, lrcGenLineIdx()),
+      total: countWordPassLines(lines),
+    }
+  }
+
+  // ── Line preview ─────────────────────────────────────────────────
+
+  const stopLinePreview = () => {
+    if (previewLineIdx() === null) return
+    setPreviewLineIdx(null)
+    setPreviewLoop(false)
+  }
+
+  /**
+   * Audition one line with the production highlighter, driven by the timings
+   * being edited rather than the saved ones — so what plays here is what will
+   * ship, without leaving the mapper to check it.
+   */
+  const startLinePreview = (idx: number, loop: boolean) => {
+    const lines = getGenLines()
+    if (!isMappableLine(lines[idx])) return
+    if (genLineStart(idx) === undefined) return
+    setPreviewLineIdx(idx)
+    setPreviewLoop(loop)
+    seekToLinePreRoll(idx)
+  }
+
+  const toggleLinePreview = (idx: number, loop: boolean) => {
+    if (previewLineIdx() === idx && previewLoop() === loop) {
+      stopLinePreview()
+      return
+    }
+    startLinePreview(idx, loop)
+  }
+
+  /** Where the previewed line stops sounding. */
+  const previewEnd = (idx: number): number | null =>
+    lineEndTime(getGenLines(), lrcGenLineTimes(), lrcGenWordTimings(), idx)
+
+  // Bound the preview: loop back to the run-in, or drop out of preview so the
+  // song keeps playing normally.
+  createEffect(() => {
+    const idx = previewLineIdx()
+    if (idx === null) return
+    const end = untrack(() => previewEnd(idx))
+    if (end === null) return
+    if (deps.elapsed() <= end + PREVIEW_TAIL_SEC) return
+    if (untrack(previewLoop)) seekToLinePreRoll(idx)
+    else stopLinePreview()
+  })
+
+  /**
+   * The word lit during preview. Kept out of `genViewData` on purpose: that
+   * memo deliberately does not track `elapsed`, and making it do so would
+   * rebuild every lyric row at frame rate.
+   */
+  const previewActiveWord = createMemo<
+    (PreviewWordHighlight & { lineIdx: number }) | null
+  >(() => {
+    const idx = previewLineIdx()
+    if (idx === null) return null
+    const end = previewEnd(idx)
+    if (end === null) return null
+    const hit = previewWordAt(
+      lrcGenWordTimings()[idx],
+      lrcGenWordEndTimings()[idx],
+      end,
+      deps.elapsed(),
+    )
+    return hit === null ? null : { ...hit, lineIdx: idx }
+  })
 
   const handleNextLine = () => {
     const t = tapTime()
@@ -1821,7 +1990,10 @@ export function useStemMixerLyricsController(
 
     const currentLine = lines[idx]
     const words = currentLine.split(/\s+/).filter((w: string) => w.length > 0)
-    if (words.length > 0 && lrcGenWordIdx() > 0) {
+    // Only pass 2 back-fills the words left behind on an abandoned line. In
+    // pass 1 those words have not been mapped yet by design, and stamping a
+    // flat 0.25s ladder here would hand pass 2 fake data to walk over.
+    if (lrcGenPass() === 2 && words.length > 0 && lrcGenWordIdx() > 0) {
       const lastWordTime = lrcGenWordTimings()[idx]?.[lrcGenWordIdx() - 1] ?? t
       const remain = words.length - lrcGenWordIdx()
       if (remain > 0) {
@@ -1839,6 +2011,11 @@ export function useStemMixerLyricsController(
       }
     }
 
+    if (lrcGenPass() === 2) {
+      advanceWordPass(idx + 1)
+      return
+    }
+
     if (idx + 1 >= lines.length) {
       setLrcGenLineIdx(idx + 1)
       setLrcGenWordIdx(0)
@@ -1851,6 +2028,12 @@ export function useStemMixerLyricsController(
   }
 
   const handleNextWord = () => {
+    // Pass 1 is line starts only — a tap advances the line, never a word.
+    if (lrcGenPass() === 1) {
+      handleNextLine()
+      return
+    }
+
     const lines = getGenLines()
     const lineIdx = lrcGenLineIdx()
     if (lineIdx >= lines.length) return
@@ -1902,15 +2085,9 @@ export function useStemMixerLyricsController(
     })
 
     if (wordIdx + 1 >= words.length) {
-      if (lineIdx + 1 >= lines.length) {
-        setLrcGenLineIdx(lineIdx + 1)
-        setLrcGenWordIdx(0)
-        handleLrcGenFinish()
-        return
-      }
-      setLrcGenLineIdx(lineIdx + 1)
-      setLrcGenWordIdx(0)
-      saveLrcGenProgress()
+      // Reached only in pass 2, which skips ahead to the next line that has
+      // words to place rather than stepping onto every line in turn.
+      advanceWordPass(lineIdx + 1)
     } else {
       setLrcGenWordIdx(wordIdx + 1)
       saveLrcGenProgress()
@@ -2059,15 +2236,27 @@ export function useStemMixerLyricsController(
     }
     if (lineIdx < 0 || !lines[lineIdx]?.trim()) return
 
-    touchedLines.delete(lineIdx)
-    setLrcGenLineTimes((prev) => {
-      const next = [...prev]
-      delete next[lineIdx]
-      return next
-    })
+    // Pass 2 treats line starts as settled, so a redo there clears the words
+    // from 1 on and leaves word 0 (and the line time) alone. Clearing them
+    // would silently undo pass 1's work from a button labelled "redo line".
+    const wordPass = lrcGenPass() === 2
+    if (!wordPass) {
+      touchedLines.delete(lineIdx)
+      setLrcGenLineTimes((prev) => {
+        const next = [...prev]
+        delete next[lineIdx]
+        return next
+      })
+    }
     setLrcGenWordTimings((prev) => {
       const next = structuredClone(prev)
-      delete next[lineIdx]
+      if (wordPass) {
+        const lineStart = next[lineIdx]?.[0]
+        if (lineStart === undefined) delete next[lineIdx]
+        else next[lineIdx] = [lineStart]
+      } else {
+        delete next[lineIdx]
+      }
       return next
     })
     setLrcGenWordEndTimings((prev) => {
@@ -2081,11 +2270,11 @@ export function useStemMixerLyricsController(
       return next
     })
     setLrcGenLineIdx(lineIdx)
-    setLrcGenWordIdx(0)
+    setLrcGenWordIdx(wordPass ? 1 : 0)
 
     const originalTime =
       canonicalLrcLines()[lineIdx]?.time ?? lrcGenLineTimes()[lineIdx] ?? 0
-    deps.seekToWithWindow(Math.max(0, originalTime - 1.5))
+    deps.seekToWithWindow(preRollTarget(originalTime))
     saveLrcGenProgress()
   }
 
@@ -2309,6 +2498,9 @@ export function useStemMixerLyricsController(
 
     // Reset gen state fully
     setLrcGenMode(false)
+    setLrcGenPassSignal(1)
+    setPreviewLineIdx(null)
+    setPreviewLoop(false)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
@@ -2387,6 +2579,9 @@ export function useStemMixerLyricsController(
     setLrcGenWordEndTimings({})
     setLrcGenWordSweepTimings({})
     setLrcGenMode(false)
+    setLrcGenPassSignal(1)
+    setPreviewLineIdx(null)
+    setPreviewLoop(false)
     touchedLines = new Set()
     clearLrcGenProgress()
   }
@@ -2856,6 +3051,14 @@ export function useStemMixerLyricsController(
     editPopover,
     setEditPopover,
     lrcGenMode,
+    lrcGenPass,
+    setLrcGenPass,
+    wordPassProgress,
+    previewLineIdx,
+    previewLoop,
+    previewActiveWord,
+    toggleLinePreview,
+    stopLinePreview,
     lrcGenInputMode,
     setLrcGenInputMode,
     lrcTimingOffsetMs,

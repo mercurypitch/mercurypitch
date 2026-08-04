@@ -6,6 +6,8 @@ import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import type { LrcGenPass, PreviewWordHighlight, } from '@/features/stem-mixer/lrc-gen-passes'
+import { TapCalibrationPanel } from '@/features/stem-mixer/TapCalibrationPanel'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { noteForWord } from '@/features/stem-mixer/zen-note-glyphs'
@@ -84,6 +86,15 @@ export interface StemMixerLyricsPanelBodyProps {
   displayLines: Accessor<DisplayLine[]>
   genViewData: Accessor<GenViewLine[]>
   hasMultipleSections: Accessor<boolean>
+
+  lrcGenPass: Accessor<LrcGenPass>
+  setLrcGenPass: (pass: LrcGenPass) => void
+  wordPassProgress: Accessor<{ done: number; total: number }>
+  previewLineIdx: Accessor<number | null>
+  previewActiveWord: Accessor<
+    (PreviewWordHighlight & { lineIdx: number }) | null
+  >
+  toggleLinePreview: (idx: number, loop: boolean) => void
 
   // Actions
   handleNextLine: () => void
@@ -177,6 +188,8 @@ export const StemMixerLyricsPanelBody: Component<
     progress: number
   }
 
+  const [showCalibration, setShowCalibration] = createSignal(false)
+  const [loopPreview, setLoopPreview] = createSignal(false)
   const [markerVisual, setMarkerVisual] = createSignal<MarkerTarget | null>(
     null,
   )
@@ -571,8 +584,18 @@ export const StemMixerLyricsPanelBody: Component<
               </button>
             </Show>
             <span class="sm-lyrics-gen-progress">
-              {Math.min(props.lrcGenLineIdx(), props.getGenLines().length)}/
-              {props.getGenLines().length}
+              {(() => {
+                // Pass 2 only stops on lines that have words to place, so
+                // counting every line there would understate the progress.
+                if (props.lrcGenPass() === 2) {
+                  const { done, total } = props.wordPassProgress()
+                  return `${Math.min(done, total)}/${total}`
+                }
+                return `${Math.min(
+                  props.lrcGenLineIdx(),
+                  props.getGenLines().length,
+                )}/${props.getGenLines().length}`
+              })()}
               {(() => {
                 const lines = props.getGenLines()
                 const idx = props.lrcGenLineIdx()
@@ -590,6 +613,42 @@ export const StemMixerLyricsPanelBody: Component<
                 return null
               })()}
             </span>
+            <div
+              class="sm-lyrics-gen-mode-switch"
+              role="group"
+              aria-label="Mapping pass"
+            >
+              <button
+                classList={{
+                  'sm-lyrics-gen-mode-btn': true,
+                  'sm-lyrics-gen-mode-btn--active': props.lrcGenPass() === 1,
+                }}
+                aria-pressed={props.lrcGenPass() === 1}
+                onClick={() => props.setLrcGenPass(1)}
+                title="Pass 1 — place the start of each line"
+              >
+                Lines
+              </button>
+              <button
+                classList={{
+                  'sm-lyrics-gen-mode-btn': true,
+                  'sm-lyrics-gen-mode-btn--active': props.lrcGenPass() === 2,
+                }}
+                aria-pressed={props.lrcGenPass() === 2}
+                onClick={() => props.setLrcGenPass(2)}
+                title="Pass 2 — line starts are frozen; place the words inside each line"
+              >
+                Words
+              </button>
+            </div>
+            <label class="sm-lyrics-gen-loop" title="Repeat previewed lines">
+              <input
+                type="checkbox"
+                checked={loopPreview()}
+                onChange={(e) => setLoopPreview(e.currentTarget.checked)}
+              />
+              <span>Loop preview</span>
+            </label>
             <div
               class="sm-lyrics-gen-mode-switch"
               role="group"
@@ -654,6 +713,14 @@ export const StemMixerLyricsPanelBody: Component<
                 aria-label="Reaction correction in milliseconds"
               />
               <span>ms</span>
+              <button
+                class="sm-lyrics-gen-calib-btn"
+                onClick={() => setShowCalibration((prev) => !prev)}
+                aria-expanded={showCalibration()}
+                title="Measure your reaction time instead of guessing it"
+              >
+                Calibrate
+              </button>
             </label>
             {(() => {
               const idx = props.lrcGenLineIdx()
@@ -712,20 +779,36 @@ export const StemMixerLyricsPanelBody: Component<
               Discard changes
             </button>
           </div>
+          <Show when={showCalibration()}>
+            <TapCalibrationPanel
+              currentOffsetMs={props.lrcTimingOffsetMs()}
+              onApply={(ms) => props.setLrcTimingOffsetMs(ms)}
+              onClose={() => setShowCalibration(false)}
+            />
+          </Show>
           <div class="sm-lyrics-gen-guidance" role="note">
             <Show
-              when={props.lrcGenInputMode() === 'marker'}
+              when={props.lrcGenPass() === 1}
               fallback={
-                <>
-                  Tap at the first audible sound of each word, not after the
-                  singer finishes it. Use Next Line only to skip the remaining
-                  words.
-                </>
+                <Show
+                  when={props.lrcGenInputMode() === 'marker'}
+                  fallback={
+                    <>
+                      Tap at the first audible sound of each word, not after the
+                      singer finishes it. Use Next Line only to skip the
+                      remaining words.
+                    </>
+                  }
+                >
+                  Press the highlighted word when its first sound begins, then
+                  drag through the text as it is sung. Hold still on long vowels
+                  and lift at a pause or after the final sound.
+                </Show>
               }
             >
-              Press the highlighted word when its first sound begins, then drag
-              through the text as it is sung. Hold still on long vowels and lift
-              at a pause or after the final sound.
+              Pass 1 — place only the start of each line. Fetched lyrics usually
+              have these already, so play through and re-tap only the lines that
+              drift, then switch to Words.
             </Show>
             <span class="sm-lyrics-gen-guidance-performance">
               Pitch and live monitors pause for smoother input; the vocal
@@ -842,6 +925,16 @@ export const StemMixerLyricsPanelBody: Component<
                     </div>
                   )
                 }
+                // During a preview the highlight follows the audio against the
+                // timings being edited, not the mapping cursor — so the line
+                // renders exactly as it will at runtime.
+                const previewHit = () => {
+                  const hit = props.previewActiveWord()
+                  return hit !== null && hit.lineIdx === item.index ? hit : null
+                }
+                const activeWordIdx = () =>
+                  previewHit()?.wordIdx ?? item.activeWordIdx
+                const isPreviewing = () => props.previewLineIdx() === item.index
                 return (
                   <div
                     class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}`}
@@ -877,6 +970,37 @@ export const StemMixerLyricsPanelBody: Component<
                       }
                     }}
                   >
+                    <button
+                      classList={{
+                        'sm-lyrics-gen-preview-btn': true,
+                        'sm-lyrics-gen-preview-btn--on': isPreviewing(),
+                      }}
+                      disabled={item.lineTime === undefined}
+                      aria-pressed={isPreviewing()}
+                      title={
+                        loopPreview()
+                          ? 'Play this line on repeat with live highlighting'
+                          : 'Play this line with live highlighting'
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        props.toggleLinePreview(item.index, loopPreview())
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="10" height="10">
+                        <Show
+                          when={isPreviewing()}
+                          fallback={
+                            <path fill="currentColor" d="M8 5v14l11-7z" />
+                          }
+                        >
+                          <path
+                            fill="currentColor"
+                            d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+                          />
+                        </Show>
+                      </svg>
+                    </button>
                     <span class="sm-lyrics-gen-line-time">
                       {item.lineTime !== undefined
                         ? props.formatTimeMs(item.lineTime)
@@ -887,6 +1011,14 @@ export const StemMixerLyricsPanelBody: Component<
                         ? item.line
                         : item.words.map((word: string, wi: number) => {
                             const progress = () => {
+                              const preview = previewHit()
+                              if (preview !== null) {
+                                return preview.wordIdx === wi
+                                  ? preview.progress
+                                  : preview.wordIdx > wi
+                                    ? 1
+                                    : 0
+                              }
                               if (item.activeWordIdx === wi) {
                                 const live = markerVisual()
                                 if (
@@ -902,16 +1034,16 @@ export const StemMixerLyricsPanelBody: Component<
                             return (
                               <span
                                 class={`sm-lyrics-gen-word${
-                                  item.activeWordIdx === wi
+                                  activeWordIdx() === wi
                                     ? ' sm-lyrics-gen-word-current'
                                     : ''
                                 }${
-                                  item.activeWordIdx >= 0 &&
-                                  wi < item.activeWordIdx
+                                  activeWordIdx() >= 0 && wi < activeWordIdx()
                                     ? ' sm-lyrics-gen-word-done'
                                     : ''
                                 }${
                                   item.isCurrent &&
+                                  !isPreviewing() &&
                                   props.lrcGenInputMode() === 'marker'
                                     ? ' sm-lyrics-gen-word-marker'
                                     : ''
@@ -919,7 +1051,7 @@ export const StemMixerLyricsPanelBody: Component<
                                 data-marker-line={item.index}
                                 data-marker-word={wi}
                                 aria-current={
-                                  item.activeWordIdx === wi ? 'true' : undefined
+                                  activeWordIdx() === wi ? 'true' : undefined
                                 }
                                 style={{
                                   '--marker-progress': `${(
