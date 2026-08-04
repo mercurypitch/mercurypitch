@@ -365,7 +365,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       {/* Renders itself only when this drill IS a segment of today's routine.
           Every exercise gets it for free by living in the shell — the
           alternative was 18 components each remembering to ask. */}
-      <RoutineRibbon type={props.type} />
+      <RoutineRibbon
+        type={props.type}
+        isRunning={() => status() === 'active' || status() === 'count-in'}
+      />
 
       <div
         class="exercise-canvas-area"
