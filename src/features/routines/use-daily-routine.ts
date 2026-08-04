@@ -32,12 +32,21 @@ export type RoutineFocus = 'auto' | 'surprise' | string // or a template id
 export interface RoutinePrefs {
   length: RoutineLength
   focus: RoutineFocus
+  /**
+   * Whether finishing a segment counts down into the next one.
+   *
+   * Optional because prefs written before this setting existed have no such
+   * key, and an absent preference is not an opt-out — see `autoContinue.ts`,
+   * which owns that reading.
+   */
+  autoContinue?: boolean
 }
 
 export const [routinePrefs, setRoutinePrefs] =
   createPersistedSignal<RoutinePrefs>(PREFS_KEY, {
     length: 'standard',
     focus: 'auto',
+    autoContinue: true,
   })
 
 /** Recently generated template ids (most recent first) — rotation memory. */

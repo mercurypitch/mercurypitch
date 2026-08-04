@@ -21,6 +21,7 @@ import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
 import { showNotification } from '@/stores/notifications-store'
 import { setActiveTab, startExercise } from '@/stores/ui-store'
+import { autoContinueEnabled } from './auto-continue'
 import styles from './DailyRoutinePanel.module.css'
 import type { SegmentKind } from './types'
 import type { RoutineLength } from './use-daily-routine'
@@ -277,6 +278,24 @@ export const DailyRoutinePanel: Component = () => {
                 Routine complete! Great work today.
               </div>
             </Show>
+
+            {/* Deliberately here and not with the Focus/Length selects: those
+                render only in the empty state, and someone who turns the
+                countdown off mid-routine has to be able to turn it back on
+                the same day. */}
+            <label class={styles.autoContinue}>
+              <input
+                type="checkbox"
+                checked={autoContinueEnabled()}
+                onChange={(e) =>
+                  setRoutinePrefs((p) => ({
+                    ...p,
+                    autoContinue: e.currentTarget.checked,
+                  }))
+                }
+              />
+              <span>Continue to the next segment automatically</span>
+            </label>
 
             <div class={styles.actions}>
               <button

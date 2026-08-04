@@ -12,13 +12,16 @@
 // The routine lives in a persisted signal that reads storage once at module
 // load, so a test that seeds storage afterwards seeds nothing.
 
-import { cleanup, render } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_LONG_NOTE, EXERCISE_SCALE_RUNNER, EXERCISE_WARMUP, } from '@/features/exercises/types'
+import { AUTO_CONTINUE_SECONDS, resetAutoContinueDismissals, } from '@/features/routines/auto-continue'
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import type { RoutineTemplate } from '@/features/routines/types'
-import { autoAdvanceRoutineSegment, loadSharedRoutine, segmentRunsExercise, } from '@/features/routines/use-daily-routine'
+import { autoAdvanceRoutineSegment, loadSharedRoutine, routinePrefs, segmentRunsExercise, setRoutinePrefs, } from '@/features/routines/use-daily-routine'
+import { pendingDrill, setPendingDrill } from '@/stores/ui-store'
 
 const WARMUP_SEGMENT = {
   type: 'warmup' as const,
@@ -155,5 +158,146 @@ describe('RoutineRibbon', () => {
     autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
 
     expect(getByText(/session is complete/)).toBeTruthy()
+  })
+})
+
+// ============================================================
+// Auto-continue
+// ============================================================
+//
+// A routine is a sequence, and making the singer click through it is what ends
+// sessions early. What these pin down is the other half: every way it can be
+// stopped, because an auto-advance that cannot be stopped is worse than none.
+
+describe('RoutineRibbon auto-continue', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    resetAutoContinueDismissals()
+    setRoutinePrefs({ length: 'standard', focus: 'auto', autoContinue: true })
+    setPendingDrill(null)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // Put the routine one segment in, so rendering Long Note attaches the
+  // ribbon; `finishSegment` then ticks it off, which is what starts the
+  // countdown. Split rather than wrapped in a helper so the `isRunning`
+  // accessor can go straight into JSX, where Solid can track it.
+  const seedAtLongNote = (): void => {
+    seedRoutine(TEMPLATE, [EXERCISE_WARMUP, FULL_WARMUP])
+  }
+  const finishSegment = (): void => {
+    autoAdvanceRoutineSegment(EXERCISE_LONG_NOTE)
+  }
+
+  const runOutTheClock = (): void => {
+    vi.advanceTimersByTime(AUTO_CONTINUE_SECONDS * 1000)
+  }
+
+  it('counts down and launches the next segment on its own', () => {
+    seedAtLongNote()
+    const { getByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+    finishSegment()
+
+    // The count is on the button itself, so it cannot drift from the target.
+    expect(getByTestId('routine-next').textContent).toContain(
+      String(AUTO_CONTINUE_SECONDS),
+    )
+    vi.advanceTimersByTime(1000)
+    expect(getByTestId('routine-next').textContent).toContain(
+      String(AUTO_CONTINUE_SECONDS - 1),
+    )
+
+    runOutTheClock()
+    expect(pendingDrill()?.exercise).toBe(EXERCISE_SCALE_RUNNER)
+  })
+
+  it('stops for good when they say to stay', () => {
+    seedAtLongNote()
+    const { getByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+    finishSegment()
+
+    fireEvent.click(getByTestId('routine-stay'))
+    runOutTheClock()
+
+    expect(pendingDrill()).toBeNull()
+    // And the offer is still there to take by hand.
+    expect(getByTestId('routine-next')).toBeTruthy()
+  })
+
+  // The countdown lives on the result screen, where Try Again lives too.
+  // Being pulled into the next drill four seconds into a re-run is the
+  // failure this whole feature has to avoid.
+  it('gives way to a new run of the same drill', () => {
+    const [running, setRunning] = createSignal(false)
+    seedAtLongNote()
+    const { queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} isRunning={running} />
+    ))
+    finishSegment()
+
+    setRunning(true)
+    runOutTheClock()
+
+    expect(pendingDrill()).toBeNull()
+    expect(queryByTestId('routine-stay')).toBeNull()
+  })
+
+  it('does not count down for a drill outside the routine', () => {
+    // Scale Runner is two segments away, so the ribbon does not attach —
+    // and must not quietly launch the routine's next segment either.
+    seedRoutine(TEMPLATE)
+    render(() => <RoutineRibbon type={EXERCISE_SCALE_RUNNER} />)
+
+    runOutTheClock()
+
+    expect(pendingDrill()).toBeNull()
+  })
+
+  it('does not count down when the preference is off', () => {
+    setRoutinePrefs((p) => ({ ...p, autoContinue: false }))
+    seedAtLongNote()
+    const { getByTestId, queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} />
+    ))
+    finishSegment()
+
+    runOutTheClock()
+
+    expect(pendingDrill()).toBeNull()
+    expect(queryByTestId('routine-stay')).toBeNull()
+    // The manual offer stays — turning off the countdown is not turning off
+    // the routine.
+    expect(getByTestId('routine-next')).toBeTruthy()
+  })
+
+  it('offers to stop asking after the second cancel, and means it', () => {
+    const [running, setRunning] = createSignal(false)
+    seedAtLongNote()
+    const { getByTestId, queryByTestId } = render(() => (
+      <RoutineRibbon type={EXERCISE_LONG_NOTE} isRunning={running} />
+    ))
+    finishSegment()
+
+    // First cancel by re-running the drill — that route counts too, since
+    // re-running is the whole reason someone would want this off.
+    setRunning(true)
+    expect(queryByTestId('routine-autocontinue-off')).toBeNull()
+
+    // Finishing the re-run starts it again; this time they use the button.
+    setRunning(false)
+    fireEvent.click(getByTestId('routine-stay'))
+
+    fireEvent.click(getByTestId('routine-autocontinue-off'))
+    expect(routinePrefs().autoContinue).toBe(false)
+
+    runOutTheClock()
+    expect(pendingDrill()).toBeNull()
   })
 })

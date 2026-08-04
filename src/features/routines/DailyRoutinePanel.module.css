@@ -205,6 +205,25 @@
   font-weight: 600;
   padding: 10px 0 6px;
 }
+/* A setting, not an action — so it sits above the button row and stays
+   quiet. Reachable mid-routine on purpose: the countdown can be switched off
+   from the ribbon, and this is where it gets switched back on. */
+.autoContinue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 0 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.autoContinue input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .actions {
   display: flex;
   justify-content: center;

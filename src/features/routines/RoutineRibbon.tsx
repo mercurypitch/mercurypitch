@@ -20,18 +20,26 @@
 // rather than vanishing at the moment it becomes most useful.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
+import { AUTO_CONTINUE_SECONDS, autoContinueEnabled, noteAutoContinueDismissed, shouldOfferToDisable, } from './auto-continue'
 import styles from './RoutineRibbon.module.css'
 import { exerciseLabel, segmentVariantLabel } from './segment-labels'
 import type { RoutineSegment } from './types'
-import { launchRoutineSegment, segmentRunsExercise, useDailyRoutine, } from './use-daily-routine'
+import { launchRoutineSegment, segmentRunsExercise, setRoutinePrefs, useDailyRoutine, } from './use-daily-routine'
 
 export interface RoutineRibbonProps {
   /** The exercise this shell is running. */
   type: ExerciseType
+  /**
+   * Whether a run is under way right now. Starting one cancels the
+   * auto-continue countdown: hitting Try Again means "this drill again", and
+   * being yanked into the next segment mid-note is the worst version of a
+   * feature meant to save clicks.
+   */
+  isRunning?: () => boolean
 }
 
 /** What a segment calls itself in the chip row. */
@@ -70,6 +78,63 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
       ? (segments()[routine.currentSegmentIndex()] ?? null)
       : null,
   )
+
+  // --- Auto-continue ------------------------------------------------------
+  // Seconds left, or null when nothing is counting. setInterval rather than
+  // rAF: a singer who tabs away mid-countdown should come back to the next
+  // segment, and rAF stops in a backgrounded tab.
+  const [remaining, setRemaining] = createSignal<number | null>(null)
+  let ticker: ReturnType<typeof setInterval> | null = null
+
+  const stopCountdown = (): void => {
+    if (ticker !== null) clearInterval(ticker)
+    ticker = null
+    setRemaining(null)
+  }
+
+  const startCountdown = (next: RoutineSegment): void => {
+    setRemaining(AUTO_CONTINUE_SECONDS)
+    ticker = setInterval(() => {
+      const left = (remaining() ?? 0) - 1
+      if (left > 0) {
+        setRemaining(left)
+        return
+      }
+      stopCountdown()
+      launchRoutineSegment(next)
+    }, 1000)
+  }
+
+  /** Stop, and remember that they stopped it — twice earns an offer to quit. */
+  const cancelCountdown = (): void => {
+    if (remaining() === null) return
+    stopCountdown()
+    noteAutoContinueDismissed()
+  }
+
+  createEffect(
+    on(
+      () => [attached(), nextSegment(), props.isRunning?.() ?? false] as const,
+      ([isAttached, next, running]) => {
+        // Starting another run IS a cancel, and a more emphatic one than the
+        // button: they went back to this drill on purpose.
+        if (running) {
+          cancelCountdown()
+          return
+        }
+        // Without this, a drill opened from the exercise list — where the
+        // ribbon renders nothing — would still count down and launch the
+        // routine's next segment out from under the singer.
+        if (!isAttached || next === null || !autoContinueEnabled()) {
+          stopCountdown()
+          return
+        }
+        if (ticker === null) startCountdown(next)
+      },
+    ),
+  )
+
+  onCleanup(stopCountdown)
 
   return (
     <Show when={attached() && segments().length > 0}>
@@ -116,26 +181,82 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
             the current one, "Next" would mean abandoning it half-done. */}
         <Show when={nextSegment()}>
           {(next) => (
-            <button
-              type="button"
-              class={styles.next}
-              onClick={() => launchRoutineSegment(next())}
-            >
-              Next: {segmentTitle(next())}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
+            <div class={styles.nextRow}>
+              <button
+                type="button"
+                class={styles.next}
+                data-testid="routine-next"
+                onClick={() => {
+                  stopCountdown()
+                  launchRoutineSegment(next())
+                }}
               >
-                <path d="M5 12h13M13 6l6 6-6 6" />
-              </svg>
-            </button>
+                Next: {segmentTitle(next())}
+                <Show when={remaining()}>
+                  {(left) => (
+                    <span class={styles.tick} aria-hidden="true">
+                      {left()}
+                    </span>
+                  )}
+                </Show>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+                {/* The bar is the only part that moves, and it drains rather
+                    than fills: a shrinking thing reads as a deadline. */}
+                <Show when={remaining() !== null}>
+                  <span
+                    class={styles.drain}
+                    aria-hidden="true"
+                    style={{
+                      width: `${((remaining() ?? 0) / AUTO_CONTINUE_SECONDS) * 100}%`,
+                    }}
+                  />
+                </Show>
+              </button>
+
+              <Show when={remaining() !== null}>
+                <button
+                  type="button"
+                  class={styles.stay}
+                  data-testid="routine-stay"
+                  onClick={cancelCountdown}
+                >
+                  Stay here
+                </button>
+                {/* Announced once — the text is constant while it counts, so
+                    this does not read out a new number every second. */}
+                <span class={styles.srOnly} aria-live="polite">
+                  Continuing to {segmentTitle(next())} in{' '}
+                  {AUTO_CONTINUE_SECONDS} seconds. Choose Stay here to cancel.
+                </span>
+              </Show>
+
+              {/* Two cancels in one sitting is an answer, not a coincidence. */}
+              <Show when={shouldOfferToDisable()}>
+                <button
+                  type="button"
+                  class={styles.optOut}
+                  data-testid="routine-autocontinue-off"
+                  onClick={() => {
+                    stopCountdown()
+                    setRoutinePrefs((p) => ({ ...p, autoContinue: false }))
+                  }}
+                >
+                  Stop counting down
+                </button>
+              </Show>
+            </div>
           )}
         </Show>
 
