@@ -9,6 +9,7 @@
 // exercise means calling this once, not wiring each consumer -- and calling
 // it twice double-counts practice credit.
 
+import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
@@ -88,6 +89,13 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
       durationMs: runMs !== undefined && runMs > 0 ? runMs : undefined,
       source: 'exercise',
     })
+    // The other three surfaces — session, challenge, weekly — each run the
+    // grant pass after saving. This one never did, so drills earned nothing
+    // until some OTHER surface happened to trigger a pass, at which point
+    // everything they had earned unlocked in one heap. Half the goals count
+    // drills (Drill Sergeant, Drill Habit, Well Rounded, every note and day
+    // total), so this was not a small gap.
+    await checkAndGrantBadges()
   })()
 }
 
