@@ -73,7 +73,7 @@ export const RoutineRibbon: Component<RoutineRibbonProps> = (props) => {
 
   return (
     <Show when={attached() && segments().length > 0}>
-      <div class={styles.ribbon}>
+      <div class={styles.ribbon} data-testid="routine-ribbon">
         <div class={styles.head}>
           <span class={styles.kicker}>
             {routine.template()?.name ?? "Today's session"}
