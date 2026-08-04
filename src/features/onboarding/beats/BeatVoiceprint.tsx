@@ -229,7 +229,12 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       props.onDenied()
       return
     }
-    if ((await session.probe()) !== 'ok' || !alive()) {
+    // 'quiet' is not a failure here either: the probe runs before the
+    // first task brief, so the room is quiet because we haven't asked
+    // for anything yet. Only a graph carrying literally nothing is a
+    // reason to abandon a run the singer opted into.
+    const probe = await session.probe()
+    if (probe === 'silent' || probe === 'no-session' || !alive()) {
       props.onDenied()
       return
     }

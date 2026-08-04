@@ -43,15 +43,23 @@ import { createF0Stream } from './pitch-f0-stream'
 const SILENCE_RMS = 1e-6
 
 /**
- * Below this peak during the probe, treat the input as unusable and
- * offer the device picker rather than starting the flow.
+ * Above this peak during the probe, the input is definitely carrying
+ * sound. Below it we know nothing: nobody has been asked to sing yet,
+ * and a working mic in a quiet room reads well under this.
  */
 const QUIET_RMS = 0.004
 
 /** Long enough for someone to say "ahh", short enough not to stall. */
 const PROBE_MS = 900
 
-export type ProbeResult = 'ok' | 'silent' | 'no-session'
+/**
+ * `quiet` is deliberately NOT a failure. The probe runs before the
+ * singer has been told to sing, so treating "under the audible bar" as
+ * a broken input sent working microphones in quiet rooms straight to
+ * the device picker — the loudest complaint from owner testing. Only a
+ * dead zero that survives a graph rebuild is a real fault.
+ */
+export type ProbeResult = 'ok' | 'quiet' | 'silent' | 'no-session'
 
 /**
  * Opening returns a result rather than throwing: micManager rejects with
@@ -72,11 +80,18 @@ export interface VoiceSession {
    */
   open: () => Promise<OpenResult>
   /**
-   * Is the input actually audible? Rebuilds the graph once on a
-   * dead-zero reading before giving up, and retries once when merely
-   * quiet so the singer gets a second beat to speak up.
+   * Is the graph carrying anything at all? Rebuilds once on a dead-zero
+   * reading before giving up. See `ProbeResult`: `quiet` means "we
+   * cannot tell yet", not "broken".
    */
   probe: () => Promise<ProbeResult>
+  /**
+   * Start the analyser without keeping any of it. Levels only flow
+   * while the stream believes it is recording, so a live meter shown
+   * BEFORE a take — the one that tells someone the app can hear them —
+   * needs this. The next `record()` clears whatever this collected.
+   */
+  arm: () => void
   /** Record for `seconds` and return the raw frames. */
   record: (seconds: number) => Promise<PitchFrame[]>
   /** Most recent frame — raw, for numbers. */
@@ -175,11 +190,19 @@ export function createVoiceSession(consumerId: string): VoiceSession {
       if (f0 === null) return 'no-session'
       const level = await probeLevel(PROBE_MS)
       if (level > QUIET_RMS) return 'ok'
-      // Dead zero = broken graph; rebuild before re-probing. Merely
-      // quiet = likely the wrong device, and the retry gives the singer
-      // one more beat before we offer the picker.
-      if (level <= SILENCE_RMS) await rebuildAudio()
-      return (await probeLevel(PROBE_MS)) > QUIET_RMS ? 'ok' : 'silent'
+      // Merely quiet is not a verdict — the room is quiet because we
+      // have not asked for a note yet. Only a dead zero is diagnostic,
+      // and it means the graph, not the room: rebuild it (the iOS
+      // WebKit sample-rate case) and look once more.
+      if (level > SILENCE_RMS) return 'quiet'
+      await rebuildAudio()
+      const second = await probeLevel(PROBE_MS)
+      if (second > QUIET_RMS) return 'ok'
+      return second > SILENCE_RMS ? 'quiet' : 'silent'
+    },
+
+    arm(): void {
+      f0?.startTask()
     },
 
     async record(seconds: number): Promise<PitchFrame[]> {
@@ -211,7 +234,9 @@ export function createVoiceSession(consumerId: string): VoiceSession {
         await micManager.acquire(consumerId)
         await rebuildAudio()
         if (f0 === null) return 'no-session'
-        return (await probeLevel(PROBE_MS)) > QUIET_RMS ? 'ok' : 'silent'
+        const level = await probeLevel(PROBE_MS)
+        if (level > QUIET_RMS) return 'ok'
+        return level > SILENCE_RMS ? 'quiet' : 'silent'
       } catch {
         return 'silent'
       }
