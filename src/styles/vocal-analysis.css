@@ -1702,23 +1702,27 @@
 /**
  * The medal IS the card.
  *
- * Square source in a 1:1.14 frame, so `cover` crops about 6% off each side
- * — and each render's own content stops 8% in, so none of the laurel is
- * lost. The spare height at the foot is where the name strip sits.
+ * Art on top, name strip under it, card height = the sum. No fixed card
+ * ratio: the first cut framed a square render in a 1:1.14 box, which left a
+ * band of empty ground above the laurel and a gap below it before the text.
+ * The renders are cropped tight to their own content now (all three to the
+ * same relative size — the bronze was visibly smaller), so the laurel runs
+ * from the top edge down to the name.
  */
 .podium-item {
   position: relative;
+  display: flex;
+  flex-direction: column;
   /* Share the row evenly and allow shrinking so the three medals stay on one
      horizontal row even on a phone-width screen. */
   flex: 1 1 0;
   min-width: 0;
   max-width: 180px;
-  aspect-ratio: 1 / 1.14;
   overflow: hidden;
   border-radius: 14px;
-  /* Matches the ground baked into the renders, so a slow or failed image
-     leaves a card rather than a hole in the shelf. */
-  background: #07070a;
+  /* Matches the ground baked into the renders, so the seam under the art is
+     invisible and a slow or failed image leaves a card, not a hole. */
+  background: #030304;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -1746,34 +1750,33 @@
 }
 
 .podium-art {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  /* The renders are square and cropped to their content, so `contain` and
+     `cover` agree — `contain` is the one that can never clip a laurel. */
+  aspect-ratio: 1;
+  object-fit: contain;
 }
 
-/* Reads the name off the art. Transparent over the medal, near-opaque under
-   the strip — a pale laurel behind white text is otherwise unreadable. */
+/* A gentle fade from the foot of the art into the card ground, so the art's
+   lower edge is never a visible seam if a render's black is not quite the
+   card's. Fixed height rather than a percentage: it has to cover the strip
+   plus a little of the art, and the strip's height is in px, not ratio. */
 .podium-veil {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 54%,
-    rgba(4, 4, 8, 0.55) 74%,
-    rgba(4, 4, 8, 0.93) 100%
-  );
+  inset: auto 0 0 0;
+  height: 74px;
+  background: linear-gradient(180deg, transparent 0%, #030304 78%);
   pointer-events: none;
 }
 
 .podium-strip {
-  position: absolute;
-  inset: auto 0 0 0;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
+  padding: 0 10px 10px;
   min-width: 0;
 }
 
@@ -1815,14 +1818,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .podium-score-display {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--accent);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .podium-score-open {
@@ -2303,7 +2304,10 @@
   }
   .podium-strip {
     gap: 6px;
-    padding: 7px;
+    padding: 0 7px 7px;
+  }
+  .podium-veil {
+    height: 54px;
   }
   .podium-avatar {
     width: 21px;
