@@ -254,8 +254,16 @@ export default defineConfig(({ mode }) => {
             // transitively load the whole app vendor bundle — legal-links
             // landing in the 'advanced' chunk once dragged ~2.7 MB of static
             // JS into the mirror's first paint via ConsentBanner.
+            // `mic-lock`, `mic-level`, `input-health` and `id` are here for a
+            // second reason on top of payload size: `mic-manager` and
+            // `pitch-f0-stream` import them, and leaving them in 'library'
+            // made the two chunks import each other. A cycle across a chunk
+            // boundary is not a warning — Rollup emits both halves and the
+            // app dies at first paint on "Cannot access 'ge' before
+            // initialization", with no clue which module 'ge' was. Whatever
+            // pitch-core reaches has to be in pitch-core.
             if (
-              /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+              /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
                 id,
               ) ||
               /src\/stores\/notifications-store/.test(id) ||
