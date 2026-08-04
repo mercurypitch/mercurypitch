@@ -1,0 +1,46 @@
+/* Sits inside the result card, under the score. Quiet framing: the contour is
+   the content, so everything around it stays out of its way. */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  width: 100%;
+}
+
+.plot {
+  position: relative;
+  width: 100%;
+  height: 92px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.plot canvas {
+  display: block;
+}
+
+.caption {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.legend {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.note {
+  min-width: 0;
+}
+
+.note strong {
+  color: var(--text-primary);
+}

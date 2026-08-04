@@ -28,6 +28,9 @@ import { getExerciseStats } from '@/stores/exercise-history-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import { gradeForScore } from './feedback'
+import type { RunTrace } from './last-run-trace'
+import { lastRunTrace } from './last-run-trace'
+import { RunTraceCanvas } from './RunTraceCanvas'
 import type { ExerciseStatus, ExerciseType } from './types'
 
 export interface AutoTimerConfig {
@@ -133,6 +136,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // comparing against a live read would never detect a PB.
   const [prevBest, setPrevBest] = createSignal<number | null>(null)
   const [prevLast, setPrevLast] = createSignal<number | null>(null)
+  // The finished run's contour, shown back on the result card.
+  const [runTrace, setRunTrace] = createSignal<RunTrace | null>(null)
   createEffect(
     on(status, (s, previous) => {
       if (s === 'active' && previous !== 'active') {
@@ -146,7 +151,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         const score = props.resultScore()
         if (score !== null && score >= 80) haptics.success()
         else haptics.tapLight()
+        // Snapshot the contour for the result card. The trace seam is global
+        // and holds whatever ran last, so the type check keeps a previous
+        // drill's shape from being shown under this one's score.
+        const trace = lastRunTrace()
+        setRunTrace(trace?.type === props.type ? trace : null)
       }
+      if (s === 'active') setRunTrace(null)
     }),
   )
   const isNewBest = () => {
@@ -398,6 +409,10 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                   <div class="exercise-result-summary">
                     {props.resultSummary}
                   </div>
+                  {/* The score says how well; the contour says where. */}
+                  <Show when={runTrace()}>
+                    {(trace) => <RunTraceCanvas trace={trace()} />}
+                  </Show>
                 </div>
               </div>
             </Show>
