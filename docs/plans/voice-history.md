@@ -124,6 +124,24 @@ feature from feeling like a generic voice-memo library.
 - The first version does not time-warp, pitch-correct, loudness-normalize, or
   claim improvement from unmatched recordings.
 
+### Listening Desk interaction architecture
+
+- One selected practice thread owns one visible workspace. **Compare**,
+  **Pattern**, and **All takes** are mutually exclusive views rather than an
+  accumulating stack of panels.
+- Compare uses one Voice Atlas canvas and one shared transport. Selecting a
+  take does not require starting playback; Play/Pause and scrubbing stay in a
+  stable control rail.
+- Reflection Beacons and the playback-only Listening Room open in one
+  contextual inspector. On narrow screens they become focused sheets instead
+  of squeezing the listening canvas.
+- Pattern unlocks at three takes and presents Practice Loom as an alternate
+  longitudinal view. All takes uses a compact selectable history with one
+  shared transport and scoped action menus.
+- Desktop uses a practice-thread rail and detail workspace. Phones navigate
+  from the thread list into one detail view and keep secondary management out
+  of the primary listening path.
+
 ### Voice Atlas v1: measured maps, not verdicts
 
 Voice Atlas is the analytical language inside Hear Yourself. It does not turn

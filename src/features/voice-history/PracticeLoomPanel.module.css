@@ -117,7 +117,7 @@
 .row {
   --loom-color: rgb(141 184 255);
   display: grid;
-  grid-template-columns: minmax(124px, 0.22fr) minmax(250px, 1fr) 78px;
+  grid-template-columns: minmax(124px, 0.22fr) minmax(250px, 1fr);
   align-items: center;
   gap: 13px;
   min-width: 0;
@@ -125,6 +125,7 @@
   border: 1px solid rgb(141 184 255 / 9%);
   border-radius: 12px;
   background: rgb(4 8 15 / 48%);
+  cursor: pointer;
   transition:
     border-color 150ms ease,
     background 150ms ease;
@@ -134,9 +135,20 @@
   border-color: color-mix(in srgb, var(--loom-color) 22%, transparent);
 }
 
-.rowActive {
+.rowSelected {
   border-color: color-mix(in srgb, var(--loom-color) 34%, transparent);
   background: color-mix(in srgb, var(--loom-color) 5%, rgb(4 8 15 / 66%));
+}
+
+.rowSelect {
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .rowIdentity {
@@ -277,36 +289,7 @@
   animation: shuttlePulse 1.2s ease-in-out infinite;
 }
 
-.playButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: 44px;
-  padding: 7px 9px;
-  font: inherit;
-  font-size: 0.67rem;
-  font-weight: 740;
-  color: #dce6f3;
-  border: 1px solid color-mix(in srgb, var(--loom-color) 20%, transparent);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--loom-color) 6%, rgb(4 8 15 / 74%));
-  cursor: pointer;
-}
-
-.playButton:hover {
-  color: #fff;
-  border-color: color-mix(in srgb, var(--loom-color) 38%, transparent);
-  background: color-mix(in srgb, var(--loom-color) 11%, rgb(4 8 15 / 76%));
-}
-
-.playButton svg {
-  width: 15px;
-  height: 15px;
-}
-
-.playButton:focus-visible,
+.rowSelect:focus-visible,
 .omission button:focus-visible,
 .foldButton:focus-visible {
   outline: 2px solid #8db8ff;
@@ -341,7 +324,7 @@
 
 .ruler {
   display: grid;
-  grid-template-columns: minmax(124px, 0.22fr) minmax(250px, 1fr) 78px;
+  grid-template-columns: minmax(124px, 0.22fr) minmax(250px, 1fr);
   gap: 13px;
   padding-inline: 10px;
 }
@@ -404,7 +387,7 @@
   }
 
   .row {
-    grid-template-columns: minmax(0, 1fr) 76px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px 10px;
   }
 

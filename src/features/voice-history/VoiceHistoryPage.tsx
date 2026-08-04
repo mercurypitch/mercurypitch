@@ -4,31 +4,31 @@
 
 /*
 THESIS: Voice history is a listening desk organised by recurring practice
-threads, never a generic voice-memo grid.
+threads, with one focused listening mode visible at a time.
 OWN-WORLD: MercuryPitch's dark Pitch Studio surfaces, ruled waveform fields,
 quiet blue-violet accents, and compact native controls.
-STORY: The singer enters a practice thread, sees its Take Topography become
-Twin Trails, listens on one shared clock, and leaves subjective reflections.
-FIRST VIEWPORT: A narrow thread rail sits beside Voice Atlas as the central
-field; privacy and storage status stay in the header, with listening room
-controls following the map instead of displacing it.
-FORM: Context-first practice threads, the third grounded structure selected by
-surface seed 828675af, extended through spectral cartography without replacing
+STORY: The singer chooses a thread, compares a pair, opens the longer pattern
+only when it exists, and manages the complete take history without leaving the
+same listening desk.
+FIRST VIEWPORT: A compact thread rail controls a focused detail workspace;
+Compare, Pattern, and All takes are mutually exclusive rather than one long
+stack, and phones move deliberately from the list into one thread.
+FORM: Context-first practice threads, the grounded structure selected by
+surface seed 4d3b7772, extended through spectral cartography without replacing
 the established Pitch Studio shell.
 */
 
-import type { Component, JSX } from 'solid-js'
+import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconMic } from '@/components/exercise-icons'
-import { Pencil } from '@/components/icons'
-import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
+import { ChevronLeft, MoreVertical } from '@/components/icons'
 import type { VoiceTakeRecord } from '@/db/entities'
 import type { VoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { deleteVoiceTake, deleteVoiceThread, getVoiceStorageSnapshot, getVoiceTakeBlob, getVoiceTakeContour, listVoiceTakes, renameFreeformVoiceThread, updateVoiceTake, updateVoiceTakeReflections, wipeVoiceTakes, } from '@/db/services/voice-take-service'
 import { trackEvent } from '@/lib/analytics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
-import { createMediaProgressLoop, isMediaPlaybackActive, mediaProgressFromPointer, } from '@/lib/media-progress-loop'
+import { createMediaProgressLoop, isMediaPlaybackActive, } from '@/lib/media-progress-loop'
 import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { FxRack, FxSettings } from '@/lib/voice-fx-rack'
 import { createFxRack, FX_PRESETS } from '@/lib/voice-fx-rack'
@@ -42,6 +42,7 @@ import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
 import { createVoiceReflection, parseVoiceReflections, } from './voice-reflections'
 import { VoiceAtlasPanel } from './VoiceAtlasPanel'
 import styles from './VoiceHistoryPage.module.css'
+import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 import { VoiceRoomPanel } from './VoiceRoomPanel'
 
 interface VoiceThread {
@@ -50,6 +51,8 @@ interface VoiceThread {
   source: VoiceTakeRecord['source']
   takes: VoiceTakeRecord[]
 }
+
+type ListeningDeskView = 'compare' | 'pattern' | 'takes'
 
 type DeleteIntent =
   | { kind: 'take'; take: VoiceTakeRecord }
@@ -130,78 +133,42 @@ function threadTitle(take: VoiceTakeRecord): string {
   return take.title
 }
 
-const Waveform: Component<{
-  take: VoiceTakeRecord
-  active: boolean
-  progress?: number
-  playing?: boolean
-  onSeek: (progress: number) => void
-}> = (props) => {
-  const currentProgress = (): number =>
-    props.active ? (props.progress ?? 0) : 0
-  const seekFromPointer = (event: PointerEvent): void => {
-    const surface = event.currentTarget as HTMLDivElement
-    const bounds = surface.getBoundingClientRect()
-    props.onSeek(
-      mediaProgressFromPointer(event.clientX, bounds.left, bounds.width),
-    )
-  }
+function threadSourceLabel(source: VoiceTakeRecord['source']): string {
+  if (source === 'freeform') return 'Free practice'
+  if (source === 'legend') return 'Weekly Legend'
+  return source[0]!.toUpperCase() + source.slice(1)
+}
 
-  return (
-    <div
-      class={styles.waveform}
-      classList={{ [styles.waveformActive]: props.active }}
-      role="slider"
-      tabindex="0"
-      aria-label={`Seek ${props.take.title}`}
-      aria-valuemin="0"
-      aria-valuemax="100"
-      aria-valuenow={Math.round(currentProgress() * 100)}
-      aria-valuetext={`${Math.round(currentProgress() * 100)} percent`}
-      onPointerDown={(event) => {
-        event.currentTarget.setPointerCapture(event.pointerId)
-        seekFromPointer(event)
-      }}
-      onPointerMove={(event) => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          seekFromPointer(event)
-        }
-      }}
-      onPointerUp={(event) => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          event.currentTarget.releasePointerCapture(event.pointerId)
-        }
-      }}
-      onKeyDown={(event) => {
-        const step = 0.05
-        const current = currentProgress()
-        const next =
-          event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? 1
-              : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
-                ? current - step
-                : event.key === 'ArrowRight' || event.key === 'ArrowUp'
-                  ? current + step
-                  : null
-        if (next === null) return
-        event.preventDefault()
-        props.onSeek(Math.max(0, Math.min(1, next)))
-      }}
-    >
-      <VoiceTakeWaveform
-        class={styles.waveformCanvas}
-        peaks={props.take.peaks}
-        progress={currentProgress()}
-        playing={props.active && props.playing === true}
-        showPlayhead={props.active}
-      />
-      <span class={styles.waveformHint} aria-hidden="true">
-        Drag to seek
-      </span>
-    </div>
-  )
+function buildVoiceThreads(takes: readonly VoiceTakeRecord[]): VoiceThread[] {
+  const grouped = new Map<string, VoiceTakeRecord[]>()
+  for (const take of takes) {
+    const current = grouped.get(take.comparisonKey) ?? []
+    current.push(take)
+    grouped.set(take.comparisonKey, current)
+  }
+  return [...grouped.entries()]
+    .map(([key, threadTakes]) => {
+      const sorted = [...threadTakes].sort(
+        (left, right) =>
+          new Date(left.capturedAt).getTime() -
+          new Date(right.capturedAt).getTime(),
+      )
+      return {
+        key,
+        title: threadTitle(sorted.at(-1)!),
+        source: sorted[0]!.source,
+        takes: sorted,
+      }
+    })
+    .sort((left, right) => {
+      const comparisonDelta =
+        Number(right.takes.length >= 2) - Number(left.takes.length >= 2)
+      if (comparisonDelta !== 0) return comparisonDelta
+      return (
+        new Date(right.takes.at(-1)!.capturedAt).getTime() -
+        new Date(left.takes.at(-1)!.capturedAt).getTime()
+      )
+    })
 }
 
 export function VoiceHistoryPage(): JSX.Element {
@@ -237,6 +204,13 @@ export function VoiceHistoryPage(): JSX.Element {
     Record<string, DecodedVoiceAtlasContour | null>
   >({})
   const [contoursLoading, setContoursLoading] = createSignal(false)
+  const [activeView, setActiveView] = createSignal<ListeningDeskView>('compare')
+  const [mobileDetailOpen, setMobileDetailOpen] = createSignal(false)
+  const [threadMenuOpen, setThreadMenuOpen] = createSignal(false)
+  const [takeMenuId, setTakeMenuId] = createSignal<string | null>(null)
+  const [allTakesSelectedId, setAllTakesSelectedId] = createSignal<
+    string | null
+  >(null)
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
@@ -246,8 +220,10 @@ export function VoiceHistoryPage(): JSX.Element {
   let uninstallAudioUnlock = (): void => undefined
   let recordLaunchButton: HTMLButtonElement | undefined
   let recorderReturnFocus: HTMLElement | null = null
+  let recorderOpenedFromThread = false
+  let threadDetailHeading: HTMLHeadingElement | undefined
   let renameInput: HTMLInputElement | undefined
-  let renameButton: HTMLButtonElement | undefined
+  let threadMenuButton: HTMLButtonElement | undefined
   let comparisonStarted = false
   let comparisonPendingComplete = false
   let contourLoadGeneration = 0
@@ -257,37 +233,7 @@ export function VoiceHistoryPage(): JSX.Element {
   const reflectionMutations = createTakeMutationQueue()
   const playbackProgress = createMediaProgressLoop(setProgress)
 
-  const threads = createMemo<VoiceThread[]>(() => {
-    const grouped = new Map<string, VoiceTakeRecord[]>()
-    for (const take of takes()) {
-      const current = grouped.get(take.comparisonKey) ?? []
-      current.push(take)
-      grouped.set(take.comparisonKey, current)
-    }
-    return [...grouped.entries()]
-      .map(([key, threadTakes]) => {
-        const sorted = [...threadTakes].sort(
-          (left, right) =>
-            new Date(left.capturedAt).getTime() -
-            new Date(right.capturedAt).getTime(),
-        )
-        return {
-          key,
-          title: threadTitle(sorted.at(-1)!),
-          source: sorted[0]!.source,
-          takes: sorted,
-        }
-      })
-      .sort((left, right) => {
-        const comparisonDelta =
-          Number(right.takes.length >= 2) - Number(left.takes.length >= 2)
-        if (comparisonDelta !== 0) return comparisonDelta
-        return (
-          new Date(right.takes.at(-1)!.capturedAt).getTime() -
-          new Date(left.takes.at(-1)!.capturedAt).getTime()
-        )
-      })
-  })
+  const threads = createMemo<VoiceThread[]>(() => buildVoiceThreads(takes()))
 
   const selectedThread = createMemo(
     () => threads().find((thread) => thread.key === selectedKey()) ?? null,
@@ -298,6 +244,12 @@ export function VoiceHistoryPage(): JSX.Element {
   )
   const later = createMemo(
     () => selectedThread()?.takes.find((take) => take.id === laterId()) ?? null,
+  )
+  const allTakesSelected = createMemo(
+    () =>
+      selectedThread()?.takes.find(
+        (take) => take.id === allTakesSelectedId(),
+      ) ?? null,
   )
   const atlasLater = createMemo(() =>
     (selectedThread()?.takes.length ?? 0) >= 2 ? later() : null,
@@ -442,6 +394,13 @@ export function VoiceHistoryPage(): JSX.Element {
     setProgress(0)
   }
 
+  function changeActiveView(nextView: ListeningDeskView): void {
+    if (activeView() === nextView) return
+    disposeAudio()
+    closeActionMenus()
+    setActiveView(nextView)
+  }
+
   async function refresh(currentKey: string | null = null): Promise<boolean> {
     if (takes().length === 0) setLoading(true)
     setLoadFailed(false)
@@ -456,7 +415,7 @@ export function VoiceHistoryPage(): JSX.Element {
       if (currentKey !== null && keys.has(currentKey)) {
         setSelectedKey(currentKey)
       } else {
-        setSelectedKey(loaded[0]?.comparisonKey ?? null)
+        setSelectedKey(buildVoiceThreads(loaded)[0]?.key ?? null)
       }
       return true
     } catch {
@@ -490,6 +449,24 @@ export function VoiceHistoryPage(): JSX.Element {
     }
     setEarlierId(thread.takes[0]!.id)
     setLaterId(thread.takes.at(-1)!.id)
+  })
+
+  createEffect(() => {
+    const takeCount = selectedThread()?.takes.length ?? 0
+    if (activeView() === 'pattern' && takeCount < 3) {
+      changeActiveView('compare')
+    }
+  })
+
+  createEffect(() => {
+    const thread = selectedThread()
+    if (thread === null || thread.takes.length === 0) {
+      setAllTakesSelectedId(null)
+      return
+    }
+    if (!thread.takes.some((take) => take.id === allTakesSelectedId())) {
+      setAllTakesSelectedId(thread.takes.at(-1)!.id)
+    }
   })
 
   createEffect(() => {
@@ -534,10 +511,14 @@ export function VoiceHistoryPage(): JSX.Element {
     trackEvent('voice_history_open')
     uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
     window.addEventListener('keydown', pausePlaybackWithSpace, true)
+    document.addEventListener('pointerdown', closeMenusFromOutsidePointer)
+    document.addEventListener('keydown', closeMenusWithEscape)
     void refresh()
   })
   onCleanup(() => {
     window.removeEventListener('keydown', pausePlaybackWithSpace, true)
+    document.removeEventListener('pointerdown', closeMenusFromOutsidePointer)
+    document.removeEventListener('keydown', closeMenusWithEscape)
     uninstallAudioUnlock()
     disposeAudio()
     disposeListeningContext()
@@ -569,6 +550,37 @@ export function VoiceHistoryPage(): JSX.Element {
     playbackProgress.stop()
     audio.pause()
     setPlaying(false)
+  }
+
+  function closeActionMenus(): void {
+    setThreadMenuOpen(false)
+    setTakeMenuId(null)
+  }
+
+  function closeMenusFromOutsidePointer(event: PointerEvent): void {
+    const target = event.target
+    if (
+      target instanceof Element &&
+      target.closest('[data-voice-action-menu]') !== null
+    ) {
+      return
+    }
+    closeActionMenus()
+  }
+
+  function closeMenusWithEscape(event: KeyboardEvent): void {
+    if (
+      event.key !== 'Escape' ||
+      (!threadMenuOpen() && takeMenuId() === null)
+    ) {
+      return
+    }
+    const trigger = document.querySelector<HTMLButtonElement>(
+      '[data-voice-action-menu] > button[aria-expanded="true"]',
+    )
+    event.preventDefault()
+    closeActionMenus()
+    queueMicrotask(() => trigger?.focus())
   }
 
   function applyPlaybackSeek(
@@ -978,29 +990,46 @@ export function VoiceHistoryPage(): JSX.Element {
 
   function openNewRecorder(): void {
     disposeAudio()
+    closeActionMenus()
+    setActiveView('compare')
     recorderReturnFocus =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null
+    recorderOpenedFromThread = false
+    setMobileDetailOpen(true)
     setRecorderTarget(createFreeformThreadTarget())
   }
 
   function openThreadRecorder(thread: VoiceThread): void {
     disposeAudio()
+    closeActionMenus()
+    setActiveView('compare')
     recorderReturnFocus =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null
+    recorderOpenedFromThread = true
+    setMobileDetailOpen(true)
     setRecorderTarget({
       comparisonKey: thread.key,
       title: thread.title,
     })
   }
 
-  function closeRecorder(): void {
+  function closeRecorder(options?: {
+    keepMobileDetailOpen?: boolean
+    restoreFocus?: boolean
+  }): void {
     const previous = recorderReturnFocus
+    const returnToThread = recorderOpenedFromThread
     recorderReturnFocus = null
+    recorderOpenedFromThread = false
     setRecorderTarget(null)
+    if (!returnToThread && options?.keepMobileDetailOpen !== true) {
+      setMobileDetailOpen(false)
+    }
+    if (options?.restoreFocus === false) return
     queueMicrotask(() => {
       if (previous?.isConnected === true) previous.focus()
       else recordLaunchButton?.focus()
@@ -1016,7 +1045,9 @@ export function VoiceHistoryPage(): JSX.Element {
     setEarlierId(null)
     setLaterId(null)
     setAtlasSelectedId(null)
-    closeRecorder()
+    setMobileDetailOpen(true)
+    closeRecorder({ keepMobileDetailOpen: true, restoreFocus: false })
+    queueMicrotask(() => threadDetailHeading?.focus())
   }
 
   function startRenaming(thread: VoiceThread): void {
@@ -1034,7 +1065,7 @@ export function VoiceHistoryPage(): JSX.Element {
     setRenameTitle('')
     setRenameError(null)
     setRenameSaving(false)
-    queueMicrotask(() => renameButton?.focus())
+    queueMicrotask(() => threadMenuButton?.focus())
   }
 
   function submitRename(event: SubmitEvent): void {
@@ -1067,6 +1098,35 @@ export function VoiceHistoryPage(): JSX.Element {
         setRenameSaving(false)
       }
     })()
+  }
+
+  function selectThread(key: string): void {
+    disposeAudio()
+    closeActionMenus()
+    setRenamingKey(null)
+    setRenameError(null)
+    comparisonStarted = false
+    comparisonPendingComplete = false
+    setAtlasSelectedId(null)
+    setAllTakesSelectedId(null)
+    setActiveView('compare')
+    setSelectedKey(key)
+    setMobileDetailOpen(true)
+  }
+
+  function selectAllTake(id: string): void {
+    if (allTakesSelectedId() === id) return
+    if (activeId() !== null) disposeAudio()
+    closeActionMenus()
+    setAllTakesSelectedId(id)
+  }
+
+  function returnToThreadList(): void {
+    disposeAudio()
+    closeActionMenus()
+    setRenamingKey(null)
+    setRenameError(null)
+    setMobileDetailOpen(false)
   }
 
   function deleteDialogMessage(): JSX.Element {
@@ -1119,34 +1179,8 @@ export function VoiceHistoryPage(): JSX.Element {
           <p class={styles.kicker}>Private voice history</p>
           <h1>Hear Yourself</h1>
           <p class={styles.intro}>
-            Keep meaningful takes on this device. Compare the same practice
-            context over time.
+            A private listening desk for the voice you are becoming.
           </p>
-        </div>
-        <div class={styles.headerActions}>
-          <button
-            ref={recordLaunchButton}
-            type="button"
-            class={styles.recordLaunch}
-            onClick={openNewRecorder}
-            disabled={recorderTarget() !== null}
-          >
-            <IconMic size={18} />
-            New practice thread
-          </button>
-          <div class={styles.storageBadge} aria-label="Local voice storage">
-            <span class={styles.storageDot} aria-hidden="true" />
-            <strong>
-              {storage() === null
-                ? 'Checking local storage'
-                : `${storage()!.takeCount} kept · ${formatBytes(storage()!.voiceBytes)}`}
-            </strong>
-            <span>
-              {storage()?.persistent === true
-                ? 'Protected from automatic cleanup'
-                : 'On this device'}
-            </span>
-          </div>
         </div>
       </div>
 
@@ -1157,17 +1191,6 @@ export function VoiceHistoryPage(): JSX.Element {
             Dismiss
           </button>
         </div>
-      </Show>
-
-      <Show when={recorderTarget()} keyed>
-        {(target) => (
-          <FreeformVoiceRecorder
-            target={target}
-            onClose={closeRecorder}
-            onKept={handleFreeformKept}
-            onStartNewThread={openNewRecorder}
-          />
-        )}
       </Show>
 
       <Show
@@ -1194,396 +1217,624 @@ export function VoiceHistoryPage(): JSX.Element {
         <Show
           when={takes().length > 0}
           fallback={
-            <div class={styles.empty}>
-              <div class={styles.emptyPulse} aria-hidden="true">
-                <span />
-              </div>
-              <div>
-                <h2>Your first thread starts with one kept take.</h2>
-                <p>
-                  Name something you want to repeat and record it here, or keep
-                  a useful replay from Glass, an Exercise, or a Weekly Legend
-                  result. A second matching take unlocks Earlier/Later.
-                </p>
-                <div class={styles.emptyActions}>
-                  <button
-                    type="button"
-                    class={styles.primaryAction}
-                    onClick={openNewRecorder}
-                  >
-                    <IconMic size={18} />
-                    Record here
-                  </button>
-                  <a class={styles.secondaryAction} href="/glass">
-                    Try Glass instead
-                  </a>
+            <Show
+              when={recorderTarget()}
+              keyed
+              fallback={
+                <div class={styles.empty}>
+                  <div class={styles.emptyPulse} aria-hidden="true">
+                    <span />
+                  </div>
+                  <div>
+                    <h2>Your first thread starts with one kept take.</h2>
+                    <p>
+                      Name something you want to repeat and record it here, or
+                      keep a useful replay from Glass, an Exercise, or a Weekly
+                      Legend result. A second matching take unlocks
+                      Earlier/Later.
+                    </p>
+                    <div class={styles.emptyActions}>
+                      <button
+                        ref={recordLaunchButton}
+                        type="button"
+                        class={styles.primaryAction}
+                        onClick={openNewRecorder}
+                      >
+                        <IconMic size={18} />
+                        New practice thread
+                      </button>
+                      <a class={styles.secondaryAction} href="/glass">
+                        Try Glass instead
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              }
+            >
+              {(target) => (
+                <FreeformVoiceRecorder
+                  target={target}
+                  onClose={closeRecorder}
+                  onKept={handleFreeformKept}
+                  onStartNewThread={openNewRecorder}
+                />
+              )}
+            </Show>
           }
         >
-          <div class={styles.desk}>
+          <div
+            class={styles.desk}
+            classList={{ [styles.deskDetail]: mobileDetailOpen() }}
+          >
             <aside class={styles.threadRail} aria-label="Practice threads">
               <div class={styles.railHeading}>
                 <div>
-                  <span>Practice threads</span>
+                  <span>Listening desk</span>
                   <strong>{threads().length}</strong>
                 </div>
-                <p>Same context, kept over time.</p>
+                <p>Choose one recurring practice context.</p>
               </div>
-              <For each={threads()}>
-                {(thread) => (
-                  <button
-                    type="button"
-                    class={styles.threadButton}
-                    aria-pressed={selectedKey() === thread.key}
-                    classList={{
-                      [styles.threadSelected]: selectedKey() === thread.key,
-                    }}
-                    onClick={() => {
-                      disposeAudio()
-                      setRenamingKey(null)
-                      setRenameError(null)
-                      comparisonStarted = false
-                      comparisonPendingComplete = false
-                      setAtlasSelectedId(null)
-                      setSelectedKey(thread.key)
-                    }}
-                  >
-                    <span class={styles.threadSource}>{thread.source}</span>
-                    <strong>{thread.title}</strong>
-                    <span class={styles.threadMeta}>
-                      {thread.takes.length}{' '}
-                      {thread.takes.length === 1 ? 'take' : 'takes'}
-                      <Show when={thread.takes.length >= 2}>
-                        <i>Ready to compare</i>
-                      </Show>
-                    </span>
-                  </button>
-                )}
-              </For>
+              <button
+                ref={recordLaunchButton}
+                type="button"
+                class={styles.recordLaunch}
+                onClick={openNewRecorder}
+                disabled={recorderTarget() !== null}
+              >
+                <IconMic size={18} />
+                New practice thread
+              </button>
+              <div class={styles.threadList}>
+                <For each={threads()}>
+                  {(thread) => (
+                    <button
+                      type="button"
+                      class={styles.threadButton}
+                      aria-pressed={selectedKey() === thread.key}
+                      classList={{
+                        [styles.threadSelected]: selectedKey() === thread.key,
+                      }}
+                      onClick={() => selectThread(thread.key)}
+                    >
+                      <span class={styles.threadSource}>
+                        {threadSourceLabel(thread.source)}
+                      </span>
+                      <strong>{thread.title}</strong>
+                      <span class={styles.threadMeta}>
+                        {thread.takes.length}{' '}
+                        {thread.takes.length === 1 ? 'take' : 'takes'}
+                        <Show when={thread.takes.length >= 2}>
+                          <i>Compare</i>
+                        </Show>
+                      </span>
+                    </button>
+                  )}
+                </For>
+              </div>
+              <div
+                class={styles.railStorageScope}
+                aria-label="Local voice storage"
+              >
+                <div class={styles.railStorageSummary}>
+                  <span class={styles.storageDot} aria-hidden="true" />
+                  <div>
+                    <strong>
+                      {storage() === null
+                        ? 'Checking storage'
+                        : `${storage()!.takeCount} kept · ${formatBytes(storage()!.voiceBytes)}`}
+                    </strong>
+                    <small>
+                      {storage()?.persistent === true
+                        ? 'Protected on this device'
+                        : 'Audio stays on this device'}
+                    </small>
+                  </div>
+                </div>
+                <button type="button" onClick={wipeAll}>
+                  Clear entire voice history
+                </button>
+              </div>
             </aside>
 
             <div class={styles.workspace}>
-              <Show when={selectedThread()} keyed>
-                {(thread) => (
-                  <>
-                    <div class={styles.workspaceHead}>
-                      <Show
-                        when={renamingKey() === thread.key}
-                        fallback={
-                          <div>
-                            <span>{thread.source} thread</span>
-                            <h2>{thread.title}</h2>
-                            <p>
-                              {formatDate(thread.takes[0]!.capturedAt)} to{' '}
-                              {formatDate(thread.takes.at(-1)!.capturedAt)}
-                            </p>
-                          </div>
-                        }
-                      >
-                        <form class={styles.renameForm} onSubmit={submitRename}>
-                          <label for="voice-thread-name">
-                            Practice thread name
-                          </label>
-                          <div class={styles.renameRow}>
-                            <input
-                              ref={renameInput}
-                              id="voice-thread-name"
-                              value={renameTitle()}
-                              maxlength={80}
-                              disabled={renameSaving()}
-                              aria-invalid={renameError() !== null}
-                              onInput={(event) => {
-                                setRenameTitle(event.currentTarget.value)
-                                if (event.currentTarget.value.trim() !== '') {
-                                  setRenameError(null)
-                                }
-                              }}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Escape') finishRenaming()
-                              }}
-                            />
-                            <button
-                              type="submit"
-                              class={styles.saveRename}
-                              disabled={renameSaving()}
-                            >
-                              {renameSaving() ? 'Saving…' : 'Save name'}
-                            </button>
-                            <button
-                              type="button"
-                              class={styles.cancelRename}
-                              onClick={finishRenaming}
-                              disabled={renameSaving()}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                          <Show when={renameError()}>
-                            <p class={styles.renameError} role="alert">
-                              {renameError()}
-                            </p>
-                          </Show>
-                        </form>
-                      </Show>
-                      <Show when={renamingKey() !== thread.key}>
-                        <div class={styles.workspaceActions}>
-                          <Show when={thread.source === 'freeform'}>
-                            <button
-                              ref={renameButton}
-                              type="button"
-                              class={styles.renameThread}
-                              onClick={() => startRenaming(thread)}
-                              disabled={recorderTarget() !== null}
-                            >
-                              <Pencil size={14} />
-                              Rename
-                            </button>
-                            <button
-                              type="button"
-                              class={styles.recordAnother}
-                              onClick={() => openThreadRecorder(thread)}
-                              disabled={recorderTarget() !== null}
-                            >
-                              <IconMic size={16} />
-                              Record another take
-                            </button>
-                          </Show>
-                          <span class={styles.localSeal}>
-                            Audio stays local
-                          </span>
-                        </div>
-                      </Show>
-                    </div>
+              <Show when={recorderTarget() === null}>
+                <button
+                  type="button"
+                  class={styles.mobileBack}
+                  onClick={returnToThreadList}
+                >
+                  <ChevronLeft />
+                  Practice threads
+                </button>
+              </Show>
 
-                    <VoiceAtlasPanel
-                      loading={contoursLoading()}
-                      model={atlasModel()}
-                      earlier={earlier()}
-                      later={atlasLater()}
-                      selectedId={atlasSelectedId()}
-                      activeId={activeId()}
-                      progress={progress()}
-                      playing={playing()}
-                      earlierReflections={parseVoiceReflections(
-                        earlier()?.reflectionsJson,
-                        earlier()?.reflectionsVersion,
-                      )}
-                      laterReflections={parseVoiceReflections(
-                        atlasLater()?.reflectionsJson,
-                        atlasLater()?.reflectionsVersion,
-                      )}
-                      totalTakeCount={thread.takes.length}
-                      pairPreset={comparisonPairPreset()}
-                      onChoosePairPreset={chooseComparisonPair}
-                      earlierSelector={
-                        thread.takes.length < 2 ? undefined : (
-                          <label>
-                            Earlier take
-                            <select
-                              value={earlierId() ?? ''}
-                              onChange={(event) =>
-                                chooseEarlier(event.currentTarget.value)
-                              }
+              <Show
+                when={recorderTarget()}
+                keyed
+                fallback={
+                  <Show when={selectedThread()} keyed>
+                    {(thread) => (
+                      <>
+                        <div class={styles.workspaceHead}>
+                          <Show
+                            when={renamingKey() === thread.key}
+                            fallback={
+                              <div class={styles.threadIdentity}>
+                                <span>
+                                  {threadSourceLabel(thread.source)} thread
+                                </span>
+                                <h2 ref={threadDetailHeading} tabindex="-1">
+                                  {thread.title}
+                                </h2>
+                                <p>
+                                  {formatDate(thread.takes[0]!.capturedAt)} to{' '}
+                                  {formatDate(thread.takes.at(-1)!.capturedAt)}
+                                  {' · '}
+                                  {thread.takes.length}{' '}
+                                  {thread.takes.length === 1 ? 'take' : 'takes'}
+                                </p>
+                              </div>
+                            }
+                          >
+                            <form
+                              class={styles.renameForm}
+                              onSubmit={submitRename}
                             >
-                              <For each={thread.takes}>
-                                {(take, index) => (
-                                  <option
-                                    value={take.id}
-                                    disabled={
-                                      index() >=
-                                      thread.takes.findIndex(
-                                        (candidate) =>
-                                          candidate.id === laterId(),
-                                      )
+                              <label for="voice-thread-name">
+                                Practice thread name
+                              </label>
+                              <div class={styles.renameRow}>
+                                <input
+                                  ref={renameInput}
+                                  id="voice-thread-name"
+                                  value={renameTitle()}
+                                  maxlength={80}
+                                  disabled={renameSaving()}
+                                  aria-invalid={renameError() !== null}
+                                  onInput={(event) => {
+                                    setRenameTitle(event.currentTarget.value)
+                                    if (
+                                      event.currentTarget.value.trim() !== ''
+                                    ) {
+                                      setRenameError(null)
                                     }
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Escape') finishRenaming()
+                                  }}
+                                />
+                                <button
+                                  type="submit"
+                                  class={styles.saveRename}
+                                  disabled={renameSaving()}
+                                >
+                                  {renameSaving() ? 'Saving…' : 'Save name'}
+                                </button>
+                                <button
+                                  type="button"
+                                  class={styles.cancelRename}
+                                  onClick={finishRenaming}
+                                  disabled={renameSaving()}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                              <Show when={renameError()}>
+                                <p class={styles.renameError} role="alert">
+                                  {renameError()}
+                                </p>
+                              </Show>
+                            </form>
+                          </Show>
+
+                          <Show when={renamingKey() !== thread.key}>
+                            <div class={styles.workspaceActions}>
+                              <Show when={thread.source === 'freeform'}>
+                                <button
+                                  type="button"
+                                  class={styles.recordAnother}
+                                  onClick={() => openThreadRecorder(thread)}
+                                  disabled={recorderTarget() !== null}
+                                >
+                                  <IconMic size={16} />
+                                  Record another take
+                                </button>
+                              </Show>
+                              <div
+                                class={styles.actionMenuRoot}
+                                data-voice-action-menu
+                              >
+                                <button
+                                  ref={threadMenuButton}
+                                  type="button"
+                                  class={styles.moreButton}
+                                  aria-label="Thread actions"
+                                  aria-haspopup="menu"
+                                  aria-expanded={threadMenuOpen()}
+                                  aria-controls="voice-thread-actions-menu"
+                                  onClick={() => {
+                                    setTakeMenuId(null)
+                                    setThreadMenuOpen((open) => !open)
+                                  }}
+                                >
+                                  <MoreVertical size={18} />
+                                </button>
+                                <Show when={threadMenuOpen()}>
+                                  <div
+                                    id="voice-thread-actions-menu"
+                                    class={styles.actionMenu}
+                                    role="menu"
+                                    aria-label="Thread actions"
                                   >
-                                    {formatDate(take.capturedAt)} · Take{' '}
-                                    {thread.takes.indexOf(take) + 1}
-                                  </option>
-                                )}
-                              </For>
-                            </select>
-                          </label>
-                        )
-                      }
-                      laterSelector={
-                        thread.takes.length < 2 ? undefined : (
-                          <label>
-                            Later take
-                            <select
-                              value={laterId() ?? ''}
-                              onChange={(event) =>
-                                chooseLater(event.currentTarget.value)
-                              }
-                            >
-                              <For each={thread.takes}>
-                                {(take, index) => (
-                                  <option
-                                    value={take.id}
-                                    disabled={
-                                      index() <=
-                                      thread.takes.findIndex(
-                                        (candidate) =>
-                                          candidate.id === earlierId(),
-                                      )
-                                    }
-                                  >
-                                    {formatDate(take.capturedAt)} · Take{' '}
-                                    {thread.takes.indexOf(take) + 1}
-                                  </option>
-                                )}
-                              </For>
-                            </select>
-                          </label>
-                        )
-                      }
-                      onPlay={(takeId) => {
-                        const take = thread.takes.find(
-                          (candidate) => candidate.id === takeId,
-                        )
-                        if (take !== undefined) {
-                          void playTake(take, thread.takes.length >= 2)
-                        }
-                      }}
-                      onSeek={(takeId, nextProgress) => {
-                        const take = thread.takes.find(
-                          (candidate) => candidate.id === takeId,
-                        )
-                        if (take !== undefined) {
-                          selectAtlasTake(takeId)
-                          seekTake(take, nextProgress, thread.takes.length >= 2)
-                        }
-                      }}
-                      onSelect={selectAtlasTake}
-                      onAddReflection={addReflection}
-                      onRemoveReflection={removeReflection}
-                    />
-
-                    <Show when={thread.takes.length >= 3}>
-                      <PracticeLoomPanel
-                        loading={contoursLoading()}
-                        model={loomModel()}
-                        takes={thread.takes}
-                        activeId={activeId()}
-                        earlierId={earlierId()}
-                        laterId={laterId()}
-                        progress={progress()}
-                        playing={playing()}
-                        onPlay={(takeId) => {
-                          const take = thread.takes.find(
-                            (candidate) => candidate.id === takeId,
-                          )
-                          if (take !== undefined) {
-                            playTake(take, true)
-                          }
-                        }}
-                        onSeek={(takeId, nextProgress) => {
-                          const take = thread.takes.find(
-                            (candidate) => candidate.id === takeId,
-                          )
-                          if (take !== undefined) {
-                            seekTake(take, nextProgress, true)
-                          }
-                        }}
-                      />
-                    </Show>
-
-                    <VoiceRoomPanel
-                      settings={roomSettings()}
-                      onChange={setRoomSettings}
-                    />
-
-                    <section class={styles.timeline}>
-                      <div class={styles.timelineHeading}>
-                        <div>
-                          <span>Thread history</span>
-                          <h3>Every kept take</h3>
+                                    <Show when={thread.source === 'freeform'}>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => {
+                                          setThreadMenuOpen(false)
+                                          startRenaming(thread)
+                                        }}
+                                      >
+                                        Rename thread
+                                      </button>
+                                    </Show>
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      class={styles.destructiveMenuItem}
+                                      onClick={() => {
+                                        setThreadMenuOpen(false)
+                                        removeThread(thread)
+                                      }}
+                                    >
+                                      Delete this thread
+                                    </button>
+                                  </div>
+                                </Show>
+                              </div>
+                            </div>
+                          </Show>
                         </div>
-                        <div class={styles.historyDangerActions}>
+
+                        <div
+                          class={styles.viewSwitcher}
+                          role="group"
+                          aria-label="Listening desk view"
+                        >
                           <button
                             type="button"
-                            class={styles.dangerLink}
-                            onClick={() => removeThread(thread)}
+                            aria-pressed={activeView() === 'compare'}
+                            onClick={() => changeActiveView('compare')}
                           >
-                            Delete this thread
+                            Compare
                           </button>
+                          <Show when={thread.takes.length >= 3}>
+                            <button
+                              type="button"
+                              aria-pressed={activeView() === 'pattern'}
+                              onClick={() => changeActiveView('pattern')}
+                            >
+                              Pattern
+                            </button>
+                          </Show>
                           <button
                             type="button"
-                            class={styles.dangerLink}
-                            onClick={wipeAll}
+                            aria-pressed={activeView() === 'takes'}
+                            onClick={() => changeActiveView('takes')}
                           >
-                            Clear entire voice history
+                            All takes
+                            <span>{thread.takes.length}</span>
                           </button>
                         </div>
-                      </div>
-                      <For each={[...thread.takes].reverse()}>
-                        {(take) => (
-                          <article class={styles.takeRow}>
-                            <button
-                              type="button"
-                              class={styles.favorite}
-                              classList={{ [styles.favoriteOn]: take.favorite }}
-                              onClick={() => toggleFavorite(take)}
-                              aria-label={
-                                take.favorite
-                                  ? 'Remove favorite'
-                                  : 'Mark favorite'
-                              }
-                              title={
-                                take.favorite
-                                  ? 'Remove favorite'
-                                  : 'Mark favorite'
-                              }
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              class={styles.takeMain}
-                              onClick={() => void playTake(take)}
-                            >
-                              <span class={styles.takeDate}>
-                                {formatDate(take.capturedAt)}
-                              </span>
-                              <strong>{take.title}</strong>
-                              <span>
-                                {formatDuration(take.durationMs)} ·{' '}
-                                {formatBytes(take.sizeBytes)}
-                              </span>
-                            </button>
-                            <Waveform
-                              take={take}
-                              active={activeId() === take.id}
+
+                        <div class={styles.viewContent}>
+                          <Show when={activeView() === 'compare'}>
+                            <VoiceAtlasPanel
+                              loading={contoursLoading()}
+                              model={atlasModel()}
+                              earlier={earlier()}
+                              later={atlasLater()}
+                              selectedId={atlasSelectedId()}
+                              activeId={activeId()}
                               progress={progress()}
                               playing={playing()}
-                              onSeek={(nextProgress) =>
-                                seekTake(take, nextProgress)
+                              earlierReflections={parseVoiceReflections(
+                                earlier()?.reflectionsJson,
+                                earlier()?.reflectionsVersion,
+                              )}
+                              laterReflections={parseVoiceReflections(
+                                atlasLater()?.reflectionsJson,
+                                atlasLater()?.reflectionsVersion,
+                              )}
+                              totalTakeCount={thread.takes.length}
+                              pairPreset={comparisonPairPreset()}
+                              roomPanel={
+                                <VoiceRoomPanel
+                                  settings={roomSettings()}
+                                  onChange={setRoomSettings}
+                                />
                               }
+                              onChoosePairPreset={chooseComparisonPair}
+                              earlierSelector={
+                                thread.takes.length < 2 ? undefined : (
+                                  <label>
+                                    Earlier take
+                                    <select
+                                      value={earlierId() ?? ''}
+                                      onChange={(event) =>
+                                        chooseEarlier(event.currentTarget.value)
+                                      }
+                                    >
+                                      <For each={thread.takes}>
+                                        {(take, index) => (
+                                          <option
+                                            value={take.id}
+                                            disabled={
+                                              index() >=
+                                              thread.takes.findIndex(
+                                                (candidate) =>
+                                                  candidate.id === laterId(),
+                                              )
+                                            }
+                                          >
+                                            {formatDate(take.capturedAt)} · Take{' '}
+                                            {thread.takes.indexOf(take) + 1}
+                                          </option>
+                                        )}
+                                      </For>
+                                    </select>
+                                  </label>
+                                )
+                              }
+                              laterSelector={
+                                thread.takes.length < 2 ? undefined : (
+                                  <label>
+                                    Later take
+                                    <select
+                                      value={laterId() ?? ''}
+                                      onChange={(event) =>
+                                        chooseLater(event.currentTarget.value)
+                                      }
+                                    >
+                                      <For each={thread.takes}>
+                                        {(take, index) => (
+                                          <option
+                                            value={take.id}
+                                            disabled={
+                                              index() <=
+                                              thread.takes.findIndex(
+                                                (candidate) =>
+                                                  candidate.id === earlierId(),
+                                              )
+                                            }
+                                          >
+                                            {formatDate(take.capturedAt)} · Take{' '}
+                                            {thread.takes.indexOf(take) + 1}
+                                          </option>
+                                        )}
+                                      </For>
+                                    </select>
+                                  </label>
+                                )
+                              }
+                              onPlay={(takeId) => {
+                                const take = thread.takes.find(
+                                  (candidate) => candidate.id === takeId,
+                                )
+                                if (take !== undefined) {
+                                  playTake(take, thread.takes.length >= 2)
+                                }
+                              }}
+                              onSeek={(takeId, nextProgress) => {
+                                const take = thread.takes.find(
+                                  (candidate) => candidate.id === takeId,
+                                )
+                                if (take !== undefined) {
+                                  selectAtlasTake(takeId)
+                                  seekTake(
+                                    take,
+                                    nextProgress,
+                                    thread.takes.length >= 2,
+                                  )
+                                }
+                              }}
+                              onSelect={selectAtlasTake}
+                              onAddReflection={addReflection}
+                              onRemoveReflection={removeReflection}
                             />
-                            <div class={styles.takeActions}>
-                              <button
-                                type="button"
-                                onClick={() => void exportTake(take)}
-                              >
-                                Export
-                              </button>
-                              <button
-                                type="button"
-                                class={styles.deleteAction}
-                                onClick={() => removeTake(take)}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </article>
-                        )}
-                      </For>
-                    </section>
-                  </>
+                          </Show>
+
+                          <Show when={activeView() === 'pattern'}>
+                            <PracticeLoomPanel
+                              loading={contoursLoading()}
+                              model={loomModel()}
+                              takes={thread.takes}
+                              activeId={activeId()}
+                              earlierId={earlierId()}
+                              laterId={laterId()}
+                              progress={progress()}
+                              playing={playing()}
+                              onPlay={(takeId) => {
+                                const take = thread.takes.find(
+                                  (candidate) => candidate.id === takeId,
+                                )
+                                if (take !== undefined) playTake(take, true)
+                              }}
+                              onSeek={(takeId, nextProgress) => {
+                                const take = thread.takes.find(
+                                  (candidate) => candidate.id === takeId,
+                                )
+                                if (take !== undefined) {
+                                  seekTake(take, nextProgress, true)
+                                }
+                              }}
+                            />
+                          </Show>
+
+                          <Show when={activeView() === 'takes'}>
+                            <section
+                              class={styles.allTakes}
+                              aria-labelledby="all-voice-takes-title"
+                            >
+                              <div class={styles.allTakesHeading}>
+                                <div>
+                                  <h3 id="all-voice-takes-title">All takes</h3>
+                                  <p>
+                                    Replay, export, favourite, or remove a saved
+                                    take.
+                                  </p>
+                                </div>
+                                <span>
+                                  {thread.takes.length}{' '}
+                                  {thread.takes.length === 1
+                                    ? 'recording'
+                                    : 'recordings'}
+                                </span>
+                              </div>
+                              <Show when={allTakesSelected()} keyed>
+                                {(take) => (
+                                  <div class={styles.sharedTransport}>
+                                    <VoicePlaybackTransport
+                                      take={take}
+                                      activeId={activeId()}
+                                      progress={progress()}
+                                      playing={playing()}
+                                      eyebrow={`Selected · Take ${thread.takes.indexOf(take) + 1} · ${formatDate(take.capturedAt)} · ${formatBytes(take.sizeBytes)}`}
+                                      tone="neutral"
+                                      onPlay={() => playTake(take)}
+                                      onSeek={(_takeId, nextProgress) =>
+                                        seekTake(take, nextProgress)
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </Show>
+                              <div class={styles.allTakesList}>
+                                <For each={[...thread.takes].reverse()}>
+                                  {(take) => (
+                                    <article
+                                      class={styles.takeEntry}
+                                      classList={{
+                                        [styles.takeSelected]:
+                                          allTakesSelectedId() === take.id,
+                                        [styles.takePlaying]:
+                                          activeId() === take.id && playing(),
+                                      }}
+                                    >
+                                      <button
+                                        type="button"
+                                        class={styles.takeSelect}
+                                        aria-pressed={
+                                          allTakesSelectedId() === take.id
+                                        }
+                                        onClick={() => selectAllTake(take.id)}
+                                      >
+                                        <span
+                                          class={styles.takeFavorite}
+                                          classList={{
+                                            [styles.takeFavoriteOn]:
+                                              take.favorite,
+                                          }}
+                                          aria-hidden="true"
+                                        />
+                                        <span class={styles.takeCopy}>
+                                          <span>
+                                            {formatDate(take.capturedAt)} · Take{' '}
+                                            {thread.takes.indexOf(take) + 1}
+                                          </span>
+                                          <strong>{take.title}</strong>
+                                          <small>
+                                            {formatDuration(take.durationMs)} ·{' '}
+                                            {formatBytes(take.sizeBytes)}
+                                          </small>
+                                        </span>
+                                      </button>
+                                      <div
+                                        class={styles.takeActionMenu}
+                                        data-voice-action-menu
+                                      >
+                                        <button
+                                          type="button"
+                                          class={styles.moreButton}
+                                          aria-label={`Actions for ${take.title}`}
+                                          aria-haspopup="menu"
+                                          aria-expanded={
+                                            takeMenuId() === take.id
+                                          }
+                                          aria-controls={`voice-take-actions-${take.id}`}
+                                          onClick={() => {
+                                            setThreadMenuOpen(false)
+                                            setTakeMenuId((current) =>
+                                              current === take.id
+                                                ? null
+                                                : take.id,
+                                            )
+                                          }}
+                                        >
+                                          <MoreVertical size={18} />
+                                        </button>
+                                        <Show when={takeMenuId() === take.id}>
+                                          <div
+                                            id={`voice-take-actions-${take.id}`}
+                                            class={`${styles.actionMenu} ${styles.takeMenu}`}
+                                            role="menu"
+                                            aria-label={`Actions for ${take.title}`}
+                                          >
+                                            <button
+                                              type="button"
+                                              role="menuitem"
+                                              onClick={() => {
+                                                setTakeMenuId(null)
+                                                toggleFavorite(take)
+                                              }}
+                                            >
+                                              {take.favorite
+                                                ? 'Remove favorite'
+                                                : 'Mark favorite'}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              role="menuitem"
+                                              onClick={() => {
+                                                setTakeMenuId(null)
+                                                void exportTake(take)
+                                              }}
+                                            >
+                                              Export
+                                            </button>
+                                            <button
+                                              type="button"
+                                              role="menuitem"
+                                              class={styles.destructiveMenuItem}
+                                              onClick={() => {
+                                                setTakeMenuId(null)
+                                                removeTake(take)
+                                              }}
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        </Show>
+                                      </div>
+                                    </article>
+                                  )}
+                                </For>
+                              </div>
+                            </section>
+                          </Show>
+                        </div>
+                      </>
+                    )}
+                  </Show>
+                }
+              >
+                {(target) => (
+                  <FreeformVoiceRecorder
+                    target={target}
+                    onClose={closeRecorder}
+                    onKept={handleFreeformKept}
+                    onStartNewThread={openNewRecorder}
+                  />
                 )}
               </Show>
             </div>

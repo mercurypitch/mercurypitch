@@ -8,12 +8,12 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Pause, Play } from '@/components/icons'
 import { VoiceTakeWaveform } from '@/components/VoiceTakeWaveform'
 import type { VoiceTakeRecord } from '@/db/entities'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import styles from './PracticeLoomPanel.module.css'
 import type { PracticeLoomRenderModel, PracticeLoomRowModel, } from './voice-atlas-model'
+import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 
 const INITIAL_VISIBLE_ROWS = 8
 const EARLIER_RGB = [45, 212, 191] as const
@@ -340,6 +340,17 @@ const LoomLane: Component<{
 export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
   const titleId = createUniqueId()
   const [showAll, setShowAll] = createSignal(false)
+  const initialSelection = (): string | null => {
+    const ids = new Set(props.takes.map((take) => take.id))
+    if (props.activeId !== null && ids.has(props.activeId)) {
+      return props.activeId
+    }
+    if (props.laterId !== null && ids.has(props.laterId)) return props.laterId
+    return props.takes[0]?.id ?? null
+  }
+  const [selectedId, setSelectedId] = createSignal<string | null>(
+    initialSelection(),
+  )
   const entries = createMemo<readonly LoomEntry[]>(() => {
     const rows = new Map(props.model.rows.map((row) => [row.id, row]))
     return props.takes.flatMap((take, index) => {
@@ -362,6 +373,49 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
     const all = entries()
     if (showAll() || all.length <= INITIAL_VISIBLE_ROWS) return all
     return [all[0]!, ...all.slice(-(INITIAL_VISIBLE_ROWS - 1))]
+  })
+  const selectedEntry = createMemo<LoomEntry | null>(() => {
+    const id = selectedId()
+    if (id === null) return null
+    return entries().find((entry) => entry.take.id === id) ?? null
+  })
+  const selectedTone = (): 'earlier' | 'later' | 'neutral' => {
+    const id = selectedId()
+    if (id !== null && id === props.earlierId) return 'earlier'
+    if (id !== null && id === props.laterId) return 'later'
+    return 'neutral'
+  }
+  let observedActiveId: string | null | undefined
+
+  createEffect(() => {
+    const all = entries()
+    const activeId = props.activeId
+    const activeChanged = activeId !== observedActiveId
+    observedActiveId = activeId
+
+    if (
+      activeChanged &&
+      activeId !== null &&
+      all.some((entry) => entry.take.id === activeId)
+    ) {
+      setSelectedId(activeId)
+      return
+    }
+
+    const currentId = selectedId()
+    if (
+      currentId !== null &&
+      all.some((entry) => entry.take.id === currentId)
+    ) {
+      return
+    }
+
+    const fallbackId =
+      props.laterId !== null &&
+      all.some((entry) => entry.take.id === props.laterId)
+        ? props.laterId
+        : (all[0]?.take.id ?? null)
+    setSelectedId(fallbackId)
   })
   const availabilityCopy = (): string => {
     if (props.loading === true) {
@@ -409,6 +463,28 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
         <span>Gaps stay unvoiced</span>
       </div>
 
+      <VoicePlaybackTransport
+        take={selectedEntry()?.take ?? null}
+        activeId={props.activeId}
+        progress={props.progress}
+        playing={props.playing}
+        eyebrow={
+          selectedEntry() === null
+            ? 'Practice Loom'
+            : `Take ${selectedEntry()!.index + 1} · ${formatDate(selectedEntry()!.take.capturedAt)}`
+        }
+        tone={selectedTone()}
+        compact={true}
+        onPlay={(takeId) => {
+          setSelectedId(takeId)
+          props.onPlay(takeId)
+        }}
+        onSeek={(takeId, nextProgress) => {
+          setSelectedId(takeId)
+          props.onSeek(takeId, nextProgress)
+        }}
+      />
+
       <div class={styles.rows}>
         <For each={visibleEntries()}>
           {(entry, visibleIndex) => (
@@ -429,56 +505,47 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
               <article
                 class={styles.row}
                 classList={{
-                  [styles.rowActive]: props.activeId === entry.take.id,
+                  [styles.rowSelected]: selectedId() === entry.take.id,
                 }}
                 style={{ '--loom-color': entry.color }}
+                data-selected={selectedId() === entry.take.id}
+                onClick={() => setSelectedId(entry.take.id)}
               >
-                <div class={styles.rowIdentity}>
-                  <span>{formatDate(entry.take.capturedAt)}</span>
-                  <strong>Take {entry.index + 1}</strong>
-                  <small>
-                    {formatClock(entry.row.durationSeconds)} ·{' '}
-                    {stateLabel(entry.row)}
-                  </small>
-                  <div class={styles.comparisonTags}>
-                    <Show when={props.earlierId === entry.take.id}>
-                      <span class={styles.earlierTag}>Earlier</span>
-                    </Show>
-                    <Show when={props.laterId === entry.take.id}>
-                      <span class={styles.laterTag}>Later</span>
-                    </Show>
+                <button
+                  type="button"
+                  class={styles.rowSelect}
+                  aria-label={`Select Take ${entry.index + 1} in Practice Loom`}
+                  aria-pressed={selectedId() === entry.take.id}
+                  onClick={() => setSelectedId(entry.take.id)}
+                >
+                  <div class={styles.rowIdentity}>
+                    <span>{formatDate(entry.take.capturedAt)}</span>
+                    <strong>Take {entry.index + 1}</strong>
+                    <small>
+                      {formatClock(entry.row.durationSeconds)} ·{' '}
+                      {stateLabel(entry.row)}
+                    </small>
+                    <div class={styles.comparisonTags}>
+                      <Show when={props.earlierId === entry.take.id}>
+                        <span class={styles.earlierTag}>Earlier</span>
+                      </Show>
+                      <Show when={props.laterId === entry.take.id}>
+                        <span class={styles.laterTag}>Later</span>
+                      </Show>
+                    </div>
                   </div>
-                </div>
+                </button>
                 <LoomLane
                   entry={entry}
                   model={props.model}
                   active={props.activeId === entry.take.id}
                   progress={props.progress}
                   playing={props.playing}
-                  onSeek={(nextProgress) =>
+                  onSeek={(nextProgress) => {
+                    setSelectedId(entry.take.id)
                     props.onSeek(entry.take.id, nextProgress)
-                  }
+                  }}
                 />
-                <button
-                  type="button"
-                  class={styles.playButton}
-                  aria-label={`${props.activeId === entry.take.id && props.playing ? 'Pause' : 'Play'} Take ${entry.index + 1} in Practice Loom`}
-                  aria-pressed={
-                    props.activeId === entry.take.id && props.playing
-                  }
-                  onClick={() => props.onPlay(entry.take.id)}
-                >
-                  {props.activeId === entry.take.id && props.playing ? (
-                    <Pause />
-                  ) : (
-                    <Play />
-                  )}
-                  <span>
-                    {props.activeId === entry.take.id && props.playing
-                      ? 'Pause'
-                      : 'Play'}
-                  </span>
-                </button>
               </article>
             </>
           )}
@@ -496,7 +563,6 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
             )}
           </For>
         </div>
-        <span />
       </div>
 
       <Show when={showAll() && hiddenCount() > 0}>

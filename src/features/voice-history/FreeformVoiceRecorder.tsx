@@ -470,15 +470,15 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
       aria-busy={state() === 'saving' || state() === 'processing'}
     >
       <div class={styles.heading}>
-        <div>
-          <span>Direct capture</span>
+        <div class={styles.headingCopy}>
+          <span class={styles.eyebrow}>Direct capture</span>
           <h2 id="freeform-recorder-title">
             {props.target.title === ''
               ? 'Start a practice thread'
               : 'Add a take'}
           </h2>
           <p>
-            Record dry audio here. Nothing is added to your history until you
+            Capture one dry, private take. It only joins your history after you
             choose Keep Take.
           </p>
         </div>
@@ -494,137 +494,194 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
       </div>
 
       <div class={styles.body}>
-        <label class={styles.promptField}>
-          <span>What do you want to repeat?</span>
-          <input
-            ref={titleInput}
-            value={title()}
-            maxlength={80}
-            placeholder="First chorus after warm-up"
-            disabled={state() !== 'idle' || props.target.title !== ''}
-            aria-invalid={titleError() !== null}
-            aria-describedby="freeform-prompt-help"
-            onInput={(event) => {
-              setTitle(event.currentTarget.value)
-              if (event.currentTarget.value.trim() !== '') setTitleError(null)
-            }}
-          />
-          <small id="freeform-prompt-help">
-            {props.target.title === ''
-              ? 'This name becomes the thread you can return to and compare later.'
-              : 'This take will join the same thread for comparison.'}
-          </small>
-          <Show when={props.target.title !== '' && state() === 'idle'}>
-            <button
-              type="button"
-              class={styles.switchThread}
-              onClick={() => props.onStartNewThread()}
-            >
-              Start a different thread
-            </button>
-          </Show>
+        <div class={styles.promptField}>
+          <div class={styles.promptCopy}>
+            <label for="freeform-practice-prompt">
+              What do you want to repeat?
+            </label>
+            <small id="freeform-prompt-help">
+              {props.target.title === ''
+                ? 'Name the moment you want to revisit and compare over time.'
+                : 'This take will join the same thread for comparison.'}
+            </small>
+          </div>
+          <div class={styles.promptControl}>
+            <input
+              id="freeform-practice-prompt"
+              ref={titleInput}
+              value={title()}
+              maxlength={80}
+              placeholder="First chorus after warm-up"
+              disabled={state() !== 'idle' || props.target.title !== ''}
+              aria-invalid={titleError() !== null}
+              aria-describedby="freeform-prompt-help"
+              onInput={(event) => {
+                setTitle(event.currentTarget.value)
+                if (event.currentTarget.value.trim() !== '') setTitleError(null)
+              }}
+            />
+            <Show when={props.target.title !== '' && state() === 'idle'}>
+              <button
+                type="button"
+                class={styles.switchThread}
+                onClick={() => props.onStartNewThread()}
+              >
+                Start a different thread
+              </button>
+            </Show>
+          </div>
           <Show when={titleError()}>
             <strong class={styles.fieldError} role="alert">
               {titleError()}
             </strong>
           </Show>
-        </label>
+        </div>
 
-        <div
+        <section
           class={styles.captureField}
-          classList={{ [styles.captureFieldLive]: state() === 'recording' }}
+          classList={{
+            [styles.captureFieldLive]: state() === 'recording',
+            [styles.captureFieldReady]: capture() !== null,
+          }}
+          aria-label="Voice capture controls"
         >
-          <div
-            class={styles.captureStatus}
-            classList={{ [styles.captureStatusLive]: state() === 'recording' }}
-          >
-            <span
-              class={styles.micMark}
-              classList={{ [styles.micLive]: state() === 'recording' }}
-              aria-hidden="true"
+          <div class={styles.captureTopline}>
+            <div
+              class={styles.captureStatus}
+              classList={{
+                [styles.captureStatusLive]: state() === 'recording',
+              }}
             >
-              <IconMic size={state() === 'recording' ? 25 : 20} />
-            </span>
-            <div>
-              <strong aria-live="polite" aria-atomic="true">
-                {state() === 'starting'
-                  ? 'Opening microphone'
-                  : state() === 'recording'
-                    ? 'Recording now'
-                    : state() === 'processing'
-                      ? 'Preparing replay'
-                      : state() === 'saved'
-                        ? 'Take kept on this device'
-                        : state() === 'ready' || state() === 'saving'
-                          ? 'Temporary take ready'
-                          : state() === 'unsupported'
-                            ? 'Recording unavailable'
-                            : 'Ready when you are'}
-              </strong>
-              <span>
-                {state() === 'recording' || state() === 'processing'
-                  ? state() === 'recording'
-                    ? `${formatElapsed(elapsedMs())} · live waveform and pitch · five-minute maximum`
-                    : `${formatElapsed(elapsedMs())} · preparing your waveform`
-                  : state() === 'saved'
-                    ? `${formatElapsed(elapsedMs())} · saved locally`
-                    : state() === 'ready' || state() === 'saving'
-                      ? `${formatElapsed(elapsedMs())} · not kept yet`
-                      : 'Your microphone audio stays on this device.'}
+              <span
+                class={styles.micMark}
+                classList={{ [styles.micLive]: state() === 'recording' }}
+                aria-hidden="true"
+              >
+                <IconMic size={state() === 'recording' ? 23 : 20} />
               </span>
+              <div class={styles.statusCopy}>
+                <span class={styles.statusEyebrow}>
+                  {state() === 'recording'
+                    ? 'Live capture'
+                    : state() === 'ready' ||
+                        state() === 'saving' ||
+                        state() === 'saved'
+                      ? 'Replay ready'
+                      : 'Private capture'}
+                </span>
+                <strong aria-live="polite" aria-atomic="true">
+                  {state() === 'starting'
+                    ? 'Opening microphone'
+                    : state() === 'recording'
+                      ? 'Recording now'
+                      : state() === 'processing'
+                        ? 'Preparing replay'
+                        : state() === 'saved'
+                          ? 'Take kept on this device'
+                          : state() === 'ready' || state() === 'saving'
+                            ? 'Temporary take ready'
+                            : state() === 'unsupported'
+                              ? 'Recording unavailable'
+                              : 'Ready when you are'}
+                </strong>
+              </div>
             </div>
+
+            <Show when={state() === 'recording' || state() === 'processing'}>
+              <time
+                class={styles.captureTimer}
+                datetime={`PT${Math.floor(elapsedMs() / 1000)}S`}
+                aria-label={`${formatElapsed(elapsedMs())} elapsed`}
+              >
+                {formatElapsed(elapsedMs())}
+              </time>
+            </Show>
           </div>
 
+          <p class={styles.captureDetail}>
+            {state() === 'recording'
+              ? 'Waveform shows input shape; the bright trail follows detected pitch.'
+              : state() === 'processing'
+                ? 'Building a replay from this local recording.'
+                : state() === 'saved'
+                  ? `${formatElapsed(elapsedMs())} saved locally. Your dry recording stays unchanged.`
+                  : state() === 'ready' || state() === 'saving'
+                    ? `${formatElapsed(elapsedMs())} captured. Listen before deciding whether to keep it.`
+                    : 'Your microphone audio stays on this device. Maximum take length is five minutes.'}
+          </p>
+
           <Show when={state() === 'recording'}>
-            <LiveVoiceCapture
-              active={true}
-              frame={() => pitchStream?.latestSmoothed() ?? null}
-            />
+            <div class={styles.liveVisual}>
+              <LiveVoiceCapture
+                active={true}
+                frame={() => pitchStream?.latestSmoothed() ?? null}
+              />
+            </div>
           </Show>
 
-          <Show when={state() === 'idle'}>
-            <button
-              ref={startButton}
-              type="button"
-              class={styles.recordButton}
-              onClick={beginRecording}
-            >
-              <span aria-hidden="true" />
-              Start recording
-            </button>
-          </Show>
-          <Show when={state() === 'starting'}>
-            <button type="button" class={styles.recordButton} disabled>
-              Opening microphone…
-            </button>
-          </Show>
-          <Show when={state() === 'recording'}>
-            <button
-              type="button"
-              class={styles.stopButton}
-              onClick={stopRecording}
-            >
-              <span aria-hidden="true" />
-              Stop recording
-            </button>
-          </Show>
-          <Show when={state() === 'processing'}>
-            <button type="button" class={styles.stopButton} disabled>
-              Preparing replay…
-            </button>
-          </Show>
-          <Show when={state() === 'unsupported'}>
-            <p class={styles.unsupported} role="status">
-              This browser cannot create a local voice recording. Your saved
-              history remains available.
-            </p>
-          </Show>
-        </div>
+          <div class={styles.captureAction}>
+            <Show when={state() === 'idle'}>
+              <button
+                ref={startButton}
+                type="button"
+                class={styles.recordButton}
+                onClick={beginRecording}
+              >
+                <span aria-hidden="true" />
+                Start recording
+              </button>
+            </Show>
+            <Show when={state() === 'starting'}>
+              <button type="button" class={styles.recordButton} disabled>
+                Opening microphone…
+              </button>
+            </Show>
+            <Show when={state() === 'recording'}>
+              <button
+                type="button"
+                class={styles.stopButton}
+                onClick={stopRecording}
+              >
+                <span aria-hidden="true" />
+                Stop recording
+              </button>
+            </Show>
+            <Show when={state() === 'processing'}>
+              <button type="button" class={styles.stopButton} disabled>
+                Preparing replay…
+              </button>
+            </Show>
+            <Show when={state() === 'unsupported'}>
+              <p class={styles.unsupported} role="status">
+                This browser cannot create a local voice recording. Your saved
+                history remains available.
+              </p>
+            </Show>
+          </div>
+        </section>
       </div>
 
       <Show when={capture()}>
         {(take) => (
-          <div class={styles.review}>
+          <section
+            class={styles.review}
+            aria-labelledby="freeform-review-title"
+          >
+            <div class={styles.reviewHeader}>
+              <div>
+                <span>
+                  {state() === 'saved' ? 'Saved take' : 'Temporary replay'}
+                </span>
+                <h3 id="freeform-review-title">
+                  {state() === 'saved'
+                    ? 'This take is in your voice history.'
+                    : 'Listen once, then choose what stays.'}
+                </h3>
+              </div>
+              <span class={styles.reviewDuration}>
+                {formatElapsed(elapsedMs())}
+              </span>
+            </div>
             <div
               class={styles.waveform}
               role="img"
@@ -659,24 +716,26 @@ export const FreeformVoiceRecorder: Component<FreeformVoiceRecorderProps> = (
                     ? 'Kept'
                     : 'Keep Take'}
               </button>
-              <button
-                type="button"
-                class={styles.textButton}
-                onClick={resetTemporary}
-                disabled={persistenceLocked()}
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                class={styles.textButton}
-                onClick={beginRecording}
-                disabled={persistenceLocked()}
-              >
-                Record again
-              </button>
+              <div class={styles.reviewSecondaryActions}>
+                <button
+                  type="button"
+                  class={styles.textButton}
+                  onClick={resetTemporary}
+                  disabled={persistenceLocked()}
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  class={styles.textButton}
+                  onClick={beginRecording}
+                  disabled={persistenceLocked()}
+                >
+                  Record again
+                </button>
+              </div>
             </div>
-          </div>
+          </section>
         )}
       </Show>
 

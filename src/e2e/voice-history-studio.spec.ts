@@ -46,13 +46,21 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   })
   await page.getByRole('button', { name: 'Keep Take' }).click()
 
-  await expect(page.getByText('Listening room')).toBeVisible({ timeout: 10000 })
+  await expect(
+    page.getByRole('heading', { name: 'Room and waveform check' }),
+  ).toBeFocused({ timeout: 10000 })
+  await expect(
+    page.getByRole('button', { name: 'Room', exact: true }),
+  ).toBeVisible({ timeout: 10000 })
   await expect(page.getByText('Room and waveform check').first()).toBeVisible()
   await expect(page.getByText('Take Topography', { exact: true })).toBeVisible()
   await expect(page.getByText('1 mapped', { exact: true })).toBeVisible()
   await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)
+  await page
+    .getByRole('button', { name: 'Add reflection', exact: true })
+    .click()
   await expect(page.getByLabel('Optional note')).toBeEnabled()
   await expect(page.getByTestId('reflection-target')).toContainText(
     'Earlier take',
@@ -66,11 +74,11 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(firstMarker).toBeVisible()
   await firstMarker.click()
   await expect(
-    page.getByRole('button', { name: 'Pause Earlier take' }),
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
   ).toBeVisible()
   await page.keyboard.press('Space')
   await expect(
-    page.getByRole('button', { name: 'Play Earlier take' }),
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
   ).toBeVisible()
   await page.getByTestId('reflection-beacon-remove').click()
 
@@ -91,10 +99,12 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   const laterCard = page.getByTestId('voice-atlas-card-later')
   await laterCard.click({ position: { x: 8, y: 8 } })
   await expect(laterCard).toHaveAttribute('data-selected', 'true')
+  await page
+    .getByRole('button', { name: 'Add reflection', exact: true })
+    .click()
   await expect(page.getByTestId('reflection-target')).toContainText(
     'Later take',
   )
-
   const seek = page.getByTestId('voice-atlas-slider')
   await seek.scrollIntoViewIfNeeded()
   const seekBounds = await seek.boundingBox()
@@ -139,9 +149,10 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   })
   await page.getByRole('button', { name: 'Keep Take' }).click()
 
-  await expect(page.getByText('Comparing 2 of 3 takes')).toBeVisible({
+  await expect(page.getByText('2 of 3 takes', { exact: true })).toBeVisible({
     timeout: 10000,
   })
+  await page.getByRole('button', { name: 'Pattern', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Hear the pattern across attempts.' }),
   ).toBeVisible()
@@ -167,13 +178,13 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     )
     .toBeGreaterThan(0.62)
   await expect(
-    page.getByRole('button', { name: 'Pause Take 2 in Practice Loom' }),
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
   ).toBeVisible()
-  await page.keyboard.press('Space')
+  await page.getByRole('button', { name: 'Compare', exact: true }).click()
   await expect(
-    page.getByRole('button', { name: 'Play Take 2 in Practice Loom' }),
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
   ).toBeVisible()
-
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
   const earlierSelect = page.getByRole('combobox', { name: 'Earlier take' })
   const fullSpanEarlier = await earlierSelect.inputValue()
   await expect(page.getByRole('button', { name: 'Full span' })).toHaveAttribute(
@@ -188,6 +199,7 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Full span' }).click()
   await expect(earlierSelect).toHaveValue(fullSpanEarlier)
 
+  await page.getByRole('button', { name: 'Room', exact: true }).click()
   const echo = page.getByTestId('voice-room-echo')
   await echo.scrollIntoViewIfNeeded()
   const bounds = await echo.boundingBox()
@@ -215,10 +227,12 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   ).toBeEnabled()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
 
+  await page.getByRole('button', { name: 'All takes', exact: false }).click()
   await page
-    .getByRole('button', { name: 'Delete', exact: true })
+    .getByRole('button', { name: 'Actions for Room and waveform check' })
     .first()
     .click()
+  await page.getByRole('menuitem', { name: 'Delete', exact: true }).click()
   await expect(page.getByRole('alertdialog')).toContainText(
     'Delete Room and waveform check from this device?',
   )
@@ -226,12 +240,38 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(page.getByRole('alertdialog')).not.toBeVisible()
 
+  await page.getByRole('button', { name: 'Compare', exact: true }).click()
+  await page.getByRole('button', { name: 'Room', exact: true }).click()
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(page.getByText('Listening room')).toBeVisible()
+  await expect(page.getByText('Listening room').first()).toBeVisible()
   const horizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   )
   expect(horizontalOverflow).toBeLessThanOrEqual(1)
+  await page.getByRole('button', { name: 'Close listening tools' }).click()
+  await page
+    .getByRole('button', { name: 'Add reflection', exact: true })
+    .click()
+  const mobileInspector = page.getByRole('dialog', {
+    name: 'Listening tools',
+  })
+  await expect(mobileInspector).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Close listening tools' }),
+  ).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect
+    .poll(() =>
+      mobileInspector.evaluate((element) =>
+        element.contains(document.activeElement),
+      ),
+    )
+    .toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(mobileInspector).not.toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Add reflection', exact: true }),
+  ).toBeFocused()
 
   await page.setViewportSize({ width: 1500, height: 1000 })
 
@@ -246,7 +286,8 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   })
   await page.getByRole('button', { name: 'Keep Take' }).click()
 
-  await page.getByRole('button', { name: 'Delete this thread' }).click()
+  await page.getByRole('button', { name: 'Thread actions' }).click()
+  await page.getByRole('menuitem', { name: 'Delete this thread' }).click()
   await expect(page.getByRole('alertdialog')).toContainText(
     'Delete Temporary thread and its 1 take from this device?',
   )
@@ -260,7 +301,11 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     .click()
   await page.getByTestId('confirm-phrase').fill('delete')
   await page.getByRole('button', { name: 'Clear history', exact: true }).click()
-  await expect(page.getByText('0 kept · 0 B')).toBeVisible({ timeout: 10000 })
+  await expect(
+    page.getByRole('heading', {
+      name: 'Your first thread starts with one kept take.',
+    }),
+  ).toBeVisible({ timeout: 10000 })
   await expect(
     page.getByRole('button', { name: 'New practice thread' }),
   ).toBeFocused()
