@@ -104,6 +104,34 @@ function contour(x: number): number {
   return 0.52 - Math.sin(x * 3.1 - 0.6) * 0.2 - Math.sin(x * 1.35 + 1.9) * 0.12
 }
 
+/** Below this width the arc moves out of the copy's way. */
+const NARROW_PX = 640
+
+/**
+ * Where the contour's own 0-1 range is painted, as fractions of the
+ * canvas height.
+ *
+ * Left alone, `contour` runs between roughly 0.29 and 0.49 — the middle
+ * of the screen. On a desk there is room either side of the copy and the
+ * arc reads as the backdrop it is. On a phone the copy starts around 28%
+ * and the arc ran straight through the eyebrow and the headline, with the
+ * beads' glows sitting directly behind the type (owner testing, iPhone).
+ *
+ * So on a narrow screen the same curve is drawn shallow and high: it
+ * lands between about 11% and 17%, under the progress rail and above the
+ * first line of copy. Compressing it rather than hiding it keeps the
+ * beads doing their job — they are the beats, not decoration.
+ */
+function arcBand(width: number): { top: number; scale: number } {
+  return width < NARROW_PX ? { top: 0.02, scale: 0.3 } : { top: 0, scale: 1 }
+}
+
+/** The contour's y in canvas pixels, after the band. */
+function arcY(x: number, width: number, height: number): number {
+  const band = arcBand(width)
+  return (band.top + contour(x) * band.scale) * height
+}
+
 /**
  * Deterministic scatter — a golden-ratio walk rather than Math.random
  * so the field is identical across resizes, remounts and both themes.
@@ -228,7 +256,7 @@ export const StarField: Component<StarFieldProps> = (props) => {
       for (let p = 0; p <= to; p += 0.004) {
         const x = ARC_X0 + p * ARC_W
         const px = x * width
-        const py = contour(x) * height
+        const py = arcY(x, width, height)
         if (p === 0) ctx.moveTo(px, py)
         else ctx.lineTo(px, py)
       }
@@ -264,7 +292,7 @@ export const StarField: Component<StarFieldProps> = (props) => {
         const at = beadAt(i, count)
         if (revealed < at) continue
         const cx = (ARC_X0 + at * ARC_W) * width
-        const cy = contour(ARC_X0 + at * ARC_W) * height
+        const cy = arcY(ARC_X0 + at * ARC_W, width, height)
         const color = beadColor(at)
         const isCurrent = i === current
         const isLit = bright >= at

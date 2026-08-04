@@ -1135,11 +1135,30 @@
 
 /* ── Phone ───────────────────────────────────────────────────── */
 
+/* iOS retracts its toolbars over a `position: fixed; inset: 0` box, so the
+   overlay was taller than what a visitor could actually see and the last
+   thing in the frame — always the primary action — sat under the browser
+   bar. "Keep my voiceprint" was cut in half (owner testing, iPhone). dvh
+   tracks the bars as they come and go. */
+@supports (height: 100dvh) {
+  .overlay {
+    height: 100dvh;
+  }
+}
+
 @media (max-width: 640px) {
   .frame {
     justify-content: flex-start;
     padding-top: 40px;
+    /* …and clear of the home indicator underneath it. */
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     gap: 20px;
+  }
+
+  /* Grey-on-smoke at the top of the plate, where the artwork is at its
+     busiest — the escape hatch has to be visible without a hunt. */
+  .skip {
+    color: var(--ob-ink-2);
   }
 
   .actions {
