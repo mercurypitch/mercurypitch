@@ -54,7 +54,8 @@ export function VoicePlaybackTransport(
         disabled={props.take === null}
         aria-label={`${active() && props.playing ? 'Pause' : 'Play'} ${props.take?.title ?? 'selected take'}`}
         aria-pressed={active() && props.playing}
-        aria-keyshortcuts={active() && props.playing ? 'Space' : undefined}
+        aria-keyshortcuts={props.take === null ? undefined : 'Space'}
+        data-voice-playback-toggle
         onClick={() => {
           const id = props.take?.id
           if (id !== undefined) props.onPlay(id)
@@ -77,6 +78,7 @@ export function VoicePlaybackTransport(
         step="1"
         value={Math.round(currentProgress() * 1000)}
         disabled={props.take === null}
+        data-voice-playback-scrubber
         aria-label={`Seek ${props.take?.title ?? 'selected take'}`}
         aria-valuetext={`${formatClock(currentSeconds())} of ${formatClock(durationSeconds())}`}
         style={{ '--transport-progress': `${currentProgress() * 100}%` }}

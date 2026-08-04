@@ -28,6 +28,7 @@ export interface PracticeLoomPanelProps {
   progress: number
   playing: boolean
   loading?: boolean
+  onSelect: (takeId: string) => void
   onPlay: (takeId: string) => void
   onSeek: (takeId: string, progress: number) => void
 }
@@ -351,6 +352,10 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
   const [selectedId, setSelectedId] = createSignal<string | null>(
     initialSelection(),
   )
+  const selectEntry = (id: string): void => {
+    setSelectedId(id)
+    props.onSelect(id)
+  }
   const entries = createMemo<readonly LoomEntry[]>(() => {
     const rows = new Map(props.model.rows.map((row) => [row.id, row]))
     return props.takes.flatMap((take, index) => {
@@ -476,11 +481,11 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
         tone={selectedTone()}
         compact={true}
         onPlay={(takeId) => {
-          setSelectedId(takeId)
+          selectEntry(takeId)
           props.onPlay(takeId)
         }}
         onSeek={(takeId, nextProgress) => {
-          setSelectedId(takeId)
+          selectEntry(takeId)
           props.onSeek(takeId, nextProgress)
         }}
       />
@@ -509,14 +514,14 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
                 }}
                 style={{ '--loom-color': entry.color }}
                 data-selected={selectedId() === entry.take.id}
-                onClick={() => setSelectedId(entry.take.id)}
+                onClick={() => selectEntry(entry.take.id)}
               >
                 <button
                   type="button"
                   class={styles.rowSelect}
                   aria-label={`Select Take ${entry.index + 1} in Practice Loom`}
                   aria-pressed={selectedId() === entry.take.id}
-                  onClick={() => setSelectedId(entry.take.id)}
+                  onClick={() => selectEntry(entry.take.id)}
                 >
                   <div class={styles.rowIdentity}>
                     <span>{formatDate(entry.take.capturedAt)}</span>
@@ -542,7 +547,7 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
                   progress={props.progress}
                   playing={props.playing}
                   onSeek={(nextProgress) => {
-                    setSelectedId(entry.take.id)
+                    selectEntry(entry.take.id)
                     props.onSeek(entry.take.id, nextProgress)
                   }}
                 />
