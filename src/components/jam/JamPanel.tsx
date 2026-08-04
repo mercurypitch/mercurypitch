@@ -21,7 +21,7 @@ import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
-import { isMobile } from '@/lib/use-viewport'
+import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
@@ -72,7 +72,7 @@ export const JamPanel: Component = () => {
       // On a phone the picker is a Sheet, which owns its own backdrop tap
       // and drag-to-dismiss. Left running, this would see a tap INSIDE the
       // sheet as outside the (unrendered) popover and close it instantly.
-      if (isMobile()) return
+      if (isNarrow()) return
       const t = e.target as Node | null
       if (t === null) return
       if (pickerRef?.contains(t) === true) return
@@ -1254,13 +1254,13 @@ export const JamPanel: Component = () => {
                   picker and nothing appeared. Same shelves, in the mobile
                   kit's sheet, which is also where Karaoke Night keeps its
                   song list, so it is a gesture already learned. */}
-              <Show when={showExercisePicker() && !isMobile()}>
+              <Show when={showExercisePicker() && !isNarrow()}>
                 <div class={panelStyles.exercisePicker} ref={pickerRef}>
                   {pickerBody()}
                 </div>
               </Show>
               <Sheet
-                isOpen={showExercisePicker() && isMobile()}
+                isOpen={showExercisePicker() && isNarrow()}
                 close={() => setShowExercisePicker(false)}
                 ariaLabel="Choose a song or a drill"
                 snap="tall"
