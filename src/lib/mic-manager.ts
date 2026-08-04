@@ -60,6 +60,17 @@ const ANALYSIS_CONSTRAINTS: MediaStreamConstraints = {
 // between two mic pages reuses the handle instead of closing and re-opening it
 // (the re-open races the OS device release and reads as a spurious "busy").
 const LINGER_MS = 2000
+
+/**
+ * Consumer ids that hold the device without any UI of their own.
+ *
+ * The mic sentinel's live-without-ui check skips these: a hold whose whole job
+ * is to keep the device open BETWEEN surfaces has no icon it could disagree
+ * with, and flagging it would put a false desync in the one diagnostic bug
+ * reports are asked for. A phantom hold on a dead stream is still reported —
+ * that check is about the hold, not the UI.
+ */
+export const BACKGROUND_HOLD_IDS: readonly string[] = ['routine']
 // One automatic retry when the OS briefly reports the device as unavailable
 // (typically a previous handle that has not finished releasing yet).
 const BUSY_RETRY_DELAY_MS = 250

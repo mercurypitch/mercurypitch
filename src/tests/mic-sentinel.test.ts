@@ -53,6 +53,41 @@ describe('mic sentinel — state comparison invariants', () => {
     expect(result.map((m) => m.kind)).toEqual(['live-without-ui'])
   })
 
+  // The routine hold's whole job is to keep the device open BETWEEN drills,
+  // so there is no icon it could be out of sync with. Reporting it would put a
+  // false desync in the one diagnostic bug reports are asked for.
+  it('a background hold with every icon off is not a desync', () => {
+    const result = compareMicStates(
+      reality({
+        holds: ['routine'],
+        streamLive: true,
+        indicators: [{ id: 'practice', on: false }],
+      }),
+    )
+    expect(result).toEqual([])
+  })
+
+  it('a background hold does not mask a real one alongside it', () => {
+    const result = compareMicStates(
+      reality({
+        holds: ['routine', 'stem-mixer'],
+        streamLive: true,
+        indicators: [{ id: 'stem-mixer', on: false }],
+      }),
+    )
+    expect(result.map((m) => m.kind)).toEqual(['live-without-ui'])
+    expect(result[0]!.ids).toEqual(['stem-mixer'])
+  })
+
+  // A hold on a dead stream is a phantom hold whoever owns it — that check is
+  // about the hold, not the UI.
+  it('a background hold on a dead stream is still reported', () => {
+    const result = compareMicStates(
+      reality({ holds: ['routine'], streamLive: false }),
+    )
+    expect(result.map((m) => m.kind)).toEqual(['hold-on-dead-stream'])
+  })
+
   it('phantom hold: consumer held with a dead stream → hold-on-dead-stream', () => {
     const result = compareMicStates(
       reality({ holds: ['audio-engine-1'], streamLive: false }),

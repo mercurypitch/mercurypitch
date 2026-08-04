@@ -19,7 +19,7 @@
 // The comparison is a pure function so the invariants are unit-testable.
 // Tests: src/tests/mic-sentinel.test.ts
 
-import { micManager } from '@/lib/mic-manager'
+import { BACKGROUND_HOLD_IDS, micManager } from '@/lib/mic-manager'
 
 export interface MicIndicatorSnapshot {
   id: string
@@ -63,13 +63,16 @@ export function compareMicStates(reality: MicRealitySnapshot): MicMismatch[] {
     })
   }
 
+  const uiHolds = reality.holds.filter(
+    (id) => !BACKGROUND_HOLD_IDS.includes(id),
+  )
   if (
     reality.streamLive &&
-    reality.holds.length > 0 &&
+    uiHolds.length > 0 &&
     reality.indicators.length > 0 &&
     onIndicators.length === 0
   ) {
-    mismatches.push({ kind: 'live-without-ui', ids: [...reality.holds] })
+    mismatches.push({ kind: 'live-without-ui', ids: uiHolds })
   }
 
   if (!reality.streamLive && reality.holds.length > 0) {
