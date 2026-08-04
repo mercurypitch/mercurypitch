@@ -445,6 +445,21 @@ export async function checkAndGrantBadges(): Promise<void> {
       const existing = achByDef.get(ach.id)
       if (existing?.unlocked === true) continue
 
+      // Nothing to write when the number has not moved. Without this, every
+      // pass PATCHed EVERY still-locked achievement — 47 of 63 on a real
+      // account — one serial request each. That is the three-to-five second
+      // "Saving your run…", and two runs inside a minute cleared the
+      // worker's 120/min `crud-write` cap, so the retries turned a slow save
+      // into a ten-second one. `progress` is an integer percent, so an
+      // unchanged percent means an unchanged row.
+      if (
+        existing !== undefined &&
+        existing.progress === result.progress &&
+        existing.unlocked === result.unlocked
+      ) {
+        continue
+      }
+
       const fields = {
         progress: result.progress,
         unlocked: result.unlocked,
