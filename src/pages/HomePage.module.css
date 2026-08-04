@@ -214,6 +214,14 @@
   filter: brightness(1.05);
 }
 
+/* One quiet line above the bar. It explains the focus ring sitting on Resume,
+   which without it reads as the page having grabbed the cursor for no reason. */
+.resumeNote {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
 .progressBar {
   height: 8px;
   border-radius: 6px;

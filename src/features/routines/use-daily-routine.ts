@@ -24,7 +24,25 @@ interface PersistedRoutine {
    * the id alone can't reproduce them across reloads.
    */
   template?: RoutineTemplate
+  /**
+   * When the routine last moved — generated, or a segment ticked off.
+   *
+   * Optional: routines persisted before this existed have no such stamp, and
+   * those are read as stale rather than recent. "You were here five minutes
+   * ago" has to be true to be worth saying.
+   */
+  lastActiveAt?: number
 }
+
+/**
+ * How long a half-finished routine stays worth offering to resume.
+ *
+ * Today's date already gates the routine itself; this is the tighter question
+ * of whether they were just here. An hour is long enough to cover a reload, a
+ * phone call, or a tab left open, and short enough that this morning's
+ * abandoned session does not greet them at bedtime.
+ */
+export const RESUME_WINDOW_MS = 60 * 60 * 1000
 
 export type RoutineLength = 'short' | 'standard' | 'long'
 export type RoutineFocus = 'auto' | 'surprise' | string // or a template id
@@ -272,6 +290,7 @@ export function loadSharedRoutine(routine: RoutineTemplate): boolean {
     date: todayStr(),
     completedSegments: [],
     template: routine,
+    lastActiveAt: Date.now(),
   })
   return hadProgress
 }
@@ -354,6 +373,7 @@ export function autoAdvanceRoutineSegment(
     setRoutineData({
       ...data,
       completedSegments: [...data.completedSegments, currentIdx],
+      lastActiveAt: Date.now(),
     })
   }
 }
@@ -399,6 +419,25 @@ export function useDailyRoutine() {
     return Math.round((completedSegments().length / t.segments.length) * 100)
   })
 
+  /**
+   * A session they are in the middle of, abandoned recently enough to pick up.
+   *
+   * Deliberately requires a segment already done: a freshly generated routine
+   * is something to START, and the card says so with its own button. This is
+   * the other case — a reload or a wander mid-routine — where the singer has
+   * no way of knowing the app remembers.
+   *
+   * The clock is read when the routine changes rather than on a timer, so a
+   * page left open past the hour keeps the prompt. Better than a prompt that
+   * vanishes while being read.
+   */
+  const resumable = createMemo(() => {
+    const p = persisted()
+    if (!p || !template() || isComplete()) return false
+    if (p.completedSegments.length === 0) return false
+    return Date.now() - (p.lastActiveAt ?? 0) < RESUME_WINDOW_MS
+  })
+
   function generate(): RoutineTemplate {
     const prefs = routinePrefs()
     // 'auto' (the default) builds today's generated 4-slot session; the
@@ -428,6 +467,7 @@ export function useDailyRoutine() {
       date: todayStr(),
       completedSegments: [],
       template: routine,
+      lastActiveAt: Date.now(),
     })
     return routine
   }
@@ -449,6 +489,7 @@ export function useDailyRoutine() {
     setPersisted({
       ...p,
       completedSegments: [...p.completedSegments, currentIdx],
+      lastActiveAt: Date.now(),
     })
   }
 
@@ -489,6 +530,7 @@ export function useDailyRoutine() {
     completedSegments,
     isComplete,
     progress,
+    resumable,
     totalDurationSec,
     remainingDurationSec,
     segmentStatuses,

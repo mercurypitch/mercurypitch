@@ -7,7 +7,7 @@
 // new launch or scoring infra.
 
 import type { Component, JSX } from 'solid-js'
-import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
+import { createMemo, createResource, createSignal, For, onMount, Show, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
@@ -105,6 +105,18 @@ const HomePage: Component = () => {
     streakNudgeOpen() &&
     (streak()?.currentStreak ?? 0) >= 2 &&
     shouldShowNudge('streak-day-2')
+
+  // A reload mid-routine keeps the ticks but loses the launch: the singer
+  // lands here with no sign the app remembers where they were. Put the cursor
+  // on the button that continues it, so Enter picks the session back up.
+  //
+  // preventScroll, because the page has not settled on mount and yanking it to
+  // the card would move things out from under the reader — the session card is
+  // in the first screenful anyway.
+  let resumeBtn: HTMLButtonElement | undefined
+  onMount(() => {
+    if (routine.resumable()) resumeBtn?.focus({ preventScroll: true })
+  })
 
   return (
     <div class={styles.page}>
@@ -279,6 +291,17 @@ const HomePage: Component = () => {
                 </div>
               }
             >
+              {/* Only when they are actually mid-session and were here
+                  recently — on a fresh routine the card's own Start button
+                  already says what to do. */}
+              <Show when={routine.resumable()}>
+                <p class={styles.resumeNote}>
+                  Picking up where you left off —{' '}
+                  {routine.completedSegments().length} of{' '}
+                  {routine.template()!.segments.length} done.
+                </p>
+              </Show>
+
               <div class={styles.progressBar}>
                 <div
                   class={styles.progressFill}
@@ -333,10 +356,11 @@ const HomePage: Component = () => {
                       </span>
                       <Show when={item.current && !item.done}>
                         <button
+                          ref={resumeBtn}
                           class={styles.segStart}
                           onClick={() => launchRoutineSegment(item.seg)}
                         >
-                          Start
+                          {routine.resumable() ? 'Resume' : 'Start'}
                         </button>
                         <button
                           class={styles.segSkip}
