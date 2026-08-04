@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, lineWordCount, needsWordPass, nextWordPassLine, normalizePass, PRE_ROLL_SEC, preRollTarget, previewWordAt, seedWordPassTimings, wordPassLinesBefore, } from '@/features/stem-mixer/lrc-gen-passes'
+import type { GenCursor, LrcGenPass, } from '@/features/stem-mixer/lrc-gen-passes'
+import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, lineWordCount, needsWordPass, nextCursorAfterLine, nextWordPassLine, normalizePass, PRE_ROLL_SEC, preRollTarget, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from '@/features/stem-mixer/lrc-gen-passes'
 
 const LINES = [
   'Hello darkness my old friend', // 0 — 5 words
@@ -74,6 +75,199 @@ describe('word-pass progress', () => {
     expect(wordPassLinesBefore(LINES, 0)).toBe(0)
     expect(wordPassLinesBefore(LINES, 4)).toBe(1)
     expect(wordPassLinesBefore(LINES, LINES.length)).toBe(2)
+  })
+})
+
+// Where the cursor goes after a line is finished. The controller used to make
+// this call inline, and All mode fell through to the word pass's advance —
+// invisible to every helper test above, because each helper was right on its
+// own and only the choice between them was wrong.
+describe('cursor advance after a line', () => {
+  // Single-word lines at both ends of the take: the word pass has nothing to
+  // place on either, so borrowing its advance drops them from All mode.
+  const TAKE = [
+    'Hello darkness my old friend', // 0 — 5 words
+    'Stay', // 1 — single word
+    '', // 2 — blank
+    '~Rest~', // 3 — synthetic countdown
+    'I have come to talk', // 4 — 5 words
+    'Again', // 5 — single word, last row
+  ]
+  const PASSES: LrcGenPass[] = ['all', 'lines', 'words']
+
+  /** Every cursor a pass stops on, walking a take from its opening line. */
+  const walk = (pass: LrcGenPass, lines: string[]): GenCursor[] => {
+    const opening: GenCursor =
+      pass === 'words'
+        ? wordPassCursorFrom(lines, 0)
+        : { lineIdx: 0, wordIdx: 0, preRoll: false, finish: false }
+    const seen: GenCursor[] = []
+    let cursor = opening
+    // Bounded so a cursor that fails to advance fails the test instead of
+    // hanging the suite.
+    while (!cursor.finish && seen.length <= lines.length) {
+      seen.push(cursor)
+      cursor = nextCursorAfterLine(pass, lines, cursor.lineIdx)
+    }
+    return seen
+  }
+
+  describe("'all'", () => {
+    it('steps onto the very next line at word 0', () => {
+      expect(nextCursorAfterLine('all', TAKE, 0)).toEqual({
+        lineIdx: 1,
+        wordIdx: 0,
+        preRoll: false,
+        finish: false,
+      })
+      expect(nextCursorAfterLine('all', TAKE, 4)).toEqual({
+        lineIdx: 5,
+        wordIdx: 0,
+        preRoll: false,
+        finish: false,
+      })
+    })
+
+    it('never skips a single-word line', () => {
+      expect(walk('all', TAKE).map((c) => c.lineIdx)).toEqual([
+        0, 1, 2, 3, 4, 5,
+      ])
+      // Lines 1 and 5 are the single-word ones the word pass would drop.
+      expect(nextCursorAfterLine('all', TAKE, 0).lineIdx).toBe(1)
+      expect(nextCursorAfterLine('all', TAKE, 4).lineIdx).toBe(5)
+    })
+
+    it('maps a take that is nothing but single-word lines', () => {
+      const chant = ['One', 'Two', 'Three']
+      expect(walk('all', chant).map((c) => c.lineIdx)).toEqual([0, 1, 2])
+      // The word pass has no work here at all, which is exactly why routing
+      // All through it mapped nothing.
+      expect(walk('words', chant)).toEqual([])
+    })
+
+    it('opens every line at its first word', () => {
+      expect(walk('all', TAKE).every((c) => c.wordIdx === 0)).toBe(true)
+    })
+
+    it('steps onto blanks and rests rather than skipping them', () => {
+      // The controller clears a run of them on the following tap; skipping
+      // here would double-advance.
+      expect(nextCursorAfterLine('all', TAKE, 1).lineIdx).toBe(2)
+      expect(nextCursorAfterLine('all', TAKE, 2).lineIdx).toBe(3)
+      expect(nextCursorAfterLine('all', TAKE, 3).lineIdx).toBe(4)
+    })
+
+    it('does not borrow the word pass advance', () => {
+      // The shipped defect in one assertion: finishing a line in All called
+      // the word-pass advance, which skips single-word lines, opens at word 1
+      // and seeks the playhead backwards mid-take.
+      expect(nextCursorAfterLine('all', TAKE, 0)).not.toEqual(
+        wordPassCursorFrom(TAKE, 1),
+      )
+    })
+  })
+
+  describe("'lines'", () => {
+    it('advances exactly like the all-in-one take', () => {
+      for (let i = 0; i < TAKE.length; i++) {
+        expect(nextCursorAfterLine('lines', TAKE, i)).toEqual(
+          nextCursorAfterLine('all', TAKE, i),
+        )
+      }
+    })
+
+    it('stops on every row, single-word ones included', () => {
+      expect(walk('lines', TAKE).map((c) => c.lineIdx)).toEqual([
+        0, 1, 2, 3, 4, 5,
+      ])
+    })
+  })
+
+  describe("'words'", () => {
+    it('skips ahead to the next line with words to place, at word 1', () => {
+      expect(nextCursorAfterLine('words', TAKE, 0)).toEqual({
+        lineIdx: 4,
+        wordIdx: 1,
+        preRoll: true,
+        finish: false,
+      })
+    })
+
+    it('stops only on the lines that have words left to place', () => {
+      expect(walk('words', TAKE).map((c) => c.lineIdx)).toEqual([0, 4])
+      expect(walk('words', TAKE).every((c) => c.wordIdx === 1)).toBe(true)
+    })
+
+    it('finishes when only unmappable rows are left', () => {
+      expect(nextCursorAfterLine('words', TAKE, 4)).toEqual({
+        lineIdx: TAKE.length,
+        wordIdx: 0,
+        preRoll: false,
+        finish: true,
+      })
+    })
+  })
+
+  it('only the word pass pre-rolls', () => {
+    for (let i = 0; i < TAKE.length; i++) {
+      expect(nextCursorAfterLine('all', TAKE, i).preRoll).toBe(false)
+      expect(nextCursorAfterLine('lines', TAKE, i).preRoll).toBe(false)
+    }
+    expect(walk('words', TAKE).every((c) => c.preRoll)).toBe(true)
+  })
+
+  it('finishing never pre-rolls, in any pass', () => {
+    for (const pass of PASSES) {
+      const done = nextCursorAfterLine(pass, TAKE, TAKE.length - 1)
+      expect(done.finish).toBe(true)
+      expect(done.preRoll).toBe(false)
+    }
+  })
+
+  it('parks the cursor past the last line when a pass ends', () => {
+    for (const pass of PASSES) {
+      expect(nextCursorAfterLine(pass, TAKE, TAKE.length - 1)).toEqual({
+        lineIdx: TAKE.length,
+        wordIdx: 0,
+        preRoll: false,
+        finish: true,
+      })
+    }
+  })
+
+  it('finishes rather than running off an empty lyric', () => {
+    for (const pass of PASSES) {
+      expect(nextCursorAfterLine(pass, [], 0).finish).toBe(true)
+    }
+  })
+})
+
+describe('wordPassCursorFrom', () => {
+  it('opens on the first line with words to place, at word 1, pre-rolled', () => {
+    expect(wordPassCursorFrom(LINES, 0)).toEqual({
+      lineIdx: 0,
+      wordIdx: 1,
+      preRoll: true,
+      finish: false,
+    })
+  })
+
+  it('searches forward past blanks, rests and single-word lines', () => {
+    expect(wordPassCursorFrom(LINES, 1)).toEqual({
+      lineIdx: 4,
+      wordIdx: 1,
+      preRoll: true,
+      finish: false,
+    })
+  })
+
+  it('finishes when no line is left to place words on', () => {
+    expect(wordPassCursorFrom(['Stay', '', '~Rest~'], 0)).toEqual({
+      lineIdx: 3,
+      wordIdx: 0,
+      preRoll: false,
+      finish: true,
+    })
   })
 })
 
