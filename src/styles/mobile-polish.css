@@ -103,21 +103,59 @@
     padding: 12px 14px;
   }
 
-  /* Header: keep Back/level/mic/score on one row and drop the title
-     to its own line so "Guided Warmup" stops wrapping into them. */
+  /* Header: one row, title included.
+     It used to drop to its own line so long names could not wrap into the
+     controls — correct at the time, but that line costs 32px, and once a
+     routine ribbon sits under it there is not enough left for the drill.
+     The title takes the space between the two control groups and
+     ellipsises instead of wrapping, and the controls are trimmed to give
+     it something to take. Measured at 390px: the header goes from 66px to
+     34px and the title gets 129px, which fits every drill name but
+     "Staccato Precision" (144px) — that one ellipsises and keeps its full
+     text in the title attribute. */
   .exercise-runner-header {
     flex-wrap: wrap;
     row-gap: 10px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 10px;
   }
+  /* `flex: 1 1 0`, not `1 1 auto`: with an auto basis a long name claims
+     its full content width and the control groups shrink to make room —
+     "Staccato Precision" ate the level chip. Basis zero means the title
+     only ever gets what is left over, and ellipsises inside it. */
   .exercise-title {
-    order: 3;
-    flex-basis: 100%;
-    font-size: 1.15rem;
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 1rem;
     line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .exercise-header-left,
+  .exercise-header-right {
+    flex-shrink: 0;
+  }
+  .exercise-runner-header .back-btn {
+    padding: 6px 9px;
+    font-size: 0.75rem;
+  }
+  .exercise-help-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .exercise-header-left {
+    gap: 6px;
   }
   .exercise-header-right {
     gap: 8px;
+  }
+  .exercise-level-chip {
+    font-size: 0.68rem;
+    padding: 3px 7px;
+  }
+  .exercise-score-display {
+    font-size: 1.1rem;
   }
 
   .exercise-canvas-area.is-idle {
@@ -207,9 +245,16 @@
   }
 
   /* Trim the pitch tracker so the exercise's own viz + metrics get room
-     (it flex-shrank unevenly before, cramming its note labels). */
+     (it flex-shrank unevenly before, cramming its note labels).
+     `height` alone never held: it is a flex item in a column, so the
+     default shrink let the exercise's own visuals squeeze it — inside a
+     routine, with a ribbon above, it came out around 55px, with the
+     contour crossing its own 1s/5s/now labels and running under the
+     AUTO/E4 controls. A floor, not a preference. */
   .exercise-pitch-tracker {
     height: 148px;
+    min-height: 148px;
+    flex-shrink: 0;
   }
 
   /* Stop → a round icon-only action button in the bottom-right corner,

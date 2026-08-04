@@ -396,7 +396,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             <IconQuestion size={18} />
           </button>
         </div>
-        <h2 class="exercise-title">{props.title}</h2>
+        {/* The title shares the header row on a phone and ellipsises when
+            it has to; the attribute keeps the full name reachable. */}
+        <h2 class="exercise-title" title={props.title}>
+          {props.title}
+        </h2>
         <div class="exercise-header-right">
           <span
             class="exercise-level-chip"

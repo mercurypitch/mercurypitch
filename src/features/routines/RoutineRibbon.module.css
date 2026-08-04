@@ -244,14 +244,58 @@
   }
 }
 
+/* On a phone the ribbon becomes one row.
+   Stacked, it cost about 75px above the drill — a kicker line, then the
+   chip rail — and on a small screen the drill is what there is not enough
+   of. The kicker is the first thing to go: "Today's session" over a row of
+   segment chips with one of them lit says nothing the chips do not. The
+   counter stays (it is the only thing that knows about segments the rail
+   has scrolled past), the rail takes the middle and keeps scrolling, and
+   the way back to the routine keeps its label at the end. */
 @media (max-width: 700px) {
   .ribbon {
-    padding: 8px 10px;
-    gap: 6px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+  }
+
+  .head {
+    display: contents;
+  }
+
+  .kicker {
+    display: none;
+  }
+
+  .count {
+    order: -1;
+  }
+
+  .steps {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .link {
+    /* `margin-left: auto` was pushing it off the end of the rail; in a row
+       it is already last. */
+    margin-left: 0;
   }
 
   .step {
     font-size: 0.68rem;
     padding: 3px 8px 3px 6px;
+  }
+
+  /* Full width under the rail rather than squeezed into it — these only
+     appear once the segment is done, when they ARE the next action. */
+  .next,
+  .finished {
+    flex: 1 0 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
