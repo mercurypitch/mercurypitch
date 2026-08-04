@@ -204,7 +204,8 @@
 .karaokeVisual,
 .exercisesVisual,
 .analysisVisual,
-.jamVisual {
+.jamVisual,
+.ascentVisual {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -453,6 +454,55 @@
 .analysisMetrics b {
   color: #e6edf3;
   font-weight: 700;
+}
+
+/* The Ascent: a seven-week climb with the first orb lit. Drawn rather
+   than photographed — the Ascent has no Home card to borrow art from,
+   and on the onboarding Map it sat next to five rooms that all had a
+   picture. */
+.ascentVisual {
+  background:
+    radial-gradient(
+      120% 92% at 10% 100%,
+      rgba(88, 166, 255, 0.2),
+      transparent 62%
+    ),
+    radial-gradient(
+      110% 86% at 92% 4%,
+      rgba(188, 140, 255, 0.22),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #101a2b 0%, #070b12 72%);
+}
+
+.ascentVisual svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* A ground plane, so the climb reads as going somewhere. */
+.ascentHorizon {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(6, 10, 16, 0.72));
+}
+
+.ascentClimb {
+  filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.4));
+}
+
+.ascentOrb {
+  fill: none;
+  stroke-width: 1.6;
+}
+
+.ascentOrbLit {
+  filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.75));
 }
 
 /* Jam Rooms: a generated rehearsal-room still, interface copy in code. */
@@ -807,6 +857,7 @@
 .artCompact .karaokeNuggets,
 .artCompact .analysisMetrics,
 .artCompact .intervalText,
+.artCompact .jamNuggets,
 .artCompact .practiceMascot {
   display: none;
 }

@@ -40,12 +40,14 @@ export interface Room {
    */
   tourTab?: ActiveTab
   /**
-   * Cover artwork reused from the Home gallery, revealed behind the
-   * card. Absent where no drawing exists yet — those rooms fall back to
-   * a plain spectrum wash rather than borrowing another room's picture,
-   * which would misdescribe where the card goes.
+   * Cover artwork revealed behind the card. Required, not optional: two
+   * rooms shipped without it (Jam, which had art on Home all along, and
+   * the Ascent, which had none anywhere), and a card with no picture
+   * beside five that have one reads as a rendering fault rather than as
+   * a different kind of room. Making it required means the next room
+   * added here cannot quietly repeat that.
    */
-  visual?: DestinationVisual
+  visual: DestinationVisual
 }
 
 export const ROOMS: readonly Room[] = [
@@ -71,6 +73,7 @@ export const ROOMS: readonly Room[] = [
     line: 'A seven-week guided path — one orb at a time.',
     target: { kind: 'tab', tab: TAB_PATH },
     tourTab: TAB_PATH,
+    visual: 'ascent',
   },
   {
     id: 'karaoke',
@@ -85,6 +88,7 @@ export const ROOMS: readonly Room[] = [
     line: 'Sing together in real time — share a room code.',
     target: { kind: 'tab', tab: TAB_JAM },
     tourTab: TAB_JAM,
+    visual: 'jam',
   },
   {
     id: 'analysis',
