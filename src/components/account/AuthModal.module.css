@@ -341,3 +341,40 @@
     animation: none;
   }
 }
+
+/* `100vh` on iOS is the LARGE viewport — the one with the browser bars
+   retracted — so the cap was taller than what a visitor could see and the
+   submit button could sit under the toolbar. */
+@supports (height: 100dvh) {
+  .dialog {
+    max-height: calc(100dvh - 32px);
+  }
+}
+
+/* Short viewport: a phone in portrait with the keyboard up, which is the
+   state the form is actually filled in. Measured at 390x664, the register
+   variant is 489px and fits — but the keyboard takes roughly half the
+   screen, and at that point every one of these paddings is being scrolled
+   past. Trimmed, the same form comes in around 100px shorter. */
+@media (max-height: 700px) {
+  .overlay {
+    padding: 10px;
+  }
+
+  .dialog {
+    padding: 14px 16px 12px;
+    max-height: calc(100dvh - 20px);
+  }
+
+  .sub {
+    margin: 0 0 10px;
+  }
+
+  .form {
+    gap: 8px;
+  }
+
+  .field {
+    gap: 3px;
+  }
+}
