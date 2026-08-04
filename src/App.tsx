@@ -3198,6 +3198,7 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_EXERCISES}>
                 <TabErrorBoundary tabName={tabLabel(TAB_EXERCISES)}>
                   <ExercisesPage
+                    subscribeFrames={practice.subscribeFrames}
                     selectedExercise={selectedExercise}
                     autoStartExercise={autoStartExercise}
                     onSelect={setSelectedExercise}

@@ -21,9 +21,14 @@ import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/S
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
+import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import styles from './ExercisesPage.module.css'
 
 interface ExercisesPageProps {
+  /** The app's single pitch-frame stream. Only the warm-up needs it — it
+   *  renders its steps on the Zen stage, which consumes frames rather than
+   *  running a detector of its own. */
+  subscribeFrames: (listener: PracticeFrameListener) => () => void
   /** Exercise selection state lives in AppShell (also set by share/deep-link
    *  and pending-drill flows), so it is threaded in rather than owned here. */
   selectedExercise: Accessor<ExerciseType | null>
@@ -70,6 +75,7 @@ export function ExercisesPage(props: ExercisesPageProps) {
           <WarmupExercise
             audioEngine={audioEngine}
             practiceEngine={practiceEngine}
+            subscribeFrames={props.subscribeFrames}
             onBack={props.onBack}
             autoStart={props.autoStartExercise()}
           />
