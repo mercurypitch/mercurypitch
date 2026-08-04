@@ -2116,9 +2116,24 @@ export function useStemMixerLyricsController(
     })
 
     if (wordIdx + 1 >= words.length) {
-      // Reached only in pass 2, which skips ahead to the next line that has
-      // words to place rather than stepping onto every line in turn.
-      advanceWordPass(lineIdx + 1)
+      if (lrcGenPass() === 'words') {
+        // The word pass skips ahead to the next line that has words to place
+        // rather than stepping onto every line in turn, and pre-rolls into it.
+        advanceWordPass(lineIdx + 1)
+      } else if (lineIdx + 1 >= lines.length) {
+        setLrcGenLineIdx(lineIdx + 1)
+        setLrcGenWordIdx(0)
+        handleLrcGenFinish()
+      } else {
+        // 'all' steps onto the very next line and starts at its first word.
+        // Routing it through advanceWordPass would skip single-word lines,
+        // start at word 1, and seek the playhead backwards mid-stream — three
+        // things that are right for the word pass and wrong for one continuous
+        // take.
+        setLrcGenLineIdx(lineIdx + 1)
+        setLrcGenWordIdx(0)
+        saveLrcGenProgress()
+      }
     } else {
       setLrcGenWordIdx(wordIdx + 1)
       saveLrcGenProgress()
