@@ -4,8 +4,16 @@ import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import type { ZenExerciseDefinition, ZenExerciseTarget, } from '@/features/zen/types'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import { midiToNote } from '@/lib/scale-data'
-import { convertExerciseTarget, createGlideTarget, createNoteTarget, duplicateExerciseTarget, exerciseTargetKind, findExerciseTarget, MIN_TARGET_DURATION_BEATS, moveExerciseTarget, removeExerciseTarget, resizeExerciseTarget, snapTimelineBeat, TIMELINE_SNAP_BEATS, updateExerciseTarget, } from './exercise-authoring-model'
+import type { ExerciseTargetKind } from './exercise-authoring-model'
+import { convertExerciseTarget, createBreathTarget, createGlideTarget, createHoldTarget, createNoteTarget, duplicateExerciseTarget, exerciseTargetKind, findExerciseTarget, MIN_TARGET_DURATION_BEATS, moveExerciseTarget, removeExerciseTarget, resizeExerciseTarget, snapTimelineBeat, TIMELINE_SNAP_BEATS, updateExerciseTarget, } from './exercise-authoring-model'
 import styles from './ExerciseTimelineEditor.module.css'
+
+const KIND_LABELS: Record<ExerciseTargetKind, string> = {
+  note: 'Note',
+  glide: 'Glide',
+  hold: 'Hold',
+  breath: 'Breath',
+}
 
 export interface ExerciseTimelineEditorProps {
   value: ZenExerciseDefinition
@@ -224,12 +232,15 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
       }. No target selected.`
     }
     const kind = exerciseTargetKind(target)
-    return `${kind === 'glide' ? 'Glide' : 'Note'} ${target.id} selected. Beat ${formatBeat(
+    const pitch =
+      kind === 'hold' || kind === 'breath'
+        ? 'no pitch'
+        : `pitch ${targetPitchLabel(props.value, target.semitone)}`
+    return `${KIND_LABELS[kind]} ${target.id} selected. Beat ${formatBeat(
       target.startBeat,
-    )}, duration ${formatBeat(target.durationBeats)} beats, pitch ${targetPitchLabel(
-      props.value,
-      target.semitone,
-    )}, cue ${target.cue || 'empty'}.`
+    )}, duration ${formatBeat(
+      target.durationBeats,
+    )} beats, ${pitch}, cue ${target.cue || 'empty'}.`
   })
 
   const getCanvasLayout = (): TimelineLayout | null => {
@@ -321,12 +332,21 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
     for (const target of props.value.targets) {
       const geometry = targetGeometry(target, layout)
       const selected = target.id === props.selectedTargetId
-      const isGlide = exerciseTargetKind(target) === 'glide'
+      const kind = exerciseTargetKind(target)
+      const isGlide = kind === 'glide'
+      // A hold or a breath sits on a row because that is how targets are
+      // stored, not because the row means anything. Drawing it dashed and
+      // hollow says so, and keeps an author from tuning a pitch nothing reads.
+      const unpitched = kind === 'hold' || kind === 'breath'
       ctx.save()
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
       ctx.shadowColor = PITCH_VISUAL_COLORS.reference
       ctx.shadowBlur = selected ? 12 : 5
+      if (unpitched) {
+        ctx.setLineDash([5, 4])
+        ctx.shadowBlur = 0
+      }
 
       if (isGlide) {
         ctx.strokeStyle = selected
@@ -347,8 +367,13 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
           height,
           height / 2,
         )
-        ctx.fillStyle = PITCH_VISUAL_COLORS.referenceFill
-        ctx.fill()
+        if (kind === 'note') {
+          ctx.fillStyle = PITCH_VISUAL_COLORS.referenceFill
+          ctx.fill()
+        } else if (kind === 'hold') {
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.16)'
+          ctx.fill()
+        }
         ctx.strokeStyle = selected
           ? PITCH_VISUAL_COLORS.selection
           : PITCH_VISUAL_COLORS.referenceBright
@@ -356,6 +381,7 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
         ctx.stroke()
       }
 
+      ctx.setLineDash([])
       ctx.shadowBlur = 0
       if (selected) {
         ctx.fillStyle = PITCH_VISUAL_COLORS.selection
@@ -656,6 +682,16 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
     selectCreatedTarget(props.value, createGlideTarget(props.value))
   }
 
+  const addHold = (): void => {
+    if (props.readOnly === true) return
+    selectCreatedTarget(props.value, createHoldTarget(props.value))
+  }
+
+  const addBreath = (): void => {
+    if (props.readOnly === true) return
+    selectCreatedTarget(props.value, createBreathTarget(props.value))
+  }
+
   const duplicateSelected = (): void => {
     const target = selectedTarget()
     if (target === null || props.readOnly === true) return
@@ -685,6 +721,16 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
     if (!modifier && event.key.toLowerCase() === 'g') {
       event.preventDefault()
       addGlide()
+      return
+    }
+    if (!modifier && event.key.toLowerCase() === 'h') {
+      event.preventDefault()
+      addHold()
+      return
+    }
+    if (!modifier && event.key.toLowerCase() === 'b') {
+      event.preventDefault()
+      addBreath()
       return
     }
     if (modifier && event.key.toLowerCase() === 'd' && target !== null) {
@@ -762,6 +808,24 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
             Add glide
             <kbd>G</kbd>
           </button>
+          <button
+            type="button"
+            disabled={props.readOnly === true}
+            onClick={addHold}
+            title="Add a block scored on loudness, not pitch (H)"
+          >
+            Add hold
+            <kbd>H</kbd>
+          </button>
+          <button
+            type="button"
+            disabled={props.readOnly === true}
+            onClick={addBreath}
+            title="Add a silent block: breathe and wait (B)"
+          >
+            Add breath
+            <kbd>B</kbd>
+          </button>
         </div>
       </header>
 
@@ -814,10 +878,10 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
           each={props.value.targets}
           fallback={
             <div class={styles.empty}>
-              <strong>No pitch targets yet</strong>
+              <strong>No targets yet</strong>
               <span>
-                Add a note or glide. Empty beats before, after, or between
-                targets are rests.
+                Add a note, a glide, a hold scored on loudness, or a breath.
+                Empty beats before, after, or between targets are rests.
               </span>
             </div>
           }
@@ -844,13 +908,15 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                         convertExerciseTarget(
                           props.value,
                           target.id,
-                          event.currentTarget.value as 'note' | 'glide',
+                          event.currentTarget.value as ExerciseTargetKind,
                         ),
                       )
                     }
                   >
                     <option value="note">Note</option>
                     <option value="glide">Glide</option>
+                    <option value="hold">Hold (loudness)</option>
+                    <option value="breath">Breath (silent)</option>
                   </select>
                 </label>
 
@@ -911,8 +977,14 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                 <label class={styles.pitchField}>
                   <span class={styles.pitchFieldHeading}>
                     <span>Start pitch</span>
+                    {/* A hold is scored on loudness and a breath on nothing at
+                        all, so the row either of them sits on is only a place
+                        to draw it. Saying so beats printing a note name the
+                        singer is never asked to hit. */}
                     <small>
-                      {targetPitchLabel(props.value, target.semitone)}
+                      {kind() === 'hold' || kind() === 'breath'
+                        ? 'Not scored'
+                        : targetPitchLabel(props.value, target.semitone)}
                     </small>
                   </span>
                   <input
@@ -939,7 +1011,11 @@ export const ExerciseTimelineEditor: Component<ExerciseTimelineEditorProps> = (
                     >
                       <span class={styles.pitchFieldHeading}>
                         <span>End pitch</span>
-                        <small>Same as start</small>
+                        <small>
+                          {kind() === 'hold' || kind() === 'breath'
+                            ? 'Not scored'
+                            : 'Same as start'}
+                        </small>
                       </span>
                     </div>
                   }

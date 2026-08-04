@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { convertExerciseTarget, createGlideTarget, createNoteTarget, duplicateExerciseTarget, exerciseTargetKind, MIN_TARGET_DURATION_BEATS, moveExerciseTarget, removeExerciseTarget, resizeExerciseTarget, snapTimelineBeat, updateExerciseTarget, } from '@/features/admin/exercises/exercise-authoring-model'
+import { convertExerciseTarget, createBreathTarget, createGlideTarget, createHoldTarget, createNoteTarget, duplicateExerciseTarget, exerciseTargetKind, MIN_TARGET_DURATION_BEATS, moveExerciseTarget, removeExerciseTarget, resizeExerciseTarget, snapTimelineBeat, updateExerciseTarget, } from '@/features/admin/exercises/exercise-authoring-model'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
+import { validateZenExercise } from '@/features/zen/validate-exercise'
 
 const exercise = (): ZenExerciseDefinition => ({
   id: 'test-pattern',
@@ -114,5 +115,88 @@ describe('exercise authoring model', () => {
     expect(snapTimelineBeat(1.12)).toBe(1)
     expect(snapTimelineBeat(1.14)).toBe(1.25)
     expect(snapTimelineBeat(2.88)).toBe(3)
+  })
+})
+
+// ============================================================
+// Blocks the pitch tracker cannot hear
+// ============================================================
+//
+// A warm-up is not four notes in a row. It is a hiss, a breath, a lip trill —
+// things a pitch tracker has nothing to say about. Schema version 2 gave the
+// runtime a way to store them; these are what let somebody build one without
+// hand-writing JSON.
+//
+// Every test here ends at the validator, because the editor's real contract is
+// not "produces an object" but "produces something publishable". The two
+// fields that say what a block is are mutually exclusive, and it is the
+// conversion path — note to hold, hold back to glide — where a stale
+// `endSemitone` or `kind` would survive to be rejected at publish time.
+
+describe('unpitched authoring blocks', () => {
+  it('creates a hold and a breath that both validate', () => {
+    const source = exercise()
+    const withHold = createHoldTarget(source, {
+      atBeat: 2,
+      durationBeats: 2,
+      cue: 'Sss',
+    })
+    const withBoth = createBreathTarget(withHold, { atBeat: 5 })
+
+    expect(withBoth.targets.map(exerciseTargetKind)).toEqual([
+      'note',
+      'hold',
+      'breath',
+    ])
+    expect(validateZenExercise(withBoth)).toEqual([])
+    // Ids say what the block is, so the event list and the summary line read
+    // as an author wrote them rather than as "note-2, note-3".
+    expect(withBoth.targets.map((target) => target.id)).toEqual([
+      'note-1',
+      'hold-1',
+      'breath-1',
+    ])
+    expect(source.targets).toHaveLength(1)
+  })
+
+  // The validator rejects `endSemitone` on anything but a sung block, so a
+  // glide that becomes a hold has to shed it on the way through rather than
+  // carrying a dead field to the publish step.
+  it('drops the glide pitch when a sung block becomes a hold', () => {
+    const glide = createGlideTarget(exercise(), { semitone: 0 })
+    expect(glide.targets[1].endSemitone).toBe(5)
+
+    const hold = convertExerciseTarget(glide, 'glide-1', 'hold')
+    expect(hold.targets[1].endSemitone).toBeUndefined()
+    expect(hold.targets[1].kind).toBe('amplitude')
+    expect(validateZenExercise(hold)).toEqual([])
+  })
+
+  // And the reverse: a block that comes back to being sung sheds `kind`
+  // entirely, which is what keeps an all-sung exercise byte-identical to the
+  // version-one shape it started as.
+  it('sheds the kind when a breath becomes a note again', () => {
+    const breath = createBreathTarget(exercise())
+    const note = convertExerciseTarget(breath, 'breath-1', 'note')
+
+    expect('kind' in note.targets[1]).toBe(false)
+    expect(exerciseTargetKind(note.targets[1])).toBe('note')
+  })
+
+  it('gives a hold turned glide a pitch to glide to', () => {
+    const hold = createHoldTarget(exercise())
+    const glide = convertExerciseTarget(hold, 'hold-1', 'glide')
+
+    expect(glide.targets[1].kind).toBeUndefined()
+    expect(glide.targets[1].endSemitone).toBe(glide.targets[1].semitone + 5)
+    expect(validateZenExercise(glide)).toEqual([])
+  })
+
+  it('keeps a duplicate on the same side of the pitch line', () => {
+    const hold = createHoldTarget(exercise())
+    const twice = duplicateExerciseTarget(hold, 'hold-1')
+
+    expect(twice.targets.map((target) => target.id)).toContain('hold-2')
+    expect(exerciseTargetKind(twice.targets[2])).toBe('hold')
   })
 })

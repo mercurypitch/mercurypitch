@@ -1,10 +1,12 @@
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { PracticeFrame } from '@/features/practice/usePracticeController'
+import { SIGNAL_FLOOR_RMS } from '@/lib/input-health'
+import { readMicLevel } from '@/lib/mic-level'
 import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
 import { getZenExercise } from './exercise-catalog'
 import type { ResolvedZenTarget, ZenExerciseDefinition, ZenPitchPoint, ZenPitchRun, ZenProgressCue, ZenSessionStatus, ZenTargetVisibility, ZenViewport, } from './types'
-import { DEFAULT_ZEN_LOOP_SECONDS, exerciseLoopDuration, fitZenViewport, resolveZenTargets, scoreZenRun, } from './zen-model'
+import { DEFAULT_ZEN_LOOP_SECONDS, exerciseLoopDuration, fitZenViewport, pitchTargetMidis, resolveZenTargets, scoreZenRun, targetKind, } from './zen-model'
 
 const MAX_SESSION_RUNS = 10
 const MIN_SAMPLE_INTERVAL_MS = 1000 / 30
@@ -136,12 +138,7 @@ export function useZenPitchSession(
   const initialViewport =
     initialTargets.length === 0
       ? centredViewport(options.initialCenterMidi ?? 60)
-      : fitZenViewport(
-          initialTargets.flatMap((target) => [
-            target.startMidi,
-            target.endMidi,
-          ]),
-        )
+      : fitZenViewport(pitchTargetMidis(initialTargets))
 
   const [exerciseId, setExerciseId] = createSignal<string | null>(
     initialExercise?.id ?? null,
@@ -182,6 +179,12 @@ export function useZenPitchSession(
   let liveExerciseId = initialExercise?.id ?? null
   let liveRoot = initialRoot
   let liveTargets = initialTargets
+  // Whether this exercise has anything to score from loudness. Gates level
+  // capture: a number per sample on every take would grow every stored run
+  // for the benefit of the handful of exercises that read it.
+  let liveTracksLevel = initialTargets.some(
+    (target) => targetKind(target) === 'amplitude',
+  )
   let liveViewport = initialViewport
   let liveLoopDuration =
     initialExercise === null
@@ -207,7 +210,7 @@ export function useZenPitchSession(
 
   const updateViewportAfterRun = (points: readonly ZenPitchPoint[]): void => {
     const values = [
-      ...liveTargets.flatMap((target) => [target.startMidi, target.endMidi]),
+      ...pitchTargetMidis(liveTargets),
       ...percentileRange(points),
     ]
     const next = fitZenViewport(values, liveViewport)
@@ -304,19 +307,29 @@ export function useZenPitchSession(
       frame.pitch !== null &&
       frame.pitch.frequency > 0 &&
       frame.pitch.clarity >= 0.2
+    const level = liveTracksLevel ? readMicLevel(frame.atMs) : undefined
     const point: ZenPitchPoint = detected
       ? {
           timeSec: elapsed,
           midi: freqToMidiFloat(frame.pitch!.frequency),
           clarity: frame.pitch!.clarity,
+          ...(level === undefined ? {} : { level }),
         }
-      : { timeSec: elapsed, midi: null }
+      : {
+          timeSec: elapsed,
+          midi: null,
+          ...(level === undefined ? {} : { level }),
+        }
 
+    // One gap marker per silence, not one per frame. But a hiss IS unpitched
+    // and audible, so on an exercise that scores loudness "no pitch" is not
+    // the same as "nothing there" — collapsing those would throw away the
+    // only evidence the step produces.
+    const isSilent = (candidate: ZenPitchPoint): boolean =>
+      candidate.midi === null &&
+      (!liveTracksLevel || (candidate.level ?? 0) < SIGNAL_FLOOR_RMS)
     const previous = livePoints[livePoints.length - 1]
-    if (
-      point.midi === null &&
-      (previous === undefined || previous.midi === null)
-    ) {
+    if (isSilent(point) && (previous === undefined || isSilent(previous))) {
       setElapsedSec(elapsed)
       return
     }
@@ -334,14 +347,15 @@ export function useZenPitchSession(
     const nextViewport =
       nextTargets.length === 0
         ? centredViewport(options.initialCenterMidi ?? 60)
-        : fitZenViewport(
-            nextTargets.flatMap((target) => [target.startMidi, target.endMidi]),
-          )
+        : fitZenViewport(pitchTargetMidis(nextTargets))
 
     liveExercise = nextExercise
     liveExerciseId = nextExercise?.id ?? null
     liveRoot = nextRoot
     liveTargets = nextTargets
+    liveTracksLevel = nextTargets.some(
+      (target) => targetKind(target) === 'amplitude',
+    )
     liveViewport = nextViewport
     liveLoopDuration =
       nextExercise === null
@@ -375,9 +389,7 @@ export function useZenPitchSession(
     const nextViewport =
       nextTargets.length === 0
         ? liveViewport
-        : fitZenViewport(
-            nextTargets.flatMap((target) => [target.startMidi, target.endMidi]),
-          )
+        : fitZenViewport(pitchTargetMidis(nextTargets))
     liveRoot = nextRoot
     liveTargets = nextTargets
     liveViewport = nextViewport
