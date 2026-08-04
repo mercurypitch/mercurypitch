@@ -187,7 +187,6 @@ import { CrashModal } from './components/CrashModal'
 import { GuideSelection } from './components/GuideSelection'
 import { TabErrorBoundary } from './components/TabErrorBoundary'
 import UserSurveyModal from './components/UserSurveyModal'
-import { WelcomeScreen } from './components/WelcomeScreen'
 
 // ============================================================
 // Tab type
@@ -535,6 +534,17 @@ const AppShell: Component<AppProps> = (props) => {
     setOnboardingReplay(false)
     startOnboarding()
   }
+
+  // The welcome door is gone. It was beat 1 twice: the same greeting,
+  // the same two choices, one screen earlier — and the card's own CTA
+  // ("Show me around") named a tour of the interface rather than the
+  // thing that actually happens, which is that we listen to you sing
+  // and hand back a voiceprint. `showWelcome` now means "this visitor
+  // has not been offered the flow yet", and the answer is to open it.
+  createEffect(() => {
+    if (!showWelcome() || flowOpen()) return
+    startFirstLight()
+  })
 
   const openOnboardingMap = () => {
     setOnboardingReplay(true)
@@ -2382,18 +2392,9 @@ const AppShell: Component<AppProps> = (props) => {
         <a class="skip-link" href="#main-content">
           Skip to main content
         </a>
-        {/* Welcome Screen (first visit, and on demand from Settings) */}
-        {/* Gated only on its own flag and on the flow not being open.
-            `finishOnboarding` now spends `welcomeSeen` itself, so the door
-            no longer comes back over the Map once the flow ends — which is
-            what an extra `isFirstRun()` condition here used to paper over,
-            at the cost of making Settings → "Show welcome screen" dead for
-            anyone who had finished onboarding. */}
-        <Show when={showWelcome() && !flowOpen()}>
-          <WelcomeScreen onStart={startFirstLight} />
-        </Show>
-
-        {/* First Light — the guided onboarding the door opens into. */}
+        {/* First Light — the whole first run. A fresh visitor lands
+            straight on beat 1; Settings → "Replay the intro" reopens it
+            through the same `showWelcome` flag. */}
         <Show when={flowOpen()}>
           <FirstLight replay={onboardingReplay()} />
         </Show>
