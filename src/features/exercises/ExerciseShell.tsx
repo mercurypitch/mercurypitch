@@ -31,11 +31,12 @@ import { gradeForScore } from './feedback'
 import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
+import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType } from './types'
 
 export interface AutoTimerConfig {
-  /** Preset durations (seconds) offered alongside "Manual". */
-  presets: number[]
+  /** Preset durations (seconds). Defaults to the shared ladder. */
+  presets?: number[]
   /** Called when the timer elapses — wire to the exercise's stop/score. */
   onElapse: () => void
 }
@@ -107,11 +108,19 @@ export interface ExerciseShellProps {
   autoTimer?: AutoTimerConfig
 }
 
+/** "45s" under a minute, "1:30" above it — a bare "90s" reads as a typo. */
+const formatRunLength = (seconds: number): string => {
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`
+}
+
 export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [helpOpen, setHelpOpen] = createSignal(false)
-  // 'manual' | seconds
-  const [timerMode, setTimerMode] = createSignal<'manual' | number>('manual')
   const [remainingMs, setRemainingMs] = createSignal(0)
+  // Opens the slider. Sticky while Custom is the selected mode so the value
+  // stays adjustable between runs, rather than collapsing after every pick.
+  const [customOpen, setCustomOpen] = createSignal(false)
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
@@ -228,17 +237,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // Arm only on the 'active' transition so the autoStart path and the
   // transient 'count-in' state never trigger a premature stop.
   createEffect(
-    on([status, timerMode], ([statusValue, mode]) => {
+    on([status, activeTimerSeconds], ([statusValue, seconds]) => {
       clearTimer()
-      if (
-        !props.autoTimer ||
-        statusValue !== 'active' ||
-        typeof mode !== 'number'
-      ) {
+      if (!props.autoTimer || statusValue !== 'active' || seconds === null) {
         return
       }
-      const end = performance.now() + mode * 1000
-      setRemainingMs(mode * 1000)
+      const end = performance.now() + seconds * 1000
+      setRemainingMs(seconds * 1000)
       timerHandle = setInterval(() => {
         const rem = end - performance.now()
         if (rem <= 0) {
@@ -292,32 +297,85 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     onCleanup(() => window.removeEventListener('keydown', onKey))
   })
 
+  const timerPresets = (): number[] =>
+    props.autoTimer?.presets ?? [...TIMER_PRESETS]
+
+  const chooseCustom = (): void => {
+    setTimerMode('custom')
+    setCustomOpen(true)
+  }
+
   const TimerToggle = (): JSX.Element => (
-    <div
-      class="exercise-timer-toggle"
-      role="group"
-      aria-label="Auto-score timer"
-    >
-      <button
-        type="button"
-        class="exercise-timer-segment"
-        classList={{ active: timerMode() === 'manual' }}
-        onClick={() => setTimerMode('manual')}
+    <div class="exercise-timer-field">
+      <div
+        class="exercise-timer-toggle"
+        role="group"
+        aria-label="Auto-score timer"
       >
-        Manual
-      </button>
-      <For each={props.autoTimer!.presets}>
-        {(sec) => (
-          <button
-            type="button"
-            class="exercise-timer-segment"
-            classList={{ active: timerMode() === sec }}
-            onClick={() => setTimerMode(sec)}
-          >
-            {sec}s
-          </button>
-        )}
-      </For>
+        <button
+          type="button"
+          class="exercise-timer-segment"
+          classList={{ active: timerMode() === 'manual' }}
+          onClick={() => {
+            setTimerMode('manual')
+            setCustomOpen(false)
+          }}
+          title="No timer — you press Stop"
+        >
+          Manual
+        </button>
+        <For each={timerPresets()}>
+          {(sec) => (
+            <button
+              type="button"
+              class="exercise-timer-segment"
+              classList={{ active: timerMode() === sec }}
+              onClick={() => {
+                setTimerMode(sec)
+                setCustomOpen(false)
+              }}
+            >
+              {sec}s
+            </button>
+          )}
+        </For>
+        <button
+          type="button"
+          class="exercise-timer-segment"
+          classList={{ active: timerMode() === 'custom' }}
+          aria-expanded={customOpen()}
+          onClick={() =>
+            timerMode() === 'custom'
+              ? setCustomOpen((open) => !open)
+              : chooseCustom()
+          }
+          title="Pick any length between the presets"
+        >
+          {timerMode() === 'custom' ? `${customTimerSeconds()}s` : 'Custom'}
+        </button>
+      </div>
+
+      {/* The slider only exists while Custom is the chosen mode: a length
+          nothing is going to use is a control that lies about what happens
+          when the singer presses Start. */}
+      <Show when={timerMode() === 'custom' && customOpen()}>
+        <label class="exercise-timer-custom">
+          <input
+            type="range"
+            min={CUSTOM_MIN_SEC}
+            max={CUSTOM_MAX_SEC}
+            step={CUSTOM_STEP_SEC}
+            value={customTimerSeconds()}
+            aria-label="Custom run length in seconds"
+            onInput={(event) =>
+              setCustomTimerSeconds(Number(event.currentTarget.value))
+            }
+          />
+          <output class="exercise-timer-custom-value">
+            {formatRunLength(customTimerSeconds())}
+          </output>
+        </label>
+      </Show>
     </div>
   )
 
@@ -491,7 +549,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             style (the secondary button's background var was undefined). */}
         <Show when={isActive()}>
           <div class="exercise-active-controls">
-            <Show when={props.autoTimer && typeof timerMode() === 'number'}>
+            <Show when={props.autoTimer && activeTimerSeconds() !== null}>
               <span class="exercise-timer-countdown">
                 {Math.ceil(remainingMs() / 1000)}s
               </span>

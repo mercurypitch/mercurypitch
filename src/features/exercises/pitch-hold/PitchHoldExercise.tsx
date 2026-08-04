@@ -115,7 +115,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       onStart={() => void handleStart()}
       stopLabel="Stop & Score"
       onStop={handleStop}
-      autoTimer={{ presets: [5, 15, 30], onElapse: handleStop }}
+      autoTimer={{ onElapse: handleStop }}
       tracker={{
         pitchHistory: base.pitchHistory,
         targetNoteMidi: () => noteToMidi(targetNote()),
