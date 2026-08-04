@@ -207,10 +207,16 @@ export function useMirrorMelodyController(
     finish()
   }
 
+  /** Notes still to come after the one being asked for, nearest first. */
+  function getUpcomingMidi(): number[] {
+    return melody.slice(noteIndex + 1)
+  }
+
   return {
     setMelody,
     startSequence,
     stopSequence,
     computeResult,
+    getUpcomingMidi,
   }
 }

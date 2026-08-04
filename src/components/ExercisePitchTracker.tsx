@@ -15,6 +15,8 @@ export interface ExercisePitchTrackerProps {
   targetNoteMidi?: () => number | undefined
   /** Optional moving guide frequency (Hz) for glide drills. */
   movingTarget?: () => number | null
+  /** Targets still to come, nearest first (MIDI) — drawn ahead of the playhead. */
+  upcomingTargets?: () => number[]
 }
 
 export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
@@ -58,6 +60,7 @@ export const ExercisePitchTracker: Component<ExercisePitchTrackerProps> = (
             visibleWindowSeconds={10}
             targetNoteMidi={props.targetNoteMidi}
             movingTarget={props.movingTarget}
+            upcomingTargets={props.upcomingTargets}
           />
         </div>
       </Show>

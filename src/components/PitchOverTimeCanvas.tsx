@@ -21,6 +21,16 @@ interface PitchOverTimeCanvasProps {
   /** Optional guide frequency (Hz) that moves over time — drawn as a vertical
    *  sliding dot so the singer can follow a glide up/down. */
   movingTarget?: () => number | null
+  /**
+   * The targets still to come, nearest first, as MIDI numbers. Drawn as a
+   * ladder in the empty space ahead of the playhead so the singer can prepare
+   * the next interval instead of meeting it.
+   *
+   * Spacing is by ORDER, not by clock: most drills advance on a response, so
+   * the sequence is known but its timing is not. The ladder therefore says
+   * "then this, then this" and never pretends to say when.
+   */
+  upcomingTargets?: () => number[]
 }
 
 const Y_AXIS_NOTES = [
@@ -40,6 +50,11 @@ const LOG_RANGE = LOG_MAX - LOG_MIN
 
 const AUTO_ZOOM_WINDOW_SEC = 6
 const MARGIN = 32
+
+/** How many upcoming targets the ladder shows before it stops being scannable. */
+const MAX_UPCOMING = 6
+/** Where the newest sample sits, as a fraction of canvas width. */
+const PLAYHEAD_FRACTION = 0.45
 
 const DOT_RADIUS = 3
 const GLOW_RADIUS = 12
@@ -166,13 +181,27 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
   ): number => {
     const window = visibleWindow()
     const windowStart = nowTime - window
-    // Pin the latest sample at 45% of canvas width so the timeline
-    // slides naturally — the dot never reaches the right-side labels.
-    const targetRight = w * 0.45
+    // Pin the latest sample at PLAYHEAD_FRACTION of canvas width so the
+    // timeline slides naturally — the dot never reaches the right-side labels,
+    // and what is left over is where the upcoming-target ladder lives.
+    const targetRight = w * PLAYHEAD_FRACTION
     const effectiveWidth = targetRight - MARGIN
     const pct = Math.max(0, Math.min(1, (sampleTime - windowStart) / window))
     const x = MARGIN + pct * effectiveWidth
     return Number.isFinite(x) ? x : MARGIN
+  }
+
+  /** The upcoming ladder as frequencies, capped and sanitised. */
+  const upcomingFreqs = (): number[] => {
+    const midis = props.upcomingTargets?.()
+    if (midis === undefined || midis.length === 0) return []
+    const out: number[] = []
+    for (const midi of midis) {
+      if (!Number.isFinite(midi) || midi <= 0) continue
+      out.push(440 * 2 ** ((midi - 69) / 12))
+      if (out.length === MAX_UPCOMING) break
+    }
+    return out
   }
 
   const startDrawLoop = () => {
@@ -183,6 +212,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       // Compute dynamic log range for zoom / auto-zoom
       const samples = props.samples()
+      const upcoming = upcomingFreqs()
       let effLogMin = LOG_MIN
       let effLogMax = LOG_MAX
 
@@ -195,6 +225,11 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
           if (s.time < windowStart) break
           if (s.freq !== null && s.freq > 0) recentFreqs.push(s.freq)
         }
+        // The ladder counts toward the range too. Auto-zoom that framed only
+        // what was already sung would push the next leap off the top of the
+        // canvas — on Arpeggio Jumper that is precisely the note you needed
+        // to see coming.
+        if (recentFreqs.length >= 3) recentFreqs.push(...upcoming)
         if (recentFreqs.length >= 3) {
           const minF = Math.min(...recentFreqs)
           const maxF = Math.max(...recentFreqs)
@@ -250,7 +285,8 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
       drawYAxisLabels(w, h, effLogMin, effLogRange)
       drawScaleGridLines(w, h, effLogMin, effLogRange)
-      drawTargetLine(w, h, effLogMin, effLogRange)
+      drawTargetLine(w, h, effLogMin, effLogRange, upcoming.length > 0)
+      drawUpcomingTargets(w, h, effLogMin, effLogRange, upcoming)
       drawMovingTarget(w, h, effLogMin, effLogRange)
       drawTimeLabels(w, h)
       drawSamples(w, h, effLogMin, effLogRange)
@@ -364,6 +400,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     h: number,
     logMin: number,
     logRange: number,
+    hasLadder: boolean,
   ) => {
     if (!ctx) return
     const targetMidi = props.targetNoteMidi?.()
@@ -392,21 +429,26 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
       return `${names[((Math.round(targetMidi) % 12) + 12) % 12]}${octave}`
     })()
 
+    // With a ladder drawn, the line stops at the playhead: this note is what
+    // is owed NOW, and running it across the lane would claim it is still the
+    // target after the next rung, which it is not.
+    const lineEnd = hasLadder ? w * PLAYHEAD_FRACTION : w - MARGIN
     ctx.strokeStyle = 'rgba(63,185,80,0.55)'
     ctx.lineWidth = 1.2
     ctx.setLineDash([8, 6])
     ctx.beginPath()
     ctx.moveTo(MARGIN, y)
-    ctx.lineTo(w - MARGIN, y)
+    ctx.lineTo(lineEnd, y)
     ctx.stroke()
     ctx.setLineDash([])
 
-    // Label pill on the right side
+    // Label pill at the end of the line — the right edge normally, tucked
+    // against the playhead when the ladder owns the space beyond it.
     ctx.font = 'bold 10px sans-serif'
     const textWidth = ctx.measureText(label).width
     const pillW = textWidth + 12
     const pillH = 16
-    const pillX = w - MARGIN - pillW
+    const pillX = lineEnd - pillW
     const pillY = y - pillH / 2
 
     ctx.fillStyle = 'rgba(13,17,23,0.85)'
@@ -424,6 +466,92 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(label, pillX + pillW / 2, y)
+  }
+
+  /**
+   * The "then this, then this" ladder in the empty half of the canvas.
+   *
+   * Rungs are evenly spaced by order and fade with distance, and a faint line
+   * links the current target to the first rung and onward — so the SHAPE of
+   * what is coming (a step, a fourth, an octave leap) reads before any of the
+   * note names do.
+   */
+  const drawUpcomingTargets = (
+    w: number,
+    h: number,
+    logMin: number,
+    logRange: number,
+    freqs: number[],
+  ) => {
+    if (!ctx) return
+    if (freqs.length === 0) return
+
+    const playheadX = w * PLAYHEAD_FRACTION
+    const laneWidth = w - MARGIN - playheadX
+    if (laneWidth < 40) return
+    const step = laneWidth / (freqs.length + 1)
+    const rungWidth = Math.min(28, step * 0.62)
+
+    // Playhead: the boundary between what was sung and what is owed.
+    ctx.strokeStyle = 'rgba(110,118,129,0.35)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(playheadX, MARGIN * 0.5)
+    ctx.lineTo(playheadX, h - MARGIN)
+    ctx.stroke()
+
+    const rungs = freqs.map((freq, i) => ({
+      x: playheadX + step * (i + 1),
+      y: freqToY(freq, h, logMin, logRange),
+      freq,
+    }))
+
+    // Connector, starting from the current target when there is one so the
+    // first interval is drawn rather than inferred.
+    const currentMidi = props.targetNoteMidi?.()
+    const from =
+      currentMidi != null && currentMidi > 0
+        ? {
+            x: playheadX,
+            y: freqToY(
+              440 * 2 ** ((currentMidi - 69) / 12),
+              h,
+              logMin,
+              logRange,
+            ),
+          }
+        : null
+    ctx.strokeStyle = 'rgba(63,185,80,0.28)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([3, 4])
+    ctx.beginPath()
+    if (from !== null) ctx.moveTo(from.x, from.y)
+    else ctx.moveTo(rungs[0]!.x, rungs[0]!.y)
+    for (const rung of rungs) ctx.lineTo(rung.x, rung.y)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    ctx.lineCap = 'round'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    rungs.forEach((rung, i) => {
+      if (rung.y < 6 || rung.y > h - MARGIN) return
+      const alpha = Math.max(0.16, 0.62 - i * 0.09)
+      ctx!.strokeStyle = `rgba(63,185,80,${alpha})`
+      ctx!.lineWidth = i === 0 ? 3 : 2
+      ctx!.beginPath()
+      ctx!.moveTo(rung.x - rungWidth / 2, rung.y)
+      ctx!.lineTo(rung.x + rungWidth / 2, rung.y)
+      ctx!.stroke()
+
+      // Only the next two carry a name — past that the shape is the message
+      // and more text would just crowd the lane.
+      if (i > 1) return
+      ctx!.fillStyle = `rgba(63,185,80,${Math.max(0.35, alpha)})`
+      ctx!.font = i === 0 ? 'bold 10px sans-serif' : '9px sans-serif'
+      ctx!.fillText(noteNameFromFreq(rung.freq), rung.x, rung.y - 5)
+    })
+    ctx.lineCap = 'butt'
   }
 
   const drawMovingTarget = (
@@ -499,7 +627,7 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
 
     const window = visibleWindow()
     // Match the sample-to-x mapping so ticks align with the dots.
-    const targetRight = w * 0.45
+    const targetRight = w * PLAYHEAD_FRACTION
     const effectiveWidth = targetRight - MARGIN
     if (effectiveWidth <= 0) return
     const pxPerSec = effectiveWidth / window
