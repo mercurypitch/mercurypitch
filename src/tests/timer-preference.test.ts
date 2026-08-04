@@ -13,7 +13,7 @@
 // asking for their 45 back, not for whatever the slider defaults to.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, resetTimerPreference, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from '@/features/exercises/timer-preference'
+import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, resetTimerPreference, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, TIMER_STORAGE_KEY, timerMode, } from '@/features/exercises/timer-preference'
 
 describe('run-length preference', () => {
   beforeEach(() => {
@@ -27,6 +27,13 @@ describe('run-length preference', () => {
   it('opens on a duration rather than on Manual', () => {
     expect(timerMode()).toBe(5)
     expect(activeTimerSeconds()).toBe(5)
+  })
+
+  it('stores under a key the settings sync will actually carry', () => {
+    // settings-service syncs by prefix. A key without it is device-local, and
+    // nothing fails loudly when that happens — the preference just quietly
+    // stops following the singer between devices.
+    expect(TIMER_STORAGE_KEY.startsWith('pitchperfect_')).toBe(true)
   })
 
   it('offers a rung between five and fifteen seconds', () => {
