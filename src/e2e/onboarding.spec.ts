@@ -17,9 +17,6 @@ import { FRESH_VISITOR_INIT } from './helpers/tone-wav'
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
 
-const door = (page: import('@playwright/test').Page) =>
-  page.getByRole('button', { name: 'Show me around' })
-
 const beat = (page: import('@playwright/test').Page, name: string) =>
   page.locator(`[data-beat="${name}"]`)
 
@@ -28,16 +25,26 @@ test.describe('First Light onboarding', () => {
     await page.addInitScript(FRESH_VISITOR_INIT)
   })
 
-  test('a fresh visitor is met by the door, not a settings dialog', async ({
+  test('a fresh visitor lands on beat 1, not a door and not a settings dialog', async ({
     page,
   }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await expect(door(page)).toBeVisible({ timeout: 10000 })
+    // No welcome card in front of the flow — it was beat 1 twice.
+    await expect(beat(page, 'sky')).toBeVisible({ timeout: 10000 })
+    await expect(
+      page.getByRole('button', { name: 'Show me around' }),
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: 'Sing one note' }),
+    ).toBeVisible()
     await expect(
       page.getByRole('button', { name: /Skip .* take me in/ }),
     ).toBeVisible()
+    // The terms line moved here with the door, and has to be on screen
+    // before anything is measured.
+    await expect(beat(page, 'sky')).toContainText(/Terms of Use/)
 
     // The questions this screen used to ask before showing any value.
     // If any of these come back, the regression is the whole point of
@@ -58,7 +65,6 @@ test.describe('First Light onboarding', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await door(page).click()
     await page.getByRole('button', { name: 'Sing one note' }).click()
     await expect(beat(page, 'first-light')).toBeVisible()
 
@@ -113,7 +119,7 @@ test.describe('First Light onboarding', () => {
     }
   })
 
-  test('skipping at the door sticks across a reload', async ({ page }) => {
+  test('skipping at beat 1 sticks across a reload', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
@@ -122,9 +128,9 @@ test.describe('First Light onboarding', () => {
 
     await page.reload()
     await expect(page.locator('#app-tabs')).toBeVisible({ timeout: 10000 })
-    // The door must not come back — that bug (keying the seen-flag off
+    // The flow must not come back — that bug (keying the seen-flag off
     // APP_VERSION) is what this redesign fixed.
-    await expect(door(page)).toHaveCount(0)
+    await expect(beat(page, 'sky')).toHaveCount(0)
   })
 
   test('Settings can reopen the intro after onboarding is finished', async ({
@@ -139,15 +145,13 @@ test.describe('First Light onboarding', () => {
     await page.goto('/')
     await page.getByRole('button', { name: /Skip .* take me in/ }).click()
     await expect(page.locator('#app-tabs')).toBeVisible()
-    await expect(door(page)).toHaveCount(0)
+    await expect(beat(page, 'sky')).toHaveCount(0)
 
     await page.goto('/#/settings/account')
     const replay = page.getByRole('button', { name: 'Replay the intro' })
     await expect(replay).toBeVisible({ timeout: 10000 })
     await replay.click()
 
-    await expect(door(page)).toBeVisible()
-    await door(page).click()
     await expect(beat(page, 'sky')).toBeVisible()
   })
 
@@ -163,14 +167,13 @@ test.describe('First Light onboarding', () => {
 
     await page.goto('/')
     await expect(page.locator('#app-tabs')).toBeVisible({ timeout: 10000 })
-    await expect(door(page)).toHaveCount(0)
+    await expect(beat(page, 'sky')).toHaveCount(0)
   })
 
   test('the flow fits a phone without sideways scroll', async ({ page }) => {
     await page.setViewportSize(PHONE)
     await page.goto('/')
 
-    await door(page).click()
     await expect(beat(page, 'sky')).toBeVisible()
 
     // The page body must never scroll horizontally — the single most
@@ -216,7 +219,6 @@ test.describe('First Light onboarding', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await door(page).click()
     await expect(beat(page, 'sky')).toBeVisible()
 
     // Beats must be fully opaque immediately — under reduced motion the
