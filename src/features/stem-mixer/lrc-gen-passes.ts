@@ -2,26 +2,39 @@
 // lrc-gen-passes — pure pass/cursor logic for two-pass LRC mapping
 // ============================================================
 //
-// Mapping used to be one continuous stream of taps that fused two different
+// Mapping can run as one continuous stream of taps that fuses two different
 // jobs: placing line starts and placing the words inside them. Line starts are
 // the easy, usually-already-known half (LRCLib ships line-level LRC, and a
 // line start is preceded by a breath); inner words are the dense, unforgiving
 // half. Fusing them means a flubbed line boundary corrupts the words after it.
 //
-// So the mapper runs two passes:
-//   Pass 1 — line starts only, one tap per line, skippable when the fetched
-//            LRC times already look right. Its real value is correction.
-//   Pass 2 — line starts are frozen and become word 0. The cursor starts at
-//            word 1 and single-word lines are skipped entirely, because they
-//            are fully determined by their line start.
+// So splitting the work is offered, not imposed — three modes:
+//   All   — the original flow: every tap places the next word, and the first
+//           word of a line places its start. Fastest when the song is slow or
+//           the lyrics are short, and the only mode before the split existed.
+//   Lines — line starts only, one tap per line, skippable when the fetched
+//           LRC times already look right. Its real value is correction.
+//   Words — line starts are frozen and become word 0. The cursor starts at
+//           word 1 and single-word lines are skipped entirely, because they
+//           are fully determined by their line start.
 //
 // See docs/plans/lrc-per-word-mapping-research.md. Tests:
 // src/tests/lrc-gen-passes.test.ts.
 
 import type { WordTimingsMap } from './types'
 
-/** 1 = line starts, 2 = the words inside each line. */
-export type LrcGenPass = 1 | 2
+export type LrcGenPass = 'all' | 'lines' | 'words'
+
+/**
+ * Coerce a persisted pass back into the union. Sessions saved before the split
+ * have no pass at all, and the first version to write one used `1`/`2` — both
+ * decode rather than dropping the operator into an unexpected mode.
+ */
+export function normalizePass(value: unknown): LrcGenPass {
+  if (value === 'lines' || value === 1) return 'lines'
+  if (value === 'words' || value === 2) return 'words'
+  return 'all'
+}
 
 /** Seconds of run-in played before a line, so the operator hears it coming. */
 export const PRE_ROLL_SEC = 1.5
@@ -136,6 +149,35 @@ export function lineEndTime(
   const anchor = last ?? start
   if (anchor === undefined) return null
   return anchor + FALLBACK_LINE_SPAN_SEC
+}
+
+/**
+ * The mapped line sounding at `time` — the last one whose start has passed, so
+ * a line stays lit through the gap after it exactly as the runtime renderer
+ * leaves it lit. Returns -1 before the first mapped line.
+ *
+ * Deliberately does not stop at the first future start: lines mapped out of
+ * order (redo a line, jump back, correct a drift) leave the array briefly
+ * non-monotonic, and an early exit there would blank the highlight instead of
+ * just being slightly wrong for one line.
+ */
+export function activeLineAt(
+  lines: string[],
+  lineTimes: (number | undefined)[],
+  time: number,
+): number {
+  let found = -1
+  let bestStart = -Infinity
+  for (let i = 0; i < lines.length; i++) {
+    const start = lineTimes[i]
+    if (start === undefined || start > time) continue
+    if (!isMappableLine(lines[i])) continue
+    if (start >= bestStart) {
+      bestStart = start
+      found = i
+    }
+  }
+  return found
 }
 
 export interface PreviewWordHighlight {
