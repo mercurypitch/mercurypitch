@@ -25,6 +25,7 @@ export const BEAT_ORDER = [
   'sky',
   'first-light',
   'fork',
+  'prints',
   'voiceprint',
   'twin',
   'keep',
@@ -35,16 +36,25 @@ export type Beat = (typeof BEAT_ORDER)[number]
 
 /**
  * `short` is the ~25s spine everyone walks; `full` adds the ~90s
- * voiceprint fork. Null until the visitor chooses at the fork.
+ * voiceprint fork; `gallery` is what the fork offers instead of `full`
+ * to someone who has already mapped their voice — their existing
+ * voiceprints, shown at full size, rather than a second measurement
+ * they did not ask for. Null until the visitor chooses at the fork.
  */
-export type OnboardingTrack = 'short' | 'full'
+export type OnboardingTrack = 'short' | 'full' | 'gallery'
 
 export interface FlowState {
   track: OnboardingTrack | null
-  /** True once a voiceprint has actually been measured. */
+  /** True once a voiceprint has actually been measured IN THIS RUN. */
   hasVoiceprint: boolean
   /** True once the visitor has refused (or cannot use) the microphone. */
   micDenied: boolean
+  /**
+   * Voiceprints this visitor already had before the flow opened. The
+   * fork reads this to stop offering "map my whole voice" to someone
+   * who has done exactly that, four times.
+   */
+  savedPrints: number
 }
 
 /**
@@ -65,6 +75,10 @@ export function isBeatApplicable(beat: Beat, state: FlowState): boolean {
     case 'voiceprint':
     case 'twin':
       return state.track === 'full'
+    // Only ever reached by choosing it, and only offered when there is
+    // something in it. An empty gallery is not a beat.
+    case 'prints':
+      return state.track === 'gallery' && state.savedPrints > 0
     // Nothing measured means nothing worth offering to keep. Asking
     // anyway is the generic "sign up!" wall this flow exists to avoid.
     case 'keep':
@@ -108,6 +122,20 @@ export function firstBeat(
 }
 
 /**
+ * The beats this visitor will actually see, in order. Both the progress
+ * hairline and the sky's beads are cuts of this one list, which is why
+ * it is a function rather than two near-identical filters.
+ */
+export function walkedBeats(
+  state: FlowState,
+  available: ReadonlySet<Beat>,
+): Beat[] {
+  return BEAT_ORDER.filter(
+    (beat) => isBeatApplicable(beat, state) && available.has(beat),
+  )
+}
+
+/**
  * Progress through the beats this visitor will actually see, 0–1.
  * Drives the thin progress hairline in the frame; a visitor on the
  * short track should not see a bar that stalls at 40%.
@@ -117,9 +145,7 @@ export function beatProgress(
   state: FlowState,
   available: ReadonlySet<Beat>,
 ): number {
-  const walked = BEAT_ORDER.filter(
-    (beat) => isBeatApplicable(beat, state) && available.has(beat),
-  )
+  const walked = walkedBeats(state, available)
   if (walked.length <= 1) return 1
   const index = walked.indexOf(current)
   if (index < 0) return 0

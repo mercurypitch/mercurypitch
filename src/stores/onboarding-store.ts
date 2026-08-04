@@ -12,9 +12,10 @@
 //
 // See docs/plans/onboarding-first-light.md.
 
-import { createSignal } from 'solid-js'
+import { batch, createSignal } from 'solid-js'
+import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { Beat, FlowState, OnboardingTrack, } from '@/features/onboarding/flow'
-import { beatProgress, firstBeat, nextBeat } from '@/features/onboarding/flow'
+import { beatProgress, firstBeat, nextBeat, walkedBeats, } from '@/features/onboarding/flow'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -45,8 +46,24 @@ const [voiceprint, setVoiceprint] = createSignal<MirrorResult | null>(null)
 const [micDenied, setMicDenied] = createSignal(false)
 /** The one note heard at beat 2, kept so beat 3 can name it back. */
 const [firstNote, setFirstNote] = createSignal<string | null>(null)
+/**
+ * Voiceprints this visitor already had before the flow opened, newest
+ * first. Loaded once by FirstLight — the flow itself never fetches, so
+ * a slow or offline read cannot stall a beat.
+ */
+const [savedVoiceprints, setSavedVoiceprints] = createSignal<
+  readonly VoiceprintRecord[]
+>([])
 
-export { currentBeat, firstNote, flowOpen, micDenied, track, voiceprint }
+export {
+  currentBeat,
+  firstNote,
+  flowOpen,
+  micDenied,
+  savedVoiceprints,
+  track,
+  voiceprint,
+}
 
 /**
  * The beats the app can currently render. Beats land phase by phase;
@@ -70,12 +87,23 @@ function flowState(): FlowState {
     track: track(),
     hasVoiceprint: voiceprint() !== null,
     micDenied: micDenied(),
+    savedPrints: savedVoiceprints().length,
   }
 }
 
 /** 0–1 across the beats THIS visitor will see (not all seven). */
 export function onboardingProgress(): number {
   return beatProgress(currentBeat(), flowState(), availableBeats())
+}
+
+/**
+ * The same walk, as beads for the sky: how many there are and which one
+ * the visitor is on. `index` is -1 before the flow starts or on a beat
+ * outside the walk (the Map opened on its own as a replay).
+ */
+export function onboardingBeads(): { count: number; index: number } {
+  const walked = walkedBeats(flowState(), availableBeats())
+  return { count: walked.length, index: walked.indexOf(currentBeat()) }
 }
 
 // ── Actions ─────────────────────────────────────────────────────
@@ -115,6 +143,13 @@ export function recordFirstNote(note: string | null): void {
   setFirstNote(note)
 }
 
+/** What this visitor already had, newest first (FirstLight, on mount). */
+export function recordSavedVoiceprints(
+  records: readonly VoiceprintRecord[],
+): void {
+  setSavedVoiceprints(records)
+}
+
 /**
  * Mark the microphone unusable — refused, unavailable, or silent. Every
  * beat after this except the Map needs one, so the traversal routes
@@ -138,17 +173,24 @@ export function advanceBeat(): Beat | null {
   return next
 }
 
-/** Close the flow and mark it seen — both "done" and "skip" land here. */
+/**
+ * Close the flow and mark it seen — both "done" and "skip" land here.
+ *
+ * Batched, and that is load-bearing rather than tidy. `showWelcome`
+ * being true with the flow shut is what OPENS the flow now that the
+ * welcome door is gone, so an unbatched `setFlowOpen(false)` ran that
+ * effect while the seen-flag was still unspent and reopened the flow on
+ * beat 1 the instant it closed. Both writes have to land as one.
+ */
 export function finishOnboarding(): void {
-  setFlowOpen(false)
-  setOnboardingDone('1')
-  // Spend the door's own flag too. The flow is entered THROUGH the door,
-  // so leaving `welcomeSeen` unspent left `showWelcome` true forever —
-  // which the render site then had to mask with an extra `isFirstRun()`
-  // condition, and that in turn made Settings → "Show welcome screen" a
-  // dead button for anyone who had finished onboarding. One flag per
-  // thing, spent when that thing is done.
-  dismissWelcome()
+  batch(() => {
+    setFlowOpen(false)
+    setOnboardingDone('1')
+    // Spend the welcome flag too. It is the "this visitor has not been
+    // offered the flow yet" flag, and leaving it unspent left the flow
+    // permanently due.
+    dismissWelcome()
+  })
 }
 
 /**
@@ -166,6 +208,7 @@ export function resetOnboarding(): void {
   setVoiceprint(null)
   setMicDenied(false)
   setFirstNote(null)
+  setSavedVoiceprints([])
   setCurrentBeat('sky')
   setFlowOpen(false)
 }
