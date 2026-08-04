@@ -246,6 +246,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       role="dialog"
       aria-modal="true"
       aria-label="Welcome to MercuryPitch"
+      // A stable hook for the E2E overlay helper. The class is a CSS
+      // module, so its name is a build hash and nothing outside this file
+      // can match on it — which is exactly how this flow ended up
+      // swallowing the clicks of every spec that dismisses overlays.
+      data-onboarding-flow
     >
       <div
         class={`${styles.plate} ${currentBeat() === 'map' ? styles.plateRecede : ''}`}
