@@ -8,14 +8,17 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Pencil, SlidersHorizontal, X } from '@/components/icons'
+import { Pencil, SlidersHorizontal } from '@/components/icons'
+import { Sheet } from '@/components/mobile/Sheet'
 import type { VoiceTakeRecord } from '@/db/entities'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
-import { useFocusTrap } from '@/lib/use-focus-trap'
+import type { DecodedVoiceAtlasContour } from '@/lib/voice-contour'
 import type { VoiceAtlasRenderModel, VoiceAtlasTrailModel, } from './voice-atlas-model'
 import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
-import { MAX_VOICE_REFLECTION_NOTE_LENGTH, voiceReflectionLabel, } from './voice-reflections'
+import { voiceReflectionLabel } from './voice-reflections'
+import { VoiceAtlasInspector } from './VoiceAtlasInspector'
 import styles from './VoiceAtlasPanel.module.css'
+import { VoiceAtlasTraits } from './VoiceAtlasTraits'
 import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 
 const EARLIER_COLOR = '#2dd4bf'
@@ -40,6 +43,8 @@ export interface VoiceAtlasPanelProps {
   model: VoiceAtlasRenderModel
   earlier: VoiceTakeRecord | null
   later: VoiceTakeRecord | null
+  earlierContour: DecodedVoiceAtlasContour | null
+  laterContour: DecodedVoiceAtlasContour | null
   /** Take currently targeted by the shared playhead and Reflection Beacons. */
   selectedId: string | null
   activeId: string | null
@@ -523,8 +528,6 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   let canvas: HTMLCanvasElement | undefined
   let roomButton: HTMLButtonElement | undefined
   let reflectionButton: HTMLButtonElement | undefined
-  let inspectorElement: HTMLElement | undefined
-  let inspectorCloseButton: HTMLButtonElement | undefined
   let resizeObserver: ResizeObserver | null = null
   let dprWatcher: ReturnType<typeof createDprWatcher> | null = null
   let redraw: ReturnType<typeof createRedrawScheduler> | null = null
@@ -548,12 +551,6 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
       if (current === 'reflection') reflectionButton?.focus()
     })
   }
-
-  useFocusTrap(() => inspectorElement, {
-    isOpen: () => inspector() !== null && mobileInspector(),
-    onClose: closeInspector,
-    initialFocus: () => inspectorCloseButton,
-  })
 
   const takeForId = (id: string | null): VoiceTakeRecord | null => {
     if (id === null) return null
@@ -733,6 +730,41 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
     setNote('')
   }
 
+  const selectedReflectionSummary = () => {
+    const marker = selectedMarker()
+    if (marker === null) return null
+    return {
+      kind: marker.reflection.kind,
+      note: marker.reflection.note,
+      seconds:
+        marker.reflection.position *
+        takeDurationSeconds(takeForId(marker.takeId)),
+    }
+  }
+
+  const inspectorContent = (mode: 'reflection' | 'room'): JSX.Element => {
+    return (
+      <VoiceAtlasInspector
+        mode={mode}
+        selectedTakeLabel={selectedTake() === null ? null : selectedLabel()}
+        selectedSeconds={currentSeconds()}
+        note={note()}
+        noteInputId={noteId}
+        selectedReflection={selectedReflectionSummary()}
+        roomPanel={props.roomPanel}
+        onClose={closeInspector}
+        onNote={setNote}
+        onAddReflection={addReflection}
+        onRemoveSelectedReflection={() => {
+          const selected = selectedMarker()
+          if (selected === null) return
+          props.onRemoveReflection(selected.takeId, selected.reflection.id)
+          setSelectedMarkerId(null)
+        }}
+      />
+    )
+  }
+
   createEffect(() => {
     void props.model
     void props.loading
@@ -772,7 +804,9 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   return (
     <section
       class={styles.atlas}
-      classList={{ [styles.inspectorOpen]: inspector() !== null }}
+      classList={{
+        [styles.inspectorOpen]: inspector() !== null && !mobileInspector(),
+      }}
       aria-labelledby={titleId}
       aria-busy={props.loading === true}
       onKeyDown={(event) => {
@@ -1036,162 +1070,43 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
               </div>
             }
           />
+
+          <VoiceAtlasTraits
+            earlier={props.earlier}
+            later={props.later}
+            earlierContour={props.earlierContour}
+            laterContour={props.laterContour}
+          />
         </div>
 
-        <Show when={inspector() !== null}>
-          <aside
-            ref={inspectorElement}
-            id={inspectorId}
-            class={styles.inspector}
-            role={mobileInspector() ? 'dialog' : 'region'}
-            aria-modal={mobileInspector() ? 'true' : undefined}
-            aria-label="Listening tools"
-            tabindex={mobileInspector() ? -1 : undefined}
-          >
-            <div class={styles.inspectorHeading}>
-              <div>
-                <span>
-                  {inspector() === 'reflection'
-                    ? 'Reflection beacons'
-                    : 'Listening room'}
-                </span>
-                <strong>
-                  {inspector() === 'reflection'
-                    ? 'Mark this exact moment.'
-                    : 'Place every replay in the same space.'}
-                </strong>
-              </div>
-              <button
-                ref={inspectorCloseButton}
-                type="button"
-                aria-label="Close listening tools"
-                onClick={closeInspector}
+        <Show when={inspector()} keyed>
+          {(mode) => (
+            <Show
+              when={mobileInspector()}
+              fallback={
+                <aside
+                  id={inspectorId}
+                  class={styles.inspector}
+                  role="region"
+                  aria-label="Listening tools"
+                >
+                  {inspectorContent(mode)}
+                </aside>
+              }
+            >
+              <Sheet
+                isOpen={true}
+                close={closeInspector}
+                ariaLabel="Listening tools"
+                snap="content"
+                class={styles.mobileInspectorSheet}
               >
-                <X aria-hidden="true" />
-              </button>
-            </div>
-
-            <Show when={inspector() === 'reflection'}>
-              <div class={styles.reflections}>
-                <div class={styles.reflectionIntro}>
-                  <Show
-                    when={selectedTake()}
-                    keyed
-                    fallback={<p>Select a take before placing a beacon.</p>}
-                  >
-                    {(take) => (
-                      <div
-                        class={styles.reflectionTarget}
-                        data-testid="reflection-target"
-                        aria-live="polite"
-                      >
-                        <span>Saving to</span>
-                        <strong>
-                          {take.id === props.earlier?.id ? 'Earlier' : 'Later'}{' '}
-                          take
-                        </strong>
-                        <time>{formatClock(currentSeconds())}</time>
-                        <p>
-                          Move the playhead to place this at another exact
-                          moment.
-                        </p>
-                      </div>
-                    )}
-                  </Show>
+                <div id={inspectorId} class={styles.mobileInspectorContent}>
+                  {inspectorContent(mode)}
                 </div>
-
-                <div class={styles.reflectionComposer}>
-                  <label for={noteId}>Optional note</label>
-                  <div class={styles.noteField}>
-                    <input
-                      id={noteId}
-                      value={note()}
-                      maxlength={MAX_VOICE_REFLECTION_NOTE_LENGTH}
-                      placeholder="What did you hear here?"
-                      disabled={selectedTake() === null}
-                      onInput={(event) => setNote(event.currentTarget.value)}
-                    />
-                    <span class={styles.noteCount} aria-hidden="true">
-                      {note().length} / {MAX_VOICE_REFLECTION_NOTE_LENGTH}
-                    </span>
-                  </div>
-                  <div
-                    class={styles.beaconActions}
-                    role="group"
-                    aria-label="Add reflection"
-                  >
-                    <For
-                      each={
-                        [
-                          'keep',
-                          'curious',
-                          'try-next',
-                        ] as const satisfies readonly VoiceReflectionKind[]
-                      }
-                    >
-                      {(kind) => (
-                        <button
-                          type="button"
-                          class={styles.beaconAction}
-                          classList={{
-                            [styles.keepAction]: kind === 'keep',
-                            [styles.curiousAction]: kind === 'curious',
-                            [styles.tryAction]: kind === 'try-next',
-                          }}
-                          data-testid={`reflection-beacon-${kind}`}
-                          disabled={selectedTake() === null}
-                          onClick={() => addReflection(kind)}
-                        >
-                          <i aria-hidden="true" />
-                          {voiceReflectionLabel(kind)}
-                        </button>
-                      )}
-                    </For>
-                  </div>
-                </div>
-
-                <Show when={selectedMarker()} keyed>
-                  {(marker) => (
-                    <div class={styles.selectedReflection} aria-live="polite">
-                      <div>
-                        <span>
-                          {voiceReflectionLabel(marker.reflection.kind)}
-                        </span>
-                        <strong>
-                          {formatClock(
-                            marker.reflection.position *
-                              takeDurationSeconds(takeForId(marker.takeId)),
-                          )}
-                        </strong>
-                        <p>
-                          {marker.reflection.note === ''
-                            ? 'No note attached to this reflection.'
-                            : marker.reflection.note}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        data-testid="reflection-beacon-remove"
-                        onClick={() => {
-                          props.onRemoveReflection(
-                            marker.takeId,
-                            marker.reflection.id,
-                          )
-                          setSelectedMarkerId(null)
-                        }}
-                      >
-                        Remove beacon
-                      </button>
-                    </div>
-                  )}
-                </Show>
-              </div>
+              </Sheet>
             </Show>
-
-            <Show when={inspector() === 'room'}>
-              <div class={styles.roomSlot}>{props.roomPanel}</div>
-            </Show>
-          </aside>
+          )}
         </Show>
       </div>
     </section>
