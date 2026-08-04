@@ -10,6 +10,7 @@ import { drumVoiceForMidi } from './drum-lanes'
 import type { DrumVoiceId } from './drum-voices'
 import { triggerDrumVoice } from './drum-voices'
 import { createBassVoice, createGuitarVoice } from './guitar/guitar-synth'
+import { publishMicLevel, resetMicLevel } from './mic-level'
 import { micManager } from './mic-manager'
 import { UvrProcessor } from './uvr-processor'
 
@@ -873,6 +874,9 @@ export class AudioEngine {
       this.micStream = null
       micManager.release(this.micConsumerId)
     }
+    // The meter must drop to the floor the instant we let go, not linger on
+    // the last frame we happened to read.
+    resetMicLevel()
     console.info('[AudioEngine] Microphone stopped')
     // Note: analyser stays active for visualization
   }
@@ -914,10 +918,29 @@ export class AudioEngine {
     return this.micStream
   }
 
+  /**
+   * Publish the level of the buffer we just filled from the mic analyser.
+   *
+   * The meter and the silence watchdog both need a number every frame, and
+   * every live surface already pulls this buffer every frame — so taking the
+   * RMS here covers all of them at once instead of threading a publish call
+   * through a dozen render loops. Gated on `isRecording` because the analyser
+   * deliberately stays connected after `stopMicrophone` for visualisation,
+   * and a released mic must read as silence rather than as history.
+   */
+  private publishLevel(): void {
+    if (!this.isRecording) return
+    const data = this._timeData
+    let sumSquares = 0
+    for (let i = 0; i < data.length; i++) sumSquares += data[i] * data[i]
+    publishMicLevel(Math.sqrt(sumSquares / data.length))
+  }
+
   /** Get waveform data from microphone (for live visualization) */
   getWaveformData(): Float32Array {
     if (this.micAnalyser) {
       this.micAnalyser.getFloatTimeDomainData(this._timeData)
+      this.publishLevel()
     }
     return this._timeData
   }
@@ -942,6 +965,7 @@ export class AudioEngine {
   getTimeData(): Float32Array {
     if (this.micAnalyser) {
       this.micAnalyser.getFloatTimeDomainData(this._timeData)
+      this.publishLevel()
     }
     return this._timeData
   }

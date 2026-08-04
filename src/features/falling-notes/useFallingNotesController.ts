@@ -4,9 +4,10 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
-import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
+import { rmsOfTimeData } from '@/lib/mic-level'
+import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { MidiNoteEvent } from '@/lib/midi-engine'
 import { MidiEngine } from '@/lib/midi-engine'
@@ -457,6 +458,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   // read micOn — a confirmed icon-on-with-no-live-track mismatch is healed
   // through the normal stop path. This controller lives for the whole app
   // session; the unsubscribes below run only if it is ever disposed.
+  // A game in flight owns the mic: releasing it mid-song would score the rest
+  // of the chart as missed notes.
+  micManager.registerRunGuard(
+    'piano-game',
+
+    () => gameState() === 'playing' || gameState() === 'countdown',
+  )
+
   const unregisterSentinel = registerMicIndicator(
     'piano',
     // Deliberately non-reactive: the sentinel polls these accessors on its

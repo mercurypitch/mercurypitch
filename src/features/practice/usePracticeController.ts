@@ -11,6 +11,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -132,6 +133,14 @@ export function usePracticeController(deps: Deps): PracticeController {
     'practice',
     () => micActive(),
     () => practiceEngine.stopMic(),
+  )
+
+  // A scored run is in progress whenever the transport is rolling with the mic
+  // on. Nothing may take the device until it stops — a run cut off halfway
+  // scores as a bad performance, which is a worse lie than a mic left open.
+  micManager.registerRunGuard(
+    'practice-run',
+    () => micActive() && deps.isPlaying(),
   )
 
   // Count-in tracking

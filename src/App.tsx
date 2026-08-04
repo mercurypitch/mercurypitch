@@ -13,6 +13,7 @@ import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { Drum, Music, MusicBoard, MusicNote, SlidersHorizontal, Split, } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
+import { MicHandoffPrompt } from '@/components/MicHandoffPrompt'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { Notifications } from '@/components/Notifications'
 import type { PianoRollEditorApi } from '@/components/PianoRollCanvas'
@@ -3616,6 +3617,8 @@ const AppShell: Component<AppProps> = (props) => {
         <LocalProgressNotice />
 
         <Notifications />
+        {/* Device-level, so it lives here rather than on any one mic page. */}
+        <MicHandoffPrompt />
         <VerifyEmailBanner />
 
         <Show when={isLibraryModalOpenSignal()}>

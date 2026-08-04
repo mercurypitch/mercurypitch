@@ -2,6 +2,7 @@
 // Lightweight pitch detector for P2P jam sessions.
 // Own AudioContext + AnalyserNode, separate from the main app's audio engine.
 
+import { publishMicLevel, resetMicLevel, rmsOfTimeData } from '../mic-level'
 import type { DetectedPitch } from '../pitch-detector'
 import { PitchDetector } from '../pitch-detector'
 
@@ -53,6 +54,7 @@ export class JamPitchDetector {
     this.ctx?.close()
     this.ctx = null
     this.detector.resetHistory()
+    resetMicLevel()
   }
 
   getLatestPitch(): DetectedPitch | null {
@@ -63,10 +65,7 @@ export class JamPitchDetector {
   /** Latest RMS input level (0–1) for mic-feedback insights; 0 when stopped. */
   getInputLevel(): number {
     if (!this.running) return 0
-    const d = this.timeData
-    let sum = 0
-    for (let i = 0; i < d.length; i++) sum += d[i] * d[i]
-    return d.length > 0 ? Math.sqrt(sum / d.length) : 0
+    return rmsOfTimeData(this.timeData)
   }
 
   private loop = (): void => {
@@ -74,6 +73,9 @@ export class JamPitchDetector {
     this.analyser.getFloatTimeDomainData(
       this.timeData as Float32Array<ArrayBuffer>,
     )
+    // Jam runs its own AudioContext, so the shared publish inside AudioEngine
+    // never fires here — the meter and the watchdog need it from this loop.
+    publishMicLevel(rmsOfTimeData(this.timeData))
     const pitch = this.detector.detect(this.timeData)
     if (pitch.frequency > 0) {
       this.onPitch?.(pitch)

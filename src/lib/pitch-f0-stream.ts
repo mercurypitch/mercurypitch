@@ -14,6 +14,7 @@
 // Lives in src/lib/ so it rides the `pitch-core` manualChunk.
 // ============================================================
 
+import { publishMicLevel, resetMicLevel } from '@/lib/mic-level'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { PitchDetector } from '@/lib/pitch-detector'
 
@@ -121,17 +122,24 @@ export function createF0Stream(
   const loop = (): void => {
     if (disposed) return
     rafId = requestAnimationFrame(loop)
-    // Only run YIN while a take is actually recording — during briefs and
-    // reference-tone playback the frames would be discarded anyway, and a
-    // full 2048-sample pass 60×/s is real battery on mobile.
-    if (!recording) return
     analyser.getFloatTimeDomainData(buffer)
 
     let sumSquares = 0
     for (let i = 0; i < buffer.length; i++) {
       sumSquares += buffer[i] * buffer[i]
     }
-    latestRms = Math.sqrt(sumSquares / buffer.length)
+    const rms = Math.sqrt(sumSquares / buffer.length)
+    // Publish every frame, take or no take: the singer wants to see the meter
+    // move while they position the mic, before they ever hit record. One
+    // sum-of-squares pass is cheap; the YIN pass below is what isn't.
+    publishMicLevel(rms)
+
+    // Only run YIN while a take is actually recording — during briefs and
+    // reference-tone playback the frames would be discarded anyway, and a
+    // full 2048-sample pass 60×/s is real battery on mobile.
+    if (!recording) return
+
+    latestRms = rms
     if (latestRms > maxRms) maxRms = latestRms
 
     const detected = detector.detect(buffer)
@@ -180,6 +188,7 @@ export function createF0Stream(
       source.disconnect()
       analyser.disconnect()
       keepalive.disconnect()
+      resetMicLevel()
     },
   }
 }

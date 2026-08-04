@@ -7,6 +7,9 @@
 // anything new to it.
 
 import { createSignal } from 'solid-js'
+import type { MicLockRecord } from '@/lib/mic-lock'
+import { onMicLockChange } from '@/lib/mic-lock'
+import { micManager } from '@/lib/mic-manager'
 
 // `micActive`/`micError` reflect the SHARED practice/analysis engine mic
 // (singing, guitar, piano, exercises) and are driven by those controllers'
@@ -22,3 +25,21 @@ export const [micError, setMicError] = createSignal<string | null>(null)
 export function toggleMicWaveVisible(): void {
   setMicWaveVisible(!micWaveVisible())
 }
+
+// Unlike the signals above, this one IS device-level: another MercuryPitch tab
+// holding the mic blocks every surface in this tab at once, so there is nothing
+// per-page about it. Set when an acquire is refused by the cross-tab lock,
+// cleared once we hold the device (or the other tab lets go).
+export const [micBlockedBy, setMicBlockedBy] =
+  createSignal<MicLockRecord | null>(null)
+
+micManager.subscribe((state) => {
+  setMicBlockedBy(state.blockedBy)
+})
+
+// The other tab can also let go on its own — closed, navigated away, crashed.
+// Watching the lock as well as the manager means the prompt disappears when the
+// reason for it does, instead of waiting for something else to emit.
+onMicLockChange((status) => {
+  if (status !== 'other') setMicBlockedBy(null)
+})

@@ -6,7 +6,6 @@ import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
-import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
@@ -19,6 +18,8 @@ import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useSt
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
+import { rmsOfAnalyser } from '@/lib/mic-level'
+import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
@@ -363,6 +364,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Backfill audio ctx holders for mic controller
   audioCtxForMic.getAudioCtx = () => audio.getAudioCtx()
   audioCtxForMic.ensureAudioCtx = () => audio.ensureAudioCtx()
+
+  // Singing along to a song with the mic on is a scored run: the comparison
+  // engine is accumulating against the reference the whole time.
+  onCleanup(
+    micManager.registerRunGuard(
+      'karaoke-take',
+      () => mic.micActive() && audio.playing(),
+    ),
+  )
 
   // Mic feedback: "can't hear you" / "too quiet" while a song plays.
   const micInsights = useMicInsights({

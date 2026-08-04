@@ -4,7 +4,7 @@
 
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
-import { rmsOfAnalyser } from '@/features/mic-feedback/mic-level'
+import { publishMicLevel, resetMicLevel, rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { computeScore as computeFrameScore } from '@/lib/mic-scoring'
@@ -179,11 +179,19 @@ export const useStemMixerMicController = (
     }
     let raf = 0
     const loop = (): void => {
-      setMicLevel(Math.min(1, rmsOfAnalyser(micAnalyserNode) * 4))
+      const rms = rmsOfAnalyser(micAnalyserNode)
+      // The mixer runs its own analyser rather than the shared one in
+      // AudioEngine, so it has to publish the level itself for the meter and
+      // the silence watchdog to see it.
+      publishMicLevel(rms)
+      setMicLevel(Math.min(1, rms * 4))
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
-    onCleanup(() => cancelAnimationFrame(raf))
+    onCleanup(() => {
+      cancelAnimationFrame(raf)
+      resetMicLevel()
+    })
   })
 
   /** Wire or unwire the monitor branch (micGain → monitorGain → destination)
