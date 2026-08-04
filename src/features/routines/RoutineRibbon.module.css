@@ -291,11 +291,28 @@
   }
 
   /* Full width under the rail rather than squeezed into it — these only
-     appear once the segment is done, when they ARE the next action. */
-  .next,
+     appear once the segment is done, when they ARE the next action.
+     The ribbon's flex child is `.nextRow`, not `.next`: the auto-continue
+     work wrapped the button together with Stay and the opt-out, so the
+     100% basis has to sit on the wrapper or the row tries to share the
+     rail with the segment chips. */
+  .nextRow,
   .finished {
     flex: 1 0 100%;
     justify-content: center;
+    text-align: center;
+  }
+
+  /* Inside that row the button takes the width and the two escapes sit
+     under it, rather than three controls fighting over one line. */
+  .next {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .stay,
+  .optOut {
+    flex: 1 1 auto;
     text-align: center;
   }
 }

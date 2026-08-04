@@ -211,6 +211,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   everything before it had taken. Phase numbers were bare literals compared
   across two files; now `SIREN_PHASE_LISTEN|GLIDE|READY`.
 
+### Changed — onboarding round 4
+
+- `WelcomeScreen.tsx`/`.module.css`, `BeatSky.tsx` and `e2e/onboarding.spec.ts`
+  deleted. Consequence worth knowing: First Light now auto-opens for a
+  first-time visitor, and every E2E spec is one, so three ribbon specs started
+  timing out behind the modal. `dismissOverlays` matched overlays by class
+  name and the flow's class is a CSS-module build hash, which nothing outside
+  the file can select — the flow root carries `data-onboarding-flow` now, and
+  the helper seeds `pitchperfect_onboarding_done`.
+- `probe()` separates `quiet` from `silent`. Treating a quiet room as a denial
+  marked the mic denied, which made every beat but the Map inapplicable — the
+  whole "it skipped the voiceprint step" report.
+- `StarField.tsx`: `arcBand(width)` + `arcY()` move the contour to a shallow
+  band (`top: 0.02`, `scale: 0.3`) below 640px. Proven arithmetically rather
+  than visually, since the canvas cannot render headless: on an 844px viewport
+  the desk arc spans y=235..414 with the eyebrow at 299 and the headline at
+  331; the phone band puts it at y=88..141, clearing the copy by 158px.
+
+### Fixed — mobile pass
+
+- Community (`vocal-analysis.css`): omitted from the
+  `height: 100%; overflow-y: auto` rule Challenges and Leaderboard share, so it
+  rendered as an inset inner scroller. The ~600px dead band was a second bug —
+  an older rule turns the header into a column, at which point
+  `flex: 1 1 320px` stops being a width basis and becomes a height one.
+- `UvrPanel.tsx`: the `header-actions` block renders into the mobile kit's
+  `OptionsSheet` below the breakpoint, behind one `data-testid`ed button.
+  Guide, Settings and the credits hint close the sheet first, so a phone never
+  stacks two dismissible layers.
+- `JamPanel.tsx`: the picker was an absolutely-positioned popover inside an
+  `overflow: hidden` column — not the iOS `<select>` bug, there is no
+  `<select>`. Extracted to `pickerBody()` and rendered into a `Sheet` when
+  `isNarrow()`; the tap-outside handler early-returns on narrow so the sheet's
+  own backdrop owns dismissal.
+- The three new viewport branches use `isNarrow`
+  (`(max-width: 768px)`), not `isMobile`
+  (`(max-width: 768px), (pointer: coarse)`) — a touchscreen laptop would have
+  been given the phone layout while every CSS rule beside it stayed on the desk
+  one.
+- `RoutineRibbon.module.css`: the mobile one-row block puts the `1 0 100%`
+  basis on `.nextRow`, not `.next` — the auto-continue work wrapped the button
+  with Stay and the opt-out, so the wrapper is the ribbon's flex child now.
+- `AuthModal.module.css`: `100dvh` caps plus a `max-height: 700px` block for a
+  phone with the keyboard up. Measured: the modal does NOT overflow at 390x664
+  (sign-in 419px, register 489px) — what looked cut off was the flow's own CTA
+  under Safari's bar, which is the `100dvh` + safe-area fix in
+  `onboarding.module.css`.
+
 ## [0.7.23] - 2026-07-31
 
 ### Added
