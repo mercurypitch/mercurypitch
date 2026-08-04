@@ -25,6 +25,7 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
 import { midiToFrequency } from '@/lib/frequency-to-note'
+import { micManager } from '@/lib/mic-manager'
 import { midiToNote } from '@/lib/scale-data'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
@@ -126,6 +127,18 @@ export function ChallengeStage(props: ChallengeStageProps) {
     if (outcome() !== null) return 'done'
     return session.status() === 'running' ? 'live' : 'ready'
   }
+
+  // A live attempt owns the mic. This is the one run where an interruption
+  // costs the singer a graded result, so it outranks every release policy.
+  onCleanup(
+    micManager.registerRunGuard(
+      'challenge-attempt',
+      // Deliberately untracked: MicManager polls this from its own timers, so
+      // there is no reactive scope to belong to.
+      // eslint-disable-next-line solid/reactivity
+      () => phase() === 'live',
+    ),
+  )
 
   const micInsights = useMicInsights({
     enabled: () => phase() === 'live',

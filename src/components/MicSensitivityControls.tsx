@@ -1,8 +1,10 @@
 import type { JSX } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import { SegmentedControl } from '@/components/shared/SegmentedControl'
+import { micActive } from '@/stores/mic-store'
 import type { AccuracyTier, SensitivityPreset } from '@/stores/settings-store'
 import { accuracyTier, applyAccuracyTier, applySensitivityPreset, sensitivityPreset, } from '@/stores/settings-store'
+import { MicLevelMeter } from './MicLevelMeter'
 import styles from './MicSensitivityControls.module.css'
 
 const TIERS: Array<{ value: AccuracyTier; label: string }> = [
@@ -42,6 +44,13 @@ export function MicSensitivityControls(props: {
       class="mic-sensitivity-controls"
       style={{ display: 'flex', 'flex-direction': 'column', gap: '0.5rem' }}
     >
+      {/* Armed on purpose. Nobody opens this panel by accident — they open it
+          because the mic is misbehaving, and "we are hearing nothing at all"
+          is the answer they came for. */}
+      <Show when={micActive()}>
+        <MicLevelMeter label="Input" armed />
+      </Show>
+
       <div
         style={{ display: 'flex', 'flex-direction': 'column', gap: '0.2rem' }}
       >

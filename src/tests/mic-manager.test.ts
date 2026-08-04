@@ -159,4 +159,50 @@ describe('MicManager', () => {
     expect(states).toContain(true) // after acquire
     expect(states[states.length - 1]).toBe(false) // after teardown
   })
+
+  describe('run guards', () => {
+    it('reports no run in progress with nothing registered', () => {
+      expect(mgr.isRunInProgress()).toBe(false)
+    })
+
+    it('reports a run while any guard says so', () => {
+      let recording = false
+      mgr.registerRunGuard('take', () => recording)
+      expect(mgr.isRunInProgress()).toBe(false)
+      recording = true
+      expect(mgr.isRunInProgress()).toBe(true)
+    })
+
+    it('stops consulting a guard once it unregisters', () => {
+      const unregister = mgr.registerRunGuard('take', () => true)
+      expect(mgr.isRunInProgress()).toBe(true)
+      unregister()
+      expect(mgr.isRunInProgress()).toBe(false)
+    })
+
+    // A broken surface must not become a licence to cut the singer off.
+    it('treats a throwing guard as busy', () => {
+      mgr.registerRunGuard('broken', () => {
+        throw new Error('boom')
+      })
+      expect(mgr.isRunInProgress()).toBe(true)
+    })
+  })
+
+  it('forceReleaseAll drops every hold and closes the device now', async () => {
+    const stream = makeStream()
+    mockGetUserMedia(() => Promise.resolve(stream))
+
+    await mgr.acquire('a')
+    await mgr.acquire('b')
+    expect(mgr.isActive()).toBe(true)
+
+    mgr.forceReleaseAll()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mgr.isActive()).toBe(false)
+    expect(mgr.getConsumers()).toEqual([])
+    // No linger: the point of forcing is that we stop capturing immediately.
+    expect(stream.track.stop).toHaveBeenCalled()
+  })
 })

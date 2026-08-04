@@ -8,9 +8,10 @@
 // the in-progress note is held separately from the committed list.
 
 import type { Accessor } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, onCleanup } from 'solid-js'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { micManager } from '@/lib/mic-manager'
 import type { RawPitchFrame } from '@/lib/pitch-pipeline'
 import { createLivePitchPipeline } from '@/lib/pitch-pipeline'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
@@ -81,6 +82,11 @@ export function useRecordingController(deps: Deps): RecordingController {
   // One-Euro smoothing, hysteresis note on/off). Replaces the old per-frame
   // round-and-compare that fragmented held notes on every octave glitch.
   const pipeline = createLivePitchPipeline()
+  // A take in progress owns the mic: nothing may release it underneath, not a
+  // backgrounded tab and not another tab asking nicely. Deliberately
+  // untracked — MicManager polls this from its own timers.
+  // eslint-disable-next-line solid/reactivity
+  onCleanup(micManager.registerRunGuard('compose-take', isRecording))
   // Raw per-frame contour retained for the take so the review slider can
   // re-segment it from gentle (as-sung) to strong (key-snapped + quantized).
   let rawFrames: RawPitchFrame[] = []

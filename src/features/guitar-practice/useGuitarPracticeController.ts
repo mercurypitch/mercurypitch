@@ -4,10 +4,10 @@
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { clampRate, rampedRate } from '@/features/guitar-practice/practice-rate'
-import { rmsOfTimeData } from '@/features/mic-feedback/mic-level'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
+import { rmsOfTimeData } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { MidiEngine } from '@/lib/midi-engine'
@@ -265,6 +265,14 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     setMicOn(false)
     setMicActive(false)
   })
+
+  // A song in flight owns the mic: releasing it mid-chart would score the rest
+  // of the piece as missed notes.
+  micManager.registerRunGuard(
+    'guitar-song',
+    // eslint-disable-next-line solid/reactivity
+    () => gameState() === 'playing' || gameState() === 'countdown',
+  )
 
   // Watchdog registration: the guitar toolbar / 3D HUD mic buttons read
   // micOn — a confirmed icon-on-with-no-live-track mismatch is healed

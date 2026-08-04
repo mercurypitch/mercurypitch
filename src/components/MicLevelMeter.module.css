@@ -1,0 +1,95 @@
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.bar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 12px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+}
+
+.compact .bar {
+  height: 8px;
+  gap: 1px;
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 2px;
+  border-radius: 1px;
+  /* Unlit segments are a faint ghost of the colour they will become, so the
+     bar reads as a scale even at rest rather than as an empty box. */
+  background: color-mix(in srgb, var(--seg) 14%, transparent);
+  transition: background-color 90ms linear;
+}
+
+.cool {
+  --seg: var(--green);
+}
+
+.warm {
+  --seg: var(--yellow);
+}
+
+.hot {
+  --seg: var(--red);
+}
+
+.on {
+  background: var(--seg);
+}
+
+/* Peak hold: the loudest recent frame, decaying back down. Rendered as a
+   brightened segment rather than a separate element so it can never drift out
+   of alignment with the scale it marks. */
+.peak {
+  background: color-mix(in srgb, var(--seg) 65%, var(--text-primary));
+}
+
+/* The watchdog has decided we are hearing nothing at all. */
+.alarm .bar {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--border));
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.hintIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--yellow);
+}
+
+.hintIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment {
+    transition: none;
+  }
+}
