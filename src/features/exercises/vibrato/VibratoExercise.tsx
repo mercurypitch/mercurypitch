@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconWave } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -168,14 +167,13 @@ const VibratoExercise: Component<VibratoExerciseProps> = (props) => {
       stopLabel="Stop & Score"
       onStop={handleStop}
       autoTimer={{ presets: [5, 15, 30], onElapse: handleStop }}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: targetMidi,
+        movingTarget,
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={targetMidi}
-            movingTarget={movingTarget}
-          />
           <div class="vibrato-current-note">{currentNote()}</div>
           <div class="vibrato-metrics">
             <div class="vibrato-metric">

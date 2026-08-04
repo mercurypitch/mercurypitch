@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconTarget } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
@@ -86,7 +85,6 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const elapsed = () => base.state().elapsedMs / 1000
 
   const fillClass = (value: number, thresholds: [number, number]) =>
@@ -122,16 +120,15 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       stopLabel="Stop & Score"
       onStop={handleStop}
       autoTimer={{ presets: [5, 15, 30], onElapse: handleStop }}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: targetMidi,
+      }}
       activeContent={
         <>
           <div class="long-note-target-display">
             Target: <strong>{targetNote()}</strong>
           </div>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={targetMidi}
-          />
           <div class="long-note-timer">{elapsed().toFixed(1)}s</div>
           <div class="long-note-metrics">
             <div class="long-note-metric">

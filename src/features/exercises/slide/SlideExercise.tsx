@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconSlide } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -182,13 +181,12 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       onStart={() => void handleStart()}
       stopLabel="Stop & Score"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        movingTarget,
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            movingTarget={movingTarget}
-          />
           <div class="slide-note-display">
             <span>{fromNote()}</span>
             <span style="color:var(--text-secondary)">→</span>

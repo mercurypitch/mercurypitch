@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconFire } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchPattern, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
@@ -101,7 +100,6 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const metrics = () => base.state().metrics
   const currentStep = () => steps()[metrics().stepIndex ?? 0]
   const phase = () => metrics().phase ?? 0
@@ -163,6 +161,11 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       startLabel="Start Warmup"
       stopLabel="End Warmup"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: () => metrics().currentMidi,
+        when: () => currentStep()?.kind === 'sing',
+      }}
       activeContent={
         <>
           <div class="warmup-step-display">
@@ -180,13 +183,6 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
               </Show>
             </div>
           </div>
-          <Show when={currentStep()?.kind === 'sing'}>
-            <ExercisePitchTracker
-              pitchHistory={base.pitchHistory}
-              isActive={isActive}
-              targetNoteMidi={() => metrics().currentMidi}
-            />
-          </Show>
         </>
       }
       resultSummary={

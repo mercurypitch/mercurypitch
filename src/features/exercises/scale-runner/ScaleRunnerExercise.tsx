@@ -2,7 +2,6 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { For } from 'solid-js'
 import { IconArrowUpDown, IconMic, IconMusic, } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
@@ -93,7 +92,6 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const phase = () => base.state().metrics.phase ?? 0
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const noteIndex = () => base.state().metrics.noteIndex ?? 0
@@ -168,13 +166,12 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       onStart={() => void handleStart()}
       stopLabel="Stop"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={() => base.state().metrics.currentMidi || undefined}
-          />
           <div class="mirror-melody-phase">
             <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
               {phase() === 1 ? (

@@ -13,6 +13,8 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, useContext, } from 'solid-js'
 import { IconQuestion } from '@/components/exercise-icons'
+import type { ExercisePitchTrackerProps } from '@/components/ExercisePitchTracker'
+import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { MicButton } from '@/components/MicButton'
 import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { EngineContext } from '@/contexts/EngineContext'
@@ -31,6 +33,25 @@ export interface AutoTimerConfig {
   presets: number[]
   /** Called when the timer elapses — wire to the exercise's stop/score. */
   onElapse: () => void
+}
+
+/**
+ * The live pitch tracker that sits above every drill's active content.
+ *
+ * It used to be rendered by each of the 18 exercise components, identically.
+ * Hoisting it here means the things that are about to change about it — an
+ * upcoming-target timeline, showing the finished run back — are one edit
+ * instead of eighteen, and a drill can no longer forget it.
+ */
+export interface ExerciseTrackerConfig {
+  pitchHistory: ExercisePitchTrackerProps['pitchHistory']
+  /** Reference note the singer is aiming at right now, if there is one. */
+  targetNoteMidi?: () => number | undefined
+  /** Guide frequency (Hz) that moves over time — glides, sirens, vibrato. */
+  movingTarget?: () => number | null
+  /** Extra gate for drills that only track part of the run (Warmup's sing
+   *  steps — breathing and hums have no pitch to plot). */
+  when?: () => boolean
 }
 
 export interface ExerciseShellProps {
@@ -55,6 +76,10 @@ export interface ExerciseShellProps {
   idlePlaceholder?: JSX.Element
   onStart: () => void
   startLabel?: string
+
+  /** Live pitch tracker drawn above activeContent. Omit for drills that plot
+   *  nothing (Ear Training's listening-only rounds). */
+  tracker?: ExerciseTrackerConfig
 
   activeContent: JSX.Element
   stopLabel?: string
@@ -397,7 +422,21 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           </div>
         </Show>
 
-        <Show when={isActive()}>{props.activeContent}</Show>
+        <Show when={isActive()}>
+          <Show when={props.tracker}>
+            {(tracker) => (
+              <Show when={tracker().when?.() ?? true}>
+                <ExercisePitchTracker
+                  pitchHistory={tracker().pitchHistory}
+                  isActive={isActive}
+                  targetNoteMidi={tracker().targetNoteMidi}
+                  movingTarget={tracker().movingTarget}
+                />
+              </Show>
+            )}
+          </Show>
+          {props.activeContent}
+        </Show>
 
         {/* Stop lives inside the exercise card, right under the action —
             it used to sit detached at the page bottom in a plain-text
