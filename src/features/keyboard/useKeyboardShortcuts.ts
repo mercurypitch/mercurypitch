@@ -16,7 +16,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
-import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
+import { PLAYBACK_MODE_SESSION, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
@@ -171,11 +171,15 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     }
 
     // ── Space — play/pause toggle ─────────────────────────────
-    // The Exercises tab owns Space itself (ExerciseShell: start/stop/
-    // try-again). Swallowing the key here with preventDefault also killed
-    // the browser's native button activation, so after clicking any
-    // exercise control Space went completely dead.
-    if (e.code === 'Space' && !isTyping && tab !== TAB_EXERCISES) {
+    // Exercises and Hear Yourself own Space inside their page controllers.
+    // Swallowing the key here would both bypass their playback state and kill
+    // native button activation for controls that deliberately keep Space.
+    if (
+      e.code === 'Space' &&
+      !isTyping &&
+      tab !== TAB_EXERCISES &&
+      tab !== TAB_VOICE_HISTORY
+    ) {
       e.preventDefault()
 
       // Piano tab — delegate to piano game handlers

@@ -2,7 +2,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
-import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -214,6 +214,25 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         <line x1="8" y1="9" x2="8" y2="15"></line>
         <line x1="12" y1="5" x2="12" y2="19"></line>
         <line x1="16" y1="10" x2="16" y2="14"></line>
+      </svg>
+    ),
+  },
+  [TAB_VOICE_HISTORY]: {
+    id: 'tab-voice-history',
+    ariaLabel: 'Hear Yourself voice history',
+    icon: () => (
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        class={styles.tabIcon}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      >
+        <path d="M3 12h2l1.5-5 3 10 2.5-8 2.5 6 2-7 1.5 4H21" />
+        <path d="M5 20h14" opacity=".45" />
       </svg>
     ),
   },

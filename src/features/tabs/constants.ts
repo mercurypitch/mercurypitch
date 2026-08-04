@@ -13,6 +13,7 @@ export const TAB_COMMUNITY = 'community' as const
 export const TAB_LEADERBOARD = 'leaderboard' as const
 export const TAB_CHALLENGES = 'challenges' as const
 export const TAB_KARAOKE = 'karaoke' as const
+export const TAB_VOICE_HISTORY = 'voice-history' as const
 export const TAB_PITCH_TEST = 'pitch-test' as const
 export const TAB_PITCH_ALGO = 'pitch-algo' as const
 /** Hidden audio-research surface. Hash route only — never in TAB_GROUPS. */
@@ -33,6 +34,7 @@ export type ActiveTab =
   | typeof TAB_LEADERBOARD
   | typeof TAB_CHALLENGES
   | typeof TAB_KARAOKE
+  | typeof TAB_VOICE_HISTORY
   | typeof TAB_PITCH_TEST
   | typeof TAB_PITCH_ALGO
   | typeof TAB_LAB
@@ -67,6 +69,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
       TAB_GUITAR,
       TAB_EXERCISES,
       TAB_KARAOKE,
+      TAB_VOICE_HISTORY,
     ],
   },
   {
@@ -111,6 +114,7 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_GUITAR]: ['guitar'],
   [TAB_EXERCISES]: ['singing'],
   [TAB_KARAOKE]: ['singing'],
+  [TAB_VOICE_HISTORY]: ['singing'],
   [TAB_JAM]: ['singing'],
   [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
   [TAB_LEADERBOARD]: ['singing', 'guitar', 'piano'],
@@ -192,6 +196,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_LEADERBOARD]: 'leaderboard',
   [TAB_CHALLENGES]: 'challenges',
   [TAB_KARAOKE]: 'karaoke',
+  [TAB_VOICE_HISTORY]: 'voice-history',
   [TAB_PITCH_TEST]: 'pitch-test',
   [TAB_PITCH_ALGO]: 'pitch-algo',
   [TAB_LAB]: 'lab',
@@ -224,6 +229,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_LEADERBOARD]: 'Leaderboard',
     [TAB_CHALLENGES]: 'Challenges',
     [TAB_KARAOKE]: 'Karaoke',
+    [TAB_VOICE_HISTORY]: 'Hear Yourself',
     [TAB_PITCH_TEST]: 'Pitch Analysis',
     [TAB_PITCH_ALGO]: 'Pitch Test',
     [TAB_LAB]: 'Lab',

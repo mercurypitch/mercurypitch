@@ -55,10 +55,11 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: {
+    config: () => ({
       type: EXERCISE_WARMUP,
-      targetNote: untrack(() => comfortNote()),
-    },
+      targetNote: comfortNote(),
+      pattern: pattern(),
+    }),
   })
 
   const controller = useWarmupController(base, audioEngine)
@@ -113,6 +114,7 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

@@ -1,0 +1,235 @@
+.room {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  container-type: inline-size;
+}
+
+.roomHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px 16px;
+}
+
+.roomHeading span {
+  font-size: 0.65rem;
+  font-weight: 780;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7fe2de;
+}
+
+.roomHeading h3 {
+  margin: 3px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.roomHeading output {
+  align-self: start;
+  padding-top: 2px;
+  font-size: 0.68rem;
+  font-weight: 680;
+  white-space: nowrap;
+  color: #91a3bd;
+}
+
+.presetRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.preset {
+  min-width: 0;
+  min-height: 44px;
+  padding: 7px 9px;
+  overflow: hidden;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #91a0b5;
+  border: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 9px;
+  background: rgb(4 9 17 / 24%);
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.preset:hover {
+  color: #e6efff;
+  border-color: rgb(141 184 255 / 27%);
+  background: rgb(141 184 255 / 5%);
+}
+
+.preset.active {
+  color: #e9fffd;
+  border-color: rgb(127 226 222 / 32%);
+  background: rgb(127 226 222 / 11%);
+}
+
+.preset:focus-visible,
+.control input:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 2px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.control {
+  display: grid;
+  grid-template-columns: minmax(68px, auto) minmax(64px, 1fr) 28px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.controlCopy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.controlCopy strong {
+  font-size: 0.73rem;
+  font-weight: 720;
+  color: #d9e3f0;
+}
+
+.controlCopy small {
+  overflow: hidden;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #75849a;
+}
+
+.control input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.control input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #74ddd7 var(--room-fill),
+    rgb(141 184 255 / 14%) var(--room-fill)
+  );
+}
+
+.control input::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #74ddd7 var(--room-fill),
+    rgb(141 184 255 / 14%) var(--room-fill)
+  );
+}
+
+.control input::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -6.5px;
+  border: 2px solid #091321;
+  border-radius: 50%;
+  appearance: none;
+  background: #d7e9ff;
+  box-shadow: 0 0 0 1px rgb(141 184 255 / 42%);
+}
+
+.control input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #091321;
+  border-radius: 50%;
+  background: #d7e9ff;
+  box-shadow: 0 0 0 1px rgb(141 184 255 / 42%);
+}
+
+.control > output {
+  min-width: 3ch;
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #8697af;
+}
+
+.note {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 0.67rem;
+  line-height: 1.45;
+  color: #718198;
+  border-top: 1px solid rgb(141 184 255 / 9%);
+}
+
+/* This panel often lives in a narrow inspector while the viewport remains
+   wide, so its controls respond to available panel width rather than screen. */
+@container (max-width: 720px) {
+  .controls {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+
+  .control {
+    grid-template-columns: minmax(82px, auto) minmax(72px, 1fr) 28px;
+  }
+}
+
+@container (max-width: 420px) {
+  .roomHeading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .roomHeading output {
+    padding-top: 0;
+  }
+
+  .presetRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .control {
+    grid-template-columns: 78px minmax(64px, 1fr) 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preset {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .preset.active {
+    border-color: Highlight;
+  }
+
+  .preset:focus-visible,
+  .control input:focus-visible {
+    outline-color: Highlight;
+  }
+}

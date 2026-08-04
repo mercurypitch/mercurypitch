@@ -14,6 +14,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseVoiceCaptureOutcome } from '@/features/exercises/use-base-exercise'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { createPersistedSignal } from '@/lib/storage'
@@ -36,6 +37,11 @@ export interface ExerciseStats {
   avgScore: number
 }
 
+export interface ExerciseResultRecordOptions {
+  /** Present only when a Weekly Legend run hands off its temporary replay. */
+  weeklyVoiceCapture?: ExerciseVoiceCaptureOutcome
+}
+
 const [history, setHistory] = createPersistedSignal<ExerciseHistoryEntry[]>(
   STORAGE_KEY,
   [],
@@ -45,7 +51,10 @@ export function exerciseHistory(): ExerciseHistoryEntry[] {
   return history()
 }
 
-export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
+export function recordExerciseResult(
+  entry: ExerciseHistoryEntry,
+  options?: ExerciseResultRecordOptions,
+): void {
   setHistory((prev) => {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
@@ -76,6 +85,7 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
     const consumedWeekly = await recordWeeklyAttempt({
       type: entry.type,
       score: entry.score,
+      voiceCapture: options?.weeklyVoiceCapture,
     })
     if (consumedChallenge || consumedWeekly) return
 

@@ -2,7 +2,7 @@
 // Dexie (IndexedDB) Adapter
 // ============================================================
 
-import type { Table } from 'dexie'
+import type { Table, UpdateSpec } from 'dexie'
 import DexieDB from 'dexie'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
@@ -54,6 +54,18 @@ class DexieDatabase extends DexieDB {
     this.version(5).stores({
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
+    })
+    // v6: explicit local real-voice history. Metadata is split from audio so
+    // journal queries never pull large binary payloads into memory.
+    this.version(6).stores({
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
+    })
+    // v7: compact analysis contours stay separate from list-safe take
+    // metadata, just as audio does. Existing v6 takes remain valid and use
+    // the waveform-only Atlas fallback.
+    this.version(7).stores({
+      voiceTakeContours: 'id, &takeId',
     })
   }
 }
@@ -210,19 +222,20 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
-    const existing = await this.table.get(id)
-    if (!existing) {
+    const now = new Date().toISOString()
+    // Dexie's field-level update is atomic. A read-merge-put sequence can lose
+    // a concurrent patch to a different field on the same local record.
+    const changed = await this.table.update(id, {
+      ...patch,
+      updatedAt: now,
+    } as UpdateSpec<T>)
+    if (changed === 0) {
       throw new Error(`Entity not found in ${this.table.name}: ${id}`)
     }
-    const now = new Date().toISOString()
-    const updated = {
-      ...existing,
-      ...patch,
-      id: existing.id,
-      createdAt: existing.createdAt,
-      updatedAt: now,
-    } as T
-    await this.table.put(updated)
+    const updated = await this.table.get(id)
+    if (updated === undefined) {
+      throw new Error(`Entity disappeared from ${this.table.name}: ${id}`)
+    }
     return updated
   }
 

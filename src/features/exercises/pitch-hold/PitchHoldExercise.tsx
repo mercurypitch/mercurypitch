@@ -32,7 +32,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'pitch-hold', targetNote: untrack(() => targetNote()) },
+    config: () => ({ type: 'pitch-hold', targetNote: targetNote() }),
   })
 
   const controller = usePitchHoldController(base)
@@ -95,6 +95,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

@@ -43,7 +43,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: { type: 'routine-runner', targetNote: untrack(() => startNote()) },
+    config: () => ({ type: 'routine-runner', targetNote: startNote() }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -113,6 +113,7 @@ const RoutineRunnerExercise: Component<RoutineRunnerExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

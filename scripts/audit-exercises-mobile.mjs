@@ -142,17 +142,23 @@ const page = await context.newPage()
 
 await page.goto(BASE, { waitUntil: 'domcontentloaded' })
 await page.waitForTimeout(2500)
-// Desktop exposes Exercises directly; the compact phone bar intentionally
-// keeps only its four primary destinations. Use the route as a fallback so
-// the mobile audit does not fail before inspecting a single exercise.
-const exTab = page.locator('#tab-exercises')
-if (await exTab.count()) {
-  await exTab.first().click()
-} else {
-  await page.evaluate(() => {
-    window.location.hash = '#/exercises'
-  })
+// Exercises may be a mounted primary tab or live inside the mobile More menu.
+// Open More when needed, then prefer the stable id and fall back to the exact
+// accessible label used by the overflow item.
+let exTab = page.locator('#tab-exercises')
+if (!(await exTab.count())) {
+  const moreTab = page.getByRole('button', { name: /^More(?: tabs)?$/ })
+  if (await moreTab.count()) {
+    await moreTab.first().click()
+    exTab = page.getByRole('button', { name: 'Exercises', exact: true })
+  }
 }
+if (!(await exTab.count())) {
+  console.error('FAIL: could not find the Exercises tab — is the app served at ' + BASE + '?')
+  await browser.close()
+  process.exit(1)
+}
+await exTab.first().click()
 await page.locator('.exercises-grid').first().waitFor({ timeout: 8000 })
 await page.waitForTimeout(800)
 

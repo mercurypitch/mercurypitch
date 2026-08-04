@@ -62,6 +62,7 @@ export interface StemMixerMicController {
   getMicAnalyserNode: () => AnalyserNode | null
   getMicPitchDetector: () => PitchDetector | null
   getMicPitchHistory: () => PitchNote[]
+  getMicStream: () => MediaStream | null
   resetMicPitchHistory: () => void
 
   // Scoring
@@ -222,6 +223,7 @@ export const useStemMixerMicController = (
   const getMicAnalyserNode = () => micAnalyserNode
   const getMicPitchDetector = () => micPitchDetector
   const getMicPitchHistory = () => micPitchHistory
+  const getMicStream = () => micManager.getStream()
   const resetMicPitchHistory = () => {
     micPitchHistory = []
   }
@@ -405,6 +407,7 @@ export const useStemMixerMicController = (
     getMicAnalyserNode,
     getMicPitchDetector,
     getMicPitchHistory,
+    getMicStream,
     resetMicPitchHistory,
     pushComparison,
     markLoopIteration,

@@ -24,11 +24,15 @@ function claimPersistenceAttempt(): boolean {
 }
 
 /**
- * Best-effort request to protect large local stems from browser eviction.
+ * Best-effort request to protect large local audio from browser eviction.
  * Unsupported APIs, blocked storage, denials, and browser errors never fail
  * the completed separation that triggered this follow-up.
  */
-export async function ensurePersistentStorage(): Promise<boolean> {
+export type PersistentStorageReason = 'stems' | 'voice-takes'
+
+export async function ensurePersistentStorage(
+  reason: PersistentStorageReason = 'stems',
+): Promise<boolean> {
   const storage =
     typeof navigator === 'undefined' ? undefined : navigator.storage
   if (storage?.persist === undefined) return false
@@ -45,11 +49,11 @@ export async function ensurePersistentStorage(): Promise<boolean> {
 
   try {
     const { showNotification } = await import('@/stores/notifications-store')
-    showNotification(
-      'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.',
-      'info',
-      { durationMs: 12000 },
-    )
+    const message =
+      reason === 'voice-takes'
+        ? 'Take saved on this device. Allow persistent storage when prompted to reduce the chance of your browser reclaiming it under low space.'
+        : 'Stems saved! To protect your separated audio from browser disk cleanups under low space, allow persistent storage when prompted.'
+    showNotification(message, 'info', { durationMs: 12000 })
   } catch {
     // A notification failure must not prevent the browser request.
   }

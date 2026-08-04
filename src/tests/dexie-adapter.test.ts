@@ -97,6 +97,21 @@ describe('DexieAdapter', () => {
     await expect(repo.update('does-not-exist', { score: 9 })).rejects.toThrow()
   })
 
+  it('preserves concurrent patches to different fields on one record', async () => {
+    const repo = adapter.getRepository<Rec>('sessionRecords')
+    const created = await repo.create({ userId: 'u', score: 1 })
+
+    await Promise.all([
+      repo.update(created.id, { score: 2 }),
+      repo.update(created.id, { userId: 'renamed' }),
+    ])
+
+    await expect(repo.findById(created.id)).resolves.toMatchObject({
+      score: 2,
+      userId: 'renamed',
+    })
+  })
+
   it('count respects the where clause and the bare count', async () => {
     const repo = adapter.getRepository<Rec>('sessionRecords')
     await repo.create({ userId: 'a', score: 1 })

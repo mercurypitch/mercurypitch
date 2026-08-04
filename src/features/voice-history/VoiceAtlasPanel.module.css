@@ -1,0 +1,1295 @@
+.atlas {
+  --atlas-void: #080b12;
+  --atlas-starlight: #f4f8fd;
+  --atlas-chrome: #8a97a6;
+  --atlas-earlier: #2dd4bf;
+  --atlas-later: #bc8cff;
+  --atlas-playhead: #ffe9a8;
+  position: relative;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin-top: 0;
+  padding: clamp(16px, 2vw, 22px);
+  overflow: hidden;
+  color: var(--atlas-starlight);
+  border: 0;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 14% -16%, rgb(45 212 191 / 8%), transparent 34%),
+    radial-gradient(circle at 92% -10%, rgb(188 140 255 / 9%), transparent 36%),
+    linear-gradient(145deg, rgb(10 16 27 / 96%), rgb(6 10 17 / 98%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
+  container-type: inline-size;
+  isolation: isolate;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.heading h3 {
+  margin: 3px 0 5px;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.heading p {
+  max-width: 72ch;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--atlas-starlight) 67%, var(--atlas-chrome));
+}
+
+.heading p span {
+  color: #75849a;
+}
+
+.kicker {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8db8ff;
+}
+
+.status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 0.66rem;
+  font-weight: 750;
+  color: #dbe8f7;
+  border: 1px solid rgb(141 184 255 / 18%);
+  border-radius: 999px;
+  background: rgb(5 10 18 / 58%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
+}
+
+.status > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--atlas-earlier);
+  box-shadow: 0 0 10px rgb(45 212 191 / 45%);
+}
+
+.atlas[aria-busy='true'] .status > span {
+  animation: mapPulse 1.4s ease-in-out infinite;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  min-height: 20px;
+  padding-inline: 4px;
+  font-size: 0.67rem;
+  font-weight: 680;
+  letter-spacing: 0.015em;
+  color: #8493a8;
+}
+
+.workspaceShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 14px;
+  background: rgb(3 7 13 / 52%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 2%);
+  transition: grid-template-columns 180ms ease;
+}
+
+.inspectorOpen .workspaceShell {
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+}
+
+.canvasColumn {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 14px 0;
+  container-type: inline-size;
+}
+
+.inspector {
+  position: sticky;
+  top: 72px;
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 18px;
+  min-width: 0;
+  max-height: calc(100dvh - 88px);
+  overflow-y: auto;
+  padding: 16px;
+  border-left: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 0 13px 13px 0;
+  background: linear-gradient(180deg, rgb(13 20 33 / 96%), rgb(7 12 21 / 98%));
+  animation: inspectorEnter 160ms ease-out both;
+}
+
+.inspectorHeading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgb(141 184 255 / 10%);
+}
+
+.inspectorHeading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.inspectorHeading span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8db8ff;
+}
+
+.inspectorHeading strong {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #e7eef8;
+}
+
+.inspectorHeading button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #8d9aab;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.inspectorHeading button:hover {
+  color: #f4f8fd;
+  background: rgb(141 184 255 / 8%);
+}
+
+.inspectorHeading svg {
+  width: 18px;
+  height: 18px;
+}
+
+.roomSlot {
+  min-width: 0;
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.plotCaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: -10px;
+}
+
+.plotCaption span {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8d5e7;
+}
+
+.plotCaption small {
+  font-size: 0.65rem;
+  letter-spacing: 0.025em;
+  color: #748398;
+}
+
+.earlierLegend i,
+.laterLegend i {
+  display: inline-block;
+  width: 28px;
+  height: 2px;
+}
+
+.earlierLegend i {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--atlas-earlier) 0 2px,
+    transparent 2px 7px
+  );
+  filter: drop-shadow(0 0 4px rgb(45 212 191 / 35%));
+}
+
+.laterLegend i {
+  background: var(--atlas-later);
+  box-shadow: 0 0 5px rgb(188 140 255 / 35%);
+}
+
+.energyLegend i {
+  width: 2px;
+  height: 13px;
+  border-radius: 99px;
+  background: linear-gradient(var(--atlas-earlier), var(--atlas-later));
+  opacity: 0.8;
+}
+
+.gapLegend::before {
+  width: 18px;
+  height: 1px;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    rgb(138 151 166 / 50%) 0 32%,
+    transparent 32% 65%,
+    rgb(138 151 166 / 50%) 65%
+  );
+}
+
+.plotFrame {
+  position: relative;
+  min-width: 0;
+  height: clamp(300px, 34vw, 420px);
+  overflow: hidden;
+  border: 1px solid rgb(141 184 255 / 13%);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(87 115 171 / 9%), transparent 55%),
+    rgb(4 8 15 / 72%);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 3%),
+    inset 0 -26px 48px rgb(0 0 0 / 12%);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.plotBounds {
+  position: absolute;
+  inset: 18px 18px 38px 50px;
+}
+
+.slider {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+
+.slider[aria-disabled='true'] {
+  cursor: default;
+}
+
+.slider:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 5px;
+  border-radius: 8px;
+}
+
+.playhead {
+  position: absolute;
+  z-index: 3;
+  top: -2px;
+  bottom: -2px;
+  left: var(--atlas-position);
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--atlas-playhead) 7%,
+    var(--atlas-playhead) 93%,
+    transparent
+  );
+  box-shadow: 0 0 11px rgb(255 233 168 / 52%);
+  transform: translateX(-50%);
+}
+
+.playhead > span {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid rgb(7 11 19 / 92%);
+  border-radius: 50%;
+  background: var(--atlas-playhead);
+  box-shadow: 0 0 12px rgb(255 233 168 / 76%);
+  transform: translate(-50%, -35%);
+}
+
+.playheadMoving > span {
+  animation: playheadGlow 1.25s ease-in-out infinite;
+}
+
+.beaconLayer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.beaconMarker {
+  --marker-color: var(--atlas-chrome);
+  position: absolute;
+  left: var(--atlas-position);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--marker-color);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  place-items: center;
+  transform: translate(-50%, -50%);
+}
+
+.earlierMarker {
+  --marker-color: var(--atlas-earlier);
+  top: 22px;
+}
+
+.laterMarker {
+  --marker-color: var(--atlas-later);
+  top: calc(100% - 22px);
+}
+
+.beaconMarker > span {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgb(6 10 17 / 94%);
+  background: var(--marker-color);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--marker-color) 48%, transparent),
+    0 0 9px color-mix(in srgb, var(--marker-color) 42%, transparent);
+}
+
+.keepMarker > span {
+  border-radius: 50%;
+}
+
+.curiousMarker > span {
+  transform: rotate(45deg);
+}
+
+.tryMarker > span {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.beaconMarker:hover > span,
+.selectedMarker > span {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--marker-color) 16%, transparent),
+    0 0 14px color-mix(in srgb, var(--marker-color) 60%, transparent);
+  transform: scale(1.2);
+}
+
+.curiousMarker:hover > span,
+.selectedMarker.curiousMarker > span {
+  transform: rotate(45deg) scale(1.2);
+}
+
+.beaconMarker:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: -5px;
+}
+
+.loadingVeil {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgb(5 9 16 / 66%);
+  backdrop-filter: blur(3px);
+}
+
+.loadingVeil span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #91a9c9;
+  animation: loadingTrail 1.3s ease-in-out infinite;
+}
+
+.loadingVeil span:nth-child(2) {
+  animation-delay: 130ms;
+}
+
+.loadingVeil span:nth-child(3) {
+  animation-delay: 260ms;
+}
+
+.trailCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid rgb(141 184 255 / 10%);
+  border-radius: 10px;
+  background: rgb(141 184 255 / 10%);
+}
+
+.singleTrail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pairBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 4px;
+  border-block: 1px solid rgb(141 184 255 / 10%);
+  background: transparent;
+}
+
+.pairBar > div:first-child {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 2px 9px;
+  min-width: 0;
+}
+
+.pairBar span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #7f90a7;
+}
+
+.pairBar strong {
+  font-size: 0.76rem;
+  color: #dbe5f2;
+}
+
+.pairBar p {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.63rem;
+  color: #75849a;
+}
+
+.pairPresets {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgb(141 184 255 / 11%);
+  border-radius: 8px;
+  background: rgb(3 7 13 / 64%);
+}
+
+.pairPresets button {
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 720;
+  white-space: nowrap;
+  color: #8e9db1;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pairPresets button:hover,
+.pairPresets button[aria-pressed='true'] {
+  color: #e8f1fc;
+  background: rgb(141 184 255 / 10%);
+}
+
+.trailCard {
+  --trail-color: var(--atlas-chrome);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 12px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 0;
+  background: rgb(5 10 18 / 82%);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.earlierCard {
+  --trail-color: var(--atlas-earlier);
+}
+
+.laterCard {
+  --trail-color: var(--atlas-later);
+}
+
+.trailCard:hover {
+  border-color: color-mix(in srgb, var(--trail-color) 24%, transparent);
+}
+
+.selectedCard {
+  background: color-mix(in srgb, var(--trail-color) 7%, rgb(5 10 18 / 88%));
+  box-shadow: inset 3px 0 var(--trail-color);
+}
+
+.trailIdentity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.trailIdentity:disabled {
+  cursor: default;
+}
+
+.trailIdentity > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.trailIdentity strong {
+  overflow: hidden;
+  font-size: 0.84rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trailIdentity small {
+  overflow: hidden;
+  font-size: 0.61rem;
+  font-weight: 650;
+  color: #718097;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedCard .trailIdentity small {
+  color: color-mix(in srgb, var(--trail-color) 72%, #cbd8e8);
+}
+
+.trailSwatch {
+  flex: 0 0 auto;
+  width: 3px;
+  height: 27px;
+  border-radius: 999px;
+  background: var(--trail-color);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--trail-color) 38%, transparent);
+}
+
+.trailLabel {
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--trail-color);
+}
+
+.trailMeta {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  color: #8190a5;
+}
+
+.trailMeta span + span::before {
+  margin-right: 8px;
+  content: '·';
+  color: #4f5d71;
+}
+
+.selectorSlot {
+  min-width: 0;
+  align-self: center;
+}
+
+.selectorSlot :is(select, button, input) {
+  max-width: 100%;
+  min-height: 44px;
+}
+
+.selectorSlot label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  font-size: 0.63rem;
+  font-weight: 680;
+  color: #8f9db1;
+}
+
+.selectorSlot select {
+  width: 100%;
+  padding: 8px 30px 8px 10px;
+  font: inherit;
+  font-size: 0.72rem;
+  color: #d8e1ee;
+  border: 1px solid rgb(141 184 255 / 15%);
+  border-radius: 8px;
+  outline: 0;
+  background: rgb(4 8 15 / 70%);
+}
+
+.selectorSlot select:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 2px;
+}
+
+.reflections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.reflectionIntro {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.reflectionIntro p {
+  margin: 1px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: #78879d;
+}
+
+.reflectionTarget {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 7px;
+  margin-top: 0;
+  padding: 10px;
+  border: 1px solid rgb(255 233 168 / 16%);
+  border-radius: 8px;
+  background: rgb(255 233 168 / 4%);
+  box-shadow: inset 0 1px rgb(255 233 168 / 4%);
+}
+
+.reflectionTarget > span {
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #75849a;
+}
+
+.reflectionTarget > strong {
+  overflow: hidden;
+  font-size: 0.72rem;
+  color: #dce5f1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reflectionTarget time {
+  min-width: 47px;
+  padding: 4px 7px;
+  font-size: 0.7rem;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: #fff1bf;
+  border: 1px solid rgb(255 233 168 / 18%);
+  border-radius: 999px;
+  background: rgb(255 233 168 / 7%);
+}
+
+.reflectionTarget > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  color: #77869b;
+}
+
+.reflectionComposer {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+}
+
+.reflectionComposer label {
+  font-size: 0.67rem;
+  font-weight: 680;
+  color: #aeb9c9;
+}
+
+.noteField {
+  position: relative;
+  min-width: 0;
+}
+
+.reflectionComposer input {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 56px 9px 11px;
+  font: inherit;
+  font-size: 0.77rem;
+  color: #edf4fd;
+  border: 1px solid rgb(141 184 255 / 16%);
+  border-radius: 10px;
+  outline: 0;
+  background: rgb(4 8 15 / 68%);
+}
+
+.reflectionComposer input::placeholder {
+  color: #5f6e82;
+}
+
+.reflectionComposer input:disabled {
+  cursor: default;
+  opacity: 0.44;
+}
+
+.noteCount {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+  color: #607087;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.beaconActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.beaconAction {
+  --beacon-color: var(--atlas-chrome);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 6px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 740;
+  white-space: normal;
+  color: #cbd5e2;
+  border: 1px solid rgb(141 184 255 / 13%);
+  border-radius: 10px;
+  background: rgb(4 8 15 / 58%);
+  cursor: pointer;
+}
+
+.keepAction {
+  --beacon-color: var(--atlas-earlier);
+}
+
+.curiousAction {
+  --beacon-color: #8db8ff;
+}
+
+.tryAction {
+  --beacon-color: var(--atlas-later);
+}
+
+.beaconAction i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgb(4 8 15 / 80%);
+  background: var(--beacon-color);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--beacon-color) 38%, transparent);
+}
+
+.keepAction i {
+  border-radius: 50%;
+}
+
+.curiousAction i {
+  transform: rotate(45deg);
+}
+
+.tryAction i {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.beaconAction:hover:not(:disabled) {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--beacon-color) 36%, transparent);
+  background: color-mix(in srgb, var(--beacon-color) 8%, rgb(4 8 15 / 64%));
+}
+
+.beaconAction:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.selectedReflection {
+  display: grid;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 11px;
+  background: rgb(5 10 18 / 52%);
+}
+
+.selectedReflection > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 3px 8px;
+  min-width: 0;
+}
+
+.selectedReflection span {
+  font-size: 0.63rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8db8ff;
+}
+
+.selectedReflection strong {
+  font-size: 0.67rem;
+  color: #9eabc0;
+}
+
+.selectedReflection p {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.76rem;
+  color: #c9d3e1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedReflection button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #b8c3d2;
+  border: 1px solid rgb(141 184 255 / 13%);
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.selectedReflection button:hover {
+  color: #fff;
+  border-color: rgb(141 184 255 / 28%);
+  background: rgb(141 184 255 / 6%);
+}
+
+.trailIdentity:focus-visible,
+.pairPresets button:focus-visible,
+.reflectionComposer input:focus-visible,
+.beaconAction:focus-visible,
+.selectedReflection button:focus-visible,
+.transportTool:focus-visible,
+.inspectorHeading button:focus-visible {
+  outline: 2px solid #8db8ff;
+  outline-offset: 2px;
+}
+
+.transportActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: end;
+  gap: 4px;
+}
+
+.transportTool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 720;
+  white-space: nowrap;
+  color: #9eabba;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.transportTool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.transportTool:hover,
+.transportToolActive {
+  color: #edf4fd;
+  background: rgb(141 184 255 / 9%);
+}
+
+@keyframes mapPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes playheadGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 9px rgb(255 233 168 / 55%);
+  }
+  50% {
+    box-shadow:
+      0 0 11px rgb(255 233 168 / 88%),
+      0 0 22px rgb(255 233 168 / 22%);
+  }
+}
+
+@keyframes loadingTrail {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes inspectorEnter {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* The app sidebar and thread rail can make this workspace narrow even on a
+   desktop viewport. Respond to the Atlas itself, not only the window. */
+@container (max-width: 700px) {
+  .trailCards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reflectionIntro strong {
+    max-width: none;
+  }
+}
+
+@container (max-width: 640px) {
+  .inspectorOpen .workspaceShell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inspector {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    border-top: 1px solid rgb(141 184 255 / 12%);
+    border-left: 0;
+    border-radius: 0 0 13px 13px;
+  }
+}
+
+@container (max-width: 500px) {
+  .heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status {
+    align-self: start;
+  }
+
+  .pairBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pairPresets {
+    align-self: start;
+  }
+
+  .pairPresets button {
+    min-height: 44px;
+  }
+
+  .energyLegend,
+  .gapLegend {
+    display: none;
+  }
+
+  .trailCard,
+  .reflectionComposer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trailMeta {
+    justify-content: start;
+  }
+
+  .reflectionComposer label,
+  .reflectionComposer input,
+  .beaconActions {
+    grid-column: 1;
+  }
+
+  .beaconActions {
+    grid-row: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .beaconAction {
+    min-width: 0;
+    padding-inline: 6px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 920px) {
+  .plotFrame {
+    height: 330px;
+  }
+
+  .trailCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trailMeta {
+    justify-content: start;
+  }
+
+  .reflectionIntro strong {
+    max-width: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .atlas {
+    gap: 15px;
+    margin-top: 16px;
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .status {
+    align-self: start;
+  }
+
+  .legend {
+    gap: 7px 14px;
+  }
+
+  .energyLegend,
+  .gapLegend {
+    display: none !important;
+  }
+
+  .plotFrame {
+    height: 300px;
+    margin-inline: 0;
+  }
+
+  .trailCards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvasColumn {
+    padding: 12px 10px 0;
+  }
+
+  .inspector {
+    position: fixed;
+    z-index: 40;
+    top: auto;
+    right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    left: 0;
+    max-height: min(76dvh, 680px);
+    overflow-y: auto;
+    padding: 16px max(16px, env(safe-area-inset-right)) 18px
+      max(16px, env(safe-area-inset-left));
+    border: 1px solid rgb(141 184 255 / 18%);
+    border-radius: 18px;
+    box-shadow: 0 -24px 70px rgb(0 0 0 / 55%);
+    animation: inspectorSheetEnter 180ms ease-out both;
+  }
+
+  .inspector::before {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    content: '';
+    background: rgb(0 0 0 / 42%);
+    backdrop-filter: blur(2px);
+  }
+
+  .transportActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .transportTool {
+    width: 100%;
+  }
+
+  .pairBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pairPresets {
+    align-self: start;
+  }
+
+  .reflectionComposer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reflectionComposer label,
+  .noteField,
+  .beaconActions {
+    grid-column: 1;
+  }
+
+  .beaconActions {
+    grid-row: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .beaconAction {
+    min-width: 0;
+    padding-inline: 6px;
+    white-space: normal;
+  }
+}
+
+@keyframes inspectorSheetEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 410px) {
+  .atlas {
+    padding: 13px;
+  }
+
+  .plotFrame {
+    height: 270px;
+  }
+
+  .selectedReflection {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .selectedReflection button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status > span,
+  .playheadMoving > span,
+  .loadingVeil span,
+  .inspector {
+    animation: none;
+  }
+
+  .trailCard {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .trailSwatch,
+  .beaconMarker > span,
+  .beaconAction i,
+  .status > span {
+    forced-color-adjust: none;
+  }
+
+  .slider:focus-visible,
+  .beaconMarker:focus-visible {
+    outline-color: Highlight;
+  }
+}

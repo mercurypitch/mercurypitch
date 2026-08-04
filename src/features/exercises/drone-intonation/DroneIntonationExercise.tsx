@@ -53,10 +53,10 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
-    config: {
+    config: () => ({
       type: 'drone-intonation',
-      targetNote: untrack(() => startNote()),
-    },
+      targetNote: startNote(),
+    }),
   })
 
   /* eslint-disable solid/reactivity */
@@ -126,6 +126,7 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
       status={() => base.state().status}
       currentScore={() => base.state().currentScore}
       resultScore={() => base.result()?.score ?? null}
+      voiceCapture={base.voiceCapture}
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       idlePlaceholder={

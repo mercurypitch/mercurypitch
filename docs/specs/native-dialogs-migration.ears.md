@@ -11,3 +11,7 @@ Requirements for migrating remaining native `alert` and `confirm` dialogs to the
 **WHEN** the user reduces the total beats in the Piano Roll
 **WHILE** there are notes that extend beyond the new total beats
 **THE** system shall prompt the user to confirm the trimming action using the styled `ConfirmDialog` instead of a native browser `confirm`.
+
+## REQ-UI-003 — Voice History Delete Confirm
+**WHEN** the user requests deletion of one kept voice take or all local voice history
+**THE** system shall identify the local deletion scope and require confirmation using the styled `ConfirmDialog` instead of a native browser `confirm`, `alert`, or `prompt`.
