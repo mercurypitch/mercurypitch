@@ -2,13 +2,12 @@
 // Badge grant engine — the round-trip budget of one pass
 // ============================================================
 //
-// Every finished run triggers `checkAndGrantBadges`, and the singer waits on
-// it behind "Saving your run…". Each repository call in a signed-in session
-// is one HTTP request to the db-worker (~85 ms warm, measured against
-// api-dev), so the round-trip COUNT is the latency, and the write count is
-// what spends the worker's 120/min `crud-write` budget.
+// Every finished run triggers `checkAndGrantBadges`, and the singer used to
+// wait on it behind "Saving your run…". Each repository call in a signed-in
+// session is one HTTP request to the db-worker (~85 ms warm, measured against
+// api-dev), so the round-trip COUNT is the latency.
 //
-// The numbers this file pins, measured against the shipped seed catalogue:
+// Where this started, measured against the shipped seed catalogue:
 //
 //   prior runs |  GET | write | total | writes BEFORE the unchanged-row guard
 //   -----------+------+-------+-------+--------------------------------------
@@ -19,12 +18,14 @@
 //
 // The right-hand column is the bug that was reported: ~50 serial PATCHes at
 // ~85 ms is the three-to-five second save, and three runs inside a minute
-// cleared the 120/min cap, so the retries turned it into ten seconds. The
-// guard removed that; this test stops it coming back.
+// cleared the 120/min cap, so the retries turned it into ten seconds.
 //
-// Write counts FALL as an account matures because unlocked goals are skipped
-// and a further run moves the remaining integer percents less often — so the
-// cap that matters is the young account, which is also the one in onboarding.
+// Two things changed since. Writes left the save path entirely — the pass
+// evaluates in memory and queues, and `flushGrants` writes a window later, so
+// the numbers this file now pins are **zero writes per pass**. And the reads
+// collapsed to one request when signed in to the cloud; what is measured here
+// is the piecemeal fallback, which is the path a local (IndexedDB) session
+// and an unreachable worker both take, and therefore the expensive one.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import seedData from '@/db/seed-data.json'
@@ -48,6 +49,7 @@ vi.mock('@/db', () => ({
       return {
         findAll: wrap('GET', repo.findAll.bind(repo)),
         findById: wrap('GET', repo.findById.bind(repo)),
+        count: wrap('GET', repo.count.bind(repo)),
         create: wrap('WRITE', repo.create.bind(repo)),
         update: wrap('WRITE', repo.update.bind(repo)),
         delete: wrap('WRITE', repo.delete.bind(repo)),
@@ -57,6 +59,7 @@ vi.mock('@/db', () => ({
 }))
 
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
+import { discardPendingGrants, flushGrants, pendingCount, } from '@/db/services/grant-flush'
 import { getUserId } from '@/db/services/user-service'
 
 /** The catalogue the app actually seeds — not a hand-written fixture, so a
@@ -91,22 +94,28 @@ async function addRuns(count: number, from: number): Promise<void> {
   }
 }
 
-/** Round trips one more run costs, once the stored rows are at steady state. */
-async function costOfOneMoreRun(priorRuns: number): Promise<{
+interface PassCost {
   gets: number
   writes: number
+  queued: number
   lockedRows: number
-}> {
+}
+
+/** Round trips one more run costs, once the stored rows are at steady state. */
+async function costOfOneMoreRun(priorRuns: number): Promise<PassCost> {
   await adapter.destroy()
+  discardPendingGrants()
   await seedCatalogue()
   await addRuns(priorRuns, 0)
   // Settle first: otherwise the measured pass also pays for the backlog of
   // every earlier run, which is not what a singer waits on.
   await checkAndGrantBadges()
+  await flushGrants()
 
   await addRuns(1, priorRuns)
   calls.length = 0
   await checkAndGrantBadges()
+  const queued = pendingCount()
 
   const rows = (await adapter
     .getRepository('userAchievements')
@@ -114,12 +123,14 @@ async function costOfOneMoreRun(priorRuns: number): Promise<{
   return {
     gets: calls.filter((c) => c === 'GET').length,
     writes: calls.filter((c) => c === 'WRITE').length,
+    queued,
     lockedRows: rows.filter((r) => r.unlocked !== true).length,
   }
 }
 
 beforeEach(async () => {
   await adapter.destroy()
+  discardPendingGrants()
   calls.length = 0
 })
 
@@ -130,26 +141,66 @@ describe('one grant pass', () => {
     // The read half does not grow with the account: it is a fixed set of
     // list calls, each already capped (session records at 200). If this
     // number rises, a new measure added a per-pass request — check it is
-    // worth 85 ms on every save.
+    // worth 85 ms on every save. Signed in to the cloud this whole set is
+    // one request; twelve is what the fallback path costs.
     expect(young.gets).toBe(12)
     expect(mature.gets).toBe(12)
   })
 
-  it('stays inside the round-trip budget at every account age', async () => {
+  it('writes nothing on the save path, at every account age', async () => {
     for (const priorRuns of [5, 30, 100, 300]) {
       const { gets, writes, lockedRows } = await costOfOneMoreRun(priorRuns)
 
-      // The budget: one save must stay under ~1.5 s of serial requests. At
-      // ~85 ms each that is 18, and the reads run as two parallel waves
-      // rather than twelve serial ones, so 12 + 12 is the ceiling with room
-      // to spare. Nowhere near the ~50 writes this used to cost.
-      expect(writes).toBeLessThanOrEqual(12)
-      expect(gets + writes).toBeLessThanOrEqual(24)
+      // The whole point of the split: finishing a run no longer waits on a
+      // single achievement write. If this is ever non-zero, persistence has
+      // crept back onto the critical path.
+      expect(writes).toBe(0)
+      expect(gets + writes).toBeLessThanOrEqual(13)
 
-      // Without the unchanged-row guard the pass wrote every still-locked
-      // goal. Pinning that number keeps the regression visible: if `writes`
-      // ever climbs to meet it, the guard has stopped working.
-      expect(writes).toBeLessThan(lockedRows)
+      // A pass that quietly stopped evaluating would also write nothing, so
+      // pin that the rows exist and most goals are still locked — otherwise
+      // this test passes for the wrong reason.
+      expect(lockedRows).toBeGreaterThan(20)
     }
+  })
+
+  it('queues only the rows whose numbers moved', async () => {
+    for (const priorRuns of [5, 30, 100, 300]) {
+      const { queued, lockedRows } = await costOfOneMoreRun(priorRuns)
+
+      // Before the unchanged-row guard every still-locked goal was written
+      // on every pass — 47 of 63 on a real account. Pinning that number
+      // keeps the regression visible: if `queued` ever climbs to meet
+      // `lockedRows`, the guard has stopped working.
+      expect(queued).toBeLessThanOrEqual(12)
+      expect(queued).toBeLessThan(lockedRows)
+    }
+  })
+
+  it('coalesces a burst of runs into one flush', async () => {
+    await seedCatalogue()
+    await addRuns(5, 0)
+    await checkAndGrantBadges()
+    await flushGrants()
+
+    // Three runs inside one window — the case that used to clear the 120/min
+    // write cap and collect 429s.
+    calls.length = 0
+    for (let i = 0; i < 3; i++) {
+      await addRuns(1, 5 + i)
+      await checkAndGrantBadges()
+    }
+    expect(calls.filter((c) => c === 'WRITE')).toHaveLength(0)
+
+    const queuedBeforeFlush = pendingCount()
+    await flushGrants()
+    const writes = calls.filter((c) => c === 'WRITE').length
+
+    // One flush, and it writes each changed row once — not once per run.
+    // (The cloud path collapses these into a single bulk request; the local
+    // path below is per-row, which is where the coalescing shows up.)
+    expect(writes).toBeGreaterThan(0)
+    expect(writes).toBeLessThanOrEqual(queuedBeforeFlush)
+    expect(pendingCount()).toBe(0)
   })
 })
