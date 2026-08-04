@@ -82,4 +82,38 @@ describe('mic-lock', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ nope: true }))
     expect(micLockStatus()).toBe('free')
   })
+
+  // The simultaneous-claim race. localStorage has no compare-and-swap, so two
+  // tabs can both find the lock free and both write; the second write wins and
+  // the first tab has to find out. Reading the record back is how.
+  //
+  // Simulated by writing over our own record between the write and the read,
+  // which is exactly what the other tab's write does.
+  it('blocks when another tab overwrote our claim in the same instant', () => {
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let overwritten = false
+    localStorage.setItem = (key: string, value: string): void => {
+      realSetItem(key, value)
+      if (key === STORAGE_KEY && !overwritten) {
+        overwritten = true
+        realSetItem(
+          key,
+          JSON.stringify({ tabId: 'faster-tab', label: 'Zen', at: Date.now() }),
+        )
+      }
+    }
+
+    try {
+      const result = claimMicLock()
+      expect(result.outcome).toBe('held-elsewhere')
+      if (result.outcome === 'held-elsewhere') {
+        expect(result.holder.tabId).toBe('faster-tab')
+      }
+      // And crucially it did not leave a heartbeat running that would keep
+      // re-writing our id over the winner's.
+      expect(micLockStatus()).toBe('other')
+    } finally {
+      localStorage.setItem = realSetItem
+    }
+  })
 })

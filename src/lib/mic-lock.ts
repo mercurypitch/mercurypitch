@@ -46,7 +46,6 @@ type LockMessage =
   | { type: 'claimed'; tabId: string }
   | { type: 'released'; tabId: string }
   | { type: 'yield'; to: string; from: string }
-  | { type: 'yielded'; tabId: string }
 
 type LockListener = (
   status: MicLockStatus,
@@ -62,7 +61,10 @@ const TAB_ID = generateId()
 
 let channel: BroadcastChannel | null = null
 let heartbeat: ReturnType<typeof setInterval> | null = null
-let onYieldRequested: (() => void) | null = null
+/** Returning a promise is how a handler says "not yet" — see the `yield`
+ *  branch in {@link openChannel}. */
+type YieldHandler = () => void | Promise<void>
+let onYieldRequested: YieldHandler | null = null
 const listeners = new Set<LockListener>()
 
 function openChannel(): BroadcastChannel | null {
@@ -72,21 +74,22 @@ function openChannel(): BroadcastChannel | null {
   channel.onmessage = (event: MessageEvent<LockMessage>) => {
     const msg = event.data
     if (msg.type === 'yield' && msg.to === TAB_ID) {
-      // Someone wants the mic and we have it. Let go, then say so — the
-      // requester is waiting on `yielded`, not on a timeout.
-      onYieldRequested?.()
-      releaseMicLock()
-      post({ type: 'yielded', tabId: TAB_ID })
-      return
-    }
-    if (msg.type === 'claimed' && msg.tabId !== TAB_ID && holdsLock()) {
-      // Two tabs claimed within the same instant — localStorage has no
-      // compare-and-swap, so the race is real if rare. Break it the same way
-      // in both tabs: the lexicographically smaller id keeps the mic.
-      if (TAB_ID > msg.tabId) {
-        onYieldRequested?.()
+      // Someone wants the mic and we have it. The order matters: the record
+      // must not say "free" until this tab has actually stopped capturing,
+      // or the requester opens the device while ours is still open — which
+      // is the one thing this module exists to prevent. So the handler is
+      // awaited, and a tab that cannot let go simply never releases and the
+      // requester times out still blocked.
+      void (async () => {
+        try {
+          await onYieldRequested?.()
+        } catch (error) {
+          // A handler that throws has not necessarily failed to stop, and
+          // holding the lock forever on its behalf helps nobody.
+          console.warn('[mic-lock] yield handler threw:', error)
+        }
         releaseMicLock()
-      }
+      })()
       return
     }
     notify()
@@ -178,6 +181,23 @@ export function claimMicLock():
   }
 
   write()
+
+  // localStorage has no compare-and-swap, so two tabs can both pass the check
+  // above and both write — and the second write silently wins. Reading our own
+  // record back is what turns that into an answer: the tab whose write did not
+  // survive finds somebody else's id here and blocks, instead of walking away
+  // believing it was granted a lock it does not hold.
+  //
+  // This is deliberately the whole story. An earlier version also broadcast a
+  // `claimed` message and had whichever tab still held the record yield to the
+  // lexicographically smaller id — which could not work, because the tab whose
+  // write lost never held the record and so never ran the rule. The record is
+  // the only source of truth; reading it is the only way to consult it.
+  const settled = readMicLock()
+  if (settled !== null && settled.tabId !== TAB_ID) {
+    return { outcome: 'held-elsewhere', holder: settled }
+  }
+
   if (heartbeat === null) {
     heartbeat = setInterval(() => {
       if (holdsLock()) write()
@@ -247,8 +267,12 @@ function waitForFree(timeoutMs: number): Promise<boolean> {
 /**
  * Register what this tab does when another tab asks for the mic: stop
  * capturing, before the lock is handed over. Only one handler — MicManager's.
+ *
+ * Return a promise that settles once the device is genuinely closed. The lock
+ * is not released until it does, so the handoff cannot hand over a name while
+ * this tab still holds the hardware.
  */
-export function setMicYieldHandler(handler: (() => void) | null): void {
+export function setMicYieldHandler(handler: YieldHandler | null): void {
   onYieldRequested = handler
 }
 

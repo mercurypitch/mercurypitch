@@ -197,12 +197,48 @@ describe('MicManager', () => {
     await mgr.acquire('b')
     expect(mgr.isActive()).toBe(true)
 
-    mgr.forceReleaseAll()
+    void mgr.forceReleaseAll()
     await vi.advanceTimersByTimeAsync(0)
 
     expect(mgr.isActive()).toBe(false)
     expect(mgr.getConsumers()).toEqual([])
     // No linger: the point of forcing is that we stop capturing immediately.
+    expect(stream.track.stop).toHaveBeenCalled()
+  })
+
+  // What the cross-tab handoff hangs on. mic-lock awaits this before it lets
+  // the record say "free", so it has to settle AFTER the device is closed —
+  // not after the close is merely queued behind an open that is still in
+  // flight. Resolving early would let the other tab open a second handle
+  // behind this one, which is the whole failure the lock exists to prevent.
+  it('forceReleaseAll resolves only once the device is really closed', async () => {
+    const stream = makeStream()
+    let openDevice: ((s: typeof stream) => void) | undefined
+    mockGetUserMedia(
+      () =>
+        new Promise<typeof stream>((resolve) => {
+          openDevice = resolve
+        }),
+    )
+
+    const acquiring = mgr.acquire('a')
+    const released = mgr.forceReleaseAll()
+
+    let settled = false
+    void released.then(() => {
+      settled = true
+    })
+
+    // The open has not finished, so the release is still queued behind it.
+    await vi.advanceTimersByTimeAsync(0)
+    expect(settled).toBe(false)
+
+    openDevice?.(stream)
+    await acquiring
+    await released
+
+    expect(settled).toBe(true)
+    expect(mgr.isActive()).toBe(false)
     expect(stream.track.stop).toHaveBeenCalled()
   })
 })
