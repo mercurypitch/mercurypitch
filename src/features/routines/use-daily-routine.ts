@@ -103,7 +103,17 @@ export function buildDailySession(
     },
   }
 
-  const reviewType = weakType ?? DEFAULT_REVIEW_EXERCISE
+  // The warm-up is already segment one, and nothing stopped it being picked
+  // as the review drill as well: the guided warm-up records a result like any
+  // other exercise, and it scores under the 65-point "weak" threshold by
+  // nature — it is a warm-up, not a precision drill — so the weakness picker
+  // chose it often and the routine listed Warm-up twice. One routine, one
+  // warm-up; a genuinely weak warm-up is not a skill to review, it is the
+  // thing you already do first.
+  const reviewType =
+    weakType !== undefined && weakType !== EXERCISE_WARMUP
+      ? weakType
+      : DEFAULT_REVIEW_EXERCISE
   const review: RoutineSegment = {
     type: 'exercise',
     durationSec: 150,
@@ -112,8 +122,10 @@ export function buildDailySession(
 
   // Grow a different skill than the one being reviewed — drawn from the
   // path's themed pool when a week is active, else the default rotation.
-  const growPool =
-    theme !== undefined && theme.pool.length > 0 ? theme.pool : GROW_POOL
+  // The warm-up is filtered out here for the same reason as above: a themed
+  // week that lists it would otherwise reintroduce the duplicate.
+  const themedPool = (theme?.pool ?? []).filter((t) => t !== EXERCISE_WARMUP)
+  const growPool = themedPool.length > 0 ? themedPool : GROW_POOL
   let growType = growPool[dayIndex % growPool.length]!
   if (growType === reviewType && growPool.length > 1) {
     growType = growPool[(dayIndex + 1) % growPool.length]!
