@@ -187,6 +187,48 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   routines dropped their challenge-prep segment, which led out of the routine
   and left it stuck.
 
+### Changed
+
+- **The welcome screen is gone.** Two screens stood between you and the app,
+  and the first one was there to be clicked past. What mattered on it — going
+  straight in without setting anything up, the Terms and Privacy line, and a
+  plain statement of what you get — moved onto the first real step.
+- **The intro arc tracks where you are.** One bead per step, lit up to the one
+  you're on. A short run gets a short arc.
+- **Coming back, you're shown the voice you already mapped.** If you have saved
+  voiceprints, the intro leads with them, and picking one opens a gallery that
+  shows the artwork at full size for the first time.
+- **The Map's rooms wear their artwork.** Backdrops were nearly invisible, a
+  phone could never ask for them at all, and Jam had no art.
+
+### Fixed
+
+- **A quiet room is not a broken microphone.** The check ran before you'd been
+  asked to sing, decided the room was silent, and sent perfectly good
+  microphones to the "pick another device" screen. The voiceprint step went
+  further and treated the silence as you refusing permission — which is the
+  whole reason it looked like the step had been skipped.
+- **Community fits your phone.** It was the one tab that never got a mobile
+  pass: it rendered as a small inset panel that scrolled inside itself, clipped
+  at the right and bottom, with a large empty gap in the middle. It now fills
+  the screen and flows like Challenges and Leaderboard.
+- **Karaoke's toolbar no longer buries the page on a phone.** Nine controls
+  wrapped into four rows and scrolled sideways with nothing saying so. The mode
+  tabs stay; everything else moves behind one Options button.
+- **The Jam song picker opens on a phone.** As host, tapping it did nothing —
+  it was a drop-down positioned outside the visible area. It now opens as a
+  drawer, the same one Karaoke Night uses.
+- **"Separate a song" sends a phone somewhere it can actually do that.** From
+  Vocal Analysis with nothing recorded yet, the button now opens Karaoke Night
+  on a phone and the Karaoke tab on a computer.
+- **The pitch tracker has room again.** With the daily routine along the top
+  and a full-width title row under it, the tracker was squeezed to a sliver.
+  The routine strip is one line on a phone, the title shares its row with the
+  controls, and the tracker has a floor it can't be pushed below.
+- **The intro reads properly on a phone.** The arc crossed the headline, and
+  the button at the bottom sat under the browser's own bar. The sign-in form is
+  trimmed for a short screen, so it fits with the keyboard up.
+
 ## [0.7.22] - 2026-07-21
 
 ### Fixed
