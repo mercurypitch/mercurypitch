@@ -273,9 +273,26 @@
   color: var(--text-muted);
   font-weight: 400;
 }
+/* Carries the mode chip as well as the length now, so it is a row. */
 .segDur {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* Which of an exercise's modes this segment runs — "Sirens", "Lip trills".
+   Only rendered for exercises that have more than one. */
+.segVariant {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 550;
+  white-space: nowrap;
 }
 .segStart {
   padding: 6px 14px;

@@ -18,6 +18,7 @@ import { DestinationGallery } from '@/features/home/DestinationGallery'
 import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
 import { AscentCard } from '@/features/path/AscentCard'
 import { manualCompletePrompt, segmentSelfReports, } from '@/features/routines/manual-complete'
+import { exerciseLabel, segmentVariantLabel, } from '@/features/routines/segment-labels'
 import type { RoutineSegment, SegmentKind } from '@/features/routines/types'
 import type { RoutineLength } from '@/features/routines/use-daily-routine'
 import { launchRoutineSegment, routinePrefs, setRoutinePrefs, useDailyRoutine, } from '@/features/routines/use-daily-routine'
@@ -309,13 +310,23 @@ const HomePage: Component = () => {
                         <span class={styles.segName}>
                           {segmentLabels[item.seg.type]}
                           <Show when={item.seg.config.exercise}>
-                            <span class={styles.segExercise}>
-                              {' · '}
-                              {item.seg.config.exercise}
-                            </span>
+                            {(exercise) => (
+                              <span class={styles.segExercise}>
+                                {' · '}
+                                {exerciseLabel(exercise())}
+                              </span>
+                            )}
                           </Show>
                         </span>
                         <span class={styles.segDur}>
+                          {/* Which mode: the warm-up alone has six, and
+                              "Warm-up" twice over reads as a duplicate
+                              rather than as sirens then lip trills. */}
+                          <Show when={segmentVariantLabel(item.seg)}>
+                            {(variant) => (
+                              <span class={styles.segVariant}>{variant()}</span>
+                            )}
+                          </Show>
                           {Math.max(1, Math.round(item.seg.durationSec / 60))}{' '}
                           min
                         </span>
