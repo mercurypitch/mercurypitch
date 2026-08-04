@@ -1689,7 +1689,9 @@
 .podium-section {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  /* stretch, not flex-start: the three cards are art now, and art of
+     different heights on one shelf reads as a rendering fault. */
+  align-items: stretch;
   gap: 16px;
   margin-bottom: 24px;
   padding: 24px 12px;
@@ -1697,88 +1699,136 @@
   border-radius: 16px;
 }
 
+/**
+ * The medal IS the card.
+ *
+ * Square source in a 1:1.14 frame, so `cover` crops about 6% off each side
+ * — and each render's own content stops 8% in, so none of the laurel is
+ * lost. The spare height at the foot is where the name strip sits.
+ */
 .podium-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
   /* Share the row evenly and allow shrinking so the three medals stay on one
      horizontal row even on a phone-width screen. */
   flex: 1 1 0;
   min-width: 0;
   max-width: 180px;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  aspect-ratio: 1 / 1.14;
+  overflow: hidden;
+  border-radius: 14px;
+  /* Matches the ground baked into the renders, so a slow or failed image
+     leaves a card rather than a hole in the shelf. */
+  background: #07070a;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
+/* The place tints used to be gradient card backgrounds. Nothing would see
+   them now — the art covers the card — so they became the rim instead. */
 .podium-1 {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 215, 0, 0.1) 0%,
-    transparent 100%
-  );
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.42);
 }
 
 .podium-2 {
-  background: linear-gradient(
-    180deg,
-    rgba(192, 192, 192, 0.1) 0%,
-    transparent 100%
-  );
-  border: 1px solid rgba(192, 192, 192, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(192, 192, 192, 0.38);
 }
 
 .podium-3 {
+  box-shadow: inset 0 0 0 1px rgba(205, 127, 50, 0.38);
+}
+
+/* An unclaimed place is a real state, not a loading one: dim the art so the
+   held-open card never outshines a singer who actually got there. */
+.podium-open .podium-art {
+  opacity: 0.42;
+  filter: saturate(0.5);
+}
+
+.podium-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Reads the name off the art. Transparent over the medal, near-opaque under
+   the strip — a pale laurel behind white text is otherwise unreadable. */
+.podium-veil {
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(205, 127, 50, 0.1) 0%,
-    transparent 100%
+    transparent 54%,
+    rgba(4, 4, 8, 0.55) 74%,
+    rgba(4, 4, 8, 0.93) 100%
   );
-  border: 1px solid rgba(205, 127, 50, 0.3);
+  pointer-events: none;
 }
 
-.podium-rank {
-  font-size: 1.25rem;
-  margin-bottom: 8px;
-}
-
-/* Medal art, not an icon — so it must size itself. app.css sets
-   `.podium-rank .icon-svg` to 18px, which is right for a glyph and far too
-   small for a rendered medal. Opaque with a soft corner, exactly like
-   `.league-strip-trophy`: the renders carry their own near-black ground and
-   sit on --bg-secondary, so no cut-out is needed. */
-.podium-medal {
-  display: block;
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  border-radius: 10px;
+.podium-strip {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  min-width: 0;
 }
 
 .podium-avatar {
-  width: 56px;
-  height: 56px;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* app.css sizes podium avatar glyphs at 22px — right for the 56px ring this
+   used to be, and bigger than the 26px circle it is now. Same specificity,
+   later file, so this wins (see index.tsx's import order). */
+.podium-avatar .icon-svg,
+.podium-avatar .icon-avatar {
+  width: 15px;
+  height: 15px;
+}
+
+.podium-ident {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
 }
 
 .podium-name {
-  font-weight: 500;
-  color: var(--text-primary);
-  text-align: center;
-  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: left;
+  margin-bottom: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .podium-score-display {
-  font-size: 1.5rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--accent);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.podium-score-open {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Leaderboard Table */
@@ -2251,31 +2301,27 @@
     gap: 6px;
     padding: 16px 6px;
   }
-  .podium-item {
-    padding: 8px 4px;
+  .podium-strip {
+    gap: 6px;
+    padding: 7px;
   }
   .podium-avatar {
-    width: 44px;
-    height: 44px;
-    font-size: 1.2rem;
+    width: 21px;
+    height: 21px;
   }
-  .podium-rank {
-    font-size: 1.05rem;
-    margin-bottom: 4px;
-  }
-  .podium-medal {
-    width: 34px;
-    height: 34px;
+  .podium-avatar .icon-svg,
+  .podium-avatar .icon-avatar {
+    width: 12px;
+    height: 12px;
   }
   .podium-name {
-    font-size: 0.8rem;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 0.72rem;
   }
   .podium-score-display {
-    font-size: 1.15rem;
+    font-size: 0.82rem;
+  }
+  .podium-score-open {
+    font-size: 0.64rem;
   }
 }
 

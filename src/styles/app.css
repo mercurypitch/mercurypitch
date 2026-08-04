@@ -1091,38 +1091,13 @@ input:checked + .settings-slider:before {
 }
 
 /* -- Podium -- */
-.podium-section {
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 12px 0;
-  border-radius: 10px;
-}
-
-.podium-avatar {
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
-  margin-bottom: 4px;
-}
-
-.podium-rank {
-  font-size: 0.9rem;
-  margin-bottom: 4px;
-}
-
-.podium-rank .icon-svg {
-  width: 18px;
-  height: 18px;
-}
-
-.podium-name {
-  font-size: 0.75rem;
-  margin-bottom: 2px;
-}
-
-.podium-score-display {
-  font-size: 1rem;
-}
+/* The block that used to live here sized `.podium-section`, `.podium-avatar`,
+   `.podium-rank`, `.podium-name` and `.podium-score-display`, and not one
+   declaration ever reached the screen: vocal-analysis.css sets every one of
+   them at equal specificity and is imported after this file (index.tsx). It
+   is gone rather than corrected — the podium's sizing has one home. Only
+   `.podium-avatar .icon-svg` below is live, and vocal-analysis overrides its
+   width/height where the small strip avatar needs to. */
 
 /* -- Leaderboard table -- */
 
