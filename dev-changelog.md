@@ -157,6 +157,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   toolbar a11y: labeled selects, `aria-pressed` on toggles, duration
   radiogroup, `aria-live` status hint.
 
+### Added — exercise frame, routine, authored warm-up
+
+- **Guided exercise schema v2** (`validate-exercise.ts`, migration `0014`):
+  targets gain a `kind` — absent means pitch (all of v1), `amplitude` scores
+  coverage above the noise floor plus level steadiness, `breath` scores
+  nothing and draws an expanding ring. v1 stays frozen and `.strict()`, so a
+  historical Ascent assignment cannot acquire a meaning it was never published
+  with; `parseZenExerciseVersion` dispatches on the stored `schemaVersion` and
+  rejects anything else. `0014` rebuilds `guidedExerciseVersions` to widen
+  `CHECK (schemaVersion = 1)` to `IN (1, 2)` — SQLite cannot alter a CHECK in
+  place — using `defer_foreign_keys` rather than `foreign_keys`, because D1
+  runs a migration inside a transaction where toggling enforcement is a no-op.
+  `createExercise`/`cloneDraft` write `ZEN_EXERCISE_SCHEMA_VERSION` instead of
+  a hardcoded 1.
+- **Zen step boundary** (`useZenPitchSession.ts`): `loopLimit` +
+  `onLoopLimitReached` let a session run a fixed number of loops and stand
+  down without closing the mic; `exerciseDefinitions` lets `selectExercise`
+  resolve every step of a sequence rather than only the one it launched with.
+- **The shell owns the pitch tracker** (`ExerciseShell.tsx`): six exercises
+  each mounted `ExercisePitchTracker` with slightly different props, one of
+  them wrong. Exercises now describe what they want tracked.
+- **Upcoming targets** (`PitchOverTimeCanvas.tsx`) and **run trace**
+  (`RunTraceCanvas.tsx`, `run-trace-view.ts`).
+- **`timer-preference.ts`**: module-scope persisted signal —
+  `createPersistedSignal` keys its cross-tab listener by storage key, so one
+  signal per mounted shell would fight over it. Keyed
+  `pitchperfect_exercise_timer`: `settings-service` syncs exactly the
+  `pitchperfect_`-prefixed keys, and the prefix is now pinned by a test.
+- **`routine-mic-hold.ts`** + `BACKGROUND_HOLD_IDS` in `mic-manager.ts`: the
+  sentinel's live-without-ui check skips a hold whose whole job is to keep the
+  device open between surfaces. A phantom hold on a dead stream is still
+  reported — that check is about the hold, not the UI.
+- **`auto-continue.ts`**: absent preference reads as on, since every existing
+  install has no key and reading that as off would silently opt everybody out.
+  The toggle lives on the populated routine card, not with the Focus/Length
+  selects, which only render in the empty state.
+
+### Fixed — exercise frame
+
+- Pitch scoring filters to pitch targets, or a hiss counts as a missed note;
+  the blend collapses to the old number when nothing is unpitched, pinned by a
+  test. The gap-marker dedupe was collapsing every frame of a hiss into one
+  silent point, because a hiss is unpitched.
+- `use-warmup-controller` deleted: reference playback is replaced by the Zen
+  stage sounding each target as the playhead reaches it, and window scoring by
+  the run scorer. A step that finalizes without a score (the breathing cycle)
+  is left out of the average rather than counted as a zero.
+- Siren (`use-siren-controller.ts`): a counted `READY` phase (3s, `READY_SEC`)
+  replaces a 400ms gap and a 600ms inter-round rest. `sirenGuideMidi(from, to,
+  sinceGlideStart)` is extracted and unit-tested — the guide dot was phased off
+  `elapsedMs`, so its position when the window opened depended on how long
+  everything before it had taken. Phase numbers were bare literals compared
+  across two files; now `SIREN_PHASE_LISTEN|GLIDE|READY`.
+
 ## [0.7.23] - 2026-07-31
 
 ### Added
