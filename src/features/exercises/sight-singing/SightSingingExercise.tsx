@@ -5,7 +5,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconMusic } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
@@ -188,7 +187,6 @@ const SightSingingExercise: Component<Props> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const metrics = () => base.state().metrics
   const currentIdx = () => metrics().noteIndex ?? 0
   const holdPct = () => metrics().holdPct ?? 0
@@ -235,6 +233,10 @@ const SightSingingExercise: Component<Props> = (props) => {
       onStart={() => void handleStart()}
       stopLabel="Stop & Score"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: targetMidi,
+      }}
       activeContent={
         <>
           <div class="sight-singing-staff-container">
@@ -292,12 +294,6 @@ const SightSingingExercise: Component<Props> = (props) => {
               Hold {midiToNoteName(targetMidi() ?? 0)} to continue
             </span>
           </div>
-
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={targetMidi}
-          />
 
           {/* DEV-only pitch debug readout for testing recognition. */}
           <Show when={import.meta.env.DEV}>

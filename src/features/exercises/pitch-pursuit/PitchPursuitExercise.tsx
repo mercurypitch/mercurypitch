@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconCheck, IconCross, IconGame } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToNoteName } from '@/lib/frequency-to-note'
@@ -99,7 +98,6 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
     lastCombo = combo
   })
 
-  const isActive = () => base.state().status === 'active'
   const met = () => base.state().metrics
 
   const currentNote = () => {
@@ -186,12 +184,11 @@ const PitchPursuitExercise: Component<PitchPursuitExerciseProps> = (props) => {
       startLabel="Start Game"
       stopLabel="Stop"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-          />
           <div class="pursuit-hud">
             <div class="pursuit-hud-stats">
               <span class="pursuit-hud-stat" style="color:#22c55e">

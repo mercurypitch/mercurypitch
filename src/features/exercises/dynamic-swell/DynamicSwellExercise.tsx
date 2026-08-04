@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconExpand, IconMic, IconMusic } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchTargetNote } from '@/features/practice-intelligence/launch-override'
@@ -82,7 +81,6 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const phase = () => base.state().metrics.phase ?? 0
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
@@ -162,13 +160,12 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       onStart={() => void handleStart()}
       stopLabel="Stop"
       onStop={handleStop}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: () => base.state().metrics.currentMidi || undefined,
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={() => base.state().metrics.currentMidi || undefined}
-          />
           <div class="mirror-melody-phase">
             <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
               {phase() === 1 ? (

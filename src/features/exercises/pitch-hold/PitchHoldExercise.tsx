@@ -1,7 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconLock } from '@/components/exercise-icons'
-import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { NoteDial } from '@/components/NoteDial'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -70,7 +69,6 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
     }
   })
 
-  const isActive = () => base.state().status === 'active'
   const elapsed = () => base.state().elapsedMs / 1000
 
   // Derived from signals for reactivity
@@ -118,13 +116,12 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       stopLabel="Stop & Score"
       onStop={handleStop}
       autoTimer={{ presets: [5, 15, 30], onElapse: handleStop }}
+      tracker={{
+        pitchHistory: base.pitchHistory,
+        targetNoteMidi: () => noteToMidi(targetNote()),
+      }}
       activeContent={
         <>
-          <ExercisePitchTracker
-            pitchHistory={base.pitchHistory}
-            isActive={isActive}
-            targetNoteMidi={() => noteToMidi(targetNote())}
-          />
           <div class="pitch-hold-header">
             <span class="target">{targetNote()}</span>
             <span class="zone-label">Zone: ±{Math.round(zoneRadius())}¢</span>

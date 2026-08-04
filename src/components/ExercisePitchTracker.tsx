@@ -3,7 +3,7 @@ import { Show } from 'solid-js'
 import { PitchOverTimeCanvas } from '@/components/PitchOverTimeCanvas'
 import { createPersistedSignal } from '@/lib/storage'
 
-interface ExercisePitchTrackerProps {
+export interface ExercisePitchTrackerProps {
   pitchHistory: () => Array<{
     freq: number
     time: number
