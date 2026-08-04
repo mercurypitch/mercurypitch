@@ -13,6 +13,7 @@ import { saveSessionRecord } from '@/db/services/session-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
 import type { ExerciseType } from '@/features/exercises/types'
+import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordCompletion } from './usage-store'
@@ -41,14 +42,6 @@ const [history, setHistory] = createPersistedSignal<ExerciseHistoryEntry[]>(
 
 export function exerciseHistory(): ExerciseHistoryEntry[] {
   return history()
-}
-
-/** Title-case an exercise slug for a human record name: long-note → Long Note. */
-function exerciseLabel(type: ExerciseType): string {
-  return type
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
 }
 
 export function recordExerciseResult(entry: ExerciseHistoryEntry): void {

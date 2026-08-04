@@ -15,6 +15,7 @@ import { IconCheck, IconFire, IconTarget, IconTrophy, IconWater, } from '@/compo
 import { dailyRoutines } from '@/data/routine-templates'
 import { EXERCISE_WARMUP } from '@/features/exercises/types'
 import { manualCompletePrompt, segmentSelfReports, } from '@/features/routines/manual-complete'
+import { exerciseLabel, segmentVariantLabel, } from '@/features/routines/segment-labels'
 import type { RoutineSegment } from '@/features/routines/types'
 import { TAB_CHALLENGES } from '@/features/tabs/constants'
 import { copyShareUrl, encodeRoutineForShare } from '@/lib/share-codec'
@@ -165,8 +166,18 @@ export const DailyRoutinePanel: Component = () => {
                       </span>
                       <span class={styles.segmentType}>
                         {segmentLabels[seg.type]}
-                        {segExercise ? `: ${segExercise}` : ''}
+                        {segExercise != null
+                          ? `: ${exerciseLabel(segExercise)}`
+                          : ''}
                       </span>
+                      {/* Which mode: the warm-up alone has six, and two rows
+                          both saying "Warmup" read as a duplicate rather
+                          than as sirens then lip trills. */}
+                      <Show when={segmentVariantLabel(seg)}>
+                        {(variant) => (
+                          <span class={styles.segmentVariant}>{variant()}</span>
+                        )}
+                      </Show>
                       <span class={styles.segmentDur}>
                         {Math.round(seg.durationSec / 60)}m
                       </span>

@@ -142,6 +142,19 @@
 .segmentType {
   flex: 1;
 }
+/* Which of an exercise's modes this segment runs — "Sirens", "Lip trills".
+   Only rendered for exercises that have more than one. */
+.segmentVariant {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--bg-secondary);
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
 .segmentDur {
   font-size: 11px;
   color: var(--text-muted);
