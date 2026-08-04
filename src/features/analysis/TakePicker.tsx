@@ -9,6 +9,8 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { KARAOKE_NIGHT_PATH } from '@/lib/karaoke-night-link'
+import { isMobile } from '@/lib/use-viewport'
 import { setActiveTab } from '@/stores'
 import styles from './AnalysisDashboard.module.css'
 import type { AnalysisTake, TakeCapability } from './takes'
@@ -90,14 +92,24 @@ export const TakePicker: Component<TakePickerProps> = (props) => {
 
       <Show when={!hasRealTakes()}>
         <p class={styles.empty}>
-          Nothing recorded yet. Sing into the mic above, or separate a song in
-          Karaoke to analyse a full vocal.{' '}
+          Nothing recorded yet. Sing into the mic above, or separate a song in{' '}
+          {isMobile() ? 'Karaoke Night' : 'Karaoke'} to analyse a full vocal.{' '}
+          {/* The in-app Karaoke tab is a desk-width surface: a header of
+              processing controls and a wide session table. Karaoke Night
+              uploads and separates too, and is the one shaped for a phone,
+              so that is where a phone is sent. */}
           <button
             type="button"
             class={styles.ghostBtn}
-            onClick={() => setActiveTab(TAB_KARAOKE)}
+            onClick={() => {
+              if (isMobile()) {
+                window.location.href = KARAOKE_NIGHT_PATH
+                return
+              }
+              setActiveTab(TAB_KARAOKE)
+            }}
           >
-            Open Karaoke
+            {isMobile() ? 'Open Karaoke Night' : 'Open Karaoke'}
           </button>
         </p>
       </Show>
