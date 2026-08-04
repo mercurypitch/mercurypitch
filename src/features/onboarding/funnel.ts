@@ -25,9 +25,12 @@ export type OnboardingEvent =
   | 'onboarding_twin'
   | 'onboarding_map'
   | 'onboarding_keep'
+  | 'onboarding_prints'
   // Choices and outcomes.
   | 'onboarding_track_short'
   | 'onboarding_track_full'
+  | 'onboarding_track_gallery'
+  | 'onboarding_another_voiceprint'
   | 'onboarding_mic_granted'
   | 'onboarding_mic_denied'
   | 'onboarding_map_room'
@@ -50,4 +53,5 @@ export const BEAT_EVENT: Record<string, OnboardingEvent> = {
   twin: 'onboarding_twin',
   map: 'onboarding_map',
   keep: 'onboarding_keep',
+  prints: 'onboarding_prints',
 }

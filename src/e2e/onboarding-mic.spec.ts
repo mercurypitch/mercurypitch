@@ -30,11 +30,57 @@ test.use({
   permissions: ['microphone'],
 })
 
-const door = (page: import('@playwright/test').Page) =>
-  page.getByRole('button', { name: 'Show me around' })
-
 const beat = (page: import('@playwright/test').Page, name: string) =>
   page.locator(`[data-beat="${name}"]`)
+
+/**
+ * The beat-2 button, whichever label it is wearing. This context grants
+ * `microphone` up front, so beat 2 knows there is no prompt to explain
+ * and says "Start listening"; a first-time visitor gets "Allow
+ * microphone". Both open the mic — matching either is the point.
+ */
+const micStart = (page: import('@playwright/test').Page) =>
+  page.getByRole('button', { name: /Allow microphone|Start listening/ })
+
+/**
+ * Two voiceprints already on this device, as a visitor who has done
+ * this before would have. Written straight to the local store — the
+ * point under test is what the fork SAYS about them, and taking three
+ * real ones would cost four and a half minutes of synthetic singing.
+ */
+const SEED_PRINTS = () => {
+  localStorage.setItem(
+    'mercurypitch.voiceprints.v1',
+    JSON.stringify([
+      {
+        id: 'seed-newer',
+        takenAt: '2026-07-30T10:00:00.000Z',
+        twin: 'Freddie Mercury',
+        source: 'onboarding',
+        summary: {
+          lowMidi: 43,
+          highMidi: 76,
+          semitones: 33,
+          accuracy: 82,
+          steadiness: 74,
+        },
+      },
+      {
+        id: 'seed-older',
+        takenAt: '2026-06-02T10:00:00.000Z',
+        twin: 'Freddie Mercury',
+        source: 'mirror',
+        summary: {
+          lowMidi: 45,
+          highMidi: 72,
+          semitones: 27,
+          accuracy: 71,
+          steadiness: 66,
+        },
+      },
+    ]),
+  )
+}
 
 test.describe('First Light with a microphone', () => {
   test.beforeEach(async ({ page }) => {
@@ -45,9 +91,8 @@ test.describe('First Light with a microphone', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await door(page).click()
     await page.getByRole('button', { name: 'Sing one note' }).click()
-    await page.getByRole('button', { name: 'Allow microphone' }).click()
+    await micStart(page).click()
 
     // The claim the whole beat rests on: we heard you, and here is what.
     const heard = beat(page, 'first-light').locator('h1')
@@ -63,9 +108,8 @@ test.describe('First Light with a microphone', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await door(page).click()
     await page.getByRole('button', { name: 'Sing one note' }).click()
-    await page.getByRole('button', { name: 'Allow microphone' }).click()
+    await micStart(page).click()
     await expect(beat(page, 'first-light').locator('h1')).toContainText(
       TONE_NOTE,
       { timeout: 20000 },
@@ -85,6 +129,43 @@ test.describe('First Light with a microphone', () => {
     await expect(page.locator('#app-tabs')).toBeVisible()
   })
 
+  test('a returning visitor is told they already mapped their voice', async ({
+    page,
+  }) => {
+    await page.addInitScript(SEED_PRINTS)
+    await page.setViewportSize(DESKTOP)
+    await page.goto('/')
+
+    await page.getByRole('button', { name: 'Sing one note' }).click()
+    await micStart(page).click()
+    await expect(beat(page, 'first-light').locator('h1')).toContainText(
+      TONE_NOTE,
+      { timeout: 20000 },
+    )
+    await page.getByRole('button', { name: 'Keep going' }).click()
+
+    // The whole point: no "map my whole voice" as the lead card to
+    // someone who has already done exactly that, twice.
+    const fork = beat(page, 'fork')
+    await expect(fork).toBeVisible()
+    await expect(fork).toContainText(/already mapped your voice/i)
+    await expect(fork).toContainText('2 voiceprints')
+    await expect(
+      page.getByRole('button', { name: /Map my whole voice/ }),
+    ).toHaveCount(0)
+
+    // The gallery, then the Map — never a second measurement.
+    await page.getByRole('button', { name: /See my voiceprints/ }).click()
+    const prints = beat(page, 'prints')
+    await expect(prints).toBeVisible()
+    await expect(prints).toContainText('2 voiceprints')
+    await expect(prints).toContainText('Earlier takes')
+
+    await page.getByRole('button', { name: /See my map/ }).click()
+    await expect(beat(page, 'map')).toBeVisible({ timeout: 10000 })
+    await expect(beat(page, 'voiceprint')).toHaveCount(0)
+  })
+
   test('the full track runs the voiceprint through to the twin and the Map', async ({
     page,
   }) => {
@@ -95,9 +176,8 @@ test.describe('First Light with a microphone', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await door(page).click()
     await page.getByRole('button', { name: 'Sing one note' }).click()
-    await page.getByRole('button', { name: 'Allow microphone' }).click()
+    await micStart(page).click()
     await expect(beat(page, 'first-light').locator('h1')).toContainText(
       TONE_NOTE,
       { timeout: 20000 },

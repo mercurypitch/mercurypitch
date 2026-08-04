@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Beat, FlowState } from '@/features/onboarding/flow'
-import { BEAT_ORDER, beatProgress, firstBeat, isBeatApplicable, nextBeat, } from '@/features/onboarding/flow'
+import { BEAT_ORDER, beatProgress, firstBeat, isBeatApplicable, nextBeat, walkedBeats, } from '@/features/onboarding/flow'
 
 /** Everything renderable — the Phase 4 end state. */
 const ALL: ReadonlySet<Beat> = new Set(BEAT_ORDER)
@@ -11,6 +11,7 @@ const state = (over: Partial<FlowState> = {}): FlowState => ({
   track: null,
   hasVoiceprint: false,
   micDenied: false,
+  savedPrints: 0,
   ...over,
 })
 
@@ -29,6 +30,25 @@ describe('isBeatApplicable', () => {
     expect(isBeatApplicable('twin', state({ track: 'short' }))).toBe(false)
     expect(isBeatApplicable('voiceprint', state({ track: 'full' }))).toBe(true)
     expect(isBeatApplicable('twin', state({ track: 'full' }))).toBe(true)
+  })
+
+  it('gates the gallery behind choosing it AND having something in it', () => {
+    // Never on the way past: the gallery is only ever reached by asking.
+    expect(isBeatApplicable('prints', state({ savedPrints: 4 }))).toBe(false)
+    expect(isBeatApplicable('prints', state({ track: 'short' }))).toBe(false)
+    expect(isBeatApplicable('prints', state({ track: 'full' }))).toBe(false)
+    // And an empty gallery is not a beat, whatever was chosen.
+    expect(isBeatApplicable('prints', state({ track: 'gallery' }))).toBe(false)
+    expect(
+      isBeatApplicable('prints', state({ track: 'gallery', savedPrints: 1 })),
+    ).toBe(true)
+  })
+
+  it('keeps the voiceprint measurement off the gallery track', () => {
+    // Someone looking at takes they already have is not re-measured.
+    const gallery = state({ track: 'gallery', savedPrints: 2 })
+    expect(isBeatApplicable('voiceprint', gallery)).toBe(false)
+    expect(isBeatApplicable('twin', gallery)).toBe(false)
   })
 
   it('offers nothing to keep when nothing was measured', () => {
@@ -83,6 +103,21 @@ describe('nextBeat', () => {
     expect(nextBeat('twin', full, withoutKeep)).toBe('map')
   })
 
+  it('sends a returning visitor fork → gallery → map, with no re-measure', () => {
+    const gallery = state({ track: 'gallery', savedPrints: 3 })
+    expect(nextBeat('fork', gallery, ALL)).toBe('prints')
+    // Straight to the Map: no voiceprint, no twin, and nothing to keep
+    // because nothing new was measured in this run.
+    expect(nextBeat('prints', gallery, ALL)).toBe('map')
+    expect(nextBeat('map', gallery, ALL)).toBeNull()
+  })
+
+  it('still offers the full measurement to a returning visitor who asks', () => {
+    // Having four on file does not take the 90-second path away.
+    const full = state({ track: 'full', savedPrints: 4 })
+    expect(nextBeat('fork', full, ALL)).toBe('voiceprint')
+  })
+
   it('skips the fork entirely on the short track', () => {
     const short = state({ track: 'short' })
     expect(nextBeat('fork', short, ALL)).toBe('map')
@@ -125,6 +160,36 @@ describe('firstBeat', () => {
 
   it('returns null when nothing can be rendered', () => {
     expect(firstBeat(state(), new Set<Beat>())).toBeNull()
+  })
+})
+
+describe('walkedBeats', () => {
+  it('is exactly the beats this visitor sees — the sky draws one bead each', () => {
+    expect(walkedBeats(state({ track: 'short' }), PHASE_1)).toEqual([
+      'sky',
+      'fork',
+      'map',
+    ])
+    // Every beat except the gallery, which belongs to the other fork.
+    expect(
+      walkedBeats(state({ track: 'full', hasVoiceprint: true }), ALL),
+    ).toEqual(BEAT_ORDER.filter((beat) => beat !== 'prints'))
+  })
+
+  it('never leaves the current beat out of its own walk', () => {
+    // The bead index is an indexOf into this list; a current beat that
+    // is not in it would light nothing and read as a broken arc.
+    const short = state({ track: 'short' })
+    for (const beat of walkedBeats(short, ALL)) {
+      expect(walkedBeats(short, ALL)).toContain(beat)
+    }
+    expect(walkedBeats(state({ micDenied: true }), ALL)).toEqual(['map'])
+  })
+
+  it('agrees with beatProgress about where the end is', () => {
+    const full = state({ track: 'full', hasVoiceprint: true })
+    const walked = walkedBeats(full, ALL)
+    expect(beatProgress(walked[walked.length - 1], full, ALL)).toBe(1)
   })
 })
 
