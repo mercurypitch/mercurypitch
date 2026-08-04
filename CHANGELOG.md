@@ -145,6 +145,48 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   you'd ever practised rather than consecutive days, so "current streak" always
   matched "best streak". It now uses the same streak as the rest of the app.
 
+### Added
+
+- **Exercises show what's coming, not just what you just sang.** The pitch
+  track now draws the notes ahead of the playhead as well as the trace behind
+  it, so you can see the next target arriving instead of finding out about it
+  when you are already late.
+- **Your finished run, shown back to you.** A drill used to end on a number.
+  It now ends on a picture of the attempt — where you were sharp, where you
+  were flat, and where you lost the note — so the score has something to point
+  at.
+- **Choose how long a held note runs before it scores itself.** Pick 5, 10, 15
+  or 30 seconds (or a custom length) before you start, instead of the run
+  ending whenever you remember to press Stop. The choice is remembered, and it
+  follows you to your other devices.
+- **The warm-up is a real warm-up now.** The six warm-up patterns run on the
+  same stage as everything else: targets ahead of the playhead, your voice
+  behind it, a lane for the hiss and an expanding ring to breathe with. The
+  hiss on the exhale is measured for the first time — and the breathing step
+  is left out of your average rather than counted as a zero.
+- **Pick up a half-finished routine.** Home offers to resume a daily routine
+  you started earlier the same day, once at least one segment is done.
+- **The routine carries you to the next segment.** Instead of waiting to be
+  clicked, it counts down five seconds and continues. Cancel stops it; cancel
+  twice and it offers to stop doing that for good.
+
+### Fixed
+
+- **The microphone stays open between routine segments.** Every segment
+  boundary used to close the device and reopen it — a visible stall, and on
+  some browsers another permission prompt.
+- **Sirens give you a breath before each glide.** The glide used to begin
+  fractions of a second after the reference notes, six times in a row, with
+  barely a rest between rounds. There is now a counted three-second beat that
+  names the note to start on — which doubles as the rest the drill never had.
+- **The siren's guide dot starts where you do.** Which end of the glide it
+  began from depended on how long everything before it had taken, so round one
+  and round two could start it in different places. It now always leaves from
+  the start note.
+- **Daily routines no longer send you somewhere they can't follow.** Generated
+  routines dropped their challenge-prep segment, which led out of the routine
+  and left it stuck.
+
 ## [0.7.22] - 2026-07-21
 
 ### Fixed
