@@ -55,6 +55,33 @@ export interface TableDef {
 }
 
 /**
+ * Restore booleans and JSON columns on rows read from D1.
+ *
+ * Lives here rather than beside the CRUD handlers because the table registry
+ * is what says which columns need it, and more than one route now reads rows
+ * straight out of D1 (see grants.ts).
+ */
+export function fromSql(
+  def: TableDef,
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  for (const col of def.boolCols ?? []) {
+    if (col in row) row[col] = !!row[col]
+  }
+  for (const col of def.jsonCols ?? []) {
+    const v = row[col]
+    if (typeof v === 'string') {
+      try {
+        row[col] = JSON.parse(v)
+      } catch {
+        /* leave as string */
+      }
+    }
+  }
+  return row
+}
+
+/**
  * Refuse a write that would publish something under no real identity.
  *
  * Anonymous identities are provisioned lazily and hold ordinary tokens, so

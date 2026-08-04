@@ -15,13 +15,14 @@
 // rules force userId scoping from the JWT, never from the request body.
 
 import type { AuthUser, Env } from './auth'
-import { checkRateLimit, getAuth, handleAuth, timingSafeEqual } from './auth'
+import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
+import { handleAchievementBulk, handleGrantContext } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { getPerksForUser } from './perks'
 import type { TableDef } from './tables'
-import { blockedForAnonymous, maskPublicRow, TABLES } from './tables'
+import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { validateWrite } from './validation'
 
 const CORS: Record<string, string> = {
@@ -96,6 +97,15 @@ function respond(body: object | null, init?: ResponseInit): Response {
   })
 }
 
+/** The 429 every rate-limited route returns, written once. */
+function rateLimited(rl: { retryAfter?: number }): Response {
+  const after = rl.retryAfter ?? 60
+  return respond(
+    { error: `Too many requests. Retry after ${after} seconds.` },
+    { status: 429, headers: { 'Retry-After': String(after) } },
+  )
+}
+
 // ── Value & identifier handling ──────────────────────────────────────
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -120,24 +130,6 @@ function toSql(v: unknown): SqlValue {
 }
 
 type Row = Record<string, unknown>
-
-/** Restore booleans and JSON columns on rows read from D1. */
-function fromSql(def: TableDef, row: Row): Row {
-  for (const col of def.boolCols ?? []) {
-    if (col in row) row[col] = !!row[col]
-  }
-  for (const col of def.jsonCols ?? []) {
-    const v = row[col]
-    if (typeof v === 'string') {
-      try {
-        row[col] = JSON.parse(v)
-      } catch {
-        /* leave as string */
-      }
-    }
-  }
-  return row
-}
 
 // ── Query parsing ────────────────────────────────────────────────────
 
@@ -1624,6 +1616,13 @@ async function handleRequest(
   )
   if (billingResponse) return billingResponse
 
+  // Resolved once for the whole request: several routes below want the
+  // identity twice over, for the rate-limit bucket and again for the query
+  // scope. getAuth returns null without touching D1 when there is no Bearer
+  // header, so the anonymous paths (the Mirror funnel beacon especially) pay
+  // nothing for it.
+  const auth = await getAuth(request, env)
+
   const isGuidedRoute =
     url.pathname.startsWith('/api/guided-exercises') ||
     url.pathname.startsWith('/api/guided-media') ||
@@ -1635,19 +1634,12 @@ async function handleRequest(
       request.method !== 'HEAD' &&
       request.method !== 'OPTIONS'
     ) {
-      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
-      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
-      if (!rl.allowed) {
-        return respond(
-          {
-            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-          },
-          {
-            status: 429,
-            headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
-          },
-        )
-      }
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
     }
     const guidedResponse = await handleGuidedExerciseRequest(
       request,
@@ -1663,7 +1655,7 @@ async function handleRequest(
   }
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
-    return handleLeaderboard(url, await getAuth(request, env), env)
+    return handleLeaderboard(url, auth, env)
   }
 
   if (url.pathname === '/api/mirror/event' && request.method === 'POST') {
@@ -1671,16 +1663,36 @@ async function handleRequest(
   }
 
   if (url.pathname === '/api/league/me' && request.method === 'GET') {
-    const auth = await getAuth(request, env)
     if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
     return respond(await getLeagueMe(env, auth.userId))
   }
 
   // Supporter cosmetic perks (shared dev+prod DB, email-keyed grants).
   if (url.pathname === '/api/perks/me' && request.method === 'GET') {
-    const auth = await getAuth(request, env)
     if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
     return respond({ perks: await getPerksForUser(env, auth.userId) })
+  }
+
+  // Everything one grant pass reads, in one request. See handleGrantContext.
+  if (url.pathname === '/api/me/grant-context' && request.method === 'GET') {
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    return handleGrantContext(auth, env, respond)
+  }
+
+  // Every changed achievement row in one request. Must be matched before the
+  // generic /api/<entity>/<id> route below, which would read "bulk" as an id.
+  if (
+    url.pathname === '/api/userAchievements/bulk' &&
+    request.method === 'POST'
+  ) {
+    if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'achievement-write',
+    )
+    if (!rl.allowed) return rateLimited(rl)
+    return handleAchievementBulk(request, auth, env, respond)
   }
 
   if (url.pathname === '/api/friends/code' && request.method === 'GET') {
@@ -1715,19 +1727,12 @@ async function handleRequest(
   ) {
     // /api/weekly writes are rate-limited like the generic CRUD path.
     if (request.method !== 'GET' && request.method !== 'OPTIONS') {
-      const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
-      const rl = await checkRateLimit(env.DB, ip, 'crud-write')
-      if (!rl.allowed) {
-        return respond(
-          {
-            error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-          },
-          {
-            status: 429,
-            headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
-          },
-        )
-      }
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
     }
     return handleWeekly(url, request, env)
   }
@@ -1741,28 +1746,21 @@ async function handleRequest(
     return respond({ error: `Unknown entity: ${entity}` }, { status: 404 })
 
   const sub = match[2] ? decodeURIComponent(match[2]) : undefined
-  const auth = await getAuth(request, env)
 
-  // Per-IP write rate limit on mutations — bounds scripted spam / unbounded
-  // row creation. (Volumetric DDoS is absorbed at the Cloudflare edge.)
+  // Per-user (per-IP when anonymous) write rate limit on mutations — bounds
+  // scripted spam / unbounded row creation. (Volumetric DDoS is absorbed at
+  // the Cloudflare edge.)
   if (
     request.method === 'POST' ||
     request.method === 'PATCH' ||
     request.method === 'DELETE'
   ) {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
-    const rl = await checkRateLimit(env.DB, ip, 'crud-write')
-    if (!rl.allowed) {
-      return respond(
-        {
-          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-        },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
-        },
-      )
-    }
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'crud-write',
+    )
+    if (!rl.allowed) return rateLimited(rl)
   }
 
   if (sub === 'count' && request.method === 'GET') {
