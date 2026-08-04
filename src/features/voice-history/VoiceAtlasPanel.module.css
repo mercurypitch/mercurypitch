@@ -7,44 +7,47 @@
   --atlas-playhead: #ffe9a8;
   position: relative;
   display: grid;
-  gap: 18px;
-  margin-top: 22px;
-  padding: clamp(18px, 2.4vw, 28px);
+  gap: 14px;
+  min-width: 0;
+  margin-top: 0;
+  padding: clamp(16px, 2vw, 22px);
   overflow: hidden;
   color: var(--atlas-starlight);
-  border: 1px solid rgb(130 177 255 / 18%);
-  border-radius: 18px;
+  border: 0;
+  border-radius: 16px;
   background:
-    radial-gradient(circle at 13% -8%, rgb(45 212 191 / 12%), transparent 34%),
-    radial-gradient(circle at 93% 5%, rgb(188 140 255 / 14%), transparent 36%),
-    linear-gradient(145deg, rgb(11 18 30 / 97%), rgb(7 11 19 / 98%));
-  box-shadow:
-    inset 0 1px rgb(255 255 255 / 4%),
-    0 24px 60px rgb(0 0 0 / 22%);
+    radial-gradient(circle at 14% -16%, rgb(45 212 191 / 8%), transparent 34%),
+    radial-gradient(circle at 92% -10%, rgb(188 140 255 / 9%), transparent 36%),
+    linear-gradient(145deg, rgb(10 16 27 / 96%), rgb(6 10 17 / 98%));
+  box-shadow: inset 0 1px rgb(255 255 255 / 3%);
   container-type: inline-size;
   isolation: isolate;
 }
 
 .heading {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
 
 .heading h3 {
-  margin: 4px 0 7px;
-  font-size: clamp(1.7rem, 3.8vw, 2.65rem);
-  line-height: 1;
-  letter-spacing: -0.035em;
+  margin: 3px 0 5px;
+  font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
 }
 
 .heading p {
-  max-width: 68ch;
+  max-width: 72ch;
   margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.55;
+  font-size: 0.76rem;
+  line-height: 1.45;
   color: color-mix(in srgb, var(--atlas-starlight) 67%, var(--atlas-chrome));
+}
+
+.heading p span {
+  color: #75849a;
 }
 
 .kicker {
@@ -60,9 +63,9 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 7px 11px;
-  font-size: 0.71rem;
+  min-height: 30px;
+  padding: 5px 9px;
+  font-size: 0.66rem;
   font-weight: 750;
   color: #dbe8f7;
   border: 1px solid rgb(141 184 255 / 18%);
@@ -88,11 +91,110 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 18px;
-  min-height: 24px;
+  min-height: 20px;
+  padding-inline: 4px;
   font-size: 0.67rem;
   font-weight: 680;
   letter-spacing: 0.015em;
   color: #8493a8;
+}
+
+.workspaceShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 14px;
+  background: rgb(3 7 13 / 52%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 2%);
+  transition: grid-template-columns 180ms ease;
+}
+
+.inspectorOpen .workspaceShell {
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 310px);
+}
+
+.canvasColumn {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 14px 0;
+  container-type: inline-size;
+}
+
+.inspector {
+  position: sticky;
+  top: 72px;
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 18px;
+  min-width: 0;
+  max-height: calc(100dvh - 88px);
+  overflow-y: auto;
+  padding: 16px;
+  border-left: 1px solid rgb(141 184 255 / 12%);
+  border-radius: 0 13px 13px 0;
+  background: linear-gradient(180deg, rgb(13 20 33 / 96%), rgb(7 12 21 / 98%));
+  animation: inspectorEnter 160ms ease-out both;
+}
+
+.inspectorHeading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgb(141 184 255 / 10%);
+}
+
+.inspectorHeading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.inspectorHeading span {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #8db8ff;
+}
+
+.inspectorHeading strong {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #e7eef8;
+}
+
+.inspectorHeading button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #8d9aab;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  place-items: center;
+}
+
+.inspectorHeading button:hover {
+  color: #f4f8fd;
+  background: rgb(141 184 255 / 8%);
+}
+
+.inspectorHeading svg {
+  width: 18px;
+  height: 18px;
+}
+
+.roomSlot {
+  min-width: 0;
 }
 
 .legend > span {
@@ -168,10 +270,10 @@
 .plotFrame {
   position: relative;
   min-width: 0;
-  height: clamp(280px, 32vw, 390px);
+  height: clamp(300px, 34vw, 420px);
   overflow: hidden;
   border: 1px solid rgb(141 184 255 / 13%);
-  border-radius: 15px;
+  border-radius: 12px;
   background:
     radial-gradient(circle at 50% 48%, rgb(87 115 171 / 9%), transparent 55%),
     rgb(4 8 15 / 72%);
@@ -354,7 +456,15 @@
 .trailCards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid rgb(141 184 255 / 10%);
+  border-radius: 10px;
+  background: rgb(141 184 255 / 10%);
+}
+
+.singleTrail {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .pairBar {
@@ -362,9 +472,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 11px 13px;
+  padding: 8px 4px;
   border-block: 1px solid rgb(141 184 255 / 10%);
-  background: linear-gradient(90deg, rgb(45 212 191 / 4%), transparent 42%);
+  background: transparent;
 }
 
 .pairBar > div:first-child {
@@ -391,7 +501,7 @@
 .pairBar p {
   grid-column: 2;
   margin: 0;
-  font-size: 0.66rem;
+  font-size: 0.63rem;
   color: #75849a;
 }
 
@@ -401,7 +511,7 @@
   gap: 3px;
   padding: 3px;
   border: 1px solid rgb(141 184 255 / 11%);
-  border-radius: 9px;
+  border-radius: 8px;
   background: rgb(3 7 13 / 64%);
 }
 
@@ -429,12 +539,12 @@
   --trail-color: var(--atlas-chrome);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 9px 12px;
+  gap: 7px 12px;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid rgb(141 184 255 / 11%);
-  border-radius: 13px;
-  background: rgb(5 10 18 / 56%);
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 0;
+  background: rgb(5 10 18 / 82%);
   cursor: pointer;
   transition:
     border-color 150ms ease,
@@ -455,15 +565,8 @@
 }
 
 .selectedCard {
-  border-color: color-mix(in srgb, var(--trail-color) 33%, transparent);
-  background: color-mix(in srgb, var(--trail-color) 6%, rgb(5 10 18 / 72%));
-  box-shadow: inset 0 1px color-mix(in srgb, var(--trail-color) 8%, transparent);
-}
-
-.playingCard {
-  box-shadow:
-    inset 0 1px color-mix(in srgb, var(--trail-color) 13%, transparent),
-    0 0 18px color-mix(in srgb, var(--trail-color) 7%, transparent);
+  background: color-mix(in srgb, var(--trail-color) 7%, rgb(5 10 18 / 88%));
+  box-shadow: inset 3px 0 var(--trail-color);
 }
 
 .trailIdentity {
@@ -514,14 +617,14 @@
 .trailSwatch {
   flex: 0 0 auto;
   width: 3px;
-  height: 31px;
+  height: 27px;
   border-radius: 999px;
   background: var(--trail-color);
   box-shadow: 0 0 10px color-mix(in srgb, var(--trail-color) 38%, transparent);
 }
 
 .trailLabel {
-  font-size: 0.65rem;
+  font-size: 0.61rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -570,7 +673,7 @@
   font-size: 0.72rem;
   color: #d8e1ee;
   border: 1px solid rgb(141 184 255 / 15%);
-  border-radius: 9px;
+  border-radius: 8px;
   outline: 0;
   background: rgb(4 8 15 / 70%);
 }
@@ -580,65 +683,16 @@
   outline-offset: 2px;
 }
 
-.playButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-width: 82px;
-  min-height: 44px;
-  padding: 8px 12px;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 750;
-  color: #e4ecf8;
-  border: 1px solid color-mix(in srgb, var(--trail-color) 22%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--trail-color) 7%, rgb(5 10 18 / 78%));
-  cursor: pointer;
-}
-
-.playButton svg {
-  width: 17px;
-  height: 17px;
-}
-
-.playButton:hover:not(:disabled) {
-  color: #fff;
-  border-color: color-mix(in srgb, var(--trail-color) 42%, transparent);
-  background: color-mix(in srgb, var(--trail-color) 12%, rgb(5 10 18 / 78%));
-}
-
-.playButton:disabled {
-  cursor: default;
-  opacity: 0.42;
-}
-
 .reflections {
   display: grid;
-  grid-template-columns: minmax(210px, 0.72fr) minmax(310px, 1.28fr);
-  gap: 18px 24px;
-  padding-top: 2px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
 .reflectionIntro {
   display: grid;
   align-content: start;
   gap: 5px;
-}
-
-.reflectionIntro > span {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #8db8ff;
-}
-
-.reflectionIntro strong {
-  max-width: 31ch;
-  font-size: 0.88rem;
-  line-height: 1.4;
 }
 
 .reflectionIntro p {
@@ -653,8 +707,8 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 3px 7px;
-  margin-top: 4px;
-  padding: 9px 10px;
+  margin-top: 0;
+  padding: 10px;
   border: 1px solid rgb(255 233 168 / 16%);
   border-radius: 8px;
   background: rgb(255 233 168 / 4%);
@@ -701,12 +755,11 @@
 .reflectionComposer {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) auto;
-  gap: 7px 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
 }
 
 .reflectionComposer label {
-  grid-column: 1;
   font-size: 0.67rem;
   font-weight: 680;
   color: #aeb9c9;
@@ -714,7 +767,6 @@
 
 .noteField {
   position: relative;
-  grid-column: 1;
   min-width: 0;
 }
 
@@ -754,11 +806,9 @@
 }
 
 .beaconActions {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  display: flex;
-  align-items: end;
-  gap: 7px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .beaconAction {
@@ -768,11 +818,11 @@
   justify-content: center;
   gap: 7px;
   min-height: 44px;
-  padding: 8px 11px;
+  padding: 8px 6px;
   font: inherit;
   font-size: 0.68rem;
   font-weight: 740;
-  white-space: nowrap;
+  white-space: normal;
   color: #cbd5e2;
   border: 1px solid rgb(141 184 255 / 13%);
   border-radius: 10px;
@@ -825,11 +875,8 @@
 }
 
 .selectedReflection {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+  display: grid;
+  gap: 10px;
   padding: 12px 13px;
   border: 1px solid rgb(141 184 255 / 12%);
   border-radius: 11px;
@@ -867,7 +914,7 @@
 }
 
 .selectedReflection button {
-  flex: 0 0 auto;
+  justify-self: start;
   min-height: 44px;
   padding: 8px 11px;
   font: inherit;
@@ -886,14 +933,51 @@
   background: rgb(141 184 255 / 6%);
 }
 
-.playButton:focus-visible,
 .trailIdentity:focus-visible,
 .pairPresets button:focus-visible,
 .reflectionComposer input:focus-visible,
 .beaconAction:focus-visible,
-.selectedReflection button:focus-visible {
+.selectedReflection button:focus-visible,
+.transportTool:focus-visible,
+.inspectorHeading button:focus-visible {
   outline: 2px solid #8db8ff;
   outline-offset: 2px;
+}
+
+.transportActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: end;
+  gap: 4px;
+}
+
+.transportTool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 720;
+  white-space: nowrap;
+  color: #9eabba;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.transportTool svg {
+  width: 16px;
+  height: 16px;
+}
+
+.transportTool:hover,
+.transportToolActive {
+  color: #edf4fd;
+  background: rgb(141 184 255 / 9%);
 }
 
 @keyframes mapPulse {
@@ -932,16 +1016,41 @@
   }
 }
 
+@keyframes inspectorEnter {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* The app sidebar and thread rail can make this workspace narrow even on a
    desktop viewport. Respond to the Atlas itself, not only the window. */
 @container (max-width: 700px) {
-  .trailCards,
-  .reflections {
+  .trailCards {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .reflectionIntro strong {
     max-width: none;
+  }
+}
+
+@container (max-width: 640px) {
+  .inspectorOpen .workspaceShell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inspector {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    border-top: 1px solid rgb(141 184 255 / 12%);
+    border-left: 0;
+    border-radius: 0 0 13px 13px;
   }
 }
 
@@ -983,10 +1092,6 @@
     justify-content: start;
   }
 
-  .playButton {
-    width: 100%;
-  }
-
   .reflectionComposer label,
   .reflectionComposer input,
   .beaconActions {
@@ -1019,14 +1124,6 @@
     justify-content: start;
   }
 
-  .playButton {
-    width: 100%;
-  }
-
-  .reflections {
-    grid-template-columns: 1fr;
-  }
-
   .reflectionIntro strong {
     max-width: none;
   }
@@ -1037,7 +1134,7 @@
     gap: 15px;
     margin-top: 16px;
     padding: 15px;
-    border-radius: 15px;
+    border-radius: 14px;
   }
 
   .heading {
@@ -1060,12 +1157,52 @@
   }
 
   .plotFrame {
-    height: 290px;
-    margin-inline: -4px;
+    height: 300px;
+    margin-inline: 0;
   }
 
   .trailCards {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .canvasColumn {
+    padding: 12px 10px 0;
+  }
+
+  .inspector {
+    position: fixed;
+    z-index: 40;
+    top: auto;
+    right: 0;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    left: 0;
+    max-height: min(76dvh, 680px);
+    overflow-y: auto;
+    padding: 16px max(16px, env(safe-area-inset-right)) 18px
+      max(16px, env(safe-area-inset-left));
+    border: 1px solid rgb(141 184 255 / 18%);
+    border-radius: 18px;
+    box-shadow: 0 -24px 70px rgb(0 0 0 / 55%);
+    animation: inspectorSheetEnter 180ms ease-out both;
+  }
+
+  .inspector::before {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    content: '';
+    background: rgb(0 0 0 / 42%);
+    backdrop-filter: blur(2px);
+  }
+
+  .transportActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .transportTool {
+    width: 100%;
   }
 
   .pairBar {
@@ -1100,6 +1237,17 @@
   }
 }
 
+@keyframes inspectorSheetEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 410px) {
   .atlas {
     padding: 13px;
@@ -1122,7 +1270,8 @@
 @media (prefers-reduced-motion: reduce) {
   .status > span,
   .playheadMoving > span,
-  .loadingVeil span {
+  .loadingVeil span,
+  .inspector {
     animation: none;
   }
 
