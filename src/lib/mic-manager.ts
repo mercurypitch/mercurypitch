@@ -319,9 +319,14 @@ export class MicManager {
    * background — cases where the point is precisely that we stop capturing.
    * Consumers find out through their existing `onMicLost` path, the same way
    * they learn about an OS revoke.
+   *
+   * Resolves once the device is actually closed, not once the close is queued.
+   * The cross-tab handoff waits on this before releasing the lock: an open
+   * that is still in flight sits ahead of us on the queue, and releasing the
+   * lock first would let the other tab open a second handle behind it.
    */
-  forceReleaseAll(): void {
-    void this.enqueue(async () => {
+  forceReleaseAll(): Promise<void> {
+    return this.enqueue(async () => {
       this.cancelLinger()
       this.consumers.clear()
       this.teardown()
@@ -410,9 +415,8 @@ export const micManager = new MicManager()
 
 // When another tab asks for the mic, stop capturing before the lock moves —
 // otherwise the hand-off hands over a name while this tab keeps the device.
-setMicYieldHandler(() => {
-  micManager.forceReleaseAll()
-})
+// Returning the promise is what makes "before" true: mic-lock waits on it.
+setMicYieldHandler(() => micManager.forceReleaseAll())
 
 /**
  * How long a backgrounded tab may keep the microphone.
@@ -442,18 +446,27 @@ if (typeof document !== 'undefined') {
     }
   }
 
-  const considerRelease = (): void => {
-    if (!document.hidden) {
+  // There is nothing left to watch for once the tab is visible again or the
+  // mic is closed — by us, by a consumer letting go, or by the OS. Saying so
+  // in one place is what stops the re-check ticking in a background tab that
+  // has not held a microphone for an hour.
+  const nothingLeftToWatch = (): boolean =>
+    !document.hidden || !micManager.isActive()
+
+  /** 'settled' when there is nothing more to do; 'waiting' while a run holds
+   *  the mic and we should look again shortly. */
+  const considerRelease = (): 'settled' | 'waiting' => {
+    if (nothingLeftToWatch()) {
       stopWatching()
-      return
+      return 'settled'
     }
-    if (!micManager.isActive()) return
     // Never mid-run. A take, a scored exercise or a challenge attempt owns the
     // mic until it finishes, however long the singer stays on another tab.
-    if (micManager.isRunInProgress()) return
+    if (micManager.isRunInProgress()) return 'waiting'
     console.info('[MicManager] Tab backgrounded — releasing the microphone')
-    micManager.forceReleaseAll()
+    void micManager.forceReleaseAll()
     stopWatching()
+    return 'settled'
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -461,10 +474,12 @@ if (typeof document !== 'undefined') {
     if (!document.hidden) return
     graceTimer = setTimeout(() => {
       graceTimer = null
-      considerRelease()
       // A run still going when the grace expires must not buy the mic an
       // indefinite reprieve — keep checking until it ends or we come back.
-      if (recheckTimer === null && document.hidden) {
+      // Only then: a grace that ended by releasing the mic has nothing left
+      // to poll, and an interval started anyway would tick in a background
+      // tab for as long as the singer left it there.
+      if (considerRelease() === 'waiting' && recheckTimer === null) {
         recheckTimer = setInterval(considerRelease, HIDDEN_RECHECK_MS)
       }
     }, HIDDEN_RELEASE_GRACE_MS)
