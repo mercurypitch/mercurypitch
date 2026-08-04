@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { batch, createEffect, createResource, createSignal, For, lazy, on, onCleanup, Show, Suspense, untrack, } from 'solid-js'
+import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
@@ -23,6 +24,7 @@ import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
+import { isNarrow } from '@/lib/use-viewport'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
@@ -157,6 +159,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   }
   const [showGuide, setShowGuide] = createSignal(false)
   const [showSettings, setShowSettings] = createSignal(false)
+  /** The phone's options sheet, holding what the header cannot fit. */
+  const [optionsOpen, setOptionsOpen] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
     createSignal(false)
 
@@ -1610,6 +1614,169 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  /** The header's processing controls: in the header on a desk, in the
+   *  options sheet on a phone. One list, two containers. */
+  const headerExtras = () => (
+    <>
+      <div class="uvr-mode-stack">
+        <div class="uvr-mode-toggle">
+          <button
+            class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
+            title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
+            onClick={() => {
+              if (requireServerAuth()) setUvrProcessingMode('server')
+            }}
+            disabled={uploadQueue.isRunning()}
+            data-testid="uvr-mode-server"
+          >
+            Server
+            <span class="mode-hq-pill">HQ</span>
+          </button>
+          <button
+            class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
+            title="Processing: Browser"
+            onClick={() => setUvrProcessingMode('local')}
+            disabled={uploadQueue.isRunning()}
+          >
+            Browser
+          </button>
+          <Show when={uvrProcessingMode() === 'server'}>
+            <div class="uvr-device-toggle" data-testid="uvr-stem-choice">
+              <button
+                class="device-toggle-btn"
+                classList={{ active: !bandSplitChoice() }}
+                onClick={() => chooseBandSplit(false)}
+                title="Vocal + instrumental"
+                disabled={uploadQueue.isRunning()}
+                data-testid="uvr-stems-two"
+              >
+                <span>2 stems</span>
+                <Show when={songCost() !== undefined}>
+                  <span class="mode-hq-pill">{songCost()}cr</span>
+                </Show>
+              </button>
+              <button
+                class="device-toggle-btn"
+                classList={{ active: bandSplitChoice() }}
+                onClick={() => chooseBandSplit(true)}
+                title="Vocal, drums, bass, guitar, piano & other — separation plus a band split"
+                disabled={uploadQueue.isRunning()}
+                data-testid="uvr-stems-band"
+              >
+                <span>Full band</span>
+                <Show when={bandCost() !== undefined}>
+                  <span class="mode-hq-pill">{bandCost()}cr</span>
+                </Show>
+              </button>
+            </div>
+          </Show>
+          <Show when={uvrProcessingMode() === 'local'}>
+            <div class="uvr-device-toggle">
+              <button
+                class="device-toggle-btn"
+                classList={{ active: !uvrForceWebGpu() }}
+                onClick={() => handleForceWebGpuToggle(false)}
+                title="Use CPU (WASM) for vocal separation"
+                disabled={uploadQueue.isRunning()}
+                data-testid="uvr-device-cpu"
+              >
+                <Cpu />
+                <span>CPU</span>
+              </button>
+              <button
+                class="device-toggle-btn"
+                classList={{ active: uvrForceWebGpu() }}
+                onClick={() => handleForceWebGpuToggle(true)}
+                title="Use GPU (WebGPU) for vocal separation"
+                disabled={uploadQueue.isRunning()}
+                data-testid="uvr-device-gpu"
+              >
+                <Zap />
+                <span>GPU</span>
+              </button>
+            </div>
+          </Show>
+          <Show
+            when={
+              uvrProcessingMode() === 'local' && uvrModelStatus() !== 'ready'
+            }
+          >
+            <span
+              class={`model-status-badge model-status-${uvrModelStatus()}`}
+              title={
+                uvrModelStatus() === 'error'
+                  ? uvrModelError()
+                  : uvrModelStatus() === 'loading'
+                    ? 'Loading ONNX model...'
+                    : ''
+              }
+            >
+              <Show when={uvrModelStatus() === 'loading'}>
+                <span class="model-loading-dot" />
+              </Show>
+              <Show when={uvrModelStatus() === 'error'}>
+                <span class="model-error-icon">!</span>
+              </Show>
+            </span>
+          </Show>
+        </div>
+        <Show when={uvrProcessingMode() === 'server'}>
+          <button
+            class="server-cost-hint"
+            title="Studio-quality separation runs on a cloud GPU and uses credits from your account. Click to manage credits."
+            data-testid="uvr-server-cost-hint"
+            onClick={() => {
+              setOptionsOpen(false)
+              openSettingsSection('credits')
+            }}
+          >
+            {creditBalanceLabel()}
+          </button>
+        </Show>
+      </div>
+      <div class="uvr-view-tabs">
+        <a
+          class="view-tab"
+          href={
+            mixerSessionId() !== ''
+              ? karaokeNightSessionUrl(mixerSessionId())
+              : currentUvrSession()?.sessionId !== undefined
+                ? karaokeNightSessionUrl(currentUvrSession()!.sessionId)
+                : KARAOKE_NIGHT_PATH
+          }
+          title="Open Karaoke Night — the theatre stage for singing your songs and playlists"
+        >
+          <StageCurtains />
+          <span>Karaoke Night</span>
+        </a>
+        <button
+          class="view-tab"
+          classList={{ active: showGuide() }}
+          onClick={() => {
+            // These open a full modal; leaving the sheet up behind it
+            // would stack two dismissible layers on a phone.
+            setOptionsOpen(false)
+            setShowGuide(!showGuide())
+          }}
+        >
+          <Music />
+          <span>Guide</span>
+        </button>
+        <button
+          class="view-tab"
+          classList={{ active: showSettings() }}
+          onClick={() => {
+            setOptionsOpen(false)
+            setShowSettings(!showSettings())
+          }}
+        >
+          <Settings />
+          <span>Settings</span>
+        </button>
+      </div>
+    </>
+  )
+
   return (
     <div class="uvr-panel">
       <div
@@ -1658,157 +1825,34 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 </button>
               </div>
             </div>
+            {/* Everything that decides HOW a song is separated — mode,
+                stem choice, device, credits — plus Guide, Settings and the
+                way through to Karaoke Night. That is nine controls, and on
+                a phone they wrapped into four rows above a view that has
+                not started yet. Below the breakpoint they move into the
+                mobile kit's options sheet behind one button, which is the
+                pattern every other mobile stage already uses. */}
             <div class="header-actions">
-              <div class="uvr-mode-stack">
-                <div class="uvr-mode-toggle">
-                  <button
-                    class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-                    title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
-                    onClick={() => {
-                      if (requireServerAuth()) setUvrProcessingMode('server')
-                    }}
-                    disabled={uploadQueue.isRunning()}
-                    data-testid="uvr-mode-server"
-                  >
-                    Server
-                    <span class="mode-hq-pill">HQ</span>
-                  </button>
-                  <button
-                    class={`mode-toggle-btn${uvrProcessingMode() === 'local' ? ' active' : ''}`}
-                    title="Processing: Browser"
-                    onClick={() => setUvrProcessingMode('local')}
-                    disabled={uploadQueue.isRunning()}
-                  >
-                    Browser
-                  </button>
-                  <Show when={uvrProcessingMode() === 'server'}>
-                    <div
-                      class="uvr-device-toggle"
-                      data-testid="uvr-stem-choice"
-                    >
-                      <button
-                        class="device-toggle-btn"
-                        classList={{ active: !bandSplitChoice() }}
-                        onClick={() => chooseBandSplit(false)}
-                        title="Vocal + instrumental"
-                        disabled={uploadQueue.isRunning()}
-                        data-testid="uvr-stems-two"
-                      >
-                        <span>2 stems</span>
-                        <Show when={songCost() !== undefined}>
-                          <span class="mode-hq-pill">{songCost()}cr</span>
-                        </Show>
-                      </button>
-                      <button
-                        class="device-toggle-btn"
-                        classList={{ active: bandSplitChoice() }}
-                        onClick={() => chooseBandSplit(true)}
-                        title="Vocal, drums, bass, guitar, piano & other — separation plus a band split"
-                        disabled={uploadQueue.isRunning()}
-                        data-testid="uvr-stems-band"
-                      >
-                        <span>Full band</span>
-                        <Show when={bandCost() !== undefined}>
-                          <span class="mode-hq-pill">{bandCost()}cr</span>
-                        </Show>
-                      </button>
-                    </div>
-                  </Show>
-                  <Show when={uvrProcessingMode() === 'local'}>
-                    <div class="uvr-device-toggle">
-                      <button
-                        class="device-toggle-btn"
-                        classList={{ active: !uvrForceWebGpu() }}
-                        onClick={() => handleForceWebGpuToggle(false)}
-                        title="Use CPU (WASM) for vocal separation"
-                        disabled={uploadQueue.isRunning()}
-                        data-testid="uvr-device-cpu"
-                      >
-                        <Cpu />
-                        <span>CPU</span>
-                      </button>
-                      <button
-                        class="device-toggle-btn"
-                        classList={{ active: uvrForceWebGpu() }}
-                        onClick={() => handleForceWebGpuToggle(true)}
-                        title="Use GPU (WebGPU) for vocal separation"
-                        disabled={uploadQueue.isRunning()}
-                        data-testid="uvr-device-gpu"
-                      >
-                        <Zap />
-                        <span>GPU</span>
-                      </button>
-                    </div>
-                  </Show>
-                  <Show
-                    when={
-                      uvrProcessingMode() === 'local' &&
-                      uvrModelStatus() !== 'ready'
-                    }
-                  >
-                    <span
-                      class={`model-status-badge model-status-${uvrModelStatus()}`}
-                      title={
-                        uvrModelStatus() === 'error'
-                          ? uvrModelError()
-                          : uvrModelStatus() === 'loading'
-                            ? 'Loading ONNX model...'
-                            : ''
-                      }
-                    >
-                      <Show when={uvrModelStatus() === 'loading'}>
-                        <span class="model-loading-dot" />
-                      </Show>
-                      <Show when={uvrModelStatus() === 'error'}>
-                        <span class="model-error-icon">!</span>
-                      </Show>
-                    </span>
-                  </Show>
-                </div>
-                <Show when={uvrProcessingMode() === 'server'}>
-                  <button
-                    class="server-cost-hint"
-                    title="Studio-quality separation runs on a cloud GPU and uses credits from your account. Click to manage credits."
-                    data-testid="uvr-server-cost-hint"
-                    onClick={() => openSettingsSection('credits')}
-                  >
-                    {creditBalanceLabel()}
-                  </button>
-                </Show>
-              </div>
-              <div class="uvr-view-tabs">
-                <a
-                  class="view-tab"
-                  href={
-                    mixerSessionId() !== ''
-                      ? karaokeNightSessionUrl(mixerSessionId())
-                      : currentUvrSession()?.sessionId !== undefined
-                        ? karaokeNightSessionUrl(currentUvrSession()!.sessionId)
-                        : KARAOKE_NIGHT_PATH
-                  }
-                  title="Open Karaoke Night — the theatre stage for singing your songs and playlists"
-                >
-                  <StageCurtains />
-                  <span>Karaoke Night</span>
-                </a>
+              <Show when={!isNarrow()}>{headerExtras()}</Show>
+              <Show when={isNarrow()}>
                 <button
-                  class="view-tab"
-                  classList={{ active: showGuide() }}
-                  onClick={() => setShowGuide(!showGuide())}
-                >
-                  <Music />
-                  <span>Guide</span>
-                </button>
-                <button
-                  class="view-tab"
-                  classList={{ active: showSettings() }}
-                  onClick={() => setShowSettings(!showSettings())}
+                  class="view-tab uvr-more-btn"
+                  onClick={() => setOptionsOpen(true)}
+                  aria-label="Separation options"
+                  data-testid="uvr-mobile-options"
                 >
                   <Settings />
-                  <span>Settings</span>
+                  <span>Options</span>
                 </button>
-              </div>
+              </Show>
             </div>
+            <OptionsSheet
+              isOpen={isNarrow() && optionsOpen()}
+              close={() => setOptionsOpen(false)}
+              ariaLabel="Separation options"
+            >
+              <div class="uvr-options-sheet">{headerExtras()}</div>
+            </OptionsSheet>
           </div>
 
           <FancyDivider class="uvr-header-divider" />
