@@ -47,6 +47,23 @@ describe('buildDailySession', () => {
     expect(buildDailySession(0).segments[1].config.exercise).toBe('long-note')
   })
 
+  it('never books the warm-up twice', () => {
+    // The guided warm-up records a result like any other exercise and scores
+    // under the "weak" threshold by nature, so the weakness picker offered it
+    // as the review drill — on top of the warm-up segment already at index 0.
+    const s = buildDailySession(0, 'warmup')
+    expect(s.segments[0].type).toBe('warmup')
+    expect(s.segments[1].config.exercise).toBe('long-note')
+    expect(
+      s.segments.filter((seg) => seg.config.exercise === 'warmup'),
+    ).toHaveLength(0)
+  })
+
+  it('keeps the warm-up out of a themed grow pool too', () => {
+    const s = buildDailySession(0, undefined, { pool: ['warmup', 'slide'] })
+    expect(s.segments[2].config.exercise).toBe('slide')
+  })
+
   it('never grows the same skill it is reviewing', () => {
     // day 0 grows GROW_POOL[0] = interval-trainer; force a collision.
     const s = buildDailySession(0, 'interval-trainer')
