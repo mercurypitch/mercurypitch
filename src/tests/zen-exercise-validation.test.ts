@@ -88,8 +88,10 @@ describe('Zen exercise publication validation', () => {
     const seed = getZenExercise('noo-siren')
     expect(seed).not.toBeNull()
 
+    // Kind-free content is valid under both, and means the same under both.
     expect(parseZenExerciseVersion(seed, 1).exercise?.id).toBe('noo-siren')
-    expect(parseZenExerciseVersion(seed, 2)).toEqual({
+    expect(parseZenExerciseVersion(seed, 2).exercise?.id).toBe('noo-siren')
+    expect(parseZenExerciseVersion(seed, 3)).toEqual({
       exercise: null,
       issues: [
         expect.objectContaining({
@@ -98,6 +100,118 @@ describe('Zen exercise publication validation', () => {
         }),
       ],
     })
+  })
+
+  // v1 is frozen: a historical Ascent assignment stored as version one must
+  // keep meaning exactly what it meant, and a block kind is not something it
+  // could ever have contained.
+  it('refuses a block kind under the frozen version-one schema', () => {
+    const seed = getZenExercise('noo-siren')
+    expect(seed).not.toBeNull()
+    if (seed === null) return
+
+    const withKind = {
+      ...seed,
+      targets: [
+        {
+          id: 'hiss',
+          startBeat: 0,
+          durationBeats: 4,
+          semitone: 0,
+          cue: 'sss',
+          kind: 'amplitude' as const,
+        },
+      ],
+    }
+
+    expect(parseZenExerciseVersion(withKind, 1).exercise).toBeNull()
+    expect(parseZenExerciseVersion(withKind, 2).exercise).not.toBeNull()
+  })
+
+  it('accepts a hiss and a breath alongside sung notes', () => {
+    const seed = getZenExercise('noo-siren')
+    expect(seed).not.toBeNull()
+    if (seed === null) return
+
+    const issues = validateZenExercise({
+      ...seed,
+      loopBeats: 12,
+      targets: [
+        { ...seed.targets[0]!, id: 'sung', startBeat: 0, durationBeats: 4 },
+        {
+          id: 'hiss',
+          startBeat: 4,
+          durationBeats: 4,
+          semitone: 0,
+          cue: 'sss',
+          kind: 'amplitude',
+        },
+        {
+          id: 'inhale',
+          startBeat: 8,
+          durationBeats: 4,
+          semitone: 0,
+          cue: 'Breathe in',
+          kind: 'breath',
+        },
+      ],
+    })
+
+    expect(issues).toEqual([])
+  })
+
+  // A glide is a pitch idea. Letting one onto a hiss would ask the renderer
+  // to draw a slide between two notes neither block has.
+  it('refuses a glide on a block with no pitch', () => {
+    const seed = getZenExercise('noo-siren')
+    expect(seed).not.toBeNull()
+    if (seed === null) return
+
+    const issues = validateZenExercise({
+      ...seed,
+      targets: [
+        {
+          id: 'hiss',
+          startBeat: 0,
+          durationBeats: 4,
+          semitone: 0,
+          endSemitone: 12,
+          cue: 'sss',
+          kind: 'amplitude',
+        },
+      ],
+    })
+
+    expect(issues).toContainEqual(
+      expect.objectContaining({ path: 'targets.0.endSemitone' }),
+    )
+  })
+
+  it('refuses an exercise that is nothing but breathing', () => {
+    const seed = getZenExercise('noo-siren')
+    expect(seed).not.toBeNull()
+    if (seed === null) return
+
+    const issues = validateZenExercise({
+      ...seed,
+      targets: [
+        {
+          id: 'inhale',
+          startBeat: 0,
+          durationBeats: 4,
+          semitone: 0,
+          cue: 'Breathe in',
+          kind: 'breath',
+        },
+      ],
+    })
+
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        path: 'targets',
+        message: expect.stringContaining('nothing to hear'),
+      }),
+    )
   })
 
   it('installs a complete valid publication atomically', () => {

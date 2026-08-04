@@ -1,6 +1,18 @@
 import type { ZenExerciseDefinition, ZenExerciseTarget, } from '@/features/zen/types'
+import { targetKind } from '@/features/zen/zen-model'
 
-export type ExerciseTargetKind = 'note' | 'glide'
+/**
+ * What a block asks the singer for, as the editor names it.
+ *
+ * Two of these are sung — a note held at one pitch, a glide between two — and
+ * the difference between them is `endSemitone`, which is how v1 exercises have
+ * always stored it. The other two ask for something a pitch tracker cannot
+ * hear at all, and carry an explicit `kind` (schema version 2).
+ */
+export type ExerciseTargetKind = 'note' | 'glide' | 'hold' | 'breath'
+
+/** The two the pitch tracker scores. Anything else is loudness or silence. */
+const SUNG_KINDS: readonly ExerciseTargetKind[] = ['note', 'glide']
 
 export type ExerciseTargetPatch = Partial<Omit<ZenExerciseTarget, 'id'>>
 
@@ -83,6 +95,9 @@ const insertionBeat = (
 export function exerciseTargetKind(
   target: ZenExerciseTarget,
 ): ExerciseTargetKind {
+  const kind = targetKind(target)
+  if (kind === 'amplitude') return 'hold'
+  if (kind === 'breath') return 'breath'
   return target.endSemitone === undefined ? 'note' : 'glide'
 }
 
@@ -144,6 +159,58 @@ export function createGlideTarget(
   return exerciseWithTargets(exercise, [...exercise.targets, target])
 }
 
+/**
+ * A block scored on loudness rather than pitch — a hiss, a held "sss", the
+ * steady part of a lip trill. It still occupies a row on the timeline because
+ * that is how targets are stored, but nothing reads its semitone.
+ */
+export function createHoldTarget(
+  exercise: ZenExerciseDefinition,
+  options: CreateExerciseTargetOptions = {},
+): ZenExerciseDefinition {
+  return exerciseWithTargets(exercise, [
+    ...exercise.targets,
+    unpitchedTarget(exercise, options, 'hold', 'Sss', 4),
+  ])
+}
+
+/** A block that asks for no sound at all: breathe in, breathe out, wait. */
+export function createBreathTarget(
+  exercise: ZenExerciseDefinition,
+  options: CreateExerciseTargetOptions = {},
+): ZenExerciseDefinition {
+  return exerciseWithTargets(exercise, [
+    ...exercise.targets,
+    unpitchedTarget(exercise, options, 'breath', 'Breathe in', 2),
+  ])
+}
+
+const unpitchedTarget = (
+  exercise: ZenExerciseDefinition,
+  options: CreateExerciseTargetOptions,
+  kind: 'hold' | 'breath',
+  defaultCue: string,
+  defaultBeats: number,
+): ZenExerciseTarget => {
+  const durationBeats = clamp(
+    finiteOr(options.durationBeats, defaultBeats),
+    MIN_TARGET_DURATION_BEATS,
+    Math.max(MIN_TARGET_DURATION_BEATS, exercise.loopBeats),
+  )
+  return {
+    id: nextTargetId(exercise.targets, kind),
+    ...clampTiming(
+      exercise,
+      finiteOr(options.atBeat, insertionBeat(exercise, durationBeats)),
+      durationBeats,
+    ),
+    semitone: Math.round(finiteOr(options.semitone, 0)),
+    cue: options.cue ?? defaultCue,
+    showCue: true,
+    kind: kind === 'hold' ? 'amplitude' : 'breath',
+  }
+}
+
 export function updateExerciseTarget(
   exercise: ZenExerciseDefinition,
   targetId: string,
@@ -199,6 +266,16 @@ export function duplicateExerciseTarget(
   return exerciseWithTargets(exercise, [...exercise.targets, duplicate])
 }
 
+/**
+ * Retype a block in place, keeping its timing, cue and row.
+ *
+ * The two fields that say what a block is are mutually exclusive: `endSemitone`
+ * only means anything on a sung block, and the validator rejects it on any
+ * other. So each conversion deletes the field the new kind must not carry
+ * rather than leaving it behind for the publish step to reject. A block that
+ * comes back to note or glide sheds `kind` entirely, which leaves an
+ * all-sung exercise byte-identical to the version-one shape it started as.
+ */
 export function convertExerciseTarget(
   exercise: ZenExerciseDefinition,
   targetId: string,
@@ -206,17 +283,23 @@ export function convertExerciseTarget(
 ): ZenExerciseDefinition {
   const target = findExerciseTarget(exercise, targetId)
   if (target === null || exerciseTargetKind(target) === kind) return exercise
-  if (kind === 'glide') {
-    return updateExerciseTarget(exercise, targetId, {
-      endSemitone: target.semitone + 5,
-    })
+
+  const next: ZenExerciseTarget = { ...target }
+  if (SUNG_KINDS.includes(kind)) {
+    delete next.kind
+  } else {
+    next.kind = kind === 'hold' ? 'amplitude' : 'breath'
   }
-  const note = { ...target }
-  delete note.endSemitone
+  if (kind === 'glide') {
+    next.endSemitone = Math.round(target.endSemitone ?? target.semitone + 5)
+  } else {
+    delete next.endSemitone
+  }
+
   return exerciseWithTargets(
     exercise,
     exercise.targets.map((candidate) =>
-      candidate.id === targetId ? note : candidate,
+      candidate.id === targetId ? next : candidate,
     ),
   )
 }

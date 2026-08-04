@@ -1,5 +1,11 @@
 import { PITCH_VISUAL_COLORS } from '@/features/stem-mixer/pitch-canvas-visuals'
+import { micLevelFraction } from '@/lib/mic-level'
 import type { ResolvedZenTarget, ZenPitchPoint, ZenTargetHighlight, ZenTargetVisibility, ZenViewport, } from './types'
+import { targetKind } from './zen-model'
+
+/** Height of the loudness lane, when an exercise has anything to put in it. */
+const LEVEL_LANE_HEIGHT = 30
+const LEVEL_LANE_GAP = 6
 
 export interface ZenCanvasRenderModel {
   durationSec: number
@@ -30,6 +36,15 @@ export interface ZenCanvasLayout {
   plotHeight: number
   timeToX: (seconds: number) => number
   midiToY: (midi: number) => number
+  /**
+   * Top edge of the loudness lane, or null when the exercise has no amplitude
+   * blocks. The lane is carved out of the plot rather than laid over it — a
+   * hiss and a note are different things and should not share a row.
+   */
+  levelLaneTop: number | null
+  levelLaneHeight: number
+  /** Linear RMS to a y inside the lane, on the meter's dB scale. */
+  levelToY: (rms: number) => number
 }
 
 const NOTE_NAMES = [
@@ -79,19 +94,38 @@ export function resolveZenTimeGrid(
   )
 }
 
+export function hasLevelTargets(
+  targets: readonly ResolvedZenTarget[] | undefined,
+): boolean {
+  return (
+    targets !== undefined &&
+    targets.some((target) => targetKind(target) === 'amplitude')
+  )
+}
+
 export function createZenCanvasLayout(
   width: number,
   height: number,
-  model: Pick<ZenCanvasRenderModel, 'durationSec' | 'viewport'>,
+  model: Pick<ZenCanvasRenderModel, 'durationSec' | 'viewport'> & {
+    targets?: readonly ResolvedZenTarget[]
+  },
 ): ZenCanvasLayout {
   const gutter = width < 520 ? 34 : 46
   const top = 16
   const right = 14
   const bottom = 24
+  const laneHeight = hasLevelTargets(model.targets) ? LEVEL_LANE_HEIGHT : 0
   const plotWidth = Math.max(1, width - gutter - right)
-  const plotHeight = Math.max(1, height - top - bottom)
+  const plotHeight = Math.max(
+    1,
+    height -
+      top -
+      bottom -
+      (laneHeight === 0 ? 0 : laneHeight + LEVEL_LANE_GAP),
+  )
   const duration = Math.max(0.001, model.durationSec)
   const span = Math.max(1, model.viewport.maxMidi - model.viewport.minMidi)
+  const laneTop = laneHeight === 0 ? null : top + plotHeight + LEVEL_LANE_GAP
 
   return {
     gutter,
@@ -107,6 +141,10 @@ export function createZenCanvasLayout(
         clamp(midi, model.viewport.minMidi, model.viewport.maxMidi)) /
         span) *
         plotHeight,
+    levelLaneTop: laneTop,
+    levelLaneHeight: laneHeight,
+    levelToY: (rms) =>
+      (laneTop ?? top) + laneHeight * (1 - clamp(micLevelFraction(rms), 0, 1)),
   }
 }
 
@@ -220,6 +258,10 @@ function drawTargets(
   ctx.lineJoin = 'round'
 
   for (const target of model.targets) {
+    // Amplitude and breath blocks have no note to sit on; they get their own
+    // passes below rather than a pill at the root, which is where a semitone
+    // nobody authored would put them.
+    if (targetKind(target) !== 'pitch') continue
     const highlight = model.targetHighlights?.get(target.id)
     // Missed notes recede so the shining ones read as the story of the run;
     // they stay visible enough to show what was asked.
@@ -317,6 +359,162 @@ function drawTargetShine(
   }
 
   ctx.globalAlpha = previousAlpha
+}
+
+/**
+ * The loudness lane: what an unpitched step actually asks for.
+ *
+ * A hiss has no note, so on the pitch plot it is invisible and, before this,
+ * unmeasured — the step was a timer and the app never knew whether the singer
+ * made a sound. Here the block says how long to hold it and the fill says
+ * whether they did.
+ */
+function drawLevelLane(
+  ctx: CanvasRenderingContext2D,
+  model: ZenCanvasRenderModel,
+  layout: ZenCanvasLayout,
+): void {
+  const laneTop = layout.levelLaneTop
+  if (laneTop === null) return
+  const laneBottom = laneTop + layout.levelLaneHeight
+
+  ctx.save()
+  ctx.fillStyle = 'rgba(12, 18, 28, 0.85)'
+  ctx.fillRect(layout.gutter, laneTop, layout.plotWidth, layout.levelLaneHeight)
+  ctx.strokeStyle = 'rgba(80, 96, 122, 0.2)'
+  ctx.lineWidth = 0.7
+  ctx.strokeRect(
+    layout.gutter,
+    Math.round(laneTop) + 0.5,
+    layout.plotWidth,
+    layout.levelLaneHeight,
+  )
+
+  if (model.targetVisibility !== 'off') {
+    ctx.globalAlpha = model.targetVisibility === 'dim' ? 0.26 : 0.85
+    for (const target of model.targets) {
+      if (targetKind(target) !== 'amplitude') continue
+      const x1 = layout.timeToX(target.startSec)
+      const x2 = layout.timeToX(target.endSec)
+      roundedRect(
+        ctx,
+        x1,
+        laneTop + 3,
+        Math.max(8, x2 - x1),
+        layout.levelLaneHeight - 6,
+        5,
+      )
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.18)'
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      if (target.showCue !== false && target.cue.trim() !== '') {
+        ctx.fillStyle = '#ffd9a0'
+        ctx.font = '700 10px Inter, system-ui, sans-serif'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(target.cue, x1 + 6, laneTop + layout.levelLaneHeight / 2)
+      }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  // What they actually gave us, as an area rather than a line: this is an
+  // envelope, and an envelope reads as a shape.
+  const levelled = model.points.filter(
+    (point): point is ZenPitchPoint & { level: number } =>
+      point.level !== undefined && Number.isFinite(point.level),
+  )
+  if (levelled.length >= 2) {
+    ctx.beginPath()
+    ctx.moveTo(layout.timeToX(levelled[0]!.timeSec), laneBottom)
+    for (const point of levelled) {
+      ctx.lineTo(layout.timeToX(point.timeSec), layout.levelToY(point.level))
+    }
+    ctx.lineTo(
+      layout.timeToX(levelled[levelled.length - 1]!.timeSec),
+      laneBottom,
+    )
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(96, 165, 250, 0.28)'
+    ctx.fill()
+    ctx.strokeStyle = PITCH_VISUAL_COLORS.singer
+    ctx.lineWidth = 1.4
+    ctx.stroke()
+  }
+
+  // The lane shares the plot's clock, so it shares its playhead. Two time
+  // axes with one marker between them would read as two different runs.
+  if (model.showPlayhead) {
+    const x = layout.timeToX(model.elapsedSec)
+    ctx.strokeStyle = PITCH_VISUAL_COLORS.playhead
+    ctx.lineWidth = 1.25
+    ctx.beginPath()
+    ctx.moveTo(x, laneTop)
+    ctx.lineTo(x, laneBottom)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/**
+ * A breath step, drawn as something that moves.
+ *
+ * Breathing is the step singers skip most, and a digit ticking down teaches
+ * nothing about how to do it. The ring expands through the first half of the
+ * block and contracts through the second, so the shape IS the instruction.
+ * A silent hold simply stops moving, which is also the instruction.
+ */
+function drawBreathTargets(
+  ctx: CanvasRenderingContext2D,
+  model: ZenCanvasRenderModel,
+  layout: ZenCanvasLayout,
+): void {
+  const breaths = model.targets.filter(
+    (target) => targetKind(target) === 'breath',
+  )
+  if (breaths.length === 0) return
+
+  ctx.save()
+  // Every breath block as a faint band, so one is visible before it arrives.
+  for (const target of breaths) {
+    const x1 = layout.timeToX(target.startSec)
+    const x2 = layout.timeToX(target.endSec)
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.07)'
+    ctx.fillRect(x1, layout.top, Math.max(2, x2 - x1), layout.plotHeight)
+  }
+
+  const active = breaths.find(
+    (target) =>
+      model.elapsedSec >= target.startSec && model.elapsedSec <= target.endSec,
+  )
+  if (active !== undefined) {
+    const span = Math.max(0.001, active.endSec - active.startSec)
+    const phase = clamp((model.elapsedSec - active.startSec) / span, 0, 1)
+    const centreX = layout.gutter + layout.plotWidth / 2
+    const centreY = layout.top + layout.plotHeight / 2
+    const maxRadius = Math.min(layout.plotHeight, layout.plotWidth) * 0.3
+    const radius = maxRadius * (0.34 + 0.66 * Math.sin(phase * Math.PI))
+
+    ctx.beginPath()
+    ctx.arc(centreX, centreY, radius, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.12)'
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.75)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+
+    if (active.cue.trim() !== '') {
+      ctx.fillStyle = '#dff2ff'
+      ctx.font = '700 12px Inter, system-ui, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(active.cue, centreX, centreY + maxRadius + 14)
+    }
+  }
+  ctx.restore()
 }
 
 function drawTrace(
@@ -429,6 +627,7 @@ export function renderZenPitchCanvas(
   ctx.beginPath()
   ctx.rect(layout.gutter, layout.top, layout.plotWidth, layout.plotHeight)
   ctx.clip()
+  drawBreathTargets(ctx, model, layout)
   drawTargets(ctx, model, layout)
   if (model.previousPoints !== undefined) {
     drawTrace(ctx, model.previousPoints, layout, { ghost: true })
@@ -448,6 +647,7 @@ export function renderZenPitchCanvas(
   }
   ctx.restore()
 
+  drawLevelLane(ctx, model, layout)
   drawEdgeIndicators(ctx, model, layout)
 
   const progress = clamp(

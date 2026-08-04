@@ -5,7 +5,7 @@
 // and public reads expose only validated published/superseded versions.
 
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '../../../src/features/zen/types'
-import { parseZenExerciseStructure, parseZenExerciseVersion, } from '../../../src/features/zen/validate-exercise'
+import { parseZenExerciseStructure, parseZenExerciseVersion, ZEN_EXERCISE_SCHEMA_VERSION, } from '../../../src/features/zen/validate-exercise'
 import type { Env } from './auth'
 
 type JsonResponder = (body: object | null, init?: ResponseInit) => Response
@@ -449,9 +449,10 @@ async function createExercise(
           (exerciseId, version, schemaVersion, locale, lifecycle, draftRevision,
            specJson, exampleMediaId, contentHash, createdAt, updatedAt,
            publishedAt, supersededAt)
-         VALUES (?, 1, 1, 'en-GB', 'draft', 1, ?, ?, NULL, ?, ?, NULL, NULL)`,
+         VALUES (?, 1, ?, 'en-GB', 'draft', 1, ?, ?, NULL, ?, ?, NULL, NULL)`,
       ).bind(
         exerciseId,
+        ZEN_EXERCISE_SCHEMA_VERSION,
         JSON.stringify(parsed.exercise),
         parsed.exampleMediaId,
         now,
@@ -552,11 +553,12 @@ async function cloneDraft(
         (exerciseId, version, schemaVersion, locale, lifecycle, draftRevision,
          specJson, exampleMediaId, contentHash, createdAt, updatedAt,
          publishedAt, supersededAt)
-       VALUES (?, ?, 1, 'en-GB', 'draft', 1, ?, ?, NULL, ?, ?, NULL, NULL)`,
+       VALUES (?, ?, ?, 'en-GB', 'draft', 1, ?, ?, NULL, ?, ?, NULL, NULL)`,
     )
       .bind(
         exerciseId,
         nextVersion,
+        ZEN_EXERCISE_SCHEMA_VERSION,
         JSON.stringify(parsed.exercise),
         parsed.exampleMediaId,
         now,

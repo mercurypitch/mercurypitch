@@ -28,7 +28,9 @@ export type ApiResult<T> =
 export interface AdminGuidedExerciseVersion {
   exerciseId: string
   version: number
-  schemaVersion: 1
+  /** Which validator decodes this stored revision — 1 is frozen, 2 adds
+   *  block kinds. Historical rows keep the version they were written with. */
+  schemaVersion: number
   locale: 'en-GB'
   lifecycle: 'draft' | 'published' | 'superseded'
   draftRevision: number

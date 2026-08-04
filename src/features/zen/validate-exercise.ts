@@ -6,7 +6,7 @@ export interface ZenExerciseValidationIssue {
   message: string
 }
 
-const zenExerciseTargetSchema = z
+const zenExerciseTargetV1Schema = z
   .object({
     id: z.string(),
     startBeat: z.number(),
@@ -17,6 +17,11 @@ const zenExerciseTargetSchema = z
     showCue: z.boolean().optional(),
   })
   .strict()
+
+/** v2 adds block kinds. Absent still means `pitch`, so v1 content is v2. */
+const zenExerciseTargetV2Schema = zenExerciseTargetV1Schema.extend({
+  kind: z.enum(['pitch', 'amplitude', 'breath']).optional(),
+})
 
 const zenExampleAudioSchema = z
   .object({
@@ -37,37 +42,52 @@ const zenScoringSchema = z
   })
   .strict()
 
+const zenExerciseBaseShape = {
+  id: z.string(),
+  version: z.number(),
+  title: z.string(),
+  category: z.enum(['range', 'agility', 'scales', 'tone', 'articulation']),
+  level: z.enum(['foundation', 'developing', 'advanced']),
+  summary: z.string(),
+  goal: z.string(),
+  instructions: z.string(),
+  safetyNote: z.string().optional(),
+  pronunciationHint: z.string().optional(),
+  bpm: z.number(),
+  countInBeats: z.number(),
+  loopBeats: z.number(),
+  defaultRootMidi: z.number(),
+  defaultTargetVisibility: z.enum(['off', 'dim', 'on']),
+  defaultProgressCue: z.enum(['none', 'playhead']),
+  scoring: zenScoringSchema,
+  exampleAudio: zenExampleAudioSchema.optional(),
+}
+
 /**
  * Structural runtime parser used at every trust boundary: published catalogue
  * responses, Admin draft payloads, and the DB worker publishing endpoint.
  * Semantic publishing rules remain in validateZenExercise below.
+ *
+ * Frozen: v1 content has no block kinds, and `.strict()` is what makes that
+ * true rather than merely conventional.
  */
 export const zenExerciseDefinitionV1Schema = z
   .object({
-    id: z.string(),
-    version: z.number(),
-    title: z.string(),
-    category: z.enum(['range', 'agility', 'scales', 'tone', 'articulation']),
-    level: z.enum(['foundation', 'developing', 'advanced']),
-    summary: z.string(),
-    goal: z.string(),
-    instructions: z.string(),
-    safetyNote: z.string().optional(),
-    pronunciationHint: z.string().optional(),
-    bpm: z.number(),
-    countInBeats: z.number(),
-    loopBeats: z.number(),
-    defaultRootMidi: z.number(),
-    targets: z.array(zenExerciseTargetSchema),
-    defaultTargetVisibility: z.enum(['off', 'dim', 'on']),
-    defaultProgressCue: z.enum(['none', 'playhead']),
-    scoring: zenScoringSchema,
-    exampleAudio: zenExampleAudioSchema.optional(),
+    ...zenExerciseBaseShape,
+    targets: z.array(zenExerciseTargetV1Schema),
   })
   .strict()
 
-export const ZEN_EXERCISE_SCHEMA_VERSION = 1
-export const zenExerciseDefinitionSchema = zenExerciseDefinitionV1Schema
+/** v2: the same exercise, with blocks that can ask for loudness or a breath. */
+export const zenExerciseDefinitionV2Schema = z
+  .object({
+    ...zenExerciseBaseShape,
+    targets: z.array(zenExerciseTargetV2Schema),
+  })
+  .strict()
+
+export const ZEN_EXERCISE_SCHEMA_VERSION = 2
+export const zenExerciseDefinitionSchema = zenExerciseDefinitionV2Schema
 
 export interface ZenExerciseParseResult {
   exercise: ZenExerciseDefinition | null
@@ -109,7 +129,7 @@ export function parseZenExerciseVersion(
   input: unknown,
   schemaVersion: number,
 ): ZenExerciseParseResult {
-  if (schemaVersion !== 1) {
+  if (schemaVersion !== 1 && schemaVersion !== 2) {
     return {
       exercise: null,
       issues: [
@@ -120,7 +140,11 @@ export function parseZenExerciseVersion(
       ],
     }
   }
-  const structured = zenExerciseDefinitionV1Schema.safeParse(input)
+  const schema =
+    schemaVersion === 1
+      ? zenExerciseDefinitionV1Schema
+      : zenExerciseDefinitionV2Schema
+  const structured = schema.safeParse(input)
   if (!structured.success) {
     return {
       exercise: null,
@@ -131,7 +155,10 @@ export function parseZenExerciseVersion(
     }
   }
   const exercise = structured.data as ZenExerciseDefinition
-  const issues = validateZenExerciseV1(exercise)
+  const issues =
+    schemaVersion === 1
+      ? validateZenExerciseV1(exercise)
+      : validateZenExerciseV2(exercise)
   return {
     exercise: issues.length === 0 ? exercise : null,
     issues,
@@ -141,10 +168,33 @@ export function parseZenExerciseVersion(
 /**
  * Frozen version-one validation shared by local seeds, Admin publishing, and
  * immutable historical reads. Authored JSON is rejected before the canvas.
+ *
+ * v1 content cannot carry a block kind — `zenExerciseDefinitionV1Schema` is
+ * strict — so treating every block as a note is not an approximation here, it
+ * is the whole of v1.
  */
 export function validateZenExerciseV1(
   exercise: ZenExerciseDefinition,
 ): ZenExerciseValidationIssue[] {
+  return validateZenExerciseShape(exercise, { allowKinds: false })
+}
+
+/**
+ * Version two: the same exercise, with blocks that can ask for loudness or a
+ * breath instead of a note.
+ */
+export function validateZenExerciseV2(
+  exercise: ZenExerciseDefinition,
+): ZenExerciseValidationIssue[] {
+  return validateZenExerciseShape(exercise, { allowKinds: true })
+}
+
+function validateZenExerciseShape(
+  exercise: ZenExerciseDefinition,
+  options: { allowKinds: boolean },
+): ZenExerciseValidationIssue[] {
+  const kindOf = (target: ZenExerciseDefinition['targets'][number]): string =>
+    options.allowKinds ? (target.kind ?? 'pitch') : 'pitch'
   const issues: ZenExerciseValidationIssue[] = []
   const add = (path: string, message: string): void => {
     issues.push({ path, message })
@@ -241,8 +291,19 @@ export function validateZenExerciseV1(
     if (target.startBeat + target.durationBeats > exercise.loopBeats) {
       add(`${path}.durationBeats`, 'Target extends beyond the loop.')
     }
+    const kind = kindOf(target)
     if (!Number.isFinite(target.semitone)) {
       add(`${path}.semitone`, 'Pitch offset must be finite.')
+    } else if (kind !== 'pitch') {
+      // Amplitude and breath blocks carry a semitone because the schema
+      // demands one; nothing reads it, so nothing checks its range either.
+      // A glide, though, is a pitch idea and cannot be smuggled onto one.
+      if (target.endSemitone !== undefined) {
+        add(
+          `${path}.endSemitone`,
+          'Only a sung block can glide to a second pitch.',
+        )
+      }
     } else if (target.semitone < -48 || target.semitone > 48) {
       add(`${path}.semitone`, 'Pitch offset must stay within four octaves.')
     } else if (
@@ -254,7 +315,9 @@ export function validateZenExerciseV1(
         'Resolved pitch must stay inside the MIDI note range.',
       )
     }
-    if (
+    if (kind !== 'pitch') {
+      // Nothing further: the remaining rules are about where a note sits.
+    } else if (
       target.endSemitone !== undefined &&
       !Number.isFinite(target.endSemitone)
     ) {
@@ -282,6 +345,16 @@ export function validateZenExerciseV1(
       add(`${path}.cue`, 'Visible cue must be 32 characters or fewer.')
     }
   })
+  if (
+    exercise.targets.length > 0 &&
+    exercise.targets.every((target) => kindOf(target) === 'breath')
+  ) {
+    add(
+      'targets',
+      'An exercise made only of breaths has nothing to hear. Add a sung or sustained block.',
+    )
+  }
+
   orderedTargets.forEach((target, index) => {
     if (index === 0) return
     const previous = orderedTargets[index - 1]!
@@ -349,5 +422,5 @@ export function validateZenExerciseV1(
 export function validateZenExercise(
   exercise: ZenExerciseDefinition,
 ): ZenExerciseValidationIssue[] {
-  return validateZenExerciseV1(exercise)
+  return validateZenExerciseV2(exercise)
 }
