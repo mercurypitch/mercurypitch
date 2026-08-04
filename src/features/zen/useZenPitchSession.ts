@@ -26,6 +26,24 @@ export interface UseZenPitchSessionOptions {
   startMic: () => Promise<boolean>
   stopMic: () => void
   onRunFinalized?: (run: ZenPitchRun) => void
+  /**
+   * Stop after this many loops instead of running until told to stop.
+   *
+   * The Zen stage was built for open-ended practice: start it and it loops
+   * until the singer finishes. A guided warm-up is the opposite shape — one
+   * authored exercise per step, run a fixed number of times, then control
+   * back to whatever is sequencing the steps. That is the whole difference,
+   * and this is it. Undefined keeps the endless loop.
+   */
+  loopLimit?: number
+  /**
+   * The loop limit was reached and the session stopped itself.
+   *
+   * Fired after the last run is finalized, so `runs()` already contains it.
+   * Not fired when the singer stops early — `finish()` is their decision and
+   * the caller already knows they made it.
+   */
+  onLoopLimitReached?: () => void
 }
 
 export interface ZenPitchSession {
@@ -45,6 +63,8 @@ export interface ZenPitchSession {
   selectedRun: Accessor<ZenPitchRun | null>
   takeNumber: Accessor<number>
   acquiredMic: Accessor<boolean>
+  /** Loops finished since the current `start()`. Resets on every start. */
+  loopsCompleted: Accessor<number>
   selectExercise: (exerciseId: string | null) => void
   setRootMidi: (midi: number) => void
   setTargetVisibility: (visibility: ZenTargetVisibility) => void
@@ -152,6 +172,7 @@ export function useZenPitchSession(
   const [selectedRunId, setSelectedRunId] = createSignal<string | null>(null)
   const [takeNumber, setTakeNumber] = createSignal(1)
   const [acquiredMic, setAcquiredMic] = createSignal(false)
+  const [loopsCompleted, setLoopsCompleted] = createSignal(0)
 
   // Plain mirrors are intentional. Pitch frames arrive from the app's
   // requestAnimationFrame callback; reading Solid memos there creates work
@@ -172,6 +193,7 @@ export function useZenPitchSession(
   let hiddenAtMs: number | null = null
   let lastSampleAtMs = Number.NEGATIVE_INFINITY
   let nextTakeNumber = 1
+  let liveLoopsCompleted = 0
   let startRequest = 0
   let startPromise: Promise<boolean> | null = null
   let ownsMic = false
@@ -247,6 +269,27 @@ export function useZenPitchSession(
     let elapsed = (frame.atMs - loopStartedAtMs) / 1000
     if (elapsed >= liveLoopDuration) {
       finalize(liveLoopDuration)
+      liveLoopsCompleted += 1
+      setLoopsCompleted(liveLoopsCompleted)
+
+      // A bounded session stops itself here rather than starting a loop the
+      // caller did not ask for. The mic is deliberately left alone: whoever
+      // is sequencing the steps owns it across the boundary, and closing it
+      // between two steps of one warm-up is the reopen cost §1(a) removed.
+      if (
+        options.loopLimit !== undefined &&
+        liveLoopsCompleted >= options.loopLimit
+      ) {
+        liveStatus = 'idle'
+        setStatus('idle')
+        try {
+          options.onLoopLimitReached?.()
+        } catch (error) {
+          console.error('[zen] loop-limit handler threw:', error)
+        }
+        return
+      }
+
       // Do not manufacture a stack of empty runs after background throttling.
       loopStartedAtMs =
         elapsed < liveLoopDuration + 1
@@ -306,6 +349,7 @@ export function useZenPitchSession(
         : exerciseLoopDuration(nextExercise)
     livePoints = []
     nextTakeNumber = 1
+    liveLoopsCompleted = 0
     loopStartedAtMs = nowMs()
     lastSampleAtMs = Number.NEGATIVE_INFINITY
 
@@ -390,6 +434,8 @@ export function useZenPitchSession(
       setActivePoints([])
       setSelectedRunId(null)
       setElapsedSec(0)
+      liveLoopsCompleted = 0
+      setLoopsCompleted(0)
       loopStartedAtMs = nowMs()
       pausedAtMs = 0
       lastSampleAtMs = Number.NEGATIVE_INFINITY
@@ -544,6 +590,7 @@ export function useZenPitchSession(
     selectedRun,
     takeNumber,
     acquiredMic,
+    loopsCompleted,
     selectExercise,
     setRootMidi,
     setTargetVisibility,

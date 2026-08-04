@@ -4,7 +4,10 @@ import type { PracticeFrame } from '@/features/practice/usePracticeController'
 import type { ZenExerciseDefinition, ZenPitchRun } from '@/features/zen/types'
 import type { ZenPitchSession } from '@/features/zen/useZenPitchSession'
 import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
+import { DEFAULT_ZEN_LOOP_SECONDS } from '@/features/zen/zen-model'
 import type { PitchResult } from '@/types'
+
+const DEFAULT_LOOP_MS = DEFAULT_ZEN_LOOP_SECONDS * 1000
 
 const pitch = (midi: number): PitchResult => ({
   freq: 440 * 2 ** ((midi - 69) / 12),
@@ -246,6 +249,151 @@ describe('removeRun', () => {
     session!.removeRun('r1')
     expect(session!.selectedRunId()).toBeNull()
     expect(session!.removeRun('missing')).toBe(false)
+    dispose()
+  })
+})
+
+// ============================================================
+// The step boundary
+// ============================================================
+//
+// The Zen stage was built to loop until told to stop. A guided warm-up is the
+// opposite shape: one authored exercise per step, run a fixed number of times,
+// then control back to whatever is sequencing the steps. `loopLimit` is that
+// difference, and these pin the two halves of it — that it stops on its own,
+// and that stopping does not touch the mic, which the sequencer owns across
+// the boundary.
+
+describe('loopLimit', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** A one-loop session with a mic it did not open. */
+  function mountBounded(loopLimit: number): {
+    session: ZenPitchSession
+    feed: (atMs: number, midi: number) => void
+    onLoopLimitReached: ReturnType<typeof vi.fn>
+    stopMic: ReturnType<typeof vi.fn>
+    dispose: () => void
+  } {
+    let listener: (frame: PracticeFrame) => void = () => undefined
+    let session: ZenPitchSession | null = null
+    const onLoopLimitReached = vi.fn()
+    const stopMic = vi.fn()
+
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        subscribeFrames: (next) => {
+          listener = next
+          return () => undefined
+        },
+        // Already open: a warm-up step inherits the mic rather than asking.
+        micActive: () => true,
+        startMic: async () => true,
+        stopMic,
+        loopLimit,
+        onLoopLimitReached,
+      })
+      return disposeRoot
+    })
+
+    return {
+      session: session!,
+      feed: (atMs, midi) => {
+        listener({ atMs, beat: 0, pitch: pitch(midi), micActive: true })
+      },
+      onLoopLimitReached,
+      stopMic,
+      dispose,
+    }
+  }
+
+  it('stops itself at the limit and hands control back', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, onLoopLimitReached, stopMic, dispose } =
+      mountBounded(1)
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    feed(100, 60)
+    feed(200, 60.1)
+    feed(300, 59.9)
+    expect(session.status()).toBe('running')
+
+    // Past the loop's end: the run finalizes and the session stands down.
+    feed(DEFAULT_LOOP_MS + 100, 62)
+
+    expect(session.status()).toBe('idle')
+    expect(session.loopsCompleted()).toBe(1)
+    expect(session.runs()).toHaveLength(1)
+    expect(onLoopLimitReached).toHaveBeenCalledTimes(1)
+    // The sequencer owns the mic across the boundary; closing it here is the
+    // reopen cost holding it across segments was meant to remove.
+    expect(stopMic).not.toHaveBeenCalled()
+
+    // And it stays stopped — a late frame must not start loop two.
+    feed(DEFAULT_LOOP_MS * 2 + 200, 62)
+    expect(session.runs()).toHaveLength(1)
+    dispose()
+  })
+
+  it('runs the whole count before stopping', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, onLoopLimitReached, dispose } = mountBounded(2)
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    feed(100, 60)
+    feed(DEFAULT_LOOP_MS + 100, 60)
+    expect(session.status()).toBe('running')
+    expect(session.loopsCompleted()).toBe(1)
+    expect(onLoopLimitReached).not.toHaveBeenCalled()
+
+    feed(DEFAULT_LOOP_MS * 2 + 100, 60)
+    expect(session.status()).toBe('idle')
+    expect(session.loopsCompleted()).toBe(2)
+    expect(onLoopLimitReached).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
+  // Without a limit the stage behaves exactly as it did: this is the Zen tab,
+  // where the loop ending is not an event, it is the point.
+  it('loops forever when no limit is set', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    let listener: (frame: PracticeFrame) => void = () => undefined
+    let session: ZenPitchSession | null = null
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        subscribeFrames: (next) => {
+          listener = next
+          return () => undefined
+        },
+        micActive: () => true,
+        startMic: async () => true,
+        stopMic: () => undefined,
+      })
+      return disposeRoot
+    })
+    await Promise.resolve()
+    expect(await session!.start()).toBe(true)
+
+    listener({ atMs: 100, beat: 0, pitch: pitch(60), micActive: true })
+    listener({
+      atMs: DEFAULT_LOOP_MS + 100,
+      beat: 0,
+      pitch: pitch(60),
+      micActive: true,
+    })
+    listener({
+      atMs: DEFAULT_LOOP_MS * 2 + 100,
+      beat: 0,
+      pitch: pitch(60),
+      micActive: true,
+    })
+
+    expect(session!.status()).toBe('running')
+    expect(session!.loopsCompleted()).toBe(2)
     dispose()
   })
 })
