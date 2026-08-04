@@ -14,20 +14,21 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
-import { saveVoiceprint } from '@/db/services/voiceprint-service'
+import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { startPageTour } from '@/stores/app-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingProgress, recordFirstNote, recordVoiceprint, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
 import { BeatFirstLight } from './beats/BeatFirstLight'
 import { BeatFork } from './beats/BeatFork'
 import { BeatKeep } from './beats/BeatKeep'
 import { BeatMap } from './beats/BeatMap'
+import { BeatPrints } from './beats/BeatPrints'
 import { BeatSky } from './beats/BeatSky'
 import { BeatTwin } from './beats/BeatTwin'
 import { BeatVoiceprint } from './beats/BeatVoiceprint'
@@ -46,6 +47,7 @@ const RENDERABLE: readonly Beat[] = [
   'sky',
   'first-light',
   'fork',
+  'prints',
   'voiceprint',
   'twin',
   'keep',
@@ -75,6 +77,15 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       ? RENDERABLE
       : RENDERABLE.filter((beat) => beat !== 'keep')
     setBeatsAvailable(beats)
+
+    // What this visitor already has. Read once, here, rather than from
+    // the fork: the fork must render the instant it is reached, and a
+    // cloud round trip behind a beat would show the wrong copy first
+    // and then rewrite it under the visitor's cursor. Failure is an
+    // empty list, which is exactly the first-timer wording.
+    void listVoiceprints()
+      .then(recordSavedVoiceprints)
+      .catch(() => recordSavedVoiceprints([]))
   })
 
   // One funnel event per beat entered, including the first.
@@ -83,12 +94,42 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     if (event !== undefined) trackOnboarding(event)
   })
 
+  const TRACK_EVENT = {
+    full: 'onboarding_track_full',
+    short: 'onboarding_track_short',
+    gallery: 'onboarding_track_gallery',
+  } as const
+
   const handleTrack = (track: OnboardingTrack) => {
     chooseTrack(track)
-    trackOnboarding(
-      track === 'full' ? 'onboarding_track_full' : 'onboarding_track_short',
-    )
+    trackOnboarding(TRACK_EVENT[track])
     advanceBeat()
+  }
+
+  /**
+   * A fresh voiceprint for someone who already has one. This is the
+   * Voice Mirror, the same destination Settings offers — a real page,
+   * so the overlay closes first, exactly as `handleEnterRoom` does for
+   * its page targets, or Back lands inside a dead onboarding.
+   */
+  const handleAnotherVoiceprint = () => {
+    trackOnboarding('onboarding_another_voiceprint')
+    leave()
+    window.location.href = '/mirror'
+  }
+
+  const latestSaved = () => savedVoiceprints()[0] ?? null
+
+  const savedWhen = (): string | null => {
+    const record = latestSaved()
+    if (record === null) return null
+    const date = new Date(record.takenAt)
+    if (Number.isNaN(date.getTime())) return null
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
   }
 
   const handleHeard = (note: SettledNote) => {
@@ -210,7 +251,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
         class={`${styles.plate} ${currentBeat() === 'map' ? styles.plateRecede : ''}`}
         aria-hidden="true"
       />
-      <StarField recede={currentBeat() === 'map'} />
+      {/* The arc is the same walk the hairline measures, drawn as a
+          journey: one bead per beat, lit behind, accented under foot,
+          hollow ahead. */}
+      <StarField
+        recede={currentBeat() === 'map'}
+        beads={onboardingBeads().count}
+        beadIndex={onboardingBeads().index}
+      />
 
       <div class={styles.rail}>
         <div class={styles.progress}>
@@ -234,7 +282,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       <div class={styles.frame}>
         <Switch>
           <Match when={currentBeat() === 'sky'}>
-            <BeatSky onContinue={() => advanceBeat()} />
+            <BeatSky onContinue={() => advanceBeat()} onSkip={handleSkip} />
           </Match>
           <Match when={currentBeat() === 'first-light'}>
             <BeatFirstLight
@@ -244,7 +292,20 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             />
           </Match>
           <Match when={currentBeat() === 'fork'}>
-            <BeatFork firstNote={firstNote()} onChoose={handleTrack} />
+            <BeatFork
+              firstNote={firstNote()}
+              savedCount={savedVoiceprints().length}
+              savedWhen={savedWhen()}
+              onChoose={handleTrack}
+              onAnother={handleAnotherVoiceprint}
+            />
+          </Match>
+          <Match when={currentBeat() === 'prints'}>
+            <BeatPrints
+              records={savedVoiceprints()}
+              onContinue={() => advanceBeat()}
+              onAnother={handleAnotherVoiceprint}
+            />
           </Match>
           <Match when={currentBeat() === 'voiceprint'}>
             <BeatVoiceprint
