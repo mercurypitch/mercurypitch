@@ -4959,6 +4959,109 @@
   max-height: 100%;
 }
 
+/* ── …and on a phone it does the opposite ────────────────────────── */
+/* Everything above is a desk-width fix and stays one. On a phone it made
+   Community the only hub that scrolls INSIDE an inset box: the panel kept
+   its 2rem padding and its full height, and the tab underneath became its
+   own `overflow-y: auto` scroller 326px wide. Content was clipped at the
+   bottom, the tab bar ran off the right, and neither could be reached.
+   Challenges and Leaderboard have `height: 100%; padding: 14px 16px;
+   overflow-y: auto` on the PANEL — Community was simply left out of that
+   rule. Below the breakpoint it joins them.
+
+   Measured at 390x844 before the fix: panel 390 wide with 32px padding,
+   tab 326 wide scrolling 1032px of content inside 668px of box, tab bar
+   341px wide in a 326px container. */
+@media (max-width: 768px) {
+  .community-panel {
+    height: 100%;
+    min-height: 0;
+    padding: 14px 16px 24px;
+    overflow-y: auto;
+  }
+
+  .community-share-tab {
+    flex: 0 0 auto;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* `flex: 1 1 320px` is a WIDTH basis, and it is correct while the header
+     is a row. The older phone rule turns that header into a COLUMN, where
+     the same 320px becomes a minimum HEIGHT — which is where the ~300px of
+     nothing between the subtitle and the share buttons came from. */
+  .community-share-tab .community-header-content {
+    flex: 0 1 auto;
+  }
+
+  .community-share-tab .community-header {
+    margin-bottom: 14px;
+  }
+
+  /* Three segments at their natural width came to 341px inside a 326px
+     box, and `overflow-x: hidden` answered by cutting the third one in
+     half. Let them share the width instead. */
+  .community-share-tab .community-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .community-share-tab .community-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 8px 6px;
+  }
+
+  .community-share-tab .community-tab .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* One thumb-width action per line beats two half-width ones. */
+  .community-share-tab .community-actions .share-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* The sessions grid asks for a hard 280px minimum where the melodies
+     grid asks for min(280px, 100%) — below ~320px of content box that
+     overflows instead of collapsing to one column. */
+  .community-share-tab .sessions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  }
+
+  .community-share-tab .melodies-grid,
+  .community-share-tab .sessions-grid {
+    gap: 14px;
+  }
+
+  /* Bounded by the panel's height, this reserved most of a viewport under
+     an empty list. The panel scrolls now, so it has nothing left to do. */
+  .community-share-tab .community-content {
+    min-height: 0;
+  }
+
+  /* An <input>'s automatic minimum width is its intrinsic size, so the
+     search field refused to shrink and pushed the sort control 17px off
+     the right edge of a 320px phone. Both have to be allowed to give. */
+  .community-share-tab .search-filter-bar {
+    flex-wrap: wrap;
+  }
+
+  .community-share-tab .search-filter-bar input {
+    min-width: 0;
+  }
+
+  .community-share-tab .sort-select,
+  .community-share-tab .sort-select select {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 /* ── Challenges: the same room, one door along ────────────────────── */
 /* Community earned its backdrop; the Challenges hub was the last big tab
    still opening onto flat black, which made it read as the utility page
