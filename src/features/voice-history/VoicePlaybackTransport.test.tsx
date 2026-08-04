@@ -52,6 +52,9 @@ describe('VoicePlaybackTransport', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Pause Morning vowels' }),
     )
+    expect(onPlay).toHaveBeenCalledWith(TAKE.id)
+
+    onPlay.mockClear()
     fireEvent.input(
       screen.getByRole('slider', { name: 'Seek Morning vowels' }),
       {
@@ -59,7 +62,7 @@ describe('VoicePlaybackTransport', () => {
       },
     )
 
-    expect(onPlay).toHaveBeenCalledWith(TAKE.id)
+    expect(onPlay).not.toHaveBeenCalled()
     expect(onSeek).toHaveBeenCalledWith(TAKE.id, 0.75)
   })
 

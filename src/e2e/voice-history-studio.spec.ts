@@ -68,11 +68,31 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(page.getByTestId('reflection-target')).toContainText('0:00')
   await page.getByLabel('Optional note').fill('The first moment is clear.')
   await page.getByTestId('reflection-beacon-keep').click()
-  const firstMarker = page
+  const listeningTools = page.getByRole('region', {
+    name: 'Listening tools',
+  })
+  await expect(listeningTools).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Add reflection', exact: true }),
+  ).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByLabel('Optional note')).toHaveValue('')
+  await page.getByLabel('Optional note').fill('A second mark stays in reach.')
+  await page.getByTestId('reflection-beacon-curious').click()
+  await expect(listeningTools).toBeVisible()
+  await expect(
+    page.locator('[data-testid^="voice-atlas-marker-"]'),
+  ).toHaveCount(2)
+  const latestMarker = page
     .locator('[data-testid^="voice-atlas-marker-"]')
-    .first()
-  await expect(firstMarker).toBeVisible()
-  await firstMarker.click()
+    .last()
+  await expect(latestMarker).toBeVisible()
+  await latestMarker.click()
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
+  await page.getByTestId('voice-atlas-slider').focus()
+  await page.keyboard.press('Space')
   await expect(
     page.getByRole('button', { name: 'Pause Room and waveform check' }),
   ).toBeVisible()
@@ -81,6 +101,11 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     page.getByRole('button', { name: 'Play Room and waveform check' }),
   ).toBeVisible()
   await page.getByTestId('reflection-beacon-remove').click()
+  const remainingMarker = page.locator('[data-testid^="voice-atlas-marker-"]')
+  await expect(remainingMarker).toHaveCount(1)
+  await remainingMarker.click()
+  await page.getByTestId('reflection-beacon-remove').click()
+  await expect(remainingMarker).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Record another take' }).click()
   await page.getByRole('button', { name: 'Start recording' }).click()
@@ -129,8 +154,58 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect
     .poll(async () => Number(await seek.getAttribute('aria-valuenow')))
     .toBeGreaterThan(pointerProgress)
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
+  const playbackStrip = page.locator('[data-voice-playback-scrubber]')
+  const playbackStripBounds = await playbackStrip.boundingBox()
+  if (playbackStripBounds === null) {
+    throw new Error('Voice playback strip has no scrub bounds')
+  }
+  const playbackStripY = playbackStripBounds.y + playbackStripBounds.height / 2
+  await page.mouse.move(
+    playbackStripBounds.x + playbackStripBounds.width * 0.38,
+    playbackStripY,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    playbackStripBounds.x + playbackStripBounds.width * 0.44,
+    playbackStripY,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect
+    .poll(async () => Number(await playbackStrip.inputValue()))
+    .toBeGreaterThan(400)
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
+  await playbackStrip.focus()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.mouse.click(
+    playbackStripBounds.x + playbackStripBounds.width * 0.56,
+    playbackStripY,
+  )
+  await expect
+    .poll(async () => Number(await playbackStrip.inputValue()))
+    .toBeGreaterThan(520)
+  await expect(
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
 
   await page.getByLabel('Optional note').fill('The onset opens here.')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
   await page.getByTestId('reflection-beacon-curious').click()
   const marker = page.locator('[data-testid^="voice-atlas-marker-"]').first()
   await expect(marker).toBeVisible()
@@ -178,7 +253,17 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     )
     .toBeGreaterThan(0.62)
   await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
+  await middleLane.focus()
+  await page.keyboard.press('Space')
+  await expect(
     page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Compare', exact: true }).click()
   await expect(
@@ -192,12 +277,37 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
     'true',
   )
   await page.getByRole('button', { name: 'Latest two' }).click()
-  expect(await earlierSelect.inputValue()).not.toBe(fullSpanEarlier)
+  const latestEarlier = await earlierSelect.inputValue()
+  expect(latestEarlier).not.toBe(fullSpanEarlier)
   await expect(
     page.getByRole('button', { name: 'Latest two' }),
   ).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Full span' }).click()
   await expect(earlierSelect).toHaveValue(fullSpanEarlier)
+  await earlierSelect.focus()
+  await earlierSelect.dispatchEvent('pointerdown', {
+    pointerType: 'mouse',
+    button: 0,
+  })
+  await earlierSelect.selectOption(latestEarlier)
+  await expect(earlierSelect).not.toBeFocused()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
+  await earlierSelect.focus()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Pause Room and waveform check' }),
+  ).toBeVisible()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('button', { name: 'Play Room and waveform check' }),
+  ).toBeVisible()
 
   await page.getByRole('button', { name: 'Room', exact: true }).click()
   const echo = page.getByTestId('voice-room-echo')
@@ -225,7 +335,14 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByRole('button', { name: 'Clear history', exact: true }),
   ).toBeEnabled()
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const cancelClear = page.getByRole('button', {
+    name: 'Cancel',
+    exact: true,
+  })
+  await cancelClear.focus()
+  await page.keyboard.press('Space')
+  await expect(page.getByRole('alertdialog')).not.toBeVisible()
+  await expect(page.getByRole('button', { name: /^Pause / })).toHaveCount(0)
 
   await page.getByRole('button', { name: 'All takes', exact: false }).click()
   await page

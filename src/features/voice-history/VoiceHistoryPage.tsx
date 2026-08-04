@@ -59,6 +59,11 @@ type DeleteIntent =
   | { kind: 'thread'; thread: VoiceThread }
   | { kind: 'all'; count: number }
 
+interface PlaybackRequestOptions {
+  requestedProgress?: number
+  autoplay?: boolean
+}
+
 export function createPlaybackRequestGate(): {
   begin: () => () => boolean
   cancel: () => void
@@ -211,6 +216,7 @@ export function VoiceHistoryPage(): JSX.Element {
   const [allTakesSelectedId, setAllTakesSelectedId] = createSignal<
     string | null
   >(null)
+  const [loomSelectedId, setLoomSelectedId] = createSignal<string | null>(null)
 
   let audio: HTMLAudioElement | null = null
   let audioUrl: string | null = null
@@ -238,6 +244,25 @@ export function VoiceHistoryPage(): JSX.Element {
   const selectedThread = createMemo(
     () => threads().find((thread) => thread.key === selectedKey()) ?? null,
   )
+  // Keep the keyed workspace mounted for metadata writes within one thread.
+  // The getters still expose the current takes, title, and reflections.
+  const selectedThreadWorkspace = createMemo<VoiceThread | null>((previous) => {
+    const current = selectedThread()
+    if (current === null) return null
+    if (previous?.key === current.key) return previous
+    return {
+      key: current.key,
+      get title() {
+        return selectedThread()?.title ?? current.title
+      },
+      get source() {
+        return selectedThread()?.source ?? current.source
+      },
+      get takes() {
+        return selectedThread()?.takes ?? current.takes
+      },
+    }
+  })
   const earlier = createMemo(
     () =>
       selectedThread()?.takes.find((take) => take.id === earlierId()) ?? null,
@@ -254,6 +279,28 @@ export function VoiceHistoryPage(): JSX.Element {
   const atlasLater = createMemo(() =>
     (selectedThread()?.takes.length ?? 0) >= 2 ? later() : null,
   )
+  const mainPlaybackTake = createMemo<VoiceTakeRecord | null>(() => {
+    if (recorderTarget() !== null) return null
+    const thread = selectedThread()
+    if (thread === null) return null
+
+    const loadedId = activeId()
+    const loadedTake = thread.takes.find((take) => take.id === loadedId)
+    if (loadedTake !== undefined) return loadedTake
+
+    const selectedId =
+      activeView() === 'compare'
+        ? atlasSelectedId()
+        : activeView() === 'pattern'
+          ? loomSelectedId()
+          : allTakesSelectedId()
+    return (
+      thread.takes.find((take) => take.id === selectedId) ??
+      (activeView() === 'compare'
+        ? (earlier() ?? atlasLater())
+        : (thread.takes.at(-1) ?? null))
+    )
+  })
   const comparisonPairPreset = createMemo<'full-span' | 'latest' | 'custom'>(
     () => {
       const thread = selectedThread()
@@ -470,6 +517,17 @@ export function VoiceHistoryPage(): JSX.Element {
   })
 
   createEffect(() => {
+    const thread = selectedThread()
+    if (thread === null || thread.takes.length === 0) {
+      setLoomSelectedId(null)
+      return
+    }
+    if (!thread.takes.some((take) => take.id === loomSelectedId())) {
+      setLoomSelectedId(later()?.id ?? thread.takes.at(-1)!.id)
+    }
+  })
+
+  createEffect(() => {
     const availableIds = [earlier()?.id, atlasLater()?.id].filter(
       (id): id is string => id !== undefined,
     )
@@ -510,13 +568,13 @@ export function VoiceHistoryPage(): JSX.Element {
   onMount(() => {
     trackEvent('voice_history_open')
     uninstallAudioUnlock = installAudioUnlock(() => listeningContext)
-    window.addEventListener('keydown', pausePlaybackWithSpace, true)
+    window.addEventListener('keydown', togglePlaybackWithSpace, true)
     document.addEventListener('pointerdown', closeMenusFromOutsidePointer)
     document.addEventListener('keydown', closeMenusWithEscape)
     void refresh()
   })
   onCleanup(() => {
-    window.removeEventListener('keydown', pausePlaybackWithSpace, true)
+    window.removeEventListener('keydown', togglePlaybackWithSpace, true)
     document.removeEventListener('pointerdown', closeMenusFromOutsidePointer)
     document.removeEventListener('keydown', closeMenusWithEscape)
     uninstallAudioUnlock()
@@ -534,22 +592,42 @@ export function VoiceHistoryPage(): JSX.Element {
     void playTakeAsync(take, fromComparison, isCurrentTake)
   }
 
-  function pausePlaybackWithSpace(event: KeyboardEvent): void {
-    if (event.code !== 'Space' || event.repeat || !playing()) return
-    const target = event.target
+  function blocksPlaybackShortcut(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false
+    return (
+      target.closest(
+        'textarea, [contenteditable], input:not([type="range"]), [role="dialog"], [role="alertdialog"], [aria-modal="true"], [role="menu"], [role="menuitem"]',
+      ) !== null
+    )
+  }
+
+  function canStartPlaybackFrom(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return true
     if (
-      target instanceof Element &&
-      target.closest('input, textarea, select, [contenteditable]') !== null
+      target.closest(
+        'select, [role="slider"], [data-voice-playback-toggle], [data-voice-playback-scrubber], [data-voice-playback-seek]',
+      ) !== null
     ) {
-      return
+      return true
     }
-    if (audio === null) return
+    return (
+      target.closest(
+        'button, a[href], input, select, textarea, [contenteditable], [role="button"], [role="menuitem"]',
+      ) === null
+    )
+  }
+
+  function togglePlaybackWithSpace(event: KeyboardEvent): void {
+    if (event.code !== 'Space' || event.repeat) return
+    const target = event.target
+    if (blocksPlaybackShortcut(target)) return
+    const take = mainPlaybackTake()
+    if (take === null || (!playing() && !canStartPlaybackFrom(target))) return
+
     event.preventDefault()
-    event.stopPropagation()
-    playbackProgress.sample(audio)
-    playbackProgress.stop()
-    audio.pause()
-    setPlaying(false)
+    event.stopImmediatePropagation()
+    const thread = selectedThread()
+    playTake(take, activeView() !== 'takes' && (thread?.takes.length ?? 0) >= 2)
   }
 
   function closeActionMenus(): void {
@@ -614,17 +692,21 @@ export function VoiceHistoryPage(): JSX.Element {
       if (playing()) playbackProgress.start(audio)
       return
     }
-    void playTakeAsync(take, fromComparison, false, nextProgress)
+    void playTakeAsync(take, fromComparison, false, {
+      requestedProgress: nextProgress,
+      autoplay: false,
+    })
   }
 
   async function playTakeAsync(
     take: VoiceTakeRecord,
     fromComparison: boolean,
     isCurrentTake: boolean,
-    requestedProgress?: number,
+    options: PlaybackRequestOptions = {},
   ): Promise<void> {
     const takeId = take.id
-    if (fromComparison && !comparisonStarted) {
+    const autoplay = options.autoplay !== false
+    if (autoplay && fromComparison && !comparisonStarted) {
       comparisonStarted = true
       comparisonPendingComplete = true
       trackEvent('voice_compare_start')
@@ -685,6 +767,7 @@ export function VoiceHistoryPage(): JSX.Element {
     }
     const nextAudioUrl = URL.createObjectURL(blob)
     const nextAudio = new Audio(nextAudioUrl)
+    if (!autoplay) nextAudio.preload = 'metadata'
     nextAudio.setAttribute('playsinline', '')
     audioUrl = nextAudioUrl
     audio = nextAudio
@@ -722,6 +805,7 @@ export function VoiceHistoryPage(): JSX.Element {
         'This browser could not decode the recording. Export it to keep the original file.',
       )
     })
+    const requestedProgress = options.requestedProgress
     if (requestedProgress !== undefined) {
       const applyRequestedSeek = (): void => {
         if (!requestIsCurrent() || audio !== nextAudio) return
@@ -733,6 +817,7 @@ export function VoiceHistoryPage(): JSX.Element {
       applyRequestedSeek()
     }
     setActiveId(takeId)
+    if (!autoplay) return
     try {
       await nextAudio.play()
       if (
@@ -968,6 +1053,13 @@ export function VoiceHistoryPage(): JSX.Element {
     if (!isVisibleTake) return
     if (activeId() !== null) disposeAudio()
     setAtlasSelectedId(id)
+  }
+
+  function selectLoomTake(id: string): void {
+    const thread = selectedThread()
+    if (thread === null || !thread.takes.some((take) => take.id === id)) return
+    if (activeId() !== null && activeId() !== id) disposeAudio()
+    setLoomSelectedId(id)
   }
 
   function chooseComparisonPair(preset: 'full-span' | 'latest'): void {
@@ -1352,7 +1444,7 @@ export function VoiceHistoryPage(): JSX.Element {
                 when={recorderTarget()}
                 keyed
                 fallback={
-                  <Show when={selectedThread()} keyed>
+                  <Show when={selectedThreadWorkspace()} keyed>
                     {(thread) => (
                       <>
                         <div class={styles.workspaceHead}>
@@ -1654,6 +1746,7 @@ export function VoiceHistoryPage(): JSX.Element {
                               laterId={laterId()}
                               progress={progress()}
                               playing={playing()}
+                              onSelect={selectLoomTake}
                               onPlay={(takeId) => {
                                 const take = thread.takes.find(
                                   (candidate) => candidate.id === takeId,
