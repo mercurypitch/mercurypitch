@@ -22,6 +22,13 @@ export interface UseZenPitchSessionOptions {
    * cannot find them. Takes precedence over initialExerciseId.
    */
   initialExerciseDefinition?: ZenExerciseDefinition
+  /**
+   * Definitions this session can switch between that the catalogue does not
+   * hold. `initialExerciseDefinition` covers one synthetic exercise; a guided
+   * warm-up is a *sequence* of them, so `selectExercise` has to be able to
+   * resolve every step, not just the one it opened on.
+   */
+  exerciseDefinitions?: readonly ZenExerciseDefinition[]
   initialCenterMidi?: number
   subscribeFrames: (listener: (frame: PracticeFrame) => void) => () => void
   micActive: Accessor<boolean>
@@ -119,16 +126,27 @@ export function useZenPitchSession(
   options: UseZenPitchSessionOptions,
 ): ZenPitchSession {
   const launchedExercise = options.initialExerciseDefinition
+  const suppliedById = new Map(
+    (options.exerciseDefinitions ?? []).map((exercise) => [
+      exercise.id,
+      exercise,
+    ]),
+  )
   const resolveExercise = (
     exerciseId: string | null | undefined,
   ): ZenExerciseDefinition | null => {
     if (launchedExercise !== undefined && exerciseId === launchedExercise.id) {
       return launchedExercise
     }
+    if (exerciseId !== null && exerciseId !== undefined) {
+      const supplied = suppliedById.get(exerciseId)
+      if (supplied !== undefined) return supplied
+    }
     return getZenExercise(exerciseId)
   }
   const initialExercise =
     launchedExercise ??
+    resolveExercise(options.initialExerciseId) ??
     getZenExercise(options.initialExerciseId, options.initialExerciseVersion)
   const initialRoot = initialExercise?.defaultRootMidi ?? 60
   const initialTargets =

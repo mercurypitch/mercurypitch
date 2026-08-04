@@ -1789,11 +1789,28 @@
   line-height: 1.4;
 }
 
-.warmup-step-countdown {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
+/* The countdown digit is gone: the warm-up now runs its steps on the Zen
+   canvas, where a playhead crossing the blocks says the same thing and says
+   it about the shape of the step rather than about the clock. */
+
+.warmup-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* The canvas frame sizes to its container, so the container has to have a
+   height — on a phone it gets the shorter one. */
+.warmup-canvas {
+  width: 100%;
+  height: clamp(240px, 42vh, 380px);
+}
+
+@media (max-width: 760px) {
+  .warmup-canvas {
+    height: clamp(200px, 34vh, 300px);
+  }
 }
 
 /* ── Live feedback strip (ExerciseFeedback): window bar, tier, combo ── */

@@ -1,25 +1,34 @@
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, untrack, } from 'solid-js'
 import { IconFire } from '@/components/exercise-icons'
 import { NoteDial } from '@/components/NoteDial'
+import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchPattern, launchTargetNote, } from '@/features/practice-intelligence/launch-override'
+import { useZenPitchSession } from '@/features/zen/useZenPitchSession'
+import type { ZenCanvasRenderModel } from '@/features/zen/zen-canvas-renderer'
+import { ZenPitchCanvas } from '@/features/zen/ZenPitchCanvas'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { midiToNote } from '@/lib/scale-data'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import type { ExerciseResult } from '../types'
 import { EXERCISE_WARMUP } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { useWarmupController } from './use-warmup-controller'
+import { WARMUP_EXERCISES, warmupPatternExercises } from './warmup-exercises'
 import type { WarmupPattern } from './warmup-steps'
 import { buildWarmupSteps, normalizeWarmupPattern, WARMUP_PATTERN_LABELS, warmupTotalSeconds, } from './warmup-steps'
 
 interface WarmupExerciseProps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
+  /** The app's one pitch-frame stream. The Zen session reads it; it never
+   *  opens a detector or a microphone of its own. */
+  subscribeFrames: (listener: PracticeFrameListener) => () => void
   onBack: () => void
   autoStart?: boolean
 }
@@ -60,24 +69,113 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     },
   })
 
-  const controller = useWarmupController(base, audioEngine)
-
+  /** The authored exercises this pattern runs, in order. */
+  const stepExercises = createMemo(() => warmupPatternExercises(pattern()))
   const steps = createMemo(() => buildWarmupSteps(pattern()))
 
-  const handleStart = async () => {
-    controller.setup(
-      untrack(() => noteToMidi(comfortNote())),
-      steps(),
-    )
+  const [stepIndex, setStepIndex] = createSignal(0)
+  const currentStep = () => steps()[stepIndex()]
+  let scores: number[] = []
+  let running = false
+
+  // ── The Zen session ─────────────────────────────────────────
+  //
+  // One session walks every step: each authored exercise runs for exactly one
+  // loop, then hands control back so the next can be selected. `loopLimit`
+  // exists for this — without it the Zen stage loops until told to stop, which
+  // is the right shape for open practice and the wrong one for a warm-up.
+  //
+  // The mic is deliberately not the session's. `useBaseExercise` already holds
+  // it for the whole warm-up, and closing it between steps is exactly the
+  // reopen cost the routine mic hold removed. So `startMic` reports what base
+  // already did, and `stopMic` does nothing at all.
+  const session = useZenPitchSession({
+    exerciseDefinitions: WARMUP_EXERCISES,
+    initialExerciseId: untrack(() => stepExercises()[0]?.id),
+    subscribeFrames: (listener) => props.subscribeFrames(listener),
+    micActive: () => base.state().status === 'active',
+    startMic: () => Promise.resolve(base.state().status === 'active'),
+    stopMic: () => undefined,
+    loopLimit: 1,
+    onLoopLimitReached: () => advanceStep(),
+  })
+
+  const startStep = (index: number): void => {
+    const exercise = stepExercises()[index]
+    if (exercise === undefined) return
+    setStepIndex(index)
+    session.selectExercise(exercise.id)
+    session.setRootMidi(noteToMidi(comfortNote()))
+    base._updateMetrics({
+      stepIndex: index,
+      totalSteps: stepExercises().length,
+    })
+    void session.start()
+  }
+
+  const advanceStep = (): void => {
+    if (!running) return
+    // A step with nothing scoreable in it — the breathing cycle is the only
+    // one — finalizes without a score, and averaging it as a zero would say
+    // the singer failed at breathing.
+    const finished = session.runs()
+    const total = finished[finished.length - 1]?.score?.total
+    if (total !== undefined) {
+      scores.push(total)
+      base._updateScore(averageScore())
+    }
+
+    const next = stepIndex() + 1
+    if (next < stepExercises().length) {
+      startStep(next)
+      return
+    }
+    finishWarmup(stepExercises().length)
+  }
+
+  const averageScore = (): number =>
+    scores.length === 0
+      ? 0
+      : Math.round(
+          scores.reduce((sum, value) => sum + value, 0) / scores.length,
+        )
+
+  const finishWarmup = (stepsCompleted: number): void => {
+    running = false
+    session.finish()
+    const result: ExerciseResult = {
+      type: EXERCISE_WARMUP,
+      score: averageScore(),
+      metrics: {
+        stepsCompleted,
+        totalSteps: stepExercises().length,
+        participation: averageScore(),
+      },
+      completedAt: Date.now(),
+    }
+    base._completeWithResult(result)
+  }
+
+  const handleStart = async (): Promise<void> => {
+    if (running) return
+    scores = []
+    setStepIndex(0)
     if (!(await base.start())) return
-    controller.startSteps()
+    running = true
+    startStep(0)
   }
 
-  const handleStop = () => {
-    controller.stopSteps()
+  const handleStop = (): void => {
+    if (!running) return
+    // The steps behind the singer are done; the one they stopped inside is not.
+    finishWarmup(stepIndex())
   }
 
-  onCleanup(() => base.reset())
+  onCleanup(() => {
+    running = false
+    session.finish()
+    base.reset()
+  })
 
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
@@ -100,9 +198,33 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
     }
   })
 
-  const metrics = () => base.state().metrics
-  const currentStep = () => steps()[metrics().stepIndex ?? 0]
-  const phase = () => metrics().phase ?? 0
+  // ── The canvas ──────────────────────────────────────────────
+  // The live pass only. Reviewing takes is what the Zen stage is for; a
+  // warm-up is a thing you get through, and a strip of finished passes in the
+  // middle of one is an invitation to stop and study a hum.
+  const canvasModel = createMemo<ZenCanvasRenderModel>(() => ({
+    durationSec: session.loopDurationSec(),
+    elapsedSec: session.elapsedSec(),
+    viewport: session.viewport(),
+    targets: session.targets(),
+    targetVisibility: session.targetVisibility(),
+    showPlayhead: session.progressCue() === 'playhead',
+    points: session.activePoints(),
+  }))
+
+  const canvasSummary = createMemo(() => {
+    const heading = `${currentStep()?.name ?? 'Warm-up'}, step ${
+      stepIndex() + 1
+    } of ${steps().length}`
+    const voiced = [...session.activePoints()]
+      .reverse()
+      .find((point) => point.midi !== null)
+    if (voiced?.midi === null || voiced === undefined) {
+      return `${heading}; waiting for your voice.`
+    }
+    const note = midiToNote(Math.round(voiced.midi))
+    return `${heading}; current pitch ${note.name}${note.octave}.`
+  })
 
   return (
     <ExerciseShell
@@ -161,35 +283,23 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
       startLabel="Start Warmup"
       stopLabel="End Warmup"
       onStop={handleStop}
-      tracker={{
-        pitchHistory: base.pitchHistory,
-        targetNoteMidi: () => metrics().currentMidi,
-        // The whole pattern for this step, since the singer sings all of it
-        // back — `currentMidi` only ever names the reference note last played.
-        upcomingTargets: () =>
-          (currentStep()?.offsets ?? []).map(
-            (offset) => noteToMidi(comfortNote()) + offset,
-          ),
-        when: () => currentStep()?.kind === 'sing',
-      }}
       activeContent={
-        <>
+        <div class="warmup-stage">
           <div class="warmup-step-display">
             <div class="warmup-step-progress">
-              Step {(metrics().stepIndex ?? 0) + 1} of {metrics().totalSteps}
+              Step {stepIndex() + 1} of {steps().length}
             </div>
             <h3 class="warmup-step-name">{currentStep()?.name}</h3>
             <p class="warmup-step-instruction">{currentStep()?.instruction}</p>
-            <div class="warmup-step-countdown">
-              <Show
-                when={phase() === 1}
-                fallback={`${metrics().stepRemaining ?? 0}s`}
-              >
-                Listen…
-              </Show>
-            </div>
           </div>
-        </>
+          {/* The same canvas the Zen stage draws on: targets ahead of the
+              playhead, the voice trace behind it, an amber lane for blocks
+              scored on loudness and a breathing ring for the ones scored on
+              nothing at all. */}
+          <div class="warmup-canvas">
+            <ZenPitchCanvas model={canvasModel} summary={canvasSummary} />
+          </div>
+        </div>
       }
       resultSummary={
         <>
