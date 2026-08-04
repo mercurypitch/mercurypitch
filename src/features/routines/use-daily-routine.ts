@@ -274,6 +274,27 @@ export function launchRoutineSegment(seg: RoutineSegment): void {
 }
 
 /**
+ * Which exercise runs this segment — exercise segments name theirs, and
+ * warm-up/cool-down segments are all run by the guided warmup with a
+ * pattern.
+ *
+ * Exported because two things need the same answer and must not drift: the
+ * auto-advance below, and the ribbon the exercise shows while you are inside
+ * a routine segment. If the ribbon claimed a run counted and auto-advance
+ * disagreed, the singer would watch a segment refuse to tick off.
+ */
+export function segmentRunsExercise(
+  seg: RoutineSegment,
+  exerciseType: ExerciseType,
+): boolean {
+  if (seg.type === 'exercise') return seg.config.exercise === exerciseType
+  if (seg.type === 'warmup' || seg.type === 'cooldown') {
+    return exerciseType === EXERCISE_WARMUP
+  }
+  return false
+}
+
+/**
  * Auto-advance the daily routine if the completed exercise matches the
  * current segment. Call this after recording an exercise result.
  */
@@ -292,19 +313,14 @@ export function autoAdvanceRoutineSegment(
 
   const currentSeg = template.segments[currentIdx]!
 
-  // Auto-advance when the completed exercise matches the current segment:
-  // exercise segments match by type; warmup/cooldown segments complete when
-  // the guided warmup exercise finishes (it runs those segments' patterns).
-  // The warmup must have run ALL its steps — ending it after two seconds
-  // (stop always records a partial result) shouldn't tick the segment off.
+  // Right exercise is necessary but not sufficient for a warm-up: it must
+  // have run ALL its steps. Stopping after two seconds still records a
+  // partial result, and that shouldn't tick the segment off.
   const fullWarmupRun =
-    exerciseType === EXERCISE_WARMUP &&
     (metrics?.stepsCompleted ?? 0) >= (metrics?.totalSteps ?? Infinity)
   const matches =
-    (currentSeg.type === 'exercise' &&
-      currentSeg.config.exercise === exerciseType) ||
-    ((currentSeg.type === 'warmup' || currentSeg.type === 'cooldown') &&
-      fullWarmupRun)
+    segmentRunsExercise(currentSeg, exerciseType) &&
+    (currentSeg.type === 'exercise' || fullWarmupRun)
   if (matches) {
     setRoutineData({
       ...data,

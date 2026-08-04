@@ -17,6 +17,7 @@ import { MicButton } from '@/components/MicButton'
 import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { EngineContext } from '@/contexts/EngineContext'
 import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
+import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { haptics } from '@/lib/haptics'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
@@ -295,6 +296,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
           <For each={help().body}>{(para) => <p>{para}</p>}</For>
         </div>
       </Show>
+
+      {/* Renders itself only when this drill IS a segment of today's routine.
+          Every exercise gets it for free by living in the shell — the
+          alternative was 18 components each remembering to ask. */}
+      <RoutineRibbon type={props.type} />
 
       <div
         class="exercise-canvas-area"

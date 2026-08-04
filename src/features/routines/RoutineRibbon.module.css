@@ -1,0 +1,163 @@
+/* Sits directly under the exercise header, above the canvas. Deliberately
+   quiet: it is context, not the thing being done. */
+.ribbon {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.kicker {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Pushed to the far edge so it never crowds the counter. */
+.link {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.link:hover {
+  color: var(--text-primary);
+}
+
+/* The four segments as a rail. Scrolls rather than wraps: a wrapped rail
+   reflows the canvas below it every time a segment ticks off. */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.steps::-webkit-scrollbar {
+  display: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+}
+
+.step + .step {
+  margin-left: 2px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.done {
+  color: var(--green);
+}
+
+.done .dot {
+  opacity: 1;
+}
+
+.current {
+  color: var(--text-primary);
+  background: var(--accent-dim);
+  box-shadow: inset 0 0 0 1px var(--accent-glow);
+  font-weight: 600;
+}
+
+.current .dot {
+  background: var(--accent);
+  opacity: 1;
+}
+
+.stepName {
+  white-space: nowrap;
+}
+
+.next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.next:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.finished {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--green);
+}
+
+@media (max-width: 700px) {
+  .ribbon {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .step {
+    font-size: 0.68rem;
+    padding: 3px 8px 3px 6px;
+  }
+}
