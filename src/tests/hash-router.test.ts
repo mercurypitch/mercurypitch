@@ -3,19 +3,8 @@
 // ============================================================
 
 import { describe, expect, it, vi } from 'vitest'
-import {
-  TAB_COMPOSE,
-  TAB_SETTINGS,
-  TAB_SINGING,
-  TAB_VOICE_HISTORY,
-} from '@/features/tabs/constants'
-import {
-  buildHash,
-  navigateTo,
-  parseHash,
-  pushHash,
-  replaceHash,
-} from '@/lib/hash-router'
+import { TAB_COMPOSE, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { buildHash, navigateTo, parseHash, pushHash, replaceHash, } from '@/lib/hash-router'
 
 // ── parseHash ─────────────────────────────────────────────────
 

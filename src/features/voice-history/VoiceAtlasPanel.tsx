@@ -8,13 +8,15 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Pause, Play } from '@/components/icons'
+import { Pencil, SlidersHorizontal, X } from '@/components/icons'
 import type { VoiceTakeRecord } from '@/db/entities'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { VoiceAtlasRenderModel, VoiceAtlasTrailModel, } from './voice-atlas-model'
 import type { VoiceReflection, VoiceReflectionKind } from './voice-reflections'
 import { MAX_VOICE_REFLECTION_NOTE_LENGTH, voiceReflectionLabel, } from './voice-reflections'
 import styles from './VoiceAtlasPanel.module.css'
+import { VoicePlaybackTransport } from './VoicePlaybackTransport'
 
 const EARLIER_COLOR = '#2dd4bf'
 const LATER_COLOR = '#bc8cff'
@@ -54,6 +56,7 @@ export interface VoiceAtlasPanelProps {
   laterSelector?: JSX.Element
   totalTakeCount: number
   pairPreset: 'full-span' | 'latest' | 'custom'
+  roomPanel: JSX.Element
   onChoosePairPreset: (preset: 'full-span' | 'latest') => void
   onSelect: (takeId: string) => void
   onPlay: (takeId: string) => void
@@ -118,7 +121,11 @@ function stateLabel(trail: VoiceAtlasTrailModel): string {
   return 'Awaiting take'
 }
 
-function canvasSummary(model: VoiceAtlasRenderModel, loading: boolean): string {
+function canvasSummary(
+  model: VoiceAtlasRenderModel,
+  loading: boolean,
+  selectedTakeCount: number,
+): string {
   if (loading) return 'Voice Atlas is mapping the selected takes.'
   const earlier = stateLabel(model.earlier)
   const later = stateLabel(model.later)
@@ -127,7 +134,8 @@ function canvasSummary(model: VoiceAtlasRenderModel, loading: boolean): string {
     model.pitchTicks.length > 1
       ? ` The shared pitch axis runs from ${model.pitchTicks.at(-1)?.label ?? 'the lower bound'} to ${model.pitchTicks[0]?.label ?? 'the upper bound'}.`
       : ''
-  return `Voice Atlas Twin Trails. Earlier: ${earlier}. Later: ${later}. Shared real-time axis: ${duration}.${pitch} Unvoiced moments are shown as gaps.`
+  const title = selectedTakeCount < 2 ? 'Take Topography' : 'Twin Trails'
+  return `Voice Atlas ${title}. Earlier: ${earlier}. Later: ${later}. Shared real-time axis: ${duration}.${pitch} Unvoiced moments are shown as gaps.`
 }
 
 function plotRect(width: number, height: number): PlotRect {
@@ -449,11 +457,8 @@ interface TrailCardProps {
   take: VoiceTakeRecord | null
   trail: VoiceAtlasTrailModel
   selected: boolean
-  active: boolean
-  playing: boolean
   selector?: JSX.Element
   onSelect: (takeId: string) => void
-  onPlay: (takeId: string) => void
 }
 
 function TrailCard(props: TrailCardProps): JSX.Element {
@@ -466,7 +471,6 @@ function TrailCard(props: TrailCardProps): JSX.Element {
         [styles.earlierCard]: props.label === 'Earlier',
         [styles.laterCard]: props.label === 'Later',
         [styles.selectedCard]: props.selected,
-        [styles.playingCard]: props.active && props.playing,
       }}
       data-testid={`voice-atlas-card-${lowerLabel()}`}
       data-selected={props.selected}
@@ -499,9 +503,7 @@ function TrailCard(props: TrailCardProps): JSX.Element {
           <strong>
             {props.take?.title ?? `Choose an ${lowerLabel()} take`}
           </strong>
-          <small>
-            {props.selected ? 'Beacon target' : 'Select for playhead'}
-          </small>
+          <small>{props.selected ? 'Selected' : 'Select take'}</small>
         </div>
       </button>
       <div class={styles.trailMeta}>
@@ -513,39 +515,45 @@ function TrailCard(props: TrailCardProps): JSX.Element {
       <Show when={props.selector !== undefined}>
         <div class={styles.selectorSlot}>{props.selector}</div>
       </Show>
-      <button
-        type="button"
-        class={styles.playButton}
-        disabled={props.take === null}
-        aria-label={`${props.active && props.playing ? 'Pause' : 'Play'} ${props.label} take`}
-        aria-pressed={props.active && props.playing}
-        aria-keyshortcuts={props.active && props.playing ? 'Space' : undefined}
-        onClick={() => {
-          const takeId = props.take?.id
-          if (takeId !== undefined) {
-            props.onSelect(takeId)
-            props.onPlay(takeId)
-          }
-        }}
-      >
-        {props.active && props.playing ? <Pause /> : <Play />}
-        <span>{props.active && props.playing ? 'Pause' : 'Play'}</span>
-      </button>
     </article>
   )
 }
 
 export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   let canvas: HTMLCanvasElement | undefined
+  let roomButton: HTMLButtonElement | undefined
+  let reflectionButton: HTMLButtonElement | undefined
+  let inspectorElement: HTMLElement | undefined
+  let inspectorCloseButton: HTMLButtonElement | undefined
   let resizeObserver: ResizeObserver | null = null
   let dprWatcher: ReturnType<typeof createDprWatcher> | null = null
   let redraw: ReturnType<typeof createRedrawScheduler> | null = null
   const titleId = createUniqueId()
   const noteId = createUniqueId()
+  const inspectorId = createUniqueId()
   const [note, setNote] = createSignal('')
   const [selectedMarkerId, setSelectedMarkerId] = createSignal<string | null>(
     null,
   )
+  const [inspector, setInspector] = createSignal<'reflection' | 'room' | null>(
+    null,
+  )
+  const [mobileInspector, setMobileInspector] = createSignal(false)
+
+  const closeInspector = (): void => {
+    const current = inspector()
+    setInspector(null)
+    queueMicrotask(() => {
+      if (current === 'room') roomButton?.focus()
+      if (current === 'reflection') reflectionButton?.focus()
+    })
+  }
+
+  useFocusTrap(() => inspectorElement, {
+    isOpen: () => inspector() !== null && mobileInspector(),
+    onClose: closeInspector,
+    initialFocus: () => inspectorCloseButton,
+  })
 
   const takeForId = (id: string | null): VoiceTakeRecord | null => {
     if (id === null) return null
@@ -561,6 +569,12 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
     activeTake()?.id === selectedTake()?.id ? clamp01(props.progress) : 0
   const currentSeconds = (): number =>
     currentProgress() * takeDurationSeconds(selectedTake())
+  const selectedTone = (): 'earlier' | 'later' =>
+    props.later !== null && selectedTake()?.id === props.later.id
+      ? 'later'
+      : 'earlier'
+  const selectedLabel = (): string =>
+    selectedTone() === 'later' ? 'Later take' : 'Earlier take'
   const currentSharedProgress = (): number => {
     const take = selectedTake()
     if (take === null) return 0
@@ -609,6 +623,8 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   }
   const selectedTakeCount = (): number =>
     Number(props.earlier !== null) + Number(props.later !== null)
+  const atlasTitle = (): string =>
+    selectedTakeCount() < 2 ? 'Take Topography' : 'Twin Trails'
 
   const availabilityCopy = (): string => {
     if (props.loading === true) {
@@ -726,6 +742,11 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   })
 
   onMount(() => {
+    const syncMobileInspector = (): void => {
+      setMobileInspector(window.innerWidth <= 680)
+    }
+    syncMobileInspector()
+    window.addEventListener('resize', syncMobileInspector)
     redraw = createRedrawScheduler(() => {
       if (canvas !== undefined) {
         drawAtlas(canvas, props.model, props.earlier, props.later)
@@ -739,6 +760,7 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
       dprWatcher = createDprWatcher(() => redraw?.queue())
     }
     redraw.queue()
+    onCleanup(() => window.removeEventListener('resize', syncMobileInspector))
   })
 
   onCleanup(() => {
@@ -750,14 +772,23 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
   return (
     <section
       class={styles.atlas}
+      classList={{ [styles.inspectorOpen]: inspector() !== null }}
       aria-labelledby={titleId}
       aria-busy={props.loading === true}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || inspector() === null) return
+        event.stopPropagation()
+        closeInspector()
+      }}
     >
       <div class={styles.heading}>
         <div>
           <span class={styles.kicker}>Voice Atlas</span>
-          <h3 id={titleId}>Twin Trails</h3>
-          <p>{availabilityCopy()}</p>
+          <h3 id={titleId}>{atlasTitle()}</h3>
+          <p>
+            {availabilityCopy()}{' '}
+            <span>True time · pitch + energy · gaps preserved.</span>
+          </p>
         </div>
         <output class={styles.status} aria-live="polite">
           <span aria-hidden="true" />
@@ -765,287 +796,401 @@ export function VoiceAtlasPanel(props: VoiceAtlasPanelProps): JSX.Element {
         </output>
       </div>
 
-      <div class={styles.legend} aria-label="Twin Trails legend">
-        <span class={styles.earlierLegend}>
-          <i aria-hidden="true" /> Earlier
-        </span>
-        <span class={styles.laterLegend}>
-          <i aria-hidden="true" /> Later
-        </span>
-        <span class={styles.energyLegend}>
-          Ribbon width <i aria-hidden="true" /> relative energy, per take
-        </span>
-        <span class={styles.gapLegend}>Gaps are unvoiced</span>
-      </div>
-
-      <div class={styles.plotCaption}>
-        <span>Take Topography</span>
-        <small>Time × pitch × energy</small>
-      </div>
-
-      <div class={styles.plotFrame}>
-        <canvas
-          ref={canvas}
-          class={styles.canvas}
-          role="img"
-          aria-label={canvasSummary(props.model, props.loading === true)}
-        />
-        <div class={styles.plotBounds}>
-          <div
-            class={styles.slider}
-            data-testid="voice-atlas-slider"
-            role="slider"
-            tabindex={seekTarget() === null ? -1 : 0}
-            aria-label={`Seek ${seekTarget()?.title ?? 'selected Voice Atlas take'}`}
-            aria-disabled={seekTarget() === null}
-            aria-orientation="horizontal"
-            aria-valuemin="0"
-            aria-valuemax={takeDurationSeconds(seekTarget())}
-            aria-valuenow={Number(currentSeconds().toFixed(2))}
-            aria-valuetext={`${formatClock(currentSeconds())} of ${formatClock(takeDurationSeconds(seekTarget()))}`}
-            onPointerDown={(event) => {
-              if (event.pointerType === 'mouse' && event.button !== 0) return
-              event.currentTarget.setPointerCapture(event.pointerId)
-              seekFromPointer(event)
-            }}
-            onPointerMove={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                seekFromPointer(event)
-              }
-            }}
-            onPointerUp={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                seekFromPointer(event)
-                event.currentTarget.releasePointerCapture(event.pointerId)
-              }
-            }}
-            onPointerCancel={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId)
-              }
-            }}
-            onKeyDown={handleSliderKey}
-          />
-
-          <Show when={selectedTake() !== null}>
-            <div
-              class={styles.playhead}
-              classList={{
-                [styles.playheadMoving]:
-                  props.playing && props.activeId === selectedTake()?.id,
-              }}
-              style={{
-                '--atlas-position': `${currentSharedProgress() * 100}%`,
-              }}
-              aria-hidden="true"
-            >
-              <span />
-            </div>
-          </Show>
-
-          <div class={styles.beaconLayer} aria-label="Saved reflection beacons">
-            <For each={markers()}>
-              {(marker) => (
-                <button
-                  type="button"
-                  classList={{
-                    [styles.beaconMarker]: true,
-                    [styles.earlierMarker]: marker.trail === 'earlier',
-                    [styles.laterMarker]: marker.trail === 'later',
-                    [styles.keepMarker]: marker.reflection.kind === 'keep',
-                    [styles.curiousMarker]:
-                      marker.reflection.kind === 'curious',
-                    [styles.tryMarker]: marker.reflection.kind === 'try-next',
-                    [styles.selectedMarker]:
-                      selectedMarkerId() === marker.reflection.id,
-                  }}
-                  style={{
-                    '--atlas-position': `${markerSharedPosition(marker) * 100}%`,
-                  }}
-                  data-testid={`voice-atlas-marker-${marker.reflection.id}`}
-                  aria-label={`Seek to ${voiceReflectionLabel(marker.reflection.kind)} reflection at ${formatClock(marker.reflection.position * takeDurationSeconds(takeForId(marker.takeId)))}${marker.reflection.note === '' ? '' : `: ${marker.reflection.note}`}`}
-                  aria-pressed={selectedMarkerId() === marker.reflection.id}
-                  onClick={() => {
-                    setSelectedMarkerId(marker.reflection.id)
-                    props.onSeek(marker.takeId, marker.reflection.position)
-                  }}
-                >
-                  <span aria-hidden="true" />
-                </button>
-              )}
-            </For>
-          </div>
-        </div>
-
-        <Show when={props.loading === true}>
-          <div class={styles.loadingVeil} aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-        </Show>
-      </div>
-
-      <Show when={props.totalTakeCount > 2}>
-        <div class={styles.pairBar}>
-          <div>
-            <span>Comparison pair</span>
-            <strong>Comparing 2 of {props.totalTakeCount} takes</strong>
-            <p>Choose any Earlier and Later take below.</p>
-          </div>
-          <div
-            class={styles.pairPresets}
-            role="group"
-            aria-label="Choose a comparison pair"
-          >
-            <button
-              type="button"
-              aria-pressed={props.pairPreset === 'full-span'}
-              onClick={() => props.onChoosePairPreset('full-span')}
-            >
-              Full span
-            </button>
-            <button
-              type="button"
-              aria-pressed={props.pairPreset === 'latest'}
-              onClick={() => props.onChoosePairPreset('latest')}
-            >
-              Latest two
-            </button>
-          </div>
-        </div>
-      </Show>
-
-      <div class={styles.trailCards}>
-        <TrailCard
-          label="Earlier"
-          take={props.earlier}
-          trail={props.model.earlier}
-          selected={props.selectedId === props.earlier?.id}
-          active={props.activeId === props.earlier?.id}
-          playing={props.playing}
-          selector={props.earlierSelector}
-          onSelect={props.onSelect}
-          onPlay={props.onPlay}
-        />
-        <TrailCard
-          label="Later"
-          take={props.later}
-          trail={props.model.later}
-          selected={props.selectedId === props.later?.id}
-          active={props.activeId === props.later?.id}
-          playing={props.playing}
-          selector={props.laterSelector}
-          onSelect={props.onSelect}
-          onPlay={props.onPlay}
-        />
-      </div>
-
-      <div class={styles.reflections}>
-        <div class={styles.reflectionIntro}>
-          <span>Reflection Beacons</span>
-          <strong>Mark what you noticed, not what a score decided.</strong>
-          <Show
-            when={selectedTake()}
-            keyed
-            fallback={<p>Select a take before placing a beacon.</p>}
-          >
-            {(take) => (
-              <div
-                class={styles.reflectionTarget}
-                data-testid="reflection-target"
-                aria-live="polite"
-              >
-                <span>Saving to</span>
-                <strong>
-                  {take.id === props.earlier?.id ? 'Earlier' : 'Later'} take
-                </strong>
-                <time>{formatClock(currentSeconds())}</time>
-                <p>Move the playhead to place this at another exact moment.</p>
-              </div>
-            )}
-          </Show>
-        </div>
-
-        <div class={styles.reflectionComposer}>
-          <label for={noteId}>Optional note</label>
-          <div class={styles.noteField}>
-            <input
-              id={noteId}
-              value={note()}
-              maxlength={MAX_VOICE_REFLECTION_NOTE_LENGTH}
-              placeholder="What did you hear here?"
-              disabled={selectedTake() === null}
-              onInput={(event) => setNote(event.currentTarget.value)}
-            />
-            <span class={styles.noteCount} aria-hidden="true">
-              {note().length} / {MAX_VOICE_REFLECTION_NOTE_LENGTH}
+      <div class={styles.workspaceShell}>
+        <div class={styles.canvasColumn}>
+          <div class={styles.legend} aria-label={`${atlasTitle()} legend`}>
+            <span class={styles.earlierLegend}>
+              <i aria-hidden="true" /> Earlier
+            </span>
+            <Show when={props.later !== null}>
+              <span class={styles.laterLegend}>
+                <i aria-hidden="true" /> Later
+              </span>
+            </Show>
+            <span class={styles.energyLegend}>
+              <i aria-hidden="true" /> Relative energy
             </span>
           </div>
-          <div
-            class={styles.beaconActions}
-            role="group"
-            aria-label="Add reflection"
-          >
-            <For
-              each={
-                [
-                  'keep',
-                  'curious',
-                  'try-next',
-                ] as const satisfies readonly VoiceReflectionKind[]
-              }
-            >
-              {(kind) => (
+
+          <Show when={props.totalTakeCount > 2}>
+            <div class={styles.pairBar}>
+              <div>
+                <span>Comparison pair</span>
+                <strong>2 of {props.totalTakeCount} takes</strong>
+                <p>Choose any earlier and later moment.</p>
+              </div>
+              <div
+                class={styles.pairPresets}
+                role="group"
+                aria-label="Choose a comparison pair"
+              >
                 <button
                   type="button"
-                  class={styles.beaconAction}
-                  classList={{
-                    [styles.keepAction]: kind === 'keep',
-                    [styles.curiousAction]: kind === 'curious',
-                    [styles.tryAction]: kind === 'try-next',
-                  }}
-                  data-testid={`reflection-beacon-${kind}`}
-                  disabled={selectedTake() === null}
-                  onClick={() => addReflection(kind)}
+                  aria-pressed={props.pairPreset === 'full-span'}
+                  onClick={() => props.onChoosePairPreset('full-span')}
                 >
-                  <i aria-hidden="true" />
-                  {voiceReflectionLabel(kind)}
+                  Full span
                 </button>
-              )}
-            </For>
+                <button
+                  type="button"
+                  aria-pressed={props.pairPreset === 'latest'}
+                  onClick={() => props.onChoosePairPreset('latest')}
+                >
+                  Latest two
+                </button>
+              </div>
+            </div>
+          </Show>
+
+          <div
+            class={styles.trailCards}
+            classList={{ [styles.singleTrail]: props.later === null }}
+          >
+            <TrailCard
+              label="Earlier"
+              take={props.earlier}
+              trail={props.model.earlier}
+              selected={props.selectedId === props.earlier?.id}
+              selector={props.earlierSelector}
+              onSelect={props.onSelect}
+            />
+            <Show when={props.later !== null}>
+              <TrailCard
+                label="Later"
+                take={props.later}
+                trail={props.model.later}
+                selected={props.selectedId === props.later?.id}
+                selector={props.laterSelector}
+                onSelect={props.onSelect}
+              />
+            </Show>
           </div>
+
+          <div class={styles.plotFrame}>
+            <canvas
+              ref={canvas}
+              class={styles.canvas}
+              role="img"
+              aria-label={canvasSummary(
+                props.model,
+                props.loading === true,
+                selectedTakeCount(),
+              )}
+            />
+            <div class={styles.plotBounds}>
+              <div
+                class={styles.slider}
+                data-testid="voice-atlas-slider"
+                role="slider"
+                tabindex={seekTarget() === null ? -1 : 0}
+                aria-label={`Seek ${seekTarget()?.title ?? 'selected Voice Atlas take'}`}
+                aria-disabled={seekTarget() === null}
+                aria-orientation="horizontal"
+                aria-valuemin="0"
+                aria-valuemax={takeDurationSeconds(seekTarget())}
+                aria-valuenow={Number(currentSeconds().toFixed(2))}
+                aria-valuetext={`${formatClock(currentSeconds())} of ${formatClock(takeDurationSeconds(seekTarget()))}`}
+                onPointerDown={(event) => {
+                  if (event.pointerType === 'mouse' && event.button !== 0)
+                    return
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                  seekFromPointer(event)
+                }}
+                onPointerMove={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    seekFromPointer(event)
+                  }
+                }}
+                onPointerUp={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    seekFromPointer(event)
+                    event.currentTarget.releasePointerCapture(event.pointerId)
+                  }
+                }}
+                onPointerCancel={(event) => {
+                  if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                    event.currentTarget.releasePointerCapture(event.pointerId)
+                  }
+                }}
+                onKeyDown={handleSliderKey}
+              />
+
+              <Show when={selectedTake() !== null}>
+                <div
+                  class={styles.playhead}
+                  classList={{
+                    [styles.playheadMoving]:
+                      props.playing && props.activeId === selectedTake()?.id,
+                  }}
+                  style={{
+                    '--atlas-position': `${currentSharedProgress() * 100}%`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <span />
+                </div>
+              </Show>
+
+              <div
+                class={styles.beaconLayer}
+                aria-label="Saved reflection beacons"
+              >
+                <For each={markers()}>
+                  {(marker) => (
+                    <button
+                      type="button"
+                      classList={{
+                        [styles.beaconMarker]: true,
+                        [styles.earlierMarker]: marker.trail === 'earlier',
+                        [styles.laterMarker]: marker.trail === 'later',
+                        [styles.keepMarker]: marker.reflection.kind === 'keep',
+                        [styles.curiousMarker]:
+                          marker.reflection.kind === 'curious',
+                        [styles.tryMarker]:
+                          marker.reflection.kind === 'try-next',
+                        [styles.selectedMarker]:
+                          selectedMarkerId() === marker.reflection.id,
+                      }}
+                      style={{
+                        '--atlas-position': `${markerSharedPosition(marker) * 100}%`,
+                      }}
+                      data-testid={`voice-atlas-marker-${marker.reflection.id}`}
+                      aria-label={`Seek to ${voiceReflectionLabel(marker.reflection.kind)} reflection at ${formatClock(marker.reflection.position * takeDurationSeconds(takeForId(marker.takeId)))}${marker.reflection.note === '' ? '' : `: ${marker.reflection.note}`}`}
+                      aria-pressed={selectedMarkerId() === marker.reflection.id}
+                      onClick={() => {
+                        setSelectedMarkerId(marker.reflection.id)
+                        setInspector('reflection')
+                        props.onSeek(marker.takeId, marker.reflection.position)
+                      }}
+                    >
+                      <span aria-hidden="true" />
+                    </button>
+                  )}
+                </For>
+              </div>
+            </div>
+
+            <Show when={props.loading === true}>
+              <div class={styles.loadingVeil} aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            </Show>
+          </div>
+
+          <VoicePlaybackTransport
+            take={selectedTake()}
+            activeId={props.activeId}
+            progress={props.progress}
+            playing={props.playing}
+            eyebrow={selectedLabel()}
+            tone={selectedTone()}
+            onPlay={(takeId) => {
+              props.onSelect(takeId)
+              props.onPlay(takeId)
+            }}
+            onSeek={(takeId, progress) => {
+              props.onSelect(takeId)
+              props.onSeek(takeId, progress)
+            }}
+            actions={
+              <div class={styles.transportActions}>
+                <button
+                  ref={roomButton}
+                  type="button"
+                  class={styles.transportTool}
+                  classList={{
+                    [styles.transportToolActive]: inspector() === 'room',
+                  }}
+                  aria-controls={inspectorId}
+                  aria-expanded={inspector() === 'room'}
+                  onClick={() =>
+                    setInspector((current) =>
+                      current === 'room' ? null : 'room',
+                    )
+                  }
+                >
+                  <SlidersHorizontal aria-hidden="true" />
+                  <span>Room</span>
+                </button>
+                <button
+                  ref={reflectionButton}
+                  type="button"
+                  class={styles.transportTool}
+                  classList={{
+                    [styles.transportToolActive]: inspector() === 'reflection',
+                  }}
+                  aria-controls={inspectorId}
+                  aria-expanded={inspector() === 'reflection'}
+                  onClick={() =>
+                    setInspector((current) =>
+                      current === 'reflection' ? null : 'reflection',
+                    )
+                  }
+                >
+                  <Pencil aria-hidden="true" />
+                  <span>Add reflection</span>
+                </button>
+              </div>
+            }
+          />
         </div>
 
-        <Show when={selectedMarker()} keyed>
-          {(marker) => (
-            <div class={styles.selectedReflection} aria-live="polite">
+        <Show when={inspector() !== null}>
+          <aside
+            ref={inspectorElement}
+            id={inspectorId}
+            class={styles.inspector}
+            role={mobileInspector() ? 'dialog' : 'region'}
+            aria-modal={mobileInspector() ? 'true' : undefined}
+            aria-label="Listening tools"
+            tabindex={mobileInspector() ? -1 : undefined}
+          >
+            <div class={styles.inspectorHeading}>
               <div>
-                <span>{voiceReflectionLabel(marker.reflection.kind)}</span>
+                <span>
+                  {inspector() === 'reflection'
+                    ? 'Reflection beacons'
+                    : 'Listening room'}
+                </span>
                 <strong>
-                  {formatClock(
-                    marker.reflection.position *
-                      takeDurationSeconds(takeForId(marker.takeId)),
-                  )}
+                  {inspector() === 'reflection'
+                    ? 'Mark this exact moment.'
+                    : 'Place every replay in the same space.'}
                 </strong>
-                <p>
-                  {marker.reflection.note === ''
-                    ? 'No note attached to this reflection.'
-                    : marker.reflection.note}
-                </p>
               </div>
               <button
+                ref={inspectorCloseButton}
                 type="button"
-                data-testid="reflection-beacon-remove"
-                onClick={() => {
-                  props.onRemoveReflection(marker.takeId, marker.reflection.id)
-                  setSelectedMarkerId(null)
-                }}
+                aria-label="Close listening tools"
+                onClick={closeInspector}
               >
-                Remove beacon
+                <X aria-hidden="true" />
               </button>
             </div>
-          )}
+
+            <Show when={inspector() === 'reflection'}>
+              <div class={styles.reflections}>
+                <div class={styles.reflectionIntro}>
+                  <Show
+                    when={selectedTake()}
+                    keyed
+                    fallback={<p>Select a take before placing a beacon.</p>}
+                  >
+                    {(take) => (
+                      <div
+                        class={styles.reflectionTarget}
+                        data-testid="reflection-target"
+                        aria-live="polite"
+                      >
+                        <span>Saving to</span>
+                        <strong>
+                          {take.id === props.earlier?.id ? 'Earlier' : 'Later'}{' '}
+                          take
+                        </strong>
+                        <time>{formatClock(currentSeconds())}</time>
+                        <p>
+                          Move the playhead to place this at another exact
+                          moment.
+                        </p>
+                      </div>
+                    )}
+                  </Show>
+                </div>
+
+                <div class={styles.reflectionComposer}>
+                  <label for={noteId}>Optional note</label>
+                  <div class={styles.noteField}>
+                    <input
+                      id={noteId}
+                      value={note()}
+                      maxlength={MAX_VOICE_REFLECTION_NOTE_LENGTH}
+                      placeholder="What did you hear here?"
+                      disabled={selectedTake() === null}
+                      onInput={(event) => setNote(event.currentTarget.value)}
+                    />
+                    <span class={styles.noteCount} aria-hidden="true">
+                      {note().length} / {MAX_VOICE_REFLECTION_NOTE_LENGTH}
+                    </span>
+                  </div>
+                  <div
+                    class={styles.beaconActions}
+                    role="group"
+                    aria-label="Add reflection"
+                  >
+                    <For
+                      each={
+                        [
+                          'keep',
+                          'curious',
+                          'try-next',
+                        ] as const satisfies readonly VoiceReflectionKind[]
+                      }
+                    >
+                      {(kind) => (
+                        <button
+                          type="button"
+                          class={styles.beaconAction}
+                          classList={{
+                            [styles.keepAction]: kind === 'keep',
+                            [styles.curiousAction]: kind === 'curious',
+                            [styles.tryAction]: kind === 'try-next',
+                          }}
+                          data-testid={`reflection-beacon-${kind}`}
+                          disabled={selectedTake() === null}
+                          onClick={() => addReflection(kind)}
+                        >
+                          <i aria-hidden="true" />
+                          {voiceReflectionLabel(kind)}
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </div>
+
+                <Show when={selectedMarker()} keyed>
+                  {(marker) => (
+                    <div class={styles.selectedReflection} aria-live="polite">
+                      <div>
+                        <span>
+                          {voiceReflectionLabel(marker.reflection.kind)}
+                        </span>
+                        <strong>
+                          {formatClock(
+                            marker.reflection.position *
+                              takeDurationSeconds(takeForId(marker.takeId)),
+                          )}
+                        </strong>
+                        <p>
+                          {marker.reflection.note === ''
+                            ? 'No note attached to this reflection.'
+                            : marker.reflection.note}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="reflection-beacon-remove"
+                        onClick={() => {
+                          props.onRemoveReflection(
+                            marker.takeId,
+                            marker.reflection.id,
+                          )
+                          setSelectedMarkerId(null)
+                        }}
+                      >
+                        Remove beacon
+                      </button>
+                    </div>
+                  )}
+                </Show>
+              </div>
+            </Show>
+
+            <Show when={inspector() === 'room'}>
+              <div class={styles.roomSlot}>{props.roomPanel}</div>
+            </Show>
+          </aside>
         </Show>
       </div>
     </section>
