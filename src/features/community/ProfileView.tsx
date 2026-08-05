@@ -35,6 +35,9 @@ export interface ProfileViewProps {
    *  portrait is resolved from it here rather than passed in, so art
    *  lookup stays in one place. */
   twinName?: string | undefined
+  /** Present only on the signed-in singer's own profile. Public profile
+   *  renderers omit it, so the private match map never appears there. */
+  onExploreVoiceConstellation?: () => void
   /** Badges earned, newest first. Shown beside the voice twin: they are
    *  the other half of "who is this singer", and a friend looking at the
    *  profile should see them too. */
@@ -120,7 +123,20 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
         <div class={styles.identityText}>
           <h2 class={styles.name}>{props.displayName}</h2>
           <Show when={props.twinName}>
-            {(twin) => <p class={styles.twin}>Voice twin: {twin()}</p>}
+            {(twin) => (
+              <div class={styles.twinRow}>
+                <p class={styles.twin}>Voice twin: {twin()}</p>
+                <Show when={props.onExploreVoiceConstellation !== undefined}>
+                  <button
+                    type="button"
+                    class={styles.exploreConstellation}
+                    onClick={() => props.onExploreVoiceConstellation?.()}
+                  >
+                    Explore constellation
+                  </button>
+                </Show>
+              </div>
+            )}
           </Show>
           <p class={styles.bio}>{props.bio}</p>
         </div>

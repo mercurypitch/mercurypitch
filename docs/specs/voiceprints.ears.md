@@ -1,7 +1,7 @@
 # EARS Specification — Voiceprints (capture, device/cloud sync, sharing)
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.0 | Date: 2026-08-01 | Scope: voiceprint records — where they
+> Version: 1.1 | Date: 2026-08-05 | Scope: voiceprint records — where they
 > come from, what the device keeps, what an account keeps, and what happens
 > when identities change on one device.
 
@@ -9,6 +9,9 @@
 `src/features/mirror/voiceprint-share.ts`,
 `src/components/account/VoiceSection.tsx`,
 `src/features/onboarding/FirstLight.tsx`, `src/features/mirror/MirrorApp.tsx`,
+`src/features/voice-constellation/VoiceConstellationSurface.tsx`,
+`src/lib/mirror/legend-catalog.ts`,
+`src/lib/mirror/voice-constellation.ts`,
 `workers/db-worker/migrations/0010_voiceprints.sql`,
 `workers/db-worker/src/auth.ts` (`USER_OWNED_TABLES`)
 **Tests:** unit — `src/tests/` (service-level pending); end-to-end — the
@@ -127,7 +130,48 @@ whichever side is visible.
 back to a PNG download otherwise, and report "unavailable" only when the
 record has no twin portrait to build a card from.
 
-## 6. End-to-end scenarios (Playwright backlog)
+## 6. Personal voice constellation
+
+### REQ-VPR-016 — One catalogue drives matching and presentation
+**Ubiquitous:** Voice Mirror matching and the personal constellation shall use
+the same ordered catalogue of 21 legends and six broad, overlapping voice
+bands. The bands are discovery guides; the app shall not present them as
+measured per-artist ranges or precise celebrity coordinates.
+
+### REQ-VPR-017 — Saved twins are historical truth
+**When** the personal constellation is built, persisted `record.twin` values
+shall determine its revealed matches; the app shall not recompute an old twin
+from that record's range. The newest record is current, unique older twins are
+past matches, null twins are ignored, and names removed from the current
+catalogue remain visible as legacy history.
+
+### REQ-VPR-018 — Mystery means not yet matched, not access control
+**While** a catalogue legend does not occur in the visible voiceprint history,
+the in-app constellation shall show the legend's name and broad band with a
+mystery illustration, shall not render or resolve that legend's portrait URL,
+and shall describe the state without achievement, completion, or paywall
+language. Portrait assets remain public product artwork; mystery presentation
+is not a security boundary.
+
+### REQ-VPR-019 — History failures never reveal portraits
+**While** voiceprint history is loading, unavailable, or empty, the
+constellation shall keep every portrait hidden and show an explicit loading,
+error, or first-voiceprint state respectively. A retry shall re-read the
+history without replacing it or generating a new match.
+
+### REQ-VPR-020 — One route-backed surface, contextual return
+**When** a singer opens the constellation from returning onboarding, Settings,
+or their own Profile, the app shall open the same `#/voice-constellation`
+surface and preserve the underlying context. Browser Back and the surface's
+close control shall return to that context; a directly loaded route shall
+close to an in-app tab rather than assuming an external history entry.
+
+### REQ-VPR-021 — Full public reveal is separate
+**Ubiquitous:** The personal constellation shall link to the public Voice
+Legends gallery for the complete portrait reveal, while keeping saved-match
+state and measured range data inside the app.
+
+## 7. End-to-end scenarios (Playwright backlog)
 
 1. Anonymous capture → record visible in settings, survives reload.
 2. Anonymous capture → register → record adopts into the new account
@@ -143,3 +187,13 @@ record has no twin portrait to build a card from.
 6. Thirteen captures anonymous → oldest evicted locally (REQ-VPR-004).
 7. Flip card → Share exports the stats variant; front exports the face
    variant (REQ-VPR-012).
+8. Open the constellation from returning onboarding, Settings, and Profile →
+   the same surface opens; close and browser Back restore each trigger context
+   (REQ-VPR-020).
+9. Two saved prints with different twins → newest is current, older is past,
+   and repeated names appear once; changing the matcher later does not rewrite
+   either saved result (REQ-VPR-017).
+10. Empty, loading, and failed history → no portrait image requests occur;
+    retry reads history again (REQ-VPR-018/019).
+11. Direct `#/voice-constellation` load → close lands on an app tab; keyboard
+    focus stays trapped while open and returns after close (REQ-VPR-020).

@@ -62,8 +62,14 @@ export interface UseHashRouterDeps {
   openResetPassword: (token: string | null) => void
   /** Whether that page is open (keeps the tab→hash sync off it). */
   showResetPassword: Accessor<boolean>
+  /** Close reset UI whenever browser navigation leaves its route. */
+  closeResetPassword: () => void
   /** Replay the First Light Map (#/map). */
   openOnboardingMap: () => void
+  /** Open or close the route-backed Voice Mirror constellation surface. */
+  setVoiceConstellationOpen: (open: boolean) => void
+  /** Keep state-to-hash sync from erasing the constellation deep link. */
+  voiceConstellationOpen: Accessor<boolean>
 
   // State signals (state → hash)
   activeTab: Accessor<ActiveTab>
@@ -105,6 +111,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       hashSyncing = false
       return
     }
+    // Route-owned surfaces update only after guarded Admin navigation accepts
+    // the destination. A veto restores /admin with replaceState (no
+    // hashchange), so opening anything before this point would stack it over
+    // unsaved owner work forever.
+    deps.setVoiceConstellationOpen(route.type === 'voice-constellation')
+    if (route.type !== 'reset-password') deps.closeResetPassword()
     if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
       deps.setActiveUvrSessionId(null)
@@ -141,6 +153,9 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'onboarding-map') {
       deps.dismissWelcome()
       deps.openOnboardingMap()
+    } else if (route.type === 'voice-constellation') {
+      // The state write above is the route action. The underlying tab remains
+      // mounted so closing the portalled surface returns to the exact context.
     } else if (route.type === 'jam-room') {
       deps.dismissWelcome()
       deps.setActiveTab(TAB_JAM)
@@ -225,7 +240,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.walkthroughModalOpen() ||
       deps.showGuideSelection() ||
       deps.showAdminContentStudio() ||
-      deps.showResetPassword()
+      deps.showResetPassword() ||
+      deps.voiceConstellationOpen()
     if (!initialized() || hashSyncing) return
     if (surfaceOpen) return
     if (tab === TAB_SETTINGS) {
@@ -260,7 +276,8 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     const walkthroughId = deps.selectedWalkthrough()
     const selectionOpen = deps.showSelection()
     const guideOpen = deps.showGuideSelection()
-    if (!initialized() || hashSyncing) return
+    const constellationOpen = deps.voiceConstellationOpen()
+    if (!initialized() || hashSyncing || constellationOpen) return
     if (modalOpen && walkthroughId !== null) {
       const expectedHash = `#/learn/${walkthroughId}`
       if (window.location.hash !== expectedHash) {

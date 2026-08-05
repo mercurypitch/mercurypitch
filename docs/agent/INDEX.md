@@ -91,12 +91,13 @@ These are the rules that break things when ignored.
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 936 | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 779 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
+| `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 515 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 507 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
-| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 479 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
+| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 495 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 436 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 328 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
+| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 299 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 283 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
-| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 282 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `mic-feedback` | [useMicInsights.ts](../../src/features/mic-feedback/useMicInsights.ts) | 255 | A single, debounced "what's happening with the mic" state, shared by every tab that listens to the mic (Singing, Karaoke, Piano, Guitar,... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 222 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
@@ -110,9 +111,9 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.2k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
+| `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.1k | Voice Mirror — pure metrics over F0 frame streams. |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
-| `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 1.8k | Voice Mirror — pure metrics over F0 frame streams. |
 | `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 1.3k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
@@ -285,7 +286,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.8k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/App.tsx](../../src/App.tsx) | 3.7k |
+| [src/App.tsx](../../src/App.tsx) | 3.8k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.2k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |

@@ -22,6 +22,7 @@ import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature, legendThumbSrc, } from '@/features/mirror/LegendCaricature'
 import { renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
+import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { showNotification } from '@/stores/notifications-store'
@@ -170,7 +171,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   }
 
   return (
-    <div class={styles.section}>
+    <div class={styles.section} data-tour="settings.voice-constellation">
       <h3 class={styles.heading}>Your voice</h3>
 
       <Show when={showAdoption()}>
@@ -246,8 +247,10 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           </Show>
           <div class={styles.latestBody}>
             <Show when={latest()?.twin != null && latest()?.twin !== ''}>
-              <p class={styles.twinName}>
-                {latest()?.twin}
+              <p class={styles.twinName}>{latest()?.twin}</p>
+            </Show>
+            <div class={styles.voiceActions}>
+              <Show when={latest()?.twin != null && latest()?.twin !== ''}>
                 <button
                   type="button"
                   class={styles.shareBtn}
@@ -257,8 +260,15 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
                 >
                   Share
                 </button>
-              </p>
-            </Show>
+              </Show>
+              <button
+                type="button"
+                class={styles.exploreBtn}
+                onClick={openVoiceConstellation}
+              >
+                Explore constellation
+              </button>
+            </div>
             <div class={styles.stats}>
               <Show when={latest()?.summary.lowMidi != null}>
                 <span>

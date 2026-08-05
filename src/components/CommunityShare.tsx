@@ -17,6 +17,7 @@ import { authVersion, getUserId } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { ProfileView } from '@/features/community/ProfileView'
 import { alreadyShared, melodyFingerprint, sessionFingerprint, } from '@/features/community/share-identity'
+import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { fuzzyMatch } from '@/lib/fuzzy-match'
 import { generateId } from '@/lib/id'
 import { copyShareUrl, encodeMelodyForShare, generateShareFullUrl, } from '@/lib/share-codec'
@@ -1052,6 +1053,7 @@ export const CommunityShare: Component = () => {
             sharedSessions={displaySessions().length}
             twinName={latestTwin()}
             badges={earnedBadges()}
+            onExploreVoiceConstellation={openVoiceConstellation}
           />
         </Show>
       </div>

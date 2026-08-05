@@ -4,13 +4,14 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, ErrorBoundary, For, on, onCleanup, onMount, Show, Suspense, untrack, } from 'solid-js'
 import { lazy } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { Drum, Music, MusicBoard, MusicNote, SlidersHorizontal, Split, } from '@/components/icons'
+import { Drum, Music, MusicBoard, MusicNote, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicHandoffPrompt } from '@/components/MicHandoffPrompt'
@@ -80,6 +81,69 @@ const FirstLight = lazy(async () =>
     default: m.FirstLight,
   })),
 )
+const VoiceConstellationSurface = lazy(async () =>
+  import('@/features/voice-constellation/VoiceConstellationSurface').then(
+    (m) => ({ default: m.VoiceConstellationSurface }),
+  ),
+)
+
+const VoiceConstellationLoadingShell: Component = () => (
+  <Portal>
+    <div
+      class={styles.voiceConstellationRouteCurtain}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Opening voice constellation"
+    >
+      <div class={styles.voiceConstellationRouteCard}>
+        <span aria-hidden="true">
+          <Voice />
+        </span>
+        <p role="status" aria-live="polite">
+          Opening your voice constellation…
+        </p>
+      </div>
+    </div>
+  </Portal>
+)
+
+const VoiceConstellationRouteError: Component<{ onClose: () => void }> = (
+  props,
+) => {
+  let closeButton: HTMLButtonElement | undefined
+  onMount(() => queueMicrotask(() => closeButton?.focus()))
+
+  return (
+    <Portal>
+      <div
+        class={styles.voiceConstellationRouteCurtain}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="voice-constellation-load-error"
+      >
+        <div class={styles.voiceConstellationRouteCard}>
+          <span aria-hidden="true">
+            <Voice />
+          </span>
+          <div>
+            <h2 id="voice-constellation-load-error">
+              The constellation could not open
+            </h2>
+            <p>Close this view and try again.</p>
+          </div>
+          <button
+            ref={closeButton}
+            type="button"
+            onClick={() => props.onClose()}
+            aria-label="Close voice constellation"
+          >
+            <X />
+          </button>
+        </div>
+      </div>
+    </Portal>
+  )
+}
 import './styles/guitar-practice.css'
 import './components/AppHeader.css'
 import { AuthModal } from '@/components/account/AuthModal'
@@ -125,6 +189,8 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
 import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
+import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
+import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -133,7 +199,7 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { IS_DEV } from '@/lib/defaults'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
-import { navigateTo } from '@/lib/hash-router'
+import { navigateTo, parseHash } from '@/lib/hash-router'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -529,6 +595,18 @@ const AppShell: Component<AppProps> = (props) => {
   // A replay (#/map) reopens the Map without re-running the first-run
   // bookkeeping, so closing it can't rewind anyone's seen-flag.
   const [onboardingReplay, setOnboardingReplay] = createSignal(false)
+  const [voiceConstellationOpen, setVoiceConstellationOpen] = createSignal(
+    parseHash(window.location.hash).type === 'voice-constellation',
+  )
+
+  useVoiceConstellationIsolation(voiceConstellationOpen)
+
+  const closeVoiceConstellation = () => {
+    const exit = leaveVoiceConstellation(activeTab())
+    // Browser Back owns the in-app path and its hashchange closes the surface.
+    // A direct deep link uses replaceState, so it needs the local close now.
+    if (exit !== 'history') setVoiceConstellationOpen(false)
+  }
 
   const startFirstLight = () => {
     setOnboardingReplay(false)
@@ -542,7 +620,7 @@ const AppShell: Component<AppProps> = (props) => {
   // and hand back a voiceprint. `showWelcome` now means "this visitor
   // has not been offered the flow yet", and the answer is to open it.
   createEffect(() => {
-    if (!showWelcome() || flowOpen()) return
+    if (!showWelcome() || flowOpen() || voiceConstellationOpen()) return
     startFirstLight()
   })
 
@@ -849,7 +927,10 @@ const AppShell: Component<AppProps> = (props) => {
     adminContentSection,
     openResetPassword: (token) => setResetPasswordView({ token }),
     showResetPassword: () => resetPasswordView() != null,
+    closeResetPassword: () => setResetPasswordView(null),
     openOnboardingMap,
+    setVoiceConstellationOpen,
+    voiceConstellationOpen,
     activeTab,
     activeUvrView,
     activeUvrSessionId,
@@ -2272,6 +2353,7 @@ const AppShell: Component<AppProps> = (props) => {
     showSessionBrowser() ||
     showShortcutHelp() ||
     showAdminContentStudio() ||
+    voiceConstellationOpen() ||
     // Never pop the survey over the sign-in modal, an already-open feedback
     // modal, or the First Light onboarding flow - all surfaces the user is
     // mid-thought in.
@@ -2397,6 +2479,18 @@ const AppShell: Component<AppProps> = (props) => {
             through the same `showWelcome` flag. */}
         <Show when={flowOpen()}>
           <FirstLight replay={onboardingReplay()} />
+        </Show>
+
+        <Show when={voiceConstellationOpen()}>
+          <ErrorBoundary
+            fallback={() => (
+              <VoiceConstellationRouteError onClose={closeVoiceConstellation} />
+            )}
+          >
+            <Suspense fallback={<VoiceConstellationLoadingShell />}>
+              <VoiceConstellationSurface onClose={closeVoiceConstellation} />
+            </Suspense>
+          </ErrorBoundary>
         </Show>
 
         {/* Guide Selection dialog */}

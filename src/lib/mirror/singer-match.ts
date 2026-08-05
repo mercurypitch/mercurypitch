@@ -2,14 +2,12 @@
 // Voice Mirror — famous-singer match for the share card.
 //
 // A playful "your range overlaps with a legend" pairing, keyed off the
-// classical voice type from voiceTypeHint(). Two or more legends per type;
-// singers are placed by their documented SINGING classification, not their
-// speaking voice — e.g. Freddie Mercury spoke as a baritone but SANG as a
-// tenor, so he sits under Tenor (see the classical ranges in metrics.ts
-// VOICE_TYPES). Every legend here needs a portrait entry in
-// LegendCaricature.tsx.
+// classical voice type from voiceTypeHint(). The canonical roster and broad
+// classifications live in legend-catalog.ts so matching and the constellation
+// cannot drift apart.
 // ============================================================
 
+import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
 import type { RangeResult } from './metrics'
 
 /**
@@ -19,22 +17,15 @@ import type { RangeResult } from './metrics'
  * payoff the whole onboarding builds to. Four of these types were pairs
  * until the second round of portraits.
  */
-export const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> = {
-  Bass: ['Johnny Cash', 'Barry White', 'Louis Armstrong'],
-  // Baritone is the most common male voice, so it carries the most variety.
-  Baritone: ['Elvis Presley', 'Frank Sinatra', 'Kurt Cobain', 'David Bowie'],
-  Tenor: [
-    'Freddie Mercury',
-    'Bruce Dickinson',
-    'Michael Jackson',
-    'Prince',
-    'Luciano Pavarotti',
-  ],
-  // contralto — the lowest female voices
-  Alto: ['Amy Winehouse', 'Cher', 'Nina Simone'],
-  'Mezzo-soprano': ['Adele', 'Whitney Houston', 'Aretha Franklin'],
-  Soprano: ['Mariah Carey', 'Celine Dion', 'Ariana Grande'],
-}
+export const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> =
+  Object.fromEntries(
+    VOICE_TYPE_BANDS.map((band) => [
+      band.id,
+      VOICE_LEGENDS.filter((legend) => legend.band === band.id).map(
+        (legend) => legend.name,
+      ),
+    ]),
+  )
 
 /**
  * A legendary singer whose range overlaps this voice type, chosen

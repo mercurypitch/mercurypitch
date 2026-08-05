@@ -13,6 +13,7 @@
 
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { detectVibrato } from '@/lib/vocal-analyzer'
+import { VOICE_TYPE_BANDS } from './legend-catalog'
 
 /** One pitch frame from the detector stream. */
 export interface F0Frame {
@@ -217,17 +218,6 @@ export interface RangeResult {
   voiceHint: string | null
 }
 
-// Overlap table from the spec (§4.1). Ranges are integer MIDI.
-const VOICE_TYPES: ReadonlyArray<{ name: string; low: number; high: number }> =
-  [
-    { name: 'Bass', low: 40, high: 64 }, // E2–E4
-    { name: 'Baritone', low: 43, high: 67 }, // G2–G4
-    { name: 'Tenor', low: 48, high: 72 }, // C3–C5
-    { name: 'Alto', low: 53, high: 77 }, // F3–F5
-    { name: 'Mezzo-soprano', low: 57, high: 81 }, // A3–A5
-    { name: 'Soprano', low: 60, high: 84 }, // C4–C6
-  ]
-
 /** Best-overlapping voice type for a detected range; ties → closest center. */
 export function voiceTypeHint(
   lowMidi: number,
@@ -235,16 +225,17 @@ export function voiceTypeHint(
 ): string | null {
   const center = (lowMidi + highMidi) / 2
   let best: { name: string; overlap: number; centerDist: number } | null = null
-  for (const vt of VOICE_TYPES) {
-    const overlap = Math.min(highMidi, vt.high) - Math.max(lowMidi, vt.low)
+  for (const band of VOICE_TYPE_BANDS) {
+    const overlap =
+      Math.min(highMidi, band.highMidi) - Math.max(lowMidi, band.lowMidi)
     if (overlap <= 0) continue
-    const centerDist = Math.abs((vt.low + vt.high) / 2 - center)
+    const centerDist = Math.abs((band.lowMidi + band.highMidi) / 2 - center)
     if (
       best === null ||
       overlap > best.overlap ||
       (overlap === best.overlap && centerDist < best.centerDist)
     ) {
-      best = { name: vt.name, overlap, centerDist }
+      best = { name: band.id, overlap, centerDist }
     }
   }
   return best?.name ?? null
