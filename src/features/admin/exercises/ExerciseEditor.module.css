@@ -172,8 +172,6 @@
 .primaryAction,
 .secondaryAction,
 .noAudio button,
-.recordingActions button,
-.pendingAudioFile button,
 .audioError button,
 .lifecycleActions button,
 .actionError button,
@@ -196,8 +194,6 @@
 
 .secondaryAction,
 .noAudio button,
-.recordingActions button,
-.pendingAudioFile button,
 .audioError button,
 .lifecycleActions button,
 .removeAudio {
@@ -212,8 +208,6 @@
 
 .secondaryAction:hover:not(:disabled),
 .noAudio button:hover:not(:disabled),
-.recordingActions button:hover:not(:disabled),
-.pendingAudioFile button:hover:not(:disabled),
 .audioError button:hover:not(:disabled),
 .lifecycleActions button:hover:not(:disabled),
 .removeAudio:hover:not(:disabled) {
@@ -224,8 +218,6 @@
 .primaryAction:disabled,
 .secondaryAction:disabled,
 .noAudio button:disabled,
-.recordingActions button:disabled,
-.pendingAudioFile button:disabled,
 .audioError button:disabled,
 .lifecycleActions button:disabled,
 .removeAudio:disabled {
@@ -237,8 +229,6 @@
 .primaryAction:focus-visible,
 .secondaryAction:focus-visible,
 .noAudio button:focus-visible,
-.recordingActions button:focus-visible,
-.pendingAudioFile button:focus-visible,
 .audioError button:focus-visible,
 .lifecycleActions button:focus-visible,
 .actionError button:focus-visible,
@@ -493,99 +483,6 @@
   line-height: 1.5;
 }
 
-.recordingTake {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 10px;
-  padding: 11px;
-  border: 1px solid #303b50;
-  border-radius: 9px;
-  background: #111824;
-}
-
-.recordingTake[data-phase='recording'] {
-  border-color: rgba(246, 169, 28, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(246, 169, 28, 0.08);
-}
-
-.recordingStatus {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-}
-
-.recordingStatus > span {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #68778d;
-  box-shadow: 0 0 0 4px rgba(104, 119, 141, 0.1);
-}
-
-.recordingTake[data-phase='recording'] .recordingStatus > span {
-  background: #f6a91c;
-  box-shadow: 0 0 0 4px rgba(246, 169, 28, 0.13);
-  animation: recordingPulse 1.2s ease-in-out infinite;
-}
-
-.recordingStatus strong {
-  overflow: hidden;
-  color: #dce5f2;
-  font-size: 0.7rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recordingStatus output {
-  color: #9facbf;
-  font:
-    0.62rem/1 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
-}
-
-.recordingProgress {
-  overflow: hidden;
-  height: 4px;
-  border-radius: 999px;
-  background: #263044;
-}
-
-.recordingProgress > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #dd8d12, #ffc454);
-  transition: width 100ms linear;
-}
-
-.recordingActions {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-}
-
-.recordingActions button {
-  flex: 0 0 auto;
-}
-
-.recordingActions small {
-  min-width: 0;
-  color: #8796ab;
-  font-size: 0.64rem;
-  line-height: 1.35;
-}
-
-.recordingActions .stopRecording {
-  border-color: #d88a0a;
-  color: #1d1202;
-  background: #f6a91c;
-}
-
 .audioFileChoice {
   display: flex;
   min-width: 0;
@@ -620,80 +517,6 @@
   color: #8998ad;
   font-size: 0.64rem;
   text-align: center;
-}
-
-.pendingAudioFile {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 7px 10px;
-  padding: 9px 10px;
-  border: 1px dashed rgba(234, 161, 22, 0.42);
-  border-radius: 8px;
-  background: rgba(89, 57, 7, 0.13);
-}
-
-.pendingAudioFile[hidden] {
-  display: none;
-}
-
-.pendingAudioFile strong {
-  overflow: hidden;
-  min-width: 0;
-  color: #e5ecf7;
-  font-size: 0.68rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pendingAudioActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
-.pendingAudioIdentity {
-  display: flex;
-  overflow: hidden;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pendingAudioIdentity span {
-  color: #8f9eb2;
-  font-size: 0.62rem;
-}
-
-.pendingAudioFile button {
-  min-height: 31px;
-  padding: 5px 9px;
-  font-size: 0.65rem;
-}
-
-.pendingAudioFile small {
-  grid-column: 1 / -1;
-  color: #a7b3c5;
-  font-size: 0.64rem;
-  line-height: 1.4;
-}
-
-.clipStart {
-  display: grid;
-  grid-column: 1 / -1;
-  gap: 6px;
-}
-
-.clipStart span {
-  color: #c8d2e1;
-  font-size: 0.66rem;
-}
-
-.clipStart input[type='range'] {
-  width: 100%;
-  accent-color: #f6a91c;
 }
 
 .audioError {
@@ -731,20 +554,8 @@
   font-size: 0.65rem;
 }
 
-@keyframes recordingPulse {
-  50% {
-    opacity: 0.45;
-    transform: scale(0.84);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .recordingTake[data-phase='recording'] .recordingStatus > span {
-    animation: none;
-  }
-
-  .audioDropZone,
-  .recordingProgress > span {
+  .audioDropZone {
     transition: none;
   }
 }
@@ -1146,15 +957,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .recordingActions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .recordingActions button {
-    width: 100%;
-  }
-
   .noAudio {
     align-items: stretch;
     flex-direction: column;
@@ -1192,14 +994,6 @@
 
   .wideField {
     grid-column: auto;
-  }
-
-  .pendingAudioFile {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .pendingAudioActions {
-    justify-content: flex-start;
   }
 
   .audioError {
@@ -1302,15 +1096,6 @@
 
   .audioUpload {
     grid-template-columns: 1fr;
-  }
-
-  .recordingActions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .recordingActions button {
-    width: 100%;
   }
 
   .noAudio {
