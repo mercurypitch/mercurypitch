@@ -14,6 +14,7 @@ import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
 import { AdminDemoSongPage } from './AdminDemoSongPage'
 import { AdminExercisesPage } from './AdminExercisesPage'
+import { AdminPremiumPerksPage } from './AdminPremiumPerksPage'
 
 type AuthStatus = 'locked' | 'checking' | 'unlocked' | 'failed'
 
@@ -67,6 +68,13 @@ const SECTIONS: readonly SectionMeta[] = [
     shortLabel: 'Demo',
     description:
       'Swap the song a first-time visitor sings, and correct its lyrics.',
+  },
+  {
+    id: 'premium-perks',
+    label: 'Premium Perks',
+    shortLabel: 'Perks',
+    description:
+      'Ship protected stage art, assign supporter access, and audit room passes.',
   },
 ] as const
 
@@ -421,6 +429,12 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                   </Match>
                   <Match when={props.section === 'demo-song'}>
                     <AdminDemoSongPage
+                      adminKey={verifiedKey()}
+                      onDirtyChange={setContentDirty}
+                    />
+                  </Match>
+                  <Match when={props.section === 'premium-perks'}>
+                    <AdminPremiumPerksPage
                       adminKey={verifiedKey()}
                       onDirtyChange={setContentDirty}
                     />

@@ -4,6 +4,11 @@
 
 import { batch, createMemo, createRoot, createSignal } from 'solid-js'
 import { getStemBlob } from '@/db/services/uvr-service'
+import { deterministicFreeJamBackground } from '@/lib/backgrounds/background-access'
+import { getBackgroundDefinition, isBackgroundPerkId, } from '@/lib/backgrounds/background-catalog'
+import { BackgroundRequestError, mintJamBackgroundCapability, } from '@/lib/backgrounds/background-runtime'
+import { runtimeBackgroundById } from '@/lib/backgrounds/background-surface'
+import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamBackgroundCapability, jamBackgroundCapabilityNeedsRefresh, jamCapabilityExpiryMs, } from '@/lib/jam/background-session'
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
@@ -12,6 +17,7 @@ import { sessionIdOfSong } from '@/lib/jam/jam-lyrics-attach'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
+import { ownerTokenFor } from '@/lib/jam/jam-rooms'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
@@ -23,7 +29,8 @@ import { encodeStemsForShare, forgetPackedStems, getPackedStems, shareStemsWithP
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { StemEncodeAbortedError } from '@/lib/jam/stem-encoder'
-import type { JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
+import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, JamRoomBackgroundState, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
+import { invalidatePremiumBackgroundAccess, premiumBackgroundCatalogState, refreshPremiumBackgroundCatalog, } from '@/stores/background-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyData } from '@/types'
@@ -75,7 +82,25 @@ export function getJamSessionInfo(): {
 export const [jamRoomId, setJamRoomId] = createSignal<string | null>(null)
 export const [jamPeerId, setJamPeerId] = createSignal<string | null>(null)
 export const [jamIsHost, setJamIsHost] = createSignal(false)
+export const [jamHostPeerId, setJamHostPeerId] = createSignal<string | null>(
+  null,
+)
 export const [jamPeers, setJamPeers] = createSignal<JamPeer[]>([])
+export const [jamRoomBackground, setJamRoomBackground] =
+  createSignal<JamRoomBackgroundState | null>(null)
+export const [jamRoomBackgroundCapability, setJamRoomBackgroundCapability] =
+  createSignal<JamBackgroundCapabilityMessage | null>(null)
+export const [jamBackgroundChanging, setJamBackgroundChanging] =
+  createSignal(false)
+export const [jamBackgroundError, setJamBackgroundError] = createSignal<
+  string | null
+>(null)
+export const jamSelectedBackgroundId = createMemo(() => {
+  const selected = getBackgroundDefinition(jamRoomBackground()?.backgroundId)
+  return selected?.surface === 'jam'
+    ? selected.id
+    : deterministicFreeJamBackground(jamRoomId()).id
+})
 /**
  * Muted until you say otherwise.
  *
@@ -738,6 +763,12 @@ export function reportSongHave(): void {
 function answerSongHaveWhenVisible(): void {
   if (document.visibilityState !== 'visible') return
   reportSongHave()
+  if (
+    jamIsHost() &&
+    jamBackgroundCapabilityNeedsRefresh(jamRoomBackgroundCapability())
+  ) {
+    void refreshJamBackgroundCapability()
+  }
 }
 
 /** Whether the listener above is currently attached. */
@@ -1322,6 +1353,285 @@ function clearPendingDepartures(): void {
 }
 
 let jamService: ReturnType<typeof createJamService> | null = null
+let pendingJamBackgroundCapability: JamBackgroundCapabilityMessage | null = null
+let pendingIncomingJamBackgroundCapability: {
+  capability: JamBackgroundCapabilityMessage
+  fromPeerId: string
+} | null = null
+let jamBackgroundCapabilityTimer: ReturnType<typeof setTimeout> | null = null
+let jamBackgroundSelectionSerial = 0
+
+function clearJamBackgroundCapabilityTimer(): void {
+  if (jamBackgroundCapabilityTimer === null) return
+  clearTimeout(jamBackgroundCapabilityTimer)
+  jamBackgroundCapabilityTimer = null
+}
+
+function scheduleJamBackgroundCapabilityRefresh(
+  capability: JamBackgroundCapabilityMessage,
+): void {
+  clearJamBackgroundCapabilityTimer()
+  const expiresAt = jamCapabilityExpiryMs(capability)
+  if (expiresAt === null) return
+  const delay = Math.max(1000, expiresAt - Date.now() - 90_000)
+  jamBackgroundCapabilityTimer = setTimeout(() => {
+    jamBackgroundCapabilityTimer = null
+    void refreshJamBackgroundCapability()
+  }, delay)
+}
+
+function shareCurrentJamBackgroundCapability(peerId?: string): void {
+  const capability = jamRoomBackgroundCapability()
+  if (
+    !jamIsHost() ||
+    capability === null ||
+    jamBackgroundCapabilityNeedsRefresh(capability)
+  ) {
+    return
+  }
+  jamService?.sendBackgroundCapability(capability, peerId)
+}
+
+function useFreeJamBackgroundAfterCapabilityFailure(): void {
+  const fallback = deterministicFreeJamBackground(jamRoomId())
+  pendingJamBackgroundCapability = null
+  setJamRoomBackgroundCapability(null)
+  clearJamBackgroundCapabilityTimer()
+  jamService?.setRoomBackground(fallback.id)
+}
+
+function unlockedPremiumJamAsset(backgroundId: string) {
+  const option = runtimeBackgroundById(
+    'jam',
+    backgroundId,
+    premiumBackgroundCatalogState(),
+  )
+  return option?.access === 'unlocked' ? option.premiumAsset : null
+}
+
+async function mintCurrentJamBackgroundCapability(
+  backgroundId: Parameters<typeof mintJamBackgroundCapability>[0],
+  roomId: string,
+  ownerToken: string,
+) {
+  const initialAsset = unlockedPremiumJamAsset(backgroundId)
+  if (initialAsset === null) {
+    throw new BackgroundRequestError(
+      403,
+      'This room stage is no longer unlocked.',
+    )
+  }
+
+  try {
+    return await mintJamBackgroundCapability(backgroundId, {
+      roomId,
+      ownerToken,
+      version: initialAsset.activeVersion,
+    })
+  } catch (error: unknown) {
+    if (
+      !(error instanceof BackgroundRequestError) ||
+      (error.status !== 404 && error.status !== 410)
+    ) {
+      throw error
+    }
+
+    // Publishing replaces immutable revisions and revokes their passes. The
+    // client catalog can be a few minutes behind that transition, so refresh
+    // once and retry the new exact version before treating it as revocation.
+    await refreshPremiumBackgroundCatalog()
+    const refreshedAsset = unlockedPremiumJamAsset(backgroundId)
+    if (
+      refreshedAsset === null ||
+      refreshedAsset.activeVersion === initialAsset.activeVersion
+    ) {
+      throw error
+    }
+    return mintJamBackgroundCapability(backgroundId, {
+      roomId,
+      ownerToken,
+      version: refreshedAsset.activeVersion,
+    })
+  }
+}
+
+/** Refresh the host-issued room pass without changing the visible stage. */
+export async function refreshJamBackgroundCapability(): Promise<boolean> {
+  const selected = jamRoomBackground()
+  const roomId = jamRoomId()
+  if (
+    !jamIsHost() ||
+    selected === null ||
+    roomId === null ||
+    !isBackgroundPerkId(selected.backgroundId)
+  ) {
+    clearJamBackgroundCapabilityTimer()
+    return false
+  }
+
+  const option = runtimeBackgroundById(
+    'jam',
+    selected.backgroundId,
+    premiumBackgroundCatalogState(),
+  )
+  const ownerToken = ownerTokenFor(roomId)
+  if (
+    option?.access !== 'unlocked' ||
+    option.premiumAsset === null ||
+    ownerToken === null
+  ) {
+    setJamBackgroundError('This room stage is no longer unlocked.')
+    useFreeJamBackgroundAfterCapabilityFailure()
+    return false
+  }
+
+  const previous = jamRoomBackgroundCapability()
+  try {
+    const minted = await mintCurrentJamBackgroundCapability(
+      selected.backgroundId,
+      roomId,
+      ownerToken,
+    )
+    if (
+      !jamIsHost() ||
+      jamRoomId() !== roomId ||
+      jamRoomBackground()?.backgroundId !== selected.backgroundId
+    ) {
+      return false
+    }
+    const capability: JamBackgroundCapabilityMessage = {
+      type: 'background-capability',
+      backgroundId: minted.backgroundId,
+      version: minted.version,
+      token: minted.token,
+      expiresAt: minted.expiresAt,
+    }
+    setJamRoomBackgroundCapability(capability)
+    setJamBackgroundError(null)
+    scheduleJamBackgroundCapabilityRefresh(capability)
+    shareCurrentJamBackgroundCapability()
+    return true
+  } catch (error: unknown) {
+    const authorizationFailure =
+      error instanceof BackgroundRequestError &&
+      [401, 403, 404, 410].includes(error.status)
+    if (authorizationFailure) {
+      invalidatePremiumBackgroundAccess(selected.backgroundId, error.status)
+    }
+    setJamBackgroundError(
+      error instanceof Error
+        ? error.message
+        : 'The room stage pass could not be refreshed.',
+    )
+
+    const previousExpiry =
+      previous === null ? null : jamCapabilityExpiryMs(previous)
+    if (
+      authorizationFailure ||
+      previousExpiry === null ||
+      previousExpiry <= Date.now()
+    ) {
+      useFreeJamBackgroundAfterCapabilityFailure()
+    } else {
+      clearJamBackgroundCapabilityTimer()
+      jamBackgroundCapabilityTimer = setTimeout(
+        () => {
+          jamBackgroundCapabilityTimer = null
+          void refreshJamBackgroundCapability()
+        },
+        Math.min(30_000, Math.max(1000, previousExpiry - Date.now())),
+      )
+    }
+    return false
+  }
+}
+
+/** Host-only authoritative selection. The owner token never leaves this call. */
+export async function selectJamRoomBackground(
+  backgroundId: string,
+): Promise<boolean> {
+  const serial = ++jamBackgroundSelectionSerial
+  const roomId = jamRoomId()
+  if (!jamIsHost() || jamService === null || roomId === null) {
+    setJamBackgroundError('Only the room host can change the stage.')
+    return false
+  }
+
+  const definition = getBackgroundDefinition(backgroundId)
+  if (definition?.surface !== 'jam') {
+    setJamBackgroundError('That room stage is unavailable.')
+    return false
+  }
+
+  const option = runtimeBackgroundById(
+    'jam',
+    definition.id,
+    premiumBackgroundCatalogState(),
+  )
+  if (option === null || option.access === 'locked') {
+    setJamBackgroundError('That room stage is not unlocked for this account.')
+    return false
+  }
+
+  setJamBackgroundChanging(true)
+  setJamBackgroundError(null)
+  try {
+    if (option.premiumAsset === null) {
+      pendingJamBackgroundCapability = null
+      setJamRoomBackgroundCapability(null)
+      clearJamBackgroundCapabilityTimer()
+      jamService.setRoomBackground(definition.id)
+      return true
+    }
+
+    const ownerToken = ownerTokenFor(roomId)
+    if (ownerToken === null || !isBackgroundPerkId(definition.id)) {
+      setJamBackgroundError('Host authority for this room has expired.')
+      return false
+    }
+    const minted = await mintCurrentJamBackgroundCapability(
+      definition.id,
+      roomId,
+      ownerToken,
+    )
+    if (
+      serial !== jamBackgroundSelectionSerial ||
+      !jamIsHost() ||
+      jamRoomId() !== roomId
+    ) {
+      return false
+    }
+    const capability: JamBackgroundCapabilityMessage = {
+      type: 'background-capability',
+      backgroundId: minted.backgroundId,
+      version: minted.version,
+      token: minted.token,
+      expiresAt: minted.expiresAt,
+    }
+    pendingJamBackgroundCapability = capability
+    scheduleJamBackgroundCapabilityRefresh(capability)
+    jamService.setRoomBackground(definition.id)
+    return true
+  } catch (error: unknown) {
+    if (
+      error instanceof BackgroundRequestError &&
+      [401, 403, 404, 410].includes(error.status) &&
+      isBackgroundPerkId(definition.id)
+    ) {
+      invalidatePremiumBackgroundAccess(definition.id, error.status)
+    }
+    setJamBackgroundError(
+      error instanceof Error
+        ? error.message
+        : 'The room stage could not be changed.',
+    )
+    return false
+  } finally {
+    if (serial === jamBackgroundSelectionSerial) {
+      setJamBackgroundChanging(false)
+    }
+  }
+}
 
 // ── Hearing the room ─────────────────────────────────────────────────
 // One <audio> element per peer, rather than a Web Audio graph.
@@ -1606,6 +1916,84 @@ export function initJam() {
         showNotification(HOST_RETURNED, 'info')
       }
       setJamIsHost(isHost)
+    },
+    onHostPeerChanged: (hostPeerId) => {
+      setJamHostPeerId(hostPeerId)
+      if (
+        pendingIncomingJamBackgroundCapability !== null &&
+        pendingIncomingJamBackgroundCapability.fromPeerId !== hostPeerId
+      ) {
+        pendingIncomingJamBackgroundCapability = null
+      }
+      const localPeerId = jamPeerId()
+      if (localPeerId !== null) setJamIsHost(hostPeerId === localPeerId)
+    },
+    onBackgroundChanged: (incoming) => {
+      const current = jamRoomBackground()
+      const next = applyNewerJamBackground(current, incoming)
+      if (next === current) return
+      setJamRoomBackground(next)
+
+      const pendingIncoming = pendingIncomingJamBackgroundCapability
+      if (
+        pendingIncoming !== null &&
+        pendingIncoming.capability.backgroundId === next.backgroundId
+      ) {
+        if (
+          isCurrentJamBackgroundCapability(pendingIncoming.capability, {
+            background: next,
+            fromPeerId: pendingIncoming.fromPeerId,
+            hostPeerId: jamHostPeerId(),
+          })
+        ) {
+          setJamRoomBackgroundCapability(pendingIncoming.capability)
+        }
+        pendingIncomingJamBackgroundCapability = null
+      }
+
+      if (jamRoomBackgroundCapability()?.backgroundId !== next.backgroundId) {
+        setJamRoomBackgroundCapability(null)
+      }
+
+      if (
+        jamIsHost() &&
+        pendingJamBackgroundCapability?.backgroundId === next.backgroundId
+      ) {
+        const capability = pendingJamBackgroundCapability
+        setJamRoomBackgroundCapability(capability)
+        pendingJamBackgroundCapability = null
+        scheduleJamBackgroundCapabilityRefresh(capability)
+        shareCurrentJamBackgroundCapability()
+      } else if (
+        jamIsHost() &&
+        isBackgroundPerkId(next.backgroundId) &&
+        jamBackgroundCapabilityNeedsRefresh(jamRoomBackgroundCapability())
+      ) {
+        void refreshJamBackgroundCapability()
+      }
+    },
+    onBackgroundCapability: (capability, fromPeerId) => {
+      const acceptance = classifyJamBackgroundCapability(capability, {
+        background: jamRoomBackground(),
+        fromPeerId,
+        hostPeerId: jamHostPeerId(),
+      })
+      if (acceptance === 'current') {
+        pendingIncomingJamBackgroundCapability = null
+        setJamRoomBackgroundCapability(capability)
+      } else if (acceptance === 'pending-background') {
+        pendingIncomingJamBackgroundCapability = { capability, fromPeerId }
+      }
+    },
+    onPeerChannelReady: (peerId) => {
+      if (
+        jamIsHost() &&
+        jamBackgroundCapabilityNeedsRefresh(jamRoomBackgroundCapability())
+      ) {
+        void refreshJamBackgroundCapability()
+        return
+      }
+      shareCurrentJamBackgroundCapability(peerId)
     },
     onError: (message) => {
       console.error('[jam:store] error:', message)
@@ -2288,7 +2676,16 @@ function cleanupJam(): void {
   setJamRoomId(null)
   setJamPeerId(null)
   setJamIsHost(false)
+  setJamHostPeerId(null)
   setJamPeers([])
+  setJamRoomBackground(null)
+  setJamRoomBackgroundCapability(null)
+  pendingJamBackgroundCapability = null
+  pendingIncomingJamBackgroundCapability = null
+  clearJamBackgroundCapabilityTimer()
+  jamBackgroundSelectionSerial += 1
+  setJamBackgroundChanging(false)
+  setJamBackgroundError(null)
   setJamError(null)
   setJamState('idle')
   setJamRemoteStreams({})

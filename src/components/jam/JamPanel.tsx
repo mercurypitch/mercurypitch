@@ -5,11 +5,13 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { Sheet } from '@/components/mobile/Sheet'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
 import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
@@ -22,7 +24,7 @@ import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
-import { createJamRoom, getJamSessionInfo, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -45,6 +47,7 @@ import { JamTransferChip } from './JamTransferDialog'
 import { JamTransport } from './JamTransport'
 
 export const JamPanel: Component = () => {
+  const roomBackgroundPicker = useBackgroundSurfaceController('jam')
   const [displayName, setDisplayName] = createSignal('')
   const [joinRoomId, setJoinRoomId] = createSignal('')
   const [showInvite, setShowInvite] = createSignal(false)
@@ -874,6 +877,17 @@ export const JamPanel: Component = () => {
                 </button>
 
                 <div class={panelStyles.roomMenuItems}>
+                  <Show when={jamIsHost()}>
+                    <PremiumBackgroundPicker
+                      controller={roomBackgroundPicker}
+                      label="Room stage"
+                      iconOnly
+                      selectedId={jamSelectedBackgroundId}
+                      onSelect={(option) => selectJamRoomBackground(option.id)}
+                      busy={jamBackgroundChanging}
+                      error={jamBackgroundError}
+                    />
+                  </Show>
                   {/* Live pitch monitor — phone only.
                       On a desktop it sits with the other view controls in
                       the transport row, but on a phone that row wraps and

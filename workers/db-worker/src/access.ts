@@ -23,10 +23,10 @@
 //   ACCESS_AUD          the Access application's Audience (AUD) tag
 //   ACCESS_ALLOWED_EMAILS  optional extra comma-separated allowlist
 //
-// With both of the first two set, Access becomes REQUIRED for admin
-// routes and the shared key alone stops being sufficient. With either
-// missing — local dev, PR previews — the key remains the only gate, so
-// nothing about the dev loop changes.
+// With both of the first two set, a verified Access identity is accepted for
+// admin routes. The shared key remains a staged fallback until ACCESS_STRICT=1
+// is also configured; with either Access setting missing — local dev, PR
+// previews — the key remains the only gate, so the dev loop does not change.
 
 import type { Env } from './auth'
 
@@ -34,6 +34,11 @@ export interface AccessIdentity {
   /** Sign-in email, or a service token's common name. */
   subject: string
   kind: 'user' | 'service'
+}
+
+export interface AdminResolution {
+  accessIdentity: AccessIdentity | null
+  authorized: boolean
 }
 
 /** RS256 is the only algorithm Access issues, and the only one accepted.
@@ -57,9 +62,7 @@ let jwksCache: CachedJwks | null = null
 
 /** True when this environment is behind Access at all. */
 export function accessConfigured(env: Env): boolean {
-  return (
-    (env.ACCESS_TEAM_DOMAIN ?? '') !== '' && (env.ACCESS_AUD ?? '') !== ''
-  )
+  return (env.ACCESS_TEAM_DOMAIN ?? '') !== '' && (env.ACCESS_AUD ?? '') !== ''
 }
 
 function teamOrigin(env: Env): string {
@@ -79,8 +82,9 @@ function base64UrlToBytes(input: string): Uint8Array {
 
 function decodeJson(segment: string): Record<string, unknown> | null {
   try {
-    return JSON.parse(new TextDecoder().decode(base64UrlToBytes(segment))) as
-      | Record<string, unknown>
+    return JSON.parse(
+      new TextDecoder().decode(base64UrlToBytes(segment)),
+    ) as Record<string, unknown>
   } catch {
     return null
   }
@@ -166,7 +170,11 @@ export async function verifyAccessJwt(
 
   const parts = token.split('.')
   if (parts.length !== 3) return null
-  const [rawHeader, rawPayload, rawSignature] = parts as [string, string, string]
+  const [rawHeader, rawPayload, rawSignature] = parts as [
+    string,
+    string,
+    string,
+  ]
 
   const header = decodeJson(rawHeader)
   if (header === null || header.alg !== ALLOWED_ALG) return null
@@ -203,7 +211,11 @@ export async function verifyAccessJwt(
   // Audience — the one check that ties a valid Cloudflare token to THIS
   // application. Without it any token from the same team is accepted.
   const aud = payload.aud
-  const audList = Array.isArray(aud) ? aud : typeof aud === 'string' ? [aud] : []
+  const audList = Array.isArray(aud)
+    ? aud
+    : typeof aud === 'string'
+      ? [aud]
+      : []
   if (!audList.includes(env.ACCESS_AUD ?? '')) return null
 
   if (payload.iss !== teamOrigin(env)) return null
@@ -256,14 +268,27 @@ export async function verifyAccessJwt(
  * Where Access is not configured at all (local wrangler, PR previews),
  * the key is the only gate and nothing about the dev loop changes.
  */
+export async function resolveAdminWithIdentity(
+  request: Request,
+  env: Env,
+  keyMatches: boolean,
+): Promise<AdminResolution> {
+  if (accessConfigured(env)) {
+    const accessIdentity = await verifyAccessJwt(request, env)
+    if (accessIdentity !== null) {
+      return { accessIdentity, authorized: true }
+    }
+    if ((env.ACCESS_STRICT ?? '') === '1') {
+      return { accessIdentity: null, authorized: false }
+    }
+  }
+  return { accessIdentity: null, authorized: keyMatches }
+}
+
 export async function resolveAdmin(
   request: Request,
   env: Env,
   keyMatches: boolean,
 ): Promise<boolean> {
-  if (accessConfigured(env)) {
-    if ((await verifyAccessJwt(request, env)) !== null) return true
-    if ((env.ACCESS_STRICT ?? '') === '1') return false
-  }
-  return keyMatches
+  return (await resolveAdminWithIdentity(request, env, keyMatches)).authorized
 }

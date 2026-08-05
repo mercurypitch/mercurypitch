@@ -159,6 +159,24 @@ export const X: Component = () => (
   </svg>
 )
 
+// Lock — protected supporter content
+export const Lock: Component<{ size?: number }> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="5" y="10" width="14" height="10" rx="2" />
+    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+  </svg>
+)
+
 // Download Icon
 export const Download: Component = () => (
   <svg

@@ -354,7 +354,14 @@ describe('parseHash', () => {
       type: 'admin',
       section: 'exercises',
     })
-    for (const section of ['exercises', 'ascent', 'weekly', 'achievements']) {
+    for (const section of [
+      'exercises',
+      'ascent',
+      'weekly',
+      'achievements',
+      'demo-song',
+      'premium-perks',
+    ]) {
       expect(parseHash(`#/admin/${section}`)).toEqual({
         type: 'admin',
         section,

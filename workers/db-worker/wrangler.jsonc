@@ -15,7 +15,7 @@
     "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
     // Browser-origin allowlist (see Env.ALLOWED_ORIGINS). Local `wrangler
     // dev` (pnpm dev:db, no --env) accepts only localhost origins.
-    "ALLOWED_ORIGINS": "localhost"
+    "ALLOWED_ORIGINS": "localhost",
   },
   "d1_databases": [
     {
@@ -25,7 +25,7 @@
       "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949",
       // Tracked schema history. `wrangler d1 migrations apply` records applied
       // files in d1_migrations, so each runs exactly once per database.
-      "migrations_dir": "migrations"
+      "migrations_dir": "migrations",
     },
     {
       // Supporter-perk grants. ONE database shared by dev AND prod on
@@ -34,16 +34,31 @@
       "binding": "PERKS_DB",
       "database_name": "mercurypitch-perks",
       "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
-      "migrations_dir": "migrations-perks"
-    }
+      "migrations_dir": "migrations-perks",
+    },
   ],
   // Create this permanent bucket before deployment. Do not attach the UVR
   // input/output lifecycle rules: published exercise playback is immutable.
   "r2_buckets": [
     {
       "binding": "GUIDED_MEDIA_BUCKET",
-      "bucket_name": "mercurypitch-guided-media"
-    }
+      "bucket_name": "mercurypitch-guided-media",
+    },
+    {
+      // Private premium originals and variants. No public domain and no UVR
+      // expiry rules: published revision keys are immutable. The top-level
+      // config mirrors prod for local/default config resolution; supported
+      // deployments still use the explicit `--env dev|prod` scripts below.
+      "binding": "PREMIUM_BACKGROUNDS_BUCKET",
+      "bucket_name": "mercurypitch-premium-backgrounds-prod",
+    },
+  ],
+  "services": [
+    {
+      "binding": "JAM_WORKER",
+      "service": "mercury-pitch-jam",
+      "entrypoint": "JamHostVerifier",
+    },
   ],
   "observability": {
     "enabled": false,
@@ -51,8 +66,8 @@
       "enabled": true,
       "head_sampling_rate": 1,
       "persist": true,
-      "invocation_logs": true
-    }
+      "invocation_logs": true,
+    },
   },
   // Custom subdomain per env (api.mercurypitch.com / api-dev.mercurypitch.com).
   // NOTE: deploying with custom_domain routes DISABLES the workers.dev URLs —
@@ -89,7 +104,7 @@
         // Cloudflare login. Requests arriving here carry
         // `Cf-Access-Jwt-Assertion`, which `resolveAdmin` already accepts —
         // no code branches on the hostname.
-        { "pattern": "studio-dev.mercurypitch.com", "custom_domain": true }
+        { "pattern": "studio-dev.mercurypitch.com", "custom_domain": true },
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
@@ -102,7 +117,7 @@
         // (<version>-mercurypitch-preview.<subdomain>.workers.dev), whose
         // hostnames aren't known ahead of time — broad, but scoped to dev
         // (test data, rate-limited). Prod (below) never lists it.
-        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev"
+        "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev",
         // ACCESS_TEAM_DOMAIN / ACCESS_AUD / ACCESS_ALLOWED_EMAILS /
         // ACCESS_STRICT are NOT here: this repo is public and the first two
         // identify the account. Set them per environment with
@@ -125,22 +140,33 @@
           "database_name": "mercurypitch-db-dev",
           // Filled in by scripts/init-cloudflare-db.sh (run: pnpm db:init:dev)
           "database_id": "e00340be-93fd-44ee-b22e-cb1124a1aadc",
-          "migrations_dir": "migrations"
+          "migrations_dir": "migrations",
         },
         {
           // Shared with prod — see the top-level PERKS_DB note.
           "binding": "PERKS_DB",
           "database_name": "mercurypitch-perks",
           "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
-          "migrations_dir": "migrations-perks"
-        }
+          "migrations_dir": "migrations-perks",
+        },
       ],
       "r2_buckets": [
         {
           "binding": "GUIDED_MEDIA_BUCKET",
-          "bucket_name": "mercurypitch-guided-media-dev"
-        }
-      ]
+          "bucket_name": "mercurypitch-guided-media-dev",
+        },
+        {
+          "binding": "PREMIUM_BACKGROUNDS_BUCKET",
+          "bucket_name": "mercurypitch-premium-backgrounds-dev",
+        },
+      ],
+      "services": [
+        {
+          "binding": "JAM_WORKER",
+          "service": "mercury-pitch-jam-dev",
+          "entrypoint": "JamHostVerifier",
+        },
+      ],
     },
     "prod": {
       "name": "mercury-pitch-db",
@@ -154,7 +180,7 @@
         // so `ACCESS_AUD` differs per env and a dev token cannot be
         // replayed here. `ACCESS_TEAM_DOMAIN` is shared (one Zero Trust
         // org).
-        { "pattern": "studio.mercurypitch.com", "custom_domain": true }
+        { "pattern": "studio.mercurypitch.com", "custom_domain": true },
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
@@ -164,7 +190,7 @@
         // let tour walks/previews create thousands of junk anonymous
         // users). Requests without an Origin header still pass (Stripe
         // webhooks, OAuth callback navigation, admin curl/seed scripts).
-        "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com"
+        "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com",
         // ACCESS_* are secrets, not vars — see the dev block above, which
         // also documents the staging. `workers_dev: false` means there is
         // no *.workers.dev hostname for this Worker, so the route list
@@ -183,22 +209,33 @@
           "binding": "DB",
           "database_name": "mercurypitch-db",
           "database_id": "35d9bae5-4818-4acf-8bd1-4644b6b24949",
-          "migrations_dir": "migrations"
+          "migrations_dir": "migrations",
         },
         {
           // Shared with dev — see the top-level PERKS_DB note.
           "binding": "PERKS_DB",
           "database_name": "mercurypitch-perks",
           "database_id": "09a3f6ce-b16f-47e8-b232-78420bc823cd",
-          "migrations_dir": "migrations-perks"
-        }
+          "migrations_dir": "migrations-perks",
+        },
       ],
       "r2_buckets": [
         {
           "binding": "GUIDED_MEDIA_BUCKET",
-          "bucket_name": "mercurypitch-guided-media-prod"
-        }
-      ]
-    }
-  }
+          "bucket_name": "mercurypitch-guided-media-prod",
+        },
+        {
+          "binding": "PREMIUM_BACKGROUNDS_BUCKET",
+          "bucket_name": "mercurypitch-premium-backgrounds-prod",
+        },
+      ],
+      "services": [
+        {
+          "binding": "JAM_WORKER",
+          "service": "mercury-pitch-jam",
+          "entrypoint": "JamHostVerifier",
+        },
+      ],
+    },
+  },
 }

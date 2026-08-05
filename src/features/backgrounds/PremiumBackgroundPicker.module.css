@@ -1,0 +1,394 @@
+.root {
+  display: inline-flex;
+  flex: none;
+}
+
+.trigger {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  padding: 0.42rem 0.68rem;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary, #0d1117) 74%, transparent);
+  color: var(--fg-secondary, #c7b9da);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.trigger:hover,
+.triggerOpen {
+  border-color: color-mix(in srgb, #d4b7ff 58%, transparent);
+  background: color-mix(in srgb, #b79ae0 18%, var(--bg-primary, #0d1117));
+  color: var(--fg-primary, #f4ecff);
+}
+
+.triggerIconOnly {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.trigger:focus-visible,
+.close:focus-visible,
+.card:focus-visible,
+.supporterFoot a:focus-visible {
+  outline: 2px solid #e0c9ff;
+  outline-offset: 3px;
+}
+
+.panel {
+  position: fixed;
+  z-index: 9400;
+  width: min(690px, calc(100vw - 24px));
+  max-height: min(760px, calc(100dvh - 24px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  border: 1px solid rgba(213, 186, 255, 0.22);
+  border-radius: 16px;
+  background: rgba(15, 8, 25, 0.98);
+  color: #f4ecff;
+  box-shadow: 0 18px 48px rgba(3, 1, 8, 0.52);
+}
+
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.panelHead h2 {
+  margin: 0 0 0.26rem;
+  color: #fffaff;
+  font-size: 1.05rem;
+  font-weight: 720;
+  letter-spacing: -0.015em;
+}
+
+.panelHead p {
+  max-width: 55ch;
+  margin: 0;
+  color: #b9accb;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.close {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #cdbfdd;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.card {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 0.72rem;
+  align-items: stretch;
+  padding: 0.42rem;
+  border: 1px solid rgba(207, 181, 246, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.card:hover:not(.cardLocked) {
+  border-color: rgba(223, 198, 255, 0.42);
+  background: rgba(205, 165, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.cardSelected {
+  border-color: rgba(255, 214, 160, 0.64);
+  background: rgba(255, 214, 160, 0.075);
+}
+
+.cardLocked {
+  color: #b4a7c3;
+  cursor: default;
+}
+
+.artwork {
+  position: relative;
+  display: block;
+  min-height: 78px;
+  overflow: hidden;
+  border-radius: 10px;
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(255, 255, 255, 0.13),
+      transparent 22%
+    ),
+    linear-gradient(145deg, #3c254f, #171022 65%);
+}
+
+.artwork::after {
+  position: absolute;
+  inset: auto 20% -26% 20%;
+  height: 70%;
+  border-radius: 50% 50% 12% 12%;
+  background: rgba(8, 4, 14, 0.52);
+  content: '';
+}
+
+.artwork img {
+  position: absolute;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--mp-stage-position, 50% 50%);
+}
+
+.artworkLocked {
+  filter: saturate(0.7);
+}
+
+.artworkFailed {
+  opacity: 0.72;
+}
+
+.edition_golden-hour {
+  background:
+    radial-gradient(
+      circle at 54% 30%,
+      rgba(255, 220, 142, 0.5),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #6e4820, #1e1320 70%);
+}
+
+.edition_aurora {
+  background:
+    radial-gradient(
+      circle at 68% 28%,
+      rgba(112, 255, 224, 0.38),
+      transparent 25%
+    ),
+    linear-gradient(145deg, #153a46, #211333 72%);
+}
+
+.edition_neon-velvet {
+  background:
+    radial-gradient(
+      circle at 32% 25%,
+      rgba(255, 91, 206, 0.42),
+      transparent 22%
+    ),
+    linear-gradient(145deg, #4c174d, #15112e 72%);
+}
+
+.edition_midnight-rain {
+  background:
+    radial-gradient(
+      circle at 70% 24%,
+      rgba(111, 170, 255, 0.38),
+      transparent 20%
+    ),
+    linear-gradient(145deg, #15304c, #11131f 72%);
+}
+
+.edition_mercury-archive {
+  background:
+    radial-gradient(
+      circle at 48% 28%,
+      rgba(211, 199, 255, 0.32),
+      transparent 23%
+    ),
+    linear-gradient(145deg, #3e3657, #16131d 72%);
+}
+
+.lockMark {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(10, 6, 17, 0.78);
+  color: #e1d4f0;
+  transform: translate(-50%, -50%);
+}
+
+.cardCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 0.2rem 0.24rem 0.16rem 0;
+}
+
+.cardTitleRow {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cardTitleRow strong {
+  overflow: hidden;
+  color: #fffaff;
+  font-size: 0.79rem;
+  font-weight: 680;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectedMark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.2rem;
+  color: #ffdfa9;
+  font-size: 0.61rem;
+  font-weight: 700;
+}
+
+.cardDescription {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 0.3rem;
+  color: #b9accb;
+  font-size: 0.68rem;
+  line-height: 1.38;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.accessLabel {
+  margin-top: auto;
+  padding-top: 0.38rem;
+  color: #d9c8ed;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.status {
+  margin: 0.68rem 0 0;
+  color: #c9b9dc;
+  font-size: 0.72rem;
+}
+
+.supporterFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+  padding-top: 0.78rem;
+  border-top: 1px solid rgba(213, 186, 255, 0.14);
+  color: #a99abb;
+  font-size: 0.7rem;
+}
+
+.supporterFoot a {
+  color: #efd8ff;
+  font-weight: 680;
+  text-decoration: none;
+}
+
+.supporterFoot a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 620px) {
+  .trigger {
+    min-height: 44px;
+  }
+
+  .triggerIconOnly {
+    width: 44px;
+    height: 44px;
+  }
+
+  .panel {
+    top: auto !important;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px !important;
+    width: auto;
+    max-height: min(78dvh, 680px);
+    padding: 0.88rem;
+  }
+
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    grid-template-columns: 108px minmax(0, 1fr);
+  }
+
+  .supporterFoot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .card {
+    transition: none;
+  }
+}

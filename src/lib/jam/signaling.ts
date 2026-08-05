@@ -190,6 +190,10 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
           )
         }
         callbacks.onHostStatus?.(msg.isHost)
+        callbacks.onHostPeerChanged?.(msg.hostPeerId)
+        if (msg.background !== undefined) {
+          callbacks.onBackgroundChanged?.(msg.background)
+        }
         console.info(
           '[jam:signaling] room created',
           msg.roomId,
@@ -229,6 +233,10 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
           )
         }
         callbacks.onHostStatus?.(msg.isHost)
+        callbacks.onHostPeerChanged?.(msg.hostPeerId)
+        if (msg.background !== undefined) {
+          callbacks.onBackgroundChanged?.(msg.background)
+        }
         console.info(
           '[jam:signaling] room joined, peer',
           msg.peerId,
@@ -281,6 +289,18 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
         callbacks.onIceCandidate?.(msg.from, msg.candidate)
         break
 
+      case 'background-changed':
+        callbacks.onHostPeerChanged?.(msg.hostPeerId)
+        callbacks.onBackgroundChanged?.({
+          backgroundId: msg.backgroundId,
+          revision: msg.revision,
+        })
+        break
+
+      case 'host-changed':
+        callbacks.onHostPeerChanged?.(msg.hostPeerId)
+        break
+
       case 'room-closed':
         console.info('[jam:signaling] room closed')
         callbacks.onRoomClosed()
@@ -314,6 +334,10 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
       from: currentPeerId ?? '',
       candidate,
     })
+  }
+
+  function setBackground(backgroundId: string): void {
+    sendSignal({ type: 'set-background', backgroundId })
   }
 
   function leaveRoom(): void {
@@ -370,6 +394,7 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
     sendOffer,
     sendAnswer,
     sendIceCandidate,
+    setBackground,
     getRoomId,
     getPeerId,
     get connecting() {

@@ -5,6 +5,7 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
@@ -16,6 +17,7 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
@@ -170,6 +172,8 @@ const CircularProgress = (props: { pct: number; size?: number }) => {
 // ── Component ──────────────────────────────────────────────────
 
 export const StemMixer: Component<StemMixerProps> = (props) => {
+  const background = useBackgroundSurfaceController('karaoke')
+
   // ── State ────────────────────────────────────────────────────
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
   const [anySoloed, setAnySoloed] = createSignal(false)
@@ -1910,6 +1914,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     >
       <div
         class="stem-mixer"
+        style={background.resolvedStyle()}
         classList={{
           'stem-mixer--focus': karaokeFocus(),
           'stem-mixer--mapping': lrcGenMode(),
@@ -1994,6 +1999,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               style={{ display: 'flex', gap: '0.5rem' }}
               data-tour="mixer.header"
             >
+              <PremiumBackgroundPicker controller={background} label="Stage" />
               <Show when={props.onOfferTour}>
                 <button
                   class="sm-btn sm-btn-secondary"
@@ -2662,7 +2668,10 @@ export const StemMixerStyles: string = `
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-secondary, #161b22);
+  background:
+    linear-gradient(rgba(13, 8, 22, 0.84), rgba(13, 8, 22, 0.9)),
+    var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
+    var(--bg-secondary, #161b22);
   overflow: hidden;
 }
 

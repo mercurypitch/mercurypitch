@@ -8,6 +8,7 @@
 // one allowlisted object key.
 
 import { describe, expect, it } from 'vitest'
+import type { BackgroundPerkId } from '../../../src/lib/backgrounds/background-catalog'
 import { BACKGROUND_PERK_IDS, getBackgroundDefinition, } from '../../../src/lib/backgrounds/background-catalog'
 import type { AuthUser, Env } from './auth'
 import { BACKGROUND_CAPABILITY_TTL_SECONDS, mintBackgroundCapability, } from './background-capabilities'
@@ -19,6 +20,7 @@ const ALICE: AuthUser = { userId: 'alice', provider: 'password' }
 const CAPABILITY_SECRET = 'test-only-capability-secret-with-more-than-32-bytes'
 const OWNER_TOKEN = '00000000-0000-4000-8000-000000000001'
 const ROOM_ID = 'ABCDEFGH'
+const workerCrypto = Reflect.get(globalThis, 'crypto') as Crypto
 
 class MainStatement {
   private values: unknown[] = []
@@ -44,19 +46,198 @@ class MainStatement {
         windowStart: Number(this.values[2]),
       } as T
     }
-    if (this.sql.startsWith('SELECT expiresAt FROM entitlements')) {
+    if (
+      this.sql.includes('SELECT expiresAt FROM entitlements') ||
+      (this.sql.startsWith('SELECT expiresAt') &&
+        this.sql.includes('FROM entitlements'))
+    ) {
       const userId = String(this.values[0])
       const expiresAt = this.db.supporterExpiry.get(userId)
       return (expiresAt === undefined ? null : { expiresAt }) as T | null
     }
-    if (this.sql === 'SELECT email, emailVerified FROM users WHERE id = ?') {
+    if (
+      this.sql === 'SELECT email, emailVerified FROM users WHERE id = ?' ||
+      this.sql.startsWith(
+        'SELECT email, emailVerified FROM users WHERE id = ?1',
+      )
+    ) {
       return (this.db.users.get(String(this.values[0])) ?? null) as T | null
+    }
+    if (
+      this.sql.startsWith(
+        'SELECT a.id, a.surface, a.title, a.description, a.activeRevisionId, r.version FROM premiumBackgroundAssets',
+      )
+    ) {
+      const id = String(this.values[0])
+      const requestedVersion = this.values[1]
+      const asset = this.db.assets.get(id)
+      if (
+        asset === undefined ||
+        asset.status !== 'active' ||
+        (requestedVersion !== null && requestedVersion !== asset.version)
+      ) {
+        return null
+      }
+      return {
+        activeRevisionId: asset.revisionId,
+        description: `${asset.id} description`,
+        id: asset.id,
+        surface: asset.surface,
+        title: asset.id,
+        version: asset.version,
+      } as T
+    }
+    if (
+      this.sql.startsWith(
+        'SELECT revisionId, variant, objectKey, width, height, byteSize, sha256 FROM premiumBackgroundVariants',
+      )
+    ) {
+      const revisionId = String(this.values[0])
+      const variant = String(this.values[1])
+      const asset = [...this.db.assets.values()].find(
+        (candidate) => candidate.revisionId === revisionId,
+      )
+      if (asset === undefined) return null
+      const stored = asset.variants.get(variant)
+      return (stored ?? null) as T | null
+    }
+    if (
+      this.sql.startsWith(
+        'SELECT id, backgroundId, revisionId, version, roomId, issuerUserId, issuedAt, expiresAt, revokedAt FROM premiumBackgroundCapabilities',
+      )
+    ) {
+      return (this.db.capabilities.get(String(this.values[0])) ??
+        null) as T | null
     }
     throw new Error(`FakeMainDb: unhandled first() — ${this.sql}`)
   }
+
+  async all<T>(): Promise<{ results: T[] }> {
+    this.db.reads += 1
+    if (
+      this.sql.startsWith(
+        'SELECT a.id, a.surface, a.title, a.description, a.activeRevisionId, r.version FROM premiumBackgroundAssets',
+      )
+    ) {
+      return {
+        results: [...this.db.assets.values()]
+          .filter((asset) => asset.status === 'active')
+          .map((asset) => ({
+            activeRevisionId: asset.revisionId,
+            description: `${asset.id} description`,
+            id: asset.id,
+            surface: asset.surface,
+            title: asset.id,
+            version: asset.version,
+          })) as T[],
+      }
+    }
+    if (
+      this.sql.startsWith(
+        'SELECT a.id AS backgroundId, a.activeRevisionId AS revisionId, r.version, v.variant, v.objectKey',
+      )
+    ) {
+      return {
+        results: [...this.db.assets.values()]
+          .filter((asset) => asset.status === 'active')
+          .flatMap((asset) =>
+            [...asset.variants.values()].map((variant) => ({
+              ...variant,
+              backgroundId: asset.id,
+              version: asset.version,
+            })),
+          ) as T[],
+      }
+    }
+    if (this.sql.includes("g.slug = 'active-supporters'")) {
+      return {
+        results: BACKGROUND_PERK_IDS.map((backgroundId) => ({
+          backgroundId,
+        })) as T[],
+      }
+    }
+    if (this.sql.includes('FROM premiumSupporterGroupMembers m')) {
+      const grants = this.db.manualGrants.get(String(this.values[0])) ?? []
+      return {
+        results: grants.map((backgroundId) => ({ backgroundId })) as T[],
+      }
+    }
+    throw new Error(`FakeMainDb: unhandled all() — ${this.sql}`)
+  }
+
+  async run(): Promise<{ meta: { changes: number }; results: unknown[] }> {
+    this.db.writes += 1
+    if (this.sql.startsWith('DELETE FROM premiumBackgroundCapabilities')) {
+      const cutoff = String(this.values[0])
+      let changes = 0
+      for (const [id, capability] of this.db.capabilities) {
+        if (capability.expiresAt <= cutoff && changes < 200) {
+          this.db.capabilities.delete(id)
+          changes += 1
+        }
+      }
+      return { meta: { changes }, results: [] }
+    }
+    if (this.sql.startsWith('INSERT INTO premiumBackgroundCapabilities')) {
+      this.db.capabilities.set(String(this.values[0]), {
+        backgroundId: String(this.values[1]),
+        expiresAt: String(this.values[7]),
+        id: String(this.values[0]),
+        issuedAt: String(this.values[6]),
+        issuerUserId: String(this.values[5]),
+        revisionId: String(this.values[2]),
+        revokedAt: null,
+        roomId: String(this.values[4]),
+        version: Number(this.values[3]),
+      })
+      return { meta: { changes: 1 }, results: [] }
+    }
+    if (this.sql.startsWith('INSERT INTO premiumPerkAudit')) {
+      return { meta: { changes: 1 }, results: [] }
+    }
+    throw new Error(`FakeMainDb: unhandled run() — ${this.sql}`)
+  }
+
+  get normalizedSql(): string {
+    return this.sql
+  }
+}
+
+interface FakeVariant {
+  byteSize: number
+  height: number
+  objectKey: string
+  revisionId: string
+  sha256: string
+  variant: string
+  width: number
+}
+
+interface FakeAsset {
+  id: string
+  revisionId: string
+  status: 'active' | 'retired'
+  surface: 'jam' | 'karaoke'
+  variants: Map<string, FakeVariant>
+  version: number
+}
+
+interface FakeCapabilityRow {
+  backgroundId: string
+  expiresAt: string
+  id: string
+  issuedAt: string
+  issuerUserId: string
+  revisionId: string
+  revokedAt: string | null
+  roomId: string
+  version: number
 }
 
 class FakeMainDb {
+  readonly assets = new Map<string, FakeAsset>()
+  readonly capabilities = new Map<string, FakeCapabilityRow>()
+  readonly manualGrants = new Map<string, string[]>()
   readonly rateLimitCounts = new Map<string, number>()
   readonly supporterExpiry = new Map<string, string | null>()
   readonly users = new Map<
@@ -64,9 +245,25 @@ class FakeMainDb {
     { email: string | null; emailVerified: number }
   >()
   reads = 0
+  writes = 0
 
   prepare(sql: string): MainStatement {
     return new MainStatement(this, sql.replace(/\s+/g, ' ').trim())
+  }
+
+  async batch<T>(
+    statements: MainStatement[],
+  ): Promise<Array<{ results: T[] }>> {
+    const results: Array<{ results: T[] }> = []
+    for (const statement of statements) {
+      if (statement.normalizedSql.startsWith('SELECT')) {
+        results.push(await statement.all<T>())
+      } else {
+        await statement.run()
+        results.push({ results: [] })
+      }
+    }
+    return results
   }
 }
 
@@ -105,9 +302,28 @@ class FakePerksDb {
   }
 }
 
+class FakeObjectMap extends Map<string, Uint8Array> {
+  constructor(private readonly main: FakeMainDb) {
+    super()
+  }
+
+  override set(key: string, value: Uint8Array): this {
+    for (const asset of this.main.assets.values()) {
+      for (const variant of asset.variants.values()) {
+        if (variant.objectKey === key) variant.byteSize = value.byteLength
+      }
+    }
+    return super.set(key, value)
+  }
+}
+
 class FakeBucket {
   readonly reads: string[] = []
-  readonly objects = new Map<string, Uint8Array>()
+  readonly objects: FakeObjectMap
+
+  constructor(main: FakeMainDb) {
+    this.objects = new FakeObjectMap(main)
+  }
 
   async get(key: string): Promise<R2ObjectBody | null> {
     this.reads.push(key)
@@ -148,7 +364,31 @@ interface Fixture {
 function fixture(): Fixture {
   const main = new FakeMainDb()
   const perks = new FakePerksDb()
-  const bucket = new FakeBucket()
+  for (const id of BACKGROUND_PERK_IDS) {
+    const definition = getBackgroundDefinition(id)!
+    const revisionId = `revision-${id}`
+    const variants = new Map<string, FakeVariant>()
+    for (const variant of ['landscape-2k', 'landscape-4k', 'portrait-2k']) {
+      variants.set(variant, {
+        byteSize: 1,
+        height: variant === 'portrait-2k' ? 2000 : 1125,
+        objectKey: `backgrounds/v1/${definition.surface}/${id}/${variant}.webp`,
+        revisionId,
+        sha256: 'test-sha256',
+        variant,
+        width: variant === 'portrait-2k' ? 1125 : 2000,
+      })
+    }
+    main.assets.set(id, {
+      id,
+      revisionId,
+      status: 'active',
+      surface: definition.surface,
+      variants,
+      version: 1,
+    })
+  }
+  const bucket = new FakeBucket(main)
   const jam = new FakeJamWorker()
   main.users.set('alice', {
     email: 'alice@example.test',
@@ -167,6 +407,40 @@ function fixture(): Fixture {
     main,
     perks,
   }
+}
+
+async function issueCapability(
+  f: Fixture,
+  backgroundId: BackgroundPerkId = 'golden-stage',
+  roomId = ROOM_ID,
+  nowMs = Date.now(),
+) {
+  const asset = f.main.assets.get(backgroundId)
+  if (asset === undefined) throw new Error('Missing fake background asset')
+  const capabilityId = workerCrypto.randomUUID()
+  const capability = await mintBackgroundCapability(
+    {
+      backgroundId,
+      capabilityId,
+      roomId,
+      version: asset.version,
+    },
+    CAPABILITY_SECRET,
+    nowMs,
+  )
+  f.main.capabilities.set(capabilityId, {
+    backgroundId,
+    expiresAt: capability.expiresAt,
+    id: capabilityId,
+    issuedAt: new Date(Math.floor(nowMs / 1000) * 1000).toISOString(),
+    issuerUserId: ALICE.userId,
+    revisionId: asset.revisionId,
+    revokedAt: null,
+    roomId,
+    version: asset.version,
+  })
+  f.main.supporterExpiry.set(ALICE.userId, '2099-01-01T00:00:00.000Z')
+  return capability
 }
 
 async function call(
@@ -245,6 +519,28 @@ describe('premium background catalog boundary', () => {
       expect(isJamPremiumBackgroundId(id)).toBe(definition?.surface === 'jam')
     }
   })
+
+  it('returns only shipped public metadata and never exposes private R2 keys', async () => {
+    const f = fixture()
+    f.main.assets.get('aurora-stage')!.status = 'retired'
+    f.main.assets.get('golden-stage')!.variants.delete('portrait-2k')
+
+    const response = await call(f.env, '/api/premium-backgrounds/catalog', null)
+
+    expect(response.status).toBe(200)
+    const result = (await response.json()) as {
+      assets: Array<Record<string, unknown>>
+    }
+    expect(result.assets).toHaveLength(BACKGROUND_PERK_IDS.length - 2)
+    expect(result.assets.some((asset) => asset.id === 'aurora-stage')).toBe(
+      false,
+    )
+    expect(result.assets.some((asset) => asset.id === 'golden-stage')).toBe(
+      false,
+    )
+    expect(JSON.stringify(result)).not.toContain('objectKey')
+    expect(JSON.stringify(result)).not.toContain('backgrounds/v1/')
+  })
 })
 
 describe('GET /api/premium-backgrounds/:id', () => {
@@ -289,11 +585,9 @@ describe('GET /api/premium-backgrounds/:id', () => {
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('private-webp')
     expect(f.bucket.reads).toEqual([key])
-    expect(f.perks.reads).toBe(0)
+    expect(f.perks.reads).toBe(1)
     expect(response.headers.get('Content-Type')).toBe('image/webp')
-    expect(response.headers.get('Cache-Control')).toBe(
-      'private, max-age=300, must-revalidate',
-    )
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
     expect(response.headers.get('Vary')).toBe(
       'Authorization, Origin, X-Jam-Background-Capability, X-Jam-Room-Id',
     )
@@ -314,6 +608,23 @@ describe('GET /api/premium-backgrounds/:id', () => {
 
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('archive-webp')
+    expect(f.bucket.reads).toEqual([key])
+  })
+
+  it('serves one background through an active verified-email group grant', async () => {
+    const f = fixture()
+    f.main.manualGrants.set('alice@example.test', ['mercury-archive'])
+    const key = 'backgrounds/v1/jam/mercury-archive/landscape-2k.webp'
+    f.bucket.objects.set(key, new TextEncoder().encode('group-webp'))
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/mercury-archive',
+      ALICE,
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('group-webp')
     expect(f.bucket.reads).toEqual([key])
   })
 
@@ -394,6 +705,29 @@ describe('GET /api/premium-backgrounds/:id', () => {
     expect(f.bucket.reads).toEqual([])
   })
 
+  it('rejects retired and stale revisions before reading R2', async () => {
+    const f = fixture()
+    f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    f.main.assets.get('golden-stage')!.status = 'retired'
+
+    const retired = await call(
+      f.env,
+      '/api/premium-backgrounds/golden-stage?version=1',
+      ALICE,
+    )
+    f.main.assets.get('golden-stage')!.status = 'active'
+    f.main.assets.get('golden-stage')!.version = 2
+    const stale = await call(
+      f.env,
+      '/api/premium-backgrounds/golden-stage?version=1',
+      ALICE,
+    )
+
+    expect(retired.status).toBe(404)
+    expect(stale.status).toBe(404)
+    expect(f.bucket.reads).toEqual([])
+  })
+
   it('rejects path and variant traversal without constructing an R2 key', async () => {
     const f = fixture()
     const pathResponse = await call(
@@ -423,7 +757,7 @@ describe('GET /api/premium-backgrounds/:id', () => {
     )
 
     expect(response.status).toBe(405)
-    expect(response.headers.get('Allow')).toBe('GET')
+    expect(response.headers.get('Allow')).toBe('GET, HEAD')
     expect(f.main.reads).toBe(0)
     expect(f.bucket.reads).toEqual([])
   })
@@ -433,6 +767,17 @@ describe('Jam Room premium background capabilities', () => {
   it('mints a short-lived capability only after entitlement and Jam host proof', async () => {
     const f = fixture()
     f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    f.main.capabilities.set('expired-record', {
+      backgroundId: 'golden-stage',
+      expiresAt: '2000-01-01T00:05:00.000Z',
+      id: 'expired-record',
+      issuedAt: '2000-01-01T00:00:00.000Z',
+      issuerUserId: ALICE.userId,
+      revisionId: 'revision-golden-stage',
+      revokedAt: null,
+      roomId: ROOM_ID,
+      version: 1,
+    })
 
     const response = await call(
       f.env,
@@ -448,10 +793,12 @@ describe('Jam Room premium background capabilities', () => {
       expiresAt: string
       roomId: string
       token: string
+      version: number
     }
     expect(result.backgroundId).toBe('golden-stage')
     expect(result.roomId).toBe(ROOM_ID)
-    expect(result.token).toMatch(/^mpbg1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
+    expect(result.version).toBe(1)
+    expect(result.token).toMatch(/^mpbg2\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/)
     const ttl = Date.parse(result.expiresAt) - Date.now()
     expect(ttl).toBeGreaterThan((BACKGROUND_CAPABILITY_TTL_SECONDS - 2) * 1000)
     expect(ttl).toBeLessThanOrEqual(BACKGROUND_CAPABILITY_TTL_SECONDS * 1000)
@@ -461,6 +808,9 @@ describe('Jam Room premium background capabilities', () => {
         roomId: ROOM_ID,
       },
     ])
+    expect(f.main.capabilities.size).toBe(1)
+    expect(f.main.capabilities.has('expired-record')).toBe(false)
+    expect(f.main.writes).toBe(3)
   })
 
   it('rejects capability minting by a non-host', async () => {
@@ -481,7 +831,7 @@ describe('Jam Room premium background capabilities', () => {
     expect(f.jam.calls).toHaveLength(1)
   })
 
-  it('rejects and cancels an oversized chunked proof with no content length', async () => {
+  it('rejects an oversized chunked proof with no content length', async () => {
     const f = fixture()
     f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
     const payload = JSON.stringify({
@@ -497,7 +847,6 @@ describe('Jam Room premium background capabilities', () => {
     const response = await callRequest(f.env, streamed.request, ALICE)
 
     expect(response.status).toBe(400)
-    expect(streamed.cancelled()).toBe(true)
     expect(f.jam.calls).toEqual([])
   })
 
@@ -515,7 +864,6 @@ describe('Jam Room premium background capabilities', () => {
     const response = await callRequest(f.env, streamed.request, ALICE)
 
     expect(response.status).toBe(400)
-    expect(streamed.cancelled()).toBe(true)
     expect(f.jam.calls).toEqual([])
   })
 
@@ -580,11 +928,30 @@ describe('Jam Room premium background capabilities', () => {
     const f = fixture()
     const key = 'backgrounds/v1/jam/golden-stage/landscape-2k.webp'
     f.bucket.objects.set(key, new TextEncoder().encode('shared-room-webp'))
-    const capability = await mintBackgroundCapability(
-      'golden-stage',
-      ROOM_ID,
-      CAPABILITY_SECRET,
+    const capability = await issueCapability(f)
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/golden-stage?version=1',
+      null,
+      'GET',
+      {
+        headers: {
+          'X-Jam-Background-Capability': capability.token,
+          'X-Jam-Room-Id': ROOM_ID,
+        },
+      },
     )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('shared-room-webp')
+    expect(f.perks.reads).toBe(1)
+    expect(f.bucket.reads).toEqual([key])
+  })
+
+  it('requires a guest to request the exact capability version', async () => {
+    const f = fixture()
+    const capability = await issueCapability(f)
 
     const response = await call(
       f.env,
@@ -599,11 +966,54 @@ describe('Jam Room premium background capabilities', () => {
       },
     )
 
-    expect(response.status).toBe(200)
-    expect(await response.text()).toBe('shared-room-webp')
-    expect(f.main.reads).toBe(1)
-    expect(f.perks.reads).toBe(0)
-    expect(f.bucket.reads).toEqual([key])
+    expect(response.status).toBe(403)
+    expect(f.main.reads).toBe(0)
+    expect(f.bucket.reads).toEqual([])
+  })
+
+  it('rejects a revoked stored capability before reading R2', async () => {
+    const f = fixture()
+    const capability = await issueCapability(f)
+    const row = [...f.main.capabilities.values()][0]!
+    row.revokedAt = new Date().toISOString()
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/golden-stage?version=1',
+      null,
+      'GET',
+      {
+        headers: {
+          'X-Jam-Background-Capability': capability.token,
+          'X-Jam-Room-Id': ROOM_ID,
+        },
+      },
+    )
+
+    expect(response.status).toBe(403)
+    expect(f.bucket.reads).toEqual([])
+  })
+
+  it('rechecks the capability issuer access before every R2 read', async () => {
+    const f = fixture()
+    const capability = await issueCapability(f)
+    f.main.supporterExpiry.set(ALICE.userId, '2000-01-01T00:00:00.000Z')
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/golden-stage?version=1',
+      null,
+      'GET',
+      {
+        headers: {
+          'X-Jam-Background-Capability': capability.token,
+          'X-Jam-Room-Id': ROOM_ID,
+        },
+      },
+    )
+
+    expect(response.status).toBe(403)
+    expect(f.bucket.reads).toEqual([])
   })
 
   it('rate-limits authenticated background reads by user before R2', async () => {
@@ -644,11 +1054,7 @@ describe('Jam Room premium background capabilities', () => {
     const f = fixture()
     const key = 'backgrounds/v1/jam/golden-stage/landscape-2k.webp'
     f.bucket.objects.set(key, new TextEncoder().encode('shared-room-webp'))
-    const capability = await mintBackgroundCapability(
-      'golden-stage',
-      ROOM_ID,
-      CAPABILITY_SECRET,
-    )
+    const capability = await issueCapability(f)
     const headers = {
       'CF-Connecting-IP': '203.0.113.8',
       'X-Jam-Background-Capability': capability.token,
@@ -658,7 +1064,7 @@ describe('Jam Room premium background capabilities', () => {
     for (let attempt = 0; attempt < 120; attempt++) {
       const response = await call(
         f.env,
-        '/api/premium-backgrounds/golden-stage',
+        '/api/premium-backgrounds/golden-stage?version=1',
         null,
         'GET',
         { headers },
@@ -668,7 +1074,7 @@ describe('Jam Room premium background capabilities', () => {
 
     const limited = await call(
       f.env,
-      '/api/premium-backgrounds/golden-stage',
+      '/api/premium-backgrounds/golden-stage?version=1',
       null,
       'GET',
       { headers },
@@ -687,11 +1093,7 @@ describe('Jam Room premium background capabilities', () => {
     'rejects a capability scoped to %s before R2',
     async (_caseName, requestedId, requestedRoom, tamper) => {
       const f = fixture()
-      const capability = await mintBackgroundCapability(
-        'golden-stage',
-        ROOM_ID,
-        CAPABILITY_SECRET,
-      )
+      const capability = await issueCapability(f)
       const tokenParts = capability.token.split('.')
       if (tamper) {
         tokenParts[2] = `${tokenParts[2].startsWith('A') ? 'B' : 'A'}${tokenParts[2].slice(1)}`
@@ -700,7 +1102,7 @@ describe('Jam Room premium background capabilities', () => {
 
       const response = await call(
         f.env,
-        `/api/premium-backgrounds/${requestedId}`,
+        `/api/premium-backgrounds/${requestedId}?version=1`,
         null,
         'GET',
         {
@@ -718,16 +1120,16 @@ describe('Jam Room premium background capabilities', () => {
 
   it('rejects an expired room capability before R2', async () => {
     const f = fixture()
-    const capability = await mintBackgroundCapability(
+    const capability = await issueCapability(
+      f,
       'golden-stage',
       ROOM_ID,
-      CAPABILITY_SECRET,
       Date.now() - (BACKGROUND_CAPABILITY_TTL_SECONDS + 1) * 1000,
     )
 
     const response = await call(
       f.env,
-      '/api/premium-backgrounds/golden-stage',
+      '/api/premium-backgrounds/golden-stage?version=1',
       null,
       'GET',
       {

@@ -15,6 +15,13 @@ interface PeerInfo {
 const MAX_PEERS = 12 // occupancy cap per room (bounds an unauthenticated channel)
 const MSG_RATE_LIMIT = 120 // max messages per window, per connection
 const MSG_RATE_WINDOW_MS = 1000
+const ROOM_BACKGROUND_KEY = 'roomBackground'
+const JAM_BACKGROUND_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+interface RoomBackgroundState {
+  backgroundId: string
+  revision: number
+}
 
 /**
  * Constant-time string comparison. Used for the secret ownerToken so the
@@ -40,6 +47,8 @@ export class JamRoom extends DurableObject<JamEnv> {
   private roomId = ''
   private readonly ownership = createRoomOwnershipState()
   private ownershipHydrated = false
+  private background: RoomBackgroundState | null = null
+  private backgroundHydrated = false
   private isHydrated = false
   private msgRate: WeakMap<WebSocket, { windowStart: number; count: number }> =
     new WeakMap()
@@ -49,6 +58,8 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.isHydrated = true
     this.peers.clear()
     this.wsToPeerId = new WeakMap()
+    let hydratedHostPeerId: string | null = null
+    let hasConflictingHostAttachments = false
     for (const ws of this.ctx.getWebSockets()) {
       try {
         const attachment =
@@ -67,11 +78,36 @@ export class JamRoom extends DurableObject<JamEnv> {
             ws,
           })
           this.wsToPeerId.set(ws, attachment.peerId)
+          if (attachment.isHost === true) {
+            if (hydratedHostPeerId === null) {
+              hydratedHostPeerId = attachment.peerId
+            } else if (hydratedHostPeerId !== attachment.peerId) {
+              hasConflictingHostAttachments = true
+            }
+          }
         }
       } catch {
         // ignore
       }
     }
+    // Older workers could leave two overlapping owner reconnect sockets marked
+    // as host. Never pick one by WebSocket iteration order after hibernation.
+    // Demote every persisted copy and reconcile the already-open clients too;
+    // a fresh owner-token reconnect will establish one authoritative host.
+    if (hasConflictingHostAttachments) {
+      for (const peer of this.peers.values()) {
+        const attachment = this.readAttachment(peer.ws)
+        if (attachment?.isHost !== true) continue
+        peer.ws.serializeAttachment({
+          ...attachment,
+          isHost: false,
+        } satisfies JamSocketAttachment)
+      }
+      this.broadcast({ type: 'host-changed', hostPeerId: null })
+    }
+    this.ownership.ownerId = hasConflictingHostAttachments
+      ? null
+      : hydratedHostPeerId
   }
 
   // ── WebSocket upgrade ────────────────────────────────────────────
@@ -192,6 +228,9 @@ export class JamRoom extends DurableObject<JamEnv> {
       case 'ice-candidate':
         this.relayToPeer(ws, msg as { type: string; target?: string })
         break
+      case 'set-background':
+        await this.handleSetBackground(ws, msg.backgroundId)
+        break
       case 'leave-room':
         await this.handleLeave(ws)
         break
@@ -211,6 +250,10 @@ export class JamRoom extends DurableObject<JamEnv> {
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
+      if (this.ownership.ownerId === peerId) {
+        this.ownership.ownerId = null
+        this.broadcast({ type: 'host-changed', hostPeerId: null }, peerId)
+      }
     }
     await this.checkEmpty()
   }
@@ -237,10 +280,29 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.ownershipHydrated = true
   }
 
+  private async hydrateBackground(): Promise<void> {
+    if (this.backgroundHydrated) return
+    const stored =
+      await this.ctx.storage.get<RoomBackgroundState>(ROOM_BACKGROUND_KEY)
+    this.background =
+      stored !== undefined &&
+      typeof stored.backgroundId === 'string' &&
+      JAM_BACKGROUND_ID_RE.test(stored.backgroundId) &&
+      Number.isSafeInteger(stored.revision) &&
+      stored.revision > 0
+        ? stored
+        : null
+    this.backgroundHydrated = true
+  }
+
   private async expireOwnership(): Promise<void> {
     await expireRoomOwnership(this.ownership, () =>
       this.ctx.storage.deleteAll(),
     )
+    // deleteAll also removes the persisted background. Keep the warm object in
+    // lockstep so a newly adopted room cannot inherit the previous room's art.
+    this.background = null
+    this.backgroundHydrated = true
   }
 
   private async expireOverdueOwnership(nowMs = Date.now()): Promise<boolean> {
@@ -303,6 +365,7 @@ export class JamRoom extends DurableObject<JamEnv> {
       connectionIntent: 'established',
       peerId,
       displayName: msg.displayName,
+      isHost: true,
       roomId: this.roomId,
     } satisfies JamSocketAttachment)
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
@@ -319,6 +382,7 @@ export class JamRoom extends DurableObject<JamEnv> {
       roomId: this.roomId,
       peerId,
       isHost: true,
+      hostPeerId: peerId,
       ownerToken,
     })
   }
@@ -381,7 +445,10 @@ export class JamRoom extends DurableObject<JamEnv> {
       freshToken !== null ||
       (typeof msg.ownerToken === 'string' &&
         (await this.hasOwnerToken(msg.ownerToken)))
-    if (isHost) this.ownership.ownerId = peerId
+    if (isHost) {
+      this.demoteOtherHostSockets(peerId)
+      this.ownership.ownerId = peerId
+    }
 
     // Validate a reconnecting owner's proof before clearing the persisted
     // deadline. Once this socket is established, the room is live again and
@@ -390,6 +457,7 @@ export class JamRoom extends DurableObject<JamEnv> {
       connectionIntent: 'established',
       peerId,
       displayName: msg.displayName,
+      isHost,
       roomId: this.roomId,
     } satisfies JamSocketAttachment)
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
@@ -399,16 +467,23 @@ export class JamRoom extends DurableObject<JamEnv> {
     console.log(
       `[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`,
     )
+    await this.hydrateBackground()
     this.send(ws, {
       type: 'room-joined',
       roomId: this.roomId,
       peerId,
       isHost,
       peers: existing,
+      hostPeerId: this.ownership.ownerId,
       // Only when this join created the ownership -- otherwise the joiner
       // already holds the secret, and it is never handed out again.
       ...(freshToken === null ? {} : { ownerToken: freshToken }),
+      ...(this.background === null ? {} : { background: this.background }),
     })
+
+    if (isHost) {
+      this.broadcast({ type: 'host-changed', hostPeerId: peerId }, peerId)
+    }
 
     console.log(
       `[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size}`,
@@ -430,6 +505,10 @@ export class JamRoom extends DurableObject<JamEnv> {
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
+      if (this.ownership.ownerId === peerId) {
+        this.ownership.ownerId = null
+        this.broadcast({ type: 'host-changed', hostPeerId: null }, peerId)
+      }
     }
     ws.serializeAttachment({
       connectionIntent: 'departed',
@@ -441,6 +520,47 @@ export class JamRoom extends DurableObject<JamEnv> {
       // already closing
     }
     await this.checkEmpty()
+  }
+
+  private async handleSetBackground(
+    ws: WebSocket,
+    candidate: unknown,
+  ): Promise<void> {
+    const attachment = this.readAttachment(ws)
+    if (
+      attachment?.connectionIntent !== 'established' ||
+      attachment.isHost !== true ||
+      attachment.peerId === undefined ||
+      attachment.peerId !== this.ownership.ownerId
+    ) {
+      this.send(ws, {
+        type: 'error',
+        message: 'Only the host can change the room',
+      })
+      return
+    }
+    if (
+      typeof candidate !== 'string' ||
+      candidate.length > 64 ||
+      !JAM_BACKGROUND_ID_RE.test(candidate)
+    ) {
+      this.send(ws, { type: 'error', message: 'Invalid room background' })
+      return
+    }
+
+    await this.hydrateBackground()
+    const next: RoomBackgroundState = {
+      backgroundId: candidate,
+      revision: (this.background?.revision ?? 0) + 1,
+    }
+    await this.ctx.storage.put(ROOM_BACKGROUND_KEY, next)
+    this.background = next
+    this.backgroundHydrated = true
+    this.broadcast({
+      type: 'background-changed',
+      ...next,
+      hostPeerId: attachment.peerId,
+    })
   }
 
   private readAttachment(ws: WebSocket): JamSocketAttachment | null {
@@ -461,6 +581,19 @@ export class JamRoom extends DurableObject<JamEnv> {
       return attachment as JamSocketAttachment
     } catch {
       return null
+    }
+  }
+
+  /** Keep hibernated socket attachments aligned with the current host. */
+  private demoteOtherHostSockets(nextHostPeerId: string): void {
+    for (const peer of this.peers.values()) {
+      if (peer.id === nextHostPeerId) continue
+      const attachment = this.readAttachment(peer.ws)
+      if (attachment?.isHost !== true) continue
+      peer.ws.serializeAttachment({
+        ...attachment,
+        isHost: false,
+      } satisfies JamSocketAttachment)
     }
   }
 

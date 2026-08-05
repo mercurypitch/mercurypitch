@@ -8,7 +8,7 @@
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
-import { accessConfigured, resolveAdmin, verifyAccessJwt } from './access'
+import { accessConfigured, resolveAdmin, resolveAdminWithIdentity, verifyAccessJwt, } from './access'
 
 const TEAM = 'example-team.cloudflareaccess.com'
 const ISSUER = `https://${TEAM}`
@@ -303,6 +303,30 @@ describe('resolveAdmin', () => {
     await expect(resolveAdmin(withToken(null), noAccess, false)).resolves.toBe(
       false,
     )
+  })
+
+  it('attributes a key fallback to the key even when Access headers are spoofed', async () => {
+    const request = new Request('https://api.example.com/api/admin', {
+      headers: {
+        'Cf-Access-Authenticated-User-Email': 'spoofed@example.com',
+        'Cf-Access-Jwt-Assertion': 'not-a-verified-token',
+      },
+    })
+
+    await expect(
+      resolveAdminWithIdentity(request, noAccess, true),
+    ).resolves.toEqual({ accessIdentity: null, authorized: true })
+  })
+
+  it('returns the identity only after verifying an Access token', async () => {
+    const token = await signToken(goodPayload())
+
+    await expect(
+      resolveAdminWithIdentity(withToken(token), env(), false),
+    ).resolves.toEqual({
+      accessIdentity: { kind: 'user', subject: 'owner@example.com' },
+      authorized: true,
+    })
   })
 
   it('accepts a verified Access token with no key at all', async () => {

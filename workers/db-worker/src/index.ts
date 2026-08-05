@@ -20,11 +20,12 @@ import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
-import { resolveAdmin } from './access'
+import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
+import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
 import { handlePremiumBackgroundRequest } from './premium-backgrounds'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
@@ -99,6 +100,16 @@ function respond(body: object | null, init?: ResponseInit): Response {
     ...init,
     headers: { 'Content-Type': 'application/json', ...headers },
     status,
+  })
+}
+
+function respondNoStore(body: object | null, init?: ResponseInit): Response {
+  return respond(body, {
+    ...init,
+    headers: {
+      ...(init?.headers as Record<string, string>),
+      'Cache-Control': 'private, no-store',
+    },
   })
 }
 
@@ -1668,12 +1679,7 @@ async function handleDemoSong(
       `UPDATE demoSongs SET ${DEMO_SONG_FIELDS.map((f) => `"${f}" = ?`).join(', ')},
         lyricsRevision = ?, updatedAt = ? WHERE slug = ?`,
     )
-      .bind(
-        ...DEMO_SONG_FIELDS.map((f) => values[f]),
-        revision,
-        now,
-        slug,
-      )
+      .bind(...DEMO_SONG_FIELDS.map((f) => values[f]), revision, now, slug)
       .run()
   }
 
@@ -1833,6 +1839,49 @@ async function handleRequest(
   // header, so the anonymous paths (the Mirror funnel beacon especially) pay
   // nothing for it.
   const auth = await getAuth(request, env)
+
+  const isPremiumAdminRoute =
+    url.pathname.startsWith('/api/admin/premium-backgrounds') ||
+    url.pathname.startsWith('/api/admin/supporter-groups') ||
+    url.pathname.startsWith('/api/admin/premium-background-capabilities')
+  if (isPremiumAdminRoute) {
+    const adminResolution = await resolveAdminWithIdentity(
+      request,
+      env,
+      hasAdminKey(request, env),
+    )
+    if (
+      adminResolution.authorized &&
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.method !== 'OPTIONS'
+    ) {
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
+    }
+    const premiumAdminResponse = await handlePremiumBackgroundAdminRequest(
+      request,
+      env,
+      url,
+      {
+        admin: adminResolution.authorized,
+        auditActor:
+          adminResolution.accessIdentity === null
+            ? { actorId: null, actorType: 'admin-key' }
+            : {
+                actorId: adminResolution.accessIdentity.subject,
+                actorType: 'access',
+              },
+        corsHeaders: CORS,
+        respond: respondNoStore,
+      },
+    )
+    if (premiumAdminResponse !== null) return premiumAdminResponse
+  }
 
   const premiumBackgroundResponse = await handlePremiumBackgroundRequest(
     request,

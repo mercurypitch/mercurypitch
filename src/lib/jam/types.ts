@@ -19,6 +19,11 @@ export interface JamRoom {
   createdAt: number
 }
 
+export interface JamRoomBackgroundState {
+  backgroundId: string
+  revision: number
+}
+
 // ── Signaling protocol messages ─────────────────────────────────────
 // All messages are JSON-serializable with a "type" discriminator.
 
@@ -29,7 +34,9 @@ export type SignalingMessage =
       roomId: string
       peerId: string
       isHost: boolean
+      hostPeerId: string
       ownerToken?: string
+      background?: JamRoomBackgroundState
     }
   | {
       type: 'join-room'
@@ -43,14 +50,22 @@ export type SignalingMessage =
       peerId: string
       isHost: boolean
       peers: Array<{ id: string; displayName: string }>
+      hostPeerId: string | null
       /** Issued only when an ownerless room adopts this joiner as owner. */
       ownerToken?: string
+      background?: JamRoomBackgroundState
     }
   | { type: 'peer-joined'; peerId: string; displayName: string }
   | { type: 'peer-left'; peerId: string }
   | { type: 'offer'; target: string; from: string; sdp: string }
   | { type: 'answer'; target: string; from: string; sdp: string }
   | { type: 'ice-candidate'; target: string; from: string; candidate: string }
+  | { type: 'set-background'; backgroundId: string }
+  | ({
+      type: 'background-changed'
+      hostPeerId: string
+    } & JamRoomBackgroundState)
+  | { type: 'host-changed'; hostPeerId: string | null }
   | { type: 'leave-room' }
   | { type: 'error'; message: string }
   | { type: 'room-closed' }
@@ -156,6 +171,19 @@ export interface JamVideoStateMessage {
   enabled: boolean
 }
 
+/**
+ * Ephemeral bearer capability sent host-to-peer over WebRTC, never stored in
+ * Durable Object room history. The signaling channel carries only the safe
+ * background id/revision; this credential supplies protected bytes.
+ */
+export interface JamBackgroundCapabilityMessage {
+  type: 'background-capability'
+  backgroundId: string
+  version: number
+  token: string
+  expiresAt: string
+}
+
 export type JamDataMessage =
   | JamChatMessage
   | JamPitchMessage
@@ -163,6 +191,7 @@ export type JamDataMessage =
   | JamSongMessage
   | JamPlaybackMessage
   | JamVideoStateMessage
+  | JamBackgroundCapabilityMessage
 
 // ── Songs ────────────────────────────────────────────────────────────
 
@@ -287,6 +316,7 @@ export interface JamCallbacks {
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onHostStatus?: (isHost: boolean) => void
+  onHostPeerChanged?: (peerId: string | null) => void
   onError: (message: string) => void
   // Signaling events from signaling (from = sender peerId)
   onOffer?: (from: string, sdp: string) => void
@@ -309,4 +339,10 @@ export interface JamCallbacks {
   /** fromPeerId lets the store charge the message its own flight time. */
   onPlaybackMessage?: (msg: JamPlaybackMessage, fromPeerId: string) => void
   onVideoState?: (peerId: string, enabled: boolean) => void
+  onBackgroundChanged?: (state: JamRoomBackgroundState) => void
+  onBackgroundCapability?: (
+    message: JamBackgroundCapabilityMessage,
+    fromPeerId: string,
+  ) => void
+  onPeerChannelReady?: (peerId: string) => void
 }

@@ -14,6 +14,8 @@ describe('Jam signaling connection intent', () => {
     expect(connectionAllowsMessage('established', 'create-room')).toBe(false)
     expect(connectionAllowsMessage('established', 'join-room')).toBe(false)
     expect(connectionAllowsMessage('established', 'offer')).toBe(true)
+    expect(connectionAllowsMessage('established', 'set-background')).toBe(true)
+    expect(connectionAllowsMessage('join', 'set-background')).toBe(false)
     expect(connectionAllowsMessage('departed', 'offer')).toBe(false)
   })
 
