@@ -1,178 +1,302 @@
-# EARS Specification — Guitar Practice
+# EARS Specification — Guitar Practice (legacy Guitar tab)
 
 > **EARS** = Easy Approach to Requirements Syntax  
-> Version: 1.0 | Date: 2026-05-29 | Scope: Guitar practice tab including synthesis, drum machine, visualization, and game mechanics
+> Version: 2.0 | Date: 2026-08-05 | Scope: the implemented `/#/guitar`
+> tab, not the planned standalone Guitar Night experience
+
+**Status:** audited as-built contract. Sections 1–7 describe the observable
+legacy implementation at this version. Section 8 records known limitations;
+it does not claim that later Guitar Night work already exists.
+
+**Source:** `src/lib/guitar/guitar-synth.ts`,
+`src/lib/guitar/drum-machine.ts`,
+`src/lib/audio-engine.ts`, `src/lib/practice-engine.ts`,
+`src/features/guitar-practice/useGuitarPracticeController.ts`,
+`src/contexts/GuitarContext.tsx`, `src/pages/GuitarPage.tsx`,
+`src/components/guitar/GuitarFretboardCanvas.tsx`,
+`src/components/guitar/GuitarFretboardModeTabs.tsx`,
+`src/features/guitar-tab-3d/`, and the Guitar tab transition in `src/App.tsx`
+
+**Tests (partial coverage):** `src/tests/guitar-synth.test.ts`,
+`src/tests/drum-machine.test.ts`, `src/tests/guitar-practice.test.ts`,
+`src/tests/audio-engine.test.ts`, `src/tests/mic-reconciliation.test.ts`,
+`src/tests/guitar-context-lifecycle.test.tsx`,
+`src/tests/guitar-tab-3d-projection.test.ts`,
+`src/tests/caged-shapes.test.ts`, `src/tests/guitar-tuner.test.ts`,
+`src/tests/transcription-trainer-state.test.ts`, and `src/e2e/guitar.spec.ts`
+
+EARS keywords: **WHEN** (event), **WHILE** (state), **IF/THEN** (unwanted
+behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ---
 
-## 1. Guitar Synthesis
+## 1. Note and voice model
 
-### REQ-GP-001 — Karplus-Strong Acoustic Guitar Voice
-**WHEN** the audio engine plays a note with the `guitar-acoustic` instrument type, the system shall synthesize the sound using a Karplus-Strong physical model: a noise-burst excitation (3 ms) driving a tuned delay line, with lowpass-damped feedback (coefficient 0.92) to model string decay and harmonic roll-off, and a 15% body resonance parallel path for warmth.
+### REQ-GP-001 — Acoustic plucked-string voice
 
-### REQ-GP-002 — Karplus-Strong Electric Guitar Voice
-**WHEN** the audio engine plays a note with the `guitar-electric` instrument type, the system shall synthesize the sound using a brighter Karplus-Strong model: lower feedback coefficient (0.85), higher damping cutoff (up to 12 kHz), and a 5% body resonance path for a tighter, brighter tone.
+**WHEN** `guitar-acoustic` is selected and the audio engine creates a note,
+the system shall use the cached Karplus–Strong acoustic profile (damping
+`0.995`, brightness `0.6`, pick position `0.18`, rendered ring `2.2 s`, level
+`0.6`) followed by its body-resonance and high-frequency roll-off filters.
 
-### REQ-GP-003 — Bass Voice Synthesis
-**WHEN** the audio engine plays a note with the `bass` instrument type, the system shall synthesize a rich low-end voice using additive synthesis: a sine sub-oscillator at the fundamental, a lowpass-filtered sawtooth at the fundamental, a sine octave harmonic, and a bandpass-filtered noise pluck transient for attack articulation.
+### REQ-GP-002 — Electric plucked-string voice
 
-### REQ-GP-004 — MIDI-to-String Assignment
-**Ubiquitous:** The system shall assign each MIDI note to the optimal guitar string (0-5, low E to high e) that minimizes fret position, considering open-string MIDI values (E2=40, A2=45, D3=50, G3=55, B3=59, E4=64) and a 24-fret range. Notes below the guitar range shall default to the lowest string.
+**WHEN** `guitar-electric` is selected and the audio engine creates a note,
+the system shall use the cached Karplus–Strong electric profile (damping
+`0.998`, brightness `0.85`, pick position `0.12`, rendered ring `2.8 s`, level
+`0.45`) followed by overdrive, presence and cabinet filtering.
 
-### REQ-GP-005 — Guitar Note Data Model
-**Ubiquitous:** Each guitar note shall carry: `midi` (MIDI number), `noteName` (e.g., "C4"), `stringIndex` (0-5), `fret` (0-24), `startBeat`, `duration`, and `targetFreq` (Hz). The `melodyToGuitarNotes` function shall convert melody items into this model.
+### REQ-GP-003 — Bass plucked-string voice
 
----
+**WHEN** `bass` is selected and the audio engine creates a note, the system
+shall use the cached Karplus–Strong bass profile (damping `0.996`, brightness
+`0.3`, pick position `0.35`, rendered ring `1.8 s`, level `0.7`) followed by a
+frequency-relative low-pass filter. The implemented bass voice is not the
+additive oscillator recipe described by version 1.0 of this specification.
 
-## 2. Drum Machine
+### REQ-GP-004 — String indexing and automatic fingering
 
-### REQ-GP-006 — Synthesized Drum Sounds
-**Ubiquitous:** The drum machine shall synthesize all drum sounds using the Web Audio API with no external samples:
-- **Kick**: sine sweep 150 Hz → 40 Hz over 80 ms, exponential decay over 300 ms.
-- **Snare**: white noise burst (120 ms) + 200 Hz triangle tone sweep to 120 Hz (100 ms).
-- **Hi-hat closed**: highpass-filtered (8 kHz) noise burst, 40 ms decay.
-- **Hi-hat open**: highpass-filtered (7 kHz) noise burst, 200 ms decay.
-- **Tom high/mid/low**: triangle oscillator sweeps starting at 350/240/150 Hz, 200 ms decay.
-- **Crash**: bandpass-filtered (4 kHz, Q=1.2) noise burst, 800 ms decay.
+**Ubiquitous:** Guitar string indices shall run high-to-low: `0` = high e
+(`E4`, MIDI 64), `1` = B3 (MIDI 59), `2` = G3 (MIDI 55), `3` = D3 (MIDI 50),
+`4` = A2 (MIDI 45), and `5` = low E (`E2`, MIDI 40). Automatic assignment
+shall choose the valid `0..24` fret with the lowest fret number. A pitch below
+the supported range shall clamp to open low E; a pitch above it shall clamp to
+the high-e string at no more than fret 24.
 
-### REQ-GP-007 — 16-Step Pattern Sequencer
-**Ubiquitous:** The drum machine shall maintain a 16-step pattern (one bar of 16th notes) per instrument, stored as boolean arrays keyed by drum sound type: `kick`, `snare`, `hh-closed`, `hh-open`, `tom-high`, `tom-mid`, `tom-low`, `crash`.
+### REQ-GP-005 — Guitar note adaptation
 
-### REQ-GP-008 — Step Sequencing and BPM Sync
-**WHILE** the drum machine is playing, it shall advance through steps at intervals of `60 / bpm / 4` seconds using `setTimeout` with drift compensation, triggering all active instruments for the current step via their synthesis functions. After step 15, sequencing wraps to step 0.
+**WHEN** melody, MIDI or Guitar Pro items are adapted for Guitar practice,
+the system shall produce notes with `id`, `midi`, `noteName`, `stringIndex`,
+`fret`, `startBeat`, `duration` and `targetFreq`, plus optional `isBacking` and
+`trackId`. **WHERE** an imported item supplies both `stringIndex` and `fret`,
+the adapter shall preserve that authored fingering; otherwise it shall use
+REQ-GP-004.
 
-### REQ-GP-009 — Preset Patterns
-**WHEN** the user selects a preset (`basic-rock`, `funk`, `hip-hop`, `jazz`, `latin`, `empty`), the drum machine shall deep-clone the corresponding pattern and notify subscribers of the state change.
+## 2. Drum machine
 
-### REQ-GP-010 — Per-Instrument Volume and Direct Trigger
-**Ubiquitous:** Each of the 8 drum sounds shall have an independent volume setting (0-1 range, default 0.8). The `trigger(sound)` method shall play a single drum sound immediately for auditioning without affecting the sequencer state.
+### REQ-GP-006 — Synthesized drum set
 
----
+**Ubiquitous:** The drum machine shall synthesize eight shared Web Audio drum
+voices without sample files: kick, snare, closed and open hi-hat, high/mid/low
+tom, and crash.
 
-## 3. Fretboard Visualization
+### REQ-GP-007 — Patterns and presets
 
-### REQ-GP-011 — Canvas Fretboard Rendering
-**Ubiquitous:** The `GuitarFretboardCanvas` component shall render a 6-string guitar neck using HTML Canvas 2D with device-pixel-ratio-aware scaling via `ResizeObserver`. The canvas shall draw:
-- A dark wood-grain background gradient (`#1a120b` to `#241a10` to `#1a120b`).
-- 6 horizontal string lines with distinct colors (wound strings E/A/D thicker at 2 px, plain strings G/B/e at 1.5 px).
-- Fret marker dots at positions 3, 5, 7, 9, and 15 (single dot), and a double dot at position 12.
+**Ubiquitous:** The drum machine shall hold one 16-step boolean pattern for
+each of the eight voices. **WHEN** `basic-rock`, `funk`, `hip-hop`, `jazz`,
+`latin` or `empty` is selected, it shall install a deep clone of that preset.
 
-### REQ-GP-012 — Falling Note Pills
-**WHILE** notes are active, the canvas shall render note pills (rounded rectangles) positioned vertically based on the beat distance from the playhead within the visible beat window. Each pill shall be color-coded by pitch class (12 colors mapped to note names). Judged notes shall recolor to gold (perfect), green (great), blue (good), or red (miss).
+### REQ-GP-008 — Independent sequencer clock
 
-### REQ-GP-013 — Duration Tails
-**Ubiquitous:** Notes with a duration longer than 0.05 beats shall display a vertical tail extending upward from the note pill, colored at 50% opacity with a darkened shade of the note's fill color, proportional in height to the note's beat duration.
+**WHILE** the drum machine is playing, it shall advance one sixteenth-note
+step every `60 / bpm / 4` seconds, wrap after step 15, and use `setTimeout`
+with elapsed-time compensation. It currently owns this clock independently
+of the Guitar song-practice controller.
 
-### REQ-GP-014 — Strum Zone
-**Ubiquitous:** The bottom 12% of the canvas height shall be rendered as a purple-highlighted strum zone with a gradient background, a demarcation line, and a "STRUM ZONE" label. The 6 horizontal string lines shall continue through this zone at increased opacity. Clicking a string lane in this zone shall register a strum input.
+### REQ-GP-009 — Drum controls
 
-### REQ-GP-015 — HUD Overlay
-**Ubiquitous:** The canvas shall render a heads-up display showing the current combo (as `Nx` in the top-right, only when combo > 1) and score below it. During non-playing states (`countdown`, `paused`, `finished`), a semi-transparent overlay shall display the state label (e.g., "GET READY", "PAUSED", "FINISHED") and final score on finish.
+**WHEN** drum BPM or voice gain is changed, the system shall clamp BPM to
+`40..300` and each gain to `0..1`. Direct audition shall trigger one voice
+without changing the pattern or sequencer position.
 
----
+### REQ-GP-010 — User-gesture audio activation
 
-## 4. Game Mechanics
+**WHEN** the Drum Machine panel's Play or voice-audition control is used, the
+panel shall initialize the machine's own interactive-latency `AudioContext`
+and initiate resume inside the originating gesture before starting or
+triggering. The lower-level `start`, `playStep` and `trigger` methods shall
+remain no-ops until `init()` has succeeded. **WHEN** the panel is unmounted,
+it shall stop the transport before unsubscribing, including a start awaiting
+resume. This activation is separate from `startGame()`.
 
-### REQ-GP-016 — Game State Machine
-**Ubiquitous:** The game shall operate through a state machine with states: `idle` → `countdown` → `playing` → `finished`, plus `paused` as a suspension of `playing`. Transitions: `startGame()` moves from `idle`/`finished` to `countdown`; after 4 beats of count-in, auto-transition to `playing`; `finishGame()` auto-triggers when all notes have been judged and the last note duration has elapsed.
+## 3. Practice visualization
 
-### REQ-GP-017 — Count-In and Playhead
-**WHEN** the game starts, the playhead shall begin at beat -4 and advance at the song's BPM. During the count-in, the drum machine shall trigger a hi-hat closed sound on each integer beat. When the playhead reaches beat 0, the game state transitions to `playing`, the drum machine starts its full sequence, and the playhead resets to 0.
+### REQ-GP-011 — Responsive Canvas 2D stage
 
-### REQ-GP-018 — Hit Detection and Timing Windows
-**WHEN** the user strums a string (via click on the strum zone or keyboard keys 1-6 / A-S-D-F-G-H), the system shall find the closest unjudged note on that string within the allowed timing window (±150 ms) and record a hit judgment:
-- `perfect`: ≤ 30 ms deviation (100 points)
-- `great`: ≤ 75 ms deviation (75 points)
-- `good`: ≤ 150 ms deviation (50 points)
-- `miss`: notes that pass the -150 ms threshold without a hit (0 points, combo reset)
+**Ubiquitous:** `GuitarFretboardCanvas` shall render a device-pixel-ratio-aware
+Canvas 2D stage, resize it with `ResizeObserver`, and stop its render loop when
+its host reports that the Guitar surface is inactive.
 
-### REQ-GP-019 — Combo and Scoring
-**Ubiquitous:** The current combo shall increment by 1 on every successful hit and reset to 0 on a miss. The maximum combo shall be tracked separately. The score shall accumulate points from each hit judgment. Both values shall be exposed as reactive SolidJS signals.
+### REQ-GP-012 — Side-scrolling string lanes
 
-### REQ-GP-020 — Pause and Resume
-**WHEN** the game is paused, the drum machine shall stop and the game state shall become `paused`. **WHEN** the game is resumed, the playhead shall continue from its paused position using time offset compensation, and the drum machine shall restart.
+**Ubiquitous:** The practice stage shall show six horizontal lanes in the
+high-to-low order from REQ-GP-004, a fixed playhead/target near the left edge,
+and notes moving horizontally according to their distance from the current
+beat. Note width, rather than a separate vertical tail, shall represent note
+duration.
 
----
+### REQ-GP-013 — Note and judgment rendering
 
-## 5. UI Integration
+**WHILE** notes are visible, the stage shall color unjudged notes by pitch,
+render visible backing-track notes as non-scored translucent notes, and render
+judgments as gold `perfect`, green `great`, blue `good` or red/ghosted `miss`
+feedback. It shall expose note labels, fret badges, detected-pitch feedback,
+score, combo and countdown/pause/finish overlays when applicable.
 
-### REQ-GP-021 — Guitar Tab Navigation
-**Ubiquitous:** A "Guitar" tab button with an SVG icon (guitar body + sound hole + headstock) shall appear in the "Practice" tab group of the app navigation bar, positioned after the Karaoke tab. Clicking it shall set the active tab to `TAB_GUITAR` and render the guitar practice panel.
+### REQ-GP-014 — Lane input
 
-### REQ-GP-022 — Shared Control Toolbar Integration
-**WHEN** the guitar tab is active, the `SharedControlToolbar` shall render: play/pause/stop transport controls, BPM display (using the guitar tab's `bpmValue` prop), note label toggle, and practice mode/cycles display. Mic sensitivity controls shall be hidden on the guitar tab.
+**WHEN** a pointer click or touch lands anywhere in a string lane, the canvas
+shall pass that lane's string index to the practice controller and show
+immediate lane feedback. The current stage does not have the bottom-only
+"strum zone" specified in version 1.0.
 
-### REQ-GP-023 — Song Picker
-**Ubiquitous:** The `GuitarPracticeSongPicker` shall present a modal song selection interface listing melodies from the melody store, each rendered as a clickable card showing song name and a "START" button. On selection, it shall convert the melody items to guitar notes via `melodyToGuitarNotes` and call the controller's `loadSong` with the adapted notes, song name, and BPM.
+### REQ-GP-015 — Three Guitar views
 
-### REQ-GP-024 — Drum Machine Panel
-**Ubiquitous:** The `DrumMachinePanel` shall display below the fretboard canvas:
-- An 8-row × 16-column toggle grid where each cell represents a step for a drum sound. Active steps shall be styled with accent-colored backgrounds.
-- Instrument labels on the left column with trigger buttons for auditioning sounds.
-- A pattern preset selector dropdown.
-- A BPM slider with numeric display.
-- Per-instrument volume sliders with color-coded thumbs.
-- Step number headers with beat-accent styling on downbeats (steps 0, 4, 8, 12).
+**Ubiquitous:** The Guitar page shall offer `Practice` (`hero`, the default),
+`Fretboard` (`interactive`) and `3D`. The current 3D view shall reuse the
+Canvas 2D perspective renderer and provide its Guitar HUD, transport,
+transpose, rate, A/B loop, input-monitor and camera controls; it shall not be
+represented as a new GPU renderer or Guitar Night stage.
 
-### REQ-GP-025 — Responsive Layout and Dark Theme
-**Ubiquitous:** All guitar practice UI components shall use CSS custom properties from the dark theme (`--bg-primary`, `--bg-secondary`, `--bg-tertiary`, `--text-primary`, `--accent`, `--spacing-md`, `--radius-sm`). On viewports narrower than 480 px, the drum grid shall reduce instrument label widths (44 px → 34 px), step cell sizes, and volume sliders shall reflow from 4 columns to 2 columns.
+## 4. Song practice controller
 
----
+### REQ-GP-016 — State machine and configurable count-in
 
-## 6. Audio Engine Integration
+**Ubiquitous:** Song practice shall use `idle`, `countdown`, `playing`,
+`paused` and `finished` states. **WHEN** play begins with loaded notes, the
+controller shall use the shared configured count-in beat count; zero shall
+start immediately. Countdown clicks shall use the audio engine metronome bus.
 
-### REQ-GP-026 — Instrument Type Registration
-**Ubiquitous:** The audio engine's `InstrumentType` union shall include `'guitar-acoustic'`, `'guitar-electric'`, and `'bass'`. The `getInstruments()` function shall return these types alongside existing instrument types. The `_createVoice()` method shall dispatch to `createGuitarVoice` or `createBassVoice` accordingly.
+### REQ-GP-017 — Current timing authority
 
-### REQ-GP-027 — Note Playback During Game
-**WHILE** the game is in the `playing` state, the system shall automatically trigger audio playback for each note exactly when its `startBeat` aligns with the playhead, using `audioEngine.playTone(note.targetFreq, durationMs)` with a minimum duration of 50 ms. Each note shall be played at most once (tracked by a `playedIndices` set).
+**WHILE** counting in or playing, the legacy controller shall derive its beat
+from `performance.now()` inside a `requestAnimationFrame` loop. Practice rate
+shall scale the playing beat, and seeking or rate changes shall re-anchor that
+mapping. No requirement in this legacy specification claims sample-clock
+authority or drum/song phase lock.
 
----
+### REQ-GP-018 — Keyboard and lane scoring
 
-## 7. Cross-Cutting Concerns
+**WHEN** the player uses keys `1..6` or `A/S/D/F/G/H` (mapped high e to low
+E), or a canvas lane, the controller shall choose the nearest unjudged note on
+that string within ±150 ms. It shall award `perfect` at ≤30 ms (100 points),
+`great` at ≤75 ms (75 points), and `good` at ≤150 ms (50 points); a note that
+ends more than 150 ms in the past shall miss, reset combo, and score zero.
 
-### REQ-GP-028 — AudioContext Initialization
-**WHEN** `startGame()` is called, the drum machine shall lazily initialize its `AudioContext` (with `latencyHint: 'interactive'`) if not already created. This ensures the Web Audio API is activated by a user gesture.
+### REQ-GP-019 — Detected-input scoring
 
-### REQ-GP-029 — Resource Cleanup
-**WHEN** the guitar practice controller's owning component is unmounted (`onCleanup`), the system shall cancel the animation frame loop and stop the drum machine. The drum machine's `dispose()` method shall close its `AudioContext` and clear its subscriber list.
+**WHILE** microphone or MIDI input is active, one fresh articulation shall be
+eligible to score at most one target. MIDI shall require the exact target MIDI
+pitch; microphone detection shall accept the target pitch class across
+octaves. Detected input shall be eligible from 150 ms before the note start
+through 150 ms after the note end. Its judgment shall use absolute deviation
+from the note start, clamped to 150 ms, and then apply the `perfect`, `great`
+and `good` values from REQ-GP-018.
 
-### REQ-GP-030 — State Reset on Song Load
-**WHEN** a new song is loaded via `loadSong()`, the system shall stop any running game and reset all state: clear hit results, judged indices, played indices, score, combo, and missed notes.
+### REQ-GP-020 — Transport, seek and practice loop
 
----
+**WHEN** practice is paused or seeked, sounding Guitar/backing voices shall be
+stopped and subsequent playback shall continue from the retained beat. **WHERE**
+a valid A/B region is enabled, the practice loop shall wrap to A and optionally
+increase its playback rate by the configured step. A fresh `startGame()` shall
+disable that practice-loop wrap and play the whole song; resuming paused
+practice shall preserve the active loop.
 
-## Summary of Requirements
+### REQ-GP-021 — Automatic guide and backing playback
 
-| ID | Category | Type | Description |
-|----|----------|------|-------------|
-| REQ-GP-001 | Synthesis | Event-driven | Karplus-Strong acoustic guitar voice |
-| REQ-GP-002 | Synthesis | Event-driven | Karplus-Strong electric guitar voice |
-| REQ-GP-003 | Synthesis | Event-driven | Bass voice with additive synthesis |
-| REQ-GP-004 | Synthesis | Ubiquitous | MIDI-to-string assignment algorithm |
-| REQ-GP-005 | Synthesis | Ubiquitous | Guitar note data model |
-| REQ-GP-006 | Drum Machine | Ubiquitous | Synthesized drum sounds (8 types) |
-| REQ-GP-007 | Drum Machine | Ubiquitous | 16-step pattern sequencer |
-| REQ-GP-008 | Drum Machine | State-driven | BPM-synced step scheduling |
-| REQ-GP-009 | Drum Machine | Event-driven | Preset pattern loading |
-| REQ-GP-010 | Drum Machine | Ubiquitous | Per-instrument volume and trigger |
-| REQ-GP-011 | Visualization | Ubiquitous | Canvas fretboard rendering |
-| REQ-GP-012 | Visualization | State-driven | Falling note pills with color coding |
-| REQ-GP-013 | Visualization | Ubiquitous | Duration tails on notes |
-| REQ-GP-014 | Visualization | Ubiquitous | Strum zone (bottom 12% of canvas) |
-| REQ-GP-015 | Visualization | Ubiquitous | HUD overlay (combo, score, state) |
-| REQ-GP-016 | Game Logic | Ubiquitous | Game state machine (5 states) |
-| REQ-GP-017 | Game Logic | Event-driven | 4-beat count-in with playhead |
-| REQ-GP-018 | Game Logic | Event-driven | Hit detection with timing windows |
-| REQ-GP-019 | Game Logic | Ubiquitous | Combo tracking and scoring |
-| REQ-GP-020 | Game Logic | Event-driven | Pause and resume with time offset |
-| REQ-GP-021 | UI | Ubiquitous | Guitar tab button in navigation |
-| REQ-GP-022 | UI | State-driven | SharedControlToolbar guitar mode |
-| REQ-GP-023 | UI | Event-driven | Song picker with melody-to-guitar adapt |
-| REQ-GP-024 | UI | Ubiquitous | Drum machine panel (grid, presets, volumes) |
-| REQ-GP-025 | UI | Ubiquitous | Responsive dark-theme layout |
-| REQ-GP-026 | Audio | Ubiquitous | Instrument type registration |
-| REQ-GP-027 | Audio | State-driven | Automatic note playback during game |
-| REQ-GP-028 | Cross | Event-driven | Lazy AudioContext initialization |
-| REQ-GP-029 | Cross | Event-driven | Resource cleanup on unmount |
-| REQ-GP-030 | Cross | Event-driven | Full state reset on song load |
+**WHILE** song practice is playing, each scored note shall trigger the selected
+instrument once as it crosses the playhead. Other imported tracks may play as
+backing unless muted; visible backing notes shall not be judged. A seek or loop
+wrap shall reset per-note playback/judgment bookkeeping for the destination.
+
+### REQ-GP-022 — Song and score-track changes
+
+**WHEN** a new song is loaded, the controller shall stop and rewind, clear
+score/combo/hit/playback state, reset transpose, rebuild score and backing
+notes, and update total length. **WHEN** the scored track of the same imported
+song changes, it shall reset scoring while retaining the current transport
+position and play/pause posture.
+
+## 5. Sources, tracks and page state
+
+### REQ-GP-023 — Supported practice sources
+
+**Ubiquitous:** The Guitar page shall accept a library melody, a saved MIDI
+song, a MIDI import, or a Guitar Pro import/drop through the current import
+pipeline. Empty or unsupported content shall not start a practice run.
+
+### REQ-GP-024 — Imported track choices
+
+**WHERE** an imported song contains multiple tracks, the player shall be able
+to select the scored track, mute backing tracks and choose which non-scored
+tracks are visible. Backing audibility/mute changes shall update the saved
+MIDI-song record through the existing store; track visibility shall remain
+in-memory only.
+
+### REQ-GP-025 — App-lifetime continuity
+
+**WHILE** the main MercuryPitch document remains mounted, the Guitar provider
+shall live above the tab switch and retain the selected Guitar view, activity,
+song and related in-memory state across a visit to another tab. This is
+in-document continuity, not standalone route or cross-document continuity.
+
+### REQ-GP-026 — Narrow-screen controls
+
+**WHEN** the current Guitar page is narrow, page-level sound, view, import and
+device choices shall be collected in its Options sheet. This requirement does
+not claim the dedicated `100dvh` Guitar Night mobile composition.
+
+## 6. Interactive fretboard activities
+
+### REQ-GP-027 — Activity set
+
+**Ubiquitous:** Fretboard view shall expose exactly these implemented activity
+IDs: `explore`, `noteQuiz`, `earTraining`, `jam`, `melodyTranscription`,
+`callResponse`, `cagedTrainer`, `chordProgression`, `singToFretboard`,
+`transcriptionTrainer`, `adaptiveJam`, `tuner`, and `riffTracker`.
+
+### REQ-GP-028 — Activity routing and owned resources
+
+**WHEN** the active fretboard activity changes or the interactive Guitar
+surface becomes inactive, the provider shall route fret input only to the
+active activity and stop the timers, subscriptions, recording state or mic
+claim owned by the activity being left. Tuner, Riff Tracker and
+Sing-to-Fretboard shall share one automatic Guitar mic claim, independent of
+the player's manual claim. A late mic acquisition shall follow the current
+app-wide aggregate claims, so leaving one activity cannot stop a replacement
+Guitar or non-Guitar owner. Stopping an activity tone shall also invalidate a
+tone start still awaiting audio initialization or resume.
+
+## 7. Legacy host cleanup
+
+### REQ-GP-029 — Guitar tab deactivation
+
+**WHEN** the main app leaves the Guitar tab, its single synchronous tab
+transition handler shall stop non-idle song practice and the independent drum
+machine, clear every Guitar mic claim and any legacy PracticeEngine claim
+opened from the Guitar surface, and return the preferred capture device to the
+system default. The global microphone shortcut shall route through the Guitar
+controller while that tab is active. Pending drum activation or microphone
+acquisition invalidated by the transition shall not restore a hidden active
+state after it resolves. The current handler does not provide
+standalone-document disposal.
+
+### REQ-GP-030 — Provider/controller disposal
+
+**WHEN** the Guitar provider is disposed, it shall dispose the drum machine
+and its owned context, cancel activity resources, cancel controller animation
+and detection loops, disconnect MIDI, unregister mic-loss/sentinel/run-guard
+callbacks, and release Guitar-owned mic resources. It shall not close the
+main app's shared audio engine.
+
+## 8. Known limitations and migration gaps
+
+These are observed boundaries of the legacy implementation, not features to
+pretend are complete:
+
+1. The drum machine owns an independent `AudioContext` and `setTimeout` clock;
+   song Play/count-in/pause/seek/loop do not start, stop or phase-lock it.
+2. Progression and Adaptive Jam pass chord quality through `selectedChord`
+   without the selected root; CAGED owns a separate chord state that defaults
+   to C. Shared highlights therefore do not carry complete chord identity.
+3. Both Guitar canvases register separate `touchstart` and `click` handlers,
+   so touch-generated click duplication is not ruled out by the current
+   contract. The canvases also lack a semantic text alternative for their
+   visual state.
+4. A dormant left-handed display option is not evidence of an implemented
+   left-handed Guitar workflow.
+
+The planned standalone route, one-clock runtime, Velvet Rehearsal shell,
+versioned beginner activation, room-band bass, separated-song accompaniment
+and evidence-backed Jam Doctor are specified separately in
+`docs/specs/guitar-night.ears.md`.

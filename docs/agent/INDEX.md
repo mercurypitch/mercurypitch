@@ -82,7 +82,7 @@ These are the rules that break things when ignored.
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.4k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.2k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
-| `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
+| `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.6k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
@@ -141,7 +141,7 @@ These are the rules that break things when ignored.
 | [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 668 | Shared Whisper transcription controller hook. |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
-| [practice-engine.ts](../../src/lib/practice-engine.ts) | 559 | Practice Engine — Mic, pitch detection, accuracy scoring |
+| [practice-engine.ts](../../src/lib/practice-engine.ts) | 560 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [runpod.ts](../../src/lib/runpod.ts) | 534 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 506 | Pitch Algorithm Tester — Compare pitch detection algorithms |
@@ -332,6 +332,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
+| [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
 | [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.3k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |

@@ -105,6 +105,8 @@ export class AudioEngine {
   private micStream: MediaStream | null = null
   private micSource: MediaStreamAudioSourceNode | null = null
   private micStartInFlight: Promise<boolean> | null = null
+  private readonly micOwners = new Set<string>()
+  private static readonly DEFAULT_MIC_OWNER = 'audio-engine-default'
   private readonly micLostCallbacks = new Set<() => void>()
   private unsubscribeMicManager: (() => void) | null = null
   // Unique per-instance id for the shared MicManager. Several AudioEngine
@@ -121,6 +123,8 @@ export class AudioEngine {
   private toneOscillator: AudioBufferSourceNode | OscillatorNode | null = null
   private toneGain: GainNode | null = null
   private toneCleanupTimer: ReturnType<typeof setTimeout> | null = null
+  /** Invalidates playTone calls that are still awaiting AudioContext startup. */
+  private playToneGeneration = 0
   private isRecording = false
   private isPlaying = false
   private callbacks: AudioEngineCallbacks = {}
@@ -741,26 +745,37 @@ export class AudioEngine {
   // Microphone
   // ============================================================
 
-  async startMic(): Promise<boolean> {
+  async startMic(
+    owner: string = AudioEngine.DEFAULT_MIC_OWNER,
+  ): Promise<boolean> {
+    this.micOwners.add(owner)
     // Re-entrant calls (toggle + nudge + auto-calibrate can race) share one
     // start — a second concurrent run used to wire a duplicate, orphaned
     // source graph into the analyser.
-    if (this.micStartInFlight !== null) return this.micStartInFlight
-    const run = (async (): Promise<boolean> => {
-      try {
-        return await this.doStartMic()
-      } finally {
-        this.micStartInFlight = null
-      }
-    })()
-    this.micStartInFlight = run
-    return run
+    if (this.micStartInFlight === null) {
+      const run = (async (): Promise<boolean> => {
+        try {
+          return await this.doStartMic()
+        } finally {
+          this.micStartInFlight = null
+        }
+      })()
+      this.micStartInFlight = run
+    }
+
+    const ok = await this.micStartInFlight
+    if (!ok) this.micOwners.delete(owner)
+    return ok && this.micOwners.has(owner)
   }
 
   private async doStartMic(): Promise<boolean> {
     try {
       await this.init()
       await this.resume()
+
+      // Every logical caller may have left while AudioContext startup was in
+      // flight. Do not open the device when nobody still wants capture.
+      if (this.micOwners.size === 0) return false
 
       if (this.isRecording) {
         console.info('[AudioEngine] Mic already active, returning true')
@@ -775,6 +790,14 @@ export class AudioEngine {
       // mic-manager.ts), exactly the constraints this engine requested before.
       // We just borrow its stream and wire it into our analyser graph.
       const stream = await micManager.acquire(this.micConsumerId)
+
+      // Permission prompts may outlive their initiating surface. A different
+      // logical owner can adopt the same in-flight acquisition; with no owner
+      // left, release the manager hold before wiring a hidden graph.
+      if (this.micOwners.size === 0) {
+        micManager.release(this.micConsumerId)
+        return false
+      }
 
       // Every failure past this point MUST release the hold, or the manager
       // keeps the device open forever with every UI reporting off (the
@@ -844,13 +867,25 @@ export class AudioEngine {
       this.micGain?.disconnect()
       this.micGain = null
       this.micStream = null
+      this.micOwners.clear()
       // Drop the stale hold so the manager doesn't count us forever.
       micManager.release(this.micConsumerId)
       for (const cb of this.micLostCallbacks) cb()
     })
   }
 
-  stopMic(): void {
+  stopMic(owner: string = AudioEngine.DEFAULT_MIC_OWNER): void {
+    if (!this.micOwners.delete(owner)) return
+    if (this.micOwners.size > 0) return
+    this.stopPhysicalMic()
+  }
+
+  stopAllMic(): void {
+    this.micOwners.clear()
+    this.stopPhysicalMic()
+  }
+
+  private stopPhysicalMic(): void {
     if (!this.isRecording) {
       console.info('[AudioEngine] Mic already stopped')
       return
@@ -996,16 +1031,24 @@ export class AudioEngine {
     staccatoRatio?: number,
     chordIntervals?: number[],
   ): Promise<void> {
+    const generation = this.playToneGeneration
     await this.init()
+    if (generation !== this.playToneGeneration) return
     await this.resume()
-    if (!this.audioCtx || !this.mainGain) return
+    if (
+      generation !== this.playToneGeneration ||
+      !this.audioCtx ||
+      !this.mainGain
+    ) {
+      return
+    }
 
     // A new note must replace the previous note immediately at the note boundary.
     // Lingering release tails here make the previous pitch sound over the next note.
     // Use 80ms release so sustained instruments (guitar, piano) fade smoothly;
     // the quick attack on the new voice prevents audible overlap.
     if (this.toneOscillator !== null) {
-      this.stopTone(80)
+      this.releaseCurrentTone(80)
     }
 
     if (this.toneCleanupTimer !== null) {
@@ -1152,6 +1195,13 @@ export class AudioEngine {
 
   /** Stop the current tone with release envelope */
   stopTone(releaseMs: number = 50): void {
+    // Also cancel playTone calls still awaiting AudioContext init/resume.
+    this.playToneGeneration += 1
+    this.releaseCurrentTone(releaseMs)
+  }
+
+  /** Release an active tone without cancelling a newer pending playTone call. */
+  private releaseCurrentTone(releaseMs: number): void {
     if (!this.audioCtx || !this.toneGain || !this.toneOscillator) return
 
     const now = this.audioCtx.currentTime
@@ -2070,7 +2120,7 @@ export class AudioEngine {
   // ============================================================
 
   destroy(): void {
-    this.stopMic()
+    this.stopAllMic()
     this.unsubscribeMicManager?.()
     this.unsubscribeMicManager = null
     this.micLostCallbacks.clear()

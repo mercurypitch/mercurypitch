@@ -137,4 +137,48 @@ test.describe('Guitar tab', () => {
     )
     await expect(page.locator('.gp-caged-hud')).toBeVisible()
   })
+
+  test('routes the global mic shortcut through Guitar ownership', async ({
+    page,
+  }) => {
+    const micButton = page.locator('#btn-mic')
+    await expect(micButton).toHaveAttribute('aria-pressed', 'false')
+
+    await page.keyboard.press('m')
+    await expect(micButton).toHaveAttribute('aria-pressed', 'true')
+
+    await page.locator('#tab-singing').click()
+    await page.locator('#tab-guitar').click()
+    await expect(page.locator('#btn-mic')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  test('@smoke stops the interactive drum loop when its surface is left', async ({
+    page,
+  }) => {
+    await page.locator(fretboardBtn()).click()
+    await modeSelect(page).selectOption('jam')
+    const drumPlay = page.locator('.dm-btn-play')
+
+    await expect(drumPlay).toBeVisible()
+    await drumPlay.click()
+    await expect(drumPlay).toHaveText('Stop')
+
+    await page.locator(practiceBtn()).click()
+    await expect(drumPlay).toHaveCount(0)
+    await page.locator(fretboardBtn()).click()
+
+    await expect(drumPlay).toHaveText('Play')
+    await expect(page.locator('.dm-status')).toHaveText('Stopped')
+
+    await drumPlay.click()
+    await expect(drumPlay).toHaveText('Stop')
+    await page.locator('#tab-singing').click()
+    await page.locator('#tab-guitar').click()
+
+    await expect(page.locator('.dm-btn-play')).toHaveText('Play')
+    await expect(page.locator('.dm-status')).toHaveText('Stopped')
+  })
 })

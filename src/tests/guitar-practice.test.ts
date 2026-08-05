@@ -6,6 +6,7 @@ import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCallResponse } from '@/features/guitar-practice/CallResponseState'
 import { createEarTraining } from '@/features/guitar-practice/EarTrainingPanel'
+import { createMelodyTranscription } from '@/features/guitar-practice/MelodyTranscriptionState'
 // Force ESM to resolve the TSX module by importing the actual functions
 // (Vitest uses vite which handles TSX natively)
 import { createNoteLocatorQuiz } from '@/features/guitar-practice/NoteLocatorQuiz'
@@ -192,6 +193,21 @@ describe('NoteLocatorQuiz', () => {
       expect(quiz.score()).toBe(30)
       dispose()
     }))
+
+  it('stops an active round and cancels its countdown', () =>
+    createRoot((dispose) => {
+      const quiz = createNoteLocatorQuiz()
+      quiz.startRound()
+      vi.advanceTimersByTime(2000)
+
+      quiz.stopRound()
+      const stoppedAt = quiz.timeLeft()
+      vi.advanceTimersByTime(5000)
+
+      expect(quiz.roundActive()).toBe(false)
+      expect(quiz.timeLeft()).toBe(stoppedAt)
+      dispose()
+    }))
 })
 
 // ============================================================
@@ -362,6 +378,53 @@ describe('EarTraining', () => {
       const result = ear.handleNotePlayed(45)
       expect(result).toBe(false)
       expect(ear.accuracy()).toBe(0)
+      dispose()
+    }))
+
+  it('stops feedback and does not start a hidden next note', () =>
+    createRoot((dispose) => {
+      const ear = createEarTraining(audio)
+      ear.playNewNote()
+      ear.handleNotePlayed(ear.targetMidi()!)
+
+      ear.stop()
+      ;(audio.playTone as ReturnType<typeof vi.fn>).mockClear()
+      vi.advanceTimersByTime(1300)
+
+      expect(ear.targetMidi()).toBeNull()
+      expect(ear.feedback()).toBeNull()
+      expect(audio.playTone).not.toHaveBeenCalled()
+      dispose()
+    }))
+})
+
+// ============================================================
+// MelodyTranscription
+// ============================================================
+describe('MelodyTranscriptionState', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('stops a phrase and cancels its scheduled playback', () =>
+    createRoot((dispose) => {
+      const audio = mockAudioEngine()
+      const melody = createMelodyTranscription(
+        audio,
+        () => 'C',
+        () => 'major',
+      )
+      melody.startNewPhrase()
+
+      melody.stop()
+      vi.advanceTimersByTime(5000)
+
+      expect(melody.phase()).toBe('idle')
+      expect(audio.playTone).not.toHaveBeenCalled()
       dispose()
     }))
 })
@@ -575,6 +638,19 @@ describe('CallResponseState', () => {
       const result = cr.handleNotePlayed(60)
       expect(result).toBe(false)
       expect(cr.totalScore()).toBe(0)
+      dispose()
+    }))
+
+  it('stops a round and cancels its scheduled playback', () =>
+    createRoot((dispose) => {
+      const cr = createCallResponse(audio, key, scale)
+      cr.startRound()
+
+      cr.stop()
+      vi.advanceTimersByTime(5000)
+
+      expect(cr.phase()).toBe('idle')
+      expect(audio.playTone).not.toHaveBeenCalled()
       dispose()
     }))
 })

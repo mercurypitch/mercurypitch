@@ -185,6 +185,34 @@ describe('mic reconciliation', () => {
     expect(engine.isMicActive()).toBe(true)
   })
 
+  it('adopts a pending capture for a replacement logical owner', async () => {
+    const contexts = stubAudioContext()
+    let resolveStream: ((stream: MockStream) => void) | undefined
+    const gum = mockGetUserMedia(
+      () =>
+        new Promise<MockStream>((resolve) => {
+          resolveStream = resolve
+        }),
+    )
+    const engine = new AudioEngine()
+
+    const staleGuitarStart = engine.startMic('guitar')
+    engine.stopMic('guitar')
+    const currentPracticeStart = engine.startMic('practice')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(resolveStream).toBeTypeOf('function')
+    resolveStream?.(makeStream())
+
+    await expect(staleGuitarStart).resolves.toBe(false)
+    await expect(currentPracticeStart).resolves.toBe(true)
+    expect(engine.isMicActive()).toBe(true)
+    expect(gum).toHaveBeenCalledTimes(1)
+    expect(contexts[0].createMediaStreamSource).toHaveBeenCalledTimes(1)
+
+    engine.stopMic('practice')
+    expect(engine.isMicActive()).toBe(false)
+  })
+
   it('preserves the device-busy recovery message through practice-engine', async () => {
     stubAudioContext()
     mockGetUserMedia(() => {

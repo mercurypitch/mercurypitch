@@ -332,6 +332,58 @@ describe('AudioEngine', () => {
 
       engine.stopTone()
     })
+
+    it('cancels a tone still awaiting AudioContext resume on stop', async () => {
+      let finishResume: () => void = () => {}
+      const resume = vi.spyOn(engine, 'resume').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishResume = resolve
+          }),
+      )
+      const context = engine.getAudioContext()
+      expect(context).not.toBeNull()
+      const oscillatorCreationsBefore = vi.mocked(context!.createOscillator)
+        .mock.calls.length
+
+      const pendingTone = engine.playTone(440, 1000)
+      await vi.waitFor(() => expect(resume).toHaveBeenCalledOnce())
+      engine.stopTone()
+      finishResume()
+
+      await expect(pendingTone).resolves.toBeUndefined()
+      expect(context!.createOscillator).toHaveBeenCalledTimes(
+        oscillatorCreationsBefore,
+      )
+      expect(engine.isTonePlaying()).toBe(false)
+    })
+
+    it('cancels a tone still awaiting AudioContext init on stop', async () => {
+      let finishInit: () => void = () => {}
+      const init = vi.spyOn(engine, 'init').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishInit = resolve
+          }),
+      )
+      const resume = vi.spyOn(engine, 'resume')
+      const context = engine.getAudioContext()
+      expect(context).not.toBeNull()
+      const oscillatorCreationsBefore = vi.mocked(context!.createOscillator)
+        .mock.calls.length
+
+      const pendingTone = engine.playTone(440, 1000)
+      await vi.waitFor(() => expect(init).toHaveBeenCalledOnce())
+      engine.stopTone()
+      finishInit()
+
+      await expect(pendingTone).resolves.toBeUndefined()
+      expect(resume).not.toHaveBeenCalled()
+      expect(context!.createOscillator).toHaveBeenCalledTimes(
+        oscillatorCreationsBefore,
+      )
+      expect(engine.isTonePlaying()).toBe(false)
+    })
   })
 
   describe('note playback', () => {

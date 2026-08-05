@@ -24,6 +24,7 @@ export interface EarTrainingState {
   setDifficulty: Setter<EarDifficulty>
   handleNotePlayed: (midi: number) => boolean
   playNewNote: () => void
+  stop: () => void
 }
 
 /** Create ear training state signals for wiring into canvas + inline HUD. */
@@ -79,9 +80,17 @@ export function createEarTraining(audioEngine: AudioEngine): EarTrainingState {
 
   const accuracy = () => (totalCount() > 0 ? correctCount() / totalCount() : 0)
 
-  onCleanup(() => {
-    if (flashTimer !== null) clearTimeout(flashTimer)
-  })
+  const stop = () => {
+    if (flashTimer !== null) {
+      clearTimeout(flashTimer)
+      flashTimer = null
+    }
+    audioEngine.stopTone()
+    setTargetMidi(null)
+    setFeedback(null)
+  }
+
+  onCleanup(stop)
 
   return {
     targetMidi,
@@ -92,5 +101,6 @@ export function createEarTraining(audioEngine: AudioEngine): EarTrainingState {
     setDifficulty,
     handleNotePlayed,
     playNewNote,
+    stop,
   }
 }
