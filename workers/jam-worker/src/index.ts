@@ -10,6 +10,8 @@
 import type { JamRoom } from './jam-room'
 import type { TurnEnv } from './turn'
 import { mintIceServers } from './turn'
+import { isJamRoomId, withJamConnectionContext } from './signaling-intent'
+export { JamHostVerifier } from './host-verification'
 export { JamRoom } from './jam-room'
 
 interface Env extends TurnEnv {
@@ -95,6 +97,7 @@ function newRoomId(): string {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url)
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: CORS })
     }
@@ -104,11 +107,12 @@ export default {
     // browser; the read-only GET room-info path is left ungated because a
     // same-origin GET may legitimately omit Origin.
     const isWsUpgrade = request.headers.get('Upgrade') === 'websocket'
-    if ((isWsUpgrade || request.method === 'POST') && !isOriginAllowed(request, env)) {
+    if (
+      (isWsUpgrade || request.method === 'POST') &&
+      !isOriginAllowed(request, env)
+    ) {
       return respond({ error: 'Origin not allowed' }, { status: 403 })
     }
-
-    const url = new URL(request.url)
 
     // ── WS: Create room ───────────────────────────────────────────
     if (url.pathname === '/api/jam/rooms/new') {
@@ -119,24 +123,23 @@ export default {
       const doId = env.JAM_ROOM.idFromName(roomId)
       const stub = env.JAM_ROOM.get(doId)
 
-      const headers = new Headers(request.headers)
-      headers.set('X-Jam-Room-Id', roomId)
-      return stub.fetch(new Request(request, { headers }))
+      return stub.fetch(withJamConnectionContext(request, roomId, 'create'))
     }
 
     // ── WS: Join room ─────────────────────────────────────────────
-    const sigMatch = url.pathname.match(/^\/api\/jam\/rooms\/(.+)\/signal$/)
+    const sigMatch = url.pathname.match(/^\/api\/jam\/rooms\/([^/]+)\/signal$/)
     if (sigMatch) {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return respond({ error: 'WebSocket upgrade required' }, { status: 426 })
       }
       const roomId = sigMatch[1]
+      if (!isJamRoomId(roomId)) {
+        return respond({ error: 'Invalid room id' }, { status: 400 })
+      }
       const doId = env.JAM_ROOM.idFromName(roomId)
       const stub = env.JAM_ROOM.get(doId)
 
-      const headers = new Headers(request.headers)
-      headers.set('X-Jam-Room-Id', roomId)
-      return stub.fetch(new Request(request, { headers }))
+      return stub.fetch(withJamConnectionContext(request, roomId, 'join'))
     }
 
     // ── REST: ICE servers ─────────────────────────────────────────
@@ -157,8 +160,11 @@ export default {
     }
 
     // ── REST: Room info ───────────────────────────────────────────
-    const infoMatch = url.pathname.match(/^\/api\/jam\/rooms\/(.+)$/)
+    const infoMatch = url.pathname.match(/^\/api\/jam\/rooms\/([^/]+)$/)
     if (infoMatch && request.method === 'GET') {
+      if (!isJamRoomId(infoMatch[1])) {
+        return respond({ error: 'Invalid room id' }, { status: 400 })
+      }
       return respond({ roomId: infoMatch[1], exists: true })
     }
 

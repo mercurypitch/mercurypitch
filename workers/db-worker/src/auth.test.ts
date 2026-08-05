@@ -75,6 +75,15 @@ class AuthStatement {
       ) ?? null) as T | null
     }
 
+    if (this.sql === 'SELECT email, emailVerified FROM users WHERE id = ?') {
+      const user = this.db.users.get(String(this.values[0]))
+      if (!user) return null
+      return {
+        email: user.email,
+        emailVerified: user.emailVerified,
+      } as T
+    }
+
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
   }
 
@@ -115,6 +124,7 @@ class AuthStatement {
         authProvider: 'password',
         email: String(email),
         passwordHash: String(passwordHash),
+        tokenVersion: this.db.user(String(id)).tokenVersion + 1,
         updatedAt: String(updatedAt),
       })
       return { success: true }
@@ -127,6 +137,7 @@ class AuthStatement {
         providerId: String(providerId),
         email: email == null ? null : String(email),
         emailVerified: Number(emailVerified),
+        tokenVersion: this.db.user(String(id)).tokenVersion + 1,
         updatedAt: String(updatedAt),
       })
       return { success: true }
@@ -142,6 +153,16 @@ class AuthStatement {
     }
 
     if (this.sql.startsWith('INSERT OR IGNORE INTO userProfiles')) {
+      return { success: true }
+    }
+
+    if (this.sql.startsWith('DELETE FROM ')) {
+      const id = String(this.values[0])
+      if (this.sql === 'DELETE FROM userProfiles WHERE id = ?') {
+        this.db.profiles.delete(id)
+      } else if (this.sql === 'DELETE FROM users WHERE id = ?') {
+        this.db.users.delete(id)
+      }
       return { success: true }
     }
 
@@ -165,6 +186,10 @@ class AuthDatabase {
       throw new Error('provider lookup unavailable')
     }
     return new AuthStatement(this, normalized)
+  }
+
+  async batch(statements: AuthStatement[]): Promise<unknown[]> {
+    return Promise.all(statements.map((statement) => statement.run()))
   }
 
   seedAnonymous(id: string): void {
@@ -193,14 +218,49 @@ class AuthDatabase {
   }
 }
 
+class PerksStatement {
+  private values: unknown[] = []
+
+  constructor(
+    private readonly db: PerksDatabase,
+    private readonly sql: string,
+  ) {}
+
+  bind(...values: unknown[]): PerksStatement {
+    this.values = values
+    return this
+  }
+
+  async run(): Promise<{ success: true }> {
+    if (this.sql !== 'DELETE FROM perkGrants WHERE email = ?1') {
+      throw new Error(`Unexpected perks run() SQL: ${this.sql}`)
+    }
+    if (this.db.failDeletes) throw new Error('shared perks unavailable')
+    this.db.deletedEmails.push(String(this.values[0]))
+    return { success: true }
+  }
+}
+
+class PerksDatabase {
+  readonly deletedEmails: string[] = []
+  failDeletes = false
+
+  prepare(sql: string): PerksStatement {
+    return new PerksStatement(this, sql.replace(/\s+/g, ' ').trim())
+  }
+}
+
 const FRESH_DEVICE_ID = '00000000-0000-4000-8000-000000000001'
 const ANONYMOUS_DEVICE_ID = '00000000-0000-4000-8000-000000000002'
 
-function makeEnv(db: AuthDatabase): Env {
+function makeEnv(db: AuthDatabase, perks?: PerksDatabase): Env {
   return {
     DB: db as unknown as D1Database,
     JWT_SECRET: 'test-jwt-secret',
     GOOGLE_CLIENT_ID: 'test-google-client',
+    ...(perks === undefined
+      ? {}
+      : { PERKS_DB: perks as unknown as D1Database }),
   }
 }
 
@@ -230,6 +290,38 @@ async function postAuth(
   if (response == null) throw new Error('Auth route was not handled')
   expect(response.status).toBe(200)
   return (await response.json()) as Record<string, unknown>
+}
+
+async function postAnonymous(
+  deviceId: string,
+  env: Env,
+): Promise<Record<string, unknown>> {
+  const response = await handleAuth(
+    new Request('https://api.test/api/auth/anonymous', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId }),
+    }),
+    env,
+    '/api/auth/anonymous',
+    respond,
+  )
+  if (response == null) throw new Error('Anonymous route was not handled')
+  expect(response.status).toBe(200)
+  return (await response.json()) as Record<string, unknown>
+}
+
+async function authMeStatus(token: unknown, env: Env): Promise<number> {
+  const response = await handleAuth(
+    new Request('https://api.test/api/auth/me', {
+      headers: { Authorization: `Bearer ${String(token)}` },
+    }),
+    env,
+    '/api/auth/me',
+    respond,
+  )
+  if (response == null) throw new Error('Me route was not handled')
+  return response.status
 }
 
 function stubGoogleClaims(sub: string): void {
@@ -658,6 +750,43 @@ describe('db-worker account creation classification', () => {
   })
 })
 
+describe('anonymous upgrade session revocation', () => {
+  it('rejects the pre-upgrade anonymous JWT after password registration', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const anonymous = await postAnonymous(ANONYMOUS_DEVICE_ID, env)
+
+    const upgraded = await postAuth(
+      'register',
+      {
+        email: 'upgraded-password@example.com',
+        password: 'Sing1ngPass',
+        deviceId: ANONYMOUS_DEVICE_ID,
+      },
+      env,
+    )
+
+    expect(await authMeStatus(anonymous.token, env)).toBe(401)
+    expect(await authMeStatus(upgraded.token, env)).toBe(200)
+  })
+
+  it('rejects the pre-upgrade anonymous JWT after Google registration', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const anonymous = await postAnonymous(ANONYMOUS_DEVICE_ID, env)
+    stubGoogleClaims('upgraded-google-session')
+
+    const upgraded = await postAuth(
+      'google',
+      { idToken: 'upgraded-token', deviceId: ANONYMOUS_DEVICE_ID },
+      env,
+    )
+
+    expect(await authMeStatus(anonymous.token, env)).toBe(401)
+    expect(await authMeStatus(upgraded.token, env)).toBe(200)
+  })
+})
+
 describe('GET /api/auth/me profile shape', () => {
   it('returns leaderboardOptIn as a real boolean, not SQLite 0/1', async () => {
     const db = new AuthDatabase()
@@ -694,5 +823,106 @@ describe('GET /api/auth/me profile shape', () => {
     // consent checkbox unchecked forever, and clicking an unchecked box
     // re-opts in - so opting OUT from the UI was impossible.
     expect(body.profile.leaderboardOptIn).toBe(true)
+  })
+})
+
+describe('DELETE /api/auth/me shared perk ownership', () => {
+  async function registerAndDelete(emailVerified: number): Promise<string[]> {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    const env = makeEnv(db, perks)
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'donor@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+    const userId = String((auth.user as Record<string, unknown>).id)
+    db.user(userId).emailVerified = emailVerified
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    expect(response?.status).toBe(200)
+    expect(db.users.has(userId)).toBe(false)
+    return perks.deletedEmails
+  }
+
+  it('does not purge an email-keyed grant for an unverified account', async () => {
+    expect(await registerAndDelete(0)).toEqual([])
+  })
+
+  it('purges an email-keyed grant after mailbox ownership is verified', async () => {
+    expect(await registerAndDelete(1)).toEqual(['donor@example.com'])
+  })
+
+  it('keeps the account retryable when the shared perks binding is unavailable', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'donor@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+    const userId = String((auth.user as Record<string, unknown>).id)
+    db.user(userId).emailVerified = 1
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    expect(response?.status).toBe(503)
+    expect(db.users.has(userId)).toBe(true)
+  })
+
+  it('keeps the account retryable when the shared perks purge fails', async () => {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    perks.failDeletes = true
+    const env = makeEnv(db, perks)
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'donor@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+    const userId = String((auth.user as Record<string, unknown>).id)
+    db.user(userId).emailVerified = 1
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    expect(response?.status).toBe(503)
+    expect(db.users.has(userId)).toBe(true)
   })
 })

@@ -25,6 +25,7 @@ import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
+import { handlePremiumBackgroundRequest } from './premium-backgrounds'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { validateWrite } from './validation'
@@ -36,7 +37,7 @@ const CORS: Record<string, string> = {
   // Spec quirk: a `*` wildcard does NOT cover the Authorization header
   // (Firefox already warns it will block it) — list everything we use.
   'Access-Control-Allow-Headers':
-    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key',
+    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key, X-Jam-Background-Capability, X-Jam-Room-Id',
   'Access-Control-Expose-Headers':
     'Accept-Ranges, Content-Length, Content-Range, ETag',
 }
@@ -339,9 +340,10 @@ async function handleGetById(
   ) {
     return respond({ error: 'Not found' }, { status: 404 })
   }
-  return respond(maskPublicRow(def, fromSql(def, row), auth?.userId ?? null, admin))
+  return respond(
+    maskPublicRow(def, fromSql(def, row), auth?.userId ?? null, admin),
+  )
 }
-
 
 async function handleCreate(
   entity: string,
@@ -610,7 +612,9 @@ async function loadLeaderboardConfig(env: Env): Promise<LeaderboardConfig> {
       sources = null
     }
     const eligibleSources =
-      Array.isArray(sources) && sources.every((s) => typeof s === 'string') && sources.length > 0
+      Array.isArray(sources) &&
+      sources.every((s) => typeof s === 'string') &&
+      sources.length > 0
         ? (sources as string[])
         : DEFAULT_LEADERBOARD_CONFIG.eligibleSources
 
@@ -642,7 +646,8 @@ const FRIEND_CODE_LENGTH = 8
 function generateFriendCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(FRIEND_CODE_LENGTH))
   let out = ''
-  for (const b of bytes) out += FRIEND_CODE_ALPHABET[b % FRIEND_CODE_ALPHABET.length]
+  for (const b of bytes)
+    out += FRIEND_CODE_ALPHABET[b % FRIEND_CODE_ALPHABET.length]
   return out
 }
 
@@ -660,7 +665,9 @@ async function handleFriendCode(request: Request, env: Env): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
-  const user = await env.DB.prepare('SELECT authProvider FROM users WHERE id = ?')
+  const user = await env.DB.prepare(
+    'SELECT authProvider FROM users WHERE id = ?',
+  )
     .bind(auth.userId)
     .first<{ authProvider: string }>()
   if (!user || user.authProvider === 'anonymous') {
@@ -698,7 +705,10 @@ async function handleFriendCode(request: Request, env: Env): Promise<Response> {
       // UNIQUE violation — the code was taken, draw another.
     }
   }
-  return respond({ error: 'Could not allocate a code, try again' }, { status: 503 })
+  return respond(
+    { error: 'Could not allocate a code, try again' },
+    { status: 503 },
+  )
 }
 
 /**
@@ -706,7 +716,10 @@ async function handleFriendCode(request: Request, env: Env): Promise<Response> {
  * directions immediately — a pending-request queue would be machinery with
  * nothing to decide. Both parties must be registered.
  */
-async function handleFriendRedeem(request: Request, env: Env): Promise<Response> {
+async function handleFriendRedeem(
+  request: Request,
+  env: Env,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
@@ -725,7 +738,10 @@ async function handleFriendRedeem(request: Request, env: Env): Promise<Response>
     .bind(auth.userId)
     .first<{ authProvider: string }>()
   if (!me || me.authProvider === 'anonymous') {
-    return respond({ error: 'Create an account to add friends' }, { status: 403 })
+    return respond(
+      { error: 'Create an account to add friends' },
+      { status: 403 },
+    )
   }
 
   const target = await env.DB.prepare(
@@ -735,7 +751,8 @@ async function handleFriendRedeem(request: Request, env: Env): Promise<Response>
     .first<{ id: string; displayName: string }>()
   // Same message for "no such code" and "that's you" would be confusing; but
   // an unknown code must not reveal whether it merely belongs to nobody yet.
-  if (!target) return respond({ error: 'No one found for that code' }, { status: 404 })
+  if (!target)
+    return respond({ error: 'No one found for that code' }, { status: 404 })
   if (target.id === auth.userId) {
     return respond({ error: 'That’s your own code' }, { status: 400 })
   }
@@ -746,15 +763,35 @@ async function handleFriendRedeem(request: Request, env: Env): Promise<Response>
       `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
        SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
          (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
-    ).bind(crypto.randomUUID(), now, now, auth.userId, target.id, auth.userId, target.id),
+    ).bind(
+      crypto.randomUUID(),
+      now,
+      now,
+      auth.userId,
+      target.id,
+      auth.userId,
+      target.id,
+    ),
     env.DB.prepare(
       `INSERT INTO follows (id, createdAt, updatedAt, userId, followedUserId)
        SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS
          (SELECT 1 FROM follows WHERE userId = ? AND followedUserId = ?)`,
-    ).bind(crypto.randomUUID(), now, now, target.id, auth.userId, target.id, auth.userId),
+    ).bind(
+      crypto.randomUUID(),
+      now,
+      now,
+      target.id,
+      auth.userId,
+      target.id,
+      auth.userId,
+    ),
   ])
 
-  return respond({ ok: true, userId: target.id, displayName: target.displayName })
+  return respond({
+    ok: true,
+    userId: target.id,
+    displayName: target.displayName,
+  })
 }
 
 async function handleLeaderboard(
@@ -851,7 +888,13 @@ async function handleLeaderboard(
   // board look mis-sorted the moment anyone's record outlived their run.
   // Safe for privacy: this handler already 400s on streak + global view, and
   // the projection below zeroes strangers' streaks on the global board.
-  const rankValue = (row: { score: number; bestScore: number; accuracy: number; totalSessions: number; longestStreak: number }): number => {
+  const rankValue = (row: {
+    score: number
+    bestScore: number
+    accuracy: number
+    totalSessions: number
+    longestStreak: number
+  }): number => {
     switch (category) {
       case 'best-score':
         return row.bestScore
@@ -1767,7 +1810,13 @@ async function handleRequest(
     )
   }
 
-  const authResponse = await handleAuth(request, env, url.pathname, respond, ctx)
+  const authResponse = await handleAuth(
+    request,
+    env,
+    url.pathname,
+    respond,
+    ctx,
+  )
   if (authResponse) return authResponse
 
   const billingResponse = await handleBilling(
@@ -1784,6 +1833,15 @@ async function handleRequest(
   // header, so the anonymous paths (the Mirror funnel beacon especially) pay
   // nothing for it.
   const auth = await getAuth(request, env)
+
+  const premiumBackgroundResponse = await handlePremiumBackgroundRequest(
+    request,
+    env,
+    url,
+    auth,
+    CORS,
+  )
+  if (premiumBackgroundResponse !== null) return premiumBackgroundResponse
 
   const isGuidedRoute =
     url.pathname.startsWith('/api/guided-exercises') ||
@@ -1875,8 +1933,13 @@ async function handleRequest(
     const rl = await checkRateLimit(env.DB, ip, 'friend-code')
     if (!rl.allowed) {
       return respond(
-        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
     return handleFriendCode(request, env)
@@ -1889,8 +1952,13 @@ async function handleRequest(
     const rl = await checkRateLimit(env.DB, ip, 'friend-redeem')
     if (!rl.allowed) {
       return respond(
-        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
     return handleFriendRedeem(request, env)

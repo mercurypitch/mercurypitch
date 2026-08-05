@@ -9,32 +9,32 @@
 // (dotfiles grant-perks.sh + companyReportViewer); the worker exposes
 // just the read path plus the account-deletion purge.
 
+import { BACKGROUND_PERK_IDS } from '../../../src/lib/backgrounds/background-catalog'
 import type { Env } from './auth'
 
-/** Catalog of grantable perk ids — keep in sync with grant-perks.sh. */
-export const PERK_IDS = [
-  'golden-stage',
-  'golden-singer',
-  'aurora-loft',
-] as const
+/** Catalog of grantable perk ids shared with the app background registry. */
+export const PERK_IDS = BACKGROUND_PERK_IDS
 
 export type PerkId = (typeof PERK_IDS)[number]
 
 /**
- * Active perk ids for a signed-in user, resolved via their account
- * email. Returns [] when the user has no email (anonymous), when no
- * grants exist, or when the perks binding is absent (local dev without
- * the shared DB) — perks are cosmetic, so absence must never error.
+ * Active perk ids for a signed-in user, resolved via their verified account
+ * email. A working session is not proof of mailbox ownership: password
+ * accounts are usable before email verification, so an unverified address
+ * must never claim an email-keyed grant. Returns [] when no verified email or
+ * grant exists, or when the shared perks binding is absent/unavailable.
  */
 export async function getPerksForUser(
   env: Env,
   userId: string,
 ): Promise<string[]> {
   if (!env.PERKS_DB) return []
-  const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
+  const user = await env.DB.prepare(
+    'SELECT email, emailVerified FROM users WHERE id = ?',
+  )
     .bind(userId)
-    .first<{ email: string | null }>()
-  if (!user?.email) return []
+    .first<{ email: string | null; emailVerified: number }>()
+  if (!user?.email || user.emailVerified !== 1) return []
   try {
     const rows = await env.PERKS_DB.prepare(
       'SELECT perkId FROM perkGrants WHERE email = ?1 AND revokedAt IS NULL',
@@ -55,20 +55,14 @@ export async function getPerksForUser(
   }
 }
 
-/**
- * Account deletion: drop every grant for the email. Best-effort — the
- * main-DB deletion batch must never fail because the perks DB hiccuped.
- */
+/** Account deletion: drop every shared grant before erasing the user row. */
 export async function purgePerksByEmail(
   env: Env,
   email: string | null,
 ): Promise<void> {
-  if (!env.PERKS_DB || !email) return
-  try {
-    await env.PERKS_DB.prepare('DELETE FROM perkGrants WHERE email = ?1')
-      .bind(email)
-      .run()
-  } catch {
-    // Swallow: deletion of the account itself already succeeded.
-  }
+  if (!email) return
+  if (!env.PERKS_DB) throw new Error('Shared perks database unavailable')
+  await env.PERKS_DB.prepare('DELETE FROM perkGrants WHERE email = ?1')
+    .bind(email)
+    .run()
 }

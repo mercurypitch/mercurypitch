@@ -19,7 +19,7 @@
 // register/google UPGRADES that anonymous user in place, so all rows
 // (sessions, badges, progress) stay attached to the same userId.
 
-import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './email'
+import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
 import { AccountSuspendedError, assertAccountActive, } from './moderation'
 import { purgePerksByEmail } from './perks'
@@ -33,6 +33,18 @@ export interface Env {
   /** Permanent short guided-exercise playback assets. Unlike UVR staging,
    * this bucket must not have an automatic expiry lifecycle. */
   GUIDED_MEDIA_BUCKET?: R2Bucket
+  /** Private supporter background assets. Objects are readable only through
+   *  the entitlement-gated delivery endpoint in premium-backgrounds.ts. */
+  PREMIUM_BACKGROUNDS_BUCKET?: R2Bucket
+  /** Private service binding to the Jam signaling Worker. Used only to ask
+   *  the room Durable Object whether an owner token matches its stored host. */
+  JAM_WORKER?: {
+    verifyHost(roomId: string, ownerToken: string): Promise<boolean>
+  }
+  /** Dedicated HMAC key for short-lived, room-scoped background capabilities.
+   *  Generate at least 32 random bytes and set it with `wrangler secret put
+   *  BACKGROUND_CAPABILITY_SECRET`; do not reuse JWT_SECRET. */
+  BACKGROUND_CAPABILITY_SECRET?: string
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
   /** OAuth client id from Google Cloud Console (Web application type). */
@@ -484,14 +496,14 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
   // Account erasure is irreversible and needs a valid token anyway; the cap
   // just bounds a scripted sweep against harvested tokens.
-  'delete-account': { max: 5, windowMs: 600_000 },      // 5/10min
+  'delete-account': { max: 5, windowMs: 600_000 }, // 5/10min
   // Password reset: forgot-password sends mail (tight, like resend); the
   // per-ADDRESS cap (keyed by email, not IP — see handleForgotPassword)
   // stops inbox-bombing from rotating IPs. reset-password covers the cheap
   // GET probe + the POST that consumes the token.
-  'forgot-password': { max: 3, windowMs: 600_000 },     // 3/10min per IP
-  'forgot-email': { max: 3, windowMs: 3_600_000 },      // 3/h per address
-  'reset-password': { max: 10, windowMs: 300_000 },     // 10/5min
+  'forgot-password': { max: 3, windowMs: 600_000 }, // 3/10min per IP
+  'forgot-email': { max: 3, windowMs: 3_600_000 }, // 3/h per address
+  'reset-password': { max: 10, windowMs: 300_000 }, // 10/5min
   // Generic cap for CRUD mutations (POST/PATCH/DELETE), enforced by index.ts,
   // keyed per USER when the caller is authenticated and per IP otherwise —
   // see rateLimitSubject. Generous for normal use (session saves, settings,
@@ -506,6 +518,14 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // Anonymous Voice Mirror funnel beacons: a full run emits ~10 events, so
   // 60/min per IP is roomy for humans and cheap to spam-bound.
   'mirror-event': { max: 60, windowMs: 60_000 },
+  // A room host normally mints once when selecting premium art. Thirty per
+  // minute leaves room for reconnects and development while bounding the
+  // entitlement query + cross-Worker Durable Object proof behind each mint.
+  'background-capability': { max: 30, windowMs: 60_000 },
+  // Protected images are browser-cached, so normal clients make only a few
+  // reads. Keep enough headroom for a 12-singer room behind one NAT while
+  // bounding replay of a guest bearer token or a runaway supporter client.
+  'background-read': { max: 120, windowMs: 60_000 },
   // Paid UVR dispatch: the client runs one song at a time, so three starts in
   // one minute leaves ample room for retries while stopping a loop or multiple
   // tabs from rapidly burning GPU spend. The sustained cap mirrors the
@@ -745,7 +765,10 @@ async function createPasswordReset(
 ): Promise<string> {
   const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
   const tokenHash = await sha256b64url(token)
-  await db.prepare('DELETE FROM passwordResets WHERE userId = ?').bind(userId).run()
+  await db
+    .prepare('DELETE FROM passwordResets WHERE userId = ?')
+    .bind(userId)
+    .run()
   await db
     .prepare(
       'INSERT INTO passwordResets (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
@@ -780,10 +803,14 @@ async function sendPasswordResetEmail(
       : fallbackAppOrigin(env)
     const resetUrl = `${returnTo}/#/reset-password?token=${encodeURIComponent(token)}`
     if (!env.RESEND_API_KEY) {
-      console.log(`[auth] reset link (email skipped, no RESEND_API_KEY): ${resetUrl}`)
+      console.log(
+        `[auth] reset link (email skipped, no RESEND_API_KEY): ${resetUrl}`,
+      )
       return
     }
-    const profile = await env.DB.prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+    const profile = await env.DB.prepare(
+      'SELECT displayName FROM userProfiles WHERE id = ?',
+    )
       .bind(user.id)
       .first<{ displayName: string | null }>()
     await sendPasswordReset(
@@ -796,7 +823,9 @@ async function sendPasswordResetEmail(
       },
     )
   } catch (err) {
-    console.error(`[auth] password-reset email failed (non-fatal): ${String(err)}`)
+    console.error(
+      `[auth] password-reset email failed (non-fatal): ${String(err)}`,
+    )
   }
 }
 
@@ -851,7 +880,8 @@ async function handleResetPasswordCheck(
     return respond({ valid: false })
   }
   const user = await findUserById(env.DB, row.userId)
-  const valid = user != null && user.email?.toLowerCase() === row.email.toLowerCase()
+  const valid =
+    user != null && user.email?.toLowerCase() === row.email.toLowerCase()
   return respond({ valid })
 }
 
@@ -902,8 +932,15 @@ async function handleResetPassword(
   return respond({ ok: true })
 }
 
-async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Promise<Response> {
-  const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
+async function handleAnonymous(
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const id =
+    body.deviceId && UUID_RE.test(body.deviceId)
+      ? body.deviceId
+      : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
   if (existing) {
     assertAccountActive(existing)
@@ -950,7 +987,7 @@ async function handleRegister(
     if (anon && anon.authProvider === 'anonymous') {
       assertAccountActive(anon)
       await env.DB.prepare(
-        `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, updatedAt = ? WHERE id = ?`,
+        `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
       )
         .bind(email, passwordHash, nowIso(), anon.id)
         .run()
@@ -1062,7 +1099,7 @@ async function resolveGoogleUser(
     if (anon && anon.authProvider === 'anonymous') {
       assertAccountActive(anon)
       await env.DB.prepare(
-        `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?`,
+        `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ?`,
       )
         .bind(
           claims.sub,
@@ -1443,7 +1480,11 @@ async function handleMe(
   const normalized =
     profile == null
       ? profile
-      : { ...profile, leaderboardOptIn: profile.leaderboardOptIn === 1 || profile.leaderboardOptIn === true }
+      : {
+          ...profile,
+          leaderboardOptIn:
+            profile.leaderboardOptIn === 1 || profile.leaderboardOptIn === true,
+        }
   return respond({ user: publicUser(row), profile: normalized })
 }
 
@@ -1524,22 +1565,49 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
  * A second call with the same token 401s — `getAuth` can no longer resolve the
  * user — so this is naturally idempotent from the client's point of view.
  */
-async function handleDeleteMe(request: Request, env: Env, respond: Respond): Promise<Response> {
+async function handleDeleteMe(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
 
   // Read the email before the user row disappears — the perks purge
   // (separate shared DB, keyed by email) needs it afterwards.
-  const userRow = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
+  const userRow = await env.DB.prepare(
+    'SELECT email, emailVerified FROM users WHERE id = ?',
+  )
     .bind(userId)
-    .first<{ email: string | null }>()
+    .first<{ email: string | null; emailVerified: number }>()
+
+  // Purge the shared, email-keyed row first. There is no transaction across
+  // two D1 databases: deleting this operator-restorable cosmetic grant before
+  // the irreversible user row is the only ordering that remains retryable.
+  // Password accounts work before mailbox verification, so an unverified
+  // address must never be allowed to delete somebody else's shared grant.
+  try {
+    await purgePerksByEmail(
+      env,
+      userRow?.emailVerified === 1 ? userRow.email : null,
+    )
+  } catch {
+    return respond(
+      { error: 'Account deletion temporarily unavailable' },
+      { status: 503 },
+    )
+  }
 
   const statements = [
     ...USER_OWNED_TABLES.map(({ table, column }) =>
-      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(userId),
+      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(
+        userId,
+      ),
     ),
-    env.DB.prepare('DELETE FROM follows WHERE userId = ? OR followedUserId = ?').bind(userId, userId),
+    env.DB.prepare(
+      'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
+    ).bind(userId, userId),
     env.DB.prepare('DELETE FROM userProfiles WHERE id = ?').bind(userId),
     env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
   ]
@@ -1547,8 +1615,6 @@ async function handleDeleteMe(request: Request, env: Env, respond: Respond): Pro
   // One batch so a mid-way failure can't strand a user row without its data
   // (or, worse, orphaned data without its user).
   await env.DB.batch(statements)
-
-  await purgePerksByEmail(env, userRow?.email ?? null)
 
   return respond({ ok: true, deleted: userId })
 }
@@ -1576,8 +1642,13 @@ export async function handleAuth(
     const rl = await checkRateLimit(env.DB, ip, 'delete-account')
     if (!rl.allowed) {
       return respond(
-        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
     return handleDeleteMe(request, env, respond)
@@ -1612,8 +1683,13 @@ export async function handleAuth(
     const rl = await checkRateLimit(env.DB, ip, 'reset-password')
     if (!rl.allowed) {
       return respond(
-        { error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.` },
-        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+        {
+          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
+        },
       )
     }
     return handleResetPasswordCheck(request, env, respond)

@@ -12,6 +12,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'cloudflare:workers': path.resolve(
+        __dirname,
+        './workers/jam-worker/test-support/cloudflare-workers.ts',
+      ),
     },
   },
   test: {
@@ -28,6 +32,7 @@ export default defineConfig({
       'src/components/__tests__/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',
       'workers/db-worker/node-tests/**/*.test.ts',
+      'workers/jam-worker/src/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

@@ -3,6 +3,8 @@
 // Uses WebSocket Hibernation API for efficient resource usage.
 
 import { DurableObject } from 'cloudflare:workers'
+import { cancelRoomOwnershipExpiry, createRoomOwnershipState, expireRoomOwnership, roomOwnershipMustExpire, ROOM_OWNERSHIP_EXPIRY_KEY, scheduleRoomOwnershipExpiry, } from './room-ownership'
+import { connectionAllowsMessage, JAM_CONNECTION_INTENT_HEADER, JAM_ROOM_ID_HEADER, type JamSocketAttachment, parseInitialConnectionIntent, } from './signaling-intent'
 
 interface PeerInfo {
   id: string
@@ -10,7 +12,6 @@ interface PeerInfo {
   ws: WebSocket
 }
 
-const GRACE_PERIOD_MS = 5 * 60 * 1000 // 5 min after last peer leaves
 const MAX_PEERS = 12 // occupancy cap per room (bounds an unauthenticated channel)
 const MSG_RATE_LIMIT = 120 // max messages per window, per connection
 const MSG_RATE_WINDOW_MS = 1000
@@ -37,10 +38,8 @@ export class JamRoom extends DurableObject<JamEnv> {
   private peers: Map<string, PeerInfo> = new Map()
   private wsToPeerId: WeakMap<WebSocket, string> = new WeakMap()
   private roomId = ''
-  private ownerId: string | null = null
-  private ownerName: string | null = null
-  private ownerToken: string | null = null
-  private deleteTimer: ReturnType<typeof setTimeout> | null = null
+  private readonly ownership = createRoomOwnershipState()
+  private ownershipHydrated = false
   private isHydrated = false
   private msgRate: WeakMap<WebSocket, { windowStart: number; count: number }> =
     new WeakMap()
@@ -52,13 +51,20 @@ export class JamRoom extends DurableObject<JamEnv> {
     this.wsToPeerId = new WeakMap()
     for (const ws of this.ctx.getWebSockets()) {
       try {
-        const attachment = ws.deserializeAttachment() as { peerId?: string, displayName?: string, roomId?: string } | null
-        if (attachment && attachment.peerId) {
-          if (!this.roomId && attachment.roomId) this.roomId = attachment.roomId
+        const attachment =
+          ws.deserializeAttachment() as JamSocketAttachment | null
+        if (!this.roomId && attachment?.roomId) {
+          this.roomId = attachment.roomId
+        }
+        if (
+          attachment &&
+          attachment.peerId &&
+          attachment.connectionIntent !== 'departed'
+        ) {
           this.peers.set(attachment.peerId, {
             id: attachment.peerId,
             displayName: attachment.displayName || '',
-            ws
+            ws,
           })
           this.wsToPeerId.set(ws, attachment.peerId)
         }
@@ -70,19 +76,62 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   // ── WebSocket upgrade ────────────────────────────────────────────
 
-  override fetch(request: Request): Response {
+  override async fetch(request: Request): Promise<Response> {
     this.hydrate()
-    this.roomId = request.headers.get('X-Jam-Room-Id') || ''
+    this.roomId = request.headers.get(JAM_ROOM_ID_HEADER) || ''
+
+    const url = new URL(request.url)
+    if (request.method === 'POST' && url.pathname === '/internal/verify-host') {
+      let body: unknown
+      try {
+        const text = await request.text()
+        if (text.length > 256) throw new Error('body too large')
+        body = JSON.parse(text)
+      } catch {
+        return new Response(null, {
+          status: 400,
+          headers: { 'Cache-Control': 'private, no-store' },
+        })
+      }
+      const ownerToken =
+        typeof body === 'object' &&
+        body !== null &&
+        typeof (body as { ownerToken?: unknown }).ownerToken === 'string'
+          ? (body as { ownerToken: string }).ownerToken
+          : ''
+      const verified = await this.hasOwnerToken(ownerToken)
+      return new Response(null, {
+        status: verified ? 204 : 403,
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
+    }
+
+    if (request.headers.get('Upgrade') !== 'websocket') {
+      return new Response('WebSocket upgrade required', { status: 426 })
+    }
+    const connectionIntent = parseInitialConnectionIntent(
+      request.headers.get(JAM_CONNECTION_INTENT_HEADER),
+    )
+    if (connectionIntent === null || this.roomId === '') {
+      return new Response('Invalid signaling route', { status: 400 })
+    }
 
     const pair = new WebSocketPair()
     const [client, server] = Object.values(pair)
     this.ctx.acceptWebSocket(server)
+    server.serializeAttachment({
+      connectionIntent,
+      roomId: this.roomId,
+    } satisfies JamSocketAttachment)
     return new Response(null, { status: 101, webSocket: client })
   }
 
   // ── WebSocket message handler ─────────────────────────────────────
 
-  override webSocketMessage(ws: WebSocket, message: string): void {
+  override async webSocketMessage(
+    ws: WebSocket,
+    message: string,
+  ): Promise<void> {
     this.hydrate()
 
     // Cheap per-connection flood guard: drop messages above the budget so a
@@ -99,22 +148,44 @@ export class JamRoom extends DurableObject<JamEnv> {
 
     let msg: { type: string; [k: string]: unknown }
     try {
-      msg = JSON.parse(message)
+      const parsed = JSON.parse(message) as unknown
+      if (
+        typeof parsed !== 'object' ||
+        parsed === null ||
+        typeof (parsed as { type?: unknown }).type !== 'string'
+      ) {
+        return
+      }
+      msg = parsed as { type: string; [k: string]: unknown }
     } catch {
+      return
+    }
+
+    const attachment = this.readAttachment(ws)
+    if (
+      !connectionAllowsMessage(attachment?.connectionIntent ?? null, msg.type)
+    ) {
+      this.rejectSocket(ws, 'Invalid signaling sequence')
       return
     }
 
     switch (msg.type) {
       case 'create-room':
-        this.handleCreateRoom(ws, msg as { type: string; displayName: string })
+        await this.handleCreateRoom(
+          ws,
+          msg as { type: string; displayName: string },
+        )
         break
       case 'join-room':
-        void this.handleJoinRoom(ws, msg as {
-          type: string
-          roomId: string
-          displayName: string
-          ownerToken?: string
-        })
+        await this.handleJoinRoom(
+          ws,
+          msg as {
+            type: string
+            roomId: string
+            displayName: string
+            ownerToken?: string
+          },
+        )
         break
       case 'offer':
       case 'answer':
@@ -122,24 +193,26 @@ export class JamRoom extends DurableObject<JamEnv> {
         this.relayToPeer(ws, msg as { type: string; target?: string })
         break
       case 'leave-room':
-        this.handleLeave(ws)
+        await this.handleLeave(ws)
         break
     }
   }
 
   // ── WebSocket close / error ───────────────────────────────────────
 
-  override webSocketClose(ws: WebSocket): void {
+  override async webSocketClose(ws: WebSocket): Promise<void> {
     this.hydrate()
     const peerId = this.wsToPeerId.get(ws)
     if (peerId) {
       const peer = this.peers.get(peerId)
-      console.log(`[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} disconnected (${peerId}). Remaining peers: ${this.peers.size - 1}`)
+      console.log(
+        `[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} disconnected (${peerId}). Remaining peers: ${this.peers.size - 1}`,
+      )
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
     }
-    this.checkEmpty()
+    await this.checkEmpty()
   }
 
   override webSocketError(_ws: WebSocket, _error: unknown): void {
@@ -148,29 +221,106 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   // ── Room lifecycle ────────────────────────────────────────────────
 
-  private handleCreateRoom(
+  private async hydrateOwnership(): Promise<void> {
+    if (this.ownershipHydrated || this.ownership.expired) return
+    const [ownerToken, ownerName, storedExpiresAt] = await Promise.all([
+      this.ctx.storage.get<string>('ownerToken'),
+      this.ctx.storage.get<string>('ownerName'),
+      this.ctx.storage.get<number>(ROOM_OWNERSHIP_EXPIRY_KEY),
+    ])
+    this.ownership.ownerToken = ownerToken ?? null
+    this.ownership.ownerName = ownerName ?? null
+    this.ownership.expiresAt =
+      typeof storedExpiresAt === 'number' && Number.isFinite(storedExpiresAt)
+        ? storedExpiresAt
+        : null
+    this.ownershipHydrated = true
+  }
+
+  private async expireOwnership(): Promise<void> {
+    await expireRoomOwnership(this.ownership, () =>
+      this.ctx.storage.deleteAll(),
+    )
+  }
+
+  private async expireOverdueOwnership(nowMs = Date.now()): Promise<boolean> {
+    await this.hydrateOwnership()
+    if (!roomOwnershipMustExpire(this.ownership, this.peers.size, nowMs)) {
+      return false
+    }
+    if (!this.ownership.expired) await this.expireOwnership()
+    return true
+  }
+
+  private async hasOwnerToken(candidate: string): Promise<boolean> {
+    if (candidate === '' || candidate.length > 128) return false
+    try {
+      if (await this.expireOverdueOwnership()) return false
+    } catch (error: unknown) {
+      // The persisted deadline still rejects this token after a cold start.
+      // Retry physical cleanup with an alarm rather than weakening the proof.
+      console.error(
+        `[JamRoom ${this.roomId}] failed to purge expired host proof: ${String(error)}`,
+      )
+      await this.ctx.storage.setAlarm(Date.now() + 60_000)
+      return false
+    }
+    return (
+      this.ownership.ownerToken !== null &&
+      timingSafeEqual(candidate, this.ownership.ownerToken)
+    )
+  }
+
+  private async handleCreateRoom(
     ws: WebSocket,
     msg: { displayName: string },
-  ): void {
+  ): Promise<void> {
+    const expired = await this.expireOverdueOwnership()
+    if (
+      !expired &&
+      (this.ownership.ownerToken !== null || this.peers.size !== 0)
+    ) {
+      // A random room-id collision must fail instead of replacing the owner.
+      this.rejectSocket(ws, 'Room id already exists')
+      return
+    }
+
     const peerId = crypto.randomUUID()
     const ownerToken = crypto.randomUUID()
 
-    this.ownerId = peerId
-    this.ownerName = msg.displayName
-    this.ownerToken = ownerToken
-    void this.ctx.storage.put('ownerName', msg.displayName)
-    void this.ctx.storage.put('ownerToken', ownerToken)
+    await this.cancelDelete()
+    this.ownership.ownerId = peerId
+    this.ownership.ownerName = msg.displayName
+    this.ownership.ownerToken = ownerToken
+    this.ownership.expired = false
+    this.ownershipHydrated = true
+    await this.ctx.storage.put({
+      ownerName: msg.displayName,
+      ownerToken,
+    })
 
-    ws.serializeAttachment({ peerId, displayName: msg.displayName, roomId: this.roomId })
+    ws.serializeAttachment({
+      connectionIntent: 'established',
+      peerId,
+      displayName: msg.displayName,
+      roomId: this.roomId,
+    } satisfies JamSocketAttachment)
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
     this.wsToPeerId.set(ws, peerId)
-    this.cancelDelete()
 
-    console.log(`[JamRoom ${this.roomId}] Room created by ${msg.displayName || 'Anonymous'} (${peerId})`)
+    console.log(
+      `[JamRoom ${this.roomId}] Room created by ${msg.displayName || 'Anonymous'} (${peerId})`,
+    )
 
     // ownerToken is the secret that proves host on reconnect — returned once,
     // and never derived from the (publicly broadcast) display name.
-    this.send(ws, { type: 'room-created', roomId: this.roomId, peerId, isHost: true, ownerToken })
+    this.send(ws, {
+      type: 'room-created',
+      roomId: this.roomId,
+      peerId,
+      isHost: true,
+      ownerToken,
+    })
   }
 
   private async handleJoinRoom(
@@ -188,6 +338,14 @@ export class JamRoom extends DurableObject<JamEnv> {
       return
     }
 
+    // Enforce the persisted deadline before cancelling it. Clearing the alarm
+    // first would let a stale owner token resurrect itself on a late join.
+    await this.hydrateOwnership()
+    if (roomOwnershipMustExpire(this.ownership, this.peers.size)) {
+      await this.expireOwnership()
+    }
+    await this.cancelDelete()
+
     const peerId = crypto.randomUUID()
 
     const existing = Array.from(this.peers.values()).map((p) => ({
@@ -197,10 +355,7 @@ export class JamRoom extends DurableObject<JamEnv> {
     // Host is proven by the secret ownerToken issued at creation — NOT by the
     // (publicly broadcast) display name, which any peer can read and replay.
     // Load it from storage in case the DO hibernated and lost in-memory state.
-    if (this.ownerToken === null) {
-      const stored = await this.ctx.storage.get<string>('ownerToken')
-      if (stored !== undefined) this.ownerToken = stored
-    }
+    await this.hydrateOwnership()
     // An ownerless room adopts its first joiner. The DO deletes its storage
     // five minutes after the last peer leaves, so a host walking back into
     // their own room later finds a blank object -- without this they would
@@ -208,22 +363,29 @@ export class JamRoom extends DurableObject<JamEnv> {
     // Not a hole: a room with no stored owner has no one to impersonate,
     // and an occupied room always reloads its token from storage above.
     let freshToken: string | null = null
-    if (this.ownerToken === null && this.peers.size === 0) {
+    if (this.ownership.ownerToken === null && this.peers.size === 0) {
       freshToken = crypto.randomUUID()
-      this.ownerToken = freshToken
-      this.ownerName = msg.displayName
-      void this.ctx.storage.put('ownerName', msg.displayName)
-      void this.ctx.storage.put('ownerToken', freshToken)
-      console.log(`[JamRoom ${this.roomId}] ownerless room adopted by ${msg.displayName || 'Anonymous'} (${peerId})`)
+      this.ownership.ownerToken = freshToken
+      this.ownership.ownerName = msg.displayName
+      this.ownership.expired = false
+      this.ownershipHydrated = true
+      await this.ctx.storage.put({
+        ownerName: msg.displayName,
+        ownerToken: freshToken,
+      })
+      console.log(
+        `[JamRoom ${this.roomId}] ownerless room adopted by ${msg.displayName || 'Anonymous'} (${peerId})`,
+      )
     }
 
     const isHost =
       freshToken !== null ||
-      (this.ownerToken !== null &&
-        typeof msg.ownerToken === 'string' &&
-        timingSafeEqual(msg.ownerToken, this.ownerToken))
-    if (isHost) this.ownerId = peerId
-    console.log(`[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`)
+      (typeof msg.ownerToken === 'string' &&
+        (await this.hasOwnerToken(msg.ownerToken)))
+    if (isHost) this.ownership.ownerId = peerId
+    console.log(
+      `[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`,
+    )
     this.send(ws, {
       type: 'room-joined',
       roomId: this.roomId,
@@ -235,33 +397,84 @@ export class JamRoom extends DurableObject<JamEnv> {
       ...(freshToken === null ? {} : { ownerToken: freshToken }),
     })
 
-    console.log(`[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size + 1}`)
+    console.log(
+      `[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size + 1}`,
+    )
 
     this.broadcast(
       { type: 'peer-joined', peerId, displayName: msg.displayName },
       peerId,
     )
 
-    ws.serializeAttachment({ peerId, displayName: msg.displayName, roomId: this.roomId })
+    ws.serializeAttachment({
+      connectionIntent: 'established',
+      peerId,
+      displayName: msg.displayName,
+      roomId: this.roomId,
+    } satisfies JamSocketAttachment)
     this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
     this.wsToPeerId.set(ws, peerId)
   }
 
-  private handleLeave(ws: WebSocket): void {
+  private async handleLeave(ws: WebSocket): Promise<void> {
     const peerId = this.wsToPeerId.get(ws)
     if (peerId) {
       const peer = this.peers.get(peerId)
-      console.log(`[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} left (${peerId}). Remaining peers: ${this.peers.size - 1}`)
+      console.log(
+        `[JamRoom ${this.roomId}] ${peer?.displayName || 'Anonymous'} left (${peerId}). Remaining peers: ${this.peers.size - 1}`,
+      )
       this.peers.delete(peerId)
       this.wsToPeerId.delete(ws)
       this.broadcast({ type: 'peer-left', peerId }, peerId)
     }
-    this.checkEmpty()
+    ws.serializeAttachment({
+      connectionIntent: 'departed',
+      roomId: this.roomId,
+    } satisfies JamSocketAttachment)
+    try {
+      ws.close(1000, 'Left room')
+    } catch {
+      // already closing
+    }
+    await this.checkEmpty()
+  }
+
+  private readAttachment(ws: WebSocket): JamSocketAttachment | null {
+    try {
+      const attachment =
+        ws.deserializeAttachment() as Partial<JamSocketAttachment> | null
+      if (!attachment || typeof attachment.roomId !== 'string') return null
+      // WebSockets accepted before this boundary shipped have peer metadata
+      // but no intent. They are already established and may finish normally.
+      if (attachment.peerId && attachment.connectionIntent === undefined) {
+        return {
+          ...attachment,
+          connectionIntent: 'established',
+          roomId: attachment.roomId,
+        }
+      }
+      if (attachment.connectionIntent === undefined) return null
+      return attachment as JamSocketAttachment
+    } catch {
+      return null
+    }
+  }
+
+  private rejectSocket(ws: WebSocket, message: string): void {
+    this.send(ws, { type: 'error', message })
+    try {
+      ws.close(1008, message)
+    } catch {
+      // already closing
+    }
   }
 
   // ── Message relay ─────────────────────────────────────────────────
 
-  private relayToPeer(sender: WebSocket, msg: { type: string; target?: string }): void {
+  private relayToPeer(
+    sender: WebSocket,
+    msg: { type: string; target?: string },
+  ): void {
     if (!msg.target) return
     const peer = this.peers.get(msg.target)
     if (peer?.ws.readyState !== 1) return
@@ -296,23 +509,40 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   // ── Auto-cleanup ──────────────────────────────────────────────────
 
-  private checkEmpty(): void {
+  private async checkEmpty(): Promise<void> {
     if (this.peers.size === 0) {
-      this.scheduleDelete()
+      await this.scheduleDelete()
     }
   }
 
-  private scheduleDelete(): void {
-    this.cancelDelete()
-    this.deleteTimer = setTimeout(() => {
-      this.ctx.storage.deleteAll()
-    }, GRACE_PERIOD_MS)
+  private async scheduleDelete(): Promise<void> {
+    await scheduleRoomOwnershipExpiry(this.ownership, this.ctx.storage)
   }
 
-  private cancelDelete(): void {
-    if (this.deleteTimer) {
-      clearTimeout(this.deleteTimer)
-      this.deleteTimer = null
+  private async cancelDelete(): Promise<void> {
+    await cancelRoomOwnershipExpiry(this.ownership, this.ctx.storage)
+  }
+
+  override async alarm(): Promise<void> {
+    this.hydrate()
+    await this.hydrateOwnership()
+
+    // A join normally cancels the alarm. If one was already being dispatched,
+    // the hydrated socket set is the final authority: an occupied room lives.
+    if (this.peers.size !== 0) {
+      await this.cancelDelete()
+      return
+    }
+
+    try {
+      await this.expireOwnership()
+    } catch (error: unknown) {
+      // The in-memory state and persisted deadline already fail closed. Keep a
+      // cleanup alarm alive beyond Cloudflare's finite automatic retry budget.
+      console.error(
+        `[JamRoom ${this.roomId}] failed to delete expired room storage: ${String(error)}`,
+      )
+      await this.ctx.storage.setAlarm(Date.now() + 60_000)
     }
   }
 }
