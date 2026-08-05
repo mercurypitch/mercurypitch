@@ -8,7 +8,7 @@ import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
 import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient, jamSignalingIsMocked } from './signaling'
-import type { JamCallbacks, JamPeer } from './types'
+import type { JamBackgroundCapabilityMessage, JamCallbacks, JamPeer, } from './types'
 
 // Audio constraints optimized for music — disable all processing
 const AUDIO_CONSTRAINTS: MediaTrackConstraints = {
@@ -602,6 +602,7 @@ export function createJamService(callbacks: JamCallbacks) {
     dc.onopen = () => {
       console.info('[jam:service] DataChannel open to', peerId)
       dc.send(JSON.stringify({ type: 'video-state', enabled: videoEnabled }))
+      callbacks.onPeerChannelReady?.(peerId)
     }
     dc.onclose = () => {
       console.info('[jam:service] DataChannel closed to', peerId)
@@ -660,6 +661,18 @@ export function createJamService(callbacks: JamCallbacks) {
           case 'video-state':
             callbacks.onVideoState?.(peerId, data.enabled)
             break
+          case 'background-capability':
+            if (
+              typeof data.backgroundId === 'string' &&
+              typeof data.version === 'number' &&
+              Number.isSafeInteger(data.version) &&
+              data.version > 0 &&
+              typeof data.token === 'string' &&
+              typeof data.expiresAt === 'string'
+            ) {
+              callbacks.onBackgroundCapability?.(data, peerId)
+            }
+            break
         }
       } catch (err) {
         console.warn('[jam:service] DataChannel parse error', err)
@@ -671,6 +684,24 @@ export function createJamService(callbacks: JamCallbacks) {
 
   function broadcastVideoState(enabled: boolean): void {
     broadcastData({ type: 'video-state', enabled })
+  }
+
+  function sendBackgroundCapability(
+    message: JamBackgroundCapabilityMessage,
+    targetPeerId?: string,
+  ): void {
+    if (targetPeerId === undefined) {
+      broadcastData(message)
+      return
+    }
+    const channel = dataChannels.get(targetPeerId)
+    if (channel?.readyState === 'open') {
+      channel.send(JSON.stringify(message))
+    }
+  }
+
+  function setRoomBackground(backgroundId: string): void {
+    signaling.setBackground(backgroundId)
   }
 
   function sendChat(text: string): void {
@@ -928,6 +959,8 @@ export function createJamService(callbacks: JamCallbacks) {
     sendPlaybackCommandSec,
     sendClearMelody,
     sendPlaybackCommand,
+    sendBackgroundCapability,
+    setRoomBackground,
     getLocalStream,
     getRoomId,
     getPeerId,

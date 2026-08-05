@@ -11,6 +11,8 @@ export type JamConnectionIntent = 'create' | 'join' | 'established' | 'departed'
 export interface JamSocketAttachment {
   connectionIntent: JamConnectionIntent
   displayName?: string
+  /** Set by the Durable Object after owner-token verification. */
+  isHost?: boolean
   peerId?: string
   roomId: string
 }
@@ -41,6 +43,7 @@ export function connectionAllowsMessage(
       messageType === 'offer' ||
       messageType === 'answer' ||
       messageType === 'ice-candidate' ||
+      messageType === 'set-background' ||
       messageType === 'leave-room'
     )
   }

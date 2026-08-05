@@ -29,12 +29,14 @@ import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
 import { StageShell } from '@/components/mobile/StageShell'
 import { RestCountdownDots } from '@/components/RestCountdownDots'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { getRestDotCount } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -174,6 +176,8 @@ function formatTime(sec: number): string {
 export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   props,
 ) => {
+  const background = useBackgroundSurfaceController('karaoke')
+
   // ── Lyrics ────────────────────────────────────────────────────
   const lines = createMemo(() =>
     [...props.parsedLyrics().entries()].sort((a, b) => a[0] - b[0]),
@@ -423,7 +427,11 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   }
 
   return (
-    <StageShell class={styles.stage} testId="karaoke-mobile-stage">
+    <StageShell
+      class={styles.stage}
+      style={background.resolvedStyle()}
+      testId="karaoke-mobile-stage"
+    >
       {/* ── Header ─────────────────────────────────────────── */}
       <div class={styles.header}>
         <Show when={props.onBack}>
@@ -449,6 +457,11 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </Show>
         </div>
         <div class={styles.headerActions}>
+          <PremiumBackgroundPicker
+            controller={background}
+            label="Stage"
+            iconOnly
+          />
           <Show when={props.alignedWords}>
             <button
               class={styles.autoplayBtn}

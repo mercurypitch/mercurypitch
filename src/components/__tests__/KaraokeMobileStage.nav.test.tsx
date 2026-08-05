@@ -167,6 +167,20 @@ describe('KaraokeMobileStage autoplay toggle (REQ-ZEN-006/007)', () => {
   })
 })
 
+describe('KaraokeMobileStage background integration', () => {
+  it('uses the shared resolved stage variables and exposes the compact picker', () => {
+    render(() => KaraokeMobileStage(makeProps()))
+    const stage = screen.getByTestId('karaoke-mobile-stage')
+    expect(stage.style.getPropertyValue('--mp-stage-image')).toContain(
+      '/karaoke-night-stage.webp',
+    )
+    expect(stage.style.getPropertyValue('--mp-stage-position')).toBe('50% 50%')
+    expect(
+      screen.getByRole('button', { name: 'Choose karaoke stage background' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('KaraokeMobileStage rest countdown', () => {
   it('renders accessible rest dots and seeks to the selected interval once', () => {
     const seekTo = vi.fn()

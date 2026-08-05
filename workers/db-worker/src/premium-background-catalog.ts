@@ -6,7 +6,8 @@
 // supplies an R2 key: resolving the complete key here prevents traversal and
 // keeps bucket layout independent from UI URLs.
 
-import { BACKGROUND_PERK_IDS, type BackgroundPerkId, } from '../../../src/lib/backgrounds/background-catalog'
+import type { BackgroundPerkId } from '../../../src/lib/backgrounds/background-catalog'
+import { BACKGROUND_PERK_IDS } from '../../../src/lib/backgrounds/background-catalog'
 
 export const PREMIUM_BACKGROUND_IDS = BACKGROUND_PERK_IDS
 
@@ -58,23 +59,4 @@ export function isPremiumBackgroundVariant(
 /** Only Jam Room art may be delegated to room guests by a host. */
 export function isJamPremiumBackgroundId(id: PremiumBackgroundId): boolean {
   return SURFACE_BY_ID[id] === 'jam'
-}
-
-/** Resolve a client-facing id and variant to a complete, versioned R2 key. */
-export function premiumBackgroundObjectKey(
-  id: PremiumBackgroundId,
-  variant: PremiumBackgroundVariant,
-): string
-export function premiumBackgroundObjectKey(
-  id: string,
-  variant: string,
-): string | null
-export function premiumBackgroundObjectKey(
-  id: string,
-  variant: string,
-): string | null {
-  if (!isPremiumBackgroundId(id) || !isPremiumBackgroundVariant(variant)) {
-    return null
-  }
-  return `backgrounds/v1/${SURFACE_BY_ID[id]}/${id}/${variant}.webp`
 }

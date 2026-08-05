@@ -194,6 +194,17 @@ produces at some zoom levels.
 
 ## Data and billing
 
+### Treat hibernated socket attachments as persisted authorization state
+
+**Symptom:** a superseded Jam host could regain background controls only after
+an overlapping reconnect and Durable Object hibernation.
+**Cause:** host authority was updated in memory but remained true on two
+serialized WebSocket attachments, so hydration chose by iteration order.
+**Rule:** update memory, storage, attachments, and client signals as one state
+transition; test live, overlapping, hibernated, departed, and expired paths,
+and fail closed whenever reconstructed authority conflicts.
+**See:** `workers/jam-worker/src/jam-room.ts`
+
 ### One completion event, one credit
 **Symptom:** practice minutes counted twice for a single run.
 **Cause:** two call sites both funnelled into the recording path.
@@ -315,3 +326,4 @@ authored as `Claude <noreply@anthropic.com>` — verify `%an|%ae` before merging
 ### Never test against production
 **Rule:** local or dev only (`api-dev`, localhost workers). Prod deploys go
 through `/prod-upd`.
+

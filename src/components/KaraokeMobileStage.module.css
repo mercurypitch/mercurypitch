@@ -14,7 +14,8 @@
       rgba(18, 8, 31, 0.72) 45%,
       rgba(10, 4, 18, 0.94) 100%
     ),
-    url('/karaoke-night-stage.webp') center / cover no-repeat, #12081f;
+    var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
+    #12081f;
 
   /* Sing pill */
   --pill-bg: rgba(120, 100, 160, 0.22);

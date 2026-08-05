@@ -12,6 +12,8 @@
 
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
@@ -69,6 +71,7 @@ function loadRailCollapsed(): boolean {
 }
 
 export function KaraokeNightApp() {
+  const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
   // ready-to-sing song" rather than a choice.
@@ -272,7 +275,13 @@ export function KaraokeNightApp() {
   })
 
   return (
-    <div class="kn-app" style={{ '--kn-alpha': String(stageAlpha()) }}>
+    <div
+      class="kn-app"
+      style={{
+        ...background.resolvedStyle(),
+        '--kn-alpha': String(stageAlpha()),
+      }}
+    >
       <header class="kn-topbar">
         <a class="kn-brand" href="/">
           MercuryPitch
@@ -322,6 +331,7 @@ export function KaraokeNightApp() {
               </svg>
             </button>
           </Show>
+          <PremiumBackgroundPicker controller={background} label="Stage" />
           {/* Named for where it goes, not for what it is: this page is a
               door into MercuryPitch and a first-time visitor has no reason
               to know that "the studio" means the rest of the app. The

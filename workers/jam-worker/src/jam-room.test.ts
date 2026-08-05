@@ -223,6 +223,254 @@ describe('JamRoom signaling and ownership lifecycle', () => {
     expect(response.status).toBe(204)
   })
 
+  it('demotes an overlapping host reconnect before hibernation', async () => {
+    const ctx = new FakeContext()
+    const creator = socket('create')
+    ctx.sockets = [creator]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'create-room', displayName: 'Ada' }),
+    )
+    const ownerToken = sentMessages(creator).find(
+      (message) => message.type === 'room-created',
+    )?.ownerToken
+    expect(typeof ownerToken).toBe('string')
+
+    const reconnectingOwner = socket('join')
+    ctx.sockets = [creator, reconnectingOwner]
+    await instance.webSocketMessage(
+      reconnectingOwner as unknown as WebSocket,
+      JSON.stringify({
+        type: 'join-room',
+        displayName: 'Ada',
+        ownerToken,
+      }),
+    )
+
+    expect(creator.attachment).toMatchObject({ isHost: false })
+    expect(reconnectingOwner.attachment).toMatchObject({ isHost: true })
+
+    // A fresh instance models hibernation. The superseded socket must not
+    // regain authority from its persisted attachment.
+    creator.sent.length = 0
+    reconnectingOwner.sent.length = 0
+    const rehydrated = room(ctx)
+    await rehydrated.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'set-background', backgroundId: 'aurora-stage' }),
+    )
+    expect(sentMessages(creator)).toContainEqual({
+      type: 'error',
+      message: 'Only the host can change the room',
+    })
+
+    await rehydrated.webSocketMessage(
+      reconnectingOwner as unknown as WebSocket,
+      JSON.stringify({ type: 'set-background', backgroundId: 'aurora-stage' }),
+    )
+    expect(ctx.storage.values.get('roomBackground')).toEqual({
+      backgroundId: 'aurora-stage',
+      revision: 1,
+    })
+  })
+
+  it('fails closed when legacy host attachments conflict after hibernation', async () => {
+    const ctx = new FakeContext()
+    const first = new FakeSocket({
+      connectionIntent: 'established',
+      displayName: 'Ada',
+      isHost: true,
+      peerId: 'first-host-peer',
+      roomId: 'ABCDEFGH',
+    })
+    const second = new FakeSocket({
+      connectionIntent: 'established',
+      displayName: 'Ada',
+      isHost: true,
+      peerId: 'second-host-peer',
+      roomId: 'ABCDEFGH',
+    })
+    ctx.sockets = [first, second]
+    ctx.storage.values.set('ownerToken', 'owner-token')
+    ctx.storage.values.set('ownerName', 'Ada')
+    const rehydrated = room(ctx)
+
+    for (const candidate of [first, second]) {
+      await rehydrated.webSocketMessage(
+        candidate as unknown as WebSocket,
+        JSON.stringify({
+          type: 'set-background',
+          backgroundId: 'aurora-stage',
+        }),
+      )
+      expect(sentMessages(candidate)).toContainEqual({
+        type: 'error',
+        message: 'Only the host can change the room',
+      })
+    }
+    expect(first.attachment).toMatchObject({ isHost: false })
+    expect(second.attachment).toMatchObject({ isHost: false })
+    expect(sentMessages(first)).toContainEqual({
+      type: 'host-changed',
+      hostPeerId: null,
+    })
+    expect(sentMessages(second)).toContainEqual({
+      type: 'host-changed',
+      hostPeerId: null,
+    })
+    expect(ctx.storage.values.has('roomBackground')).toBe(false)
+  })
+
+  it('lets only the host persist and broadcast a room background', async () => {
+    const ctx = new FakeContext()
+    const creator = socket('create')
+    const guest = socket('join')
+    ctx.sockets = [creator, guest]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'create-room', displayName: 'Ada' }),
+    )
+    await instance.webSocketMessage(
+      guest as unknown as WebSocket,
+      JSON.stringify({ type: 'join-room', displayName: 'Grace' }),
+    )
+
+    creator.sent.length = 0
+    guest.sent.length = 0
+    await instance.webSocketMessage(
+      guest as unknown as WebSocket,
+      JSON.stringify({ type: 'set-background', backgroundId: 'aurora-stage' }),
+    )
+
+    expect(sentMessages(guest)).toContainEqual({
+      type: 'error',
+      message: 'Only the host can change the room',
+    })
+    expect(ctx.storage.values.has('roomBackground')).toBe(false)
+
+    guest.sent.length = 0
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'set-background', backgroundId: 'aurora-stage' }),
+    )
+
+    expect(ctx.storage.values.get('roomBackground')).toEqual({
+      backgroundId: 'aurora-stage',
+      revision: 1,
+    })
+    expect(sentMessages(creator)).toContainEqual(
+      expect.objectContaining({
+        type: 'background-changed',
+        backgroundId: 'aurora-stage',
+        revision: 1,
+      }),
+    )
+    expect(sentMessages(guest)).toContainEqual(
+      expect.objectContaining({
+        type: 'background-changed',
+        backgroundId: 'aurora-stage',
+        revision: 1,
+      }),
+    )
+  })
+
+  it('hydrates the selected background for a later joiner', async () => {
+    const ctx = new FakeContext()
+    const host = new FakeSocket({
+      connectionIntent: 'established',
+      displayName: 'Ada',
+      isHost: true,
+      peerId: 'host-peer',
+      roomId: 'ABCDEFGH',
+    })
+    const guest = socket('join')
+    ctx.sockets = [host, guest]
+    ctx.storage.values.set('ownerToken', 'owner-token')
+    ctx.storage.values.set('ownerName', 'Ada')
+    ctx.storage.values.set('roomBackground', {
+      backgroundId: 'golden-hour-stage',
+      revision: 4,
+    })
+
+    await room(ctx).webSocketMessage(
+      guest as unknown as WebSocket,
+      JSON.stringify({ type: 'join-room', displayName: 'Grace' }),
+    )
+
+    expect(sentMessages(guest)).toContainEqual(
+      expect.objectContaining({
+        type: 'room-joined',
+        background: {
+          backgroundId: 'golden-hour-stage',
+          revision: 4,
+        },
+      }),
+    )
+  })
+
+  it('does not leak an expired room background into a warm room adoption', async () => {
+    const ctx = new FakeContext()
+    const creator = socket('create')
+    ctx.sockets = [creator]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'create-room', displayName: 'Ada' }),
+    )
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({
+        type: 'set-background',
+        backgroundId: 'golden-hour-stage',
+      }),
+    )
+    await instance.webSocketClose(creator as unknown as WebSocket)
+    await instance.alarm()
+
+    const adopter = socket('join')
+    ctx.sockets = [adopter]
+    await instance.webSocketMessage(
+      adopter as unknown as WebSocket,
+      JSON.stringify({ type: 'join-room', displayName: 'Grace' }),
+    )
+
+    const joined = sentMessages(adopter).find(
+      (message) => message.type === 'room-joined',
+    )
+    expect(joined).toBeDefined()
+    expect(joined).not.toHaveProperty('background')
+    expect(ctx.storage.values.has('roomBackground')).toBe(false)
+  })
+
+  it('rejects malformed room background ids', async () => {
+    const ctx = new FakeContext()
+    const creator = socket('create')
+    ctx.sockets = [creator]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'create-room', displayName: 'Ada' }),
+    )
+    creator.sent.length = 0
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'set-background', backgroundId: '../private' }),
+    )
+
+    expect(sentMessages(creator)).toContainEqual({
+      type: 'error',
+      message: 'Invalid room background',
+    })
+    expect(ctx.storage.values.has('roomBackground')).toBe(false)
+  })
+
   it('fails a create-route id collision instead of replacing a live owner', async () => {
     const ctx = new FakeContext()
     const creator = socket('create')

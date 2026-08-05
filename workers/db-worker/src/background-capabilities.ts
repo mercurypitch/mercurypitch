@@ -10,24 +10,41 @@
 import type { PremiumBackgroundId } from './premium-background-catalog'
 
 const CAPABILITY_AUDIENCE = 'jam-premium-background'
-const CAPABILITY_PREFIX = 'mpbg1'
-export const BACKGROUND_CAPABILITY_TTL_SECONDS = 15 * 60
+const CAPABILITY_PREFIX = 'mpbg2'
+export const BACKGROUND_CAPABILITY_TTL_SECONDS = 5 * 60
 export const JAM_ROOM_ID_RE = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const encoder = new TextEncoder()
+const workerCrypto = Reflect.get(globalThis, 'crypto') as Crypto
 
 interface BackgroundCapabilityPayload {
   aud: typeof CAPABILITY_AUDIENCE
   backgroundId: PremiumBackgroundId
+  capabilityId: string
   exp: number
   iat: number
   roomId: string
-  v: 1
+  v: 2
+  version: number
 }
 
 export interface MintedBackgroundCapability {
   expiresAt: string
   token: string
+}
+
+export interface BackgroundCapabilityScope {
+  backgroundId: PremiumBackgroundId
+  capabilityId: string
+  roomId: string
+  version: number
+}
+
+export interface VerifiedBackgroundCapability extends BackgroundCapabilityScope {
+  expiresAt: string
+  issuedAt: string
 }
 
 function b64urlEncode(data: Uint8Array): string {
@@ -44,7 +61,7 @@ function b64urlDecode(value: string): Uint8Array {
 }
 
 async function capabilityKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
+  return workerCrypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
@@ -61,24 +78,33 @@ export function hasSecureCapabilitySecret(
 }
 
 export async function mintBackgroundCapability(
-  backgroundId: PremiumBackgroundId,
-  roomId: string,
+  scope: BackgroundCapabilityScope,
   secret: string,
   nowMs = Date.now(),
 ): Promise<MintedBackgroundCapability> {
+  if (
+    !UUID_RE.test(scope.capabilityId) ||
+    !JAM_ROOM_ID_RE.test(scope.roomId) ||
+    !Number.isInteger(scope.version) ||
+    scope.version < 1
+  ) {
+    throw new Error('Invalid background capability scope')
+  }
   const issuedAt = Math.floor(nowMs / 1000)
   const expiresAt = issuedAt + BACKGROUND_CAPABILITY_TTL_SECONDS
   const payload: BackgroundCapabilityPayload = {
     aud: CAPABILITY_AUDIENCE,
-    backgroundId,
+    backgroundId: scope.backgroundId,
+    capabilityId: scope.capabilityId,
     exp: expiresAt,
     iat: issuedAt,
-    roomId,
-    v: 1,
+    roomId: scope.roomId,
+    v: 2,
+    version: scope.version,
   }
   const body = b64urlEncode(encoder.encode(JSON.stringify(payload)))
   const signature = new Uint8Array(
-    await crypto.subtle.sign(
+    await workerCrypto.subtle.sign(
       'HMAC',
       await capabilityKey(secret),
       encoder.encode(`${CAPABILITY_PREFIX}.${body}`),
@@ -98,58 +124,88 @@ export async function verifyBackgroundCapability(
   token: string,
   expectedBackgroundId: PremiumBackgroundId,
   expectedRoomId: string,
+  expectedVersion: number,
   secret: string,
   nowMs = Date.now(),
-): Promise<boolean> {
-  if (token.length > 2048 || !JAM_ROOM_ID_RE.test(expectedRoomId)) return false
+): Promise<VerifiedBackgroundCapability | null> {
+  if (
+    token.length > 2048 ||
+    !JAM_ROOM_ID_RE.test(expectedRoomId) ||
+    !Number.isInteger(expectedVersion) ||
+    expectedVersion < 1
+  ) {
+    return null
+  }
 
   const parts = token.split('.')
-  if (parts.length !== 3 || parts[0] !== CAPABILITY_PREFIX) return false
+  if (parts.length !== 3 || parts[0] !== CAPABILITY_PREFIX) return null
   const [, body, encodedSignature] = parts
   if (
     !/^[A-Za-z0-9_-]+$/.test(body) ||
     !/^[A-Za-z0-9_-]+$/.test(encodedSignature)
   ) {
-    return false
+    return null
   }
 
   let signature: Uint8Array
   try {
     signature = b64urlDecode(encodedSignature)
   } catch {
-    return false
+    return null
   }
-  if (signature.byteLength !== 32) return false
+  if (signature.byteLength !== 32) return null
 
-  const signatureValid = await crypto.subtle.verify(
+  const signatureValid = await workerCrypto.subtle.verify(
     'HMAC',
     await capabilityKey(secret),
     signature,
     encoder.encode(`${CAPABILITY_PREFIX}.${body}`),
   )
-  if (!signatureValid) return false
+  if (signatureValid !== true) return null
 
   let payload: unknown
   try {
     payload = JSON.parse(new TextDecoder().decode(b64urlDecode(body)))
   } catch {
-    return false
+    return null
   }
-  if (typeof payload !== 'object' || payload === null) return false
+  if (typeof payload !== 'object' || payload === null) return null
 
   const candidate = payload as Partial<BackgroundCapabilityPayload>
   const now = Math.floor(nowMs / 1000)
-  return (
-    candidate.v === 1 &&
-    candidate.aud === CAPABILITY_AUDIENCE &&
-    candidate.backgroundId === expectedBackgroundId &&
-    candidate.roomId === expectedRoomId &&
-    Number.isInteger(candidate.iat) &&
-    Number.isInteger(candidate.exp) &&
-    (candidate.iat as number) <= now + 30 &&
-    (candidate.exp as number) > now &&
-    (candidate.exp as number) > (candidate.iat as number) &&
-    (candidate.exp as number) - (candidate.iat as number) <=
-      BACKGROUND_CAPABILITY_TTL_SECONDS
-  )
+  if (
+    candidate.v !== 2 ||
+    candidate.aud !== CAPABILITY_AUDIENCE ||
+    candidate.backgroundId !== expectedBackgroundId
+  ) {
+    return null
+  }
+  if (
+    typeof candidate.capabilityId !== 'string' ||
+    !UUID_RE.test(candidate.capabilityId) ||
+    candidate.roomId !== expectedRoomId ||
+    candidate.version !== expectedVersion ||
+    !Number.isInteger(candidate.iat) ||
+    !Number.isInteger(candidate.exp)
+  ) {
+    return null
+  }
+  const issuedAt = candidate.iat as number
+  const expiresAt = candidate.exp as number
+  if (
+    issuedAt > now + 30 ||
+    expiresAt <= now ||
+    expiresAt <= issuedAt ||
+    expiresAt - issuedAt > BACKGROUND_CAPABILITY_TTL_SECONDS
+  ) {
+    return null
+  }
+  return {
+    backgroundId: expectedBackgroundId,
+    capabilityId: candidate.capabilityId,
+    expiresAt: new Date(expiresAt * 1000).toISOString(),
+    issuedAt: new Date(issuedAt * 1000).toISOString(),
+    roomId: expectedRoomId,
+    version: expectedVersion,
+  }
 }

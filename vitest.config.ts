@@ -28,6 +28,8 @@ export default defineConfig({
     include: [
       'src/tests/**/*.test.ts',
       'src/tests/**/*.test.tsx',
+      'src/features/**/*.test.ts',
+      'src/features/**/*.test.tsx',
       'src/lib/**/*.test.ts',
       'src/components/__tests__/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',

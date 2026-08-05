@@ -86,6 +86,7 @@ export function createMockSignalingClient(callbacks: JamCallbacks) {
       roomId = fakeRoomId()
       peerId = 'preview-self'
       callbacks.onHostStatus?.(true)
+      callbacks.onHostPeerChanged?.(peerId)
       populate()
       console.info('[jam:mock] preview room', roomId, 'as', displayName)
     }, FAKE_LATENCY_MS)
@@ -98,6 +99,7 @@ export function createMockSignalingClient(callbacks: JamCallbacks) {
       // A joiner is not the host, which is the more interesting state to
       // look at: it hides the mode picker and the transport.
       callbacks.onHostStatus?.(false)
+      callbacks.onHostPeerChanged?.(FAKE_PEERS[0]?.id ?? null)
       populate()
       console.info('[jam:mock] preview join', id, 'as', displayName)
     }, FAKE_LATENCY_MS)
@@ -123,6 +125,10 @@ export function createMockSignalingClient(callbacks: JamCallbacks) {
   // which is the one place a mock must never diverge.
   const noop = (_target: string, _payload: string): void => {}
 
+  function setBackground(backgroundId: string): void {
+    callbacks.onBackgroundChanged?.({ backgroundId, revision: 1 })
+  }
+
   return {
     createRoom,
     connect,
@@ -131,6 +137,7 @@ export function createMockSignalingClient(callbacks: JamCallbacks) {
     sendOffer: noop,
     sendAnswer: noop,
     sendIceCandidate: noop,
+    setBackground,
     getRoomId: () => roomId,
     getPeerId: () => peerId,
     get connecting() {

@@ -24,6 +24,7 @@ import styles from './StageShell.module.css'
 
 interface StageShellProps {
   class?: string
+  style?: JSX.CSSProperties
   testId?: string
   children: JSX.Element
 }
@@ -35,6 +36,7 @@ export const StageShell: Component<StageShellProps> = (props) => {
     <Portal>
       <div
         class={`${styles.shell} ${props.class ?? ''}`}
+        style={props.style}
         data-testid={props.testId}
       >
         {props.children}

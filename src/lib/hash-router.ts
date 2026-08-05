@@ -102,6 +102,7 @@ const VALID_ADMIN_SECTIONS: Set<string> = new Set([
   'weekly',
   'achievements',
   'demo-song',
+  'premium-perks',
 ])
 
 function isValidTab(tab: string): tab is ActiveTab {

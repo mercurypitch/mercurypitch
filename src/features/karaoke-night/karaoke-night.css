@@ -1,6 +1,6 @@
 /* Karaoke Night — standalone page styles.
-   The backdrop is a generated theatre still (public/karaoke-night-stage.webp)
-   under a plum gradient scrim, so UI text stays AA-readable. */
+   The resolved free or supporter backdrop sits under a plum gradient scrim,
+   so UI text stays AA-readable at every focal point. */
 
 * {
   margin: 0;
@@ -52,7 +52,8 @@ body {
       rgba(18, 8, 31, 0.45) 40%,
       rgba(18, 8, 31, 0.88) 100%
     ),
-    url('/karaoke-night-stage.webp') center / cover no-repeat fixed,
+    var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat
+      fixed,
     #12081f;
 }
 
