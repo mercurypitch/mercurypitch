@@ -51,6 +51,9 @@ function base(): string {
   return API_BASE_URL ?? ''
 }
 
+/** Kept identical to the runtime's test in `karaoke-night/demo-song.ts`. */
+const LRC_STAMP = /\[\d{1,2}:\d{2}/
+
 export const blankDemoSongDraft = (): DemoSongDraft => ({
   title: '',
   artist: '',
@@ -126,6 +129,40 @@ export async function saveDemoSong(
   } catch (e) {
     return { ok: false, error: String(e) }
   }
+}
+
+/**
+ * Read a dropped or browsed lyrics file into text.
+ *
+ * The file itself is never uploaded — it goes straight into the pasted
+ * lyrics field and is saved with the row, which is why an `.lrc` needs no
+ * R2 round trip to reach a singer. Every failure is a returned error
+ * rather than a throw: the author is mid-form, and losing their other
+ * fields to an exception would cost far more than a bad file does.
+ */
+export async function readLyricsFile(
+  file: File,
+): Promise<
+  | { ok: true; text: string; format: 'lrc' | 'txt' }
+  | { ok: false; error: string }
+> {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (ext !== 'lrc' && ext !== 'txt') {
+    return { ok: false, error: 'Only .lrc and .txt files can be read.' }
+  }
+  const text = await new Promise<string | null>((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file)
+  })
+  if (text === null) return { ok: false, error: 'That file could not be read.' }
+  if (text.trim() === '') return { ok: false, error: 'That file is empty.' }
+  // Inferred from the CONTENT, not the extension, because that is what
+  // the runtime does (`demoLyricsText` looks for [mm:ss stamps). A .lrc
+  // with its timestamps stripped is plain text, and the studio has to say
+  // so rather than promise a sync the singer will not get.
+  return { ok: true, text, format: LRC_STAMP.test(text) ? 'lrc' : 'txt' }
 }
 
 /**

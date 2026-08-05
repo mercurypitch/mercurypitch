@@ -34,9 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     stamps existed, is left alone permanently. Stamp in `localStorage`
     under `mercurypitch.demoLyricsSeed.v1`.
 
-  Covered by `workers/db-worker/src/demo-song.test.ts` and
-  `src/tests/demo-song.test.ts` (23 tests). Both decisions fail silently
-  when wrong, so both were mutation-checked.
+  - **Lyrics files are read, never uploaded** (`readLyricsFile`). A
+    dropped or browsed `.lrc`/`.txt` lands in the pasted-lyrics field and
+    travels in the row, so a timed lyric reaches a singer with no R2 round
+    trip and no new storage surface. The reported format comes from the
+    **content**, not the extension — `demoLyricsText` infers sync from
+    `[mm:ss` stamps, so a `.lrc` with its timestamps stripped is announced
+    as plain text rather than promising a sync that will not happen. Every
+    failure returns an error instead of throwing: the author is mid-form,
+    and an exception would cost them every other field.
+
+  Covered by `workers/db-worker/src/demo-song.test.ts`,
+  `src/tests/demo-song.test.ts` and `src/tests/demo-song-admin.test.ts`
+  (31 tests). The revision and seeding decisions fail silently when wrong,
+  so both were mutation-checked.
 
 - **Weekly Legend rotation** (`scripts/seed-weekly-rotation.mjs`, `pnpm
   db:seed:weekly`): five consecutive weeks, week one `active` and weeks

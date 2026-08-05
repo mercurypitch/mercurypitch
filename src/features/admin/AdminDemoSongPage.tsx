@@ -21,11 +21,11 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, onMount, Show } from 'solid-js'
-import { AlertTriangle, CheckCircle, RotateCcw } from '@/components/icons'
+import { AlertTriangle, CheckCircle, FileUpload, RotateCcw, } from '@/components/icons'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AdminDemoSongPage.module.css'
 import type { DemoSongDraft, DemoSongRecord } from './demo-song-admin-service'
-import { blankDemoSongDraft, loadDemoSong, loadShippedManifest, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
+import { blankDemoSongDraft, loadDemoSong, loadShippedManifest, readLyricsFile, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
 
 interface AdminDemoSongPageProps {
   adminKey: string
@@ -102,6 +102,33 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
       (current.lyricsText ?? '') !== draft().lyricsText
     )
   })
+
+  // ── Dropping a lyrics file ──────────────────────────────────────
+  // The file is read into the pasted-lyrics field, not uploaded. That is
+  // the whole trick: an .lrc reaches a singer with no R2 round trip,
+  // because the text travels in the row and the server infers "synced"
+  // from the timestamps it carries.
+  const [dragOver, setDragOver] = createSignal(false)
+  const [fileNote, setFileNote] = createSignal('')
+  const [fileError, setFileError] = createSignal('')
+
+  const takeFile = async (file: File | undefined): Promise<void> => {
+    if (file === undefined) return
+    setFileNote('')
+    setFileError('')
+    const read = await readLyricsFile(file)
+    if (!read.ok) {
+      setFileError(read.error)
+      return
+    }
+    edit('lyricsText', read.text)
+    const lines = read.text.trim().split('\n').length
+    setFileNote(
+      `Loaded ${file.name} — ${lines} ${lines === 1 ? 'line' : 'lines'}, ${
+        read.format === 'lrc' ? 'timed' : 'plain text'
+      }. Save to publish it.`,
+    )
+  }
 
   const revertToShipped = (): void => {
     const manifest = shipped()
@@ -272,13 +299,58 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
               undefined,
               'https://…/lyrics.lrc',
             )}
+            <label
+              class={styles.drop}
+              classList={{ [styles.dropOver!]: dragOver() }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragOver(true)
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                void takeFile(e.dataTransfer?.files?.[0])
+              }}
+            >
+              <input
+                type="file"
+                accept=".lrc,.txt"
+                hidden
+                onChange={(e) => {
+                  void takeFile(e.currentTarget.files?.[0])
+                  // Let the same file be picked twice in a row.
+                  e.currentTarget.value = ''
+                }}
+              />
+              <FileUpload />
+              <span>Drop a .lrc or .txt here, or browse</span>
+              <span class={styles.hint}>
+                It fills the box below — nothing is uploaded until you save.
+              </span>
+            </label>
+
+            <Show when={fileNote() !== ''}>
+              <p class={styles.fileNote}>{fileNote()}</p>
+            </Show>
+            <Show when={fileError() !== ''}>
+              <p class={styles.fileError} role="alert">
+                <AlertTriangle />
+                {fileError()}
+              </p>
+            </Show>
+
             <label class={styles.field}>
               <span class={styles.fieldLabel}>Pasted lyrics</span>
               <textarea
                 rows="10"
                 value={draft().lyricsText}
                 spellcheck={false}
-                onInput={(e) => edit('lyricsText', e.currentTarget.value)}
+                onInput={(e) => {
+                  edit('lyricsText', e.currentTarget.value)
+                  // Typing supersedes whatever the file note claimed.
+                  setFileNote('')
+                }}
               />
             </label>
             <Show when={lyricsChanged() && saved() !== null}>
