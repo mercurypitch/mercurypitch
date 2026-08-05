@@ -99,7 +99,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   max-height: 100%;
 }
 
@@ -114,11 +114,22 @@
 }
 
 .zoomCaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin: 0;
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   font-size: 1.05rem;
   font-weight: 600;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   color: var(--text-primary);
+}
+
+.zoomCaptionText {
+  display: inline;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -137,7 +148,7 @@
 }
 
 .twinName {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -278,16 +289,25 @@
 }
 
 /* ── Share, constellation + zoom-flip additions ────────────────────── */
+.voiceHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0 0 10px;
+}
+
 .voiceActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 10px;
+  align-items: center;
+  gap: 6px;
 }
 
 .shareBtn {
-  min-height: 44px;
-  padding: 0 14px;
+  position: relative;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 6px;
   border: 1px solid var(--accent, #58a6ff);
   background: transparent;
@@ -297,14 +317,24 @@
 }
 
 .exploreBtn {
-  min-height: 44px;
-  padding: 0 14px;
+  position: relative;
+  min-height: 30px;
+  padding: 0 10px;
   border: 1px solid color-mix(in srgb, var(--teal) 55%, var(--border));
   border-radius: 6px;
   color: var(--teal);
   background: color-mix(in srgb, var(--teal) 7%, transparent);
   font-size: 12px;
   cursor: pointer;
+}
+
+/* Keep the visible controls compact beside a name while preserving a
+   comfortable 44px vertical pointer target on touch screens. */
+.shareBtn::after,
+.exploreBtn::after {
+  content: '';
+  position: absolute;
+  inset: -7px 0;
 }
 
 .exploreBtn:hover {

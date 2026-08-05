@@ -311,28 +311,30 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             </Show>
           </Show>
           <div class={styles.latestBody}>
-            <Show when={latest()?.twin != null && latest()?.twin !== ''}>
-              <p class={styles.twinName}>{latest()?.twin}</p>
-            </Show>
-            <div class={styles.voiceActions}>
+            <div class={styles.voiceHeading}>
               <Show when={latest()?.twin != null && latest()?.twin !== ''}>
+                <p class={styles.twinName}>{latest()?.twin}</p>
+              </Show>
+              <div class={styles.voiceActions}>
+                <Show when={latest()?.twin != null && latest()?.twin !== ''}>
+                  <button
+                    type="button"
+                    class={styles.shareBtn}
+                    disabled={sharing()}
+                    onClick={() => void shareLatest('stats')}
+                    title="Share this voiceprint card (twin + your numbers)"
+                  >
+                    Share
+                  </button>
+                </Show>
                 <button
                   type="button"
-                  class={styles.shareBtn}
-                  disabled={sharing()}
-                  onClick={() => void shareLatest('stats')}
-                  title="Share this voiceprint card (twin + your numbers)"
+                  class={styles.exploreBtn}
+                  onClick={openVoiceConstellation}
                 >
-                  Share
+                  Explore constellation
                 </button>
-              </Show>
-              <button
-                type="button"
-                class={styles.exploreBtn}
-                onClick={openVoiceConstellation}
-              >
-                Explore constellation
-              </button>
+              </div>
             </div>
             <div class={styles.stats}>
               <Show when={latest()?.summary.lowMidi != null}>
@@ -499,11 +501,13 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
               />
             </Show>
             <figcaption class={styles.zoomCaption}>
-              {latest()?.twin}
-              <span class={styles.zoomHint}>
-                {flipRequested()
-                  ? ' — preparing card…'
-                  : ' — click card to flip'}
+              <span class={styles.zoomCaptionText}>
+                {latest()?.twin}
+                <span class={styles.zoomHint}>
+                  {flipRequested()
+                    ? ' — preparing card…'
+                    : ' — click card to flip'}
+                </span>
               </span>
               {/* Shares the side being looked at: portrait card on the
                   front, the data card on the back. */}
