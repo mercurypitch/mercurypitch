@@ -219,9 +219,8 @@
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-.lengthRow select {
-  margin-left: 8px;
-}
+/* No margin-left any more: the 8px used to separate the select from the word
+   "Length", and with that gone it was just an unexplained indent. */
 
 .primaryBtn {
   align-self: flex-start;
