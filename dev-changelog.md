@@ -91,6 +91,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocked behind an explicit save or discard rather than dropping the
   edits.
 
+  Rail (`KaraokeNightApp`): the opener keeps a full card — it is the single
+  call to action a first-time visitor gets — and every song after it
+  becomes a row in a `.kn-library`-shaped list under "Also tonight", with
+  the same active state and equalizer the library rows use. One card per
+  song reads fine at two and buries the visitor's own library at ten.
+
+  Topbar: the studio link was a bare `<a>`, and a `display: none` under the
+  mobile breakpoint (keyed on `a[href='/#/karaoke']`, so it only fired when
+  no session was staged) left a phone with no way back to the app. It is
+  now a chip with a grid icon, labelled for its destination rather than for
+  itself, and the label shortens to "App" under 640px instead of vanishing.
+  The accessible name lives on `aria-label` because the visible label is
+  two mutually exclusive spans.
+
   Nine new tests across `workers/db-worker/src/demo-song.test.ts` and
   `src/tests/demo-song.test.ts`. The legacy-session-id case is the one that
   earns its keep: it is the only guard on a failure that produces no error,

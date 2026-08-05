@@ -98,6 +98,33 @@ body {
   color: #ffffff;
 }
 
+/* The way back to the rest of the app. A chip rather than a bare link:
+   it is the only navigation on this page, and on a phone a text link in a
+   crowded bar is a coin-toss tap target. */
+.kn-studio-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid rgba(183, 154, 224, 0.35);
+  border-radius: 999px;
+  background: rgba(183, 154, 224, 0.1);
+  white-space: nowrap;
+}
+
+.kn-topbar-links .kn-studio-link:hover {
+  background: rgba(183, 154, 224, 0.18);
+  color: #ffffff;
+}
+
+.kn-studio-link svg {
+  flex: none;
+}
+
+.kn-studio-label--short {
+  display: none;
+}
+
 /* ── Account chip + menu ─────────────────────────────────── */
 
 .kn-account {
@@ -761,6 +788,37 @@ body {
   text-overflow: ellipsis;
 }
 
+/* Demo rows carry an artist as well as a title, so the label stacks. The
+   list is otherwise the library list — same rows, same active state — so
+   the second song reads as one of the songs on offer rather than as a
+   second hero. */
+.kn-demo-list {
+  max-height: 11rem;
+}
+
+.kn-demo-list .kn-library-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  white-space: normal;
+}
+
+.kn-demo-name,
+.kn-demo-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kn-demo-artist {
+  font-size: 0.76rem;
+  color: #a693c4;
+}
+
+.kn-library-song--active .kn-demo-artist {
+  color: #e0b6cd;
+}
+
 .kn-library-song:hover {
   background: rgba(183, 154, 224, 0.14);
 }
@@ -1151,8 +1209,18 @@ body {
     min-width: 0;
   }
 
-  .kn-topbar-links > a[href='/#/karaoke'] {
+  /* The label shortens; the link stays. Hiding it outright (what this
+     rule used to do) left a phone with no way back to the app at all. */
+  .kn-studio-label {
     display: none;
+  }
+
+  .kn-studio-label--short {
+    display: inline;
+  }
+
+  .kn-studio-link {
+    padding: 0.35rem 0.65rem;
   }
 
   .kn-glass,

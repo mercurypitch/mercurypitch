@@ -248,6 +248,10 @@ export function KaraokeNightApp() {
     })()
   }
 
+  /** Whether this demo is the one currently on the stage. */
+  const onStage = (demo: DemoSongManifest): boolean =>
+    activeSong()?.sessionId === demoSessionId(demo.slug)
+
   /**
    * Who the footer credits.
    *
@@ -257,11 +261,9 @@ export function KaraokeNightApp() {
    * line.
    */
   const credits = createMemo(() => {
-    const onStage = demos().find(
-      (d) => demoSessionId(d.slug) === activeSong()?.sessionId,
-    )
+    const staged = demos().find(onStage)
     const seen = new Set<string>()
-    return (onStage !== undefined ? [onStage] : demos()).filter((d) => {
+    return (staged !== undefined ? [staged] : demos()).filter((d) => {
       const key = `${d.attribution.text}|${d.attribution.url}`
       if (d.attribution.text.trim() === '' || seen.has(key)) return false
       seen.add(key)
@@ -320,7 +322,13 @@ export function KaraokeNightApp() {
               </svg>
             </button>
           </Show>
+          {/* Named for where it goes, not for what it is: this page is a
+              door into MercuryPitch and a first-time visitor has no reason
+              to know that "the studio" means the rest of the app. The
+              label shortens on a phone rather than disappearing, which is
+              what it used to do. */}
           <a
+            class="kn-studio-link"
             href={studioSessionUrl(
               // The demo/opener isn't a real library session, so a session
               // deep-link would open an empty studio. Send it to the studio
@@ -329,9 +337,35 @@ export function KaraokeNightApp() {
                 ? null
                 : activeSong()?.sessionId,
             )}
+            aria-label="Open the full MercuryPitch app"
+            title="Open the full MercuryPitch app — exercises, analysis and your progress"
             onClick={() => trackKaraoke('karaoke_cta_studio')}
           >
-            Open the studio
+            <svg
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+            <span class="kn-studio-label" aria-hidden="true">
+              MercuryPitch app
+            </span>
+            <span
+              class="kn-studio-label kn-studio-label--short"
+              aria-hidden="true"
+            >
+              App
+            </span>
           </a>
           <Suspense>
             <KaraokeAccount />
@@ -430,6 +464,10 @@ export function KaraokeNightApp() {
               </svg>
               Hide panel
             </button>
+            {/* The opener keeps a full card — it is the one call to action
+                a first-time visitor gets. Everything after it collapses
+                into a list in the shape of the library below, because ten
+                cards would bury the visitor's own songs. */}
             <Show
               when={demos().length > 0}
               fallback={
@@ -439,34 +477,73 @@ export function KaraokeNightApp() {
                 </section>
               }
             >
-              <For each={demos()}>
-                {(demo, i) => (
-                  <section class="kn-card kn-card--demo">
-                    <p class="kn-card-kicker">
-                      {i() === 0 ? "Tonight's opener" : 'Also tonight'}
-                    </p>
-                    <h2>{demo.title}</h2>
-                    <p class="kn-card-sub">{demo.artist}</p>
-                    {/* The API list is already filtered to playable rows;
-                        the shipped manifest is not, so a half-filled one
-                        must not offer a button that does nothing. */}
-                    <Show
-                      when={demoIsPlayable(demo)}
-                      fallback={<p class="kn-soon">Opener coming soon</p>}
-                    >
-                      <button
-                        class="kn-btn kn-btn--primary"
-                        onClick={() => singDemo(demo)}
-                        disabled={
-                          activeSong()?.sessionId === demoSessionId(demo.slug)
-                        }
-                      >
-                        Sing this song
-                      </button>
-                    </Show>
-                  </section>
-                )}
-              </For>
+              <section class="kn-card kn-card--demo">
+                <p class="kn-card-kicker">Tonight's opener</p>
+                <h2>{manifest()!.title}</h2>
+                <p class="kn-card-sub">{manifest()!.artist}</p>
+                {/* The API list is already filtered to playable rows; the
+                    shipped manifest is not, so a half-filled one must not
+                    offer a button that does nothing. */}
+                <Show
+                  when={demoIsPlayable(manifest())}
+                  fallback={<p class="kn-soon">Opener coming soon</p>}
+                >
+                  <button
+                    class="kn-btn kn-btn--primary"
+                    onClick={() => singDemo(manifest()!)}
+                    disabled={onStage(manifest()!)}
+                  >
+                    {onStage(manifest()!) ? 'On stage now' : 'Sing this song'}
+                  </button>
+                </Show>
+              </section>
+
+              <Show when={demos().length > 1}>
+                <section class="kn-card kn-card--demo">
+                  <p class="kn-card-kicker">
+                    Also tonight
+                    <span class="kn-count-pill">{demos().length - 1}</span>
+                  </p>
+                  <ul class="kn-library kn-demo-list">
+                    <For each={demos().slice(1)}>
+                      {(demo) => (
+                        <li>
+                          <button
+                            class="kn-library-song"
+                            classList={{
+                              'kn-library-song--active': onStage(demo),
+                            }}
+                            disabled={onStage(demo) || !demoIsPlayable(demo)}
+                            title={
+                              onStage(demo)
+                                ? 'On stage now'
+                                : demoIsPlayable(demo)
+                                  ? 'Sing this song'
+                                  : 'Not ready to sing yet'
+                            }
+                            onClick={() => singDemo(demo)}
+                          >
+                            <Show when={onStage(demo)}>
+                              <span class="kn-eq" aria-hidden="true">
+                                <i />
+                                <i />
+                                <i />
+                              </span>
+                            </Show>
+                            <span class="kn-library-title">
+                              <span class="kn-demo-name">{demo.title}</span>
+                              <span class="kn-demo-artist">{demo.artist}</span>
+                            </span>
+                            <Show when={!demoIsPlayable(demo)}>
+                              <span class="kn-chip">Soon</span>
+                            </Show>
+                          </button>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </section>
+              </Show>
             </Show>
 
             <Suspense>
