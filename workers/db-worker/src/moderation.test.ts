@@ -179,6 +179,50 @@ describe('account moderation', () => {
       true,
     )
     expect(badReason.status).toBe(400)
+
+    for (const body of [
+      { userId: USER_ID, reason: 'Automated abuse review' },
+      {
+        userId: USER_ID,
+        suspended: 'yes',
+        reason: 'Automated abuse review',
+      },
+      { userId: USER_ID, suspended: true },
+      { userId: USER_ID, suspended: true, reason: 42 },
+      { userId: USER_ID, suspended: true, reason: 'valid reason\nforged' },
+      { userId: USER_ID, suspended: true, reason: 'x'.repeat(281) },
+    ]) {
+      const response = await handleUserSuspension(
+        request(body),
+        env,
+        respond,
+        true,
+      )
+      expect(response.status).toBe(400)
+    }
+  })
+
+  it('rejects non-POST requests and malformed JSON', async () => {
+    const { env } = envWithUser()
+    const wrongMethod = await handleUserSuspension(
+      new Request('https://api.test/api/admin/user-suspension'),
+      env,
+      respond,
+      true,
+    )
+    expect(wrongMethod.status).toBe(405)
+
+    const malformed = await handleUserSuspension(
+      new Request('https://api.test/api/admin/user-suspension', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{',
+      }),
+      env,
+      respond,
+      true,
+    )
+    expect(malformed.status).toBe(400)
   })
 
   it('suspends once, revokes tokens, and appends one audit event', async () => {
@@ -234,6 +278,22 @@ describe('account moderation', () => {
       changed: true,
     })
     expect(db.users.get(USER_ID)?.tokenVersion).toBe(2)
+    expect(db.events.map((event) => event.action)).toEqual([
+      'suspend',
+      'restore',
+    ])
+
+    const idempotent = await handleUserSuspension(
+      request({
+        userId: USER_ID,
+        suspended: false,
+        reason: 'Manual appeal accepted',
+      }),
+      env,
+      respond,
+      true,
+    )
+    await expect(idempotent.json()).resolves.toMatchObject({ changed: false })
     expect(db.events.map((event) => event.action)).toEqual([
       'suspend',
       'restore',

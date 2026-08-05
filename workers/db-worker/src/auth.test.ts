@@ -379,6 +379,68 @@ describe('suspended account authentication', () => {
       ),
     ).rejects.toBeInstanceOf(AccountSuspendedError)
   })
+
+  it('returns the suspension code through the Google redirect flow', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    stubGoogleClaims('suspended-google-redirect')
+    const auth = await postAuth('google', { idToken: 'first' }, env)
+    db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?returnTo=https%3A%2F%2Fapp.test%2Faccount',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    expect(start?.status).toBe(302)
+    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
+      'state',
+    )
+    expect(state).not.toBeNull()
+
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id_token: 'redirect-id-token' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              aud: 'test-google-client',
+              sub: 'suspended-google-redirect',
+              email: 'suspended-google-redirect@example.com',
+              email_verified: 'true',
+              name: 'Suspended Singer',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+    )
+
+    const callback = await handleAuth(
+      new Request(
+        `https://api.test/api/auth/google/callback?code=valid&state=${encodeURIComponent(state as string)}`,
+      ),
+      env,
+      '/api/auth/google/callback',
+      respond,
+    )
+    expect(callback?.status).toBe(302)
+    expect(callback?.headers.get('Location')).toBe(
+      'https://app.test/account#gauth_error=account_suspended',
+    )
+  })
 })
 
 describe('db-worker account creation classification', () => {

@@ -161,6 +161,95 @@ describe('UVR worker routing protections', () => {
     expect(getByName).not.toHaveBeenCalled()
   })
 
+  it('fails closed when the DB validation binding is missing', async () => {
+    const secret = 'test-secret'
+    const getByName = vi.fn()
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/delete-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await bearer(secret)}` },
+      }),
+      {
+        JWT_SECRET: secret,
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(503)
+    expect(getByName).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toEqual({
+      error: 'Account validation is unavailable',
+    })
+  })
+
+  it('does not confuse an unrelated DB authorization failure with suspension', async () => {
+    const secret = 'test-secret'
+    const getByName = vi.fn()
+    stubDb(403, { error: 'Different policy', code: 'different_policy' })
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/delete-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await bearer(secret)}` },
+      }),
+      {
+        JWT_SECRET: secret,
+        DB_API_URL: 'https://db.test',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(403)
+    expect(getByName).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' })
+  })
+
+  it('uses safe copy when a suspension response has no human message', async () => {
+    const secret = 'test-secret'
+    const getByName = vi.fn()
+    stubDb(403, { error: 42, code: 'account_suspended' })
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/delete-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await bearer(secret)}` },
+      }),
+      {
+        JWT_SECRET: secret,
+        DB_API_URL: 'https://db.test',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(403)
+    expect(getByName).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toEqual({
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+  })
+
+  it('fails closed on an unexpected DB validation response', async () => {
+    const secret = 'test-secret'
+    const getByName = vi.fn()
+    stubDb(500, { error: 'Internal server error' })
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/delete-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await bearer(secret)}` },
+      }),
+      {
+        JWT_SECRET: secret,
+        DB_API_URL: 'https://db.test',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(503)
+    expect(getByName).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toEqual({
+      error: 'Account validation is unavailable',
+    })
+  })
+
   it('fails closed when account validation is unavailable', async () => {
     const secret = 'test-secret'
     const getByName = vi.fn()

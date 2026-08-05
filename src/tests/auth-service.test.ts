@@ -10,12 +10,17 @@ vi.mock('@/lib/defaults', () => ({
 vi.mock('@/lib/analytics', () => ({
   trackEvent: vi.fn(),
 }))
+vi.mock('@/stores/notifications-store', () => ({
+  showNotification: vi.fn(),
+}))
 
-import { consumeGoogleRedirect, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { showNotification } from '@/stores/notifications-store'
 
 const trackEventMock = vi.mocked(trackEvent)
+const showNotificationMock = vi.mocked(showNotification)
 
 function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
   const payload = {
@@ -48,6 +53,7 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   trackEventMock.mockClear()
+  showNotificationMock.mockClear()
   history.replaceState(null, '', '/')
 })
 
@@ -233,6 +239,12 @@ describe('requireAuth', () => {
     expect(getAuthToken()).toBeNull()
     expect(await requireAuth()).toBe(false)
     expect(fetchMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledWith(
+      expect.stringContaining('account is suspended'),
+      'error',
+      { channel: 'account-suspension', durationMs: 15000 },
+    )
     infoSpy.mockRestore()
   })
 
@@ -305,6 +317,20 @@ describe('Google redirect signup tracking', () => {
     expect(trackEventMock).toHaveBeenCalledWith('signup')
     expect(window.location.hash).toBe('#/mirror')
   })
+
+  it('shows a human suspension result without exposing the internal error code', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', '/#gauth_error=account_suspended')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toEqual({
+      ok: false,
+      error: expect.stringContaining('account is suspended'),
+    })
+    expect(showNotificationMock).not.toHaveBeenCalled()
+    expect(window.location.hash).toBe('#/mirror')
+  })
 })
 
 describe('logout', () => {
@@ -355,6 +381,19 @@ describe('login and register', () => {
     expect(getAuthToken()).toBeNull()
   })
 
+  it('reports a suspended login once through the form error path', async () => {
+    mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    await expect(
+      loginWithPassword('suspended@example.com', 'secret123'),
+    ).rejects.toThrow('This account is suspended.')
+    expect(getAuthToken()).toBeNull()
+    expect(showNotificationMock).not.toHaveBeenCalled()
+  })
+
   it('passes the device id along on register (account upgrade)', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {
@@ -390,6 +429,32 @@ describe('login and register', () => {
       idToken: 'google-id-token',
       deviceId,
     })
+  })
+})
+
+describe('authenticated account endpoints', () => {
+  it.each([
+    ['profile', () => fetchMe()],
+    ['resend verification', () => resendVerificationEmail()],
+    ['account deletion', () => deleteAccount()],
+  ])('handles a suspended response from %s', async (_label, request) => {
+    setAuthToken(makeToken(3600, 'password'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    await request().catch(() => undefined)
+
+    expect(getAuthToken()).toBeNull()
+    expect(showNotificationMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledWith(
+      expect.stringContaining('account is suspended'),
+      'error',
+      { channel: 'account-suspension', durationMs: 15000 },
+    )
+    infoSpy.mockRestore()
   })
 })
 
