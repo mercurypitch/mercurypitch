@@ -261,6 +261,15 @@ moving those vars first.
 **See:** `wrangler.jsonc:21` (top level), `:124` dev, `:134` preview;
 `.github/workflows/build.yml:90` gate, `:148` preview upload.
 
+### Force Vitest's environment before resolving Solid
+**Symptom:** dozens of Solid interaction tests failed locally with detached-root
+warnings while the same commit passed on CI.
+**Cause:** the host exported `NODE_ENV=production`; Vitest only defaults it to
+`test` when unset, so Vite omitted Solid's browser test condition.
+**Rule:** set `NODE_ENV=test` in `vitest.config.ts` before defining the config;
+do not trust the caller's shell environment.
+**See:** `vitest.config.ts`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked
