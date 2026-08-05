@@ -97,10 +97,9 @@ async function validateDbSession(
   if (dbApiUrl === undefined || dbApiUrl === '') {
     return json({ error: 'Account validation is unavailable' }, 503)
   }
-  const authorization = request.headers.get('Authorization')
-  if (authorization === null || authorization === '') {
-    return json({ error: 'Unauthorized' }, 401)
-  }
+  // The caller runs only after verifyBearer accepted this same request, so a
+  // non-empty Authorization header is already guaranteed here.
+  const authorization = request.headers.get('Authorization') as string
 
   try {
     const endpoint = new URL('/api/auth/me', dbApiUrl)

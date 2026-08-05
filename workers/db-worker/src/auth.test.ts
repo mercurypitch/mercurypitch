@@ -154,9 +154,17 @@ class AuthDatabase {
   // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
   // the /me normalization regression below tests the real shape.
   readonly profiles = new Map<string, Record<string, unknown>>()
+  failProviderLookup = false
 
   prepare(sql: string): AuthStatement {
-    return new AuthStatement(this, sql.replace(/\s+/g, ' ').trim())
+    const normalized = sql.replace(/\s+/g, ' ').trim()
+    if (
+      this.failProviderLookup &&
+      normalized === 'SELECT * FROM users WHERE providerId = ?'
+    ) {
+      throw new Error('provider lookup unavailable')
+    }
+    return new AuthStatement(this, normalized)
   }
 
   seedAnonymous(id: string): void {
@@ -380,6 +388,32 @@ describe('suspended account authentication', () => {
     ).rejects.toBeInstanceOf(AccountSuspendedError)
   })
 
+  it('does not auto-link Google to a suspended password account', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const auth = await postAuth(
+      'register',
+      { email: 'suspended-google-autolink@example.com', password: 'secret123' },
+      env,
+    )
+    db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
+    stubGoogleClaims('suspended-google-autolink')
+
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: 'google-id-token' }),
+        }),
+        env,
+        '/api/auth/google',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+    expect(db.user(String(auth.userId)).providerId).toBeNull()
+  })
+
   it('returns the suspension code through the Google redirect flow', async () => {
     const db = new AuthDatabase()
     const env = makeEnv(db)
@@ -440,6 +474,113 @@ describe('suspended account authentication', () => {
     expect(callback?.headers.get('Location')).toBe(
       'https://app.test/account#gauth_error=account_suspended',
     )
+  })
+
+  it('still issues a session through a successful Google redirect', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?returnTo=https%3A%2F%2Fapp.test%2Faccount',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
+      'state',
+    ) as string
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id_token: 'redirect-id-token' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              aud: 'test-google-client',
+              sub: 'fresh-google-redirect',
+              email: 'fresh-google-redirect@example.com',
+              email_verified: 'true',
+              name: 'Fresh Singer',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+    )
+
+    const callback = await handleAuth(
+      new Request(
+        `https://api.test/api/auth/google/callback?code=valid&state=${encodeURIComponent(state)}`,
+      ),
+      env,
+      '/api/auth/google/callback',
+      respond,
+    )
+    expect(callback?.status).toBe(302)
+    expect(callback?.headers.get('Location')).toMatch(
+      /^https:\/\/app\.test\/account#gauth=.+&gauth_new=1$/,
+    )
+  })
+
+  it('does not disguise an unexpected Google callback failure as suspension', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    env.GOOGLE_CLIENT_SECRET = 'test-google-secret'
+    env.APP_ORIGINS = 'https://app.test'
+    const start = await handleAuth(
+      new Request(
+        'https://api.test/api/auth/google/start' +
+          '?returnTo=https%3A%2F%2Fapp.test%2Faccount',
+      ),
+      env,
+      '/api/auth/google/start',
+      respond,
+    )
+    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
+      'state',
+    ) as string
+    db.failProviderLookup = true
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ id_token: 'redirect-id-token' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              aud: 'test-google-client',
+              sub: 'failing-google-redirect',
+              email_verified: 'true',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+    )
+
+    await expect(
+      handleAuth(
+        new Request(
+          `https://api.test/api/auth/google/callback?code=valid&state=${encodeURIComponent(state)}`,
+        ),
+        env,
+        '/api/auth/google/callback',
+        respond,
+      ),
+    ).rejects.toThrow('provider lookup unavailable')
   })
 })
 

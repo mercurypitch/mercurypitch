@@ -461,9 +461,7 @@ export function consumeGoogleRedirect(): void {
     googleRedirectResult = {
       ok: false,
       error:
-        error === ACCOUNT_SUSPENDED_CODE
-          ? ACCOUNT_SUSPENDED_MESSAGE
-          : error,
+        error === ACCOUNT_SUSPENDED_CODE ? ACCOUNT_SUSPENDED_MESSAGE : error,
     }
   }
   const returnHash = sessionStorage.getItem(RETURN_HASH_KEY) ?? ''

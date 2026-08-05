@@ -14,7 +14,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -298,6 +298,34 @@ describe('requireAuth', () => {
     const init = fetchMock.mock.calls[2][1] as RequestInit
     expect(JSON.parse(init.body as string)).toEqual({ deviceId })
     infoSpy.mockRestore()
+  })
+
+  it('does not turn a suspended anonymous device without a token into a new identity', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).not.toHaveBeenCalled()
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[auth] suspended account cannot sync personal data',
+    )
+    infoSpy.mockRestore()
+  })
+})
+
+describe('suspension response recognition', () => {
+  it('ignores non-403, malformed, and unrelated errors', () => {
+    expect(handleAuthErrorResponse(401, '{')).toBe(false)
+    expect(handleAuthErrorResponse(403, '{')).toBe(false)
+    expect(
+      handleAuthErrorResponse(403, JSON.stringify({ code: 'other' })),
+    ).toBe(false)
+    expect(showNotificationMock).not.toHaveBeenCalled()
   })
 })
 

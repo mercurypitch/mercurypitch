@@ -89,6 +89,7 @@ class ModerationStatement {
 class ModerationDatabase {
   readonly users = new Map<string, UserState>()
   readonly events: ModerationEvent[] = []
+  deleteUserAfterNextBatch = false
 
   prepare(sql: string): ModerationStatement {
     return new ModerationStatement(this, sql.replace(/\s+/g, ' ').trim())
@@ -97,7 +98,12 @@ class ModerationDatabase {
   async batch(
     statements: ModerationStatement[],
   ): Promise<Array<{ meta: { changes: number } }>> {
-    return statements.map((statement) => statement.execute())
+    const results = statements.map((statement) => statement.execute())
+    if (this.deleteUserAfterNextBatch) {
+      this.users.clear()
+      this.deleteUserAfterNextBatch = false
+    }
+    return results
   }
 }
 
@@ -343,5 +349,21 @@ describe('account moderation', () => {
     )
     expect(response.status).toBe(404)
     expect(db.events).toHaveLength(0)
+  })
+
+  it('returns not found when the target disappears during the transition', async () => {
+    const { env, db } = envWithUser()
+    db.deleteUserAfterNextBatch = true
+    const response = await handleUserSuspension(
+      request({
+        userId: USER_ID,
+        suspended: true,
+        reason: 'Automated abuse review',
+      }),
+      env,
+      respond,
+      true,
+    )
+    expect(response.status).toBe(404)
   })
 })

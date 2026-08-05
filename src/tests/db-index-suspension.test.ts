@@ -26,15 +26,15 @@ vi.mock('@/db/services/user-service', () => ({
 }))
 
 vi.mock('@/db/adapters/server-adapter', () => ({
-  ServerAdapter: class ServerAdapter {
-    constructor(config: NonNullable<typeof mocks.serverConfig>) {
-      mocks.serverConfig = config
-    }
+  ServerAdapter: function ServerAdapter(
+    config: NonNullable<typeof mocks.serverConfig>,
+  ) {
+    mocks.serverConfig = config
   },
 }))
 
 vi.mock('@/db/adapters/dexie-adapter', () => ({
-  DexieAdapter: class DexieAdapter {},
+  DexieAdapter: function DexieAdapter() {},
 }))
 
 vi.mock('@/db/adapters/hybrid-adapter', () => ({
