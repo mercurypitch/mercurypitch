@@ -179,6 +179,50 @@ describe('JamRoom signaling and ownership lifecycle', () => {
     })
   })
 
+  it('restores host authority when the owner reconnects inside the grace period', async () => {
+    const ctx = new FakeContext()
+    const creator = socket('create')
+    ctx.sockets = [creator]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      creator as unknown as WebSocket,
+      JSON.stringify({ type: 'create-room', displayName: 'Ada' }),
+    )
+    const ownerToken = sentMessages(creator).find(
+      (message) => message.type === 'room-created',
+    )?.ownerToken
+    expect(typeof ownerToken).toBe('string')
+
+    await instance.webSocketClose(creator as unknown as WebSocket)
+    expect(ctx.storage.values.has(ROOM_OWNERSHIP_EXPIRY_KEY)).toBe(true)
+
+    const reconnectingOwner = socket('join')
+    ctx.sockets = [reconnectingOwner]
+    await instance.webSocketMessage(
+      reconnectingOwner as unknown as WebSocket,
+      JSON.stringify({
+        type: 'join-room',
+        displayName: 'Ada',
+        ownerToken,
+      }),
+    )
+
+    expect(sentMessages(reconnectingOwner)).toContainEqual(
+      expect.objectContaining({ type: 'room-joined', isHost: true }),
+    )
+    expect(ctx.storage.values.has(ROOM_OWNERSHIP_EXPIRY_KEY)).toBe(false)
+
+    const response = await instance.fetch(
+      new Request('https://jam-room.internal/internal/verify-host', {
+        method: 'POST',
+        headers: { 'X-Jam-Room-Id': 'ABCDEFGH' },
+        body: JSON.stringify({ ownerToken }),
+      }),
+    )
+    expect(response.status).toBe(204)
+  })
+
   it('fails a create-route id collision instead of replacing a live owner', async () => {
     const ctx = new FakeContext()
     const creator = socket('create')
