@@ -614,40 +614,78 @@
   display: block;
 }
 
+/* Five perks, each an icon beside a title and a line of plain English.
+   Two columns where there is room so the list does not become a wall
+   before the buttons; one column on a phone. The fifth item spans both
+   columns rather than sitting alone in a half-width box. */
 .keepList {
   list-style: none;
   margin: 2px 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
   width: 100%;
-  max-width: 44ch;
+  max-width: 62ch;
   text-align: left;
 }
 
-.keepList li {
-  position: relative;
-  padding-left: 26px;
-  font-size: 0.88rem;
-  line-height: 1.5;
-  color: var(--ob-ink-2);
+.keepPerk {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
 }
 
-.keepList li::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 0.55em;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: linear-gradient(120deg, var(--ob-blue), var(--ob-teal));
+/* An odd count leaves a hole; let the last one take the whole row. */
+.keepPerk:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
-.keepList em {
+.keepPerkIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   color: var(--ob-teal);
-  font-style: normal;
+  background: rgba(45, 212, 191, 0.1);
+  border: 1px solid rgba(45, 212, 191, 0.22);
+}
+
+.keepPerkIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.keepPerkText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.keepPerkTitle {
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ob-ink-1);
+}
+
+.keepPerkBody {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ob-ink-3);
+}
+
+@media (max-width: 640px) {
+  .keepList {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    max-width: 44ch;
+  }
 }
 
 .keepFootnote {
@@ -1084,6 +1122,34 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ob-ink-3);
+}
+
+/* The way back to the account offer, for anyone who closed it — on the
+   one screen they land on afterwards. Deliberately the quietest text on
+   the beat: it must be findable, not persuasive. The offer already made
+   its case one screen earlier. */
+.mapKeep {
+  margin: 14px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ob-ink-3);
+  text-align: center;
+}
+
+.mapKeepLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ob-ink-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.mapKeepLink:hover,
+.mapKeepLink:focus-visible {
+  color: var(--ob-ink-1);
 }
 
 /* ── Motion ──────────────────────────────────────────────────── */
