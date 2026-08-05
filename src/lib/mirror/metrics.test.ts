@@ -6,6 +6,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { VOICE_TYPE_BANDS } from './legend-catalog'
 import type { F0Frame } from './metrics'
 import { computeAccuracy, computeDelta, computeMirrorResult, computeRange, computeSteadiness, foldCents, hzToCents, matchScore, medianFilter, pickMatchTargets, preprocess, scoreMatchTake, steadinessScore, summarize, voiceTypeHint, } from './metrics'
 
@@ -210,12 +211,27 @@ describe('computeRange', () => {
 })
 
 describe('voiceTypeHint', () => {
+  it('classifies every canonical broad band as itself', () => {
+    for (const band of VOICE_TYPE_BANDS) {
+      expect(voiceTypeHint(band.lowMidi, band.highMidi), band.id).toBe(band.id)
+    }
+  })
+
   it('matches a G2–G4 range to Baritone', () => {
     expect(voiceTypeHint(43, 67)).toBe('Baritone')
   })
 
   it('matches a C4–C6 range to Soprano', () => {
     expect(voiceTypeHint(60, 84)).toBe('Soprano')
+  })
+
+  it('breaks equal-overlap ties by closest center, then catalogue order', () => {
+    expect(voiceTypeHint(60, 67)).toBe('Alto')
+    expect(voiceTypeHint(52, 55)).toBe('Bass')
+  })
+
+  it('returns null when a range does not overlap a canonical band', () => {
+    expect(voiceTypeHint(20, 30)).toBeNull()
   })
 })
 

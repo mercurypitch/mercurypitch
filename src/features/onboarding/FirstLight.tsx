@@ -17,6 +17,7 @@ import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
+import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import type { F0Frame, MirrorResult } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
@@ -320,6 +321,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               records={savedVoiceprints()}
               onContinue={() => advanceBeat()}
               onAnother={handleAnotherVoiceprint}
+              onExplore={openVoiceConstellation}
             />
           </Match>
           <Match when={currentBeat() === 'voiceprint'}>

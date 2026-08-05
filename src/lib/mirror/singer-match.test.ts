@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LEGENDS } from '@/features/mirror/LegendCaricature'
+import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from './legend-catalog'
 import { voiceTypeHint } from './metrics'
 import { singerForVoiceType, SINGERS_BY_VOICE_TYPE } from './singer-match'
 
@@ -9,6 +10,19 @@ import { singerForVoiceType, SINGERS_BY_VOICE_TYPE } from './singer-match'
 const OPTIONS = SINGERS_BY_VOICE_TYPE
 
 describe('singerForVoiceType', () => {
+  it('derives every roster and its order from the canonical catalogue', () => {
+    expect(Object.keys(OPTIONS)).toEqual(
+      VOICE_TYPE_BANDS.map((band) => band.id),
+    )
+    for (const band of VOICE_TYPE_BANDS) {
+      expect(OPTIONS[band.id]).toEqual(
+        VOICE_LEGENDS.filter((legend) => legend.band === band.id).map(
+          (legend) => legend.name,
+        ),
+      )
+    }
+  })
+
   it('returns one of the legends for each voice type', () => {
     for (const [type, options] of Object.entries(OPTIONS)) {
       expect(options).toContain(singerForVoiceType(type, 43, 67))

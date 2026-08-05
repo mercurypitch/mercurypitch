@@ -742,3 +742,105 @@
     animation: none;
   }
 }
+
+/* Immediate portalled boundary for the lazy Voice Constellation route. The
+   route signal makes #app inert before its feature chunk arrives, while this
+   body-level curtain prevents a cold load from exposing interactive chrome. */
+.voiceConstellationRouteCurtain {
+  position: fixed;
+  inset: 0;
+  z-index: 11990;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #f5f2ff;
+  background:
+    radial-gradient(
+      circle at 24% 18%,
+      rgba(108, 199, 255, 0.14),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 78% 24%,
+      rgba(168, 146, 255, 0.16),
+      transparent 32%
+    ),
+    #08080f;
+}
+
+.voiceConstellationRouteCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 480px);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+.voiceConstellationRouteCard > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(108, 199, 255, 0.28);
+  border-radius: 50%;
+  color: #6cc7ff;
+  background: rgba(108, 199, 255, 0.08);
+}
+
+.voiceConstellationRouteCard > span svg {
+  width: 19px;
+  height: 19px;
+}
+
+.voiceConstellationRouteCard > div {
+  flex: 1;
+}
+
+.voiceConstellationRouteCard h2,
+.voiceConstellationRouteCard p {
+  margin: 0;
+}
+
+.voiceConstellationRouteCard h2 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.voiceConstellationRouteCard p {
+  color: #aaa7ba;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.voiceConstellationRouteCard h2 + p {
+  margin-top: 4px;
+}
+
+.voiceConstellationRouteCard > button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  color: #f5f2ff;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+}
+
+.voiceConstellationRouteCard > button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voiceConstellationRouteCard > button:focus-visible {
+  outline: 2px solid #6cc7ff;
+  outline-offset: 3px;
+}

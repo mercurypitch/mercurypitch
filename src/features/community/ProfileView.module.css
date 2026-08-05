@@ -55,9 +55,42 @@
 }
 
 .twin {
-  margin: 5px 0 0;
+  margin: 0;
   font-size: 0.8125rem;
   color: var(--accent);
+}
+
+.twinRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 12px;
+  margin-top: 5px;
+}
+
+.exploreConstellation {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 3px;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.exploreConstellation:hover {
+  color: var(--text-primary);
+}
+
+.exploreConstellation:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
 .bio {

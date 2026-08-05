@@ -118,6 +118,12 @@ describe('parseHash', () => {
     })
   })
 
+  it('parses the voice constellation surface route', () => {
+    expect(parseHash('#/voice-constellation')).toEqual({
+      type: 'voice-constellation',
+    })
+  })
+
   it('returns unknown for invalid guide section', () => {
     expect(parseHash('#/guide/nonexistent')).toEqual({ type: 'unknown' })
     // The old combined 'settings' guide id was split into per-tab tours.
@@ -433,6 +439,12 @@ describe('buildHash', () => {
     )
   })
 
+  it('builds the voice constellation surface hash', () => {
+    expect(buildHash({ type: 'voice-constellation' })).toBe(
+      '/voice-constellation',
+    )
+  })
+
   it('builds settings-section hashes (singing -> practice slug)', () => {
     expect(buildHash({ type: 'settings-section', section: 'credits' })).toBe(
       '/settings/credits',
@@ -477,6 +489,7 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/guide/all',
     '#/guide/practice',
     '#/guide/editor',
+    '#/voice-constellation',
     '#/s/abc123XYZ0',
     '#/reset-password',
     '#/reset-password?token=tok_abc-123',

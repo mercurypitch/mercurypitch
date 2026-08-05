@@ -32,6 +32,8 @@ export interface BeatPrintsProps {
   onContinue: () => void
   /** Leave the flow for the Voice Mirror and take a fresh one. */
   onAnother: () => void
+  /** Open the saved match map without leaving this returning-user beat. */
+  onExplore: () => void
 }
 
 function formatDate(iso: string): string {
@@ -185,6 +187,13 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
           onClick={() => props.onAnother()}
         >
           Make another
+        </button>
+        <button
+          type="button"
+          class={styles.secondary}
+          onClick={() => props.onExplore()}
+        >
+          Explore your voice constellation
         </button>
       </div>
     </div>

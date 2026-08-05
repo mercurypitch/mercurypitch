@@ -676,6 +676,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-account"]'],
   },
   {
+    title: 'Your voice constellation',
+    targetSelector: '[data-tour="settings.voice-constellation"]',
+    description:
+      'Your saved voiceprints keep your latest range, current twin and earlier matches together. Once you have one, Explore constellation opens the full map without changing your history.',
+    placement: 'bottom',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-account"]'],
+  },
+  {
     title: 'Getting started, again',
     targetSelector: '[data-tour="settings.getting-started"]',
     description:
@@ -1464,7 +1474,7 @@ const COMMUNITY_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Browse the community',
     description:
-      'Switch between shared melodies, practice sessions, and your public profile — with your stats, progress charts and personal records.',
+      'Switch between shared melodies, practice sessions, and your profile — with stats, progress charts, personal records and a private link to your saved voice constellation.',
     targetSelector: '.community-tabs',
     placement: 'bottom',
     requiredTab: TAB_COMMUNITY,

@@ -25,6 +25,8 @@ export type HashRoute =
   | { type: 'learn-chapter'; chapterId: string }
   | { type: 'guide' }
   | { type: 'guide-start'; sectionId: string }
+  /** Full-screen map of every Voice Mirror legend and the singer's saved matches. */
+  | { type: 'voice-constellation' }
   /** Replay the First Light Map — "what can I do here", on demand.
    *  Distinct from `guide`, which opens the spotlight-tour picker. Phase 3
    *  folds the tour catalog into the Map, at which point the two should be
@@ -216,6 +218,11 @@ export function parseHash(rawHash: string): HashRoute {
     return { type: 'guide' }
   }
 
+  // Match: /voice-constellation — the saved Voice Mirror match map.
+  if (hash === '/voice-constellation') {
+    return { type: 'voice-constellation' }
+  }
+
   // Match: /map (replay the First Light Map)
   if (hash === '/map') {
     return { type: 'onboarding-map' }
@@ -312,6 +319,8 @@ export function buildHash(route: HashRoute): string {
       return route.sectionId === 'all'
         ? '/guide/all'
         : `/guide/${route.sectionId}`
+    case 'voice-constellation':
+      return '/voice-constellation'
     case 'onboarding-map':
       return '/map'
     case 'billing-return':
