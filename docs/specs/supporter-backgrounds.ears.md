@@ -9,7 +9,7 @@ supporter access evidence, and persisted selection behavior.
 `workers/db-worker/src/premium-background-access.ts`,
 `workers/db-worker/src/premium-background-admin.ts`,
 `workers/db-worker/src/background-capabilities.ts`,
-`workers/db-worker/migrations/0017_premium_background_studio.sql`,
+`workers/db-worker/migrations/0018_premium_background_studio.sql`,
 `workers/jam-worker/src/host-verification.ts`,
 `workers/jam-worker/src/room-ownership.ts`,
 `workers/jam-worker/src/signaling-intent.ts`,

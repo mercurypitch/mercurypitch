@@ -326,4 +326,3 @@ authored as `Claude <noreply@anthropic.com>` — verify `%an|%ae` before merging
 ### Never test against production
 **Rule:** local or dev only (`api-dev`, localhost workers). Prod deploys go
 through `/prod-upd`.
-

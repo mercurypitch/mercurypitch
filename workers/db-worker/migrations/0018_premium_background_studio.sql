@@ -1,4 +1,4 @@
--- 0017_premium_background_studio.sql — mutable premium-background publishing.
+-- 0018_premium_background_studio.sql — mutable premium-background publishing.
 --
 -- The environment-local main DB owns lifecycle, supporter groups and
 -- revocable Jam capabilities. The separately bound PERKS_DB remains the
