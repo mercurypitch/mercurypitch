@@ -7,6 +7,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **The Karaoke Night demo song can be changed from the admin studio.**
+  Its title, artist, stems, attribution and lyrics used to be fixed in the
+  build, so correcting a single wrong lyric line meant shipping a release.
+  There is now a page for it. Lyrics can be pasted straight in, and a
+  correction reaches anyone who has already sung the demo — unless they
+  have edited their own copy, which always wins. The version that ships
+  with the app stays the fallback, so a half-filled entry shows the old
+  demo rather than a broken page.
+
 - **The weekly Legend now has a run of weeks queued behind it.** Five
   challenges instead of one, opening on the money note — Puccini's B4 on
   "Vincerò" — and stepping through a long sustain, a full-octave sweep, a

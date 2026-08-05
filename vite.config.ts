@@ -230,6 +230,21 @@ export default defineConfig(({ mode }) => {
         },
         output: {
           manualChunks(id) {
+            // Vite's own virtual helpers, above every other rule.
+            //
+            // `__vitePreload` is imported by EVERY chunk that contains a
+            // dynamic import, so wherever it lands, the whole graph points
+            // at that chunk. Falling through the rules below, it was
+            // grouped into 'pitch-core' — and because pitch-core imports
+            // 'vendor' for real, that closed a chunk cycle:
+            //   Circular chunk: vendor -> pitch-core -> vendor
+            // Rollup emits both halves of a cycle and the app can die at
+            // first paint on "Cannot access 'X' before initialization",
+            // which only a production build shows and only E2E catches.
+            // The helper depends on nothing but the DOM, so its own chunk
+            // has no back-edge for anything to close a cycle through.
+            if (id.startsWith('\0vite/') || id.includes('vite/preload-helper'))
+              return 'vite-helpers'
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
               // GPU stack rides its own chunk: only the lazily-imported glass

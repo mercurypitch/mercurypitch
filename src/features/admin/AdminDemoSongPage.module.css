@@ -1,0 +1,276 @@
+/* Studio console styling, matched to AdminAchievementsPage/AdminAscentPage:
+   dark instrument shell, amber/accent action colour, compact technical type. */
+
+.page {
+  min-width: 0;
+  color: var(--text-primary, #f4f7fb);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.header h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.header p {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #2a3446);
+  border-radius: 10px;
+  background: var(--bg-card, #131a26);
+  font-size: 0.85rem;
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.state svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Status ─────────────────────────────────────────────────────── */
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #2a3446);
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+/* The icon and its label share a baseline rather than a box edge — a
+   flex row alone leaves the glyph riding high against small caps. */
+.badge svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.badgeLive {
+  border-color: color-mix(in srgb, var(--accent, #f0a848) 55%, transparent);
+  color: var(--accent, #f0a848);
+}
+
+.badgeIdle {
+  color: var(--warning, #e0b341);
+  border-color: color-mix(in srgb, var(--warning, #e0b341) 40%, transparent);
+}
+
+.meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #7d8a9c);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Form ───────────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.group {
+  margin: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border, #2a3446);
+  border-radius: 12px;
+  background: var(--bg-card, #131a26);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.group legend {
+  padding: 0 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted, #7d8a9c);
+}
+
+.groupNote {
+  margin: 0;
+  max-width: 66ch;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.groupNote code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-primary, #0c111a);
+  font-size: 0.95em;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border, #2a3446);
+  border-radius: 8px;
+  background: var(--bg-primary, #0c111a);
+  color: var(--text-primary, #f4f7fb);
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--accent, #f0a848);
+  outline-offset: 1px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-muted, #7d8a9c);
+}
+
+/* ── Actions ────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 18px;
+}
+
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  max-width: 52ch;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #b9c4d4);
+  cursor: pointer;
+}
+
+.toggle input {
+  margin-top: 2px;
+  flex: none;
+  accent-color: var(--accent, #f0a848);
+}
+
+.primaryButton,
+.ghostButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.83rem;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.primaryButton {
+  background: var(--accent, #f0a848);
+  color: #14100a;
+  font-weight: 600;
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.primaryButton:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent, #f0a848) 88%, #fff);
+}
+
+.ghostButton {
+  background: transparent;
+  border-color: var(--border, #2a3446);
+  color: var(--text-secondary, #b9c4d4);
+}
+
+.ghostButton:hover {
+  border-color: var(--accent, #f0a848);
+  color: var(--accent, #f0a848);
+}
+
+.ghostButton svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton,
+  .ghostButton {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryButton {
+    justify-content: center;
+  }
+}
