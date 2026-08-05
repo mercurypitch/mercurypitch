@@ -83,8 +83,15 @@
   transform: scale(0.94);
 }
 
-/* Autoplay toggle — leads the header's right-hand cluster (its margin-left
-   pushes both it and the song-list button to the edge). */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+/* Header toggles stay in one compact group. The title owns any flexible space
+   on phones; desktop Zen lets the group follow the title from the left. */
 .autoplayBtn {
   display: inline-flex;
   align-items: center;
@@ -92,7 +99,6 @@
   width: 38px;
   height: 38px;
   flex: none;
-  margin-left: auto;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.12);
@@ -118,6 +124,7 @@
 .titleWrap {
   min-width: 0;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 1px;
 }
@@ -683,6 +690,11 @@
     margin-right: auto;
     padding-left: 2rem;
     padding-right: 2rem;
+  }
+
+  .titleWrap {
+    flex: 0 1 auto;
+    max-width: 58%;
   }
 
   /* Tuck the sing pill against the column's right edge, not the far edge of

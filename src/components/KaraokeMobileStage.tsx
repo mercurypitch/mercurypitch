@@ -448,57 +448,59 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             </p>
           </Show>
         </div>
-        <Show when={props.alignedWords}>
+        <div class={styles.headerActions}>
+          <Show when={props.alignedWords}>
+            <button
+              class={styles.autoplayBtn}
+              classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
+              onClick={toggleNoteGlyphs}
+              aria-pressed={noteGlyphsOn()}
+              title={
+                noteGlyphsOn()
+                  ? 'Hide the notes to sing'
+                  : 'Show the note to sing over each word'
+              }
+              aria-label="Toggle the sing-this-note labels"
+            >
+              <NoteGlyphIcon />
+            </button>
+          </Show>
           <button
             class={styles.autoplayBtn}
-            classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
-            onClick={toggleNoteGlyphs}
-            aria-pressed={noteGlyphsOn()}
-            title={
-              noteGlyphsOn()
-                ? 'Hide the notes to sing'
-                : 'Show the note to sing over each word'
-            }
-            aria-label="Toggle the sing-this-note labels"
+            classList={{
+              [styles.autoplayBtnOn]: lyricsSize() !== 'current',
+            }}
+            onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
+            title={lyricsSizeTitle()}
+            aria-label="Cycle the lyrics text size"
           >
-            <NoteGlyphIcon />
+            <TextSizeIcon />
           </button>
-        </Show>
-        <button
-          class={styles.autoplayBtn}
-          classList={{
-            [styles.autoplayBtnOn]: lyricsSize() !== 'current',
-          }}
-          onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
-          title={lyricsSizeTitle()}
-          aria-label="Cycle the lyrics text size"
-        >
-          <TextSizeIcon />
-        </button>
-        <Show when={props.onPickSession}>
-          <button
-            class={styles.autoplayBtn}
-            classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
-            onClick={() => props.onToggleAutoplay()}
-            aria-pressed={props.autoplayEnabled()}
-            title={
-              props.autoplayEnabled()
-                ? 'Autoplay is on — the next song plays automatically'
-                : 'Autoplay is off — turn on to keep playing song after song'
-            }
-            aria-label="Toggle autoplay"
-          >
-            <AutoplayIcon />
-          </button>
-          <button
-            class={styles.listBtn}
-            onClick={() => setSheetOpen(true)}
-            title="Songs and playlists"
-            aria-label="Open the song list"
-          >
-            <SongListIcon />
-          </button>
-        </Show>
+          <Show when={props.onPickSession}>
+            <button
+              class={styles.autoplayBtn}
+              classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
+              onClick={() => props.onToggleAutoplay()}
+              aria-pressed={props.autoplayEnabled()}
+              title={
+                props.autoplayEnabled()
+                  ? 'Autoplay is on — the next song plays automatically'
+                  : 'Autoplay is off — turn on to keep playing song after song'
+              }
+              aria-label="Toggle autoplay"
+            >
+              <AutoplayIcon />
+            </button>
+            <button
+              class={styles.listBtn}
+              onClick={() => setSheetOpen(true)}
+              title="Songs and playlists"
+              aria-label="Open the song list"
+            >
+              <SongListIcon />
+            </button>
+          </Show>
+        </div>
       </div>
 
       {/* ── Desktop-zen playlist card (uses the side gutter) ── */}
