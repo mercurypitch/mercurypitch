@@ -31,6 +31,7 @@ import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
+import { useFocusTrap } from './lib/use-focus-trap'
 import { isNarrow } from './lib/use-viewport'
 import { installAutoResume } from './lib/uvr-auto-resume'
 
@@ -87,39 +88,73 @@ const VoiceConstellationSurface = lazy(async () =>
   ),
 )
 
-const VoiceConstellationLoadingShell: Component = () => (
-  <Portal>
-    <div
-      class={styles.voiceConstellationRouteCurtain}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Opening voice constellation"
-    >
-      <div class={styles.voiceConstellationRouteCard}>
-        <span aria-hidden="true">
-          <Voice />
-        </span>
-        <p role="status" aria-live="polite">
-          Opening your voice constellation…
-        </p>
-      </div>
-    </div>
-  </Portal>
-)
-
-const VoiceConstellationRouteError: Component<{ onClose: () => void }> = (
+const VoiceConstellationLoadingShell: Component<{ onClose: () => void }> = (
   props,
 ) => {
+  let dialog: HTMLDivElement | undefined
   let closeButton: HTMLButtonElement | undefined
-  onMount(() => queueMicrotask(() => closeButton?.focus()))
+  useFocusTrap(() => dialog, {
+    isOpen: () => true,
+    onClose: () => props.onClose(),
+    initialFocus: () => closeButton,
+  })
 
   return (
     <Portal>
       <div
+        ref={dialog}
+        class={styles.voiceConstellationRouteCurtain}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="voice-constellation-loading-title"
+        tabindex="-1"
+      >
+        <div class={styles.voiceConstellationRouteCard}>
+          <span aria-hidden="true">
+            <Voice />
+          </span>
+          <div>
+            <h2 id="voice-constellation-loading-title">
+              Opening your voice constellation
+            </h2>
+            <p role="status" aria-live="polite">
+              Restoring your saved Voice Mirror history…
+            </p>
+          </div>
+          <button
+            ref={closeButton}
+            type="button"
+            onClick={() => props.onClose()}
+            aria-label="Cancel opening voice constellation"
+          >
+            <X />
+          </button>
+        </div>
+      </div>
+    </Portal>
+  )
+}
+
+const VoiceConstellationRouteError: Component<{ onClose: () => void }> = (
+  props,
+) => {
+  let dialog: HTMLDivElement | undefined
+  let closeButton: HTMLButtonElement | undefined
+  useFocusTrap(() => dialog, {
+    isOpen: () => true,
+    onClose: () => props.onClose(),
+    initialFocus: () => closeButton,
+  })
+
+  return (
+    <Portal>
+      <div
+        ref={dialog}
         class={styles.voiceConstellationRouteCurtain}
         role="dialog"
         aria-modal="true"
         aria-labelledby="voice-constellation-load-error"
+        tabindex="-1"
       >
         <div class={styles.voiceConstellationRouteCard}>
           <span aria-hidden="true">
@@ -2487,7 +2522,13 @@ const AppShell: Component<AppProps> = (props) => {
               <VoiceConstellationRouteError onClose={closeVoiceConstellation} />
             )}
           >
-            <Suspense fallback={<VoiceConstellationLoadingShell />}>
+            <Suspense
+              fallback={
+                <VoiceConstellationLoadingShell
+                  onClose={closeVoiceConstellation}
+                />
+              }
+            >
               <VoiceConstellationSurface onClose={closeVoiceConstellation} />
             </Suspense>
           </ErrorBoundary>

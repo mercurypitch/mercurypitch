@@ -163,4 +163,41 @@ describe('VoiceSection portrait flip', () => {
       await screen.findByAltText('David Bowie — your voiceprint card'),
     ).toHaveAttribute('src', 'data:image/png;base64,bowie')
   })
+
+  it('hides the previous account portrait while keyed history reloads', async () => {
+    const nextAccount = deferred<VoiceprintRecord[]>()
+    mocks.listVoiceprints
+      .mockResolvedValueOnce([freddie])
+      .mockReturnValueOnce(nextAccount.promise)
+
+    render(() => <VoiceSection signedIn />)
+
+    const freddieButton = await screen.findByRole('button', {
+      name: 'See Freddie Mercury full size',
+    })
+    fireEvent.click(freddieButton)
+    expect(screen.getByRole('dialog')).toHaveAccessibleName(
+      'Freddie Mercury portrait',
+    )
+
+    setAuthToken('next-account')
+    await waitFor(() => expect(mocks.listVoiceprints).toHaveBeenCalledTimes(2))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      screen.queryByRole('button', {
+        name: 'See Freddie Mercury full size',
+      }),
+    ).toBeNull()
+    expect(document.querySelector('img[src*="freddie-mercury"]')).toBeNull()
+    expect(screen.getByText('Checking your saved voiceprints…')).toBeTruthy()
+
+    nextAccount.resolve([bowie])
+    expect(
+      await screen.findByRole('button', {
+        name: 'See David Bowie full size',
+      }),
+    ).toBeTruthy()
+    expect(screen.queryByText('Freddie Mercury')).toBeNull()
+  })
 })
