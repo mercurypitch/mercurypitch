@@ -333,7 +333,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   tabs stay; everything else moves behind one Options button.
 - **The Jam song picker opens on a phone.** As host, tapping it did nothing —
   it was a drop-down positioned outside the visible area. It now opens as a
-  drawer, the same one Karaoke Night uses.
+  drawer, the same one Karaoke Night uses. That drawer then had a second
+  problem on a phone, found on an iPhone before release: it came up as a
+  squashed strip you could not touch, because the Jam room's blurred glass
+  and clipping trapped it inside the transport row. Drawers are now anchored
+  to the page itself, so no screen can pin one down — everywhere they are
+  used, not just here.
 - **"Separate a song" sends a phone somewhere it can actually do that.** From
   Vocal Analysis with nothing recorded yet, the button now opens Karaoke Night
   on a phone and the Karaoke tab on a computer.
