@@ -16,7 +16,7 @@
 // locked panel.
 
 import type { Component } from 'solid-js'
-import { createResource, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createEffect, createResource, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { authVersion } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
@@ -103,6 +103,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   // In the zoom overlay a click on the card flips it (portrait <-> the
   // record's numbers); a click outside closes. Reset on every open.
   const [flipped, setFlipped] = createSignal(false)
+  const [flipRequested, setFlipRequested] = createSignal(false)
   const [sharing, setSharing] = createSignal(false)
 
   const shareLatest = async (variant: 'face' | 'stats') => {
@@ -138,6 +139,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
       setZoomed(false)
       // Same reset the backdrop click does — reopening starts on the front.
       setFlipped(false)
+      setFlipRequested(false)
     }
   }
   window.addEventListener('keydown', onKeyDown)
@@ -145,16 +147,65 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
 
   const latest = (): VoiceprintRecord | null => prints()?.[0] ?? null
 
-  // The flip side is the real stats card — the same art the Share
-  // button exports — rendered on first flip and cached per record.
-  // While it renders, the plain-text back stands in.
-  const [statsCard] = createResource(
-    () => (flipped() ? (latest() ?? undefined) : undefined),
-    async (record) => {
-      const canvas = await renderVoiceprintCard(record, 'stats')
-      return canvas?.toDataURL('image/png') ?? null
-    },
-  )
+  // The flip side is the real stats card — the same art the Share button
+  // exports. It starts rendering when the portrait opens, but the portrait
+  // stays mounted until the result is ready. Solid resources retain their
+  // previous value while a new source loads, so tag the result and never
+  // expose a card that belongs to another voiceprint.
+  const [statsCardRecord, setStatsCardRecord] = createSignal<VoiceprintRecord>()
+  const [statsCard] = createResource(statsCardRecord, async (record) => {
+    const canvas = await renderVoiceprintCard(record, 'stats')
+    return {
+      recordId: record.id,
+      src: canvas?.toDataURL('image/png') ?? null,
+    }
+  })
+
+  const matchingStatsCard = () => {
+    const record = latest()
+    const card = statsCard()
+    return record !== null && card?.recordId === record.id ? card : null
+  }
+
+  const matchingStatsSrc = (): string | null => matchingStatsCard()?.src ?? null
+
+  createEffect(() => {
+    if (!flipRequested()) return
+    const card = matchingStatsCard()
+    if (card === null) return
+
+    // A null result means there is no share-card art for this record. End the
+    // pending interaction without replacing the known-good portrait.
+    if (card.src !== null) setFlipped(true)
+    setFlipRequested(false)
+  })
+
+  const openPortrait = () => {
+    const record = latest()
+    if (record === null) return
+    setFlipped(false)
+    setFlipRequested(false)
+    setStatsCardRecord(record)
+    setZoomed(true)
+  }
+
+  const togglePortraitSide = () => {
+    if (flipped()) {
+      setFlipped(false)
+      setFlipRequested(false)
+      return
+    }
+
+    if (matchingStatsSrc() !== null) {
+      setFlipped(true)
+      return
+    }
+
+    const record = latest()
+    if (record === null) return
+    setFlipRequested(true)
+    setStatsCardRecord(record)
+  }
   const first = (): VoiceprintRecord | null => {
     const all = prints()
     return all !== undefined && all.length > 1 ? all[all.length - 1] : null
@@ -230,7 +281,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
               <button
                 type="button"
                 class={styles.twinBtn}
-                onClick={() => setZoomed(true)}
+                onClick={openPortrait}
                 title={`See ${latest()?.twin ?? ''} full size`}
                 aria-label={`See ${latest()?.twin ?? ''} full size`}
               >
@@ -376,22 +427,24 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           onClick={() => {
             setZoomed(false)
             setFlipped(false)
+            setFlipRequested(false)
           }}
         >
           {/* Click the card to flip portrait <-> numbers; the backdrop
               closes. stopPropagation keeps the flip from also closing. */}
           <figure
             class={styles.zoomFigure}
+            aria-busy={flipRequested()}
             onClick={(event) => {
               event.stopPropagation()
-              setFlipped((f) => !f)
+              togglePortraitSide()
             }}
           >
             <Show
               when={!flipped()}
               fallback={
                 <Show
-                  when={statsCard() != null}
+                  when={matchingStatsSrc()}
                   fallback={
                     <div class={styles.zoomBack}>
                       <p class={styles.zoomBackTwin}>{latest()?.twin}</p>
@@ -413,11 +466,13 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
                   {/* The data side is the actual stats card — twin plus
                       the record's numbers — so flipping previews exactly
                       what Share exports. */}
-                  <img
-                    class={styles.zoomImg}
-                    src={statsCard() ?? ''}
-                    alt={`${latest()?.twin ?? ''} — your voiceprint card`}
-                  />
+                  {(src) => (
+                    <img
+                      class={styles.zoomImg}
+                      src={src()}
+                      alt={`${latest()?.twin ?? ''} — your voiceprint card`}
+                    />
+                  )}
                 </Show>
               }
             >
@@ -431,7 +486,11 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
             </Show>
             <figcaption class={styles.zoomCaption}>
               {latest()?.twin}
-              <span class={styles.zoomHint}> — click card to flip</span>
+              <span class={styles.zoomHint}>
+                {flipRequested()
+                  ? ' — preparing card…'
+                  : ' — click card to flip'}
+              </span>
               {/* Shares the side being looked at: portrait card on the
                   front, the data card on the back. */}
               <button
