@@ -309,22 +309,25 @@ const HomePage: Component = () => {
                     </InfoPopover>
                   </div>
                   <div class={styles.lengthRow}>
-                    <label>
-                      Length
-                      <select
-                        value={routinePrefs().length}
-                        onChange={(e) =>
-                          setRoutinePrefs((p) => ({
-                            ...p,
-                            length: e.currentTarget.value as RoutineLength,
-                          }))
-                        }
-                      >
-                        <option value="short">Short (~5 min)</option>
-                        <option value="standard">Standard (~8 min)</option>
-                        <option value="long">Long (~12 min)</option>
-                      </select>
-                    </label>
+                    {/* No visible "Length": every option already carries its
+                        own minutes, so the word only repeated what the
+                        control says. The name moves to aria-label rather
+                        than disappearing — the wrapping <label> was what
+                        named this select for a screen reader. */}
+                    <select
+                      aria-label="Session length"
+                      value={routinePrefs().length}
+                      onChange={(e) =>
+                        setRoutinePrefs((p) => ({
+                          ...p,
+                          length: e.currentTarget.value as RoutineLength,
+                        }))
+                      }
+                    >
+                      <option value="short">Short (~5 min)</option>
+                      <option value="standard">Standard (~8 min)</option>
+                      <option value="long">Long (~12 min)</option>
+                    </select>
                   </div>
                   <button
                     class={styles.primaryBtn}
