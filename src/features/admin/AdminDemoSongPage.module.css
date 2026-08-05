@@ -42,6 +42,115 @@
   height: 16px;
 }
 
+/* ── Song bar ───────────────────────────────────────────────────── */
+
+/* Tabs, not a select: there are two or three songs and the status of each
+   is the thing an author is scanning for. A dropdown would hide exactly
+   that. */
+.songBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border, #2a3446);
+}
+
+.songTab {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 13px;
+  border: 1px solid var(--border, #2a3446);
+  border-radius: 10px;
+  background: var(--bg-card, #131a26);
+  color: var(--text-secondary, #b9c4d4);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.songTab:not(:disabled):hover {
+  border-color: var(--accent, #f0a848);
+}
+
+.songTab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.songTabOn {
+  border-color: color-mix(in srgb, var(--accent, #f0a848) 60%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--accent, #f0a848) 8%,
+    var(--bg-card, #131a26)
+  );
+  color: var(--text-primary, #f4f7fb);
+  cursor: default;
+}
+
+.songTabTitle {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.songTabMeta {
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted, #7d8a9c);
+}
+
+.songTabOn .songTabMeta {
+  color: var(--accent, #f0a848);
+}
+
+/* Dashed, like the lyrics well: it makes something rather than opens
+   something. */
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px dashed var(--border, #2a3446);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary, #b9c4d4);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.addButton:not(:disabled):hover {
+  border-color: var(--accent, #f0a848);
+  color: var(--accent, #f0a848);
+}
+
+.addButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.addButton svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .songTab,
+  .addButton {
+    transition: none;
+  }
+}
+
 /* ── Status ─────────────────────────────────────────────────────── */
 
 .statusRow {
@@ -179,6 +288,31 @@
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--text-muted, #7d8a9c);
+}
+
+/* The link id once it is fixed — shown, not editable. */
+.slugLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+}
+
+.slugLine svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  color: var(--text-muted, #7d8a9c);
+}
+
+.slugLine code {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--bg-primary, #0c111a);
+  font-size: 0.8rem;
+  color: var(--text-primary, #f4f7fb);
 }
 
 /* ── Lyrics file drop ───────────────────────────────────────────── */

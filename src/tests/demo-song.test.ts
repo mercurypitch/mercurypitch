@@ -10,7 +10,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
-import { demoIsPlayable, loadDemoSong, shouldSeedLyrics, } from '@/features/karaoke-night/demo-song'
+import { DEMO_SESSION_ID, demoIsPlayable, demoSessionId, isDemoSessionId, LEGACY_SLUG, loadDemoSong, loadDemoSongs, shouldSeedLyrics, } from '@/features/karaoke-night/demo-song'
 
 const SHIPPED: DemoSongManifest = {
   title: 'Shipped Demo',
@@ -78,6 +78,61 @@ describe('demoIsPlayable', () => {
     )
     expect(demoIsPlayable({ ...SHIPPED, stems: {} })).toBe(false)
     expect(demoIsPlayable(null)).toBe(false)
+  })
+})
+
+describe('demoSessionId', () => {
+  // The load-bearing case. Every visitor who has ever sung the demo has
+  // lyrics, pitch analysis and takes in their local db keyed by the bare
+  // id. If the original song ever started producing a suffixed id, all of
+  // that would be silently orphaned — no error, just a page that has
+  // forgotten what they did.
+  it('keeps the historic bare id for the original song', () => {
+    expect(demoSessionId(LEGACY_SLUG)).toBe(DEMO_SESSION_ID)
+    expect(demoSessionId(undefined)).toBe(DEMO_SESSION_ID)
+    expect(demoSessionId('')).toBe(DEMO_SESSION_ID)
+    expect(demoSessionId('  ')).toBe(DEMO_SESSION_ID)
+  })
+
+  it('namespaces every later song under it', () => {
+    expect(demoSessionId('second-song')).toBe(`${DEMO_SESSION_ID}:second-song`)
+    expect(demoSessionId(' second-song ')).toBe(
+      `${DEMO_SESSION_ID}:second-song`,
+    )
+  })
+
+  it('recognises its own ids, and only those', () => {
+    expect(isDemoSessionId(DEMO_SESSION_ID)).toBe(true)
+    expect(isDemoSessionId(demoSessionId('second-song'))).toBe(true)
+    expect(isDemoSessionId('karaoke-night-demo-2')).toBe(false)
+    expect(isDemoSessionId('uvr-1234')).toBe(false)
+    expect(isDemoSessionId('')).toBe(false)
+  })
+})
+
+describe('loadDemoSongs', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('falls back to the shipped manifest as a one-song list', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(SHIPPED), { status: 200 })),
+    )
+    const songs = await loadDemoSongs()
+    expect(songs).toHaveLength(1)
+    expect(songs[0]).toMatchObject({ title: 'Shipped Demo' })
+  })
+
+  it('returns an empty list rather than throwing when nothing is reachable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline')
+      }),
+    )
+    await expect(loadDemoSongs()).resolves.toEqual([])
   })
 })
 

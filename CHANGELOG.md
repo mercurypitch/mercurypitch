@@ -17,6 +17,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the version that ships with the app stays the fallback, so a half-filled
   entry shows the old demo rather than a broken page.
 
+- **Karaoke Night can offer more than one song.** The studio page holds a
+  list now instead of a single entry: add a song, give it a short link id,
+  paste its vocal and instrumental, its lyrics and its credit, and it
+  appears on the Karaoke Night rail beside the opener. Taking one down is a
+  switch rather than a deletion, and every song on offer is credited in the
+  footer — not just the first one.
+
 - **The weekly Legend now has a run of weeks queued behind it.** Five
   challenges instead of one, opening on the money note — Puccini's B4 on
   "Vincerò" — and stepping through a long sustain, a full-octave sweep, a

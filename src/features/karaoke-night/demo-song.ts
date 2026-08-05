@@ -16,6 +16,11 @@
 import { API_BASE_URL } from '@/lib/defaults'
 
 export interface DemoSongManifest {
+  /**
+   * Stable id for this demo. Absent on the shipped manifest, which is
+   * `LEGACY_SLUG` by definition — see `demoSessionId`.
+   */
+  slug?: string
   title: string
   artist: string
   attribution: {
@@ -39,15 +44,55 @@ export interface DemoSongManifest {
   durationSec?: number
 }
 
-/** Stable session id — lyrics, pitch analysis and scores persist under it in
- *  the local db exactly like a normal separation session. */
+/**
+ * Session id of the ORIGINAL demo — lyrics, pitch analysis and scores
+ * persist under it in the local db exactly like a normal separation
+ * session.
+ *
+ * It is a bare string with no slug in it because it shipped that way, and
+ * every visitor who has ever sung the demo has local rows keyed by it.
+ * `demoSessionId` therefore keeps returning exactly this for the original
+ * slug rather than migrating anybody.
+ */
 export const DEMO_SESSION_ID = 'karaoke-night-demo'
+
+/** The slug the shipped manifest and every pre-list row carry. */
+export const LEGACY_SLUG = 'karaoke-night'
+
+/**
+ * Local-db session id for a demo.
+ *
+ * The original keeps its historic id; anything added later is namespaced
+ * under it. Getting this wrong does not throw — it silently orphans a
+ * visitor's lyrics and takes, which is why the legacy case is spelled out
+ * rather than derived.
+ */
+export function demoSessionId(slug: string | undefined): string {
+  const s = (slug ?? '').trim()
+  return s === '' || s === LEGACY_SLUG
+    ? DEMO_SESSION_ID
+    : `${DEMO_SESSION_ID}:${s}`
+}
+
+/** Whether a local session belongs to any demo song. */
+export function isDemoSessionId(sessionId: string): boolean {
+  return (
+    sessionId === DEMO_SESSION_ID || sessionId.startsWith(`${DEMO_SESSION_ID}:`)
+  )
+}
 
 const MANIFEST_URL = '/karaoke-demo-song.json'
 
 /** What we last seeded, so an authored update can tell an untouched copy
- *  from one the visitor has edited. */
+ *  from one the visitor has edited. Per demo — the original keeps the
+ *  unsuffixed key it has always written, for the same reason the session
+ *  id does. */
 const SEED_STAMP_KEY = 'mercurypitch.demoLyricsSeed.v1'
+
+function seedStampKey(slug: string | undefined): string {
+  const id = demoSessionId(slug)
+  return id === DEMO_SESSION_ID ? SEED_STAMP_KEY : `${SEED_STAMP_KEY}.${id}`
+}
 
 export interface SeedStamp {
   revision: number
@@ -85,17 +130,20 @@ function isManifest(m: unknown): m is DemoSongManifest {
   )
 }
 
-async function loadFromApi(): Promise<DemoSongManifest | null> {
-  if ((API_BASE_URL ?? '') === '') return null
+async function loadListFromApi(): Promise<DemoSongManifest[]> {
+  if ((API_BASE_URL ?? '') === '') return []
   try {
-    const res = await fetch(`${API_BASE_URL}/api/demo-song`)
-    if (!res.ok) return null
-    const data = (await res.json()) as { song: DemoSongManifest | null }
-    return isManifest(data.song) ? data.song : null
+    const res = await fetch(`${API_BASE_URL}/api/demo-songs`)
+    if (!res.ok) return []
+    const data = (await res.json()) as { songs?: unknown }
+    if (!Array.isArray(data.songs)) return []
+    // Filter rather than reject the batch: one malformed row must not cost
+    // the visitor the songs that are fine.
+    return data.songs.filter(isManifest).filter(demoIsPlayable)
   } catch (err) {
     if (import.meta.env.DEV)
       console.warn('[KaraokeNight] demo song API failed:', err)
-    return null
+    return []
   }
 }
 
@@ -112,13 +160,30 @@ async function loadFromManifest(): Promise<DemoSongManifest | null> {
   }
 }
 
+/**
+ * Every demo the page should offer, in the order it should offer them.
+ *
+ * The API list wins whole: as soon as the studio has one playable row, it
+ * is the set. Mixing in the shipped manifest would resurrect a song an
+ * author had deliberately parked, and there would be no way to take it
+ * down. An empty list — no rows, no API, an outage — falls back to the
+ * manifest that ships with the build, which is the floor.
+ */
+export async function loadDemoSongs(): Promise<DemoSongManifest[]> {
+  const fromApi = await loadListFromApi()
+  if (fromApi.length > 0) return fromApi
+  const shipped = await loadFromManifest()
+  return shipped === null ? [] : [shipped]
+}
+
+/**
+ * The first playable demo. Kept for the single-song paths (a `?session=`
+ * restore of the original, and the attribution line) that have no list to
+ * choose from.
+ */
 export async function loadDemoSong(): Promise<DemoSongManifest | null> {
-  // A studio row only wins if it is actually playable. Half-filled rows
-  // (someone saving a title before pasting the stem URLs) fall through to
-  // the shipped manifest rather than presenting an unplayable demo.
-  const fromApi = await loadFromApi()
-  if (fromApi !== null && demoIsPlayable(fromApi)) return fromApi
-  return loadFromManifest()
+  const songs = await loadDemoSongs()
+  return songs[0] ?? null
 }
 
 /** The demo is singable once both stem URLs are filled in. */
@@ -130,9 +195,9 @@ export function demoIsPlayable(m: DemoSongManifest | null): boolean {
   )
 }
 
-function readStamp(): SeedStamp | null {
+function readStamp(key: string): SeedStamp | null {
   try {
-    const raw = localStorage.getItem(SEED_STAMP_KEY)
+    const raw = localStorage.getItem(key)
     if (raw === null) return null
     const parsed = JSON.parse(raw) as SeedStamp
     return typeof parsed.revision === 'number' &&
@@ -144,9 +209,9 @@ function readStamp(): SeedStamp | null {
   }
 }
 
-function writeStamp(stamp: SeedStamp): void {
+function writeStamp(key: string, stamp: SeedStamp): void {
   try {
-    localStorage.setItem(SEED_STAMP_KEY, JSON.stringify(stamp))
+    localStorage.setItem(key, JSON.stringify(stamp))
   } catch {
     // Private-mode storage failure just means we re-check next time.
   }
@@ -187,18 +252,23 @@ export async function seedDemoLyrics(m: DemoSongManifest): Promise<void> {
   try {
     const { loadLyricsFromDb, saveLyricsToDb } =
       await import('@/db/services/lyrics-db-service')
-    const existing = await loadLyricsFromDb(DEMO_SESSION_ID)
+    const sessionId = demoSessionId(m.slug)
+    const stampKey = seedStampKey(m.slug)
+    const existing = await loadLyricsFromDb(sessionId)
     const revision = m.lyricsRevision ?? 0
-    if (!shouldSeedLyrics(existing?.text ?? null, readStamp(), revision)) return
+    if (
+      !shouldSeedLyrics(existing?.text ?? null, readStamp(stampKey), revision)
+    )
+      return
 
     const lyrics = await demoLyricsText(m)
     if (lyrics === null) return
-    await saveLyricsToDb(DEMO_SESSION_ID, {
+    await saveLyricsToDb(sessionId, {
       text: lyrics.text,
       format: lyrics.format,
       filename: `${m.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${lyrics.format}`,
     })
-    writeStamp({ revision, text: lyrics.text })
+    writeStamp(stampKey, { revision, text: lyrics.text })
   } catch (err) {
     if (import.meta.env.DEV)
       console.warn('[KaraokeNight] demo lyrics seed failed:', err)
