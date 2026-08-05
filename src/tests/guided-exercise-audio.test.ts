@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { audioDurationLabel, createGuidedExerciseAudioClip, isSupportedGuidedExerciseAudio, } from '@/features/zen/guided-exercise-audio'
+import { audioDurationLabel, createGuidedExerciseAudioClip, isSupportedGuidedExerciseAudio, normalizeGuidedExerciseAudioSelection, } from '@/features/zen/guided-exercise-audio'
 
 function audioBuffer(durationSeconds: number, sampleRate = 100): AudioBuffer {
   const length = durationSeconds * sampleRate
@@ -30,17 +30,23 @@ describe('guided exercise audio preparation', () => {
     ).toBeFalsy()
   })
 
-  it('cuts a bounded five-second mono WAV from the selected start', async () => {
+  it('cuts a mono WAV from the selected start and end', async () => {
     const source = new File(['source'], 'long-song.mp3', {
       type: 'audio/mpeg',
     })
-    const clip = createGuidedExerciseAudioClip(source, audioBuffer(12), 3_000)
+    const clip = createGuidedExerciseAudioClip(
+      source,
+      audioBuffer(12),
+      3_000,
+      11_000,
+    )
 
-    expect(clip.file.name).toBe('long-song-5s-clip.wav')
+    expect(clip.file.name).toBe('long-song-8s-clip.wav')
     expect(clip.file.type).toBe('audio/wav')
     expect(clip.startMs).toBe(3_000)
-    expect(clip.durationMs).toBe(5_000)
-    expect(clip.file.size).toBe(44 + 5 * 100 * 2)
+    expect(clip.endMs).toBe(11_000)
+    expect(clip.durationMs).toBe(8_000)
+    expect(clip.file.size).toBe(44 + 8 * 100 * 2)
 
     const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
       const reader = new FileReader()
@@ -53,15 +59,26 @@ describe('guided exercise audio preparation', () => {
     expect(header).toContain('WAVE')
   })
 
-  it('clamps the start point and describes long source durations', () => {
+  it('keeps either moved handle inside a fifteen-second selection', () => {
+    expect(
+      normalizeGuidedExerciseAudioSelection(30_000, 0, 22_000, 'end'),
+    ).toEqual({ startMs: 7_000, endMs: 22_000 })
+    expect(
+      normalizeGuidedExerciseAudioSelection(30_000, 5_000, 25_000, 'start'),
+    ).toEqual({ startMs: 5_000, endMs: 20_000 })
+  })
+
+  it('allows a shorter region and describes long source durations', () => {
     const clip = createGuidedExerciseAudioClip(
       new File(['source'], 'coach.ogg', { type: 'audio/ogg' }),
       audioBuffer(7),
-      60_000,
+      1_000,
+      6_500,
     )
 
-    expect(clip.startMs).toBe(2_000)
-    expect(clip.durationMs).toBe(5_000)
+    expect(clip.startMs).toBe(1_000)
+    expect(clip.endMs).toBe(6_500)
+    expect(clip.durationMs).toBe(5_500)
     expect(audioDurationLabel(132_000)).toBe('2:12')
   })
 })

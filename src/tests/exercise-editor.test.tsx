@@ -1,9 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExerciseEditor, getExerciseRecordingLimitMs, isExerciseEditorBusy, shouldAutoUploadPreparedExampleAudio, } from '@/features/admin/exercises/ExerciseEditor'
+import { ExerciseEditor, getExerciseRecordingLimitMs, isExerciseEditorBusy, } from '@/features/admin/exercises/ExerciseEditor'
 import { ExercisePreview } from '@/features/admin/exercises/ExercisePreview'
 import { ExerciseTimelineEditor } from '@/features/admin/exercises/ExerciseTimelineEditor'
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '@/features/zen/types'
+import { micManager } from '@/lib/mic-manager'
 
 const exercise = (): ZenExerciseDefinition => ({
   id: 'ng-five-tone',
@@ -180,7 +181,7 @@ describe('ExerciseEditor', () => {
       screen.getByText(/or drop audio anywhere in this box/i),
     ).toBeVisible()
     expect(
-      screen.getByText(/longer songs get a clip-start control/i),
+      screen.getByText(/select any region up to 15 seconds/i),
     ).toBeVisible()
   })
 
@@ -243,7 +244,7 @@ describe('ExerciseEditor', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getByText(
-        'Stops automatically at 5 seconds, then opens review and trim controls.',
+        'Stops automatically at 5 seconds. Replay, trim, or record again before upload.',
       ),
     ).toBeVisible()
     expect(screen.getByRole('button', { name: '10 sec' })).toHaveAttribute(
@@ -256,19 +257,79 @@ describe('ExerciseEditor', () => {
     )
   })
 
+  it('keeps the active recording meter aligned with a custom duration', async () => {
+    class MediaRecorderStub {
+      static isTypeSupported(): boolean {
+        return true
+      }
+
+      mimeType = 'audio/webm;codecs=opus'
+      ondataavailable: ((event: BlobEvent) => void) | null = null
+      onerror: (() => void) | null = null
+      onstop: (() => void) | null = null
+      state: RecordingState = 'inactive'
+
+      start(): void {
+        this.state = 'recording'
+      }
+
+      stop(): void {
+        this.state = 'inactive'
+      }
+    }
+    vi.stubGlobal('MediaRecorder', MediaRecorderStub)
+    const stream = {
+      getTracks: () => [{ stop: vi.fn() }],
+    } as unknown as MediaStream
+    vi.spyOn(micManager, 'acquire').mockResolvedValue(stream)
+    vi.spyOn(micManager, 'release').mockImplementation(() => undefined)
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      mediaDevices: { getUserMedia: vi.fn() },
+    })
+    const readyAudio: ZenExampleAudio = {
+      src: '',
+      durationMs: 5000,
+      locale: 'en-GB',
+      source: 'coach',
+      transcript: 'NG',
+    }
+
+    render(() => (
+      <ExerciseEditor
+        value={{ ...exercise(), exampleAudio: readyAudio }}
+        lifecycle="draft"
+        status="idle"
+        validationIssues={[]}
+        onChange={vi.fn()}
+        onExampleAudioFile={vi.fn()}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Custom' }))
+    fireEvent.input(screen.getByLabelText(/Custom seconds/), {
+      target: { value: '12' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Record 12-second example' }),
+    )
+
+    await screen.findByText('Recording live')
+    await waitFor(() =>
+      expect(
+        screen.getByRole('progressbar', {
+          name: 'Example recording duration',
+        }),
+      ).toHaveAttribute('aria-valuemax', '12000'),
+    )
+  })
+
   it('normalizes preset and custom recording windows', () => {
     expect(getExerciseRecordingLimitMs(5)).toBe(5000)
     expect(getExerciseRecordingLimitMs(10)).toBe(10000)
     expect(getExerciseRecordingLimitMs('custom', 12)).toBe(12000)
     expect(getExerciseRecordingLimitMs('custom', 0)).toBe(1000)
     expect(getExerciseRecordingLimitMs('custom', 30)).toBe(15000)
-  })
-
-  it('keeps microphone takes in review while preserving short file uploads', () => {
-    expect(shouldAutoUploadPreparedExampleAudio('recording', 5000)).toBeFalsy()
-    expect(shouldAutoUploadPreparedExampleAudio('recording', 10000)).toBeFalsy()
-    expect(shouldAutoUploadPreparedExampleAudio('file', 5000)).toBeTruthy()
-    expect(shouldAutoUploadPreparedExampleAudio('file', 5001)).toBeFalsy()
   })
 
   it('treats an active recording as a blocking editor action', () => {

@@ -1,0 +1,620 @@
+.recorder,
+.review {
+  min-width: 0;
+  border: 1px solid #303b50;
+  border-radius: 12px;
+  color: var(--studio-ink);
+  background: #101722;
+}
+
+.recorder {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 14px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.recorder[data-phase='recording'] {
+  border-color: rgba(255, 128, 104, 0.72);
+  box-shadow: 0 12px 30px rgba(67, 23, 18, 0.22);
+}
+
+.recorderHeader {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.recorderHeader > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recorderHeader strong {
+  color: #edf3fc;
+  font-size: 0.75rem;
+  font-weight: 720;
+}
+
+.recorderHeader small,
+.recorderActions small {
+  color: #91a0b5;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.recorderHeader output {
+  color: #b6c2d4;
+  font:
+    0.65rem/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordingBeacon {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #68778d;
+  box-shadow: 0 0 0 5px rgba(104, 119, 141, 0.11);
+}
+
+.recorder[data-phase='recording'] .recordingBeacon {
+  background: #ff8068;
+  box-shadow: 0 0 0 5px rgba(255, 128, 104, 0.14);
+  animation: recordingPulse 1.2s ease-in-out infinite;
+}
+
+.durationControls {
+  display: grid;
+  gap: 7px;
+}
+
+.durationControls > span {
+  color: #aeb9ca;
+  font-size: 0.65rem;
+  font-weight: 680;
+}
+
+.durationTemplates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 3px;
+  border: 1px solid #2d3749;
+  border-radius: 10px;
+  background: #0a1019;
+}
+
+.durationTemplates button {
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 7px;
+  color: #9caabd;
+  background: transparent;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.durationTemplates button:hover:not(:disabled) {
+  color: #e6edf7;
+  background: #171f2d;
+}
+
+.durationTemplates button[aria-pressed='true'] {
+  color: #ffe0a6;
+  background: #37270e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.durationTemplates button:disabled,
+.customDuration input:disabled,
+.recorderActions button:disabled,
+.review button:disabled,
+.trimTimeline input:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.customDuration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.customDuration span,
+.customDuration small {
+  color: #8796ab;
+  font-size: 0.64rem;
+}
+
+.customDuration input {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #3a465b;
+  border-radius: 8px;
+  color: #edf3fc;
+  background: #0b111b;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.liveWaveform {
+  position: relative;
+  overflow: hidden;
+  height: 82px;
+  border: 1px solid #2c3749;
+  border-radius: 10px;
+  background:
+    linear-gradient(rgba(96, 165, 250, 0.08) 1px, transparent 1px) 0 50% / 100%
+      50%,
+    #080e17;
+}
+
+.liveWaveform::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgba(116, 135, 164, 0.25);
+  content: '';
+}
+
+.liveWaveform canvas {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.liveWaveform > span {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  color: #718097;
+  background: rgba(8, 14, 23, 0.82);
+  font-size: 0.62rem;
+}
+
+.liveWaveform[data-active='true'] {
+  border-color: rgba(255, 128, 104, 0.42);
+  background-color: #0d1119;
+}
+
+.recordingProgress {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: #263044;
+}
+
+.recordingProgress > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #f59e0b;
+  transform-origin: left center;
+  transition: transform 100ms linear;
+}
+
+.recorderActions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+}
+
+.recorderActions button,
+.review button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid #3a465b;
+  border-radius: 9px;
+  color: #e6edf7;
+  background: #171e2b;
+  font: inherit;
+  font-size: 0.69rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recorderActions button svg,
+.review button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.recorderActions button:hover:not(:disabled),
+.review button:hover:not(:disabled) {
+  border-color: #5a6a84;
+  background: #1d2635;
+}
+
+.recorderActions .recordButton {
+  border-color: #d88a0a;
+  color: #1d1202;
+  background: #f6a91c;
+  box-shadow: 0 8px 20px rgba(95, 54, 3, 0.26);
+}
+
+.recorderActions .recordButton:hover:not(:disabled) {
+  border-color: #ec9e19;
+  background: #ffb633;
+}
+
+.recorderActions .stopButton {
+  border-color: #ff8068;
+  color: #1f0b07;
+  background: #ff8068;
+  box-shadow: 0 8px 20px rgba(99, 28, 19, 0.26);
+}
+
+.recorderActions .stopButton:hover:not(:disabled) {
+  border-color: #ff9a87;
+  background: #ff9a87;
+}
+
+.stopMark {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: currentcolor;
+}
+
+.review {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  padding: 15px;
+  border-color: rgba(245, 158, 11, 0.52);
+  background: #0d141f;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+}
+
+.reviewHeader {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reviewHeader > div {
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.reviewHeader span {
+  color: #d3a55e;
+  font-size: 0.59rem;
+  font-weight: 760;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.reviewHeader > div strong {
+  overflow: hidden;
+  color: #e8eef8;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewHeader output {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 9px;
+  color: #acb9cb;
+  font:
+    0.65rem/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.reviewHeader output strong {
+  color: #ffd487;
+  font-family: system-ui, sans-serif;
+  font-size: 0.66rem;
+}
+
+.trimTimeline {
+  position: relative;
+  overflow: hidden;
+  height: 96px;
+  border: 1px solid #2f3b4e;
+  border-radius: 10px;
+  background: #080e17;
+  isolation: isolate;
+}
+
+.waveformBars {
+  position: absolute;
+  display: flex;
+  inset: 10px 6px;
+  align-items: center;
+  gap: 2px;
+}
+
+.waveformBars span {
+  min-width: 1px;
+  flex: 1 1 0;
+  border-radius: 2px;
+  background: #7c8ba0;
+  opacity: 0.8;
+}
+
+.trimSelection {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  border-top: 2px solid #f6a91c;
+  border-bottom: 2px solid #f6a91c;
+  background: rgba(245, 158, 11, 0.11);
+  pointer-events: none;
+}
+
+.trimShade {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(3, 7, 12, 0.7);
+  pointer-events: none;
+}
+
+.previewPlayhead {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #7ec0ff;
+  box-shadow: 2px 0 8px rgba(96, 165, 250, 0.45);
+  pointer-events: none;
+}
+
+.trimTimeline input[type='range'] {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.trimTimeline .startHandle {
+  z-index: 7;
+}
+
+.trimTimeline input[type='range']::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.trimTimeline input[type='range']::-webkit-slider-thumb {
+  width: 18px;
+  height: 58px;
+  border: 2px solid #f6a91c;
+  border-radius: 6px;
+  appearance: none;
+  background: #151b25;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.38);
+  cursor: ew-resize;
+}
+
+.trimTimeline input[type='range']::-moz-range-track {
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.trimTimeline input[type='range']::-moz-range-thumb {
+  width: 15px;
+  height: 56px;
+  border: 2px solid #f6a91c;
+  border-radius: 6px;
+  background: #151b25;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.38);
+  cursor: ew-resize;
+}
+
+.trimTimeline input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--studio-blue);
+  outline-offset: 3px;
+}
+
+.trimTimeline input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--studio-blue);
+  outline-offset: 3px;
+}
+
+.trimLabels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8796ab;
+  font:
+    0.6rem/1.2 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.review audio {
+  display: none;
+}
+
+.previewError {
+  margin: 0;
+  color: #ffb5ad;
+  font-size: 0.66rem;
+}
+
+.reviewFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reviewSecondaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.review .useClipButton {
+  flex: 0 0 auto;
+  border-color: #d88a0a;
+  color: #1d1202;
+  background: #f6a91c;
+  box-shadow: 0 8px 20px rgba(95, 54, 3, 0.26);
+}
+
+.review .useClipButton:hover:not(:disabled) {
+  border-color: #ec9e19;
+  background: #ffb633;
+}
+
+.reviewHint {
+  color: #91a0b5;
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.durationTemplates button:focus-visible,
+.customDuration input:focus-visible,
+.recorderActions button:focus-visible,
+.review button:focus-visible {
+  outline: 2px solid var(--studio-blue);
+  outline-offset: 2px;
+}
+
+@keyframes recordingPulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.84);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recorder,
+  .recordingProgress > span {
+    transition: none;
+  }
+
+  .recorder[data-phase='recording'] .recordingBeacon {
+    animation: none;
+  }
+}
+
+@container exercise-editor (max-width: 760px) {
+  .recorderActions {
+    grid-template-columns: 1fr;
+  }
+
+  .recorderActions button {
+    width: 100%;
+  }
+
+  .reviewHeader,
+  .reviewFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reviewHeader output {
+    justify-content: space-between;
+  }
+
+  .review .useClipButton {
+    width: 100%;
+  }
+}
+
+@container exercise-editor (max-width: 460px) {
+  .recorder,
+  .review {
+    padding: 12px;
+  }
+
+  .recorderHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .recorderHeader output {
+    grid-column: 2;
+  }
+
+  .customDuration {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+
+  .customDuration small {
+    grid-column: 1 / -1;
+  }
+
+  .liveWaveform {
+    height: 74px;
+  }
+
+  .trimTimeline {
+    height: 88px;
+  }
+
+  .trimLabels span:nth-child(2) {
+    display: none;
+  }
+
+  .reviewSecondaryActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reviewSecondaryActions button:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .review button {
+    min-height: 44px;
+  }
+}

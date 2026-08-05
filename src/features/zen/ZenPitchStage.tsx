@@ -192,7 +192,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
 
   const examplePlayer = createPreviewPlayer({
     onEnded: onExampleEnded,
-    // A spoken five-second cue should answer the tap quickly while retaining
+    // A short spoken cue should answer the tap quickly while retaining
     // a short pop-free envelope.
     attackMs: 45,
     releaseMs: 100,
