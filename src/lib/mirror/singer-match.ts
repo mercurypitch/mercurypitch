@@ -12,14 +12,28 @@
 
 import type { RangeResult } from './metrics'
 
-const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> = {
-  Bass: ['Johnny Cash', 'Barry White'],
+/**
+ * Three or more per type, deliberately. The match is seeded off the
+ * detected range, so a two-name roster makes the "twin" a coin flip that
+ * two singers in the same type keep landing on — and the twin is the
+ * payoff the whole onboarding builds to. Four of these types were pairs
+ * until the second round of portraits.
+ */
+export const SINGERS_BY_VOICE_TYPE: Record<string, readonly string[]> = {
+  Bass: ['Johnny Cash', 'Barry White', 'Louis Armstrong'],
   // Baritone is the most common male voice, so it carries the most variety.
   Baritone: ['Elvis Presley', 'Frank Sinatra', 'Kurt Cobain', 'David Bowie'],
-  Tenor: ['Freddie Mercury', 'Bruce Dickinson'],
-  Alto: ['Amy Winehouse', 'Cher'], // contralto — the lowest female voices
-  'Mezzo-soprano': ['Adele', 'Whitney Houston'],
-  Soprano: ['Mariah Carey', 'Celine Dion'],
+  Tenor: [
+    'Freddie Mercury',
+    'Bruce Dickinson',
+    'Michael Jackson',
+    'Prince',
+    'Luciano Pavarotti',
+  ],
+  // contralto — the lowest female voices
+  Alto: ['Amy Winehouse', 'Cher', 'Nina Simone'],
+  'Mezzo-soprano': ['Adele', 'Whitney Houston', 'Aretha Franklin'],
+  Soprano: ['Mariah Carey', 'Celine Dion', 'Ariana Grande'],
 }
 
 /**

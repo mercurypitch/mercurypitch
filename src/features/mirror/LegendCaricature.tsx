@@ -403,6 +403,209 @@ export const LEGENDS: Record<string, LegendArt> = {
       { x: 110, y: 192, r: 3.2 }, // heart
     ],
   },
+
+  // ── Round two ────────────────────────────────────────────────
+  //
+  // Seven more so no voice type comes down to a coin flip. Before these,
+  // Bass and Tenor had two legends each and the seed hash sent everyone
+  // in a type to one of a pair; Baritone alone had four. Same Style A
+  // recipe, same 928x1152 masters.
+  'Michael Jackson': {
+    epithet: 'The King of Pop',
+    imageSrc: '/legends/michael-jackson.webp',
+    silhouette: [
+      // Fedora: crown + brim, worn low.
+      'M84,50 C86,26 138,28 136,52 Z',
+      'M58,60 C58,50 162,48 162,56 C162,66 60,70 58,60 Z',
+      // Curls escaping under the brim.
+      'M76,64 C70,78 74,92 82,96 C78,84 80,72 86,64 Z',
+    ],
+    accent: [
+      // The single glove, raised.
+      'M162,120 L176,112 L186,124 L182,146 L166,142 Z',
+    ],
+    stars: [
+      { x: 62, y: 58, r: 3 },
+      { x: 110, y: 30 },
+      { x: 158, y: 54, r: 3 },
+      { x: 96, y: 112, dim: true },
+      { x: 124, y: 112, dim: true },
+      { x: 176, y: 128, r: 3.4 }, // the glove
+      { x: 110, y: 158 },
+    ],
+    lines: [
+      [0, 1],
+      [1, 2],
+      [2, 5],
+    ],
+  },
+
+  Prince: {
+    epithet: 'His Purple Majesty',
+    imageSrc: '/legends/prince.webp',
+    silhouette: [
+      // High curled hair.
+      'M78,66 C72,32 148,32 142,66 C138,46 82,46 78,66 Z',
+      // Ruffled high collar.
+      'M88,164 L110,148 L132,164 L126,184 L118,170 L110,182 L102,170 L94,184 Z',
+      // Guitar neck across the shoulder.
+      'M150,196 L170,132 L180,136 L160,200 Z',
+    ],
+    accent: [
+      // Pencil moustache.
+      'M98,124 C104,120 116,120 122,124 C116,122 104,122 98,124 Z',
+    ],
+    stars: [
+      { x: 84, y: 52 },
+      { x: 110, y: 34, r: 3.2 },
+      { x: 138, y: 52 },
+      { x: 96, y: 110, dim: true },
+      { x: 124, y: 110, dim: true },
+      { x: 110, y: 172 },
+      { x: 176, y: 132, r: 3 }, // headstock
+    ],
+    lines: [
+      [0, 1],
+      [1, 2],
+      [5, 6],
+    ],
+  },
+
+  'Luciano Pavarotti': {
+    epithet: 'The tenor of tenors',
+    imageSrc: '/legends/pavarotti.webp',
+    silhouette: [
+      // Full beard.
+      'M80,116 C80,158 92,178 110,178 C128,178 140,158 140,116 ' +
+        'C134,146 86,146 80,116 Z',
+      // The white scarf over the tailcoat.
+      'M96,158 L110,150 L124,158 L120,214 L110,196 L100,214 Z',
+    ],
+    accent: [
+      // The famous handkerchief, held aloft.
+      'M160,86 L184,78 L192,100 L168,108 Z',
+    ],
+    stars: [
+      { x: 96, y: 106, dim: true },
+      { x: 124, y: 106, dim: true },
+      { x: 110, y: 140, r: 3 }, // the open mouth
+      { x: 176, y: 92, r: 3.4 }, // handkerchief
+      { x: 150, y: 116 },
+    ],
+    lines: [
+      [2, 4],
+      [4, 3],
+    ],
+  },
+
+  'Aretha Franklin': {
+    epithet: 'The Queen of Soul',
+    imageSrc: '/legends/aretha-franklin.webp',
+    silhouette: [
+      // Tall bouffant.
+      'M74,68 C68,24 152,24 146,68 C140,40 80,40 74,68 Z',
+      // Hoop earrings.
+      'M74,112 C66,112 66,132 74,132 C70,126 70,118 74,112 Z',
+      'M146,112 C154,112 154,132 146,132 C150,126 150,118 146,112 Z',
+    ],
+    stars: [
+      { x: 80, y: 50 },
+      { x: 110, y: 28, r: 3.4 },
+      { x: 140, y: 50 },
+      { x: 96, y: 112, dim: true },
+      { x: 124, y: 112, dim: true },
+      { x: 70, y: 124, dim: true },
+      { x: 150, y: 124, dim: true },
+      { x: 110, y: 156 },
+    ],
+    lines: [
+      [0, 1],
+      [1, 2],
+    ],
+  },
+
+  'Louis Armstrong': {
+    epithet: 'Satchmo',
+    imageSrc: '/legends/louis-armstrong.webp',
+    silhouette: [
+      // Bow tie.
+      'M88,166 L106,158 L106,178 Z',
+      'M132,166 L114,158 L114,178 Z',
+      // Trumpet raised across the frame: bell, bore, mouthpiece.
+      'M148,96 C170,84 190,92 190,110 C190,128 170,136 148,124 Z',
+      'M126,104 L150,104 L150,116 L126,116 Z',
+    ],
+    accent: [
+      // The grin.
+      'M92,132 C102,146 118,146 128,132 C118,140 102,140 92,132 Z',
+    ],
+    stars: [
+      { x: 96, y: 108, dim: true },
+      { x: 124, y: 108, dim: true },
+      { x: 110, y: 140, r: 3 }, // the grin
+      { x: 152, y: 110 },
+      { x: 186, y: 110, r: 3.6 }, // the bell
+      { x: 110, y: 168 },
+    ],
+    lines: [
+      [2, 3],
+      [3, 4],
+    ],
+  },
+
+  'Nina Simone': {
+    epithet: 'The High Priestess of Soul',
+    imageSrc: '/legends/nina-simone.webp',
+    silhouette: [
+      // Sculpted high hair.
+      'M76,66 C70,28 150,28 144,66 C138,42 82,42 76,66 Z',
+      // Jewelled headband.
+      'M78,58 C96,44 124,44 142,58 L140,64 C122,52 98,52 80,64 Z',
+      // Statement earrings.
+      'M76,114 L84,114 L80,140 Z',
+      'M144,114 L136,114 L140,140 Z',
+    ],
+    stars: [
+      { x: 82, y: 54 },
+      { x: 110, y: 40, r: 3.4 }, // the headband jewel
+      { x: 138, y: 54 },
+      { x: 96, y: 112, dim: true },
+      { x: 124, y: 112, dim: true },
+      { x: 80, y: 138, dim: true },
+      { x: 140, y: 138, dim: true },
+      { x: 110, y: 158 },
+    ],
+    lines: [
+      [0, 1],
+      [1, 2],
+    ],
+  },
+
+  'Ariana Grande': {
+    epithet: 'The ponytail and the whistle register',
+    imageSrc: '/legends/ariana-grande.webp',
+    silhouette: [
+      // The high ponytail: gathered crown, then the fall down the back.
+      'M82,62 C82,44 138,44 138,62 C130,50 90,50 82,62 Z',
+      'M132,48 C158,42 176,58 178,88 C182,124 172,158 158,176 ' +
+        'L146,166 C160,146 168,116 164,90 C162,68 148,58 130,58 Z',
+      // Studio mic on its boom.
+      'M150,84 C164,84 164,110 150,110 Z',
+    ],
+    stars: [
+      { x: 96, y: 112, dim: true },
+      { x: 124, y: 112, dim: true },
+      { x: 110, y: 150 },
+      { x: 160, y: 96, r: 3 }, // the mic
+      { x: 176, y: 66 },
+      { x: 190, y: 34, r: 3.6 }, // the whistle note, off the top
+    ],
+    lines: [
+      [2, 3],
+      [3, 4],
+      [4, 5],
+    ],
+  },
 }
 
 /** Generic silhouette used until a specific legend's constellation is authored. */
@@ -424,34 +627,68 @@ export function legendArt(name: string): LegendArt {
 }
 
 /**
- * The portrait sized for a thumbnail box, or undefined when the legend has
- * no raster art.
+ * Which sized asset a box should be handed.
  *
  * The full portraits are 928x1152. Handing one to a 30x37 box asks the
  * browser for a 31x downscale, and at 125%/200% zoom it stops taking the
  * high-quality path and the face turns to mush — the same failure the jam
  * backdrops hit from the other direction (upscaling a 1x still onto a
  * hi-DPI screen), solved the same way: ship the pixels the box actually
- * needs. At 120px wide the worst case left is a 4x downscale, which is
- * what the big card portrait already does and looks right at every zoom.
+ * needs. Past roughly 4x either way it stops looking right, which is what
+ * bounds the tiers:
  *
- * Derived by convention rather than a second field per legend, so adding a
- * legend only means generating its thumb — and a test asserts every
- * imageSrc has one, so a missing file fails the suite instead of the page.
+ *   thumb  120px — chips and profile rows      (~30-120px boxes)
+ *   mid    360px — onboarding beats and cards  (~130-360px boxes)
+ *   full   928px — the reveal card
+ *
+ * `mid` exists because neither neighbour covers the onboarding: the master
+ * into `.twinArtSmall` (130-180px) is a 7.1x downscale, and the thumb into
+ * the same box is an upscale.
+ *
+ * Sources are derived by convention rather than a field per legend, so
+ * adding a legend only means running `node scripts/gen-legend-tiers.mjs` —
+ * and legend-thumbs.test.ts asserts every tier's DIMENSIONS, not just that
+ * a file is present, since a present-but-wrong-size file is exactly how the
+ * onboarding drifted.
  */
-export function legendThumbSrc(name: string): string | undefined {
+export type LegendTier = 'thumb' | 'mid' | 'full'
+
+const TIER_DIR: Record<LegendTier, string> = {
+  thumb: '/legends/thumbs/',
+  mid: '/legends/mid/',
+  full: '/legends/',
+}
+
+export function legendTierSrc(
+  name: string,
+  tier: LegendTier,
+): string | undefined {
   const src = legendArt(name).imageSrc
   if (src == null || src === '') return undefined
-  return src.replace('/legends/', '/legends/thumbs/')
+  return src.replace('/legends/', TIER_DIR[tier])
+}
+
+/** The portrait sized for a thumbnail box, or undefined when there is no art. */
+export function legendThumbSrc(name: string): string | undefined {
+  return legendTierSrc(name, 'thumb')
 }
 
 export const LegendCaricature: Component<{
   legend: string
   /** Extra class for sizing / animation hooks. */
   class?: string
+  /**
+   * Which sized asset to draw. Defaults to `full` so the reveal card and
+   * every existing caller keep the behaviour they were built against; a
+   * small box should say so rather than be guessed at from CSS this
+   * component cannot see.
+   */
+  tier?: LegendTier
 }> = (props) => {
   const art = (): LegendArt => legendArt(props.legend)
   const starAt = (i: number): Star => art().stars[i]
+  const src = (): string | undefined =>
+    legendTierSrc(props.legend, props.tier ?? 'full')
   return (
     <svg
       class={`mirror-legend-svg ${props.class ?? ''}`}
@@ -539,7 +776,7 @@ export const LegendCaricature: Component<{
         }
       >
         <image
-          href={art().imageSrc}
+          href={src()}
           x="0"
           y="0"
           width="220"
