@@ -79,7 +79,17 @@
       "workers_dev": false,
       "triggers": { "crons": ["17 */6 * * *"] },
       "routes": [
-        { "pattern": "api-dev.mercurypitch.com", "custom_domain": true }
+        { "pattern": "api-dev.mercurypitch.com", "custom_domain": true },
+        // Second door to the SAME worker, for the Cloudflare Access
+        // application to sit in front of. It exists because Access matches
+        // on hostname + path and admin-ness here is decided by METHOD:
+        // `GET /api/weekly/active` is public and `POST /api/weekly` is
+        // admin, on one path. No pattern on api-dev can separate them, so
+        // gating that host would bounce every anonymous visitor to a
+        // Cloudflare login. Requests arriving here carry
+        // `Cf-Access-Jwt-Assertion`, which `resolveAdmin` already accepts —
+        // no code branches on the hostname.
+        { "pattern": "studio-dev.mercurypitch.com", "custom_domain": true }
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
@@ -93,12 +103,21 @@
         // hostnames aren't known ahead of time — broad, but scoped to dev
         // (test data, rate-limited). Prod (below) never lists it.
         "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev"
-        // ACCESS_TEAM_DOMAIN / ACCESS_AUD / ACCESS_ALLOWED_EMAILS are NOT
-        // here: this repo is public and both identify the account. Set
-        // them per environment with `wrangler secret put`. When the first
-        // two are present the admin surface requires a verified
-        // Cloudflare Access token and X-Admin-Key alone stops working;
-        // when absent the key remains the only gate (local, previews).
+        // ACCESS_TEAM_DOMAIN / ACCESS_AUD / ACCESS_ALLOWED_EMAILS /
+        // ACCESS_STRICT are NOT here: this repo is public and the first two
+        // identify the account. Set them per environment with
+        // `wrangler secret put`.
+        //
+        // `resolveAdmin` is STAGED, and the stages are easy to misread:
+        //   - team domain + aud set, ACCESS_STRICT unset — a verified
+        //     Access token grants admin, and X-Admin-Key STILL WORKS. This
+        //     is the safe default and the only one usable today.
+        //   - ACCESS_STRICT=1 — the key stops working and a token is
+        //     required. Do not set this yet: the browser studio is served
+        //     from dev.mercurypitch.com and calls this worker
+        //     cross-origin, so it cannot carry the Access cookie
+        //     (third-party) and would 403 on every write.
+        //   - neither set — the key is the only gate (local, previews).
       },
       "d1_databases": [
         {
@@ -127,7 +146,16 @@
       "name": "mercury-pitch-db",
       "workers_dev": false,
       "triggers": { "crons": ["17 */6 * * *"] },
-      "routes": [{ "pattern": "api.mercurypitch.com", "custom_domain": true }],
+      "routes": [
+        { "pattern": "api.mercurypitch.com", "custom_domain": true },
+        // The Access-gated door — see the dev block for why a second
+        // hostname rather than a path on the API host. Its Access
+        // application is SEPARATE from dev's and has its own audience tag,
+        // so `ACCESS_AUD` differs per env and a dev token cannot be
+        // replayed here. `ACCESS_TEAM_DOMAIN` is shared (one Zero Trust
+        // org).
+        { "pattern": "studio.mercurypitch.com", "custom_domain": true }
+      ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
@@ -137,10 +165,18 @@
         // users). Requests without an Origin header still pass (Stripe
         // webhooks, OAuth callback navigation, admin curl/seed scripts).
         "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com"
-        // ACCESS_* are secrets, not vars — see the dev block above. Note
-        // `workers_dev: false` plus the single custom-domain route: there
-        // is no *.workers.dev hostname on which this Worker can be reached
-        // around whatever Access sits in front of api.mercurypitch.com.
+        // ACCESS_* are secrets, not vars — see the dev block above, which
+        // also documents the staging. `workers_dev: false` means there is
+        // no *.workers.dev hostname for this Worker, so the route list
+        // below is the complete set of ways in.
+        //
+        // Which is the point worth being blunt about: api.mercurypitch.com
+        // is NOT behind Access and must not be — the public app calls it.
+        // So while ACCESS_STRICT is unset, the admin key remains a way in
+        // that bypasses the Access gate entirely. Access is defence in
+        // depth here, not yet the gate. ACCESS_STRICT=1 is what closes it,
+        // and that needs the studio talking to studio.mercurypitch.com
+        // first.
       },
       "d1_databases": [
         {
