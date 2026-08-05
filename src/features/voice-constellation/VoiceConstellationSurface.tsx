@@ -8,12 +8,12 @@
 // are the only source of current and past reveals.
 
 import type { Component } from 'solid-js'
-import { createMemo, createResource, For, Show } from 'solid-js'
+import { createEffect, createMemo, createResource, createSignal, For, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
-import { EyeOff, Sparkles, Voice, X } from '@/components/icons'
+import { Sparkles, Voice, X } from '@/components/icons'
 import { authVersion } from '@/db/services/user-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
-import { legendTierSrc } from '@/features/mirror/LegendCaricature'
+import { legendArt, legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { WEBSITE_URL } from '@/lib/legal-links'
 import type { VoiceTypeBand } from '@/lib/mirror/legend-catalog'
 import { VOICE_TYPE_BANDS } from '@/lib/mirror/legend-catalog'
@@ -53,13 +53,10 @@ const MysteryPortrait: Component = () => (
   <div class={styles.mystery} aria-hidden="true">
     <span class={styles.mysteryOrbit} />
     <span class={styles.mysteryFigure} />
-    <span class={styles.mysteryIcon}>
-      <EyeOff />
-    </span>
   </div>
 )
 
-const LegendCard: Component<{
+const LegendCardBody: Component<{
   legend: VoiceConstellationLegend
   mode: HistoryMode
 }> = (props) => {
@@ -81,20 +78,7 @@ const LegendCard: Component<{
   }
 
   return (
-    <li
-      class={styles.legendCard}
-      classList={{
-        [styles.legendCurrent]:
-          props.mode === 'ready' && props.legend.state === 'current',
-        [styles.legendPast]:
-          props.mode === 'ready' && props.legend.state === 'past',
-        [styles.legendPending]: props.mode !== 'ready',
-      }}
-      data-legend-card={props.legend.id}
-      data-legend-state={
-        props.mode === 'ready' ? props.legend.state : props.mode
-      }
-    >
+    <>
       <div class={styles.portraitFrame}>
         <Show when={portraitSrc()} fallback={<MysteryPortrait />}>
           {(src) => (
@@ -129,7 +113,202 @@ const LegendCard: Component<{
           <p>Matched {formatDate(props.legend.matchedAt)}</p>
         </Show>
       </div>
+    </>
+  )
+}
+
+const LegendCard: Component<{
+  legend: VoiceConstellationLegend
+  mode: HistoryMode
+  onOpen: (legend: VoiceConstellationLegend) => void
+}> = (props) => {
+  const isRevealed = (): boolean =>
+    props.mode === 'ready' && props.legend.state !== 'unmatched'
+
+  return (
+    <li
+      class={styles.legendCard}
+      classList={{
+        [styles.legendCurrent]:
+          props.mode === 'ready' && props.legend.state === 'current',
+        [styles.legendPast]:
+          props.mode === 'ready' && props.legend.state === 'past',
+        [styles.legendPending]: props.mode !== 'ready',
+        [styles.legendInteractive]: isRevealed(),
+      }}
+      data-legend-card={props.legend.id}
+      data-legend-state={
+        props.mode === 'ready' ? props.legend.state : props.mode
+      }
+    >
+      <Show
+        when={isRevealed()}
+        fallback={<LegendCardBody legend={props.legend} mode={props.mode} />}
+      >
+        <button
+          type="button"
+          class={styles.legendCardButton}
+          aria-haspopup="dialog"
+          aria-label={`Open ${props.legend.name} portrait details`}
+          onClick={() => props.onOpen(props.legend)}
+        >
+          <LegendCardBody legend={props.legend} mode={props.mode} />
+        </button>
+      </Show>
     </li>
+  )
+}
+
+const DetailPortrait: Component<{ src: string; name: string }> = (props) => {
+  const [loaded, setLoaded] = createSignal(false)
+
+  return (
+    <img
+      class={styles.detailPortrait}
+      classList={{ [styles.detailPortraitLoaded]: loaded() }}
+      src={props.src}
+      width="928"
+      height="1152"
+      loading="eager"
+      decoding="async"
+      alt={`Illustrated caricature of ${props.name} in the MercuryPitch starfield style`}
+      onLoad={() => setLoaded(true)}
+    />
+  )
+}
+
+const LegendDetailDialog: Component<{
+  legend: VoiceConstellationLegend
+  position: number
+  total: number
+  onClose: () => void
+  onPrevious: () => void
+  onNext: () => void
+}> = (props) => {
+  let dialog: HTMLElement | undefined
+  let closeButton: HTMLButtonElement | undefined
+
+  const imageSrc = (): string | undefined =>
+    legendTierSrc(props.legend.name, 'full')
+  const band = () =>
+    VOICE_TYPE_BANDS.find((candidate) => candidate.id === props.legend.band)
+  const stateLabel = (): string =>
+    props.legend.state === 'current' ? 'Current match' : 'Past match'
+  const matchStory = (): string =>
+    props.legend.state === 'current'
+      ? 'This is your latest saved Voice Mirror match.'
+      : 'This portrait remains revealed from an earlier saved Voice Mirror match.'
+
+  useFocusTrap(() => dialog, {
+    isOpen: () => true,
+    onClose: () => props.onClose(),
+    initialFocus: () => closeButton,
+  })
+
+  return (
+    <Portal>
+      <section
+        ref={dialog}
+        class={styles.detailBackdrop}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="voice-legend-detail-name"
+        aria-describedby="voice-legend-detail-note"
+        tabindex="-1"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) props.onClose()
+        }}
+        onKeyDown={(event) => {
+          if (props.total < 2) return
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault()
+            props.onPrevious()
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault()
+            props.onNext()
+          }
+        }}
+      >
+        <div class={styles.detailPanel}>
+          <button
+            ref={closeButton}
+            type="button"
+            class={styles.detailClose}
+            onClick={() => props.onClose()}
+            aria-label="Close portrait details"
+            title="Close portrait details"
+          >
+            <X />
+          </button>
+
+          <div class={styles.detailArt}>
+            <Show when={imageSrc()} keyed>
+              {(src) => <DetailPortrait src={src} name={props.legend.name} />}
+            </Show>
+            <span class={styles.detailState}>{stateLabel()}</span>
+          </div>
+
+          <div class={styles.detailCopy}>
+            <div>
+              <span class={styles.detailBand}>{props.legend.band}</span>
+              <h2 id="voice-legend-detail-name">{props.legend.name}</h2>
+              <p class={styles.detailEpithet}>
+                {legendArt(props.legend.name).epithet}
+              </p>
+            </div>
+
+            <p class={styles.detailMatchStory}>{matchStory()}</p>
+
+            <dl class={styles.detailFacts}>
+              <div>
+                <dt>Voice neighborhood</dt>
+                <dd>{props.legend.band}</dd>
+              </div>
+              <div>
+                <dt>Reference band</dt>
+                <dd>{band()?.rangeLabel ?? 'Broad guide'}</dd>
+              </div>
+              <div>
+                <dt>Revealed</dt>
+                <dd>{formatDate(props.legend.matchedAt)}</dd>
+              </div>
+            </dl>
+
+            <p id="voice-legend-detail-note" class={styles.detailNote}>
+              MercuryPitch places this legend in a broad{' '}
+              {props.legend.band.toLowerCase()} neighborhood. The band is a
+              playful point of reference, not a measured range for this artist.
+            </p>
+
+            <div class={styles.detailActions}>
+              <div
+                class={styles.detailNav}
+                aria-label="Browse revealed portraits"
+              >
+                <button
+                  type="button"
+                  disabled={props.total < 2}
+                  onClick={() => props.onPrevious()}
+                >
+                  Previous
+                </button>
+                <span>
+                  {props.position} of {props.total} revealed
+                </span>
+                <button
+                  type="button"
+                  disabled={props.total < 2}
+                  onClick={() => props.onNext()}
+                >
+                  Next
+                </button>
+              </div>
+              <a href="/mirror">Make another voiceprint</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </Portal>
   )
 }
 
@@ -140,6 +319,13 @@ export const VoiceConstellationSurface: Component<
   let closeButton: HTMLButtonElement | undefined
 
   const [prints, { refetch }] = createResource(authVersion, listVoiceprints)
+  const [selectedLegendId, setSelectedLegendId] = createSignal<string | null>(
+    null,
+  )
+
+  createEffect(() => {
+    if (prints.loading) setSelectedLegendId(null)
+  })
 
   const mode = (): HistoryMode => {
     if (prints.error !== undefined) return 'error'
@@ -152,9 +338,31 @@ export const VoiceConstellationSurface: Component<
 
   const records = () => (mode() === 'ready' ? (prints() ?? []) : [])
   const constellation = createMemo(() => buildVoiceConstellation(records()))
+  const revealedLegends = createMemo(() =>
+    constellation().legends.filter((legend) => legend.state !== 'unmatched'),
+  )
   const savedMatchCount = () =>
-    constellation().legends.filter((legend) => legend.state !== 'unmatched')
-      .length
+    revealedLegends().length + constellation().legacyMatches.length
+  const selectedLegend = createMemo(() =>
+    revealedLegends().find((legend) => legend.id === selectedLegendId()),
+  )
+  const selectedPosition = (): number => {
+    const selected = selectedLegend()
+    if (selected === undefined) return 0
+    return (
+      revealedLegends().findIndex((legend) => legend.id === selected.id) + 1
+    )
+  }
+
+  const stepSelectedLegend = (offset: -1 | 1): void => {
+    const legends = revealedLegends()
+    if (legends.length < 2) return
+    const selected = selectedLegend()
+    if (selected === undefined) return
+    const index = legends.findIndex((legend) => legend.id === selected.id)
+    const nextIndex = (index + offset + legends.length) % legends.length
+    setSelectedLegendId(legends[nextIndex]?.id ?? null)
+  }
 
   const bandGroups = createMemo(() =>
     VOICE_TYPE_BANDS.map((band) => ({
@@ -274,16 +482,34 @@ export const VoiceConstellationSurface: Component<
               aria-label="Your constellation status"
             >
               <span class={styles.readoutLabel}>Latest voiceprint</span>
-              <strong>
-                {constellation().currentTwin ?? 'No legend match recorded'}
-              </strong>
-              <p>{rangeStory()}</p>
-              <div class={styles.revealCount}>
-                <span>{savedMatchCount()}</span>{' '}
-                <small>
-                  {savedMatchCount() === 1 ? 'saved match' : 'saved matches'}
-                </small>
-              </div>
+              <Show
+                when={mode() === 'ready'}
+                fallback={
+                  <>
+                    <strong>
+                      {mode() === 'loading'
+                        ? 'Checking saved history…'
+                        : 'History unavailable'}
+                    </strong>
+                    <p>
+                      {mode() === 'loading'
+                        ? 'Your revealed portraits will appear when this account’s history is ready.'
+                        : 'No portrait is revealed while saved history cannot be verified.'}
+                    </p>
+                  </>
+                }
+              >
+                <strong>
+                  {constellation().currentTwin ?? 'No legend match recorded'}
+                </strong>
+                <p>{rangeStory()}</p>
+                <div class={styles.revealCount}>
+                  <span>{savedMatchCount()}</span>{' '}
+                  <small>
+                    {savedMatchCount() === 1 ? 'saved match' : 'saved matches'}
+                  </small>
+                </div>
+              </Show>
             </aside>
           </div>
 
@@ -347,7 +573,15 @@ export const VoiceConstellationSurface: Component<
                   </div>
                   <ul class={styles.legendGrid}>
                     <For each={group.legends}>
-                      {(legend) => <LegendCard legend={legend} mode={mode()} />}
+                      {(legend) => (
+                        <LegendCard
+                          legend={legend}
+                          mode={mode()}
+                          onOpen={(revealed) =>
+                            setSelectedLegendId(revealed.id)
+                          }
+                        />
+                      )}
                     </For>
                   </ul>
                 </section>
@@ -400,6 +634,19 @@ export const VoiceConstellationSurface: Component<
             Mirror history—not a new guess—decides what is revealed.
           </p>
         </main>
+
+        <Show when={selectedLegend()}>
+          {(legend) => (
+            <LegendDetailDialog
+              legend={legend()}
+              position={selectedPosition()}
+              total={revealedLegends().length}
+              onClose={() => setSelectedLegendId(null)}
+              onPrevious={() => stepSelectedLegend(-1)}
+              onNext={() => stepSelectedLegend(1)}
+            />
+          )}
+        </Show>
       </section>
     </Portal>
   )
