@@ -1,7 +1,8 @@
 const OUTPUT_SAMPLE_RATE = 44_100
 const WAV_HEADER_BYTES = 44
 
-export const GUIDED_EXAMPLE_CLIP_MS = 5_000
+export const MAX_GUIDED_EXAMPLE_CLIP_MS = 15_000
+export const MIN_GUIDED_EXAMPLE_CLIP_MS = 100
 export const MAX_GUIDED_EXAMPLE_SOURCE_BYTES = 25 * 1024 * 1024
 export const GUIDED_EXAMPLE_ACCEPT =
   'audio/mpeg,audio/mp3,audio/mp4,audio/aac,audio/x-m4a,audio/webm,audio/ogg,audio/wav,audio/x-wav,audio/wave,.mp3,.m4a,.mp4,.aac,.webm,.ogg,.oga,.wav'
@@ -27,6 +28,12 @@ export interface GuidedExerciseAudioClip {
   file: File
   durationMs: number
   startMs: number
+  endMs: number
+}
+
+export interface GuidedExerciseAudioSelection {
+  startMs: number
+  endMs: number
 }
 
 export function isSupportedGuidedExerciseAudio(file: File): boolean {
@@ -78,33 +85,73 @@ function writeAscii(view: DataView, offset: number, value: string): void {
   }
 }
 
-function clipName(name: string): string {
+function clipName(name: string, durationMs: number): string {
   const stem = name.replace(/\.[^.]+$/, '').trim() || 'example-audio'
-  return `${stem}-5s-clip.wav`
+  const seconds = (durationMs / 1000)
+    .toFixed(durationMs % 1000 === 0 ? 0 : 1)
+    .replace('.', 'p')
+  return `${stem}-${seconds}s-clip.wav`
+}
+
+export function normalizeGuidedExerciseAudioSelection(
+  sourceDurationMs: number,
+  requestedStartMs: number,
+  requestedEndMs: number,
+  movedHandle: 'start' | 'end' = 'end',
+): GuidedExerciseAudioSelection {
+  const durationMs = Math.max(1, Math.round(sourceDurationMs))
+  const minimumDurationMs = Math.min(MIN_GUIDED_EXAMPLE_CLIP_MS, durationMs)
+  let startMs = Math.min(
+    durationMs - minimumDurationMs,
+    Math.max(0, Math.round(requestedStartMs)),
+  )
+  let endMs = Math.min(
+    durationMs,
+    Math.max(minimumDurationMs, Math.round(requestedEndMs)),
+  )
+
+  if (endMs - startMs < minimumDurationMs) {
+    if (movedHandle === 'start') {
+      startMs = Math.max(0, endMs - minimumDurationMs)
+    } else {
+      endMs = Math.min(durationMs, startMs + minimumDurationMs)
+    }
+  }
+  if (endMs - startMs > MAX_GUIDED_EXAMPLE_CLIP_MS) {
+    if (movedHandle === 'start') {
+      endMs = Math.min(durationMs, startMs + MAX_GUIDED_EXAMPLE_CLIP_MS)
+    } else {
+      startMs = Math.max(0, endMs - MAX_GUIDED_EXAMPLE_CLIP_MS)
+    }
+  }
+
+  return { startMs, endMs }
 }
 
 export function createGuidedExerciseAudioClip(
   file: File,
   buffer: AudioBuffer,
   requestedStartMs: number,
-  clipDurationMs = GUIDED_EXAMPLE_CLIP_MS,
+  requestedEndMs = Math.min(
+    Math.round(buffer.duration * 1000),
+    requestedStartMs + MAX_GUIDED_EXAMPLE_CLIP_MS,
+  ),
 ): GuidedExerciseAudioClip {
-  const boundedDurationMs = Math.max(1, Math.round(clipDurationMs))
   const sourceDurationMs = Math.round(buffer.duration * 1000)
-  const maximumStartMs = Math.max(0, sourceDurationMs - boundedDurationMs)
-  const startMs = Math.min(
-    maximumStartMs,
-    Math.max(0, Math.round(requestedStartMs)),
+  const { startMs, endMs } = normalizeGuidedExerciseAudioSelection(
+    sourceDurationMs,
+    requestedStartMs,
+    requestedEndMs,
   )
   const startFrame = Math.min(
     buffer.length - 1,
     Math.max(0, Math.floor((startMs / 1000) * buffer.sampleRate)),
   )
-  const requestedFrames = Math.max(
-    1,
-    Math.round((boundedDurationMs / 1000) * buffer.sampleRate),
+  const endFrame = Math.min(
+    buffer.length,
+    Math.max(startFrame + 1, Math.ceil((endMs / 1000) * buffer.sampleRate)),
   )
-  const frameCount = Math.min(requestedFrames, buffer.length - startFrame)
+  const frameCount = endFrame - startFrame
   const pcmBytes = frameCount * 2
   const bytes = new ArrayBuffer(WAV_HEADER_BYTES + pcmBytes)
   const view = new DataView(bytes)
@@ -145,9 +192,12 @@ export function createGuidedExerciseAudioClip(
     Math.round((frameCount / buffer.sampleRate) * 1000),
   )
   return {
-    file: new File([bytes], clipName(file.name), { type: 'audio/wav' }),
+    file: new File([bytes], clipName(file.name, durationMs), {
+      type: 'audio/wav',
+    }),
     durationMs,
     startMs,
+    endMs: startMs + durationMs,
   }
 }
 
