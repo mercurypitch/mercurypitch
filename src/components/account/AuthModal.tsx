@@ -10,7 +10,7 @@
 // itself through the authVersion/authStamp signals.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, createUniqueId, Match, Show, Switch, } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
@@ -46,6 +46,18 @@ export const AuthModal: Component = () => {
   // so later edits to the field can't rewrite the message).
   const [sentTo, setSentTo] = createSignal('')
 
+  /**
+   * Has anything been typed into this form?
+   *
+   * `email` deliberately survives a close (see the effect above), so an
+   * address carried over from a previous open is not "typed" for this
+   * purpose — only a password or a display name, plus an email that
+   * differs from whatever was already there when the modal opened.
+   */
+  const [emailAtOpen, setEmailAtOpen] = createSignal('')
+  const dirty = (): boolean =>
+    password() !== '' || displayName() !== '' || email() !== emailAtOpen()
+
   // Every open lands on the requested pane with transient state cleared.
   // The email survives on purpose: retrying login → forgot → back keeps it.
   createEffect(() => {
@@ -56,6 +68,8 @@ export const AuthModal: Component = () => {
     setShowPassword(false)
     setError('')
     setBusy(false)
+    // The baseline `dirty` compares against — see close()/onBackdropClick.
+    setEmailAtOpen(untrack(email))
   })
 
   function close(): void {
@@ -64,6 +78,19 @@ export const AuthModal: Component = () => {
     setPassword('')
     setShowPassword(false)
     setError('')
+  }
+
+  /**
+   * Backdrop click. An untouched form still closes on one — opening this
+   * by accident should cost one click to undo. Once anything has been
+   * typed it stops closing, because a stray click outside a half-filled
+   * sign-up discards the lot with no warning and no undo, which is what
+   * owner testing hit. The X and Escape stay unconditional, so there is
+   * never a state with no way out.
+   */
+  function onBackdropClick(): void {
+    if (dirty()) return
+    close()
   }
 
   function switchPane(next: Pane): void {
@@ -147,7 +174,7 @@ export const AuthModal: Component = () => {
       <div
         class={styles.overlay}
         data-testid="auth-modal-overlay"
-        onClick={close}
+        onClick={onBackdropClick}
       >
         <div
           ref={dialogRef}
