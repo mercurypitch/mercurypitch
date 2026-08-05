@@ -38,8 +38,26 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string
   /** OAuth client secret — required for the redirect code flow. */
   GOOGLE_CLIENT_SECRET?: string
-  /** Shared secret for seed/admin writes via X-Admin-Key header. */
+  /**
+   * Shared secret for seed/admin writes via X-Admin-Key header. Where
+   * Cloudflare Access is configured this is NOT sufficient on its own —
+   * see `isAdmin` in index.ts and `access.ts`.
+   */
   ADMIN_KEY?: string
+  /**
+   * Cloudflare Access team domain, e.g. "mercurypitch.cloudflareaccess.com".
+   * Setting this AND ACCESS_AUD puts the admin surface behind Access.
+   */
+  ACCESS_TEAM_DOMAIN?: string
+  /** The Access application's Audience (AUD) tag — ties a token to us. */
+  ACCESS_AUD?: string
+  /** Optional belt-and-braces email allowlist on top of the Access policy. */
+  ACCESS_ALLOWED_EMAILS?: string
+  /**
+   * "1" retires the shared ADMIN_KEY entirely, leaving Access as the only
+   * way in. Stage two of the rollout — see `resolveAdmin` in access.ts.
+   */
+  ACCESS_STRICT?: string
   /** Supporter-perk grants — ONE database shared by dev AND prod (grants
    *  are keyed by email, published once per person). Optional so a local
    *  worker without the binding degrades to "no perks". */

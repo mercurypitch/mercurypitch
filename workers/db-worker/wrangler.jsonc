@@ -93,6 +93,12 @@
         // hostnames aren't known ahead of time — broad, but scoped to dev
         // (test data, rate-limited). Prod (below) never lists it.
         "ALLOWED_ORIGINS": "https://dev.mercurypitch.com,localhost,*.workers.dev"
+        // ACCESS_TEAM_DOMAIN / ACCESS_AUD / ACCESS_ALLOWED_EMAILS are NOT
+        // here: this repo is public and both identify the account. Set
+        // them per environment with `wrangler secret put`. When the first
+        // two are present the admin surface requires a verified
+        // Cloudflare Access token and X-Admin-Key alone stops working;
+        // when absent the key remains the only gate (local, previews).
       },
       "d1_databases": [
         {
@@ -131,6 +137,10 @@
         // users). Requests without an Origin header still pass (Stripe
         // webhooks, OAuth callback navigation, admin curl/seed scripts).
         "ALLOWED_ORIGINS": "https://mercurypitch.com,https://www.mercurypitch.com,https://about.mercurypitch.com"
+        // ACCESS_* are secrets, not vars — see the dev block above. Note
+        // `workers_dev: false` plus the single custom-domain route: there
+        // is no *.workers.dev hostname on which this Worker can be reached
+        // around whatever Access sits in front of api.mercurypitch.com.
       },
       "d1_databases": [
         {

@@ -8,6 +8,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Weekly Legend rotation** (`scripts/seed-weekly-rotation.mjs`, `pnpm
+  db:seed:weekly`): five consecutive weeks, week one `active` and weeks
+  two to five `queued` on Monday-to-Monday windows. No cron — the worker
+  resolves the current challenge lazily on every `GET /api/weekly/active`,
+  closing a passed week (snapshotting its board into `resultsJson`) and
+  promoting the queued row whose window contains now, so consecutive
+  windows chain themselves. All five are `evergreen`, so the encore path
+  clones a closed one once the queue is spent. Supersedes
+  `seed-weekly-sample.mjs`; week one is byte-for-byte its reviewed melody,
+  so an already-seeded board keeps its content and scores. `--dry-run`,
+  `--no-founder` and `--start <ISO>`; production refuses without
+  `MP_ALLOW_PROD=1`.
+
+- **Cloudflare Access verification for admin routes**
+  (`workers/db-worker/src/access.ts`, 27 tests): RS256 pinned, signature
+  checked against the team JWKS (cached per isolate, re-fetched on an
+  unknown `kid`), `aud` matched to the application, `iss` to the team, and
+  `exp`/`iat` with 60s skew. Tokens read from `Cf-Access-Jwt-Assertion` or
+  the `CF_Authorization` cookie; service tokens accepted by
+  `common_name`. `resolveAdmin()` holds a two-stage policy: unconfigured →
+  `X-Admin-Key` only; configured → a verified token passes and the key
+  still does; `ACCESS_STRICT=1` → token only. Staged because the browser
+  studio calls the API cross-origin and cannot carry the Access cookie
+  yet, so retiring the key in one move would lock the owner out.
+  `isAdmin()` is now async, awaited at all ten call sites. Seed scripts
+  send service-token headers via the new `scripts/admin-headers.mjs`.
+
+### Changed
+
+- **`WeeklyChallenge.targetItems` documented as absolute, untransposed
+  MIDI** (`weekly-service.ts`, `MISTAKES.md`): a weekly Legend is a shared
+  feat, so everyone attempts the identical notes and the board stays
+  comparable. `voiceTypeSplit` is the unbuilt hook for per-type variants
+  and is read by nothing. Written down because it reads as a bug — a Bass
+  handed a B4 — and an agent would otherwise "fix" it.
+
+- **Migration guidance: replay, do not reason** (`MISTAKES.md`). A chain
+  analysed statement-by-statement and called safe fails on `0001` against
+  the real prod baseline: `CREATE INDEX IF NOT EXISTS ... ON
+  sessionRecords(weeklyChallengeId)` throws where the column is absent,
+  because `IF NOT EXISTS` guards the index and not the column, and the
+  `CREATE TABLE IF NOT EXISTS` above it is a no-op on an existing table.
+  The rule is now to rebuild the target database from the schema that
+  environment actually has and execute every migration against it.
+
 ### Fixed
 
 - **Piano-roll viewport** (`piano-roll.ts`, `PianoRollEditor.css`): grid/ruler
