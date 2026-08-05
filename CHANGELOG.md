@@ -7,6 +7,62 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Jam rooms sing songs now, not just exercises.** A room can hold a whole
+  song on its own timeline: the words down the left, a pitch lane per singer
+  down the right, and each line scored as it goes past rather than at the
+  end. Count-in dots carry you through the rests, there is a scrubber for
+  moving around the song, and the room keeps one scoreboard everyone agrees
+  on. A room run counts as practice like anything else — and a room can also
+  run exercises, this week's Legend, or your Ascent week.
+
+- **Hand out the parts.** Assign singers to lines — click a lyric line to
+  take it from there — and everyone can see whose notes are whose. Harmony
+  Stack and Relay give a room parts that cannot be sung alone. If a session
+  has no words, the room can go and find them, and once you have fixed a line
+  you sing the version you fixed.
+
+- **Bring your own song into a room.** Your separated sessions and your own
+  songs appear in the picker, and the stem itself is packed small and sent
+  over the connection to the room — with a real progress bar while it moves.
+  A guide vocal only you can hear is a switch away, with the same karaoke pill
+  the rest of the app uses.
+
+- **The Mercury Rooms.** A set of photographic backdrops shot at native 4K,
+  with a transparency slider so the room actually shows the room behind the
+  video — the slider dials the blur along with it. The room says who just
+  walked in, says what it is currently doing, and lets the host put it right
+  when it is wrong. A host who drops out can walk back into their own room.
+
+- **Achievements, properly.** Fifty-two more goals across the groups, laid out
+  as a grid instead of a list, with badges as earned objects you can look at
+  rather than glyphs in a toolbar — and they show up on profiles.
+
+- **Content can be authored in the studio instead of shipped.** Achievements,
+  exercises and their recordings and timelines all have pages now, and a
+  timed `.lrc` can be dropped straight onto the demo song.
+
+- **A podium worth standing on.** The top three get three distinct medals, and
+  the medal is the whole card rather than a thumbnail beside a name. The board
+  also ranks the streak it actually names.
+
+- **The Challenges hub got the room it belongs to,** with art that reflects
+  how the run went and a full after-run card on the tab instead of a modal
+  that vanishes.
+
+- **A dial for picking a note.** The wall of note pills is now a dial: the
+  octave lives on its rim, and tapping the note you are on plays it.
+
+- **Zen sessions can count.** Give a session a fixed number of loops and it
+  stands down when they are done, instead of running until you stop it. Zen
+  exercises can also ask for loudness and for silence, not only for pitch.
+
+- **One tab holds the microphone, and you can see what it hears.** Opening the
+  app in a second tab no longer fights the first one for the device, and there
+  is a live meter so "is it picking me up" is answerable at a glance.
+
+- **Swell shows the loudness it was already scoring.** The measurement existed
+  and was invisible; now the dynamics you are being judged on are on screen.
+
 - **Your Voice Constellation.** Every legend your voice has been matched
   with now has a place of its own — the one you match today, and every one
   you matched before. Revealed legends open full-size: the artwork, the
@@ -167,6 +223,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Four achievements could never be won.** Their conditions could not be met
+  by any amount of singing, so they sat locked forever. They are winnable now.
+- **The Ascent opens on the week you are on,** not the one above it, and its
+  days no longer read left to right when your week does not start on a Monday.
 - **Repairing a streak tells you whether it worked.** The button reported
   nothing at all, so a repair that failed looked exactly like one that
   succeeded — you found out by watching the number not change. It now says,

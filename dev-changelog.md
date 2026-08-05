@@ -10,6 +10,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Jam song mode — a room can run a whole song on its own timeline.** The
+  song timeline is kept deliberately separate from the beat grid, so a room
+  running a song and a room running an exercise do not share a clock. The
+  stage puts lyrics left and one pitch lane per singer right, with a target
+  line drawn on every lane and per-line scoring evaluated as each line
+  passes rather than at the end. Count-in dots run through the rests. One
+  scoreboard is agreed across the room instead of each peer keeping its own,
+  and a room run records as practice through the same path as any other
+  session. Rooms can also run exercises, the weekly Legend and the singer's
+  Ascent week.
+
+- **Part assignment and multi-part arrangements in Jam.** Lines are handed
+  out per person, notes are attributed to their singer, and clicking a lyric
+  line takes the part from there. Harmony Stack and Relay are arrangement
+  types a single singer cannot complete. Lyric fixes made in the room are
+  what the room then sings.
+
+- **Stem transfer over the DataChannel.** A stem is encoded small enough to
+  send, then moved in chunks across the peer connection with real progress
+  reporting rather than a spinner. The picker gained a Songs shelf plus the
+  singer's own separated sessions, and a guide vocal audible only to the
+  local singer. TURN credentials are minted from Cloudflare instead of a free
+  public relay.
+
+- **The Mercury Rooms** — a native-4K photographic backdrop set, regenerated
+  texture-forward to kill colour banding, behind a transparency slider that
+  drives blur along with opacity. Room presence announces arrivals, the room
+  reports its own activity state with a host override when it desyncs, a host
+  can rejoin their own room, and a browser-blocked microphone is reported
+  distinctly from a user-denied one.
+
+- **Achievements expansion and authoring** — fifty-two additional goals
+  across the groups, a grid layout, badges reworked from toolbar glyphs into
+  earned objects surfaced on profiles, and Content Studio pages for
+  authoring achievements, exercises, exercise recordings and exercise
+  timelines. A timed `.lrc` can be dropped onto the demo song.
+
+- **Leaderboard podium** — three distinct medals for the top three, the medal
+  promoted to the full card, and the board ranking the same streak it names.
+
+- **Challenges hub** — its own surface rather than a borrowed one, run-aware
+  art, the after-run moment as a full card on the tab instead of a modal, a
+  Zen-based challenge performance stage with a melody adapter and parity
+  scoring, and the weekly Legend surfaced on the tab.
+
+- **Note dial** replacing the note-pill wall, with the octave on the rim and
+  tap-to-audition.
+
+- **Zen loop counts and non-pitch targets** — a session can run a fixed
+  number of loops and stand down, and an exercise can ask for loudness or for
+  silence rather than only pitch.
+
+- **Cross-tab microphone lock plus an input meter** — one tab owns the
+  device, with hand-off, and the level is published for display.
+
+- **Swell surfaces the loudness it already scored**, so the dynamics being
+  judged are visible.
+
+- **LRC mapper** — two-pass mapping, line preview and reaction calibration.
+
 - **Personal Voice Constellation** (#428) (`src/features/voice-constellation/`,
   `src/lib/mirror/voice-constellation.ts`, `src/lib/mirror/legend-catalog.ts`).
   A route-backed surface for current and past saved Voice Mirror matches.
