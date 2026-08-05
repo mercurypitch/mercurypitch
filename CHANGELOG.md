@@ -22,7 +22,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   paste its vocal and instrumental, its lyrics and its credit, and it
   appears on the Karaoke Night rail beside the opener. Taking one down is a
   switch rather than a deletion, and every song on offer is credited in the
-  footer — not just the first one.
+  footer — not just the first one. The opener keeps its own card; anything
+  after it sits in a compact list, so a night with ten songs on the bill
+  still leaves room for your own.
+
+- **Karaoke Night has a proper way back into the app.** The link out was
+  plain text, and on a phone it was not there at all. It is now a button
+  with an icon that says where it goes, and it survives a narrow screen.
 
 - **The weekly Legend now has a run of weeks queued behind it.** Five
   challenges instead of one, opening on the money note — Puccini's B4 on
