@@ -17,6 +17,8 @@
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
+import type { DemoSongRow } from './demo-song'
+import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, publicDemoSong, } from './demo-song'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { resolveAdmin } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
@@ -1503,6 +1505,105 @@ async function updateWeekly(
   return respond({ ok: true })
 }
 
+// ── Demo song (Karaoke Night) ────────────────────────────────────────
+//
+// Not a generic CRUD entity: reads are public and unauthenticated (the
+// Karaoke page fetches this before anyone signs in) while writes are
+// admin-only, which the TABLES allowlist has no way to express. The
+// shipped `public/karaoke-demo-song.json` stays the fallback, so an
+// absent row, a parked row or an unreachable API all degrade to the demo
+// that ships with the build rather than to a broken page.
+
+async function handleDemoSong(
+  url: URL,
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const slug = url.searchParams.get('slug') ?? 'karaoke-night'
+
+  if (request.method === 'GET') {
+    // `active = 1` only for the public read: a parked row must look exactly
+    // like no row, so the client falls through to the shipped manifest.
+    const admin = await isAdmin(request, env)
+    const row = await env.DB.prepare(
+      admin
+        ? `SELECT * FROM demoSongs WHERE slug = ?`
+        : `SELECT * FROM demoSongs WHERE slug = ? AND active = 1`,
+    )
+      .bind(slug)
+      .first<DemoSongRow>()
+    return respond({ song: row ? publicDemoSong(row) : null })
+  }
+
+  if (request.method !== 'PUT') {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
+  if (!(await isAdmin(request, env))) {
+    return respond({ error: 'Admin key required' }, { status: 403 })
+  }
+
+  let body: Record<string, unknown>
+  try {
+    body = (await request.json()) as Record<string, unknown>
+  } catch {
+    return respond({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  if (typeof body.title !== 'string' || body.title.trim() === '') {
+    return respond({ error: 'Missing field: title' }, { status: 400 })
+  }
+  if (typeof body.artist !== 'string' || body.artist.trim() === '') {
+    return respond({ error: 'Missing field: artist' }, { status: 400 })
+  }
+
+  const existing = await env.DB.prepare(
+    `SELECT * FROM demoSongs WHERE slug = ?`,
+  )
+    .bind(slug)
+    .first<DemoSongRow>()
+
+  const now = new Date().toISOString()
+  const values = demoSongValues(body)
+  const revision = nextLyricsRevision(
+    existing,
+    values.lyricsUrl as string | null,
+    values.lyricsText as string | null,
+  )
+
+  if (existing === null) {
+    await env.DB.prepare(
+      `INSERT INTO demoSongs
+        (id, createdAt, updatedAt, slug, ${DEMO_SONG_FIELDS.join(', ')}, lyricsRevision)
+       VALUES (?,?,?,?,${DEMO_SONG_FIELDS.map(() => '?').join(',')},?)`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        now,
+        now,
+        slug,
+        ...DEMO_SONG_FIELDS.map((f) => values[f]),
+        revision,
+      )
+      .run()
+  } else {
+    await env.DB.prepare(
+      `UPDATE demoSongs SET ${DEMO_SONG_FIELDS.map((f) => `"${f}" = ?`).join(', ')},
+        lyricsRevision = ?, updatedAt = ? WHERE slug = ?`,
+    )
+      .bind(
+        ...DEMO_SONG_FIELDS.map((f) => values[f]),
+        revision,
+        now,
+        slug,
+      )
+      .run()
+  }
+
+  const saved = await env.DB.prepare(`SELECT * FROM demoSongs WHERE slug = ?`)
+    .bind(slug)
+    .first<DemoSongRow>()
+  return respond({ song: saved ? publicDemoSong(saved) : null })
+}
+
 async function handleWeekly(
   url: URL,
   request: Request,
@@ -1745,6 +1846,18 @@ async function handleRequest(
       )
     }
     return handleFriendRedeem(request, env)
+  }
+
+  if (url.pathname === '/api/demo-song') {
+    if (request.method !== 'GET' && request.method !== 'OPTIONS') {
+      const rl = await checkRateLimit(
+        env.DB,
+        rateLimitSubject(request, auth),
+        'crud-write',
+      )
+      if (!rl.allowed) return rateLimited(rl)
+    }
+    return handleDemoSong(url, request, env)
   }
 
   if (

@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Editable Karaoke Night demo song** (`workers/db-worker/migrations/0016_demo_song.sql`,
+  `workers/db-worker/src/demo-song.ts`, `src/features/admin/AdminDemoSongPage.tsx`,
+  studio section `#/admin/demo-song`). `GET /api/demo-song` is public and
+  unauthenticated — the Karaoke page fetches it before anyone signs in —
+  while `PUT` is admin-gated, a split the `TABLES` allowlist cannot
+  express, so the route is handled outside the generic CRUD dispatcher.
+  Three properties worth keeping:
+  - **The shipped manifest is the floor.** `public/karaoke-demo-song.json`
+    still loads whenever there is no row, the row is parked
+    (`active = 0`), the row is malformed, or the API is unreachable. A
+    row also has to be *playable* (both stem URLs set) to win, so saving
+    a title before pasting the stems cannot present an unplayable demo.
+    The public `GET` filters on `active = 1` so a parked row is
+    indistinguishable from no row; the admin `GET` sees it and reports
+    `active: false`, which is why the projection carries the flag at all.
+  - **`lyricsRevision` only moves when the lyrics move**
+    (`nextLyricsRevision`). It is the client's re-seed cue, so bumping it
+    for a title typo would re-seed every visitor for nothing.
+  - **Seeding never takes a visitor's work** (`shouldSeedLyrics`). A
+    correction replaces a local copy only when a stamp proves we wrote it
+    and it is still byte-identical; an edited copy, or one seeded before
+    stamps existed, is left alone permanently. Stamp in `localStorage`
+    under `mercurypitch.demoLyricsSeed.v1`.
+
+  Covered by `workers/db-worker/src/demo-song.test.ts` and
+  `src/tests/demo-song.test.ts` (23 tests). Both decisions fail silently
+  when wrong, so both were mutation-checked.
+
 - **Weekly Legend rotation** (`scripts/seed-weekly-rotation.mjs`, `pnpm
   db:seed:weekly`): five consecutive weeks, week one `active` and weeks
   two to five `queued` on Monday-to-Monday windows. No cron — the worker
@@ -56,6 +84,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment actually has and execute every migration against it.
 
 ### Fixed
+
+- **Circular chunk `vendor -> pitch-core -> vendor`** (`vite.config.ts`):
+  `manualChunks` had no rule for Vite's own virtual modules, so
+  `vite/preload-helper` — the module that defines `__vitePreload`, and
+  which every chunk containing a dynamic import therefore imports — fell
+  through to `pitch-core`. `pitch-core` imports `vendor` for real, closing
+  the cycle. Rollup emits both halves of a cycle rather than failing, and
+  the failure mode is the one already recorded in `MISTAKES.md`: a
+  production build that dies at first paint on "Cannot access 'X' before
+  initialization", invisible to `pnpm check` and to dev. Virtual Vite
+  helpers now get their own `vite-helpers` chunk, placed above every other
+  rule; it imports nothing, so nothing can point back through it.
+  Verified on the built output: `vite-helpers-*.js` (1.8K) has no imports,
+  `vendor-*.js` imports only `vite-helpers`, and the warning is gone.
 
 - **Piano-roll viewport** (`piano-roll.ts`, `PianoRollEditor.css`): grid/ruler
   canvases were sized to the whole song — a 267-bar import is 51,240 CSS px =

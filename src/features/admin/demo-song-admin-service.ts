@@ -1,0 +1,161 @@
+// ── Demo song admin API ─────────────────────────────────────────────
+// The Karaoke Night demo used to be a git-tracked manifest, so changing
+// the song or fixing a lyric line meant shipping a build. `/api/demo-song`
+// is the override layer: a public GET the page reads, and an admin PUT the
+// studio writes.
+//
+// Kept out of `features/karaoke-night/demo-song.ts` on purpose — that
+// module is on the Karaoke page's first-paint graph, and nothing an
+// authoring page needs belongs there.
+
+import { API_BASE_URL } from '@/lib/defaults'
+
+/** The row as the API returns it, admin fields included. */
+export interface DemoSongRecord {
+  slug: string
+  title: string
+  artist: string
+  attribution: {
+    text: string
+    url: string
+    license: string
+    licenseUrl: string
+  }
+  stems: { vocal?: string; instrumental?: string }
+  lyrics: string | null
+  lyricsText: string | null
+  lyricsRevision: number
+  durationSec: number | null
+  /** Absent on the shipped manifest, which is live by definition. */
+  active?: boolean
+  updatedAt?: string
+}
+
+/** Everything an author supplies. The server owns revision and timestamps. */
+export interface DemoSongDraft {
+  title: string
+  artist: string
+  attributionText: string
+  attributionUrl: string
+  licenseName: string
+  licenseUrl: string
+  vocalUrl: string
+  instrumentalUrl: string
+  lyricsUrl: string
+  lyricsText: string
+  durationSec: number | null
+  active: boolean
+}
+
+function base(): string {
+  return API_BASE_URL ?? ''
+}
+
+export const blankDemoSongDraft = (): DemoSongDraft => ({
+  title: '',
+  artist: '',
+  attributionText: '',
+  attributionUrl: '',
+  licenseName: '',
+  licenseUrl: '',
+  vocalUrl: '',
+  instrumentalUrl: '',
+  lyricsUrl: '',
+  lyricsText: '',
+  durationSec: null,
+  active: true,
+})
+
+export function recordToDraft(row: DemoSongRecord): DemoSongDraft {
+  return {
+    title: row.title,
+    artist: row.artist,
+    attributionText: row.attribution?.text ?? '',
+    attributionUrl: row.attribution?.url ?? '',
+    licenseName: row.attribution?.license ?? '',
+    licenseUrl: row.attribution?.licenseUrl ?? '',
+    vocalUrl: row.stems?.vocal ?? '',
+    instrumentalUrl: row.stems?.instrumental ?? '',
+    lyricsUrl: row.lyrics ?? '',
+    lyricsText: row.lyricsText ?? '',
+    durationSec: row.durationSec,
+    active: row.active ?? true,
+  }
+}
+
+/**
+ * The current row, or null when there is none. Throws nothing — callers
+ * distinguish "no row yet" (null) from a transport failure by the
+ * `ok` flag rather than by an exception.
+ */
+export async function loadDemoSong(): Promise<
+  { ok: true; song: DemoSongRecord | null } | { ok: false; error: string }
+> {
+  if (base() === '') return { ok: false, error: 'No API configured' }
+  try {
+    const res = await fetch(`${base()}/api/demo-song`)
+    if (!res.ok) return { ok: false, error: `Request failed (${res.status})` }
+    const data = (await res.json()) as { song: DemoSongRecord | null }
+    return { ok: true, song: data.song ?? null }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
+export async function saveDemoSong(
+  draft: DemoSongDraft,
+  adminKey: string,
+): Promise<
+  { ok: true; song: DemoSongRecord | null } | { ok: false; error: string }
+> {
+  if (base() === '') return { ok: false, error: 'No API configured' }
+  try {
+    const res = await fetch(`${base()}/api/demo-song`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+      body: JSON.stringify(draft),
+    })
+    const data = (await res.json().catch(() => ({}))) as {
+      song?: DemoSongRecord
+      error?: string
+    }
+    if (!res.ok) {
+      return { ok: false, error: data.error ?? `Save failed (${res.status})` }
+    }
+    return { ok: true, song: data.song ?? null }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
+/**
+ * The manifest that ships with the build — the floor the live page falls
+ * back to. Shown in the studio so an author can see what they are
+ * overriding, and start from it rather than from an empty form.
+ */
+export async function loadShippedManifest(): Promise<DemoSongRecord | null> {
+  try {
+    const res = await fetch('/karaoke-demo-song.json', { cache: 'no-cache' })
+    if (!res.ok) return null
+    const m = (await res.json()) as Partial<DemoSongRecord>
+    if (typeof m.title !== 'string' || typeof m.artist !== 'string') return null
+    return {
+      slug: 'karaoke-night',
+      title: m.title,
+      artist: m.artist,
+      attribution: m.attribution ?? {
+        text: '',
+        url: '',
+        license: '',
+        licenseUrl: '',
+      },
+      stems: m.stems ?? {},
+      lyrics: m.lyrics ?? null,
+      lyricsText: null,
+      lyricsRevision: 0,
+      durationSec: m.durationSec ?? null,
+    }
+  } catch {
+    return null
+  }
+}
