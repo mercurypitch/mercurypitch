@@ -10,12 +10,12 @@
 // Carries its own funnel instrumentation (./funnel) -- this is a top-of-funnel
 // landing surface, not just another tab.
 
-import { createSignal, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
+import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
-import { DEMO_SESSION_ID, demoIsPlayable, loadDemoSong, seedDemoLyrics, } from './demo-song'
+import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
 import { trackKaraoke } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
@@ -69,7 +69,11 @@ function loadRailCollapsed(): boolean {
 }
 
 export function KaraokeNightApp() {
-  const [manifest, setManifest] = createSignal<DemoSongManifest | null>(null)
+  // The whole demo list. `manifest()` is the first of them — the one the
+  // hero's single call to action offers, since that copy promises "our
+  // ready-to-sing song" rather than a choice.
+  const [demos, setDemos] = createSignal<DemoSongManifest[]>([])
+  const manifest = () => demos()[0] ?? null
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
   const [stageAlpha, setStageAlpha] = createSignal(loadStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
@@ -121,27 +125,42 @@ export function KaraokeNightApp() {
     updateSessionUrl(song?.sessionId ?? null, push)
   }
 
+  /**
+   * Restore whatever `?session=` names.
+   *
+   * The demo list is a parameter rather than a `demos()` read on purpose:
+   * this runs from a promise callback at mount, where reading a signal is
+   * untracked and the lint rule is right to say so. Callers that have the
+   * list hand it over; anyone else gets a fresh fetch.
+   */
   const restoreFromUrl = async (
     sessionId: string | null,
-    providedManifest?: DemoSongManifest | null,
+    demoList?: DemoSongManifest[],
   ) => {
     if (sessionId === null || sessionId === '') {
       setActiveSong(null)
       return
     }
-    if (sessionId === DEMO_SESSION_ID) {
-      const m = providedManifest ?? (await loadDemoSong())
-      if (m !== null) setManifest(m)
-      if (demoIsPlayable(m)) {
-        const demoSong = m as DemoSongManifest
-        await seedDemoLyrics(demoSong)
-        setActiveSong({
-          sessionId: DEMO_SESSION_ID,
-          title: `${demoSong.title} — ${demoSong.artist}`,
-          stems: demoSong.stems,
-          autoPlay: false,
-        })
+    if (isDemoSessionId(sessionId)) {
+      const list =
+        demoList !== undefined && demoList.length > 0
+          ? demoList
+          : await loadDemoSongs()
+      // A shared link can outlive the song it names — an author parks a
+      // demo, someone opens yesterday's URL. Drop to the stage-less page
+      // rather than restoring a song that is no longer offered.
+      const demoSong = list.find((d) => demoSessionId(d.slug) === sessionId)
+      if (demoSong === undefined || !demoIsPlayable(demoSong)) {
+        updateSessionUrl(null, false)
+        return
       }
+      await seedDemoLyrics(demoSong)
+      setActiveSong({
+        sessionId,
+        title: `${demoSong.title} — ${demoSong.artist}`,
+        stems: demoSong.stems,
+        autoPlay: false,
+      })
       return
     }
 
@@ -183,17 +202,17 @@ export function KaraokeNightApp() {
     const searchParams = new URLSearchParams(window.location.search)
     const initialSession = searchParams.get('session')
 
-    void loadDemoSong().then((m) => {
-      setManifest(m)
-      if (initialSession === DEMO_SESSION_ID) {
-        void restoreFromUrl(DEMO_SESSION_ID, m)
+    void loadDemoSongs().then((list) => {
+      setDemos(list)
+      if (initialSession !== null && isDemoSessionId(initialSession)) {
+        void restoreFromUrl(initialSession, list)
       }
     })
 
     if (
       initialSession !== null &&
       initialSession !== '' &&
-      initialSession !== DEMO_SESSION_ID
+      !isDemoSessionId(initialSession)
     ) {
       void restoreFromUrl(initialSession)
     }
@@ -202,7 +221,7 @@ export function KaraokeNightApp() {
       const params = new URLSearchParams(window.location.search)
       const sessionInUrl = params.get('session')
       if (sessionInUrl !== (activeSong()?.sessionId ?? null)) {
-        void restoreFromUrl(sessionInUrl)
+        void restoreFromUrl(sessionInUrl, demos())
       }
     }
 
@@ -210,18 +229,16 @@ export function KaraokeNightApp() {
     onCleanup(() => window.removeEventListener('popstate', handlePopState))
   })
 
-  const singDemo = () => {
-    const m = manifest()
-    if (!demoIsPlayable(m)) return
+  const singDemo = (md: DemoSongManifest) => {
+    if (!demoIsPlayable(md)) return
     trackKaraoke('karaoke_demo_start')
-    const md = m as DemoSongManifest
     void (async () => {
       // The stage's lyrics controller reads the db on mount and starts an
       // online search when it finds nothing — so the seed must land first.
       await seedDemoLyrics(md)
       setSongWithUrl(
         {
-          sessionId: DEMO_SESSION_ID,
+          sessionId: demoSessionId(md.slug),
           title: `${md.title} — ${md.artist}`,
           stems: md.stems,
           autoPlay: true,
@@ -231,7 +248,26 @@ export function KaraokeNightApp() {
     })()
   }
 
-  const attribution = () => manifest()?.attribution
+  /**
+   * Who the footer credits.
+   *
+   * Whichever demo is on stage, when one is — otherwise every song on
+   * offer, because CC BY is not satisfied by crediting the first of two.
+   * Deduped by source, so two songs from the same artist page get one
+   * line.
+   */
+  const credits = createMemo(() => {
+    const onStage = demos().find(
+      (d) => demoSessionId(d.slug) === activeSong()?.sessionId,
+    )
+    const seen = new Set<string>()
+    return (onStage !== undefined ? [onStage] : demos()).filter((d) => {
+      const key = `${d.attribution.text}|${d.attribution.url}`
+      if (d.attribution.text.trim() === '' || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })
 
   return (
     <div class="kn-app" style={{ '--kn-alpha': String(stageAlpha()) }}>
@@ -289,7 +325,7 @@ export function KaraokeNightApp() {
               // The demo/opener isn't a real library session, so a session
               // deep-link would open an empty studio. Send it to the studio
               // home instead.
-              activeSong()?.sessionId === DEMO_SESSION_ID
+              isDemoSessionId(activeSong()?.sessionId ?? '')
                 ? null
                 : activeSong()?.sessionId,
             )}
@@ -394,23 +430,44 @@ export function KaraokeNightApp() {
               </svg>
               Hide panel
             </button>
-            <section class="kn-card kn-card--demo">
-              <p class="kn-card-kicker">Tonight's opener</p>
-              <h2>{manifest()?.title ?? "Tonight's opener"}</h2>
-              <p class="kn-card-sub">{manifest()?.artist ?? ''}</p>
-              <Show
-                when={demoIsPlayable(manifest())}
-                fallback={<p class="kn-soon">Opener coming soon</p>}
-              >
-                <button
-                  class="kn-btn kn-btn--primary"
-                  onClick={singDemo}
-                  disabled={activeSong()?.sessionId === DEMO_SESSION_ID}
-                >
-                  Sing this song
-                </button>
-              </Show>
-            </section>
+            <Show
+              when={demos().length > 0}
+              fallback={
+                <section class="kn-card kn-card--demo">
+                  <p class="kn-card-kicker">Tonight's opener</p>
+                  <h2>Opener coming soon</h2>
+                </section>
+              }
+            >
+              <For each={demos()}>
+                {(demo, i) => (
+                  <section class="kn-card kn-card--demo">
+                    <p class="kn-card-kicker">
+                      {i() === 0 ? "Tonight's opener" : 'Also tonight'}
+                    </p>
+                    <h2>{demo.title}</h2>
+                    <p class="kn-card-sub">{demo.artist}</p>
+                    {/* The API list is already filtered to playable rows;
+                        the shipped manifest is not, so a half-filled one
+                        must not offer a button that does nothing. */}
+                    <Show
+                      when={demoIsPlayable(demo)}
+                      fallback={<p class="kn-soon">Opener coming soon</p>}
+                    >
+                      <button
+                        class="kn-btn kn-btn--primary"
+                        onClick={() => singDemo(demo)}
+                        disabled={
+                          activeSong()?.sessionId === demoSessionId(demo.slug)
+                        }
+                      >
+                        Sing this song
+                      </button>
+                    </Show>
+                  </section>
+                )}
+              </For>
+            </Show>
 
             <Suspense>
               <KaraokeRailPanels
@@ -449,7 +506,10 @@ export function KaraokeNightApp() {
                   </div>
                 </div>
                 <Show when={demoIsPlayable(manifest())}>
-                  <button class="kn-btn kn-btn--primary" onClick={singDemo}>
+                  <button
+                    class="kn-btn kn-btn--primary"
+                    onClick={() => singDemo(manifest()!)}
+                  >
                     Sing this song
                   </button>
                 </Show>
@@ -476,22 +536,31 @@ export function KaraokeNightApp() {
       </div>
 
       <footer class="kn-footer">
-        <Show when={attribution()}>
-          {(a) => (
+        <For each={credits()}>
+          {(d) => (
             <p class="kn-attribution">
-              <a href={a().url} target="_blank" rel="noopener noreferrer">
-                {a().text}
-              </a>{' '}
+              {/* Named only when there is more than one credit — two bare
+                  lines side by side would not say which song is whose. */}
+              <Show when={credits().length > 1}>
+                <span class="kn-attribution-song">{d.title} — </span>
+              </Show>
               <a
-                href={a().licenseUrl}
+                href={d.attribution.url}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                ({a().license})
+                {d.attribution.text}
+              </a>{' '}
+              <a
+                href={d.attribution.licenseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                ({d.attribution.license})
               </a>
             </p>
           )}
-        </Show>
+        </For>
         <nav class="kn-footer-links">
           <a href="/" onClick={() => trackKaraoke('karaoke_cta_studio')}>
             MercuryPitch — the full studio

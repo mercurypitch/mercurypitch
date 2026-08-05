@@ -1,14 +1,23 @@
-// The demo song's two quiet decisions.
+// The demo song's quiet decisions.
 //
 // Neither throws when it is wrong. A revision that moves too eagerly
 // re-seeds every visitor's lyrics for a title typo; one that never moves
 // leaves an authored correction stranded on the server forever. And a
 // projection that drops `active` makes the studio show a parked row as
-// live, so the next save re-arms it without anybody asking.
+// live, so the next save re-arms it without anybody asking. The slug is
+// the same kind of trap from the other end: it becomes a local session key
+// and a `?session=` link, so anything that survives into the database but
+// not through a URL creates a row nobody can address.
 
 import { describe, expect, it } from 'vitest'
 import type { DemoSongRow } from './demo-song'
-import { demoSongValues, nextLyricsRevision, publicDemoSong } from './demo-song'
+import {
+  DEFAULT_DEMO_SLUG,
+  demoSongValues,
+  nextLyricsRevision,
+  normalizeDemoSlug,
+  publicDemoSong,
+} from './demo-song'
 
 const row = (over: Partial<DemoSongRow> = {}): DemoSongRow => ({
   id: 'row-1',
@@ -114,5 +123,42 @@ describe('demoSongValues', () => {
     expect(demoSongValues({ durationSec: '214' }).durationSec).toBeNull()
     expect(demoSongValues({ durationSec: Number.NaN }).durationSec).toBeNull()
     expect(demoSongValues({ durationSec: 214.6 }).durationSec).toBe(215)
+  })
+})
+
+describe('normalizeDemoSlug', () => {
+  it('defaults an absent slug to the original song', () => {
+    // Every row written before the list existed carries this slug, and
+    // every client written before it sends no slug at all.
+    expect(normalizeDemoSlug(null)).toBe(DEFAULT_DEMO_SLUG)
+    expect(normalizeDemoSlug('')).toBe(DEFAULT_DEMO_SLUG)
+    expect(normalizeDemoSlug('   ')).toBe(DEFAULT_DEMO_SLUG)
+  })
+
+  it('accepts and lowercases a hyphenated id', () => {
+    expect(normalizeDemoSlug('second-song')).toBe('second-song')
+    expect(normalizeDemoSlug(' Second-Song ')).toBe('second-song')
+    expect(normalizeDemoSlug('take2')).toBe('take2')
+  })
+
+  it('rejects anything that would not survive a URL or a key', () => {
+    for (const bad of [
+      'two words',
+      'with_underscore',
+      '-leading',
+      'trailing-',
+      'double--hyphen',
+      'slash/es',
+      'question?mark',
+      'colon:sep',
+      'accented-é',
+      'a'.repeat(65),
+    ]) {
+      expect(normalizeDemoSlug(bad)).toBeNull()
+    }
+  })
+
+  it('allows a slug right at the length limit', () => {
+    expect(normalizeDemoSlug('a'.repeat(64))).toBe('a'.repeat(64))
   })
 })

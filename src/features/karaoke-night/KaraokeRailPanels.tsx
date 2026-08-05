@@ -12,7 +12,7 @@ import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, start
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
-import { DEMO_SESSION_ID } from './demo-song'
+import { isDemoSessionId } from './demo-song'
 import { trackKaraoke } from './funnel'
 import { credits, refreshCredits, signedIn } from './karaoke-account'
 import { groupLibrarySongs } from './library-grouping'
@@ -102,7 +102,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       .filter(
         (s) =>
           s.status === 'completed' &&
-          s.sessionId !== DEMO_SESSION_ID &&
+          !isDemoSessionId(s.sessionId) &&
           (s.outputs !== undefined || s.stemMeta !== undefined),
       )
       .sort((a, b) => b.createdAt - a.createdAt),
@@ -125,7 +125,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       sessions()
         .filter(
           (s) =>
-            s.sessionId !== DEMO_SESSION_ID &&
+            !isDemoSessionId(s.sessionId) &&
             s.processingMode === 'server' &&
             (s.status === 'processing' || s.status === 'finalizing'),
         )

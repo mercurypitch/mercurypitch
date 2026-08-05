@@ -1099,6 +1099,10 @@ body {
   font-size: 0.82rem;
 }
 
+.kn-attribution-song {
+  color: #8f7bb0;
+}
+
 .kn-attribution a {
   color: #b79ae0;
   text-decoration: none;

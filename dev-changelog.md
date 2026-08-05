@@ -46,8 +46,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Covered by `workers/db-worker/src/demo-song.test.ts`,
   `src/tests/demo-song.test.ts` and `src/tests/demo-song-admin.test.ts`
-  (31 tests). The revision and seeding decisions fail silently when wrong,
+  (40 tests). The revision and seeding decisions fail silently when wrong,
   so both were mutation-checked.
+
+- **More than one Karaoke Night demo song** (`GET /api/demo-songs`,
+  `normalizeDemoSlug`, `demoSessionId`). `demoSongs` was already
+  slug-keyed, so there is no migration. What matters:
+  - **`GET /api/demo-songs`** returns every row in `createdAt ASC` order —
+    live rows only for the public, all of them for an admin key, because a
+    list that hides what you parked is a list you cannot un-park from.
+    Order is by creation, not title, so adding a song never moves the one a
+    first-time visitor is meant to sing. The single-row
+    `GET /api/demo-song?slug=` is unchanged and an absent slug still
+    resolves to `karaoke-night`, so every pre-list client keeps working.
+  - **The original demo keeps its historic session id.** `demoSessionId()`
+    returns the bare `karaoke-night-demo` for the legacy slug and
+    `karaoke-night-demo:<slug>` for anything added later. Every visitor who
+    has ever sung the demo has lyrics, pitch analysis and takes in their
+    local db keyed by the bare id, so producing a suffixed one would orphan
+    all of it — silently, with no error to notice. The lyrics seed stamp is
+    namespaced the same way, for the same reason.
+  - **Slugs are constrained at both ends** (`normalizeDemoSlug`, in the
+    worker and in the studio): lowercase, `[a-z0-9]` with single hyphens,
+    64 characters. Binding keeps it out of the SQL but it does not stay in
+    the database — the client builds a local-db key and a `?session=` URL
+    from it — so anything that would not survive that round trip is a 400
+    rather than a row nobody can address. The studio also refuses a new
+    slug that collides with an existing one, because `PUT` is an upsert and
+    would otherwise overwrite a song silently.
+  - **The API list wins whole** (`loadDemoSongs`). One playable row makes
+    it the set; mixing the shipped manifest back in would resurrect a song
+    an author had deliberately parked, with no way to take it down. An
+    empty list, a malformed batch or an outage still lands on the manifest,
+    which stays the floor. Malformed rows are filtered individually rather
+    than failing the whole batch.
+  - **Attribution follows the song on stage** and, when none is, credits
+    every song on offer — CC BY is not satisfied by crediting the first of
+    two. Deduped by source, and named per song only when there is more than
+    one line to tell apart.
+
+  Studio (`AdminDemoSongPage`): a song bar with per-row `Live`/`Draft`/
+  `Parked` status, an "Add a song" action, and a link-id field editable
+  only before the first save. Switching songs while the form is dirty is
+  blocked behind an explicit save or discard rather than dropping the
+  edits.
+
+  Nine new tests across `workers/db-worker/src/demo-song.test.ts` and
+  `src/tests/demo-song.test.ts`. The legacy-session-id case is the one that
+  earns its keep: it is the only guard on a failure that produces no error,
+  just a page that has forgotten what somebody did.
 
 - **Weekly Legend rotation** (`scripts/seed-weekly-rotation.mjs`, `pnpm
   db:seed:weekly`): five consecutive weeks, week one `active` and weeks

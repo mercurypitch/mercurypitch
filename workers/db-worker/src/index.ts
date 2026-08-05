@@ -18,7 +18,7 @@ import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
-import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, publicDemoSong, } from './demo-song'
+import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { resolveAdmin } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
@@ -1521,12 +1521,41 @@ async function updateWeekly(
 // absent row, a parked row or an unreachable API all degrade to the demo
 // that ships with the build rather than to a broken page.
 
+/**
+ * Every demo the Karaoke page should offer.
+ *
+ * Public reads see live rows only, so parking one takes it off the page
+ * without deleting anything. The studio sees all of them, because a list
+ * that hides what you parked is a list you cannot un-park from.
+ *
+ * `createdAt` order, not alphabetical: the original demo stays first, so
+ * adding a song never moves the one a first-time visitor is meant to sing.
+ */
+async function handleDemoSongList(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (request.method !== 'GET') {
+    return respond({ error: 'Not found' }, { status: 404 })
+  }
+  const admin = await isAdmin(request, env)
+  const { results } = await env.DB.prepare(
+    admin
+      ? `SELECT * FROM demoSongs ORDER BY createdAt ASC`
+      : `SELECT * FROM demoSongs WHERE active = 1 ORDER BY createdAt ASC`,
+  ).all<DemoSongRow>()
+  return respond({ songs: (results ?? []).map(publicDemoSong) })
+}
+
 async function handleDemoSong(
   url: URL,
   request: Request,
   env: Env,
 ): Promise<Response> {
-  const slug = url.searchParams.get('slug') ?? 'karaoke-night'
+  const slug = normalizeDemoSlug(url.searchParams.get('slug'))
+  if (slug === null) {
+    return respond({ error: 'Invalid slug' }, { status: 400 })
+  }
 
   if (request.method === 'GET') {
     // `active = 1` only for the public read: a parked row must look exactly
@@ -1865,6 +1894,10 @@ async function handleRequest(
       )
     }
     return handleFriendRedeem(request, env)
+  }
+
+  if (url.pathname === '/api/demo-songs') {
+    return handleDemoSongList(request, env)
   }
 
   if (url.pathname === '/api/demo-song') {

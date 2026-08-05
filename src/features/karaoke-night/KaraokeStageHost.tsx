@@ -9,7 +9,7 @@ import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-ru
 import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { getUvrSession } from '@/stores/uvr-store'
-import { DEMO_SESSION_ID } from './demo-song'
+import { isDemoSessionId } from './demo-song'
 import { trackKaraoke, trackKaraokeOnce } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
@@ -83,7 +83,7 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       autoPlay={props.song.autoPlay === true}
       karaokeReferenceVocal={isPlaylistActive()}
       onThirtySecondsPlayed={
-        props.song.sessionId === DEMO_SESSION_ID
+        isDemoSessionId(props.song.sessionId)
           ? () => trackKaraokeOnce('karaoke_demo_complete')
           : undefined
       }

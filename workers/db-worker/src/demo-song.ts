@@ -24,6 +24,26 @@ export interface DemoSongRow {
   updatedAt: string
 }
 
+/** The slug every pre-list row carries, and the default when none is given. */
+export const DEFAULT_DEMO_SLUG = 'karaoke-night'
+
+/**
+ * Constrain a slug, or reject it.
+ *
+ * Binding keeps it out of the SQL, but it does not stay in the database:
+ * the client builds a local-db session id from it and a `?session=` URL
+ * around that. So it has to survive a round trip through a URL and a key
+ * unchanged — which means lowercase, no spaces, no separators of its own.
+ * Returns null for anything that does not qualify, so the caller answers
+ * 400 rather than quietly creating a row nobody can address.
+ */
+export function normalizeDemoSlug(raw: string | null): string | null {
+  const slug = (raw ?? '').trim().toLowerCase()
+  if (slug === '') return DEFAULT_DEMO_SLUG
+  if (slug.length > 64) return null
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : null
+}
+
 /** The columns a PUT may set, in bind order. */
 export const DEMO_SONG_FIELDS = [
   'title',

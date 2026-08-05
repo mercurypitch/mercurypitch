@@ -1,31 +1,35 @@
 // ============================================================
-// AdminDemoSongPage — the Karaoke Night demo, editable
+// AdminDemoSongPage — the Karaoke Night demo songs, editable
 // ============================================================
 //
-// THESIS: the song a first-time visitor sings is content, not a constant.
-// FIRST VIEWPORT: what is live now, and the one control that changes it.
-// FORM: a single form with the shipped manifest visible beside it, because
-// the studio row is an override and an author should be able to see what
-// they are overriding — and get back to it.
+// THESIS: the songs a first-time visitor can sing are content, not a
+// constant.
+// FIRST VIEWPORT: the songs that exist, which one is live, and the control
+// that adds another.
+// FORM: one form, pointed at whichever song is selected, with the shipped
+// manifest reachable beside it — the studio row is an override, and an
+// author should be able to see what they are overriding and get back to it.
 //
-// Two behaviours worth knowing before editing this file:
+// Three behaviours worth knowing before editing this file:
 //
-//   1. A row is only used by the live page when BOTH stem URLs are set.
-//      A half-filled row falls through to the shipped manifest rather than
-//      presenting an unplayable demo, so saving a title before pasting the
-//      stems is safe.
+//   1. A row is only offered by the live page when BOTH stem URLs are set.
+//      A half-filled row is skipped rather than presented as an unplayable
+//      demo, so saving a title before pasting the stems is safe.
 //   2. The lyrics revision is owned by the server and only moves when the
 //      lyrics actually change. It is what lets an authored correction
 //      reach a visitor who already has the old copy seeded locally —
 //      without ever clobbering a copy they edited themselves.
+//   3. The link id (slug) is fixed after the first save. It is what the
+//      local session id and the `?session=` link are built from, so
+//      changing it would orphan every take recorded against the old one.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, onMount, Show } from 'solid-js'
-import { AlertTriangle, CheckCircle, FileUpload, RotateCcw, } from '@/components/icons'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { AlertTriangle, CheckCircle, FileUpload, LinkChain, Plus, RotateCcw, } from '@/components/icons'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AdminDemoSongPage.module.css'
 import type { DemoSongDraft, DemoSongRecord } from './demo-song-admin-service'
-import { blankDemoSongDraft, loadDemoSong, loadShippedManifest, readLyricsFile, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
+import { blankDemoSongDraft, DEFAULT_DEMO_SLUG, loadDemoSongs, loadShippedManifest, normalizeDemoSlug, readLyricsFile, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
 
 interface AdminDemoSongPageProps {
   adminKey: string
@@ -34,7 +38,21 @@ interface AdminDemoSongPageProps {
 
 type LoadState = 'loading' | 'ready' | 'failed'
 
+/** What the song bar says about a row, in the live page's own terms. */
+function rowStatus(song: DemoSongRecord): string {
+  if (song.active === false) return 'Parked'
+  return (song.stems.vocal ?? '') !== '' &&
+    (song.stems.instrumental ?? '') !== ''
+    ? 'Live'
+    : 'Draft'
+}
+
 export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
+  const [songs, setSongs] = createSignal<DemoSongRecord[]>([])
+  // Which row the form is editing. A slug that is not in `songs()` is a new
+  // song being authored — that is the whole "add" state, so there is no
+  // separate mode flag that can fall out of step with it.
+  const [slug, setSlug] = createSignal(DEFAULT_DEMO_SLUG)
   const [draft, setDraft] = createSignal<DemoSongDraft>(blankDemoSongDraft())
   const [saved, setSaved] = createSignal<DemoSongRecord | null>(null)
   const [shipped, setShipped] = createSignal<DemoSongRecord | null>(null)
@@ -42,12 +60,14 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
   const [loadError, setLoadError] = createSignal('')
   const [saving, setSaving] = createSignal(false)
   // The baseline the dirty check compares against — the last thing that
-  // round-tripped through the server, not the initial draft.
+  // round-tripped through the server, not the initial draft. It doubles as
+  // what "discard" restores.
   const [baseline, setBaseline] = createSignal(
     JSON.stringify(blankDemoSongDraft()),
   )
 
   const dirty = createMemo(() => JSON.stringify(draft()) !== baseline())
+  const isNew = createMemo(() => !songs().some((s) => s.slug === slug()))
 
   const settle = (next: DemoSongDraft): void => {
     setDraft(next)
@@ -63,31 +83,67 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
     props.onDirtyChange?.(dirty())
   }
 
+  // ── Which song the form is pointed at ───────────────────────────
+  const [fileNote, setFileNote] = createSignal('')
+  const [fileError, setFileError] = createSignal('')
+
+  const select = (next: string, list = songs()): void => {
+    setSlug(next)
+    const row = list.find((s) => s.slug === next) ?? null
+    setSaved(row)
+    setFileNote('')
+    setFileError('')
+    settle(row !== null ? recordToDraft(row) : blankDemoSongDraft())
+  }
+
+  /** Refresh the bar. Deliberately leaves the form alone. */
+  const refreshList = async (): Promise<DemoSongRecord[]> => {
+    const list = await loadDemoSongs(props.adminKey)
+    if (!list.ok) {
+      setState('failed')
+      setLoadError(list.error)
+      return []
+    }
+    setState('ready')
+    setSongs(list.songs)
+    return list.songs
+  }
+
   onMount(() => {
     void (async () => {
-      const [row, manifest] = await Promise.all([
-        loadDemoSong(),
+      const [list, manifest] = await Promise.all([
+        refreshList(),
         loadShippedManifest(),
       ])
       setShipped(manifest)
-      if (!row.ok) {
-        setState('failed')
-        setLoadError(row.error)
+      if (state() === 'failed') return
+      const first = list[0]
+      if (first !== undefined) {
+        select(first.slug, list)
         return
       }
-      setState('ready')
-      setSaved(row.song)
-      // No row yet: start from the shipped demo rather than an empty form,
-      // so the first save is an edit of something real.
-      const start =
-        row.song !== null
-          ? recordToDraft(row.song)
-          : manifest !== null
-            ? recordToDraft(manifest)
-            : blankDemoSongDraft()
-      settle(start)
+      // No rows yet: start from the shipped demo rather than an empty
+      // form, so the first save is a promotion of something real.
+      setSlug(DEFAULT_DEMO_SLUG)
+      setSaved(null)
+      settle(manifest !== null ? recordToDraft(manifest) : blankDemoSongDraft())
     })()
   })
+
+  const addSong = (): void => {
+    setSaved(null)
+    setFileNote('')
+    setFileError('')
+    setSlug('')
+    settle(blankDemoSongDraft())
+  }
+
+  /** Back to the last settled state — which is exactly what `baseline` is. */
+  const discard = (): void => {
+    setFileNote('')
+    setFileError('')
+    settle(JSON.parse(baseline()) as DemoSongDraft)
+  }
 
   const playable = createMemo(
     () =>
@@ -109,8 +165,6 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
   // because the text travels in the row and the server infers "synced"
   // from the timestamps it carries.
   const [dragOver, setDragOver] = createSignal(false)
-  const [fileNote, setFileNote] = createSignal('')
-  const [fileError, setFileError] = createSignal('')
 
   const takeFile = async (file: File | undefined): Promise<void> => {
     if (file === undefined) return
@@ -139,17 +193,35 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
 
   const save = async (): Promise<void> => {
     if (saving()) return
+    const target = normalizeDemoSlug(slug())
+    if (target === null) {
+      showNotification(
+        'Give the song a link id — lowercase letters, numbers and hyphens.',
+        'error',
+      )
+      return
+    }
+    // A PUT is an upsert, so a colliding id on a new song would overwrite
+    // a song that already exists rather than fail.
+    if (isNew() && songs().some((s) => s.slug === target)) {
+      showNotification(
+        `"${target}" already exists — pick it from the bar above to edit it.`,
+        'error',
+      )
+      return
+    }
     if (draft().title.trim() === '' || draft().artist.trim() === '') {
       showNotification('A title and an artist are required.', 'error')
       return
     }
     setSaving(true)
-    const result = await saveDemoSong(draft(), props.adminKey)
+    const result = await saveDemoSong(target, draft(), props.adminKey)
     setSaving(false)
     if (!result.ok) {
       showNotification(`Could not save the demo song: ${result.error}`, 'error')
       return
     }
+    setSlug(target)
     setSaved(result.song)
     settle(result.song !== null ? recordToDraft(result.song) : draft())
     showNotification(
@@ -158,6 +230,9 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
         : 'Demo song saved.',
       'success',
     )
+    // A new row has to appear in the bar, and an edited title has to
+    // change there too.
+    void refreshList()
   }
 
   const field = (
@@ -186,11 +261,12 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
     <div class={styles.page}>
       <header class={styles.header}>
         <div>
-          <h2>Karaoke demo song</h2>
+          <h2>Karaoke demo songs</h2>
           <p>
-            The song a first-time visitor sings on Karaoke Night. Saved here, it
-            overrides the copy that ships with the build — which stays the
-            fallback, so a half-finished row can never break the page.
+            The songs a first-time visitor can sing on Karaoke Night. Saved
+            here, they override the single song that ships with the build —
+            which stays the fallback, so a half-finished row can never break the
+            page.
           </p>
         </div>
       </header>
@@ -204,10 +280,61 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
       </Show>
 
       <Show when={state() === 'loading'}>
-        <p class={styles.state}>Loading the demo song…</p>
+        <p class={styles.state}>Loading the demo songs…</p>
       </Show>
 
       <Show when={state() === 'ready'}>
+        <nav class={styles.songBar} aria-label="Demo songs">
+          <For each={songs()}>
+            {(song) => (
+              <button
+                type="button"
+                class={styles.songTab}
+                classList={{ [styles.songTabOn!]: song.slug === slug() }}
+                aria-current={song.slug === slug() ? 'true' : undefined}
+                disabled={dirty() && song.slug !== slug()}
+                title={
+                  dirty() && song.slug !== slug()
+                    ? 'Save or discard your changes first'
+                    : undefined
+                }
+                onClick={() => select(song.slug)}
+              >
+                <span class={styles.songTabTitle}>
+                  {song.title.trim() === '' ? song.slug : song.title}
+                </span>
+                <span class={styles.songTabMeta}>{rowStatus(song)}</span>
+              </button>
+            )}
+          </For>
+
+          <Show when={isNew()}>
+            <span class={`${styles.songTab} ${styles.songTabOn}`}>
+              <span class={styles.songTabTitle}>
+                {draft().title.trim() === '' ? 'New song' : draft().title}
+              </span>
+              <span class={styles.songTabMeta}>Unsaved</span>
+            </span>
+          </Show>
+
+          <button
+            type="button"
+            class={styles.addButton}
+            disabled={isNew() || dirty()}
+            title={
+              isNew()
+                ? 'Save this one first'
+                : dirty()
+                  ? 'Save or discard your changes first'
+                  : undefined
+            }
+            onClick={addSong}
+          >
+            <Plus />
+            Add a song
+          </button>
+        </nav>
+
         <div class={styles.statusRow}>
           <span
             class={`${styles.badge} ${playable() ? styles.badgeLive : styles.badgeIdle}`}
@@ -216,15 +343,21 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
               <CheckCircle />
             </Show>
             {playable()
-              ? 'Playable — this row is what visitors get'
-              : 'Not playable yet — visitors get the shipped demo'}
+              ? 'Playable — visitors get this song'
+              : 'Not playable yet — both stems are needed first'}
           </span>
           <Show when={saved() !== null}>
             <span class={styles.meta}>
               Lyrics revision {saved()!.lyricsRevision}
             </span>
           </Show>
-          <Show when={shipped() !== null}>
+          <Show when={dirty()}>
+            <button type="button" class={styles.ghostButton} onClick={discard}>
+              <RotateCcw />
+              Discard changes
+            </button>
+          </Show>
+          <Show when={shipped() !== null && !dirty()}>
             <button
               type="button"
               class={styles.ghostButton}
@@ -245,6 +378,33 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
         >
           <fieldset class={styles.group}>
             <legend>The song</legend>
+            <Show
+              when={isNew()}
+              fallback={
+                <p class={styles.slugLine}>
+                  <LinkChain />
+                  <code>{slug()}</code>
+                  <span class={styles.hint}>
+                    The link id. Fixed once saved — changing it would orphan
+                    every take already recorded against it.
+                  </span>
+                </p>
+              }
+            >
+              <label class={styles.field}>
+                <span class={styles.fieldLabel}>Link id</span>
+                <input
+                  type="text"
+                  value={slug()}
+                  placeholder="second-song"
+                  onInput={(e) => setSlug(e.currentTarget.value)}
+                />
+                <span class={styles.hint}>
+                  Lowercase letters, numbers and hyphens. It goes in the
+                  shareable link, and cannot be changed after the first save.
+                </span>
+              </label>
+            </Show>
             <div class={styles.row}>
               {field('Title', 'title')}
               {field('Artist', 'artist')}
@@ -274,8 +434,8 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
           <fieldset class={styles.group}>
             <legend>Stems</legend>
             <p class={styles.groupNote}>
-              Both are required before this row goes live. Host them on R2 — the
-              bucket already serves the current demo.
+              Both are required before this song is offered. Host them on R2 —
+              the bucket already serves the current demo.
             </p>
             {field('Vocal URL', 'vocalUrl', undefined, 'https://…/vocal.m4a')}
             {field(
@@ -384,16 +544,23 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
                 onChange={(e) => edit('active', e.currentTarget.checked)}
               />
               <span>
-                Live. Turn this off to park the row — visitors fall back to the
-                demo that ships with the build.
+                Live. Turn this off to park the song — it stops being offered,
+                and if it was the only one, visitors fall back to the demo that
+                ships with the build.
               </span>
             </label>
             <button
               type="submit"
               class={styles.primaryButton}
-              disabled={saving() || !dirty()}
+              disabled={saving() || (!dirty() && saved() !== null)}
             >
-              {saving() ? 'Saving…' : dirty() ? 'Save demo song' : 'Saved'}
+              {saving()
+                ? 'Saving…'
+                : saved() === null
+                  ? 'Save new song'
+                  : dirty()
+                    ? 'Save changes'
+                    : 'Saved'}
             </button>
           </div>
         </form>

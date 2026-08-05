@@ -10,6 +10,26 @@
 
 import { API_BASE_URL } from '@/lib/defaults'
 
+/** The slug the shipped manifest and every pre-list row carry. */
+export const DEFAULT_DEMO_SLUG = 'karaoke-night'
+
+/**
+ * Constrain a slug to what the Worker will accept, so the studio rejects a
+ * bad one before a round trip rather than showing a 400.
+ *
+ * Two deliberate differences from the Worker's version. Spaces are folded
+ * to hyphens, because an author typing a name should not have to know the
+ * rule. And an empty id is REJECTED rather than defaulting to
+ * `karaoke-night` — the Worker's default is what keeps pre-list clients
+ * working, but here it would quietly point a new song at the original one
+ * and overwrite it on save.
+ */
+export function normalizeDemoSlug(raw: string): string | null {
+  const slug = raw.trim().toLowerCase().replace(/\s+/g, '-')
+  if (slug === '' || slug.length > 64) return null
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : null
+}
+
 /** The row as the API returns it, admin fields included. */
 export interface DemoSongRecord {
   slug: string
@@ -87,25 +107,33 @@ export function recordToDraft(row: DemoSongRecord): DemoSongDraft {
 }
 
 /**
- * The current row, or null when there is none. Throws nothing — callers
- * distinguish "no row yet" (null) from a transport failure by the
- * `ok` flag rather than by an exception.
+ * Every row, parked ones included — the admin key is what makes the API
+ * return those, and a list that hid them would be a list you could not
+ * un-park from.
+ *
+ * Throws nothing: callers distinguish "no rows yet" from a transport
+ * failure by the `ok` flag rather than by an exception.
  */
-export async function loadDemoSong(): Promise<
-  { ok: true; song: DemoSongRecord | null } | { ok: false; error: string }
+export async function loadDemoSongs(
+  adminKey: string,
+): Promise<
+  { ok: true; songs: DemoSongRecord[] } | { ok: false; error: string }
 > {
   if (base() === '') return { ok: false, error: 'No API configured' }
   try {
-    const res = await fetch(`${base()}/api/demo-song`)
+    const res = await fetch(`${base()}/api/demo-songs`, {
+      headers: { 'X-Admin-Key': adminKey },
+    })
     if (!res.ok) return { ok: false, error: `Request failed (${res.status})` }
-    const data = (await res.json()) as { song: DemoSongRecord | null }
-    return { ok: true, song: data.song ?? null }
+    const data = (await res.json()) as { songs?: DemoSongRecord[] }
+    return { ok: true, songs: data.songs ?? [] }
   } catch (e) {
     return { ok: false, error: String(e) }
   }
 }
 
 export async function saveDemoSong(
+  slug: string,
   draft: DemoSongDraft,
   adminKey: string,
 ): Promise<
@@ -113,11 +141,17 @@ export async function saveDemoSong(
 > {
   if (base() === '') return { ok: false, error: 'No API configured' }
   try {
-    const res = await fetch(`${base()}/api/demo-song`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-      body: JSON.stringify(draft),
-    })
+    const res = await fetch(
+      `${base()}/api/demo-song?slug=${encodeURIComponent(slug)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': adminKey,
+        },
+        body: JSON.stringify(draft),
+      },
+    )
     const data = (await res.json().catch(() => ({}))) as {
       song?: DemoSongRecord
       error?: string
