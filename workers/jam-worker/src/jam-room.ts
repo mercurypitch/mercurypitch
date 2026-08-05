@@ -344,7 +344,6 @@ export class JamRoom extends DurableObject<JamEnv> {
     if (roomOwnershipMustExpire(this.ownership, this.peers.size)) {
       await this.expireOwnership()
     }
-    await this.cancelDelete()
 
     const peerId = crypto.randomUUID()
 
@@ -383,6 +382,20 @@ export class JamRoom extends DurableObject<JamEnv> {
       (typeof msg.ownerToken === 'string' &&
         (await this.hasOwnerToken(msg.ownerToken)))
     if (isHost) this.ownership.ownerId = peerId
+
+    // Validate a reconnecting owner's proof before clearing the persisted
+    // deadline. Once this socket is established, the room is live again and
+    // both expiry mechanisms can be cancelled safely.
+    ws.serializeAttachment({
+      connectionIntent: 'established',
+      peerId,
+      displayName: msg.displayName,
+      roomId: this.roomId,
+    } satisfies JamSocketAttachment)
+    this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
+    this.wsToPeerId.set(ws, peerId)
+    await this.cancelDelete()
+
     console.log(
       `[JamRoom ${this.roomId}] host check: incoming="${msg.displayName}" isHost=${isHost}`,
     )
@@ -398,22 +411,13 @@ export class JamRoom extends DurableObject<JamEnv> {
     })
 
     console.log(
-      `[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size + 1}`,
+      `[JamRoom ${this.roomId}] ${msg.displayName || 'Anonymous'} joined (${peerId}). Total peers: ${this.peers.size}`,
     )
 
     this.broadcast(
       { type: 'peer-joined', peerId, displayName: msg.displayName },
       peerId,
     )
-
-    ws.serializeAttachment({
-      connectionIntent: 'established',
-      peerId,
-      displayName: msg.displayName,
-      roomId: this.roomId,
-    } satisfies JamSocketAttachment)
-    this.peers.set(peerId, { id: peerId, displayName: msg.displayName, ws })
-    this.wsToPeerId.set(ws, peerId)
   }
 
   private async handleLeave(ws: WebSocket): Promise<void> {
