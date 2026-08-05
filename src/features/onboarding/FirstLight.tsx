@@ -13,7 +13,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
-import { hasUpgradedAccount } from '@/db/services/auth-service'
+import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -202,6 +202,16 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     openAuthModal('register')
   }
 
+  /**
+   * The Map's way back to the account offer. Unlike handleCreateAccount
+   * it does not advance — the Map is already the last beat, and closing
+   * the modal should leave them looking at the map they were reading.
+   */
+  const handleReopenAccount = () => {
+    trackOnboarding('onboarding_account_created')
+    openAuthModal('register')
+  }
+
   const handleDismissAccount = () => {
     trackOnboarding('onboarding_account_dismissed')
     dismissNudge('onboarding-twin')
@@ -345,6 +355,18 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               onEnter={handleEnterRoom}
               onTour={handleRoomTour}
               onDone={handleDone}
+              /* Only when there is something to save and nothing holding
+                 it. Not gated on shouldShowNudge: the quiet period exists
+                 to stop the OFFER from re-asking, and this is not an ask
+                 — it is the way back for somebody who just closed the
+                 form, which is exactly the moment a quiet period would
+                 hide it. `accountHeld` is reactive, so it disappears the
+                 moment they sign up without the flow being re-entered. */
+              onKeep={
+                voiceprint() !== null && !accountHeld()
+                  ? handleReopenAccount
+                  : undefined
+              }
             />
           </Match>
           <Match when={currentBeat() === 'keep'}>

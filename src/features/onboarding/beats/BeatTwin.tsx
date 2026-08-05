@@ -48,8 +48,10 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           </>
         }
       >
+        {/* 200-320px box: `mid` (360px) lands inside 4x either way, where
+            the master was already at 4.6x on the small end. */}
         <span class={styles.twinArt} aria-hidden="true">
-          <LegendCaricature legend={twin() ?? ''} />
+          <LegendCaricature legend={twin() ?? ''} tier="mid" />
         </span>
         <p class={styles.eyebrow}>Your twin</p>
         <h1 class={styles.headline}>
@@ -93,12 +95,20 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         voice showed us, so you know exactly where to go from here.
       </p>
       <div class={styles.actions}>
+        {/* Not "See my map": this advances to `keep`, and the Map is one
+            screen further on. Promising the Map and then showing an
+            account offer that repeats the portrait is what made the two
+            screens read as one screen twice. `keep` is also skippable
+            (isBeatApplicable: state.hasVoiceprint), so the label has to be
+            true whether the next thing is the offer or the Map itself —
+            the pull lives in the paragraph above, which sells the Map
+            without the button having to lie about the order. */}
         <button
           type="button"
           class={styles.primary}
           onClick={() => props.onContinue()}
         >
-          See my map
+          Continue
         </button>
         <Show when={props.onShare !== undefined}>
           <button

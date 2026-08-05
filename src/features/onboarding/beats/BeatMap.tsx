@@ -29,6 +29,17 @@ export interface BeatMapProps {
   /** Open a room AND start its spotlight tour. */
   onTour: (target: RoomTarget, tab: ActiveTab) => void
   onDone: () => void
+  /**
+   * Reopen the account offer. Passed only when there is a voiceprint to
+   * save and no account holding it — the flow decides, so this beat does
+   * not have to know about auth.
+   *
+   * The Map is where somebody lands after closing the sign-up form,
+   * whether they meant to or not, so this is the one screen that has to
+   * carry a way back. It is a line of text under the actions rather than
+   * a card or a banner: the beat's job is still to send them into a room.
+   */
+  onKeep?: () => void
 }
 
 export const BeatMap: Component<BeatMapProps> = (props) => {
@@ -150,6 +161,19 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           {props.replay === true ? 'Done' : 'Start singing'}
         </button>
       </div>
+
+      <Show when={props.onKeep !== undefined}>
+        <p class={styles.mapKeep}>
+          Your voiceprint is saved in this browser only.{' '}
+          <button
+            type="button"
+            class={styles.mapKeepLink}
+            onClick={() => props.onKeep?.()}
+          >
+            Save it to a free account
+          </button>
+        </p>
+      </Show>
     </div>
   )
 }
