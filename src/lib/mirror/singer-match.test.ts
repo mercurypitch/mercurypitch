@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { LEGENDS } from '@/features/mirror/LegendCaricature'
 import { voiceTypeHint } from './metrics'
-import { singerForVoiceType } from './singer-match'
+import { singerForVoiceType, SINGERS_BY_VOICE_TYPE } from './singer-match'
 
-const OPTIONS: Record<string, string[]> = {
-  Bass: ['Johnny Cash', 'Barry White'],
-  Baritone: ['Elvis Presley', 'Frank Sinatra', 'Kurt Cobain', 'David Bowie'],
-  Tenor: ['Freddie Mercury', 'Bruce Dickinson'],
-  Alto: ['Amy Winehouse', 'Cher'],
-  'Mezzo-soprano': ['Adele', 'Whitney Houston'],
-  Soprano: ['Mariah Carey', 'Celine Dion'],
-}
+// The roster is imported, not restated. It used to be copied into this
+// file, which meant adding a legend passed a test suite that was still
+// asserting against the old list.
+const OPTIONS = SINGERS_BY_VOICE_TYPE
 
 describe('singerForVoiceType', () => {
   it('returns one of the legends for each voice type', () => {
@@ -24,18 +21,39 @@ describe('singerForVoiceType', () => {
     )
   })
 
-  it('can reach BOTH legends of a type across different ranges', () => {
-    // seed = lowMidi*3 + highMidi; 48*3+72=216 (even → [0]), 48*3+73=217 (odd → [1])
-    expect(singerForVoiceType('Tenor', 48, 72)).toBe('Freddie Mercury')
-    expect(singerForVoiceType('Tenor', 48, 73)).toBe('Bruce Dickinson')
+  it('reaches EVERY legend of EVERY type across different ranges', () => {
+    // seed = |round(low)*3 + round(high)|, so holding low and stepping high
+    // by one walks the seed by one — n consecutive values must therefore
+    // cover an n-name roster exactly once. This is the property that makes
+    // a legend reachable at all; a name nobody can be matched to is dead
+    // weight, and with a 2-name roster the twin was close to a coin flip.
+    for (const [type, options] of Object.entries(OPTIONS)) {
+      const reached = new Set(
+        options.map((_, i) => singerForVoiceType(type, 42, 70 + i)),
+      )
+      expect([...reached].sort(), type).toEqual([...options].sort())
+    }
   })
 
-  it('reaches every Baritone legend across different ranges', () => {
-    // seed mod 4 walks the four options: 42*3+70=196 → 0 … 42*3+73=199 → 3.
-    expect(singerForVoiceType('Baritone', 42, 70)).toBe('Elvis Presley')
-    expect(singerForVoiceType('Baritone', 42, 71)).toBe('Frank Sinatra')
-    expect(singerForVoiceType('Baritone', 42, 72)).toBe('Kurt Cobain')
-    expect(singerForVoiceType('Baritone', 42, 73)).toBe('David Bowie')
+  it('gives every voice type at least three legends', () => {
+    for (const [type, options] of Object.entries(OPTIONS)) {
+      expect(options.length, type).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('never lists the same legend under two voice types', () => {
+    const all = Object.values(OPTIONS).flat()
+    expect(all.length).toBe(new Set(all).size)
+  })
+
+  it('has a portrait for every legend on the roster', () => {
+    // singer-match names the twin; LegendCaricature draws it. A name with
+    // no entry silently falls back to the generic bust, which reads as a
+    // bug on the one screen the whole flow builds up to.
+    const missing = Object.values(OPTIONS)
+      .flat()
+      .filter((name) => LEGENDS[name]?.imageSrc == null)
+    expect(missing).toEqual([])
   })
 
   it('places Freddie Mercury under Tenor, never Baritone', () => {
