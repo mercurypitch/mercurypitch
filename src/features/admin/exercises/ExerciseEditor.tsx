@@ -142,9 +142,13 @@ interface PendingExampleAudioFile {
   buffer: AudioBuffer
   durationMs: number
   clipStartMs: number
+  origin: 'file' | 'recording'
 }
 
-const EXAMPLE_RECORDING_LIMIT_MS = 5000
+type RecordingDurationChoice = 5 | 10 | 'custom'
+
+const RECORDING_DURATION_TEMPLATES = [5, 10] as const
+const MAX_EXAMPLE_RECORDING_SECONDS = 15
 const RECORDER_MIME_TYPES = [
   'audio/mp4;codecs=mp4a.40.2',
   'audio/webm;codecs=opus',
@@ -168,8 +172,174 @@ const recordingExtension = (mimeType: string): string => {
   return 'webm'
 }
 
-const recordingTimeLabel = (durationMs: number): string =>
-  `${(durationMs / 1000).toFixed(1)} / 5.0 s`
+const recordingTimeLabel = (durationMs: number, limitMs: number): string =>
+  `${(durationMs / 1000).toFixed(1)} / ${(limitMs / 1000).toFixed(1)} s`
+
+const recordingSecondsLabel = (durationMs: number): string =>
+  (durationMs / 1000).toFixed(durationMs % 1000 === 0 ? 0 : 1)
+
+export const getExerciseRecordingLimitMs = (
+  choice: RecordingDurationChoice,
+  customSeconds = MAX_EXAMPLE_RECORDING_SECONDS,
+): number => {
+  const seconds = choice === 'custom' ? customSeconds : choice
+  return Math.round(
+    Math.min(
+      MAX_EXAMPLE_RECORDING_SECONDS,
+      Math.max(1, Number.isFinite(seconds) ? seconds : 5),
+    ) * 1000,
+  )
+}
+
+export const shouldAutoUploadPreparedExampleAudio = (
+  origin: PendingExampleAudioFile['origin'],
+  durationMs: number,
+): boolean => origin === 'file' && durationMs <= GUIDED_EXAMPLE_CLIP_MS
+
+interface ExerciseRecordingControlsProps {
+  activeLimitMs: number
+  available: boolean
+  customSeconds: number
+  durationChoice: RecordingDurationChoice
+  elapsedMs: number
+  hasExistingAudio: boolean
+  phase: RecordingPhase
+  readOnly: boolean
+  selectedLimitMs: number
+  transcriptReady: boolean
+  onCancel: () => void
+  onCustomSecondsChange: (seconds: number) => void
+  onDurationChoiceChange: (choice: RecordingDurationChoice) => void
+  onStart: () => void
+  onStop: () => void
+}
+
+const ExerciseRecordingControls: Component<ExerciseRecordingControlsProps> = (
+  props,
+) => {
+  const displayedLimitMs = (): number =>
+    props.phase === 'idle' ? props.selectedLimitMs : props.activeLimitMs
+
+  return (
+    <div class={styles.recordingTake} data-phase={props.phase}>
+      <div class={styles.recordingStatus} aria-live="polite">
+        <span aria-hidden="true" />
+        <strong>
+          {props.phase === 'acquiring'
+            ? 'Opening microphone'
+            : props.phase === 'recording'
+              ? 'Recording example'
+              : props.phase === 'preparing'
+                ? 'Preparing review'
+                : 'Record from microphone'}
+        </strong>
+        <output>
+          {recordingTimeLabel(props.elapsedMs, displayedLimitMs())}
+        </output>
+      </div>
+      <div class={styles.recordingDuration}>
+        <span>Capture window</span>
+        <div
+          class={styles.recordingTemplates}
+          role="group"
+          aria-label="Recording length"
+        >
+          <For each={RECORDING_DURATION_TEMPLATES}>
+            {(seconds) => (
+              <button
+                type="button"
+                aria-pressed={props.durationChoice === seconds}
+                disabled={props.readOnly || props.phase !== 'idle'}
+                onClick={() => props.onDurationChoiceChange(seconds)}
+              >
+                {seconds} sec
+              </button>
+            )}
+          </For>
+          <button
+            type="button"
+            aria-pressed={props.durationChoice === 'custom'}
+            disabled={props.readOnly || props.phase !== 'idle'}
+            onClick={() => props.onDurationChoiceChange('custom')}
+          >
+            Custom
+          </button>
+        </div>
+        <Show when={props.durationChoice === 'custom'}>
+          <label class={styles.customRecordingDuration}>
+            <span>Custom seconds</span>
+            <input
+              type="number"
+              min="1"
+              max={MAX_EXAMPLE_RECORDING_SECONDS}
+              step="1"
+              value={props.customSeconds}
+              disabled={props.readOnly || props.phase !== 'idle'}
+              onInput={(event) => {
+                const seconds = event.currentTarget.valueAsNumber
+                props.onCustomSecondsChange(
+                  Math.min(
+                    MAX_EXAMPLE_RECORDING_SECONDS,
+                    Math.max(1, Number.isFinite(seconds) ? seconds : 5),
+                  ),
+                )
+              }}
+            />
+            <small>1–15 seconds</small>
+          </label>
+        </Show>
+      </div>
+      <div
+        class={styles.recordingProgress}
+        role="progressbar"
+        aria-label="Example recording duration"
+        aria-valuemin="0"
+        aria-valuemax={displayedLimitMs()}
+        aria-valuenow={Math.round(props.elapsedMs)}
+      >
+        <span
+          style={{
+            width: `${Math.min(100, (props.elapsedMs / displayedLimitMs()) * 100)}%`,
+          }}
+        />
+      </div>
+      <div class={styles.recordingActions}>
+        <button
+          type="button"
+          classList={{
+            [styles.stopRecording]: props.phase === 'recording',
+          }}
+          disabled={
+            props.phase === 'preparing' ||
+            (props.phase !== 'recording' &&
+              props.phase !== 'acquiring' &&
+              (props.readOnly || !props.transcriptReady))
+          }
+          onClick={() => {
+            if (props.phase === 'recording') props.onStop()
+            else if (props.phase === 'acquiring') props.onCancel()
+            else props.onStart()
+          }}
+        >
+          {props.phase === 'recording'
+            ? 'Stop and review recording'
+            : props.phase === 'acquiring'
+              ? 'Cancel microphone request'
+              : props.hasExistingAudio
+                ? `Record ${recordingSecondsLabel(props.selectedLimitMs)}-second replacement`
+                : `Record ${recordingSecondsLabel(props.selectedLimitMs)}-second example`}
+        </button>
+        <small>
+          {!props.available
+            ? 'Direct recording is not supported in this browser.'
+            : !props.transcriptReady
+              ? 'Enter the transcript above before recording.'
+              : `Stops automatically at ${recordingSecondsLabel(displayedLimitMs())} seconds, then opens review and trim controls.`}
+        </small>
+      </div>
+    </div>
+  )
+}
 
 export function isExerciseEditorBusy(
   hasLocalAction: boolean,
@@ -189,6 +359,15 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
   const [recordingPhase, setRecordingPhase] =
     createSignal<RecordingPhase>('idle')
   const [recordingElapsedMs, setRecordingElapsedMs] = createSignal(0)
+  const [recordingDurationChoice, setRecordingDurationChoice] =
+    createSignal<RecordingDurationChoice>(5)
+  const [customRecordingSeconds, setCustomRecordingSeconds] = createSignal(15)
+  const selectedRecordingLimitMs = createMemo(() =>
+    getExerciseRecordingLimitMs(
+      recordingDurationChoice(),
+      customRecordingSeconds(),
+    ),
+  )
   const [pendingExampleAudioFile, setPendingExampleAudioFile] =
     createSignal<PendingExampleAudioFile | null>(null)
   const [audioDropActive, setAudioDropActive] = createSignal(false)
@@ -210,6 +389,7 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
   let recordingElapsedTimer: number | undefined
   let discardRecording = false
   let disposed = false
+  let activeRecordingLimitMs = 5_000
   let recordingUploadContext: ExampleAudioUploadContext | null = null
 
   const inOwner = (callback: () => void): void => {
@@ -337,7 +517,11 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
         callback,
         value: {
           ...value,
-          exampleAudio: { ...exampleAudio, transcript: transcript.trim() },
+          exampleAudio: {
+            ...exampleAudio,
+            transcript: transcript.trim(),
+            ...(pending.origin === 'recording' ? { source: 'coach' } : {}),
+          },
         },
         onChange,
       },
@@ -369,12 +553,15 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
     )
   }
 
-  const selectExampleAudioFile = (file: File): void => {
-    const callback = props.onExampleAudioFile
-    if (readOnly() || callback === undefined) return
+  const prepareExampleAudioFile = (
+    file: File,
+    context: ExampleAudioUploadContext,
+    origin: PendingExampleAudioFile['origin'],
+  ): void => {
     const request = ++fileSelectionRequest
-    const value = props.value
-    const onChange = props.onChange
+    const callback = context.callback
+    const value = context.value
+    const onChange = context.onChange
     const transcript = value.exampleAudio?.transcript ?? ''
     setAudioDropActive(false)
     setAudioError(null)
@@ -389,9 +576,11 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
             buffer: decoded.buffer,
             durationMs: decoded.durationMs,
             clipStartMs: 0,
+            origin,
           }
           setPendingExampleAudioFile(pending)
           setLocalAction(null)
+          if (origin === 'recording') setRecordingPhase('idle')
           // Mark the editor dirty so its existing navigation guard also
           // protects this local, not-yet-uploaded file selection.
           onChange(value)
@@ -399,7 +588,9 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
             exampleTranscriptInput?.focus()
             return
           }
-          if (decoded.durationMs <= GUIDED_EXAMPLE_CLIP_MS) {
+          if (
+            shouldAutoUploadPreparedExampleAudio(origin, decoded.durationMs)
+          ) {
             uploadDecodedExampleAudio(
               pending,
               transcript,
@@ -414,9 +605,20 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
         inOwner(() => {
           if (disposed || request !== fileSelectionRequest) return
           setLocalAction(null)
+          if (origin === 'recording') setRecordingPhase('idle')
           setAudioError(errorMessage(error))
         }),
       )
+  }
+
+  const selectExampleAudioFile = (file: File): void => {
+    const callback = props.onExampleAudioFile
+    if (readOnly() || callback === undefined) return
+    prepareExampleAudioFile(
+      file,
+      { callback, value: props.value, onChange: props.onChange },
+      'file',
+    )
   }
 
   const clearRecordingTimers = (): void => {
@@ -439,7 +641,7 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
     const recorder = recordingRecorder
     const uploadContext = recordingUploadContext
     const durationMs = Math.min(
-      EXAMPLE_RECORDING_LIMIT_MS,
+      activeRecordingLimitMs,
       Math.max(1, Math.round(performance.now() - recordingStartedAt)),
     )
     const recorderType = recorder?.mimeType
@@ -464,22 +666,22 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
 
     const recording = new Blob(chunks, { type: mimeType })
     setRecordingElapsedMs(durationMs)
-    setRecordingPhase('idle')
     if (recording.size === 0) {
+      setRecordingPhase('idle')
       setAudioError('The microphone recording was empty. Please try again.')
       return
     }
     if (uploadContext === null) {
+      setRecordingPhase('idle')
       setAudioError('The recording session expired. Please try again.')
       return
     }
-
     const file = new File(
       [recording],
       `zen-example-${Date.now()}.${recordingExtension(mimeType)}`,
       { type: mimeType },
     )
-    beginExampleAudioUpload(file, uploadContext, durationMs)
+    prepareExampleAudioFile(file, uploadContext, 'recording')
   }
 
   const stopExampleRecording = (): void => {
@@ -487,7 +689,7 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
     if (recorder === null || recorder.state === 'inactive') return
     setRecordingElapsedMs(
       Math.min(
-        EXAMPLE_RECORDING_LIMIT_MS,
+        activeRecordingLimitMs,
         Math.max(0, performance.now() - recordingStartedAt),
       ),
     )
@@ -516,17 +718,16 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
     }
 
     const request = ++recordingRequest
+    const limitMs = selectedRecordingLimitMs()
     setAudioError(null)
     setRecordingElapsedMs(0)
+    activeRecordingLimitMs = limitMs
     recordingUploadContext = {
       callback,
-      value:
-        exampleAudio === undefined
-          ? value
-          : {
-              ...value,
-              exampleAudio: { ...exampleAudio, source: 'coach' },
-            },
+      value: {
+        ...value,
+        exampleAudio: { ...exampleAudio, source: 'coach' },
+      },
       onChange: props.onChange,
     }
     setRecordingPhase('acquiring')
@@ -574,17 +775,14 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
             () =>
               inOwner(() => {
                 setRecordingElapsedMs(
-                  Math.min(
-                    EXAMPLE_RECORDING_LIMIT_MS,
-                    performance.now() - recordingStartedAt,
-                  ),
+                  Math.min(limitMs, performance.now() - recordingStartedAt),
                 )
               }),
             100,
           )
           recordingStopTimer = window.setTimeout(
             () => inOwner(stopExampleRecording),
-            EXAMPLE_RECORDING_LIMIT_MS,
+            limitMs,
           )
         }),
       )
@@ -1263,7 +1461,10 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                             const pending = pendingExampleAudioFile()
                             if (
                               pending !== null &&
-                              pending.durationMs <= GUIDED_EXAMPLE_CLIP_MS
+                              shouldAutoUploadPreparedExampleAudio(
+                                pending.origin,
+                                pending.durationMs,
+                              )
                             ) {
                               uploadPendingExampleAudio(
                                 event.currentTarget.value,
@@ -1271,11 +1472,14 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                             }
                           }}
                           onKeyDown={(event) => {
+                            const pending = pendingExampleAudioFile()
                             if (
                               event.key === 'Enter' &&
-                              pendingExampleAudioFile() !== null &&
-                              pendingExampleAudioFile()!.durationMs <=
-                                GUIDED_EXAMPLE_CLIP_MS &&
+                              pending !== null &&
+                              shouldAutoUploadPreparedExampleAudio(
+                                pending.origin,
+                                pending.durationMs,
+                              ) &&
                               event.currentTarget.value.trim() !== ''
                             ) {
                               event.preventDefault()
@@ -1292,81 +1496,26 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                       </label>
                     </div>
                     <div class={styles.audioUpload}>
-                      <div
-                        class={styles.recordingTake}
-                        data-phase={recordingPhase()}
-                      >
-                        <div class={styles.recordingStatus} aria-live="polite">
-                          <span aria-hidden="true" />
-                          <strong>
-                            {recordingPhase() === 'acquiring'
-                              ? 'Opening microphone'
-                              : recordingPhase() === 'recording'
-                                ? 'Recording example'
-                                : recordingPhase() === 'preparing'
-                                  ? 'Preparing upload'
-                                  : 'Record from microphone'}
-                          </strong>
-                          <output>
-                            {recordingTimeLabel(recordingElapsedMs())}
-                          </output>
-                        </div>
-                        <div
-                          class={styles.recordingProgress}
-                          role="progressbar"
-                          aria-label="Example recording duration"
-                          aria-valuemin="0"
-                          aria-valuemax={EXAMPLE_RECORDING_LIMIT_MS}
-                          aria-valuenow={Math.round(recordingElapsedMs())}
-                        >
-                          <span
-                            style={{
-                              width: `${Math.min(100, (recordingElapsedMs() / EXAMPLE_RECORDING_LIMIT_MS) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <div class={styles.recordingActions}>
-                          <button
-                            type="button"
-                            classList={{
-                              [styles.stopRecording]:
-                                recordingPhase() === 'recording',
-                            }}
-                            disabled={
-                              recordingPhase() === 'preparing' ||
-                              (recordingPhase() !== 'recording' &&
-                                recordingPhase() !== 'acquiring' &&
-                                (readOnly() ||
-                                  audio().transcript.trim() === '' ||
-                                  props.onExampleAudioFile === undefined))
-                            }
-                            onClick={() => {
-                              if (recordingPhase() === 'recording') {
-                                stopExampleRecording()
-                              } else if (recordingPhase() === 'acquiring') {
-                                cancelExampleRecording(true)
-                              } else {
-                                startExampleRecording()
-                              }
-                            }}
-                          >
-                            {recordingPhase() === 'recording'
-                              ? 'Stop and use recording'
-                              : recordingPhase() === 'acquiring'
-                                ? 'Cancel microphone request'
-                                : audio().src.trim() === ''
-                                  ? 'Record 5-second example'
-                                  : 'Record replacement'}
-                          </button>
-                          <small>
-                            {!directRecordingAvailable()
-                              ? 'Direct recording is not supported in this browser.'
-                              : audio().transcript.trim() === ''
-                                ? 'Enter the transcript above before recording.'
-                                : 'Stops automatically at five seconds.'}
-                          </small>
-                        </div>
-                      </div>
+                      <ExerciseRecordingControls
+                        activeLimitMs={activeRecordingLimitMs}
+                        available={directRecordingAvailable()}
+                        customSeconds={customRecordingSeconds()}
+                        durationChoice={recordingDurationChoice()}
+                        elapsedMs={recordingElapsedMs()}
+                        hasExistingAudio={audio().src.trim() !== ''}
+                        phase={recordingPhase()}
+                        readOnly={readOnly()}
+                        selectedLimitMs={selectedRecordingLimitMs()}
+                        transcriptReady={
+                          audio().transcript.trim() !== '' &&
+                          props.onExampleAudioFile !== undefined
+                        }
+                        onCancel={() => cancelExampleRecording(true)}
+                        onCustomSecondsChange={setCustomRecordingSeconds}
+                        onDurationChoiceChange={setRecordingDurationChoice}
+                        onStart={startExampleRecording}
+                        onStop={stopExampleRecording}
+                      />
                       <div class={styles.audioFileChoice}>
                         <div
                           class={styles.audioDropZone}
@@ -1493,7 +1642,10 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                               {(pendingExampleAudioFile()?.durationMs ?? 0) >
                               GUIDED_EXAMPLE_CLIP_MS
                                 ? 'Use selected 5-second clip'
-                                : 'Upload file'}
+                                : pendingExampleAudioFile()?.origin ===
+                                    'recording'
+                                  ? 'Use recording'
+                                  : 'Upload file'}
                             </button>
                             <button
                               type="button"
@@ -1512,7 +1664,10 @@ export const ExerciseEditor: Component<ExerciseEditorProps> = (props) => {
                               : (pendingExampleAudioFile()?.durationMs ?? 0) >
                                   GUIDED_EXAMPLE_CLIP_MS
                                 ? 'Choose where the five-second pronunciation example starts, then use the selected clip.'
-                                : 'The file is ready to upload as a normalized mono clip.'}
+                                : pendingExampleAudioFile()?.origin ===
+                                    'recording'
+                                  ? 'Review the captured duration, then use the recording or discard it and try again.'
+                                  : 'The file is ready to upload as a normalized mono clip.'}
                           </small>
                         </div>
                         <p>
