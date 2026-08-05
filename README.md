@@ -29,9 +29,9 @@ Sing with timed lyrics and pitch cues, then slip into a distraction-free Zen sta
 
 ### Practice foundations
 
-| Singing practice                                                         | Piano roll editor                                                       |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| ![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg) | ![MercuryPitch Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg) |
+| Singing practice                                                         | Piano practice                                                           |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| ![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg) | ![MercuryPitch Piano Practice](assets/BasicMelodyPractice_Piano.jpg)      |
 
 ## Features
 
@@ -169,6 +169,8 @@ The capture utility creates repeatable product screenshots and a small provenanc
 # With the normal local development server running on port 3000
 pnpm marketing:capture -- --recipe karaoke-zen --base-url http://127.0.0.1:3000
 pnpm marketing:capture -- --recipe voice-mirror --profile freddie --base-url http://127.0.0.1:3000
+pnpm marketing:capture -- --recipe singing-practice --base-url http://127.0.0.1:3000
+pnpm marketing:capture -- --recipe piano-practice --base-url http://127.0.0.1:3000
 
 # Jam's deterministic Ada + Bo preview needs a mock-signaling dev server
 VITE_JAM_MOCK_SIGNALING=1 VITE_DEV_PORT=3001 pnpm dev --host 127.0.0.1

@@ -6,7 +6,8 @@
 // consumes the resulting manifest and never needs to know how MercuryPitch is
 // staged. Captures are intentionally localhost-only and use synthetic/demo
 // state so marketing work cannot accidentally read production or personal data.
-// Recipes: karaoke-zen, jam-karaoke, voice-mirror.
+// Recipes: karaoke-zen, jam-karaoke, piano-practice, singing-practice,
+// voice-mirror.
 // Usage: pnpm marketing:capture -- --recipe <recipe> [options]
 
 import { createHash } from 'node:crypto'
@@ -87,7 +88,14 @@ if (
 }
 
 const recipe = values.recipe
-if (!['jam-karaoke', 'karaoke-zen', 'voice-mirror'].includes(recipe)) {
+const recipes = new Set([
+  'jam-karaoke',
+  'karaoke-zen',
+  'piano-practice',
+  'singing-practice',
+  'voice-mirror',
+])
+if (!recipes.has(recipe)) {
   throw new Error(`Unknown recipe: ${recipe}`)
 }
 const mirrorProfiles = new Set(['freddie'])
@@ -95,8 +103,11 @@ const profile = values.profile
 if (recipe === 'voice-mirror' && !mirrorProfiles.has(profile)) {
   throw new Error(`Unknown Voice Mirror profile: ${profile}`)
 }
-if (recipe === 'voice-mirror' && values.background !== undefined) {
-  throw new Error('Voice Mirror capture does not accept a background override')
+if (
+  !['jam-karaoke', 'karaoke-zen'].includes(recipe) &&
+  values.background !== undefined
+) {
+  throw new Error(`${recipe} capture does not accept a background override`)
 }
 
 // A deterministic capture-only target melody. Jam shows these as denoised
@@ -133,6 +144,8 @@ const syntheticPitchGuides = (() => {
 // Capture-only lyrics. They are deliberately original rather than a bundled
 // copy of the demo song's lyric sheet; the screenshot needs stable timing and
 // assignment rows, not a network dependency or a claim about the recording.
+const captureDemoTitle = 'Violet Light'
+const captureDemoArtist = 'MercuryPitch Demo'
 const captureDemoLrc = `[00:00.00]The room wakes up in violet light
 [00:08.00]A quiet count rolls through the air
 [00:16.00]Ada takes the opening line
@@ -334,13 +347,13 @@ if (recipe === 'karaoke-zen' || recipe === 'jam-karaoke') {
     lyrics: new URL('lyrics.lrc', captureRoot).toString(),
   }
   const captureManifest = {
-    title: 'Goodbye to Spring',
-    artist: 'Josh Woodward',
+    title: captureDemoTitle,
+    artist: captureDemoArtist,
     attribution: {
-      text: 'Music: "Goodbye to Spring" by Josh Woodward',
-      url: 'https://www.joshwoodward.com/song/GoodbyeToSpring',
-      license: 'CC BY 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      text: '',
+      url: '',
+      license: '',
+      licenseUrl: '',
     },
     stems: {
       vocal: captureUrls.vocal,
@@ -436,10 +449,7 @@ try {
     }
 
     await stage.waitFor({ state: 'visible' })
-    await page
-      .getByText('Goodbye to Spring', { exact: false })
-      .first()
-      .waitFor()
+    await page.getByText(captureDemoTitle, { exact: false }).first().waitFor()
     await page.waitForTimeout(1800)
 
     const pause = stage.getByRole('button', { name: /^pause$/i })
@@ -484,11 +494,11 @@ try {
     await unmuteMicrophone.click()
     await page.getByRole('button', { name: 'Choose a drill or a song' }).click()
     const demoSong = page.getByRole('button', {
-      name: /Goodbye to Spring/i,
+      name: new RegExp(captureDemoTitle, 'i'),
     })
     await demoSong.waitFor({ state: 'visible' })
     await demoSong.click()
-    await page.getByText('Josh Woodward', { exact: false }).first().waitFor()
+    await page.getByText(captureDemoArtist, { exact: false }).first().waitFor()
 
     const paintLines = async (singer, fromLine, toLine) => {
       await page.getByRole('button', { name: singer, exact: true }).click()
@@ -545,6 +555,38 @@ try {
       }
     })
     await page.waitForTimeout(500)
+  } else if (recipe === 'piano-practice') {
+    routePath = '/#/piano'
+    await gotoLocal(routePath)
+    const practiceSurface = page.locator(
+      '#falling-notes-panel, [data-testid="piano-mobile-stage"]',
+    )
+    await practiceSurface.waitFor({ state: 'visible' })
+    await practiceSurface
+      .locator('canvas')
+      .first()
+      .waitFor({ state: 'visible' })
+    await practiceSurface
+      .getByRole('button', { name: /^play$/i })
+      .first()
+      .waitFor({ state: 'visible' })
+    await page.waitForTimeout(700)
+  } else if (recipe === 'singing-practice') {
+    routePath = '/#/singing'
+    await gotoLocal(routePath)
+    const practiceSurface = page.locator(
+      '#practice-panel, [data-testid="singing-mobile-stage"]',
+    )
+    await practiceSurface.waitFor({ state: 'visible' })
+    await practiceSurface
+      .locator('canvas')
+      .first()
+      .waitFor({ state: 'visible' })
+    await practiceSurface
+      .getByRole('button', { name: /^play$/i })
+      .first()
+      .waitFor({ state: 'visible' })
+    await page.waitForTimeout(700)
   } else {
     routePath = `/mirror?demo=${encodeURIComponent(profile)}&revealed=1`
     await gotoLocal(routePath)
