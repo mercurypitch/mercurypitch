@@ -12,7 +12,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { IconCheck, IconFire, IconTarget, IconTrophy, } from '@/components/exercise-icons'
 import { InfoPopover } from '@/components/InfoPopover'
 import { DAILY_GOAL_MS, getTodayScoredMinutes, } from '@/db/services/practice-minutes'
-import { getStreakState, repairStreak } from '@/db/services/streak-service'
+import { getStreakState, MAX_FREEZES, repairStreak, STARTING_FREEZES, } from '@/db/services/streak-service'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
 import { DestinationGallery } from '@/features/home/DestinationGallery'
 import { dismissNudge, satisfyNudge, shouldShowNudge, } from '@/features/onboarding/account-nudge'
@@ -90,8 +90,21 @@ const HomePage: Component = () => {
   })
 
   async function onRepair(): Promise<void> {
-    await repairStreak()
+    const result = await repairStreak()
     void refetchStreak()
+    if (result.ok) {
+      showNotification(`Streak restored — ${result.streak} days`, 'success')
+      return
+    }
+    // Each reason gets its own sentence, because they need different things
+    // from the singer. "Not repairable" is usually the window having closed
+    // while the page sat open, and a refetch has just corrected the card.
+    showNotification(
+      result.reason === 'not-repairable'
+        ? 'That streak can no longer be repaired — the 72-hour window has passed.'
+        : 'The streak could not be repaired. Nothing was changed; try again in a moment.',
+      'error',
+    )
   }
 
   // The account nudge, gated on an earned moment: a streak of two or
@@ -179,11 +192,25 @@ const HomePage: Component = () => {
                   ? `Today counts — ${DAILY_GOAL_MIN} min sung`
                   : `${minutesToday} of ${DAILY_GOAL_MIN} min today keeps the streak`}
               </span>
+              {/* Both forgiveness paths, in the order a singer meets them.
+                  It used to describe freezes only, while the repair button sat
+                  right below it unexplained — which is how "I clicked extend
+                  and my freeze didn't disappear" happened. They are separate
+                  currencies and the card now shows one at a time. */}
               <InfoPopover label="How the streak works">
-                Sing for {DAILY_GOAL_MIN} minutes and the day counts. Miss a day
-                and a banked freeze covers it; miss one with no freeze and the
-                streak goes back to zero. Anything you practise counts —
-                sessions, exercises and challenges alike.
+                Sing for {DAILY_GOAL_MIN} minutes and the day counts. Anything
+                you practise counts — sessions, exercises and challenges alike.
+                <br />
+                <br />
+                Miss a day and a banked freeze covers it automatically, the next
+                time you sing. You start with {STARTING_FREEZES} and earn one
+                more every 30 days, up to {streak()?.maxFreezes ?? MAX_FREEZES}.
+                <br />
+                <br />
+                If a gap is longer than your freezes can cover, the streak goes
+                back to zero — and then a one-off repair can restore it for
+                free, within 72 hours, once a month. Repair is a separate
+                favour: it never spends a freeze.
               </InfoPopover>
             </div>
           </div>
@@ -212,6 +239,23 @@ const HomePage: Component = () => {
               <span class={styles.statLabel}>best streak</span>
             </div>
           </div>
+
+          {/* `atRisk` was computed by the service and read by nothing: the
+              card only spoke up AFTER the break, by offering a repair. Warning
+              first is the whole point of having freezes — a singer who knows
+              the day is still open can just sing. */}
+          <Show when={streak()?.atRisk}>
+            <div class={styles.streakRisk} role="status">
+              <span class={styles.riskIcon} aria-hidden="true">
+                <IconFire size={14} />
+              </span>
+              <span>
+                {(streak()?.freezes ?? 0) > 0
+                  ? `Your ${streak()!.currentStreak}-day streak is open today. Sing ${DAILY_GOAL_MIN} minutes to keep it, or a freeze will cover the gap.`
+                  : `Your ${streak()!.currentStreak}-day streak ends today unless you sing — no freezes left to cover it.`}
+              </span>
+            </div>
+          </Show>
 
           <Show when={(streak()?.freezes ?? 0) > 0}>
             <div class={styles.streakMeta}>

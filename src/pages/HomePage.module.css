@@ -122,6 +122,30 @@
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
+/* The warning BEFORE the break. Deliberately quieter than .repairBtn: this is
+   a nudge with the day still winnable, not an alarm. */
+.streakRisk {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--warning, #e0a33e) 40%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--warning, #e0a33e) 10%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.riskIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  /* Nudged down to sit on the first text line rather than above it. */
+  margin-top: 1px;
+  color: var(--warning, #e0a33e);
+}
+
 .repairBtn {
   margin-top: 12px;
   width: 100%;

@@ -3,11 +3,20 @@
 // ============================================================
 //
 // A day counts once the user has practiced ~5 scored minutes (the gate lives
-// in practice-minutes.ts, which calls updatePracticeStreak). Forgiveness:
+// in practice-minutes.ts, which calls updatePracticeStreak). Forgiveness comes
+// in two currencies, and the card shows one at a time:
 //   - Freezes: a short gap auto-consumes freezes instead of resetting. You
-//     earn one each time the streak crosses a multiple of 7 (cap 2).
-//   - Repair: a recently-broken streak can be restored once, free, within a
-//     72h window (once per 30 days).
+//     start with two and accrue one per thirty days waited, capped at three.
+//     Nothing the singer clicks spends one.
+//   - Repair: a streak the freezes could NOT save can be restored once, free,
+//     within a 72h window (once per 30 days). It never touches the freeze
+//     count — that separation is why both used to be on screen together, and
+//     why `computeStreakState` now keeps them apart.
+//
+// Accrual used to be "one per seven days of streak", which gave forgiveness to
+// whoever was already keeping a streak and none to whoever had just lost one.
+// It is now a clock, so an idle month accrues too — which is what
+// `lastFreezeEarnedDate` exists for.
 //
 // The date math and state transitions are pure functions (exported for tests);
 // the async wrappers just load/persist the profile row.
@@ -16,8 +25,20 @@ import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import { findOwnProfile } from '@/db/services/user-service'
 
-export const MAX_FREEZES = 2
-const FREEZE_EARN_EVERY = 7
+export const MAX_FREEZES = 3
+/**
+ * What a new singer starts with. Two, because a beginner who breaks on day
+ * three is exactly the person who never comes back, and the old rule handed
+ * them nothing: freezes accrued at streak multiples of seven, so forgiveness
+ * went to whoever was already doing well and none to whoever needed it.
+ *
+ * Applied by the profile that creates the row. Accounts that predate this are
+ * topped up once, by hand, from `scripts/grant-starting-freezes.sql` — a
+ * numbered migration is the wrong home for a one-off gift of currency.
+ */
+export const STARTING_FREEZES = 2
+/** One freeze per whole thirty days waited, banked or not. */
+const FREEZE_ACCRUAL_DAYS = 30
 const REPAIR_WINDOW_DAYS = 3 // ~72h
 const REPAIR_COOLDOWN_DAYS = 30
 
@@ -31,6 +52,13 @@ export interface StreakFields {
   previousStreak: number
   streakResetDate: string | null
   lastRepairDate: string | null
+  /**
+   * When the accrual clock last ticked — NOT when a freeze was last spent.
+   * Its own field precisely because accrual has to survive an idle month: a
+   * count derived from practice dates would only ever grow for people who
+   * practise, which is the bias this replaced.
+   */
+  lastFreezeEarnedDate: string | null
 }
 
 /** What the Home streak card renders. */
@@ -66,20 +94,52 @@ export function streakFieldsOf(
   return {
     currentStreak: p?.currentStreak ?? 0,
     longestStreak: p?.longestStreak ?? p?.currentStreak ?? 0,
-    streakFreezes: p?.streakFreezes ?? 0,
+    // `STARTING_FREEZES`, not zero: a profile with no stored count is one
+    // nobody has spent from yet. Accounts that stored a literal 0 under the
+    // old rules are a separate, one-time concern — see the release script
+    // named on the constant.
+    streakFreezes: p?.streakFreezes ?? STARTING_FREEZES,
     lastPracticeDate: p?.lastPracticeDate ?? null,
     lastFreezeUsedDate: p?.lastFreezeUsedDate ?? null,
     previousStreak: p?.previousStreak ?? 0,
     streakResetDate: p?.streakResetDate ?? null,
     lastRepairDate: p?.lastRepairDate ?? null,
+    lastFreezeEarnedDate: p?.lastFreezeEarnedDate ?? null,
   }
 }
 
-function earnFreezeIfMilestone(streak: number, freezes: number): number {
-  if (streak > 0 && streak % FREEZE_EARN_EVERY === 0) {
-    return Math.min(MAX_FREEZES, freezes + 1)
+/** `days` after a YYYY-MM-DD date, as YYYY-MM-DD. */
+function addDays(date: string, days: number): string {
+  const t = Date.parse(`${date}T00:00:00Z`)
+  if (Number.isNaN(t)) return date
+  return new Date(t + days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * Bank whatever the clock owes. Pure, and safe to call on every read: it is
+ * a function of the stored anchor and today, so calling it twice in a day
+ * grants nothing the second time.
+ *
+ * Time spent at the cap is spent, not banked — the anchor advances by the
+ * periods that elapsed whether or not the count could take them. Otherwise a
+ * singer sitting at three for half a year would spend one and be handed six
+ * back, which is not a cap.
+ */
+export function accrueFreezes(f: StreakFields, today: string): StreakFields {
+  const anchor = f.lastFreezeEarnedDate
+  // No clock yet: start it, and grant nothing. A profile created this morning
+  // has not waited a month, and `STARTING_FREEZES` is what covers day one.
+  if (anchor === null || anchor === '') {
+    return { ...f, lastFreezeEarnedDate: today }
   }
-  return freezes
+  const elapsed = daysBetween(anchor, today)
+  if (!Number.isFinite(elapsed) || elapsed < FREEZE_ACCRUAL_DAYS) return f
+  const periods = Math.floor(elapsed / FREEZE_ACCRUAL_DAYS)
+  return {
+    ...f,
+    streakFreezes: Math.min(MAX_FREEZES, f.streakFreezes + periods),
+    lastFreezeEarnedDate: addDays(anchor, periods * FREEZE_ACCRUAL_DAYS),
+  }
 }
 
 /**
@@ -87,7 +147,15 @@ function earnFreezeIfMilestone(streak: number, freezes: number): number {
  * next StreakFields. Handles first-ever, same-day (idempotent), yesterday,
  * and gap (freeze-bridge or reset-with-snapshot).
  */
-export function advanceStreak(f: StreakFields, today: string): StreakFields {
+export function advanceStreak(
+  fields: StreakFields,
+  today: string,
+): StreakFields {
+  // Accrue FIRST, deliberately. The gap being bridged is itself time waited,
+  // so a singer coming back after five weeks should spend the freeze that
+  // waiting earned them — settling up afterwards would let the same absence
+  // break the streak and then pay for it.
+  const f = accrueFreezes(fields, today)
   const last = f.lastPracticeDate
   if (last === null || last === '') {
     const currentStreak = 1
@@ -101,7 +169,8 @@ export function advanceStreak(f: StreakFields, today: string): StreakFields {
 
   const gap = daysBetween(last, today)
 
-  // Already counted today — idempotent.
+  // Already counted today — idempotent for the streak, though an accrual that
+  // came due today still has to be kept.
   if (gap <= 0) return f
 
   if (gap === 1) {
@@ -109,7 +178,6 @@ export function advanceStreak(f: StreakFields, today: string): StreakFields {
     return {
       ...f,
       currentStreak,
-      streakFreezes: earnFreezeIfMilestone(currentStreak, f.streakFreezes),
       longestStreak: Math.max(f.longestStreak, currentStreak),
       lastPracticeDate: today,
     }
@@ -120,11 +188,10 @@ export function advanceStreak(f: StreakFields, today: string): StreakFields {
   if (f.streakFreezes >= missedDays) {
     // Freezes bridge the gap — streak survives, freezes consumed.
     const currentStreak = f.currentStreak + 1
-    const afterConsume = f.streakFreezes - missedDays
     return {
       ...f,
       currentStreak,
-      streakFreezes: earnFreezeIfMilestone(currentStreak, afterConsume),
+      streakFreezes: f.streakFreezes - missedDays,
       lastFreezeUsedDate: today,
       longestStreak: Math.max(f.longestStreak, currentStreak),
       lastPracticeDate: today,
@@ -143,9 +210,13 @@ export function advanceStreak(f: StreakFields, today: string): StreakFields {
 
 /** Pure read model for the streak card — never mutates. */
 export function computeStreakState(
-  f: StreakFields,
+  fields: StreakFields,
   today: string,
 ): StreakState {
+  // The card must show what the singer HAS, and an accrual that came due
+  // while they were away is theirs before they next practise. Pure: this
+  // reports the number, `advanceStreak` is what persists it.
+  const f = accrueFreezes(fields, today)
   const last = f.lastPracticeDate
   const gap = last !== null && last !== '' ? daysBetween(last, today) : null
 
@@ -190,8 +261,28 @@ export function computeStreakState(
 
   const repairableStreak =
     (hasRecordedReset ? f.previousStreak : f.currentStreak) + 1
+
+  // ONE forgiveness path at a time. Two of them on screen together is what
+  // made this confusing: freezes are spent for you, repair is a button, and a
+  // card offering both invited the reasonable guess that the button spends a
+  // freeze — it does not, and `applyRepair` never touches the count.
+  //
+  // The dividing line is whether the freezes can still save THIS streak, not
+  // whether the singer happens to hold any. `hasPendingBreak` already requires
+  // `gap - 1 > streakFreezes`, so it only fires on a gap the freezes cannot
+  // bridge; `atRisk` covers the case where they can. What is added here is the
+  // same exclusivity for a break already recorded.
+  //
+  // Note this is NOT "offer repair only when freezes are empty", which is the
+  // shorter rule and the wrong one: two freezes cannot bridge three missed
+  // days, so a literal reading would strand a broken streak next to two
+  // freezes that can no longer help it — and with a start of two and monthly
+  // accrual, most singers hold one most of the time, which would delete
+  // repair rather than sequence it.
+  const freezesProtectStreak = atRisk && f.streakFreezes > 0
   const canRepair =
     cooldownOk &&
+    !freezesProtectStreak &&
     (hasRecordedReset || hasPendingBreak) &&
     repairableStreak > displayStreak
 
@@ -207,8 +298,17 @@ export function computeStreakState(
   }
 }
 
-/** Pure repair transition — restores the streak and counts today. */
-export function applyRepair(f: StreakFields, today: string): StreakFields {
+/**
+ * Pure repair transition — restores the streak and counts today.
+ *
+ * Deliberately does NOT spend a freeze. Repair is the other path, not a
+ * second way to spend the same currency; `computeStreakState` is what keeps
+ * the two from being offered at once.
+ */
+export function applyRepair(fields: StreakFields, today: string): StreakFields {
+  // Same accrual the card just showed, so a repair does not silently discard
+  // a freeze that came due today.
+  const f = accrueFreezes(fields, today)
   const state = computeStreakState(f, today)
   if (!state.canRepair) return f
   const currentStreak = state.repairableStreak
@@ -234,6 +334,7 @@ function streakPatch(f: StreakFields): Partial<UserProfile> {
     previousStreak: f.previousStreak,
     streakResetDate: f.streakResetDate,
     lastRepairDate: f.lastRepairDate,
+    lastFreezeEarnedDate: f.lastFreezeEarnedDate,
   }
 }
 
@@ -270,22 +371,37 @@ export async function getStreakState(): Promise<StreakState> {
   }
 }
 
-/** Repair a recently-broken streak. Returns the restored streak, or 0. */
-export async function repairStreak(): Promise<number> {
+/**
+ * Why a repair did not happen, when it did not.
+ *
+ * It used to return `0` for all three of "no profile", "not repairable" and
+ * "the write threw", which the caller could not tell apart from each other or
+ * from a genuinely repaired streak of zero — so a click that did nothing
+ * looked exactly like one that worked. A repair is offered once every thirty
+ * days; failing it silently is the worst place to be quiet.
+ */
+export type RepairResult =
+  | { ok: true; streak: number }
+  | { ok: false; reason: 'no-profile' | 'not-repairable' | 'error' }
+
+/** Repair a recently-broken streak. */
+export async function repairStreak(): Promise<RepairResult> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserProfile>('userProfiles')
     const profile = await findOwnProfile(repo)
-    if (profile === undefined) return 0
+    if (profile === undefined) return { ok: false, reason: 'no-profile' }
 
     const today = todayDateString()
     const fields = streakFieldsOf(profile)
-    if (!computeStreakState(fields, today).canRepair) return 0
+    if (!computeStreakState(fields, today).canRepair) {
+      return { ok: false, reason: 'not-repairable' }
+    }
     const next = applyRepair(fields, today)
     await repo.update(profile.id, streakPatch(next))
-    return next.currentStreak
+    return { ok: true, streak: next.currentStreak }
   } catch {
-    return 0
+    return { ok: false, reason: 'error' }
   }
 }
 
