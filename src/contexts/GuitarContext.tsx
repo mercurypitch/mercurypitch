@@ -30,7 +30,10 @@ import { buildChordToneMidis } from '@/lib/guitar/chord-utils'
 import { DrumMachine } from '@/lib/guitar/drum-machine'
 import { midiToFreq } from '@/lib/scale-data'
 import { KEY_OFFSETS, SCALE_DEFINITIONS } from '@/lib/scale-data'
-import { activeTab as activeTabSignal } from '@/stores'
+import { setMicActive } from '@/stores/mic-store'
+import { updateMidiSongSelection } from '@/stores/saved-midi-songs-store'
+import { countIn } from '@/stores/transport-store'
+import { activeTab as activeTabSignal } from '@/stores/ui-store'
 
 export interface GuitarFretboardState {
   guitarView: Accessor<'interactive' | 'hero' | '3d'>
@@ -85,7 +88,12 @@ export function GuitarProvider(props: { children: JSX.Element }) {
   const [drumBpm, setDrumBpm] = createSignal(drumMachine.bpm)
   drumMachine.onChange(() => setDrumBpm(drumMachine.bpm))
 
-  const guitar = useGuitarPracticeController(audioEngine)
+  const guitar = useGuitarPracticeController({
+    audioEngine,
+    countIn,
+    setMicActive,
+    updateMidiSongSelection,
+  })
 
   const [guitarView, setGuitarView] = createSignal<
     'interactive' | 'hero' | '3d'

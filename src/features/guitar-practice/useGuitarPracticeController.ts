@@ -15,9 +15,7 @@ import { NOTE_NAMES } from '@/lib/note-utils'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToFreq } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
-import { countIn, setMicActive } from '@/stores'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
-import { updateMidiSongSelection } from '@/stores/saved-midi-songs-store'
 
 export interface GuitarGameState {
   idle: 'idle'
@@ -131,7 +129,25 @@ export interface GuitarHitResult {
 export type GuitarMicOwner = 'manual' | 'interactive-auto'
 const GUITAR_AUDIO_MIC_OWNER = 'guitar-controller'
 
-export function useGuitarPracticeController(audioEngine: AudioEngine) {
+/** Host ports keep the shared Guitar controller independent from App stores. */
+export interface GuitarPracticeControllerDeps {
+  audioEngine: AudioEngine
+  countIn: () => number
+  setMicActive: (active: boolean) => void
+  updateMidiSongSelection: (
+    id: string,
+    scoreTrackId: string,
+    backingTrackIds: string[],
+  ) => void
+}
+
+export function useGuitarPracticeController(
+  deps: GuitarPracticeControllerDeps,
+) {
+  const audioEngine = deps.audioEngine
+  const countIn = deps.countIn
+  const setMicActive = deps.setMicActive
+  const updateMidiSongSelection = deps.updateMidiSongSelection
   const [fallingNotes, setFallingNotes] = createSignal<GuitarNote[]>([])
   // Untransposed source notes; `fallingNotes` is derived from these + transpose.
   const [baseNotes, setBaseNotes] = createSignal<GuitarNote[]>([])
