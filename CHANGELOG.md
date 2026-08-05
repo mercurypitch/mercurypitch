@@ -31,6 +31,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Seven more legends to be matched with.** Michael Jackson, Prince, Luciano
+  Pavarotti, Aretha Franklin, Louis Armstrong, Nina Simone and Ariana Grande
+  join the voice-twin roster, each with their own portrait in the same
+  constellation style. Every voice type now has at least three legends behind
+  it instead of two, so the twin you're shown is far less of a coin flip.
+- **A way back to saving your voiceprint.** If you close the account form
+  during the intro — deliberately or by a stray click — the map screen now
+  carries a quiet line offering it again, rather than leaving the only route
+  through your profile settings.
 - **Drum kit mode in Compose.** A new Melody / Drums switch in the Compose
   header turns the piano roll into a 12-lane drum machine — kick, snare,
   sidestick, clap, three hats, three toms, crash and ride, each mapped to its

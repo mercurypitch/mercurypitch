@@ -58,6 +58,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Seven more legend portraits** (`LegendCaricature.tsx`, `singer-match.ts`,
+  `public/legends/`): Michael Jackson, Prince, Luciano Pavarotti, Aretha
+  Franklin, Louis Armstrong, Nina Simone, Ariana Grande — Style A masters
+  (928x1152) plus authored vector fallbacks, and `pnpm assets:legends`
+  regenerated `thumbs/`/`mid/` for all 21. Every voice type now has >= 3
+  legends (Bass/Alto/Mezzo/Soprano were pairs, Tenor was a pair);
+  `singerForVoiceType` seeds off the detected range, so a two-name roster
+  made the twin close to a coin flip. `SINGERS_BY_VOICE_TYPE` is now
+  exported and `singer-match.test.ts` imports it rather than restating it —
+  the old copy meant a roster change passed a suite asserting the old list.
+  New assertions: >= 3 per type, no name under two types, every legend
+  reachable across consecutive seeds, and a `LEGENDS[name].imageSrc` for
+  every roster entry (a missing one silently fell back to the generic bust).
+- **`webpSize` reads VP8X and VP8L** (`scripts/gen-legend-tiers.mjs`): a
+  master converted without `magick -strip` keeps generator metadata, and
+  metadata forces the extended VP8X container — the simple-`VP8 `-only
+  reader threw on the new portraits instead of measuring them. All 21
+  masters re-encoded stripped, so the repo is uniform, and the parser now
+  handles all three variants regardless.
+- **Map beat account recovery** (`BeatMap.tsx`, `FirstLight.tsx`): optional
+  `onKeep`, passed only when `voiceprint() !== null && !accountHeld()`.
+  Deliberately NOT gated on `shouldShowNudge` — the quiet period exists to
+  stop the offer re-asking, and this is the way back for somebody who just
+  closed the form, which is exactly when a quiet period would hide it.
+  `handleReopenAccount` does not `advanceBeat()` (the Map is the last beat),
+  and `accountHeld` is reactive so the line disappears on sign-in.
 - **Compose drum kit mode**: per-melody `kind: 'melody' | 'drums'`
   (`MelodyData`, absent = melody, legacy-safe) with a header segmented
   control (`data-tour="compose.kind"`). Drum lanes are plain `ScaleDegree`
