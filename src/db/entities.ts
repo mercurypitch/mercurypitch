@@ -22,6 +22,12 @@ export interface UserProfile extends DbEntity {
   /** Unspent streak freezes; a 1-day gap auto-consumes one instead of resetting. */
   streakFreezes?: number
   lastFreezeUsedDate?: string | null // YYYY-MM-DD
+  /**
+   * When the accrual clock last ticked — one freeze per thirty days waited,
+   * so an idle month still earns one. Distinct from `lastFreezeUsedDate`,
+   * which is when one was spent.
+   */
+  lastFreezeEarnedDate?: string | null // YYYY-MM-DD
   /** Streak value just before the most recent reset — restorable via repair. */
   previousStreak?: number
   /** When the streak last reset to 1 (drives the 72h repair window). */
