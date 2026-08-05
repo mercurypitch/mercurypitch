@@ -355,6 +355,24 @@ db:seed:weekly`): five consecutive weeks, week one `active` and weeks
 
 ### Changed
 
+- **`Sheet` portals to `document.body`** (`src/components/mobile/Sheet.tsx`).
+  It rendered in place, justified in its own header by "a `position: fixed`
+  box escapes to the viewport anyway — StageShell has no transform/filter".
+  Verified against one caller, false for the rest: `position: fixed` is
+  viewport-relative only while no ancestor creates a containing block or clip,
+  and `transform` / `filter` / `backdrop-filter` / `will-change` / `contain` /
+  `overflow` all can. JamPanel is blurred glass over a photographic room
+  inside `.mainArea { overflow: hidden }`, so the song picker opened as a
+  squashed, uninteractable band pinned to `.transportRow` on a phone. Fixing
+  the class rather than the instance: portalling makes it immune to all of
+  those triggers, so a stage growing a `filter` later cannot silently break
+  sheets. The `--sheet-*` cascade is preserved by an in-place anchor whose
+  resolved values are copied onto the portalled backdrop on open — including
+  `--sheet-max-h`, which `.sheetSplitStrip` overloads for the sheet-MUSIC
+  strip, so forwarding reproduces today's inheritance rather than changing it.
+  New spec asserts the dialog is in `document.body` and absent from the
+  caller's subtree, and was confirmed to fail with the portal removed.
+
 - **`deploy-db.yml` reconciles the target schema before applying the chain**
   (`scripts/reconcile-d1-schema.mjs`, new Reconcile step before
   **Apply D1 migrations**). `CREATE TABLE IF NOT EXISTS` does not compare
