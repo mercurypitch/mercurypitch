@@ -4,9 +4,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { Env } from './auth'
-import worker from './index'
-import { awardForSessionRecord, getLeagueMe, isoWeekStart, runWeeklyLeagueCut, } from './league'
+import type { Env } from '../src/auth'
+import worker from '../src/index'
+import { awardForSessionRecord, getLeagueMe, isoWeekStart, runWeeklyLeagueCut, } from '../src/league'
 
 class SqliteD1Statement {
   constructor(

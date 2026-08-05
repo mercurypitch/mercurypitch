@@ -1,4 +1,4 @@
--- 0016_user_suspension.sql — reversible account suspension with audit history.
+-- 0017_user_suspension.sql — reversible account suspension with audit history.
 --
 -- Suspension is an access-control state, not deletion. The current state lives
 -- on users for the hot authentication path; every real state transition is

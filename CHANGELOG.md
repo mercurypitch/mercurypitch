@@ -5,6 +5,33 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Added
+
+- **The Karaoke Night demo song can be changed from the admin studio.**
+  Its title, artist, stems, attribution and lyrics used to be fixed in the
+  build, so correcting a single wrong lyric line meant shipping a release.
+  There is now a page for it. Lyrics can be pasted straight in, and a
+  correction reaches anyone who has already sung the demo — unless they
+  have edited their own copy, which always wins. Lyrics files can be
+  dropped straight onto the page — a timed `.lrc` or a plain `.txt` — and
+  the version that ships with the app stays the fallback, so a half-filled
+  entry shows the old demo rather than a broken page.
+
+- **The weekly Legend now has a run of weeks queued behind it.** Five
+  challenges instead of one, opening on the money note — Puccini's B4 on
+  "Vincerò" — and stepping through a long sustain, a full-octave sweep, a
+  stepwise run and a low-note descent. Each opens automatically when the
+  previous one closes, and once the five are spent the app re-runs a past
+  week as an Encore rather than showing an empty card.
+
+### Changed
+
+- **The admin studio can be put behind a Cloudflare sign-in.** Where it is
+  configured, changing site content needs a real account Cloudflare
+  vouched for, not just a shared key — so every change has a name against
+  it and access can be revoked for one person without changing anything
+  for everyone else.
+
 ### Fixed
 
 - **Big songs open properly in Compose.** Loading a long MIDI (hundreds of

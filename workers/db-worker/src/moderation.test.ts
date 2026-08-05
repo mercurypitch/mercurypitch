@@ -162,6 +162,35 @@ describe('account moderation', () => {
     expect(db.users.get(USER_ID)?.suspendedAt).not.toBeNull()
   })
 
+  it('awaits strict Cloudflare Access authorization before the admin route', async () => {
+    const { env, db } = envWithUser()
+    env.ADMIN_KEY = 'test-admin-key'
+    env.ACCESS_TEAM_DOMAIN = 'example-team.cloudflareaccess.com'
+    env.ACCESS_AUD = 'suspension-admin-audience'
+    env.ACCESS_STRICT = '1'
+
+    const response = await worker.fetch(
+      new Request('https://api.test/api/admin/user-suspension', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': 'test-admin-key',
+        },
+        body: JSON.stringify({
+          userId: USER_ID,
+          suspended: true,
+          reason: 'Automated abuse review',
+        }),
+      }),
+      env,
+      {} as ExecutionContext,
+    )
+
+    expect(response.status).toBe(403)
+    expect(db.users.get(USER_ID)?.suspendedAt).toBeNull()
+    expect(db.events).toHaveLength(0)
+  })
+
   it('rejects malformed targets and weak audit reasons', async () => {
     const { env } = envWithUser()
     const badUser = await handleUserSuspension(

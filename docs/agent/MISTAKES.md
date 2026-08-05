@@ -219,6 +219,36 @@ only surfaces on an existing table. The `scripts/migrate-*.sql` files predate
 the tracked chain and are legacy-only
 ([README](../../scripts/README-legacy-migrations.md)) — never add another.
 
+### Replay a migration chain, never reason about it
+**Symptom:** a chain analysed statement-by-statement and declared safe failed
+on the first file when actually run.
+**Cause:** the analysis checked which columns each migration *adds* and never
+which columns each migration *reads*. `CREATE INDEX IF NOT EXISTS ... ON
+t(missing_column)` still throws — `IF NOT EXISTS` guards the index, not the
+column — and a `CREATE TABLE IF NOT EXISTS` above it is a silent no-op on a
+database where the table already exists with an older shape.
+**Rule:** rebuild the target database from the schema that environment
+actually has (`git show <tag>:workers/db-worker/schema.sql` for anything
+predating the tracked chain), then execute every migration against it in
+order. A few seconds of SQLite beats any amount of reading. Remember that
+columns added by the legacy `scripts/migrate-*.sql` scripts are NOT in
+`schema.sql`, so a database's real shape is the schema plus whatever legacy
+scripts were hand-run on it.
+
+### Never transpose a weekly challenge to the singer's range
+**Symptom:** looks like a bug — a Bass is handed a B4 they cannot reach, and
+`voiceTypeSplit` sits there unused as if someone forgot to wire it.
+**Cause:** assuming every pitched surface should adapt to the singer, because
+almost every other one does.
+**Rule:** `WeeklyChallenge.targetItems` is absolute MIDI and is sung at written
+pitch. A weekly Legend is a shared feat — everyone attempts the identical
+notes, which is the only thing that makes the board comparable and lets "I hit
+the B4" mean something. A week being out of reach for some voices is the
+accepted cost, and sometimes the point. Author inside G3-C5 for a week most
+people can finish; go outside it deliberately.
+**See:** `src/features/challenges/weekly-service.ts` (the `targetItems` doc
+comment), `scripts/seed-weekly-rotation.mjs` (the TESSITURA note).
+
 ## Tooling and environment
 
 ### `rg -r` means `--replace`, not recursive
@@ -260,6 +290,15 @@ before the wrangler command. Do not "de-duplicate" the two builds without
 moving those vars first.
 **See:** `wrangler.jsonc:21` (top level), `:124` dev, `:134` preview;
 `.github/workflows/build.yml:90` gate, `:148` preview upload.
+
+### Force Vitest's environment before resolving Solid
+**Symptom:** dozens of Solid interaction tests failed locally with detached-root
+warnings while the same commit passed on CI.
+**Cause:** the host exported `NODE_ENV=production`; Vitest only defaults it to
+`test` when unset, so Vite omitted Solid's browser test condition.
+**Rule:** set `NODE_ENV=test` in `vitest.config.ts` before defining the config;
+do not trust the caller's shell environment.
+**See:** `vitest.config.ts`
 
 ## Process
 

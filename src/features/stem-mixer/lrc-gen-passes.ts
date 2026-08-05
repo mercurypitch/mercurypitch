@@ -18,6 +18,10 @@
 //           word 1 and single-word lines are skipped entirely, because they
 //           are fully determined by their line start.
 //
+// Those modes differ in exactly one place at tap time — where the cursor goes
+// once a line is finished — so that decision is `nextCursorAfterLine` here
+// rather than a branch in the controller. It shipped broken as a branch.
+//
 // See docs/plans/lrc-per-word-mapping-research.md. Tests:
 // src/tests/lrc-gen-passes.test.ts.
 
@@ -86,6 +90,58 @@ export function wordPassLinesBefore(lines: string[], index: number): number {
     if (needsWordPass(lines[i])) n++
   }
   return n
+}
+
+/**
+ * Where the mapping cursor sits next, and what the controller owes it to get
+ * there: `finish` means the lyric ran out and the session should end, and
+ * `preRoll` means the playhead should seek back to the line's run-in.
+ */
+export interface GenCursor {
+  lineIdx: number
+  wordIdx: number
+  preRoll: boolean
+  finish: boolean
+}
+
+/** Past the last line: the cursor parks at the end and the session ends. */
+function finishedCursor(lines: string[]): GenCursor {
+  return { lineIdx: lines.length, wordIdx: 0, preRoll: false, finish: true }
+}
+
+/**
+ * Word-pass cursor for the first line at or after `from` with words to place.
+ * It opens at word 1 — word 0 is the frozen line start — and pre-rolls, so the
+ * line is heard from its run-in rather than picked up mid-phrase.
+ */
+export function wordPassCursorFrom(lines: string[], from: number): GenCursor {
+  const next = nextWordPassLine(lines, from)
+  if (next >= lines.length) return finishedCursor(lines)
+  return { lineIdx: next, wordIdx: 1, preRoll: true, finish: false }
+}
+
+/**
+ * Where the cursor goes once the line at `lineIdx` is finished — the one
+ * decision that differs per pass, and the reason it lives here rather than
+ * inline in the controller: picking the wrong branch is invisible to a test
+ * that only exercises the helpers.
+ *
+ * Only the word pass may skip lines, open at word 1, or move the playhead. In
+ * one continuous take the operator is mid-performance, so skipping a
+ * single-word line leaves it unmapped and a pre-roll seeks the audio backwards
+ * under them.
+ */
+export function nextCursorAfterLine(
+  pass: LrcGenPass,
+  lines: string[],
+  lineIdx: number,
+): GenCursor {
+  if (pass === 'words') return wordPassCursorFrom(lines, lineIdx + 1)
+  const next = lineIdx + 1
+  if (next >= lines.length) return finishedCursor(lines)
+  // Blanks and rests are stepped onto rather than skipped; the controller
+  // clears them on the following tap.
+  return { lineIdx: next, wordIdx: 0, preRoll: false, finish: false }
 }
 
 /**

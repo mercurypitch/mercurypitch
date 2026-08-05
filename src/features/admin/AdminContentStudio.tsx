@@ -12,6 +12,7 @@ import { registerAdminContentCloseGuard } from '@/stores/ui-store'
 import { AdminAchievementsPage } from './AdminAchievementsPage'
 import { AdminAscentPage } from './AdminAscentPage'
 import styles from './AdminContentStudio.module.css'
+import { AdminDemoSongPage } from './AdminDemoSongPage'
 import { AdminExercisesPage } from './AdminExercisesPage'
 
 type AuthStatus = 'locked' | 'checking' | 'unlocked' | 'failed'
@@ -59,6 +60,13 @@ const SECTIONS: readonly SectionMeta[] = [
     shortLabel: 'Achievements',
     description:
       'Shape the long-term goal ladder singers climb: bands, targets, icons.',
+  },
+  {
+    id: 'demo-song',
+    label: 'Karaoke Demo',
+    shortLabel: 'Demo',
+    description:
+      'Swap the song a first-time visitor sings, and correct its lyrics.',
   },
 ] as const
 
@@ -407,6 +415,12 @@ export const AdminContentStudio: Component<AdminContentStudioProps> = (
                   </Match>
                   <Match when={props.section === 'achievements'}>
                     <AdminAchievementsPage
+                      adminKey={verifiedKey()}
+                      onDirtyChange={setContentDirty}
+                    />
+                  </Match>
+                  <Match when={props.section === 'demo-song'}>
+                    <AdminDemoSongPage
                       adminKey={verifiedKey()}
                       onDirtyChange={setContentDirty}
                     />

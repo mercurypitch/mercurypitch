@@ -4,7 +4,7 @@
 > Version: 1.0 | Date: 2026-08-05 | Scope: reversible account suspension,
 > session revocation, ranking exclusion, operator controls, and audit history.
 
-**Source:** `workers/db-worker/migrations/0016_user_suspension.sql`,
+**Source:** `workers/db-worker/migrations/0017_user_suspension.sql`,
 `workers/db-worker/src/moderation.ts`, `workers/db-worker/src/auth.ts`,
 `workers/db-worker/src/index.ts`, `workers/db-worker/src/league.ts`,
 `src/worker.ts`, `src/db/services/auth-service.ts`, and the MercuryPitch Admin
@@ -12,7 +12,7 @@ Studio Users page.
 
 **Tests:** `workers/db-worker/src/moderation.test.ts`,
 `workers/db-worker/src/auth.test.ts`,
-`workers/db-worker/src/suspension-integration.test.ts`,
+`workers/db-worker/node-tests/suspension-integration.test.ts`,
 `src/tests/auth-service.test.ts`, `src/tests/server-adapter.test.ts`,
 `src/tests/worker-uvr-routing.test.ts`, `src/tests/league-cut.test.ts`, and
 `src/tests/weekly-challenge.test.ts`.
@@ -23,10 +23,12 @@ Studio Users page.
 
 ### REQ-AS-001 — Admin authorization
 **When** a caller requests suspension or restoration, the DB worker shall
-require its server-side `X-Admin-Key` check before reading or changing the
-target account. The browser shall never receive the admin key; the local Admin
-Studio bridge owns it, and the deployed Studio shall additionally sit behind
-Cloudflare Access.
+await the shared admin policy before reading or changing the target account:
+a verified Cloudflare Access identity, or the server-side `X-Admin-Key` only
+while that environment's staged rollout still permits it. **While** Access
+strict mode is enabled, the shared key alone shall not authorize moderation.
+The browser shall never receive the admin key; the local Admin Studio bridge
+owns it, and the deployed Studio shall sit behind Cloudflare Access.
 
 ### REQ-AS-002 — Strict moderation input
 **When** an authorized caller requests a state change, the DB worker shall
@@ -120,7 +122,7 @@ identity. Clearing browser identity storage creates a different anonymous
 identity and is not an account-level anti-evasion mechanism.
 
 ### REQ-AS-017 — Ordered rollout
-**When** this feature is deployed, migration `0016` shall complete before the
+**When** this feature is deployed, migration `0017` shall complete before the
 DB worker is deployed, and the DB worker shall be available before the main
 worker/client begins relying on suspension responses and UVR revalidation.
 

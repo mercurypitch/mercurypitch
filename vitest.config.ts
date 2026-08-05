@@ -2,6 +2,10 @@ import path from 'path'
 import solidPlugin from 'vite-plugin-solid'
 import { defineConfig } from 'vitest/config'
 
+// Vitest only defaults NODE_ENV to "test" when the host has not set it.
+// Force a stable test runtime before Vite resolves Solid's conditional exports.
+process.env.NODE_ENV = 'test'
+
 export default defineConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [solidPlugin({ hot: false }) as any],
@@ -23,6 +27,7 @@ export default defineConfig({
       'src/lib/**/*.test.ts',
       'src/components/__tests__/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',
+      'workers/db-worker/node-tests/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

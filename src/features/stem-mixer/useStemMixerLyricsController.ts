@@ -26,8 +26,8 @@ import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
-import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
-import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextWordPassLine, normalizePass, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassLinesBefore, } from './lrc-gen-passes'
+import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
+import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, normalizePass, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 // ── Deps ──────────────────────────────────────────────────────────
@@ -1836,23 +1836,24 @@ export function useStemMixerLyricsController(
     deps.seekToWithWindow(preRollTarget(start))
   }
 
+  /** Put the cursor where `nextCursorAfterLine` and friends decided it goes. */
+  const applyGenCursor = (cursor: GenCursor) => {
+    setLrcGenLineIdx(cursor.lineIdx)
+    setLrcGenWordIdx(cursor.wordIdx)
+    if (cursor.finish) {
+      handleLrcGenFinish()
+      return
+    }
+    if (cursor.preRoll) seekToLinePreRoll(cursor.lineIdx)
+    saveLrcGenProgress()
+  }
+
   /**
    * Move the pass-2 cursor to the next line that has words to place, seeking
    * so it is heard from its run-in. Finishing the last one ends the session.
    */
   const advanceWordPass = (fromLineIdx: number) => {
-    const lines = getGenLines()
-    const next = nextWordPassLine(lines, fromLineIdx)
-    if (next >= lines.length) {
-      setLrcGenLineIdx(lines.length)
-      setLrcGenWordIdx(0)
-      handleLrcGenFinish()
-      return
-    }
-    setLrcGenLineIdx(next)
-    setLrcGenWordIdx(1)
-    seekToLinePreRoll(next)
-    saveLrcGenProgress()
+    applyGenCursor(wordPassCursorFrom(getGenLines(), fromLineIdx))
   }
 
   /**
@@ -2041,20 +2042,7 @@ export function useStemMixerLyricsController(
       }
     }
 
-    if (lrcGenPass() === 'words') {
-      advanceWordPass(idx + 1)
-      return
-    }
-
-    if (idx + 1 >= lines.length) {
-      setLrcGenLineIdx(idx + 1)
-      setLrcGenWordIdx(0)
-      handleLrcGenFinish()
-      return
-    }
-    setLrcGenLineIdx(idx + 1)
-    setLrcGenWordIdx(0)
-    saveLrcGenProgress()
+    applyGenCursor(nextCursorAfterLine(lrcGenPass(), lines, idx))
   }
 
   const handleNextWord = () => {
@@ -2116,24 +2104,7 @@ export function useStemMixerLyricsController(
     })
 
     if (wordIdx + 1 >= words.length) {
-      if (lrcGenPass() === 'words') {
-        // The word pass skips ahead to the next line that has words to place
-        // rather than stepping onto every line in turn, and pre-rolls into it.
-        advanceWordPass(lineIdx + 1)
-      } else if (lineIdx + 1 >= lines.length) {
-        setLrcGenLineIdx(lineIdx + 1)
-        setLrcGenWordIdx(0)
-        handleLrcGenFinish()
-      } else {
-        // 'all' steps onto the very next line and starts at its first word.
-        // Routing it through advanceWordPass would skip single-word lines,
-        // start at word 1, and seek the playhead backwards mid-stream — three
-        // things that are right for the word pass and wrong for one continuous
-        // take.
-        setLrcGenLineIdx(lineIdx + 1)
-        setLrcGenWordIdx(0)
-        saveLrcGenProgress()
-      }
+      applyGenCursor(nextCursorAfterLine(lrcGenPass(), lines, lineIdx))
     } else {
       setLrcGenWordIdx(wordIdx + 1)
       saveLrcGenProgress()
