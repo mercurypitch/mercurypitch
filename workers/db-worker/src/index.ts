@@ -23,6 +23,7 @@ import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './g
 import { resolveAdmin } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
+import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
@@ -822,6 +823,9 @@ async function handleLeaderboard(
     )
     binds.push(auth?.userId ?? '')
   }
+  clauses.push(
+    's."userId" IN (SELECT "id" FROM "users" WHERE "suspendedAt" IS NULL)',
+  )
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
   // Per-user aggregates; displayName/avatar from the public profile.
@@ -1184,6 +1188,9 @@ async function computeWeeklyBoard(
      FROM "sessionRecords" s
      LEFT JOIN "userProfiles" p ON p."id" = s."userId"
      WHERE s."weeklyChallengeId" = ?
+       AND s."userId" IN (
+         SELECT "id" FROM "users" WHERE "suspendedAt" IS NULL
+       )
      GROUP BY s."userId"
      ORDER BY best DESC`,
   )
@@ -1685,6 +1692,9 @@ export default {
     try {
       return await handleRequest(request, env, ctx)
     } catch (err) {
+      if (err instanceof AccountSuspendedError) {
+        return accountSuspendedResponse(respond)
+      }
       // Without this boundary an unhandled throw returns Cloudflare's error
       // page with no CORS headers, which the browser surfaces to the app as
       // an opaque "Failed to fetch". Log it (visible via `wrangler tail`) and
@@ -1718,6 +1728,15 @@ async function handleRequest(
   ctx?: ExecutionContext,
 ): Promise<Response> {
   const url = new URL(request.url)
+
+  if (url.pathname === '/api/admin/user-suspension') {
+    return handleUserSuspension(
+      request,
+      env,
+      respond,
+      await isAdmin(request, env),
+    )
+  }
 
   const authResponse = await handleAuth(request, env, url.pathname, respond, ctx)
   if (authResponse) return authResponse

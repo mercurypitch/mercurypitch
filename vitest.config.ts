@@ -27,6 +27,7 @@ export default defineConfig({
       'src/lib/**/*.test.ts',
       'src/components/__tests__/**/*.test.tsx',
       'workers/db-worker/src/**/*.test.ts',
+      'workers/db-worker/node-tests/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

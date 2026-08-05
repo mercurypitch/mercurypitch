@@ -28,6 +28,8 @@ export interface ServerAdapterConfig {
    * browsing must never create an account.
    */
   beforeWrite?: () => Promise<unknown>
+  /** Observe structured API failures before the adapter consumes their body. */
+  onErrorResponse?: (status: number, body: string) => void | Promise<void>
 }
 
 // Cloud reads degrade to empty when the backend is unreachable so the app
@@ -105,6 +107,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
 
         if (!res.ok) {
           const body = await res.text().catch(() => '')
+          await this.config.onErrorResponse?.(res.status, body)
           throw new Error(
             `ServerAdapter: ${res.status} ${res.statusText} on ${url}${body ? ` — ${body}` : ''}`,
           )

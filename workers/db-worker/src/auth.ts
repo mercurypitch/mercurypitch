@@ -21,6 +21,7 @@
 
 import { sendEmailVerification, sendPasswordReset, sendSignupWelcome } from './email'
 import { shouldTouchLastActive } from './last-active'
+import { AccountSuspendedError, assertAccountActive, } from './moderation'
 import { purgePerksByEmail } from './perks'
 
 export interface Env {
@@ -116,6 +117,8 @@ interface UserRow {
   lastLoginAt: string | null
   lastActiveAt: string | null
   tokenVersion: number
+  suspendedAt: string | null
+  suspensionReason: string | null
 }
 
 const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
@@ -244,11 +247,20 @@ export async function getAuth(
   // treated as version 0 so a single tokenVersion bump also revokes legacy
   // tokens.
   const user = await env.DB.prepare(
-    'SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?',
+    'SELECT tokenVersion, lastActiveAt, suspendedAt FROM users WHERE id = ?',
   )
     .bind(payload.sub)
-    .first<{ tokenVersion: number; lastActiveAt: string | null }>()
+    .first<{
+      tokenVersion: number
+      lastActiveAt: string | null
+      suspendedAt: string | null
+    }>()
   if (!user) return null
+  // Check this before tokenVersion: suspension bumps that counter too, but the
+  // client needs the distinct 403 to avoid silently minting a replacement
+  // anonymous identity. Once restored, the old token falls through to the
+  // ordinary version check and stays revoked.
+  assertAccountActive(user)
   if (user.tokenVersion > (payload.v ?? 0)) return null
 
   // Throttled last-active touch: at most one write per user per window (see
@@ -568,6 +580,7 @@ export async function checkRateLimit(
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
 async function createSession(env: Env, row: UserRow): Promise<string> {
+  assertAccountActive(row)
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
     {
@@ -893,6 +906,7 @@ async function handleAnonymous(body: AuthBody, env: Env, respond: Respond): Prom
   const id = body.deviceId && UUID_RE.test(body.deviceId) ? body.deviceId : crypto.randomUUID()
   const existing = await findUserById(env.DB, id)
   if (existing) {
+    assertAccountActive(existing)
     // Knowing the random UUID is the anonymous credential. Upgraded
     // accounts must log in with their real method instead.
     if (existing.authProvider !== 'anonymous') {
@@ -934,6 +948,7 @@ async function handleRegister(
   if (body.deviceId && UUID_RE.test(body.deviceId)) {
     const anon = await findUserById(env.DB, body.deviceId)
     if (anon && anon.authProvider === 'anonymous') {
+      assertAccountActive(anon)
       await env.DB.prepare(
         `UPDATE users SET authProvider = 'password', email = ?, passwordHash = ?, updatedAt = ? WHERE id = ?`,
       )
@@ -1016,7 +1031,10 @@ async function resolveGoogleUser(
   )
     .bind(claims.sub)
     .first<UserRow>()
-  if (linked) return { row: linked, isNew: false }
+  if (linked) {
+    assertAccountActive(linked)
+    return { row: linked, isNew: false }
+  }
 
   const email = claims.email?.toLowerCase()
   const emailVerified = claims.email_verified === 'true'
@@ -1025,6 +1043,7 @@ async function resolveGoogleUser(
   if (email && emailVerified) {
     const byEmail = await findUserByEmail(env.DB, email)
     if (byEmail) {
+      assertAccountActive(byEmail)
       await env.DB.prepare(
         'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
       )
@@ -1041,6 +1060,7 @@ async function resolveGoogleUser(
   if (deviceId && UUID_RE.test(deviceId)) {
     const anon = await findUserById(env.DB, deviceId)
     if (anon && anon.authProvider === 'anonymous') {
+      assertAccountActive(anon)
       await env.DB.prepare(
         `UPDATE users SET authProvider = 'google', providerId = ?, email = ?, emailVerified = ?, updatedAt = ? WHERE id = ?`,
       )
@@ -1303,8 +1323,18 @@ async function handleGoogleCallback(
     return redirectWithError(state.returnTo, 'Invalid Google token')
   }
 
-  const { row, isNew } = await resolveGoogleUser(claims, state.deviceId, env)
-  const token = await createSession(env, row)
+  let resolved: { row: UserRow; isNew: boolean }
+  let token: string
+  try {
+    resolved = await resolveGoogleUser(claims, state.deviceId, env)
+    token = await createSession(env, resolved.row)
+  } catch (error) {
+    if (error instanceof AccountSuspendedError) {
+      return redirectWithError(state.returnTo, error.code)
+    }
+    throw error
+  }
+  const { isNew } = resolved
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
@@ -1470,6 +1500,7 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // code never runs against a database missing migration 0005's tables.
   { table: 'leagueMembership', column: 'userId' },
   { table: 'leaguePointEvents', column: 'userId' },
+  { table: 'userModerationEvents', column: 'userId' },
   // Credits and entitlements go with the account. Stripe remains the
   // authoritative financial record (and keeps its own retention), so this
   // erases our copy without destroying the accounting trail.

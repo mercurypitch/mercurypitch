@@ -170,6 +170,19 @@ describe('ServerAdapter lazy identity provisioning', () => {
 })
 
 describe('ServerAdapter response handling', () => {
+  it('reports a structured failure before consuming it for the thrown error', async () => {
+    const onErrorResponse = vi.fn()
+    const body = JSON.stringify({ code: 'account_suspended' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(403, body)))
+    const suspendedRepo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      onErrorResponse,
+    }).getRepository<Rec>('sessionRecords')
+
+    await expect(suspendedRepo.create({ score: 1 })).rejects.toThrow(/403/)
+    expect(onErrorResponse).toHaveBeenCalledWith(403, body)
+  })
+
   it('findById swallows a 404 and returns null', async () => {
     const fetchMock = vi.fn().mockResolvedValue(fail(404))
     vi.stubGlobal('fetch', fetchMock)

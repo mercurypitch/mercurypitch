@@ -10,12 +10,17 @@ vi.mock('@/lib/defaults', () => ({
 vi.mock('@/lib/analytics', () => ({
   trackEvent: vi.fn(),
 }))
+vi.mock('@/stores/notifications-store', () => ({
+  showNotification: vi.fn(),
+}))
 
-import { consumeGoogleRedirect, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, restoreAuth, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { showNotification } from '@/stores/notifications-store'
 
 const trackEventMock = vi.mocked(trackEvent)
+const showNotificationMock = vi.mocked(showNotification)
 
 function makeToken(expiresInSeconds: number, provider = 'anonymous'): string {
   const payload = {
@@ -34,13 +39,12 @@ function mockFetchOnce(
   status: number,
   body: unknown,
 ): ReturnType<typeof vi.fn> {
-  const fn = vi.fn(async () => ({
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: String(status),
-    json: async () => body,
-    text: async () => JSON.stringify(body),
-  }))
+  const response = (): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  const fn = vi.fn(async () => response())
   vi.stubGlobal('fetch', fn)
   return fn
 }
@@ -49,6 +53,7 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   trackEventMock.mockClear()
+  showNotificationMock.mockClear()
   history.replaceState(null, '', '/')
 })
 
@@ -220,6 +225,108 @@ describe('requireAuth', () => {
     expect(await requireAuth()).toBe(true)
     infoSpy.mockRestore()
   })
+
+  it('clears a suspended password session and never falls back to anonymous', async () => {
+    logout() // reset the module-level one-verification cache from earlier tests
+    setAuthToken(makeToken(3600, 'password'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(await requireAuth()).toBe(false)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledWith(
+      expect.stringContaining('account is suspended'),
+      'error',
+      { channel: 'account-suspension', durationMs: 15000 },
+    )
+    infoSpy.mockRestore()
+  })
+
+  it('retains a suspended anonymous probe and recovers the same device after restore', async () => {
+    logout() // reset the module-level one-verification cache from earlier tests
+    const deviceId = getUserId()
+    setAuthToken(makeToken(3600, 'anonymous'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: 'This account is suspended.',
+            code: 'account_suspended',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      // Once restored, suspension's tokenVersion bump keeps the old bearer
+      // revoked. That 401 is the signal to mint a fresh token for this device.
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            token: makeToken(3600, 'anonymous'),
+            userId: deviceId,
+            isNew: false,
+            user: { id: deviceId, authProvider: 'anonymous' },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).not.toBeNull()
+
+    expect(await requireAuth()).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/me')
+    expect(fetchMock.mock.calls[1][0]).toBe('http://api.test/api/auth/me')
+    expect(fetchMock.mock.calls[2][0]).toBe(
+      'http://api.test/api/auth/anonymous',
+    )
+    const init = fetchMock.mock.calls[2][1] as RequestInit
+    expect(JSON.parse(init.body as string)).toEqual({ deviceId })
+    infoSpy.mockRestore()
+  })
+
+  it('does not turn a suspended anonymous device without a token into a new identity', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).not.toHaveBeenCalled()
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[auth] suspended account cannot sync personal data',
+    )
+    infoSpy.mockRestore()
+  })
+})
+
+describe('suspension response recognition', () => {
+  it('ignores non-403, malformed, and unrelated errors', () => {
+    expect(handleAuthErrorResponse(401, '{')).toBe(false)
+    expect(handleAuthErrorResponse(403, '{')).toBe(false)
+    expect(
+      handleAuthErrorResponse(403, JSON.stringify({ code: 'other' })),
+    ).toBe(false)
+    expect(showNotificationMock).not.toHaveBeenCalled()
+  })
 })
 
 describe('Google redirect signup tracking', () => {
@@ -236,6 +343,20 @@ describe('Google redirect signup tracking', () => {
 
     expect(trackEventMock).toHaveBeenCalledTimes(1)
     expect(trackEventMock).toHaveBeenCalledWith('signup')
+    expect(window.location.hash).toBe('#/mirror')
+  })
+
+  it('shows a human suspension result without exposing the internal error code', () => {
+    sessionStorage.setItem('mp:gauthReturnHash', '#/mirror')
+    history.replaceState(null, '', '/#gauth_error=account_suspended')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toEqual({
+      ok: false,
+      error: expect.stringContaining('account is suspended'),
+    })
+    expect(showNotificationMock).not.toHaveBeenCalled()
     expect(window.location.hash).toBe('#/mirror')
   })
 })
@@ -288,6 +409,19 @@ describe('login and register', () => {
     expect(getAuthToken()).toBeNull()
   })
 
+  it('reports a suspended login once through the form error path', async () => {
+    mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    await expect(
+      loginWithPassword('suspended@example.com', 'secret123'),
+    ).rejects.toThrow('This account is suspended.')
+    expect(getAuthToken()).toBeNull()
+    expect(showNotificationMock).not.toHaveBeenCalled()
+  })
+
   it('passes the device id along on register (account upgrade)', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {
@@ -323,6 +457,32 @@ describe('login and register', () => {
       idToken: 'google-id-token',
       deviceId,
     })
+  })
+})
+
+describe('authenticated account endpoints', () => {
+  it.each([
+    ['profile', () => fetchMe()],
+    ['resend verification', () => resendVerificationEmail()],
+    ['account deletion', () => deleteAccount()],
+  ])('handles a suspended response from %s', async (_label, request) => {
+    setAuthToken(makeToken(3600, 'password'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    await request().catch(() => undefined)
+
+    expect(getAuthToken()).toBeNull()
+    expect(showNotificationMock).toHaveBeenCalledOnce()
+    expect(showNotificationMock).toHaveBeenCalledWith(
+      expect.stringContaining('account is suspended'),
+      'error',
+      { channel: 'account-suspension', durationMs: 15000 },
+    )
+    infoSpy.mockRestore()
   })
 })
 
