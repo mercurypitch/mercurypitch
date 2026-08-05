@@ -1,16 +1,37 @@
 # MercuryPitch
 
-A free, open-source vocal pitch practice tool that runs in your browser. See your pitch in real time, sing along with customizable melodies, get per-note feedback on where you go flat or sharp, and track your progress over time. The pitch practice runs entirely on-device, so your voice never leaves your machine. It also includes optional vocal/instrumental stem separation, community features, and real-time audio processing.
+A free, open-source place to see your voice, sing Karaoke Night, and make music together in Jam Rooms. Get live pitch feedback, build practice melodies, separate stems, and turn a short vocal check-in into a shareable Voice Mirror result. Core pitch analysis runs on your device.
+
+The gallery below previews upcoming cosmetic supporter editions for Karaoke Night and Jam Rooms. The singing, practice, and collaboration tools stay free.
 
 ## Live Demo
 
 Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it out.
 
-## Showcase
+## Karaoke Night, Voice Mirror, and Jam Rooms
 
-![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg)
+### Karaoke Night
 
-![MercuryPitch Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg)
+![MercuryPitch Karaoke Night in Zen mode with an Aurora stage scene](docs/assets/showcase/karaoke-night.webp)
+
+Sing with timed lyrics and pitch cues, then slip into a distraction-free Zen stage. Shown here: the real Karaoke Night interface with an Aurora supporter-scene preview.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/assets/showcase/voice-mirror.webp" alt="MercuryPitch Voice Mirror result interface" /></td>
+    <td width="50%"><img src="docs/assets/showcase/jam-rooms.webp" alt="MercuryPitch Jam Room running Karaoke with a shared room scene" /></td>
+  </tr>
+  <tr>
+    <td><strong>See your voice.</strong> Voice Mirror turns pitch, range, and steadiness into a playful result you can keep or share. This is an illustrative demo generated from a synthetic profile; your result comes from your singing.</td>
+    <td><strong>Sing it together.</strong> Jam Rooms combine live collaboration with Karaoke and shared controls. This real app capture previews a planned host-selected room scene and uses synthetic preview peers, target-pitch guides, lyric assignments, and a local test microphone.</td>
+  </tr>
+</table>
+
+### Practice foundations
+
+| Singing practice                                                         | Piano roll editor                                                       |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| ![MercuryPitch Singing Practice](assets/BasicMelodyPractice_Singing.jpg) | ![MercuryPitch Piano Roll Editor](assets/BasicMelodyPractice_Piano.jpg) |
 
 ## Features
 
@@ -59,7 +80,7 @@ Open [mercurypitch.com](https://mercurypitch.com) in a modern browser to try it 
 | Singing        | Main pitch practice with piano roll and real-time feedback       |
 | Compose        | Piano roll note editor with scale builder and MIDI import/export |
 | Analysis       | Visualize vocal recordings and session history                   |
-| Karaoke        | Vocal/instrumental separation — upload audio, mix stems, lyrics   |
+| Karaoke        | Vocal/instrumental separation — upload audio, mix stems, lyrics  |
 | Community      | Browse shared melodies and sessions                              |
 | Leaderboard    | Top performers across challenges                                 |
 | Challenges     | Timed pitch accuracy challenges                                  |
@@ -127,17 +148,34 @@ pnpm run dev
 
 ### Commands
 
-| Command              | Description                              |
-| -------------------- | ---------------------------------------- |
-| `pnpm run dev`       | Start Vite dev server with HMR           |
-| `pnpm run build`     | Production build to `dist/`              |
-| `pnpm run check`     | Typecheck + auto-fix lint + auto-format  |
-| `pnpm test`          | Run Vitest in watch mode                 |
-| `pnpm run test:run`  | Run Vitest once (CI mode)                |
-| `pnpm run test:e2e`  | Run Playwright E2E tests                 |
-| `pnpm run typecheck` | TypeScript check (`tsc --noEmit`)        |
-| `pnpm run lint`      | ESLint check                             |
-| `pnpm run fmt`       | Prettier check                           |
+| Command                  | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `pnpm run dev`           | Start Vite dev server with HMR                     |
+| `pnpm run build`         | Production build to `dist/`                        |
+| `pnpm run check`         | Typecheck + auto-fix lint + auto-format            |
+| `pnpm test`              | Run Vitest in watch mode                           |
+| `pnpm run test:run`      | Run Vitest once (CI mode)                          |
+| `pnpm run test:e2e`      | Run Playwright E2E tests                           |
+| `pnpm run typecheck`     | TypeScript check (`tsc --noEmit`)                  |
+| `pnpm run lint`          | ESLint check                                       |
+| `pnpm run fmt`           | Prettier check                                     |
+| `pnpm marketing:capture` | Capture deterministic, local-only marketing states |
+
+### Marketing captures
+
+The capture utility creates repeatable product screenshots and a small provenance manifest from synthetic local state. Output goes to the gitignored `output/marketing-captures/` directory; browser HTTP and WebSocket egress is restricted to loopback, so it cannot connect to production. Karaoke recipes substitute capture-only silent stems and original timed fixture lyrics. Jam's preview also skips peer connections and uses Chromium's fake microphone device.
+
+```bash
+# With the normal local development server running on port 3000
+pnpm marketing:capture -- --recipe karaoke-zen --base-url http://127.0.0.1:3000
+pnpm marketing:capture -- --recipe voice-mirror --profile freddie --base-url http://127.0.0.1:3000
+
+# Jam's deterministic Ada + Bo preview needs a mock-signaling dev server
+VITE_JAM_MOCK_SIGNALING=1 VITE_DEV_PORT=3001 pnpm dev --host 127.0.0.1
+pnpm marketing:capture -- --recipe jam-karaoke --base-url http://127.0.0.1:3001
+```
+
+Use `--viewport WIDTHxHEIGHT` for a target format, `--out` for a different destination, and `--background` with the Karaoke or Jam recipes to preview a local scene. A local background override is recorded as unverified provenance and requires a personal-data review. Voice Mirror profiles are deliberately allowlisted synthetic fixtures.
 
 ### Git Workflow
 
@@ -151,11 +189,13 @@ The Jam feature requires a **local signaling server** in addition to the Vite de
 Open two terminals:
 
 **Terminal 1 -- Vite dev server:**
+
 ```bash
 pnpm run dev
 ```
 
 **Terminal 2 -- Signaling worker (Cloudflare Workers dev):**
+
 ```bash
 cd workers/jam-worker && npx wrangler dev --port 8787
 ```
@@ -204,10 +244,10 @@ The UVR panel communicates with a local Python API server (`audio-separator`):
 
 The app runs on **Cloudflare Workers**. There are multiple workers that need to be deployed:
 
-| Worker | Purpose | Route | Deploy Script |
-| ------ | ------- | ----- | ------------- |
-| `mercurypitch` | Main app (static assets + share link shortener + UVR proxy) | `mercurypitch.com` | `pnpm run deploy:prod` |
-| `mercury-pitch-jam` | P2P Jam signaling server (Durable Objects + WebSocket) | `mercurypitch.com/api/jam*` | `pnpm run deploy:jam:prod` |
+| Worker              | Purpose                                                     | Route                       | Deploy Script              |
+| ------------------- | ----------------------------------------------------------- | --------------------------- | -------------------------- |
+| `mercurypitch`      | Main app (static assets + share link shortener + UVR proxy) | `mercurypitch.com`          | `pnpm run deploy:prod`     |
+| `mercury-pitch-jam` | P2P Jam signaling server (Durable Objects + WebSocket)      | `mercurypitch.com/api/jam*` | `pnpm run deploy:jam:prod` |
 
 ### Deploy commands
 
@@ -245,4 +285,3 @@ Bug reports and feature requests are welcome as GitHub issues.
 
 - Modern browser with Web Audio API and `getUserMedia`
 - Microphone access for pitch detection
-
