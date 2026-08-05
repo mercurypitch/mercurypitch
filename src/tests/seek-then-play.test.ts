@@ -6,10 +6,11 @@
 // ============================================================
 
 import { createRoot } from 'solid-js'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { micManager } from '@/lib/mic-manager'
 import type { FallingNote } from '@/stores/falling-notes-store'
 import { setCountIn } from '@/stores/transport-store'
 
@@ -23,7 +24,9 @@ const mockAudioEngine = () =>
     playMetronomeClick: () => {},
     playClick: () => {},
     playNote: () => Promise.resolve(undefined),
+    setInstrument: () => {},
     stopAllNotes: () => {},
+    stopMic: () => {},
     stopTone: () => {},
     isMicActive: () => false,
     onMicLost: () => () => {},
@@ -95,5 +98,147 @@ describe('guitar: seek while stopped', () => {
       expect(ctl.playheadBeat()).toBe(0)
       dispose()
     })
+  })
+
+  it('unregisters its mic run guard when the controller is disposed', () => {
+    const unregister = vi.fn()
+    const register = vi
+      .spyOn(micManager, 'registerRunGuard')
+      .mockReturnValue(unregister)
+    let disposeController = () => {}
+
+    createRoot((dispose) => {
+      disposeController = dispose
+      useGuitarPracticeController(mockAudioEngine())
+    })
+
+    expect(register).toHaveBeenCalledWith('guitar-song', expect.any(Function))
+    expect(unregister).not.toHaveBeenCalled()
+    disposeController()
+    expect(unregister).toHaveBeenCalledTimes(1)
+    register.mockRestore()
+  })
+
+  it('releases a mic start that resolves after controller disposal', async () => {
+    let resolveStart = (_started: boolean) => {}
+    const audio = mockAudioEngine()
+    const stopMic = vi.fn()
+    audio.startMic = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveStart = resolve
+        }),
+    )
+    audio.stopMic = stopMic
+    let disposeController = () => {}
+    let controller!: ReturnType<typeof useGuitarPracticeController>
+
+    createRoot((dispose) => {
+      disposeController = dispose
+      controller = useGuitarPracticeController(audio)
+    })
+
+    const starting = controller.startMic()
+    disposeController()
+    resolveStart(true)
+
+    await expect(starting).resolves.toBe(false)
+    // Once during unconditional teardown, then again when the late acquire
+    // resolves successfully after its owner is already gone.
+    expect(stopMic).toHaveBeenCalledTimes(2)
+  })
+
+  it('releases a mic start that resolves after an explicit stop', async () => {
+    let resolveStart = (_started: boolean) => {}
+    const audio = mockAudioEngine()
+    const stopMic = vi.fn()
+    audio.startMic = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveStart = resolve
+        }),
+    )
+    audio.stopMic = stopMic
+    let disposeController = () => {}
+    let controller!: ReturnType<typeof useGuitarPracticeController>
+
+    createRoot((dispose) => {
+      disposeController = dispose
+      controller = useGuitarPracticeController(audio)
+    })
+
+    const starting = controller.startMic()
+    controller.stopMic()
+    resolveStart(true)
+
+    await expect(starting).resolves.toBe(false)
+    expect(controller.isMicActive()).toBe(false)
+    expect(stopMic).toHaveBeenCalledTimes(2)
+    disposeController()
+  })
+
+  it('adopts a pending physical start for a newer mic claim', async () => {
+    let resolveStart = (_started: boolean) => {}
+    const audio = mockAudioEngine()
+    const stopMic = vi.fn()
+    audio.startMic = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveStart = resolve
+        }),
+    )
+    audio.stopMic = stopMic
+    let disposeController = () => {}
+    let controller!: ReturnType<typeof useGuitarPracticeController>
+
+    createRoot((dispose) => {
+      disposeController = dispose
+      controller = useGuitarPracticeController(audio)
+    })
+
+    const staleStart = controller.startMic()
+    controller.stopMic()
+    const currentStart = controller.startMic()
+
+    expect(audio.startMic).toHaveBeenCalledTimes(1)
+    resolveStart(true)
+    await expect(staleStart).resolves.toBe(false)
+    await expect(currentStart).resolves.toBe(true)
+    expect(controller.isMicActive()).toBe(true)
+    expect(stopMic).toHaveBeenCalledTimes(1)
+    disposeController()
+  })
+
+  it('keeps the mic inactive when a replacement claim shares a failed start', async () => {
+    let resolveStart = (_started: boolean) => {}
+    const audio = mockAudioEngine()
+    const stopMic = vi.fn()
+    audio.startMic = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveStart = resolve
+        }),
+    )
+    audio.stopMic = stopMic
+    let disposeController = () => {}
+    let controller!: ReturnType<typeof useGuitarPracticeController>
+
+    createRoot((dispose) => {
+      disposeController = dispose
+      controller = useGuitarPracticeController(audio)
+    })
+
+    const staleStart = controller.startMic()
+    controller.stopMic()
+    const currentStart = controller.startMic()
+
+    expect(audio.startMic).toHaveBeenCalledTimes(1)
+    resolveStart(false)
+    await expect(staleStart).resolves.toBe(false)
+    await expect(currentStart).resolves.toBe(false)
+    expect(controller.isMicActive()).toBe(false)
+    expect(stopMic).toHaveBeenCalledTimes(1)
+    disposeController()
+    expect(stopMic).toHaveBeenCalledTimes(2)
   })
 })

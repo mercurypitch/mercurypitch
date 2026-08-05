@@ -137,6 +137,7 @@ export class DrumMachine {
   private _pattern: DrumPattern = PRESETS['basic-rock']
   private _volumes: Record<DrumSound, number>
   private _timer: ReturnType<typeof setInterval> | null = null
+  private _transportGeneration = 0
   private _listeners: Set<() => void> = new Set()
 
   constructor() {
@@ -148,8 +149,14 @@ export class DrumMachine {
 
   /** Must be called after user gesture to initialize AudioContext */
   async init(): Promise<void> {
-    if (this.ctx) return
-    this.ctx = new AudioContext({ latencyHint: 'interactive' })
+    if (!this.ctx) {
+      this.ctx = new AudioContext({ latencyHint: 'interactive' })
+    }
+    // Initiate resume inside the originating gesture. Deferring this to
+    // start() through a Promise continuation loses browser activation.
+    if (this.ctx.state === 'suspended') {
+      await this.ctx.resume()
+    }
   }
 
   get playing(): boolean {
@@ -219,11 +226,19 @@ export class DrumMachine {
   }
 
   async start(): Promise<void> {
-    if (!this.ctx || this._playing) return
+    const ctx = this.ctx
+    if (!ctx || this._playing) return
+
+    const transportGeneration = ++this._transportGeneration
     // Resume suspended context (iOS Safari)
-    if (this.ctx.state === 'suspended') {
-      await this.ctx.resume()
+    if (ctx.state === 'suspended') {
+      await ctx.resume()
     }
+
+    // stop() and dispose() invalidate starts that are waiting on resume().
+    if (transportGeneration !== this._transportGeneration || this.ctx !== ctx)
+      return
+
     this._playing = true
     this._currentStep = -1
     this.notify()
@@ -231,6 +246,7 @@ export class DrumMachine {
   }
 
   stop(): void {
+    this._transportGeneration++
     this._playing = false
     if (this._timer !== null) {
       clearTimeout(this._timer)

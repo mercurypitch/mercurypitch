@@ -1347,6 +1347,7 @@ const AppShell: Component<AppProps> = (props) => {
   const pianoIsPaused = createMemo(() => fallingNotes.gameState() === 'paused')
 
   // ── Keyboard shortcuts & piano roll events ─────────────────
+  let guitarDrumActivationGeneration = 0
   useKeyboardShortcuts({
     isPlaying,
     isPaused,
@@ -1404,6 +1405,7 @@ const AppShell: Component<AppProps> = (props) => {
     guitar: {
       strumKeyboard: guitarCtx.guitar.strumKeyboard,
       togglePlayback: () => {
+        const activationGeneration = ++guitarDrumActivationGeneration
         // Only the interactive fretboard (jam) view owns the drum loop. The
         // playback views (Practice/hero and 3D) toggle the tab/melody playback
         // — i.e. the main toolbar play/pause.
@@ -1411,9 +1413,22 @@ const AppShell: Component<AppProps> = (props) => {
           if (guitarCtx.drumMachine.playing) {
             guitarCtx.drumMachine.stop()
           } else {
-            void guitarCtx.drumMachine.init().then(() => {
-              void guitarCtx.drumMachine.start()
-            })
+            const drumMachine = guitarCtx.drumMachine
+            void drumMachine
+              .init()
+              .then(() => {
+                if (
+                  activationGeneration !== guitarDrumActivationGeneration ||
+                  activeTab() !== TAB_GUITAR ||
+                  guitarCtx.fretboard.guitarView() !== 'interactive'
+                ) {
+                  return
+                }
+                return drumMachine.start()
+              })
+              .catch((err) => {
+                console.error('[Guitar] drum activation failed:', err)
+              })
           }
         } else {
           guitarCtx.guitar.togglePlay()
@@ -1477,14 +1492,16 @@ const AppShell: Component<AppProps> = (props) => {
       guitarCtx.guitar.stopGame()
     }
 
-    // 4. Stop guitar mic if active. The guitar controller owns its mic
-    // (shared MicManager), so stop it directly; practiceEngine.stopMic()
-    // covers the singToFretboard mode's own mic. Then hand capture back to
-    // the system default: the persisted guitar input (e.g. an interface's
-    // instrument in) must only redirect capture while the guitar surface is
-    // in use, not for singing/piano afterwards.
+    // 4. Stop every Guitar mic claim. Tuner, Riff Tracker, Sing-to-Fretboard
+    // and the manual Hero/3D control all share this controller-level arbiter.
+    // Clear the legacy PracticeEngine claim too: global controls and older
+    // Guitar entry points may still have opened it. Then hand capture back to
+    // the system default; the persisted guitar input must only redirect
+    // capture while the guitar surface is in use.
     if (prevTab === TAB_GUITAR) {
-      guitarCtx.guitar.stopMic()
+      guitarDrumActivationGeneration++
+      guitarCtx.drumMachine.stop()
+      guitarCtx.guitar.stopAllMic()
       practiceEngine.stopMic()
       guitarCtx.guitar.releaseGuitarInputDevice()
     }
@@ -1857,6 +1874,11 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
+    if (activeTab() === TAB_GUITAR) {
+      if (guitarCtx.guitar.isMicActive()) guitarCtx.guitar.stopAllMic()
+      else await guitarCtx.guitar.startMic()
+      return
+    }
     if (micActive()) {
       practiceEngine.stopMic()
     } else {

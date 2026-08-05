@@ -259,6 +259,27 @@ describe('DrumMachine presets', () => {
 // ── Transport: start/stop lifecycle ────────────────────────────
 
 describe('DrumMachine transport', () => {
+  it('initiates AudioContext resume synchronously during initialization', async () => {
+    const dm = new DrumMachine()
+    let resolveResume!: () => void
+    const resumePromise = new Promise<void>((resolve) => {
+      resolveResume = resolve
+    })
+    const ctx = {
+      ...mockAudioContext(),
+      state: 'suspended',
+      resume: vi.fn().mockReturnValue(resumePromise),
+    } as unknown as AudioContext
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(dm as any).ctx = ctx
+
+    const initPromise = dm.init()
+
+    expect(ctx.resume).toHaveBeenCalledOnce()
+    resolveResume()
+    await initPromise
+  })
+
   it('does not start without AudioContext initialization', () => {
     const dm = new DrumMachine()
     dm.start()
@@ -305,6 +326,35 @@ describe('DrumMachine transport', () => {
     expect(dm.currentStep).toBe(0)
     dm.stop()
   })
+
+  it.each(['stop', 'dispose'] as const)(
+    'does not finish starting after %s while AudioContext resume is pending',
+    async (action) => {
+      const dm = new DrumMachine()
+      let resolveResume!: () => void
+      const resumePromise = new Promise<void>((resolve) => {
+        resolveResume = resolve
+      })
+      const ctx = {
+        ...mockAudioContext(),
+        state: 'suspended',
+        resume: vi.fn().mockReturnValue(resumePromise),
+        close: vi.fn().mockResolvedValue(undefined),
+      } as unknown as AudioContext
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(dm as any).ctx = ctx
+
+      const startPromise = dm.start()
+      expect(ctx.resume).toHaveBeenCalledOnce()
+
+      dm[action]()
+      resolveResume()
+      await startPromise
+
+      expect(dm.playing).toBe(false)
+      expect(ctx.createOscillator).not.toHaveBeenCalled()
+    },
+  )
 })
 
 // ── playStep ───────────────────────────────────────────────────

@@ -39,21 +39,28 @@ export const DrumMachinePanel: Component<DrumMachinePanelProps> = (props) => {
   const [playing, setPlaying] = createSignal(dm.playing)
   const [currentStep, setCurrentStep] = createSignal(dm.currentStep)
   const [volumes, setVolumes] = createSignal(dm.volumes)
+  let unmounted = false
+
+  onCleanup(() => {
+    unmounted = true
+  })
 
   // Subscribe to drum machine state changes
   createEffect(() => {
-    const unsub = props.drumMachine.onChange(() => {
-      const dm = untrack(() => props.drumMachine)
-      setPattern({ ...dm.pattern })
-      setPlaying(dm.playing)
-      setCurrentStep(dm.currentStep)
-      setBpm(dm.bpm)
-      setVolumes({ ...dm.volumes })
+    const drumMachine = props.drumMachine
+    const unsub = drumMachine.onChange(() => {
+      setPattern({ ...drumMachine.pattern })
+      setPlaying(drumMachine.playing)
+      setCurrentStep(drumMachine.currentStep)
+      setBpm(drumMachine.bpm)
+      setVolumes({ ...drumMachine.volumes })
     })
-    // `createEffect`'s return value is passed as the `prev` arg to its
-    // next run, not treated as a cleanup — the subscription needs an
-    // explicit onCleanup or it leaks on every re-run/unmount.
-    onCleanup(unsub)
+    onCleanup(() => {
+      // The panel owns direct transport activation. Stop before dropping the
+      // listener so view/mode teardown also cancels a pending audio resume.
+      drumMachine.stop()
+      unsub()
+    })
   })
 
   const handleToggleStep = (sound: DrumSound, step: number) => {
@@ -82,15 +89,31 @@ export const DrumMachinePanel: Component<DrumMachinePanelProps> = (props) => {
     setPattern({ ...props.drumMachine.pattern })
   }
 
+  const runAfterInit = (
+    action: (drumMachine: DrumMachine) => void | Promise<void>,
+  ): void => {
+    // Capture the prop while still in the click handler; the continuation runs
+    // asynchronously after Web Audio has been initialized by this gesture.
+    const drumMachine = props.drumMachine
+    void drumMachine
+      .init()
+      .then(() => {
+        if (!unmounted) return action(drumMachine)
+      })
+      .catch((err) => {
+        console.error('[DrumMachinePanel] audio activation failed:', err)
+      })
+  }
+
   const handleTrigger = (sound: DrumSound) => {
-    props.drumMachine.trigger(sound)
+    runAfterInit((drumMachine) => drumMachine.trigger(sound))
   }
 
   const handleTogglePlay = () => {
     if (props.drumMachine.playing) {
       props.drumMachine.stop()
     } else {
-      props.drumMachine.start()
+      runAfterInit((drumMachine) => drumMachine.start())
     }
   }
 

@@ -23,6 +23,7 @@ import { createNoteLocatorQuiz } from '@/features/guitar-practice/NoteLocatorQui
 import { createRiffTracker } from '@/features/guitar-practice/RiffTrackerState'
 import { createSingToFretboard } from '@/features/guitar-practice/SingToFretboardState'
 import { createTranscriptionTrainer } from '@/features/guitar-practice/TranscriptionTrainerState'
+import type { GuitarMicOwner } from '@/features/guitar-practice/useGuitarPracticeController'
 import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import { TAB_GUITAR } from '@/features/tabs/constants'
 import { buildChordToneMidis } from '@/lib/guitar/chord-utils'
@@ -77,7 +78,7 @@ export interface GuitarContextValue {
 const GuitarContext = createContext<GuitarContextValue | null>(null)
 
 export function GuitarProvider(props: { children: JSX.Element }) {
-  const { audioEngine, practiceEngine } = useEngines()
+  const { audioEngine } = useEngines()
   const activeTab = () => activeTabSignal()
 
   const drumMachine = new DrumMachine()
@@ -183,16 +184,42 @@ export function GuitarProvider(props: { children: JSX.Element }) {
   // Single createEffect dispatches on the active mode, starting the correct
   // sub-mode on enter and stopping/disabling it on leave.
 
-  // True while the current guitar mic run was auto-started by the effect
-  // below for tuner/riffTracker (the mic was off on entry). While IN those
-  // modes any off-flip re-runs the effect, which restarts the mic and
-  // re-claims — so a user-started run can only exist when the claim is
-  // false, and mode leave never stops a mic it doesn't own.
-  let tunerAutoStartedMic = false
+  // Tuner, Riff Tracker and Sing share one logical auto claim on the Guitar
+  // controller. A separate manual claim can coexist, so leaving an automatic
+  // mode never tears down a capture the player explicitly started.
+  const interactiveMicOwner: GuitarMicOwner = 'interactive-auto'
+  let interactiveMicClaimed = false
+  let interactiveMicStartPending = false
+  let interactiveMicStartGeneration = 0
+
+  const stopInactivePracticeActivities = (mode: FretboardMode | null) => {
+    if (mode !== 'noteQuiz' && noteQuiz.roundActive()) noteQuiz.stopRound()
+    if (
+      mode !== 'earTraining' &&
+      (earTraining.targetMidi() !== null || earTraining.feedback() !== null)
+    ) {
+      earTraining.stop()
+    }
+    if (
+      mode !== 'melodyTranscription' &&
+      melodyTranscription.phase() !== 'idle'
+    ) {
+      melodyTranscription.stop()
+    }
+    if (mode !== 'callResponse' && callResponse.phase() !== 'idle') {
+      callResponse.stop()
+    }
+    if (mode !== 'riffTracker' && riffTracker.phase() === 'recording') {
+      riffTracker.stopRecording()
+    }
+  }
 
   createEffect(() => {
+    const guitarMicActive = guitar.isMicActive()
     const active = activeTab() === TAB_GUITAR && guitarView() === 'interactive'
     const mode = active ? fretboardMode() : null
+
+    stopInactivePracticeActivities(mode)
 
     // Modes that auto-start on enter
     if (mode === 'noteQuiz' && !noteQuiz.roundActive()) {
@@ -224,33 +251,35 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       adaptiveJam.stop()
     }
 
-    // singToFretboard: start/stop with mic lifecycle
+    // Sing-to-Fretboard owns only its detection loop here. Its microphone is
+    // acquired through the same controller claim as Tuner and Riff Tracker.
     if (mode === 'singToFretboard') {
-      if (!singToFretboard.running()) {
-        void practiceEngine.startMic()
-        singToFretboard.start()
-      }
-    } else if (singToFretboard.running()) {
-      singToFretboard.stop()
-      practiceEngine.stopMic()
+      if (!singToFretboard.running()) singToFretboard.start()
+    } else {
+      if (singToFretboard.running()) singToFretboard.stop()
     }
 
-    // Tuner & RiffTracker: auto-start the guitar controller mic on enter,
-    // stop on leave (only if this source started it — a mic the user had on
-    // before entering keeps running).
-    if (mode === 'tuner' || mode === 'riffTracker') {
-      if (!guitar.isMicActive()) {
-        tunerAutoStartedMic = true
-        void guitar.startMic().then(() => {
-          // The mode was left while the acquire / permission prompt was in
-          // flight: this start belongs to a mode that is gone — undo it.
-          if (!tunerAutoStartedMic && guitar.isMicActive()) guitar.stopMic()
+    const modeNeedsInteractiveMic =
+      mode === 'tuner' || mode === 'riffTracker' || mode === 'singToFretboard'
+    if (modeNeedsInteractiveMic) {
+      if (
+        !interactiveMicClaimed ||
+        (!guitarMicActive && !interactiveMicStartPending)
+      ) {
+        interactiveMicClaimed = true
+        interactiveMicStartPending = true
+        const startGeneration = ++interactiveMicStartGeneration
+        void guitar.startMic(interactiveMicOwner).finally(() => {
+          if (startGeneration === interactiveMicStartGeneration) {
+            interactiveMicStartPending = false
+          }
         })
       }
-    } else {
-      const wasAutoStarted = tunerAutoStartedMic
-      tunerAutoStartedMic = false
-      if (wasAutoStarted && guitar.isMicActive()) guitar.stopMic()
+    } else if (interactiveMicClaimed) {
+      interactiveMicClaimed = false
+      interactiveMicStartPending = false
+      interactiveMicStartGeneration++
+      guitar.stopMic(interactiveMicOwner)
     }
 
     // transcriptionTrainer: stop when leaving mode
@@ -258,16 +287,22 @@ export function GuitarProvider(props: { children: JSX.Element }) {
       transcriptionTrainer.stop()
     }
 
-    // Hero / 3D playback views manage the mic directly through the guitar
-    // controller (guitar.startMic/stopMic, backed by the shared MicManager) —
-    // driven by the toolbar / 3D-overlay toggle. We deliberately do NOT drive
-    // practiceEngine's mic here: it wraps the same AudioEngine, and toggling it
-    // on gameState changes tore the shared mic down when Play was pressed. One
-    // owner for the guitar mic avoids that fight. (singToFretboard above is the
-    // only mode that legitimately needs practiceEngine's own mic.)
+    // Hero / 3D playback views use the controller's independent manual claim,
+    // driven by the toolbar / 3D-overlay toggle.
   })
 
-  onCleanup(() => drumMachine.dispose())
+  onCleanup(() => {
+    interactiveMicClaimed = false
+    interactiveMicStartPending = false
+    interactiveMicStartGeneration++
+    stopInactivePracticeActivities(null)
+    chordProgression.stop()
+    adaptiveJam.stop()
+    singToFretboard.stop()
+    transcriptionTrainer.stop()
+    guitar.stopAllMic()
+    drumMachine.dispose()
+  })
 
   const value: GuitarContextValue = {
     guitar,

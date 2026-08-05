@@ -26,6 +26,7 @@ export interface CallResponseState {
   finishEcho: () => void
   finishImprov: () => void
   skipRound: () => void
+  stop: () => void
 }
 
 function generateResponse(
@@ -183,9 +184,13 @@ export function createCallResponse(
     }, 2500)
   }
 
-  onCleanup(() => {
+  const stop = () => {
     timers.clear()
-  })
+    audioEngine.stopTone()
+    setPhase('idle')
+  }
+
+  onCleanup(stop)
 
   return {
     phase,
@@ -201,5 +206,6 @@ export function createCallResponse(
     finishEcho,
     finishImprov,
     skipRound,
+    stop,
   }
 }

@@ -18,6 +18,7 @@ export interface MelodyTranscriptionState {
   handleNotePlayed: (midi: number) => boolean
   startNewPhrase: () => void
   skipPhrase: () => void
+  stop: () => void
 }
 
 export function createMelodyTranscription(
@@ -118,9 +119,14 @@ export function createMelodyTranscription(
     return isCorrect
   }
 
-  onCleanup(() => {
+  const stop = () => {
     timers.clear()
-  })
+    audioEngine.stopTone()
+    setPhase('idle')
+    setCurrentNoteIndex(0)
+  }
+
+  onCleanup(stop)
 
   return {
     targetNotes,
@@ -134,5 +140,6 @@ export function createMelodyTranscription(
     handleNotePlayed,
     startNewPhrase,
     skipPhrase,
+    stop,
   }
 }

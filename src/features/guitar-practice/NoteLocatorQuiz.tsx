@@ -7,6 +7,7 @@ export interface NoteLocatorQuizState {
   foundMidis: Accessor<Set<number>>
   handleNotePlayed: (midi: number) => boolean
   startRound: () => void
+  stopRound: () => void
   score: Accessor<number>
   timeLeft: Accessor<number>
   roundActive: Accessor<boolean>
@@ -35,12 +36,16 @@ export function createNoteLocatorQuiz(): NoteLocatorQuizState {
     return seen.size
   }
 
-  const endRound = () => {
+  const stopRound = () => {
     if (timerInterval !== null) {
       clearInterval(timerInterval)
       timerInterval = null
     }
     setRoundActive(false)
+  }
+
+  const endRound = () => {
+    stopRound()
     const found = foundMidis().size
     const total = totalPositions()
     const s = found === total ? score() + 100 : score()
@@ -83,15 +88,14 @@ export function createNoteLocatorQuiz(): NoteLocatorQuizState {
     return true
   }
 
-  onCleanup(() => {
-    if (timerInterval !== null) clearInterval(timerInterval)
-  })
+  onCleanup(stopRound)
 
   return {
     targetMidiClass,
     foundMidis,
     handleNotePlayed,
     startRound,
+    stopRound,
     score,
     timeLeft,
     roundActive,

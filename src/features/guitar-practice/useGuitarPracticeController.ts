@@ -127,6 +127,10 @@ export interface GuitarHitResult {
   timestamp: number
 }
 
+/** Logical Guitar-surface consumers of the one shared microphone capture. */
+export type GuitarMicOwner = 'manual' | 'interactive-auto'
+const GUITAR_AUDIO_MIC_OWNER = 'guitar-controller'
+
 export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const [fallingNotes, setFallingNotes] = createSignal<GuitarNote[]>([])
   // Untransposed source notes; `fallingNotes` is derived from these + transpose.
@@ -221,6 +225,10 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const [stepRate, setStepRate] = createSignal(0.1)
 
   const midiEngine = new MidiEngine()
+  let disposed = false
+  let micOwnerSequence = 0
+  const micOwners = new Map<GuitarMicOwner, number>()
+  let micActivationInFlight: Promise<boolean> | null = null
 
   midiEngine.callbacks.onNoteOn = (e) => {
     bumpArticulation()
@@ -236,26 +244,80 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     }
   }
 
-  const startMic = async (): Promise<boolean> => {
-    const ok = await audioEngine.startMic()
-    if (ok) {
-      // The audio context is now guaranteed to be created and running, so we can reliably get the hardware sample rate
-      pitchDetector = new PitchDetector({
-        sampleRate: audioEngine.audioCtx?.sampleRate ?? 44100,
-      })
-      if (midiConnected()) midiDisconnect()
-      setMicOn(true)
-      setMicActive(true)
-      setInputMode('mic')
-    }
-    return ok
+  const publishMicStarted = () => {
+    // The audio context is now guaranteed to be created and running, so we can reliably get the hardware sample rate
+    pitchDetector = new PitchDetector({
+      sampleRate: audioEngine.audioCtx?.sampleRate ?? 44100,
+    })
+    if (midiConnected()) midiDisconnect()
+    setMicOn(true)
+    setMicActive(true)
+    setInputMode('mic')
   }
 
-  const stopMic = () => {
-    audioEngine.stopMic()
+  const publishMicStopped = () => {
     setMicOn(false)
     setMicActive(false)
     if (inputMode() === 'mic') setInputMode('keyboard')
+  }
+
+  const stopPhysicalMic = () => {
+    audioEngine.stopMic(GUITAR_AUDIO_MIC_OWNER)
+    publishMicStopped()
+  }
+
+  const ensureMicActive = (): Promise<boolean> => {
+    if (disposed || micOwners.size === 0) return Promise.resolve(false)
+    if (micOn()) return Promise.resolve(true)
+    if (micActivationInFlight !== null) return micActivationInFlight
+
+    const activation = (async (): Promise<boolean> => {
+      let ok = false
+      try {
+        ok = await audioEngine.startMic(GUITAR_AUDIO_MIC_OWNER)
+      } catch {
+        ok = false
+      }
+
+      // Permission may resolve after every interested surface has left. The
+      // current aggregate demand, rather than the age of the request, decides
+      // whether this late capture is adopted or released.
+      if (!ok) return false
+      if (disposed || micOwners.size === 0) {
+        stopPhysicalMic()
+        return false
+      }
+
+      publishMicStarted()
+      return true
+    })()
+    micActivationInFlight = activation
+    void activation.finally(() => {
+      if (micActivationInFlight === activation) micActivationInFlight = null
+    })
+    return activation
+  }
+
+  const startMic = async (
+    owner: GuitarMicOwner = 'manual',
+  ): Promise<boolean> => {
+    if (disposed) return false
+    const claimVersion = ++micOwnerSequence
+    micOwners.set(owner, claimVersion)
+    const ok = await ensureMicActive()
+    return ok && !disposed && micOwners.get(owner) === claimVersion
+  }
+
+  const stopMic = (owner: GuitarMicOwner = 'manual') => {
+    if (!micOwners.delete(owner)) return
+    if (micOwners.size === 0) stopPhysicalMic()
+  }
+
+  const stopAllMic = () => {
+    const hadMicDemand =
+      micOwners.size > 0 || micOn() || micActivationInFlight !== null
+    micOwners.clear()
+    if (hadMicDemand) stopPhysicalMic()
   }
 
   // The shared stream can die under us (OS revoke, a device switch tearing
@@ -268,7 +330,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
 
   // A song in flight owns the mic: releasing it mid-chart would score the rest
   // of the piece as missed notes.
-  micManager.registerRunGuard(
+  const unregisterRunGuard = micManager.registerRunGuard(
     'guitar-song',
     // eslint-disable-next-line solid/reactivity
     () => gameState() === 'playing' || gameState() === 'countdown',
@@ -285,7 +347,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     () => micOn(),
     // eslint-disable-next-line solid/reactivity
     () => {
-      if (micOn()) stopMic()
+      if (micOn()) stopAllMic()
     },
   )
 
@@ -294,9 +356,10 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const setInputDevice = async (deviceId: string): Promise<void> => {
     setInputDeviceIdSignal(deviceId)
     await micManager.setPreferredDevice(deviceId || null)
-    if (micOn()) {
-      stopMic()
-      await startMic()
+    if (micOwners.size > 0) {
+      // Re-wire the physical graph without dropping logical Guitar owners.
+      stopPhysicalMic()
+      await ensureMicActive()
     }
   }
 
@@ -308,7 +371,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   const midiConnect = async (): Promise<boolean> => {
     const ok = await midiEngine.connect()
     if (ok) {
-      if (micOn()) stopMic()
+      stopAllMic()
       setInputMode('midi')
       setMidiConnected(true)
     }
@@ -568,10 +631,15 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
   }
 
   onCleanup(() => {
+    disposed = true
     stopLoop()
+    audioEngine.stopAllNotes()
+    stopAllMic()
+    releaseGuitarInputDevice()
     midiEngine.disconnect()
     unsubscribeMicLost()
     unregisterSentinel()
+    unregisterRunGuard()
   })
 
   // ── Pitch detection helper ────────────────────────────────────
@@ -1134,6 +1202,7 @@ export function useGuitarPracticeController(audioEngine: AudioEngine) {
     articulationId: articulationIdSig,
     startMic,
     stopMic,
+    stopAllMic,
     isMicActive: micOn,
     /** RMS mic input level (0–1) for mic-feedback insights; 0 when mic off. */
     getInputLevel: () =>

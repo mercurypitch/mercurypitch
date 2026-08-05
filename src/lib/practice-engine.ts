@@ -18,6 +18,7 @@ const SCORE_PERFECT = 100
 const SCORE_EXCELLENT = 90
 const SCORE_GOOD = 75
 const SCORE_OKAY = 50
+const PRACTICE_MIC_OWNER = 'practice-engine'
 
 // Accuracy bands (threshold in cents → band score)
 const DEFAULT_BANDS: { threshold: number; band: number }[] = [
@@ -202,7 +203,7 @@ export class PracticeEngine {
         })
       }
 
-      const ok = await this.audioEngine.startMic()
+      const ok = await this.audioEngine.startMic(PRACTICE_MIC_OWNER)
       if (ok) {
         this.micActive = true
         this.detector.resetHistory()
@@ -229,7 +230,7 @@ export class PracticeEngine {
       return
     }
     console.info('[PracticeEngine] Stopping mic...')
-    this.audioEngine.stopMic()
+    this.audioEngine.stopMic(PRACTICE_MIC_OWNER)
     this.micActive = false
     this.emit('onMicStateChange', false)
   }
