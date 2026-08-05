@@ -1,6 +1,6 @@
 {
   "name": "mercury-pitch",
-  "version": "0.7.26",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.12.0",

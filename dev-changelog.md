@@ -6,9 +6,44 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.8.0] - 2026-08-06
 
 ### Added
+
+- **Personal Voice Constellation** (#428) (`src/features/voice-constellation/`,
+  `src/lib/mirror/voice-constellation.ts`, `src/lib/mirror/legend-catalog.ts`).
+  A route-backed surface for current and past saved Voice Mirror matches.
+  The 21-legend, six-band catalogue is centralised in `legend-catalog.ts` and
+  shared by matching, classification and presentation, so the three can no
+  longer disagree about a legend's band. Unmatched portraits stay inert
+  mystery scenes and never resolve or load their portrait assets — the
+  reveal is also a bandwidth boundary. Revealed legends open a focus-trapped
+  detail view with full artwork, vocal range, match history and
+  previous/next navigation. Entry points from returning onboarding, Settings
+  and the signed-in singer profile. `useVoiceConstellationIsolation` scopes
+  the surface to the signed-in identity so an account transition cannot leak
+  the previous singer's cards.
+
+- **Streak freezes accrue on a rolling clock**
+  (`workers/db-worker/migrations/0017_streak_freeze_accrual.sql`,
+  `src/db/services/streak-service.ts`). `MAX_FREEZES = 3`,
+  `STARTING_FREEZES = 2`, `FREEZE_ACCRUAL_DAYS = 30`. The old
+  `earnFreezeIfMilestone` granted at streak multiples of seven, which paid
+  forgiveness to whoever least needed it; `accrueFreezes` replaces it and
+  runs at the head of `advanceStreak`, `computeStreakState` and
+  `applyRepair`, so any read or write brings the balance current. It needs
+  its own anchor — `userProfiles.lastFreezeEarnedDate`, added by 0017 —
+  because a date derived from practice would only advance for people who
+  practise, and an idle month is exactly the case that must accrue. The
+  anchor advances by whole `periods * FREEZE_ACCRUAL_DAYS`, never to
+  `today`, so partial periods are not silently forfeited. `applyRepair` now
+  returns a typed `RepairResult` instead of a bare boolean, and repair is
+  suppressed while `freezesProtectStreak` — the two currencies are mutually
+  exclusive by construction, not by UI convention. Topping existing accounts
+  up to `STARTING_FREEZES` is deliberately NOT in the migration:
+  `scripts/grant-starting-freezes.sql` is run by hand from the release
+  checklist, because a migration CI applies would hand out currency
+  unreviewed against prod at tag time.
 
 - **Editable Karaoke Night demo song** (`workers/db-worker/migrations/0016_demo_song.sql`,
   `workers/db-worker/src/demo-song.ts`, `src/features/admin/AdminDemoSongPage.tsx`,
@@ -20,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **The shipped manifest is the floor.** `public/karaoke-demo-song.json`
     still loads whenever there is no row, the row is parked
     (`active = 0`), the row is malformed, or the API is unreachable. A
-    row also has to be *playable* (both stem URLs set) to win, so saving
+    row also has to be _playable_ (both stem URLs set) to win, so saving
     a title before pasting the stems cannot present an unplayable demo.
     The public `GET` filters on `active = 1` so a parked row is
     indistinguishable from no row; the admin `GET` sees it and reports
@@ -111,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   just a page that has forgotten what somebody did.
 
 - **Weekly Legend rotation** (`scripts/seed-weekly-rotation.mjs`, `pnpm
-  db:seed:weekly`): five consecutive weeks, week one `active` and weeks
+db:seed:weekly`): five consecutive weeks, week one `active` and weeks
   two to five `queued` on Monday-to-Monday windows. No cron — the worker
   resolves the current challenge lazily on every `GET /api/weekly/active`,
   closing a passed week (snapshotting its board into `resultsJson`) and
@@ -136,88 +171,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   yet, so retiring the key in one move would lock the owner out.
   `isAdmin()` is now async, awaited at all ten call sites. Seed scripts
   send service-token headers via the new `scripts/admin-headers.mjs`.
-
-### Changed
-
-- **`WeeklyChallenge.targetItems` documented as absolute, untransposed
-  MIDI** (`weekly-service.ts`, `MISTAKES.md`): a weekly Legend is a shared
-  feat, so everyone attempts the identical notes and the board stays
-  comparable. `voiceTypeSplit` is the unbuilt hook for per-type variants
-  and is read by nothing. Written down because it reads as a bug — a Bass
-  handed a B4 — and an agent would otherwise "fix" it.
-
-- **Migration guidance: replay, do not reason** (`MISTAKES.md`). A chain
-  analysed statement-by-statement and called safe fails on `0001` against
-  the real prod baseline: `CREATE INDEX IF NOT EXISTS ... ON
-  sessionRecords(weeklyChallengeId)` throws where the column is absent,
-  because `IF NOT EXISTS` guards the index and not the column, and the
-  `CREATE TABLE IF NOT EXISTS` above it is a no-op on an existing table.
-  The rule is now to rebuild the target database from the schema that
-  environment actually has and execute every migration against it.
-
-### Fixed
-
-- **Circular chunk `vendor -> pitch-core -> vendor`** (`vite.config.ts`):
-  `manualChunks` had no rule for Vite's own virtual modules, so
-  `vite/preload-helper` — the module that defines `__vitePreload`, and
-  which every chunk containing a dynamic import therefore imports — fell
-  through to `pitch-core`. `pitch-core` imports `vendor` for real, closing
-  the cycle. Rollup emits both halves of a cycle rather than failing, and
-  the failure mode is the one already recorded in `MISTAKES.md`: a
-  production build that dies at first paint on "Cannot access 'X' before
-  initialization", invisible to `pnpm check` and to dev. Virtual Vite
-  helpers now get their own `vite-helpers` chunk, placed above every other
-  rule; it imports nothing, so nothing can point back through it.
-  Verified on the built output: `vite-helpers-*.js` (1.8K) has no imports,
-  `vendor-*.js` imports only `vite-helpers`, and the warning is gone.
-
-- **Piano-roll viewport** (`piano-roll.ts`, `PianoRollEditor.css`): grid/ruler
-  canvases were sized to the whole song — a 267-bar import is 51,240 CSS px =
-  ~102,480 device px at DPR 2, past Chrome's 65,535 dimension cap, so the
-  canvas silently failed to allocate (blank grid). `.roll-grid-container` also
-  had **no CSS rule anywhere**, so it was never a scroll container: every
-  `scrollLeft` write was a no-op and the ruler's `translateX` sync never fired.
-  Canvases are now viewport-sized and positioned at the scroll offset inside a
-  full-width spacer layer; draws shift into content space via one
-  `ctx.translate(-scrollX)` (so existing `beat * beatWidth` math is unchanged)
-  and pointer handlers add the offset back. Grid lines, note blocks and preview
-  notes cull to the visible window; the ruler no longer draws twice per frame;
-  the ball playhead (viewport-sized but drawn in song space, hence invisible
-  past one viewport) takes the same shift and clears in CSS px. New
-  `MAX_CANVAS_PX` DPR clamp makes over-allocation impossible to reintroduce.
-  Navigation: `goToBar`/`pageView` + a bar box in the View group, and
-  `followPlayhead` (recording forward-only, playback re-centres).
-- **Row auto-fit** (`_fitRowsToMelody`): the old auto-grow raised the octave
-  COUNT but never moved the window's bottom octave, so imports reaching below
-  the start octave rendered hatched off-grid. Now derives start + count from
-  `melodyMidiRange`, and only fires when notes would actually be off-grid so
-  melodies that already fit keep the user's rows. (Note: this brings effect
-  notes on-scale that previously drew as off-scale blocks, which is why the
-  playback test's canvas mock needed `bezierCurveTo`.)
-- **Melody identity**: `SheetMusicView` gains a `melodyName` prop (key/scale
-  demoted to the kicker; `.scoreTitleName` opts out of `text-transform:
-  capitalize`), passed at all three call sites; Compose header gains an
-  identity row inside a new `.editorLeft` column-1 wrapper so `.composeToolbar`
-  keeps exactly three grid children and `data-tour="compose.editor"` stays on
-  the tablist.
-- **Tempo on load** (pre-existing, not a regression — `git log -S setBpm`
-  confirms the loader never had it): `handleSingingSongLoaded` wrote
-  `bpm: songBpm` onto the MelodyData but never called `setBpm`, so the
-  transport kept its previous/default BPM while the notes came from a song
-  written at another tempo. (The sidebar's `loadAndPlayMelodyForSession` and
-  `useSessionSequencer` both *do* apply it — only the Songs picker / import
-  path didn't.) Both branches now apply it. Additionally
-  `importMelodyFromMIDI` skips all meta events, so Compose's own import
-  discarded the file's tempo entirely: new `readMidiTempoBpm(data)` scans for
-  the Set Tempo meta (0xFF 0x51, µs/quarter) with a 20-400 BPM sanity gate,
-  wired through a new `onTempoImport` editor option and the file-menu import.
-- **Import naming**: new `melodyStore.loadImportedMelody(items, name, extra)`
-  reuses a same-named melody or creates one, replacing `setMelody` in the
-  Compose MIDI import (`useEditorController`), the roll toolbar's import (new
-  `onMelodyImport` option → `PianoRollCanvas` → App) and shared-link import,
-  all of which previously kept the *current* melody's name.
-
-### Added
 
 - **Seven more legend portraits** (`LegendCaricature.tsx`, `singer-match.ts`,
   `public/legends/`): Michael Jackson, Prince, Luciano Pavarotti, Aretha
@@ -305,47 +258,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `compose-scale-sync.test.ts` + an e2e that flips harmonic minor and
   clicks Rows +.
 
-### Fixed
-
-- Piano-roll bug sweep (`src/lib/piano-roll.ts`): zoom applied twice to the
-  canvas width (and `fitToView` both double-zoomed and subtracted the piano
-  column from a viewport that never contained it); `destroy()` leaked every
-  document/window listener — editors stacked per tab switch (now one
-  `AbortController` severs all, with a regression test); `Ctrl+A/Z/±`
-  intercepted before the `isTyping` guard, hijacking text inputs app-wide;
-  left column mis-sized on HiDPI (`style.width` never pinned); ball playhead
-  dead after the first Stop; multi-note resize collapsed every selected note
-  onto one end beat (now anchor-delta per note); resize/placement/drag snap
-  now follows note length down to 0.25 so 1/16 notes are usable; stopped-state
-  click at x<10 seeked instead of placing; `_rebuildScale` read the never-set
-  `window.pitchPerfectApp.key` (rebuilds silently reverted to C) — key/octave
-  now sync from every store scale push; pitch-track `ctx.scale(dpr)`
-  compounded across resizes; grid-toggle button and settings signal could
-  disagree (toolbar now round-trips the persisted setting); status-bar note
-  count refreshed only on Bars±; library saves debounced (was a full-library
-  `JSON.stringify` + localStorage write per drag mousemove) with flush on
-  hide/unload; "Melody saved!" toast spam removed.
-- `roll-toolbar-disabled` finally has CSS — browse-mode "disabled" toolbar
-  groups were fully interactive.
-
-### Removed
-
-- Dead code: unreachable internal playback animation loop (+ its
-  `playStartTime`/`editorBeat`/`startedNoteIds` machinery), `#roll-octave-value`
-  queries, `#roll-delete-selected-btn` handler, `'='` scale-name check,
-  `_trackIndex`, never-dispatched `presetSaved`/`presetLoaded` and
-  `pitchperfect:gridToggle` subscriptions, `MelodyEngine` (unused wrapper,
-  all-stub BPM/speed API) and the inert Speed select on the Compose bar.
-
-### Changed
-
-- Piano-roll canvases draw from a CSS-variable palette (`--roll-*` in
-  `PianoRollEditor.css`, dark values as fallbacks) instead of hardcoded hex;
-  toolbar a11y: labeled selects, `aria-pressed` on toggles, duration
-  radiogroup, `aria-live` status hint.
-
-### Added — exercise frame, routine, authored warm-up
-
 - **Guided exercise schema v2** (`validate-exercise.ts`, migration `0014`):
   targets gain a `kind` — absent means pitch (all of v1), `amplitude` scores
   coverage above the noise floor plus level steadiness, `breath` scores
@@ -381,24 +293,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The toggle lives on the populated routine card, not with the Focus/Length
   selects, which only render in the empty state.
 
-### Fixed — exercise frame
+### Changed
 
-- Pitch scoring filters to pitch targets, or a hiss counts as a missed note;
-  the blend collapses to the old number when nothing is unpitched, pinned by a
-  test. The gap-marker dedupe was collapsing every frame of a hiss into one
-  silent point, because a hiss is unpitched.
-- `use-warmup-controller` deleted: reference playback is replaced by the Zen
-  stage sounding each target as the playhead reaches it, and window scoring by
-  the run scorer. A step that finalizes without a score (the breathing cycle)
-  is left out of the average rather than counted as a zero.
-- Siren (`use-siren-controller.ts`): a counted `READY` phase (3s, `READY_SEC`)
-  replaces a 400ms gap and a 600ms inter-round rest. `sirenGuideMidi(from, to,
-  sinceGlideStart)` is extracted and unit-tested — the guide dot was phased off
-  `elapsedMs`, so its position when the window opened depended on how long
-  everything before it had taken. Phase numbers were bare literals compared
-  across two files; now `SIREN_PHASE_LISTEN|GLIDE|READY`.
+- **`deploy-db.yml` reconciles the target schema before applying the chain**
+  (`scripts/reconcile-d1-schema.mjs`, new Reconcile step before
+  **Apply D1 migrations**). `CREATE TABLE IF NOT EXISTS` does not compare
+  shapes, so every column `0001_baseline.sql` declares on a table predating
+  it never reached a `schema.sql`-era database — production, built by
+  `d1 execute schema.sql` at v0.7.22. Where the baseline indexes such a
+  column the first migration fails outright; where it does not, the chain
+  reports success while the app writes to columns that are not there, which
+  is how prod lacked six `userProfiles` streak columns for months at one D1
+  error per write.
 
-### Changed — onboarding round 4
+  The step derives the gap rather than carrying a list: apply **only** 0001
+  to a throwaway local database, read the target's real shape, add what is
+  missing from tables both have with the reference's own type, NOT NULL flag
+  and default. A baseline-only reference is what makes it safe — a column a
+  _later_ migration adds by ALTER is absent from it, so it is never
+  pre-added and that migration still finds the column missing and succeeds.
+  A hand-maintained list got exactly this wrong first time by including
+  `userProfiles.lastFreezeEarnedDate`, which `0017` adds; pre-adding it
+  would have failed 0017 on duplicate column and taken the chain down.
+
+  Runs for dev as well as prod on purpose: a step that only executes during
+  a release is a step nobody has tested. Verified against remote dev
+  (no-op), a chain-built replica (no-op), and a `v0.7.22:schema.sql` replica
+  (exactly seven columns); then reconcile that replica, replay all 17
+  migrations, and diff against a from-scratch database — 373 columns, 59
+  indexes, byte-identical. Re-running is a no-op. Limits: columns only, so
+  type changes, drops and renames still need a hand-written rebuild, and a
+  missing NOT NULL column with no default exits 1 rather than guessing what
+  existing rows should hold. Supersedes and deletes the print-only
+  `gen-column-patch-sql.mjs`.
+
+- **`WeeklyChallenge.targetItems` documented as absolute, untransposed
+  MIDI** (`weekly-service.ts`, `MISTAKES.md`): a weekly Legend is a shared
+  feat, so everyone attempts the identical notes and the board stays
+  comparable. `voiceTypeSplit` is the unbuilt hook for per-type variants
+  and is read by nothing. Written down because it reads as a bug — a Bass
+  handed a B4 — and an agent would otherwise "fix" it.
+
+- **Migration guidance: replay, do not reason** (`MISTAKES.md`). A chain
+  analysed statement-by-statement and called safe fails on `0001` against
+  the real prod baseline: `CREATE INDEX IF NOT EXISTS ... ON
+sessionRecords(weeklyChallengeId)` throws where the column is absent,
+  because `IF NOT EXISTS` guards the index and not the column, and the
+  `CREATE TABLE IF NOT EXISTS` above it is a no-op on an existing table.
+  The rule is now to rebuild the target database from the schema that
+  environment actually has and execute every migration against it.
+
+- Piano-roll canvases draw from a CSS-variable palette (`--roll-*` in
+  `PianoRollEditor.css`, dark values as fallbacks) instead of hardcoded hex;
+  toolbar a11y: labeled selects, `aria-pressed` on toggles, duration
+  radiogroup, `aria-live` status hint.
 
 - `WelcomeScreen.tsx`/`.module.css`, `BeatSky.tsx` and `e2e/onboarding.spec.ts`
   deleted. Consequence worth knowing: First Light now auto-opens for a
@@ -416,7 +364,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the desk arc spans y=235..414 with the eyebrow at 299 and the headline at
   331; the phone band puts it at y=88..141, clearing the copy by 158px.
 
-### Fixed — mobile pass
+### Removed
+
+- Four `src/e2e/debug-*.spec.ts` scratch specs (`debug-appstore`,
+  `debug-layout`, `debug-proto`, `debug-reactivity`) — 223 lines asserting
+  nothing anybody relies on, costing time on every E2E run. Kept in git
+  history for the next similar hunt.
+- `scripts/gen-column-patch-sql.mjs` — the print-only column patcher with a
+  hand-maintained expected-column list, superseded by
+  `scripts/reconcile-d1-schema.mjs`, which derives the same set from the
+  baseline and cannot go stale.
+- Dead code: unreachable internal playback animation loop (+ its
+  `playStartTime`/`editorBeat`/`startedNoteIds` machinery), `#roll-octave-value`
+  queries, `#roll-delete-selected-btn` handler, `'='` scale-name check,
+  `_trackIndex`, never-dispatched `presetSaved`/`presetLoaded` and
+  `pitchperfect:gridToggle` subscriptions, `MelodyEngine` (unused wrapper,
+  all-stub BPM/speed API) and the inert Speed select on the Compose bar.
+
+### Fixed
+
+- **Circular chunk `vendor -> pitch-core -> vendor`** (`vite.config.ts`):
+  `manualChunks` had no rule for Vite's own virtual modules, so
+  `vite/preload-helper` — the module that defines `__vitePreload`, and
+  which every chunk containing a dynamic import therefore imports — fell
+  through to `pitch-core`. `pitch-core` imports `vendor` for real, closing
+  the cycle. Rollup emits both halves of a cycle rather than failing, and
+  the failure mode is the one already recorded in `MISTAKES.md`: a
+  production build that dies at first paint on "Cannot access 'X' before
+  initialization", invisible to `pnpm check` and to dev. Virtual Vite
+  helpers now get their own `vite-helpers` chunk, placed above every other
+  rule; it imports nothing, so nothing can point back through it.
+  Verified on the built output: `vite-helpers-*.js` (1.8K) has no imports,
+  `vendor-*.js` imports only `vite-helpers`, and the warning is gone.
+
+- **Piano-roll viewport** (`piano-roll.ts`, `PianoRollEditor.css`): grid/ruler
+  canvases were sized to the whole song — a 267-bar import is 51,240 CSS px =
+  ~102,480 device px at DPR 2, past Chrome's 65,535 dimension cap, so the
+  canvas silently failed to allocate (blank grid). `.roll-grid-container` also
+  had **no CSS rule anywhere**, so it was never a scroll container: every
+  `scrollLeft` write was a no-op and the ruler's `translateX` sync never fired.
+  Canvases are now viewport-sized and positioned at the scroll offset inside a
+  full-width spacer layer; draws shift into content space via one
+  `ctx.translate(-scrollX)` (so existing `beat * beatWidth` math is unchanged)
+  and pointer handlers add the offset back. Grid lines, note blocks and preview
+  notes cull to the visible window; the ruler no longer draws twice per frame;
+  the ball playhead (viewport-sized but drawn in song space, hence invisible
+  past one viewport) takes the same shift and clears in CSS px. New
+  `MAX_CANVAS_PX` DPR clamp makes over-allocation impossible to reintroduce.
+  Navigation: `goToBar`/`pageView` + a bar box in the View group, and
+  `followPlayhead` (recording forward-only, playback re-centres).
+- **Row auto-fit** (`_fitRowsToMelody`): the old auto-grow raised the octave
+  COUNT but never moved the window's bottom octave, so imports reaching below
+  the start octave rendered hatched off-grid. Now derives start + count from
+  `melodyMidiRange`, and only fires when notes would actually be off-grid so
+  melodies that already fit keep the user's rows. (Note: this brings effect
+  notes on-scale that previously drew as off-scale blocks, which is why the
+  playback test's canvas mock needed `bezierCurveTo`.)
+- **Melody identity**: `SheetMusicView` gains a `melodyName` prop (key/scale
+  demoted to the kicker; `.scoreTitleName` opts out of `text-transform:
+capitalize`), passed at all three call sites; Compose header gains an
+  identity row inside a new `.editorLeft` column-1 wrapper so `.composeToolbar`
+  keeps exactly three grid children and `data-tour="compose.editor"` stays on
+  the tablist.
+- **Tempo on load** (pre-existing, not a regression — `git log -S setBpm`
+  confirms the loader never had it): `handleSingingSongLoaded` wrote
+  `bpm: songBpm` onto the MelodyData but never called `setBpm`, so the
+  transport kept its previous/default BPM while the notes came from a song
+  written at another tempo. (The sidebar's `loadAndPlayMelodyForSession` and
+  `useSessionSequencer` both _do_ apply it — only the Songs picker / import
+  path didn't.) Both branches now apply it. Additionally
+  `importMelodyFromMIDI` skips all meta events, so Compose's own import
+  discarded the file's tempo entirely: new `readMidiTempoBpm(data)` scans for
+  the Set Tempo meta (0xFF 0x51, µs/quarter) with a 20-400 BPM sanity gate,
+  wired through a new `onTempoImport` editor option and the file-menu import.
+- **Import naming**: new `melodyStore.loadImportedMelody(items, name, extra)`
+  reuses a same-named melody or creates one, replacing `setMelody` in the
+  Compose MIDI import (`useEditorController`), the roll toolbar's import (new
+  `onMelodyImport` option → `PianoRollCanvas` → App) and shared-link import,
+  all of which previously kept the _current_ melody's name.
+
+- Piano-roll bug sweep (`src/lib/piano-roll.ts`): zoom applied twice to the
+  canvas width (and `fitToView` both double-zoomed and subtracted the piano
+  column from a viewport that never contained it); `destroy()` leaked every
+  document/window listener — editors stacked per tab switch (now one
+  `AbortController` severs all, with a regression test); `Ctrl+A/Z/±`
+  intercepted before the `isTyping` guard, hijacking text inputs app-wide;
+  left column mis-sized on HiDPI (`style.width` never pinned); ball playhead
+  dead after the first Stop; multi-note resize collapsed every selected note
+  onto one end beat (now anchor-delta per note); resize/placement/drag snap
+  now follows note length down to 0.25 so 1/16 notes are usable; stopped-state
+  click at x<10 seeked instead of placing; `_rebuildScale` read the never-set
+  `window.pitchPerfectApp.key` (rebuilds silently reverted to C) — key/octave
+  now sync from every store scale push; pitch-track `ctx.scale(dpr)`
+  compounded across resizes; grid-toggle button and settings signal could
+  disagree (toolbar now round-trips the persisted setting); status-bar note
+  count refreshed only on Bars±; library saves debounced (was a full-library
+  `JSON.stringify` + localStorage write per drag mousemove) with flush on
+  hide/unload; "Melody saved!" toast spam removed.
+- `roll-toolbar-disabled` finally has CSS — browse-mode "disabled" toolbar
+  groups were fully interactive.
+
+- Pitch scoring filters to pitch targets, or a hiss counts as a missed note;
+  the blend collapses to the old number when nothing is unpitched, pinned by a
+  test. The gap-marker dedupe was collapsing every frame of a hiss into one
+  silent point, because a hiss is unpitched.
+- `use-warmup-controller` deleted: reference playback is replaced by the Zen
+  stage sounding each target as the playhead reaches it, and window scoring by
+  the run scorer. A step that finalizes without a score (the breathing cycle)
+  is left out of the average rather than counted as a zero.
+- Siren (`use-siren-controller.ts`): a counted `READY` phase (3s, `READY_SEC`)
+  replaces a 400ms gap and a 600ms inter-round rest. `sirenGuideMidi(from, to,
+sinceGlideStart)` is extracted and unit-tested — the guide dot was phased off
+  `elapsedMs`, so its position when the window opened depended on how long
+  everything before it had taken. Phase numbers were bare literals compared
+  across two files; now `SIREN_PHASE_LISTEN|GLIDE|READY`.
 
 - Community (`vocal-analysis.css`): omitted from the
   `height: 100%; overflow-y: auto` rule Challenges and Leaderboard share, so it
@@ -524,7 +585,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Worker-first routing for /api/* + mirror host**: Cloudflare's asset layer with `not_found_handling: single-page-application` answers every path not in `assets.run_worker_first` WITHOUT invoking the Worker — `POST /api/uvr/process` died as an empty-body 405 (server separation broken with a blank error), `GET /api/*` returned cached index.html, and `mirror.mercurypitch.com` served the SPA shell instead of mirror.html. `run_worker_first` now lists `/api/*` and `/` alongside the glass aliases. Client hardening: `uvr-api` names the HTTP status when an error response has no body (HTTP/2 has no statusText).
+- **Worker-first routing for /api/\* + mirror host**: Cloudflare's asset layer with `not_found_handling: single-page-application` answers every path not in `assets.run_worker_first` WITHOUT invoking the Worker — `POST /api/uvr/process` died as an empty-body 405 (server separation broken with a blank error), `GET /api/*` returned cached index.html, and `mirror.mercurypitch.com` served the SPA shell instead of mirror.html. `run_worker_first` now lists `/api/*` and `/` alongside the glass aliases. Client hardening: `uvr-api` names the HTTP status when an error response has no body (HTTP/2 has no statusText).
 - **Stem-mixer canvas staleness** (#276): `syncCanvasSizes` pinned inline pixel width/height, overriding `.sm-canvas { width:100% }` and silencing the ResizeObserver — canvases froze at first measure across sidebar/layout/zoom/HMR changes. Observers now follow Show-block canvas swaps; DPR changes resync.
 
 ## [0.7.15] - 2026-07-19
@@ -597,7 +658,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Track switch preserves the playhead + transport** (#208): switching the scored track of an imported multi-track MIDI ran the full load path (`stopGame` / `setPlayheadBeat(0)`), rewinding to 0:00 and stalling the play button. New `changeScoreTrack()` on the guitar and piano (falling-notes) controllers rebuilds the notes/backing and resets the score but keeps the playhead + transport (keeps playing if playing; Play/Space resume from the current beat; notes before the playhead are marked passed so they don't all fire at once). The shared song picker gains an `onScoreTrackChange` hand-off (falls back to `onSongLoaded`).
 - **Local/WebGPU separation retry no longer crashes when Cloud mode is active** (#209): `getSeparator()`'s `setUvrModelStatus('loading')` write synchronously re-ran `UvrPanel`'s server-mode cleanup effect (it read `uvrModelStatus()`), which called `destroyPipeline()` and nulled the module `separator` mid-init → "can't access property initialize, … is null". Gated that effect on the mode signal only (`on(uvrProcessingMode)` + `untrack` for the status), hardened `getSeparator` to hold a local reference across the store writes, and added `humanizeProcessingError` so no raw JS crash reaches a session card.
-- **Singing song-change refreshes the canvas + timeline** (#215): `handleSingingSongLoaded` now calls `resetPlaybackState()` before loading the new melody. While playing/paused the playback controller holds a *frozen* `playbackDisplayMelody` / `playbackDisplayBeats` for the in-progress run (its auto-clear effect only fires when stopped), so switching songs mid/after a run — e.g. during A-B loop testing — left the previous song frozen on the canvas + timeline. Also clears the old A-B loop, whose beats belonged to the previous song.
+- **Singing song-change refreshes the canvas + timeline** (#215): `handleSingingSongLoaded` now calls `resetPlaybackState()` before loading the new melody. While playing/paused the playback controller holds a _frozen_ `playbackDisplayMelody` / `playbackDisplayBeats` for the in-progress run (its auto-clear effect only fires when stopped), so switching songs mid/after a run — e.g. during A-B loop testing — left the previous song frozen on the canvas + timeline. Also clears the old A-B loop, whose beats belonged to the previous song.
 - **Focus mode scrolls instead of squishing long songs** (#215): `FocusMode` passed `isScrolling={() => false}` to `PitchCanvas`, forcing the fit-whole-song `beatToX` branch (divide by the whole range, not the visible window); now `true`, so short melodies still render whole (`rangeBeats <= visibleBeatWindow`) but long songs scroll a fixed window like normal mode.
 - **e2e** (#213): expand the (now collapsed-by-default) sidebar Playback Setup section before asserting on its scale controls — new idempotent `openPlaybackSetup` helper; fixes 6 specs across `app` / `critical-flows` / `css-audit`.
 
@@ -606,7 +667,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **A-B loop on the Singing tab** (#200): mark A then B on the melody and loop that section. The loop math is extracted to a pure, unit-tested `src/lib/ab-loop.ts` (`shouldLoopBack`, `isSeekOutsideLoop`, `loopRegionPct`, `clampLoopB`) mirroring the stem-mixer's half-open `[A, B)` semantics and its `seekedOutsideLoop` escape flag — so a manual seek past B is no longer instantly reverted. `App.tsx` owns the signals + the auto-seek-back effect (gated on `beat < totalBeats()` to avoid racing the runtime's natural-end); `SingingStatusBar` draws a reactive loop-region overlay (no stale IIFE); `SingingControlBar` reuses the existing `IconRepeat` for the toggle and a single consolidated `IconLoopPoint`. `.loopRegionActive` uses `var(--green)` (no hardcoded hex). 21 loop-math tests.
-- **Guitar tuner + riff tracker** (#199): `src/lib/guitar/tuner.ts` `classifyPitch(frequency, clarity, targets, names)` classifies against the *selected* tuning, so presets (Standard / Drop D / Half Step Down / Open G / DADGAD) actually retune instead of only relabeling; the previously-dead `isTuningSignal` ±50-cent gate is wired in so off-string noise can't read "in tune" (manual per-string mode bypasses the gate so a far-off/fresh string still shows deviation). Open G frequencies corrected. `GuitarTuner`/`GuitarRiffTracker` components + a headless `RiffTrackerState` factory (record → timeline → score against a target melody). Riff capture is driven off a new reactive `articulationId` signal on `useGuitarPracticeController` (a lockstep mirror of the non-reactive scoring counter) so repeated same-pitch attacks aren't de-duplicated away by `detectedMidi`. Reuses `frequencyToMidi` / `computeCentsDeviation` / `noteToMidi` (the last now parses flats + multi-digit octaves); glyphs replaced with SVG icons. 33 tuner + riff tests.
+- **Guitar tuner + riff tracker** (#199): `src/lib/guitar/tuner.ts` `classifyPitch(frequency, clarity, targets, names)` classifies against the _selected_ tuning, so presets (Standard / Drop D / Half Step Down / Open G / DADGAD) actually retune instead of only relabeling; the previously-dead `isTuningSignal` ±50-cent gate is wired in so off-string noise can't read "in tune" (manual per-string mode bypasses the gate so a far-off/fresh string still shows deviation). Open G frequencies corrected. `GuitarTuner`/`GuitarRiffTracker` components + a headless `RiffTrackerState` factory (record → timeline → score against a target melody). Riff capture is driven off a new reactive `articulationId` signal on `useGuitarPracticeController` (a lockstep mirror of the non-reactive scoring counter) so repeated same-pitch attacks aren't de-duplicated away by `detectedMidi`. Reuses `frequencyToMidi` / `computeCentsDeviation` / `noteToMidi` (the last now parses flats + multi-digit octaves); glyphs replaced with SVG icons. 33 tuner + riff tests.
 - **Transactional emails** (#202): purchase thank-you email + account sign-up welcome email.
 
 ### Fixed
@@ -631,7 +692,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Cloud-separated stems no longer go missing after a reload (#uvr durability): stems are persisted durably to IndexedDB *before* a session is marked done, always reopened from the local copy, and never depend on the server's temporary links. Added a `beforeunload` guard during the finalize/save window, orphan-DB cleanup + reconcile-on-load, and serialized per-session DB writes; added durability + reconciliation test suites.
+- Cloud-separated stems no longer go missing after a reload (#uvr durability): stems are persisted durably to IndexedDB _before_ a session is marked done, always reopened from the local copy, and never depend on the server's temporary links. Added a `beforeunload` guard during the finalize/save window, orphan-DB cleanup + reconcile-on-load, and serialized per-session DB writes; added durability + reconciliation test suites.
 
 ### Added
 
@@ -1095,8 +1156,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mixer Deep-Link Race Condition**: Fixed `handleSessionView` unconditionally overwriting the mixer view from URL hash.
 - **Whisper Progress Bar**: Fixed erratic progress bar behavior with per-file monotonic aggregate reporting.
 
-
-
 ## [0.3.10] - 2026-06-02
 
 ### Added
@@ -1107,7 +1166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Karaoke UI**: Re-styled the Karaoke Settings modal to be more compact, removed redundant title, and fixed oversized SVG icons. Added a styled "filename pill" with truncation and hover tooltip to the audio processing view and the results view.
 - **Routing**: Renamed the URL hash from `#/uvr/...` to `#/karaoke/...` for better consistency with the Karaoke tab, while maintaining backwards compatibility for old links.
-- **Database Migration**: Moved lyrics and session storage from `localStorage` to IndexedDB for improved reliability and storage capacity. *(Note: Users may need to clear/reset data via the "Clear All Data" button for the app to function stably after this migration).*
+- **Database Migration**: Moved lyrics and session storage from `localStorage` to IndexedDB for improved reliability and storage capacity. _(Note: Users may need to clear/reset data via the "Clear All Data" button for the app to function stably after this migration)._
 - **UI Consolidation**: Replaced duplicate delete buttons with a single unified "Clear All Data" wipe button to completely remove cached songs and session history.
 
 ### Fixed
@@ -1120,6 +1179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Session Loading Performance**: Optimized `ensureHydrated` to cache loaded IndexedDB Blobs per page session, significantly speeding up "View Results" and "Play" navigation.
 - **Whisper Transcription**: Increased processing timeout from 180s to 300s to prevent valid large files from failing. Added toast notifications to warn users of poor transcription accuracy (<25%).
 - **Clipboard Access**: Added a dedicated "Paste" button to the lyrics headers and a global `Ctrl+V` listener to seamlessly load lyrics directly from the clipboard.
+
 ## [0.3.9] - 2026-05-30
 
 ### Added
