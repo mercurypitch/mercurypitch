@@ -3,9 +3,25 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [Unreleased]
+## [0.8.0] - 2026-08-06
 
 ### Added
+
+- **Your Voice Constellation.** Every legend your voice has been matched
+  with now has a place of its own — the one you match today, and every one
+  you matched before. Revealed legends open full-size: the artwork, the
+  vocal range, when you were matched, and arrows through the rest. The
+  twenty-one legends you have not met yet stay as unnamed scenes, so there
+  is something left to find. Reachable from Settings, from your profile, and
+  from the intro when you come back.
+
+- **Streaks can survive a missed day.** You start with two freezes and earn
+  another for every thirty days, up to three held at once. A freeze spends
+  itself automatically on the day you miss, so a streak you have kept for
+  months does not end because of one evening. The card now says when a
+  streak is at risk rather than waiting to tell you it is gone, and while a
+  freeze can still cover you it does not offer the repair — no point
+  spending the rarer thing on a problem the cheaper one already handles.
 
 - **The Karaoke Night demo song can be changed from the admin studio.**
   Its title, artist, stems, attribution and lyrics used to be fixed in the
@@ -36,40 +52,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   stepwise run and a low-note descent. Each opens automatically when the
   previous one closes, and once the five are spent the app re-runs a past
   week as an Encore rather than showing an empty card.
-
-### Changed
-
-- **The admin studio can be put behind a Cloudflare sign-in.** Where it is
-  configured, changing site content needs a real account Cloudflare
-  vouched for, not just a shared key — so every change has a name against
-  it and access can be revoked for one person without changing anything
-  for everyone else.
-
-### Fixed
-
-- **Big songs open properly in Compose.** Loading a long MIDI (hundreds of
-  bars) used to show an empty grid you couldn't scroll — the editor was trying
-  to draw the entire song onto a single canvas far larger than browsers allow,
-  so it drew nothing at all. Compose now draws just the part you're looking at
-  and scrolls smoothly through the rest, with Prev/Next page buttons and a
-  "go to bar" box for getting around long songs. Playback keeps the playhead
-  in view, and a dense song no longer bogs the editor down.
-- **Imported songs land on the right rows.** The grid now positions itself
-  over the song's actual pitch range instead of leaving high and low notes
-  stranded off-grid — while melodies that already fit keep the rows you chose.
-- **You can see which melody you're editing.** Compose shows the melody name
-  next to the view tabs, and the score header names it too, so Split view no
-  longer looks like two different pieces — no need to open the sidebar.
-- **Imports keep their own name.** Importing a MIDI from Compose (or opening a
-  shared link) used to pour the notes into whatever melody was open and keep
-  that melody's old name; imports now become a melody named after the file or
-  the shared song.
-- **Songs play at their own tempo.** Loading a song or melody left the tempo
-  wherever it was — usually the default — so an imported MIDI played at the
-  wrong speed from the first note. Loading now adopts the song's tempo, and
-  Compose's own MIDI import reads the tempo out of the file too.
-
-### Added
 
 - **Seven more legends to be matched with.** Michael Jackson, Prince, Luciano
   Pavarotti, Aretha Franklin, Louis Armstrong, Nina Simone and Ariana Grande
@@ -103,7 +85,118 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   bar to jump there or drag across the staff to scrub playback,
   Guitar-Pro-style. The choice is remembered.
 
+- **See the shape of a take.** Every take now gets a pitch plot: your live
+  contour as you sing, the detected notes of a song you separated in Karaoke,
+  or a practice run drawn note by note and coloured by how close each one
+  landed. Practice notes are laid out by how long you actually spent on each,
+  so a held note is a wide bar.
+- **A real spectrogram for a separated vocal.** Pick a song you've separated
+  and hit "Analyse audio" — it reads the whole vocal in the background and
+  gives you a spectrogram plus breathiness, resonance and harmonics measured
+  across the take, not just the moment.
+- **Depth without clutter on a phone.** The heavier sections start folded on
+  mobile and open on desktop; tap a heading to expand one. Nothing is
+  desktop-only any more — the phone gets every section, just tidier.
+
+- **Exercises show what's coming, not just what you just sang.** The pitch
+  track now draws the notes ahead of the playhead as well as the trace behind
+  it, so you can see the next target arriving instead of finding out about it
+  when you are already late.
+- **Your finished run, shown back to you.** A drill used to end on a number.
+  It now ends on a picture of the attempt — where you were sharp, where you
+  were flat, and where you lost the note — so the score has something to point
+  at.
+- **Choose how long a held note runs before it scores itself.** Pick 5, 10, 15
+  or 30 seconds (or a custom length) before you start, instead of the run
+  ending whenever you remember to press Stop. The choice is remembered, and it
+  follows you to your other devices.
+- **The warm-up is a real warm-up now.** The six warm-up patterns run on the
+  same stage as everything else: targets ahead of the playhead, your voice
+  behind it, a lane for the hiss and an expanding ring to breathe with. The
+  hiss on the exhale is measured for the first time — and the breathing step
+  is left out of your average rather than counted as a zero.
+- **Pick up a half-finished routine.** Home offers to resume a daily routine
+  you started earlier the same day, once at least one segment is done.
+- **The routine carries you to the next segment.** Instead of waiting to be
+  clicked, it counts down five seconds and continues. Cancel stops it; cancel
+  twice and it offers to stop doing that for good.
+
+### Changed
+
+- **The admin studio can be put behind a Cloudflare sign-in.** Where it is
+  configured, changing site content needs a real account Cloudflare
+  vouched for, not just a shared key — so every change has a name against
+  it and access can be revoked for one person without changing anything
+  for everyone else.
+
+- **Leaderboards are opt-in and for accounts only.** You choose a display
+  name and publish your results deliberately; nothing is listed until you do.
+  Rankings now count real completed exercises and challenges rather than
+  open-ended practice time.
+- **Visiting no longer creates an account.** The app only registers a cloud
+  identity the moment you actually save something, so just looking around
+  leaves nothing behind.
+
+- **Analysis is one page now, and it works on your phone.** The tab used to
+  show three sub-tabs of dense tooling on desktop and something completely
+  different on mobile. It's now a single dashboard at every screen size: pick
+  what you want to look at — your mic right now, a song you separated in
+  Karaoke, or a past practice session — and see the analysis for it.
+- **Every number on the page is real.** The old page showed vibrato rate,
+  breathiness and a "spectrum" for past practice sessions, all calculated from
+  saved note scores rather than any audio — the spectrum was drawn from note
+  frequencies, not measured. Each take now says what depth of analysis its data
+  supports, and sections that would need audio you don't have simply aren't
+  shown. You'll see fewer numbers for old sessions, and the ones you see mean
+  something.
+- **Live singing is measured more accurately.** Breathiness, resonance and
+  harmonic richness now come from the real frequency analysis that was already
+  running, instead of being estimated from the pitch track alongside it.
+
+- **The welcome screen is gone.** Two screens stood between you and the app,
+  and the first one was there to be clicked past. What mattered on it — going
+  straight in without setting anything up, the Terms and Privacy line, and a
+  plain statement of what you get — moved onto the first real step.
+- **The intro arc tracks where you are.** One bead per step, lit up to the one
+  you're on. A short run gets a short arc.
+- **Coming back, you're shown the voice you already mapped.** If you have saved
+  voiceprints, the intro leads with them, and picking one opens a gallery that
+  shows the artwork at full size for the first time.
+- **The Map's rooms wear their artwork.** Backdrops were nearly invisible, a
+  phone could never ask for them at all, and Jam had no art.
+
 ### Fixed
+
+- **Repairing a streak tells you whether it worked.** The button reported
+  nothing at all, so a repair that failed looked exactly like one that
+  succeeded — you found out by watching the number not change. It now says,
+  either way.
+- **Switching accounts no longer leaves the last singer's portraits on
+  screen.** The constellation kept showing cards from the account you just
+  left until it caught up, and could flash a stale card on the way in.
+- **Leaving the constellation returns you to the app.** The brand in the
+  corner went to the marketing site rather than back where you came from.
+- **Big songs open properly in Compose.** Loading a long MIDI (hundreds of
+  bars) used to show an empty grid you couldn't scroll — the editor was trying
+  to draw the entire song onto a single canvas far larger than browsers allow,
+  so it drew nothing at all. Compose now draws just the part you're looking at
+  and scrolls smoothly through the rest, with Prev/Next page buttons and a
+  "go to bar" box for getting around long songs. Playback keeps the playhead
+  in view, and a dense song no longer bogs the editor down.
+- **Imported songs land on the right rows.** The grid now positions itself
+  over the song's actual pitch range instead of leaving high and low notes
+  stranded off-grid — while melodies that already fit keep the rows you chose.
+- **You can see which melody you're editing.** Compose shows the melody name
+  next to the view tabs, and the score header names it too, so Split view no
+  longer looks like two different pieces — no need to open the sidebar.
+- **Imports keep their own name.** Importing a MIDI from Compose (or opening a
+  shared link) used to pour the notes into whatever melody was open and keep
+  that melody's old name; imports now become a melody named after the file or
+  the shared song.
+- **Songs play at their own tempo.** Loading a song or melody left the tempo
+  wherever it was — usually the default — so an imported MIDI played at the
+  wrong speed from the first note. Loading now adopts the song's tempo, and
+  Compose's own MIDI import reads the tempo out of the file too.
 
 - **Fast, dense melodies play every note.** At high tempo, notes shorter than
   one animation frame could fall between two scheduler samples and never
@@ -147,79 +240,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Delete your account.** Settings → Account can now erase your cloud
   account and its data completely — type the confirmation word and it's gone.
 
-### Changed
-
-- **Leaderboards are opt-in and for accounts only.** You choose a display
-  name and publish your results deliberately; nothing is listed until you do.
-  Rankings now count real completed exercises and challenges rather than
-  open-ended practice time.
-- **Visiting no longer creates an account.** The app only registers a cloud
-  identity the moment you actually save something, so just looking around
-  leaves nothing behind.
-
-- **Analysis is one page now, and it works on your phone.** The tab used to
-  show three sub-tabs of dense tooling on desktop and something completely
-  different on mobile. It's now a single dashboard at every screen size: pick
-  what you want to look at — your mic right now, a song you separated in
-  Karaoke, or a past practice session — and see the analysis for it.
-- **Every number on the page is real.** The old page showed vibrato rate,
-  breathiness and a "spectrum" for past practice sessions, all calculated from
-  saved note scores rather than any audio — the spectrum was drawn from note
-  frequencies, not measured. Each take now says what depth of analysis its data
-  supports, and sections that would need audio you don't have simply aren't
-  shown. You'll see fewer numbers for old sessions, and the ones you see mean
-  something.
-- **Live singing is measured more accurately.** Breathiness, resonance and
-  harmonic richness now come from the real frequency analysis that was already
-  running, instead of being estimated from the pitch track alongside it.
-
-### Added
-
-- **See the shape of a take.** Every take now gets a pitch plot: your live
-  contour as you sing, the detected notes of a song you separated in Karaoke,
-  or a practice run drawn note by note and coloured by how close each one
-  landed. Practice notes are laid out by how long you actually spent on each,
-  so a held note is a wide bar.
-- **A real spectrogram for a separated vocal.** Pick a song you've separated
-  and hit "Analyse audio" — it reads the whole vocal in the background and
-  gives you a spectrogram plus breathiness, resonance and harmonics measured
-  across the take, not just the moment.
-- **Depth without clutter on a phone.** The heavier sections start folded on
-  mobile and open on desktop; tap a heading to expand one. Nothing is
-  desktop-only any more — the phone gets every section, just tidier.
-
-### Fixed
-
 - **Your practice streak was wrong on the Analysis page.** It counted every day
   you'd ever practised rather than consecutive days, so "current streak" always
   matched "best streak". It now uses the same streak as the rest of the app.
-
-### Added
-
-- **Exercises show what's coming, not just what you just sang.** The pitch
-  track now draws the notes ahead of the playhead as well as the trace behind
-  it, so you can see the next target arriving instead of finding out about it
-  when you are already late.
-- **Your finished run, shown back to you.** A drill used to end on a number.
-  It now ends on a picture of the attempt — where you were sharp, where you
-  were flat, and where you lost the note — so the score has something to point
-  at.
-- **Choose how long a held note runs before it scores itself.** Pick 5, 10, 15
-  or 30 seconds (or a custom length) before you start, instead of the run
-  ending whenever you remember to press Stop. The choice is remembered, and it
-  follows you to your other devices.
-- **The warm-up is a real warm-up now.** The six warm-up patterns run on the
-  same stage as everything else: targets ahead of the playhead, your voice
-  behind it, a lane for the hiss and an expanding ring to breathe with. The
-  hiss on the exhale is measured for the first time — and the breathing step
-  is left out of your average rather than counted as a zero.
-- **Pick up a half-finished routine.** Home offers to resume a daily routine
-  you started earlier the same day, once at least one segment is done.
-- **The routine carries you to the next segment.** Instead of waiting to be
-  clicked, it counts down five seconds and continues. Cancel stops it; cancel
-  twice and it offers to stop doing that for good.
-
-### Fixed
 
 - **The microphone stays open between routine segments.** Every segment
   boundary used to close the device and reopen it — a visible stall, and on
@@ -235,22 +258,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Daily routines no longer send you somewhere they can't follow.** Generated
   routines dropped their challenge-prep segment, which led out of the routine
   and left it stuck.
-
-### Changed
-
-- **The welcome screen is gone.** Two screens stood between you and the app,
-  and the first one was there to be clicked past. What mattered on it — going
-  straight in without setting anything up, the Terms and Privacy line, and a
-  plain statement of what you get — moved onto the first real step.
-- **The intro arc tracks where you are.** One bead per step, lit up to the one
-  you're on. A short run gets a short arc.
-- **Coming back, you're shown the voice you already mapped.** If you have saved
-  voiceprints, the intro leads with them, and picking one opens a gallery that
-  shows the artwork at full size for the first time.
-- **The Map's rooms wear their artwork.** Backdrops were nearly invisible, a
-  phone could never ask for them at all, and Jam had no art.
-
-### Fixed
 
 - **A quiet room is not a broken microphone.** The check ran before you'd been
   asked to sing, decided the room was silent, and sent perfectly good
