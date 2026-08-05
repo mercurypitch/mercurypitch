@@ -103,6 +103,9 @@ describe('VoiceConstellationSurface', () => {
       'src',
       '/legends/mid/freddie.webp',
     )
+    expect(current?.querySelector('button')).toHaveAccessibleName(
+      'Open Freddie Mercury portrait details',
+    )
     expect(current).toHaveTextContent('Tenor')
     expect(current).toHaveTextContent('Current match')
 
@@ -117,12 +120,66 @@ describe('VoiceConstellationSurface', () => {
     const mystery = document.querySelector('[data-legend-card="frank-sinatra"]')
     expect(mystery).toHaveAttribute('data-legend-state', 'unmatched')
     expect(mystery?.querySelector('img')).toBeNull()
+    expect(mystery?.querySelector('button')).toBeNull()
+    expect(mystery?.querySelector('svg')).toBeNull()
     expect(mystery?.innerHTML).not.toContain('/legends/')
     expect(mystery).toHaveTextContent('Baritone')
     expect(mystery).toHaveTextContent('Mystery portrait')
     expect(screen.getByText(/Your latest measured range,/)).toHaveTextContent(
       'G2–C5',
     )
+  })
+
+  it('opens full details for revealed portraits and restores the card on close', async () => {
+    mocks.listVoiceprints.mockResolvedValue([
+      voiceprint('current', 'Freddie Mercury', '2026-08-05T10:00:00.000Z'),
+      voiceprint('past', 'Elvis Presley', '2026-07-01T10:00:00.000Z'),
+    ])
+    const host = appHost()
+
+    render(() => <VoiceConstellationSurface onClose={vi.fn()} />, {
+      container: host,
+    })
+
+    const opener = await screen.findByRole('button', {
+      name: 'Open Freddie Mercury portrait details',
+    })
+    opener.focus()
+    fireEvent.click(opener)
+
+    const detail = await screen.findByRole('dialog', {
+      name: 'Freddie Mercury',
+    })
+    const detailClose = screen.getByRole('button', {
+      name: 'Close portrait details',
+    })
+    await waitFor(() => expect(detailClose).toHaveFocus())
+    expect(detail).toHaveTextContent('Champion of the mic stand')
+    expect(detail).toHaveTextContent('Current match')
+    expect(detail).toHaveTextContent('C3–C5')
+    expect(detail).toHaveTextContent('2 of 2 revealed')
+    expect(detail.querySelector('img')).toHaveAttribute(
+      'src',
+      '/legends/freddie.webp',
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Next',
+      }),
+    )
+    await waitFor(() => expect(detail).toHaveAccessibleName('Elvis Presley'))
+    expect(detail).toHaveTextContent('The King of Rock and Roll')
+    expect(detail.querySelector('img')).toHaveAttribute(
+      'src',
+      '/legends/elvis.webp',
+    )
+
+    fireEvent.click(detailClose)
+    await waitFor(() => expect(opener).toHaveFocus())
+    expect(
+      screen.queryByRole('dialog', { name: 'Elvis Presley' }),
+    ).not.toBeInTheDocument()
   })
 
   it('keeps every portrait mysterious while history is loading or unavailable', async () => {
@@ -139,6 +196,37 @@ describe('VoiceConstellationSurface', () => {
     expect(
       document.querySelector('[data-legend-card="freddie-mercury"]'),
     ).toHaveAttribute('data-legend-state', 'error')
+    expect(screen.queryByText('No legend match recorded')).toBeNull()
+  })
+
+  it('does not show a false empty readout while saved history is loading', async () => {
+    mocks.listVoiceprints.mockReturnValue(new Promise(() => undefined))
+    const host = appHost()
+
+    render(() => <VoiceConstellationSurface onClose={vi.fn()} />, {
+      container: host,
+    })
+
+    expect(await screen.findByText('Checking saved history…')).toBeTruthy()
+    expect(screen.queryByText('No legend match recorded')).toBeNull()
+    expect(screen.queryByText('0 saved matches')).toBeNull()
+  })
+
+  it('counts saved legacy matches even when their portrait left this map', async () => {
+    mocks.listVoiceprints.mockResolvedValue([
+      voiceprint('current', 'Retired Legend', '2026-08-05T10:00:00.000Z'),
+      voiceprint('past', 'Elvis Presley', '2026-07-01T10:00:00.000Z'),
+    ])
+    const host = appHost()
+
+    render(() => <VoiceConstellationSurface onClose={vi.fn()} />, {
+      container: host,
+    })
+
+    await screen.findAllByText('Retired Legend')
+    expect(screen.getByText('saved matches').parentElement).toHaveTextContent(
+      '2 saved matches',
+    )
   })
 
   it('traps the route surface, closes with Escape, and restores the opener', async () => {
