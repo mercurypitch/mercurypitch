@@ -547,6 +547,57 @@
     monospace;
 }
 
+.recordingDuration {
+  display: grid;
+  gap: 7px;
+}
+
+.recordingDuration > span {
+  color: #aeb9ca;
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.recordingTemplates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.recordingTemplates button {
+  min-height: 32px;
+  padding: 5px 8px;
+  border-color: #38455b;
+  color: #aeb9ca;
+  background: #0c121c;
+  font-size: 0.64rem;
+}
+
+.recordingTemplates button[aria-pressed='true'] {
+  border-color: rgba(246, 169, 28, 0.68);
+  color: #ffd487;
+  background: rgba(112, 71, 7, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(246, 169, 28, 0.08);
+}
+
+.customRecordingDuration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.customRecordingDuration > span,
+.customRecordingDuration small {
+  color: #8796ab;
+  font-size: 0.62rem;
+}
+
+.customRecordingDuration input {
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
 .recordingProgress {
   overflow: hidden;
   height: 4px;

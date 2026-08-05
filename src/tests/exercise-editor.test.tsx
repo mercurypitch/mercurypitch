@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExerciseEditor, isExerciseEditorBusy, } from '@/features/admin/exercises/ExerciseEditor'
+import { ExerciseEditor, getExerciseRecordingLimitMs, isExerciseEditorBusy, shouldAutoUploadPreparedExampleAudio, } from '@/features/admin/exercises/ExerciseEditor'
 import { ExercisePreview } from '@/features/admin/exercises/ExercisePreview'
 import { ExerciseTimelineEditor } from '@/features/admin/exercises/ExerciseTimelineEditor'
 import type { ZenExampleAudio, ZenExerciseDefinition, } from '@/features/zen/types'
@@ -204,7 +204,7 @@ describe('ExerciseEditor', () => {
     expect(screen.getByText('Runtime canvas')).toBeInTheDocument()
   })
 
-  it('offers a five-second microphone recording action for ready audio', () => {
+  it('offers five-second, ten-second, and custom recording windows', () => {
     const mediaRecorderStub = vi.fn() as unknown as typeof MediaRecorder
     Object.defineProperty(mediaRecorderStub, 'isTypeSupported', {
       value: () => true,
@@ -239,8 +239,36 @@ describe('ExerciseEditor', () => {
       screen.getByRole('progressbar', { name: 'Example recording duration' }),
     ).toHaveAttribute('aria-valuemax', '5000')
     expect(
-      screen.getByText('Stops automatically at five seconds.'),
+      screen.queryByText('Stops automatically at five seconds.'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Stops automatically at 5 seconds, then opens review and trim controls.',
+      ),
     ).toBeVisible()
+    expect(screen.getByRole('button', { name: '10 sec' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('normalizes preset and custom recording windows', () => {
+    expect(getExerciseRecordingLimitMs(5)).toBe(5000)
+    expect(getExerciseRecordingLimitMs(10)).toBe(10000)
+    expect(getExerciseRecordingLimitMs('custom', 12)).toBe(12000)
+    expect(getExerciseRecordingLimitMs('custom', 0)).toBe(1000)
+    expect(getExerciseRecordingLimitMs('custom', 30)).toBe(15000)
+  })
+
+  it('keeps microphone takes in review while preserving short file uploads', () => {
+    expect(shouldAutoUploadPreparedExampleAudio('recording', 5000)).toBeFalsy()
+    expect(shouldAutoUploadPreparedExampleAudio('recording', 10000)).toBeFalsy()
+    expect(shouldAutoUploadPreparedExampleAudio('file', 5000)).toBeTruthy()
+    expect(shouldAutoUploadPreparedExampleAudio('file', 5001)).toBeFalsy()
   })
 
   it('treats an active recording as a blocking editor action', () => {
