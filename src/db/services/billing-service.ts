@@ -60,6 +60,33 @@ export interface BillingMe {
   stripeConfigured: boolean
 }
 
+type BillingEntitlement = BillingMe['entitlements'][number]
+
+function isBillingEntitlement(value: unknown): value is BillingEntitlement {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<BillingEntitlement>
+  return (
+    typeof candidate.feature === 'string' &&
+    (candidate.source === null || typeof candidate.source === 'string') &&
+    (candidate.expiresAt === null || typeof candidate.expiresAt === 'string') &&
+    (candidate.sourceLabel === undefined ||
+      candidate.sourceLabel === null ||
+      typeof candidate.sourceLabel === 'string')
+  )
+}
+
+function isBillingMe(value: unknown): value is BillingMe {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<BillingMe>
+  return (
+    typeof candidate.creditBalance === 'number' &&
+    Number.isFinite(candidate.creditBalance) &&
+    Array.isArray(candidate.entitlements) &&
+    candidate.entitlements.every(isBillingEntitlement) &&
+    typeof candidate.stripeConfigured === 'boolean'
+  )
+}
+
 function apiBase(base?: string): string {
   const b = base ?? API_BASE_URL
   return b != null && b !== '' ? b.replace(/\/+$/, '') : ''
@@ -94,16 +121,30 @@ export function withModelCredits(pricing: Pricing): Pricing {
  *
  *  A row with `expiresAt` in the past is a donation that ran out — the worker
  *  leaves it in place as history, so the expiry check belongs here. A null
- *  `expiresAt` means "no expiry" (a manual grant). */
+ *  `expiresAt` means "no expiry" (a manual grant); malformed dates fail
+ *  closed rather than turning corrupt server data into access. */
 export function supporterEntitlement(
   me: BillingMe | null,
   now: number = Date.now(),
 ): BillingMe['entitlements'][number] | null {
-  const grant = me?.entitlements.find((e) => e.feature === 'supporter')
-  if (grant == null) return null
-  if (grant.expiresAt == null || grant.expiresAt === '') return grant
+  if (me === null || !Array.isArray(me.entitlements)) return null
+  const grant = me.entitlements.find(
+    (entry: unknown) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      (entry as { feature?: unknown }).feature === 'supporter',
+  )
+  if (!isBillingEntitlement(grant)) return null
+  if (grant.expiresAt === null) return grant
+  if (grant.expiresAt === '') return null
   const expires = Date.parse(grant.expiresAt)
-  return Number.isFinite(expires) && expires <= now ? null : grant
+  if (
+    !Number.isFinite(expires) ||
+    new Date(expires).toISOString() !== grant.expiresAt
+  ) {
+    return null
+  }
+  return expires <= now ? null : grant
 }
 
 /** The donation tier id behind a grant (`donation:sup-voice` → `sup-voice`). */
@@ -148,7 +189,8 @@ export async function fetchBillingMe(base?: string): Promise<BillingMe | null> {
       headers: getAuthHeaders(),
     })
     if (!res.ok) return null
-    return (await res.json()) as BillingMe
+    const data = (await res.json()) as unknown
+    return isBillingMe(data) ? data : null
   } catch {
     // Backend unreachable — degrade to "no billing info" instead of throwing.
     return null
