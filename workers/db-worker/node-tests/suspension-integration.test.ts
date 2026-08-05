@@ -73,10 +73,21 @@ let sqlite: DatabaseSync
 let database: SqliteD1Database
 let env: Env
 
-function applyMigrations(target: DatabaseSync): void {
+function migrationFiles(): string[] {
   const directory = join(import.meta.dirname, '../migrations')
-  for (const file of readdirSync(directory).filter((name) => name.endsWith('.sql')).sort()) {
-    target.exec(readFileSync(join(directory, file), 'utf8'))
+  return readdirSync(directory)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+}
+
+function applyMigration(target: DatabaseSync, file: string): void {
+  const directory = join(import.meta.dirname, '../migrations')
+  target.exec(readFileSync(join(directory, file), 'utf8'))
+}
+
+function applyMigrations(target: DatabaseSync): void {
+  for (const file of migrationFiles()) {
+    applyMigration(target, file)
   }
 }
 
@@ -172,6 +183,45 @@ afterEach(() => {
 })
 
 describe('account suspension against the migrated schema', () => {
+  it('preserves the suspension filename already recorded by the shared preview', () => {
+    const preview = new DatabaseSync(':memory:')
+    const files = migrationFiles()
+    const suspension = '0016_user_suspension.sql'
+    const initiallyApplied = files.filter(
+      (file) => Number.parseInt(file.slice(0, 4), 10) <= 15,
+    )
+
+    try {
+      for (const file of initiallyApplied) applyMigration(preview, file)
+      applyMigration(preview, suspension)
+
+      const recorded = new Set([...initiallyApplied, suspension])
+      for (const file of files) {
+        if (!recorded.has(file)) applyMigration(preview, file)
+      }
+
+      const columns = preview
+        .prepare('PRAGMA table_info(users)')
+        .all() as Array<{
+        name: string
+      }>
+      expect(files).toContain(suspension)
+      expect(files).not.toContain('0017_user_suspension.sql')
+      expect(columns.map(({ name }) => name)).toEqual(
+        expect.arrayContaining(['suspendedAt', 'suspensionReason']),
+      )
+      expect(
+        preview
+          .prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'demoSongs'",
+          )
+          .get(),
+      ).toBeDefined()
+    } finally {
+      preview.close()
+    }
+  })
+
   it('excludes suspended users from the live and weekly leaderboards', async () => {
     seedUser(ACTIVE_ID, 'Active Singer', null)
     seedUser(SUSPENDED_ID, 'Suspended Singer', NOW)
@@ -216,7 +266,14 @@ describe('account suspension against the migrated schema', () => {
          (id, updatedAt, userId, cohortId, weekStart, points)
        VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    membership.run('active-current', NOW, ACTIVE_ID, 'current-l1', currentWeek, 40)
+    membership.run(
+      'active-current',
+      NOW,
+      ACTIVE_ID,
+      'current-l1',
+      currentWeek,
+      40,
+    )
     membership.run(
       'suspended-current',
       NOW,
@@ -225,7 +282,14 @@ describe('account suspension against the migrated schema', () => {
       currentWeek,
       100,
     )
-    membership.run('active-previous', NOW, ACTIVE_ID, 'previous-l1', previousWeek, 40)
+    membership.run(
+      'active-previous',
+      NOW,
+      ACTIVE_ID,
+      'previous-l1',
+      previousWeek,
+      40,
+    )
     membership.run(
       'suspended-previous',
       NOW,

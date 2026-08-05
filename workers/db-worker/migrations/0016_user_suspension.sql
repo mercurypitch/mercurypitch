@@ -1,4 +1,9 @@
--- 0017_user_suspension.sql — reversible account suspension with audit history.
+-- 0016_user_suspension.sql — reversible account suspension with audit history.
+--
+-- This intentionally shares its numeric prefix with 0016_demo_song.sql. D1
+-- tracks the complete filename and Wrangler orders equal numeric prefixes by
+-- filename. The suspension filename was already applied to the shared preview
+-- database before demo_song reached main, so it must not be renamed.
 --
 -- Suspension is an access-control state, not deletion. The current state lives
 -- on users for the hot authentication path; every real state transition is
