@@ -19,8 +19,14 @@ name: Deploy DB Worker
 # ALTER had to be remembered and run by hand, and an index over a
 # never-added column failed the deploy.
 #
+# The baseline inherited that blind spot for the columns that predate it, so
+# a Reconcile step runs first and closes it without a list to maintain. See
+# the comment on that step; the short version is that a database older than
+# the migrations gets the columns the baseline could not give it.
+#
 # Adding a change: drop a new NNNN_name.sql in migrations/ (next number).
 # Never edit an applied file; databases that already ran it won't re-run it.
+# An ALTER in a numbered migration needs nothing from the reconcile step.
 #
 # One-time prerequisites per environment (NOT done by CI):
 #   pnpm db:init:dev   (creates the DB and commits its id to wrangler.jsonc)
@@ -128,6 +134,35 @@ jobs:
           pnpm exec wrangler d1 execute mercurypitch-db-backup --remote             --file=/tmp/prod-backup.sql -y
           rm -f /tmp/prod-backup.sql
           echo "Backup complete: mercurypitch-db-backup ($backup_id)"
+
+      # The chain's one blind spot, closed automatically.
+      #
+      # `0001_baseline.sql` declares every column inside
+      # `CREATE TABLE IF NOT EXISTS`, which is a no-op on a table that already
+      # exists — it does not compare shapes. A database built by
+      # `d1 execute schema.sql` before the migration era therefore keeps its
+      # older version of every table, and a column the baseline added to an
+      # already-existing table never arrives. Where the baseline then indexes
+      # such a column, the FIRST migration fails; where it does not, the chain
+      # reports success and the app writes to columns that are not there.
+      #
+      # This step derives the gap instead of being told about it: it applies
+      # only 0001 to a throwaway local database, reads the target's real shape,
+      # and adds what is missing from tables both have. A column some LATER
+      # migration adds by ALTER is absent from a baseline-only reference, so it
+      # is never pre-added and that migration still succeeds. It is a no-op
+      # against any database the migrations built — which is dev, every PR
+      # preview, and prod once this has run there once.
+      #
+      # It runs on dev too, deliberately. A step that only ever executes
+      # during a release is a step nobody has tested.
+      - name: Reconcile schema with the migrations' assumed shape
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node scripts/reconcile-d1-schema.mjs \
+            --db "${DB_NAME}" --env "${DEPLOY_ENV}" --apply
 
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
