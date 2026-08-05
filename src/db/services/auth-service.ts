@@ -129,10 +129,54 @@ class AuthHttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message)
     this.name = 'AuthHttpError'
   }
+}
+
+const ACCOUNT_SUSPENDED_CODE = 'account_suspended'
+
+export function handleAuthErrorResponse(
+  status: number,
+  body: string,
+  providerHint?: AuthUserInfo['authProvider'],
+): boolean {
+  if (status !== 403) return false
+  let code = ''
+  try {
+    code = (JSON.parse(body) as { code?: string }).code ?? ''
+  } catch {
+    return false
+  }
+  if (code !== ACCOUNT_SUSPENDED_CODE) return false
+
+  const provider =
+    decodeToken(getAuthToken() ?? '')?.provider ?? providerHint ?? null
+  const anonymous = provider === 'anonymous'
+  // Keep an anonymous token as a server-side revocation probe. If the account
+  // is restored, /me will reject that now-version-stale token and the client
+  // can safely re-provision the same device identity. Real accounts must stop
+  // carrying their bearer token immediately.
+  if (!anonymous) setAuthToken(null)
+  setRequiresLogin(!anonymous)
+  tokenServerVerified = false
+  authChanged()
+  console.info('[auth] account suspended — cloud access disabled')
+  return true
+}
+
+async function handleAuthResponse(
+  response: Response,
+  providerHint?: AuthUserInfo['authProvider'],
+): Promise<boolean> {
+  if (response.ok) return false
+  const body = await response
+    .clone()
+    .text()
+    .catch(() => '')
+  return handleAuthErrorResponse(response.status, body, providerHint)
 }
 
 async function postAuth(
@@ -149,14 +193,23 @@ async function postAuth(
     // not the raw JSON — this string is shown directly in the UI.
     const detail = await res.text().catch(() => '')
     let message = ''
+    let code = ''
     try {
-      message = (JSON.parse(detail) as { error?: string }).error ?? ''
+      const parsed = JSON.parse(detail) as { error?: string; code?: string }
+      message = parsed.error ?? ''
+      code = parsed.code ?? ''
     } catch {
       /* not JSON */
     }
+    handleAuthErrorResponse(
+      res.status,
+      detail,
+      route === 'anonymous' ? 'anonymous' : undefined,
+    )
     throw new AuthHttpError(
       message !== '' ? message : `Sign-in failed (${res.status})`,
       res.status,
+      code !== '' ? code : undefined,
     )
   }
   const auth = (await res.json()) as AuthResponse
@@ -216,6 +269,13 @@ async function verifyTokenWithServer(): Promise<boolean> {
       setAuthToken(null)
       return false
     }
+    if (res.status === 403) {
+      const body = await res
+        .clone()
+        .text()
+        .catch(() => '')
+      if (handleAuthErrorResponse(res.status, body)) return false
+    }
     // 5xx etc. — keep the token, assume a server hiccup.
     return true
   } catch {
@@ -261,16 +321,28 @@ export async function requireAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
   if (tearingDown) return false
   if (await restoreAuth()) return true
+  // A suspended anonymous token is deliberately retained so /me can detect
+  // a later restore. Do not turn its failed verification into a new identity.
+  if (hasValidToken()) return false
   if (requiresLogin()) return false
   provisioning ??= (async () => {
     try {
       await postAuth('anonymous', { deviceId: getUserId() })
       return true
     } catch (err) {
-      if (err instanceof AuthHttpError && err.status === 403) {
+      if (
+        err instanceof AuthHttpError &&
+        err.status === 403 &&
+        err.code !== ACCOUNT_SUSPENDED_CODE
+      ) {
         // Upgraded account signed out — needs an explicit login.
         setRequiresLogin(true)
         console.info('[auth] signed out — log in to sync personal data')
+      } else if (
+        err instanceof AuthHttpError &&
+        err.code === ACCOUNT_SUSPENDED_CODE
+      ) {
+        console.info('[auth] suspended account cannot sync personal data')
       } else {
         console.warn('[auth] anonymous auth failed:', err)
       }
@@ -366,6 +438,12 @@ export function consumeGoogleRedirect(): void {
     // gauth_new marks a first-time Google account (set by the worker).
     if (params.get('gauth_new') === '1') trackEvent('signup')
   } else if (error != null && error !== '') {
+    if (error === ACCOUNT_SUSPENDED_CODE) {
+      handleAuthErrorResponse(
+        403,
+        JSON.stringify({ code: ACCOUNT_SUSPENDED_CODE }),
+      )
+    }
     googleRedirectResult = { ok: false, error }
   }
   const returnHash = sessionStorage.getItem(RETURN_HASH_KEY) ?? ''
@@ -432,6 +510,7 @@ export async function resendVerificationEmail(): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   })
+  await handleAuthResponse(res)
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
     let message = ''
@@ -555,6 +634,7 @@ export async function deleteAccount(): Promise<void> {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   })
+  await handleAuthResponse(res)
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
     let message = ''
@@ -590,7 +670,10 @@ export async function fetchMe(): Promise<MeResponse | null> {
     const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      await handleAuthResponse(res)
+      return null
+    }
     return (await res.json()) as MeResponse
   } catch {
     // Backend unreachable (offline / CORS / down) — treat as unauthenticated

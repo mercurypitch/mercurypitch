@@ -34,13 +34,12 @@ function mockFetchOnce(
   status: number,
   body: unknown,
 ): ReturnType<typeof vi.fn> {
-  const fn = vi.fn(async () => ({
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: String(status),
-    json: async () => body,
-    text: async () => JSON.stringify(body),
-  }))
+  const response = (): Response =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  const fn = vi.fn(async () => response())
   vi.stubGlobal('fetch', fn)
   return fn
 }
@@ -218,6 +217,74 @@ describe('requireAuth', () => {
     })
     await loginWithPassword('a@b.com', 'secret123')
     expect(await requireAuth()).toBe(true)
+    infoSpy.mockRestore()
+  })
+
+  it('clears a suspended password session and never falls back to anonymous', async () => {
+    logout() // reset the module-level one-verification cache from earlier tests
+    setAuthToken(makeToken(3600, 'password'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = mockFetchOnce(403, {
+      error: 'This account is suspended.',
+      code: 'account_suspended',
+    })
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(await requireAuth()).toBe(false)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    infoSpy.mockRestore()
+  })
+
+  it('retains a suspended anonymous probe and recovers the same device after restore', async () => {
+    logout() // reset the module-level one-verification cache from earlier tests
+    const deviceId = getUserId()
+    setAuthToken(makeToken(3600, 'anonymous'))
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: 'This account is suspended.',
+            code: 'account_suspended',
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      // Once restored, suspension's tokenVersion bump keeps the old bearer
+      // revoked. That 401 is the signal to mint a fresh token for this device.
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            token: makeToken(3600, 'anonymous'),
+            userId: deviceId,
+            isNew: false,
+            user: { id: deviceId, authProvider: 'anonymous' },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await requireAuth()).toBe(false)
+    expect(getAuthToken()).not.toBeNull()
+
+    expect(await requireAuth()).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.test/api/auth/me')
+    expect(fetchMock.mock.calls[1][0]).toBe('http://api.test/api/auth/me')
+    expect(fetchMock.mock.calls[2][0]).toBe(
+      'http://api.test/api/auth/anonymous',
+    )
+    const init = fetchMock.mock.calls[2][1] as RequestInit
+    expect(JSON.parse(init.body as string)).toEqual({ deviceId })
     infoSpy.mockRestore()
   })
 })

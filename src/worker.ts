@@ -35,9 +35,10 @@ export interface Env {
   RUNPOD_ENDPOINT_ID_CPU?: string
   /** Optional RunPod API base override (defaults to https://api.runpod.ai/v2). */
   RUNPOD_BASE_URL?: string
-  /** db-worker base URL — required for RunPod admission, rate limits, and
-   *  credit metering (debit on accept, refund on failure). Per-env var in
-   *  wrangler.jsonc; new paid jobs fail closed while it is unset. */
+  /** db-worker base URL — required for session validation, RunPod admission,
+   *  rate limits, and credit metering (debit on accept, refund on failure).
+   *  Per-env var in wrangler.jsonc; state-changing UVR calls and new paid jobs
+   *  fail closed while it is unset. */
   DB_API_URL?: string
   /** Shared secret for service-to-service billing refunds; the SAME value
    *  is set on the db-worker. `wrangler secret put BILLING_SERVICE_KEY`.
@@ -89,6 +90,52 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+async function validateDbSession(
+  request: Request,
+  dbApiUrl: string | undefined,
+): Promise<Response | null> {
+  if (dbApiUrl === undefined || dbApiUrl === '') {
+    return json({ error: 'Account validation is unavailable' }, 503)
+  }
+  const authorization = request.headers.get('Authorization')
+  if (authorization === null || authorization === '') {
+    return json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    const endpoint = new URL('/api/auth/me', dbApiUrl)
+    const response = await fetch(endpoint, {
+      headers: { Authorization: authorization },
+    })
+    if (response.ok) return null
+    if (response.status === 401) {
+      return json({ error: 'Unauthorized' }, 401)
+    }
+    if (response.status === 403) {
+      const body = (await response.json().catch(() => null)) as {
+        error?: unknown
+        code?: unknown
+      } | null
+      if (body?.code === 'account_suspended') {
+        return json(
+          {
+            error:
+              typeof body.error === 'string'
+                ? body.error
+                : 'This account is suspended.',
+            code: 'account_suspended',
+          },
+          403,
+        )
+      }
+      return json({ error: 'Forbidden' }, 403)
+    }
+    return json({ error: 'Account validation is unavailable' }, 503)
+  } catch {
+    return json({ error: 'Account validation is unavailable' }, 503)
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -108,6 +155,8 @@ export default {
         if (!auth) {
           return json({ error: 'Unauthorized' }, 401)
         }
+        const rejected = await validateDbSession(request, env.DB_API_URL)
+        if (rejected !== null) return rejected
       }
 
       // New processing is RunPod-only and must always pass the paid admission

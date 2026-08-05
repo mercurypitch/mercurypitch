@@ -7,7 +7,7 @@ import { DexieAdapter } from './adapters/dexie-adapter'
 import { HybridAdapter } from './adapters/hybrid-adapter'
 import { ServerAdapter } from './adapters/server-adapter'
 import { seedAll } from './seed'
-import { requireAuth, restoreAuth } from './services/auth-service'
+import { handleAuthErrorResponse, requireAuth, restoreAuth, } from './services/auth-service'
 import { getAuthHeaders } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
@@ -31,6 +31,9 @@ function resolveAdapter(): DatabaseAdapter {
         // anonymous identity here rather than at startup, so a browse-only
         // visit leaves no server-side rows.
         beforeWrite: requireAuth,
+        onErrorResponse: (status, body) => {
+          handleAuthErrorResponse(status, body)
+        },
       }),
       new DexieAdapter(),
     )

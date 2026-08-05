@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
-import { handleAuth } from './auth'
+import { getAuth, handleAuth } from './auth'
+import { AccountSuspendedError } from './moderation'
 
 interface UserRecord {
   id: string
@@ -14,6 +15,8 @@ interface UserRecord {
   lastLoginAt: string | null
   lastActiveAt: string | null
   tokenVersion: number
+  suspendedAt: string | null
+  suspensionReason: string | null
 }
 
 class AuthStatement {
@@ -41,12 +44,16 @@ class AuthStatement {
       return (this.db.users.get(String(this.values[0])) ?? null) as T | null
     }
 
-    if (this.sql === 'SELECT tokenVersion, lastActiveAt FROM users WHERE id = ?') {
+    if (
+      this.sql ===
+      'SELECT tokenVersion, lastActiveAt, suspendedAt FROM users WHERE id = ?'
+    ) {
       const user = this.db.users.get(String(this.values[0]))
       if (!user) return null
       return {
         tokenVersion: user.tokenVersion,
         lastActiveAt: user.lastActiveAt,
+        suspendedAt: user.suspendedAt,
       } as T
     }
 
@@ -96,6 +103,8 @@ class AuthStatement {
         lastLoginAt: lastLoginAt == null ? null : String(lastLoginAt),
         lastActiveAt: null,
         tokenVersion: 1,
+        suspendedAt: null,
+        suspensionReason: null,
       })
       return { success: true }
     }
@@ -164,6 +173,8 @@ class AuthDatabase {
       lastLoginAt: now,
       lastActiveAt: null,
       tokenVersion: 1,
+      suspendedAt: null,
+      suspensionReason: null,
     })
   }
 
@@ -234,6 +245,140 @@ function stubGoogleClaims(sub: string): void {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('suspended account authentication', () => {
+  it('rejects a previously issued bearer with a structured suspension error', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const auth = await postAuth(
+      'register',
+      { email: 'suspended@example.com', password: 'secret123' },
+      env,
+    )
+    db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
+
+    await expect(
+      getAuth(
+        new Request('https://api.test/api/auth/me', {
+          headers: { Authorization: `Bearer ${String(auth.token)}` },
+        }),
+        env,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+  })
+
+  it('does not issue a new anonymous session for a suspended device id', async () => {
+    const db = new AuthDatabase()
+    db.seedAnonymous(ANONYMOUS_DEVICE_ID)
+    db.user(ANONYMOUS_DEVICE_ID).suspendedAt = new Date().toISOString()
+    const env = makeEnv(db)
+
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/anonymous', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: ANONYMOUS_DEVICE_ID }),
+        }),
+        env,
+        '/api/auth/anonymous',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+  })
+
+  it('does not issue a password session for a suspended account', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const auth = await postAuth(
+      'register',
+      { email: 'login-suspended@example.com', password: 'secret123' },
+      env,
+    )
+    db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
+
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'login-suspended@example.com',
+            password: 'secret123',
+          }),
+        }),
+        env,
+        '/api/auth/login',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+  })
+
+  it('does not upgrade a suspended anonymous identity during registration', async () => {
+    const db = new AuthDatabase()
+    db.seedAnonymous(ANONYMOUS_DEVICE_ID)
+    db.user(ANONYMOUS_DEVICE_ID).suspendedAt = new Date().toISOString()
+    const env = makeEnv(db)
+
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: 'upgrade-suspended@example.com',
+            password: 'secret123',
+            deviceId: ANONYMOUS_DEVICE_ID,
+          }),
+        }),
+        env,
+        '/api/auth/register',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+    expect(db.user(ANONYMOUS_DEVICE_ID).authProvider).toBe('anonymous')
+  })
+
+  it('does not return or upgrade suspended identities through Google', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    stubGoogleClaims('suspended-google')
+    const auth = await postAuth('google', { idToken: 'first' }, env)
+    db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
+
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: 'second' }),
+        }),
+        env,
+        '/api/auth/google',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+
+    db.seedAnonymous(ANONYMOUS_DEVICE_ID)
+    db.user(ANONYMOUS_DEVICE_ID).suspendedAt = new Date().toISOString()
+    stubGoogleClaims('suspended-google-upgrade')
+    await expect(
+      handleAuth(
+        new Request('https://api.test/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idToken: 'third',
+            deviceId: ANONYMOUS_DEVICE_ID,
+          }),
+        }),
+        env,
+        '/api/auth/google',
+        respond,
+      ),
+    ).rejects.toBeInstanceOf(AccountSuspendedError)
+  })
 })
 
 describe('db-worker account creation classification', () => {

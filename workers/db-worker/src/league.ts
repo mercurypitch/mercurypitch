@@ -48,11 +48,13 @@ async function loadPointsConfig(env: Env): Promise<LeaguePointsConfig> {
 /** Leagues are registered-accounts-only; anonymous identities earn nothing. */
 async function isRegistered(env: Env, userId: string): Promise<boolean> {
   const row = await env.DB.prepare(
-    'SELECT authProvider FROM users WHERE id = ?',
+    'SELECT authProvider, suspendedAt FROM users WHERE id = ?',
   )
     .bind(userId)
-    .first<{ authProvider: string }>()
-  return row != null && row.authProvider !== 'anonymous'
+    .first<{ authProvider: string; suspendedAt: string | null }>()
+  return (
+    row != null && row.authProvider !== 'anonymous' && row.suspendedAt === null
+  )
 }
 
 /** The rung a user sits on (their profile's currentLeagueId, 'l1' fallback). */
@@ -319,7 +321,9 @@ export async function runWeeklyLeagueCut(env: Env): Promise<void> {
     for (const { weekStart } of weeks ?? []) {
       const { results: members } = await env.DB.prepare(
         `SELECT c.leagueId AS leagueId, m.userId AS userId, m.points AS points
-         FROM leagueMembership m JOIN leagueCohorts c ON c.id = m.cohortId
+         FROM leagueMembership m
+         JOIN leagueCohorts c ON c.id = m.cohortId
+         JOIN users u ON u.id = m.userId AND u.suspendedAt IS NULL
          WHERE m.weekStart = ?`,
       )
         .bind(weekStart)
@@ -475,7 +479,9 @@ async function readLeagueMe(env: Env, userId: string): Promise<LeagueMe> {
                   THEN COALESCE(p.displayName, 'Singer-' || substr(m.userId, 1, 6))
                 ELSE 'Singer-' || substr(m.userId, 1, 6)
               END AS displayName
-       FROM leagueMembership m LEFT JOIN userProfiles p ON p.id = m.userId
+       FROM leagueMembership m
+       JOIN users u ON u.id = m.userId AND u.suspendedAt IS NULL
+       LEFT JOIN userProfiles p ON p.id = m.userId
        WHERE m.cohortId = ?1
        ORDER BY m.points DESC, m.userId ASC`,
     )
