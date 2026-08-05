@@ -12,7 +12,7 @@ import { useGuitarPracticeController } from '@/features/guitar-practice/useGuita
 import type { AudioEngine } from '@/lib/audio-engine'
 import { micManager } from '@/lib/mic-manager'
 import type { FallingNote } from '@/stores/falling-notes-store'
-import { setCountIn } from '@/stores/transport-store'
+import { countIn, setCountIn } from '@/stores/transport-store'
 
 const mockAudioEngine = () =>
   ({
@@ -32,6 +32,13 @@ const mockAudioEngine = () =>
     onMicLost: () => () => {},
     audioCtx: null,
   }) as unknown as AudioEngine
+
+const guitarControllerDeps = (audioEngine: AudioEngine) => ({
+  audioEngine,
+  countIn,
+  setMicActive: () => undefined,
+  updateMidiSongSelection: () => undefined,
+})
 
 const pianoNotes: FallingNote[] = Array.from({ length: 16 }, (_, i) => ({
   id: i,
@@ -82,7 +89,9 @@ describe('guitar: seek while stopped', () => {
   it('seekToBeat while idle moves the playhead and stop resets it', () => {
     createRoot((dispose) => {
       setCountIn(0)
-      const ctl = useGuitarPracticeController(mockAudioEngine())
+      const ctl = useGuitarPracticeController(
+        guitarControllerDeps(mockAudioEngine()),
+      )
       ctl.loadSong(
         Array.from({ length: 16 }, (_, i) => ({
           midi: 52 + (i % 12),
@@ -109,7 +118,7 @@ describe('guitar: seek while stopped', () => {
 
     createRoot((dispose) => {
       disposeController = dispose
-      useGuitarPracticeController(mockAudioEngine())
+      useGuitarPracticeController(guitarControllerDeps(mockAudioEngine()))
     })
 
     expect(register).toHaveBeenCalledWith('guitar-song', expect.any(Function))
@@ -135,7 +144,7 @@ describe('guitar: seek while stopped', () => {
 
     createRoot((dispose) => {
       disposeController = dispose
-      controller = useGuitarPracticeController(audio)
+      controller = useGuitarPracticeController(guitarControllerDeps(audio))
     })
 
     const starting = controller.startMic()
@@ -164,7 +173,7 @@ describe('guitar: seek while stopped', () => {
 
     createRoot((dispose) => {
       disposeController = dispose
-      controller = useGuitarPracticeController(audio)
+      controller = useGuitarPracticeController(guitarControllerDeps(audio))
     })
 
     const starting = controller.startMic()
@@ -193,7 +202,7 @@ describe('guitar: seek while stopped', () => {
 
     createRoot((dispose) => {
       disposeController = dispose
-      controller = useGuitarPracticeController(audio)
+      controller = useGuitarPracticeController(guitarControllerDeps(audio))
     })
 
     const staleStart = controller.startMic()
@@ -225,7 +234,7 @@ describe('guitar: seek while stopped', () => {
 
     createRoot((dispose) => {
       disposeController = dispose
-      controller = useGuitarPracticeController(audio)
+      controller = useGuitarPracticeController(guitarControllerDeps(audio))
     })
 
     const staleStart = controller.startMic()
