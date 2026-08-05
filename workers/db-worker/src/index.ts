@@ -18,6 +18,7 @@ import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
+import { resolveAdmin } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { getPerksForUser } from './perks'
@@ -176,9 +177,21 @@ function parseListQuery(url: URL): ListQuery | null {
 
 // ── Access control helpers ───────────────────────────────────────────
 
-function isAdmin(request: Request, env: Env): boolean {
+function hasAdminKey(request: Request, env: Env): boolean {
   const key = request.headers.get('X-Admin-Key')
   return !!key && !!env.ADMIN_KEY && timingSafeEqual(key, env.ADMIN_KEY)
+}
+
+/**
+ * Who may write admin-owned rows. The policy itself lives in
+ * `resolveAdmin` (access.ts), which is where the two-stage Access
+ * rollout is explained and tested.
+ *
+ * Async because verification fetches (and caches) the team's signing
+ * keys. Every caller is already in an async handler.
+ */
+async function isAdmin(request: Request, env: Env): Promise<boolean> {
+  return resolveAdmin(request, env, hasAdminKey(request, env))
 }
 
 /**
@@ -335,7 +348,7 @@ async function handleCreate(
   env: Env,
 ): Promise<Response> {
   if (def.access === 'admin') {
-    if (!isAdmin(request, env))
+    if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
   } else if (!auth) {
     return respond({ error: 'Unauthorized' }, { status: 401 })
@@ -419,7 +432,7 @@ async function handleUpdate(
 ): Promise<Response> {
   const row = await fetchRow(entity, id, env)
   if (!row) return respond({ error: 'Not found' }, { status: 404 })
-  if (!canWriteRow(def, row, auth, isAdmin(request, env))) {
+  if (!canWriteRow(def, row, auth, await isAdmin(request, env))) {
     return respond({ error: 'Forbidden' }, { status: 403 })
   }
   // Rows that predate the rule stay editable by their owner in every way
@@ -491,7 +504,7 @@ async function handleDelete(
 ): Promise<Response> {
   const row = await fetchRow(entity, id, env)
   if (!row) return respond({ error: 'Not found' }, { status: 404 })
-  if (!canWriteRow(def, row, auth, isAdmin(request, env))) {
+  if (!canWriteRow(def, row, auth, await isAdmin(request, env))) {
     return respond({ error: 'Forbidden' }, { status: 403 })
   }
   await env.DB.prepare(`DELETE FROM "${entity}" WHERE id = ?`).bind(id).run()
@@ -1500,7 +1513,7 @@ async function handleWeekly(
 
   // ── Admin writes ──
   if (method === 'POST' && sub === '') {
-    if (!isAdmin(request, env))
+    if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
     return createWeekly(request, env)
   }
@@ -1510,12 +1523,12 @@ async function handleWeekly(
     sub !== 'board' &&
     sub !== 'archive'
   ) {
-    if (!isAdmin(request, env))
+    if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
     return updateWeekly(sub, request, env)
   }
   if (method === 'DELETE' && sub !== '') {
-    if (!isAdmin(request, env))
+    if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
     await env.DB.prepare(`DELETE FROM weeklyChallenges WHERE id = ?`)
       .bind(sub)
@@ -1525,7 +1538,7 @@ async function handleWeekly(
 
   // ── Admin: list ALL rows (incl. queued) for the authoring page ──
   if (method === 'GET' && sub === 'all') {
-    if (!isAdmin(request, env))
+    if (!(await isAdmin(request, env)))
       return respond({ error: 'Admin key required' }, { status: 403 })
     const { results } = await env.DB.prepare(
       `SELECT * FROM weeklyChallenges ORDER BY startsAt DESC LIMIT 200`,
@@ -1646,7 +1659,7 @@ async function handleRequest(
       env,
       url,
       {
-        admin: isAdmin(request, env),
+        admin: await isAdmin(request, env),
         corsHeaders: CORS,
         respond,
       },
@@ -1777,19 +1790,42 @@ async function handleRequest(
   }
 
   if (sub === 'count' && request.method === 'GET') {
-    return handleList(entity, def, url, auth, env, true, isAdmin(request, env))
+    return handleList(
+      entity,
+      def,
+      url,
+      auth,
+      env,
+      true,
+      await isAdmin(request, env),
+    )
   }
 
   if (sub === undefined) {
     if (request.method === 'GET')
-      return handleList(entity, def, url, auth, env, false, isAdmin(request, env))
+      return handleList(
+        entity,
+        def,
+        url,
+        auth,
+        env,
+        false,
+        await isAdmin(request, env),
+      )
     if (request.method === 'POST')
       return handleCreate(entity, def, request, auth, env)
     return respond({ error: 'Method not allowed' }, { status: 405 })
   }
 
   if (request.method === 'GET')
-    return handleGetById(entity, def, sub, auth, env, isAdmin(request, env))
+    return handleGetById(
+      entity,
+      def,
+      sub,
+      auth,
+      env,
+      await isAdmin(request, env),
+    )
   if (request.method === 'PATCH')
     return handleUpdate(entity, def, sub, request, auth, env)
   if (request.method === 'DELETE')

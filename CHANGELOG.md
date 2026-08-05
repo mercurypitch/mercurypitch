@@ -5,6 +5,23 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Added
+
+- **The weekly Legend now has a run of weeks queued behind it.** Five
+  challenges instead of one, opening on the money note — Puccini's B4 on
+  "Vincerò" — and stepping through a long sustain, a full-octave sweep, a
+  stepwise run and a low-note descent. Each opens automatically when the
+  previous one closes, and once the five are spent the app re-runs a past
+  week as an Encore rather than showing an empty card.
+
+### Changed
+
+- **The admin studio can be put behind a Cloudflare sign-in.** Where it is
+  configured, changing site content needs a real account Cloudflare
+  vouched for, not just a shared key — so every change has a name against
+  it and access can be revoked for one person without changing anything
+  for everyone else.
+
 ### Fixed
 
 - **Big songs open properly in Compose.** Loading a long MIDI (hundreds of

@@ -15,6 +15,7 @@
 //   DB_ADMIN_KEY=... node scripts/seed-remote-db.mjs
 
 import seedData from '../src/db/seed-data.json' with { type: 'json' }
+import { accessHint, adminHeaders } from './admin-headers.mjs'
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`)
@@ -42,7 +43,10 @@ async function request(path, init) {
   const res = await fetch(`${baseUrl}/api/${path}`, init)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new Error(`${init?.method ?? 'GET'} /api/${path} → ${res.status} ${body}`)
+    throw new Error(
+      `${init?.method ?? 'GET'} /api/${path} → ${res.status} ${body}` +
+        (res.status === 403 ? accessHint(baseUrl) : ''),
+    )
   }
   return res.json()
 }
@@ -50,10 +54,7 @@ async function request(path, init) {
 function writeRow(method, path, row) {
   return request(path, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Admin-Key': adminKey,
-    },
+    headers: adminHeaders(adminKey),
     body: JSON.stringify(row),
   })
 }

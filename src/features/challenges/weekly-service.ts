@@ -22,6 +22,19 @@ export interface WeeklyChallenge {
   featType: string
   voiceTypeSplit: unknown
   difficulty: string
+  /**
+   * Absolute MIDI, sung at written pitch. **Never transpose these to the
+   * singer's range** — that is the design, not an oversight. A weekly
+   * Legend is a shared feat: everyone attempts the identical notes, which
+   * is the only thing that makes the board comparable and "I hit the B4"
+   * mean something. Per-voice transposition would make it meaningless.
+   *
+   * The accepted cost is that a given week is not equally reachable by
+   * every voice. Author the melody inside G3-C5 when you want a week most
+   * people can finish, and go outside it deliberately when being out of
+   * reach IS the challenge. `voiceTypeSplit` above is the unbuilt hook for
+   * per-type variants; it is read by nothing today.
+   */
   targetItems: MelodyItem[]
   targetScore: number
   hearItUrl: string | null
