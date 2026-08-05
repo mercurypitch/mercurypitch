@@ -77,26 +77,53 @@
 
 .brand {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   gap: 10px;
+  padding: 3px 8px 3px 3px;
+  border: 0;
+  border-radius: 12px;
   color: inherit;
-  text-decoration: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background 180ms ease;
 }
 
 .brandMark {
-  display: grid;
   width: 38px;
   height: 38px;
-  place-items: center;
-  border: 1px solid rgba(108, 199, 255, 0.35);
+  flex: none;
+  overflow: hidden;
   border-radius: 50%;
-  color: var(--constellation-blue);
-  background: rgba(108, 199, 255, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: transform 180ms ease;
 }
 
-.brandMark svg {
-  width: 18px;
-  height: 18px;
+.brandMark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.brand:hover .brandMark {
+  transform: translateX(-1px);
+}
+
+.brand:active .brandMark {
+  transform: translateX(-2px);
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--constellation-blue);
+  outline-offset: 3px;
 }
 
 .brand > span:last-child {
@@ -931,6 +958,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .brand,
+  .brandMark,
   .portrait,
   .legendCard,
   .publicLink,

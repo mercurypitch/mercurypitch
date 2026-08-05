@@ -54,6 +54,31 @@ afterEach(() => {
 })
 
 describe('VoiceConstellationSurface', () => {
+  it('uses the MercuryPitch mark as an in-app return control', async () => {
+    mocks.listVoiceprints.mockResolvedValue([])
+    const host = appHost()
+    const onClose = vi.fn()
+
+    render(() => <VoiceConstellationSurface onClose={onClose} />, {
+      container: host,
+    })
+
+    const returnControl = await screen.findByRole('button', {
+      name: 'Back to MercuryPitch',
+    })
+    expect(returnControl.tagName).toBe('BUTTON')
+    expect(returnControl.querySelector('img')).toHaveAttribute(
+      'src',
+      '/favicon.svg',
+    )
+    expect(
+      screen.getByRole('link', { name: 'Explore every portrait' }),
+    ).toHaveAttribute('href', 'https://about.mercurypitch.com/voice-legends/')
+
+    fireEvent.click(returnControl)
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('shows all 21 positions but only loads saved current and past portraits', async () => {
     mocks.listVoiceprints.mockResolvedValue([
       voiceprint('current', 'Freddie Mercury', '2026-08-05T10:00:00.000Z'),

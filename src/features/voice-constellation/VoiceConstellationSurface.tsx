@@ -216,15 +216,21 @@ export const VoiceConstellationSurface: Component<
         <div class={styles.sky} aria-hidden="true" />
 
         <div class={styles.topbar}>
-          <a class={styles.brand} href={VOICE_LEGENDS_URL}>
+          <button
+            type="button"
+            class={styles.brand}
+            onClick={() => props.onClose()}
+            aria-label="Back to MercuryPitch"
+            title="Back to MercuryPitch"
+          >
             <span class={styles.brandMark} aria-hidden="true">
-              <Voice />
+              <img src="/favicon.svg" width="38" height="38" alt="" />
             </span>
             <span>
               <b>MercuryPitch</b>
               <small>Voice Mirror</small>
             </span>
-          </a>
+          </button>
           <div class={styles.topbarActions}>
             <a
               class={styles.publicLink}
