@@ -12,8 +12,9 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
-import { googleSignInUrl, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
+import { googleSignInUrl, isAccountSuspendedError, loginWithPassword, registerWithPassword, requestPasswordReset, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
+import { CONTACT_EMAIL } from '@/lib/contact-links'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { showNotification } from '@/stores/notifications-store'
@@ -41,6 +42,7 @@ export const AuthModal: Component = () => {
   const [showPassword, setShowPassword] = createSignal(false)
   const [displayName, setDisplayName] = createSignal('')
   const [error, setError] = createSignal('')
+  const [suspensionError, setSuspensionError] = createSignal(false)
   const [busy, setBusy] = createSignal(false)
   // The address the forgot-sent confirmation names (snapshotted on send,
   // so later edits to the field can't rewrite the message).
@@ -67,6 +69,7 @@ export const AuthModal: Component = () => {
     setPassword('')
     setShowPassword(false)
     setError('')
+    setSuspensionError(false)
     setBusy(false)
     // The baseline `dirty` compares against — see close()/onBackdropClick.
     setEmailAtOpen(untrack(email))
@@ -78,6 +81,7 @@ export const AuthModal: Component = () => {
     setPassword('')
     setShowPassword(false)
     setError('')
+    setSuspensionError(false)
   }
 
   /**
@@ -96,6 +100,7 @@ export const AuthModal: Component = () => {
   function switchPane(next: Pane): void {
     setPane(next)
     setError('')
+    setSuspensionError(false)
     setShowPassword(false)
   }
 
@@ -129,6 +134,7 @@ export const AuthModal: Component = () => {
 
     const run = async (): Promise<void> => {
       setError('')
+      setSuspensionError(false)
       setBusy(true)
       try {
         if (current === 'register') {
@@ -161,6 +167,7 @@ export const AuthModal: Component = () => {
           setPane('forgot-sent')
         }
       } catch (err) {
+        setSuspensionError(isAccountSuspendedError(err))
         setError(err instanceof Error ? err.message : String(err))
       } finally {
         setBusy(false)
@@ -358,7 +365,16 @@ export const AuthModal: Component = () => {
                     role="alert"
                     data-testid="auth-error"
                   >
-                    {error()}
+                    <Show when={suspensionError()} fallback={error()}>
+                      This account is suspended.{' '}
+                      <a
+                        href={`mailto:${CONTACT_EMAIL}`}
+                        data-testid="auth-suspension-support"
+                      >
+                        Contact support
+                      </a>{' '}
+                      if you believe this is a mistake.
+                    </Show>
                   </p>
                 </Show>
 

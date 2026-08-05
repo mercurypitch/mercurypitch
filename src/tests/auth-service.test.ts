@@ -14,7 +14,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, hasValidToken, isAccountSuspendedError, loginWithGoogle, loginWithPassword, logout, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -415,9 +415,15 @@ describe('login and register', () => {
       code: 'account_suspended',
     })
 
-    await expect(
-      loginWithPassword('suspended@example.com', 'secret123'),
-    ).rejects.toThrow('This account is suspended.')
+    let caught: unknown
+    try {
+      await loginWithPassword('suspended@example.com', 'secret123')
+    } catch (error) {
+      caught = error
+    }
+    expect(caught).toBeInstanceOf(Error)
+    expect((caught as Error).message).toBe('This account is suspended.')
+    expect(isAccountSuspendedError(caught)).toBe(true)
     expect(getAuthToken()).toBeNull()
     expect(showNotificationMock).not.toHaveBeenCalled()
   })

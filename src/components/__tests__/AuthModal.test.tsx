@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   registerWithPassword: vi.fn(),
   requestPasswordReset: vi.fn(),
   googleSignInUrl: vi.fn(() => 'http://api.test/api/auth/google/start'),
+  isAccountSuspendedError: vi.fn((_error: unknown): boolean => false),
 }))
 
 vi.mock('@/db/services/auth-service', () => mocks)
@@ -21,6 +22,7 @@ import { AuthModal } from '../account/AuthModal'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.isAccountSuspendedError.mockReturnValue(false)
   closeAuthModal()
 })
 
@@ -137,6 +139,33 @@ describe('AuthModal', () => {
     expect(error.textContent).toContain('Invalid email or password')
     // Still open so the user can retry
     expect(screen.getByTestId('auth-modal-overlay')).toBeInTheDocument()
+  })
+
+  it('links a suspended account to the canonical support address', async () => {
+    const suspended = new Error(
+      'This account is suspended. Contact support if you believe this is a mistake.',
+    )
+    mocks.loginWithPassword.mockRejectedValue(suspended)
+    mocks.isAccountSuspendedError.mockImplementation(
+      (error) => error === suspended,
+    )
+    render(() => <AuthModal />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'suspended@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    const link = await screen.findByTestId('auth-suspension-support')
+    expect(link).toHaveTextContent('Contact support')
+    expect(link).toHaveAttribute('href', 'mailto:hello@mercurypitch.com')
+    expect(screen.getByTestId('auth-error')).toHaveTextContent(
+      'This account is suspended. Contact support if you believe this is a mistake.',
+    )
   })
 
   it('closes from the header button', async () => {

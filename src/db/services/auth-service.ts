@@ -142,6 +142,12 @@ const ACCOUNT_SUSPENDED_MESSAGE =
   'This account is suspended. Contact support if you believe this is a mistake.'
 const ACCOUNT_SUSPENDED_NOTIFICATION_CHANNEL = 'account-suspension'
 
+/** Distinguish suspension from ordinary credential failures without asking
+ * UI surfaces to match human-readable copy or expose AuthHttpError internals. */
+export function isAccountSuspendedError(error: unknown): boolean {
+  return error instanceof AuthHttpError && error.code === ACCOUNT_SUSPENDED_CODE
+}
+
 export function handleAuthErrorResponse(
   status: number,
   body: string,

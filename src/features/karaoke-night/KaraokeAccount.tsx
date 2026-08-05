@@ -6,7 +6,8 @@ import { createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
-import { googleSignInUrl, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { googleSignInUrl, isAccountSuspendedError, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { CONTACT_EMAIL } from '@/lib/contact-links'
 import { isPasswordValid } from '@/lib/password-policy'
 import { showNotification } from '@/stores/notifications-store'
 import { account, credits, knLogout, refreshAccount, signedIn, } from './karaoke-account'
@@ -30,6 +31,7 @@ export function KaraokeAccount() {
   const [showPassword, setShowPassword] = createSignal(false)
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
+  const [suspensionError, setSuspensionError] = createSignal(false)
 
   // Full email for the title/menu; a compact local-part for the chip so a
   // long address never spills off the top-right on a phone (the chip is a
@@ -57,6 +59,7 @@ export function KaraokeAccount() {
     }
     setBusy(true)
     setError('')
+    setSuspensionError(false)
     try {
       if (mode() === 'register') {
         await registerWithPassword(email().trim(), password())
@@ -68,6 +71,7 @@ export function KaraokeAccount() {
       setPassword('')
       setShowPassword(false)
     } catch (err) {
+      setSuspensionError(isAccountSuspendedError(err))
       setError(err instanceof Error ? err.message : 'Sign-in failed.')
     } finally {
       setBusy(false)
@@ -82,7 +86,14 @@ export function KaraokeAccount() {
       <Show
         when={signedIn()}
         fallback={
-          <button class="kn-account-chip" onClick={() => setModalOpen(true)}>
+          <button
+            class="kn-account-chip"
+            onClick={() => {
+              setError('')
+              setSuspensionError(false)
+              setModalOpen(true)
+            }}
+          >
             <svg viewBox="0 0 24 24" width="14" height="14">
               <path
                 fill="currentColor"
@@ -210,7 +221,13 @@ export function KaraokeAccount() {
                 />
               </Show>
               <Show when={error() !== ''}>
-                <p class="kn-modal-error">{error()}</p>
+                <p class="kn-modal-error">
+                  <Show when={suspensionError()} fallback={error()}>
+                    This account is suspended.{' '}
+                    <a href={`mailto:${CONTACT_EMAIL}`}>Contact support</a> if
+                    you believe this is a mistake.
+                  </Show>
+                </p>
               </Show>
               <button
                 class="kn-btn kn-btn--primary"
@@ -235,6 +252,7 @@ export function KaraokeAccount() {
               onClick={() => {
                 setMode((m) => (m === 'login' ? 'register' : 'login'))
                 setError('')
+                setSuspensionError(false)
               }}
             >
               {mode() === 'login'

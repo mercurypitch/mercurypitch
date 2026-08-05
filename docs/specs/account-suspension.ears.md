@@ -80,8 +80,10 @@ old token shall remain invalid because suspension advanced `tokenVersion`.
 
 **When** the client receives `account_suspended`, it shall stop cloud access,
 clear an upgraded account bearer, prevent anonymous fallback, and show a clear
-human suspension message. Google redirect UI shall show the human message and
-shall not expose the internal error code.
+human suspension message. **When** that message is shown in a sign-in form, it
+shall link Contact support to the canonical MercuryPitch contact email. Google
+redirect UI shall show the human message and shall not expose the internal
+error code.
 
 ### REQ-AS-009 — Anonymous restoration probe
 
@@ -150,7 +152,8 @@ revalidation.
    advances `tokenVersion`, and writes one audit event; the second is a no-op.
 2. Reuse the pre-suspension bearer across `/api/auth/me`, a generic cloud
    write, and a mutating UVR request: each is rejected before protected work;
-   the app shows one clear suspension notice.
+   the app shows one clear suspension notice, and the sign-in form links to
+   the canonical support email.
 3. Attempt password login, Google redirect login, registration upgrade, and
    anonymous re-authentication while suspended: none issues a token.
 4. Restore the account: the old bearer remains 401, a fresh login succeeds,
