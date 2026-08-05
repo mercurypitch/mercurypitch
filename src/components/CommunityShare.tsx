@@ -311,6 +311,7 @@ export const CommunityShare: Component = () => {
   // and an unkeyed resource would keep the previous identity's twin.
   const [voiceprints] = createResource(authVersion, listVoiceprints)
   const latestTwin = (): string | undefined => {
+    if (voiceprints.loading) return undefined
     const twin = voiceprints()?.[0]?.twin
     return twin === null || twin === undefined || twin === '' ? undefined : twin
   }

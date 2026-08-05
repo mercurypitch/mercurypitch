@@ -145,7 +145,12 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   window.addEventListener('keydown', onKeyDown)
   onCleanup(() => window.removeEventListener('keydown', onKeyDown))
 
-  const latest = (): VoiceprintRecord | null => prints()?.[0] ?? null
+  // Solid resources retain their previous value while a keyed refetch is in
+  // flight. Treat that retained value as private stale data: account-scoped
+  // voiceprints disappear until the new identity's request settles.
+  const visiblePrints = (): readonly VoiceprintRecord[] =>
+    prints.loading ? [] : (prints() ?? [])
+  const latest = (): VoiceprintRecord | null => visiblePrints()[0] ?? null
 
   // The flip side is the real stats card — the same art the Share button
   // exports. It starts rendering when the portrait opens, but the portrait
@@ -159,6 +164,14 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
       recordId: record.id,
       src: canvas?.toDataURL('image/png') ?? null,
     }
+  })
+
+  createEffect(() => {
+    if (!prints.loading) return
+    setZoomed(false)
+    setFlipped(false)
+    setFlipRequested(false)
+    setStatsCardRecord(undefined)
   })
 
   const matchingStatsCard = () => {
@@ -207,8 +220,8 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
     setStatsCardRecord(record)
   }
   const first = (): VoiceprintRecord | null => {
-    const all = prints()
-    return all !== undefined && all.length > 1 ? all[all.length - 1] : null
+    const all = visiblePrints()
+    return all.length > 1 ? (all[all.length - 1] ?? null) : null
   }
 
   // Growth is measured against the FIRST take, not the previous one:
@@ -258,8 +271,9 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
         when={latest() !== null}
         fallback={
           <p class={styles.empty}>
-            No voiceprint yet. Take the guided voice map from the home screen
-            and your range, steadiness and twin will show up here.
+            {prints.loading
+              ? 'Checking your saved voiceprints…'
+              : 'No voiceprint yet. Take the guided voice map from the home screen and your range, steadiness and twin will show up here.'}
           </p>
         }
       >
@@ -367,9 +381,9 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           </div>
         </div>
 
-        <Show when={(prints()?.length ?? 0) > 1}>
+        <Show when={visiblePrints().length > 1}>
           <ol class={styles.history}>
-            <For each={prints()?.slice(0, 8)}>
+            <For each={visiblePrints().slice(0, 8)}>
               {(print) => (
                 <li class={styles.historyRow}>
                   <Show when={historyThumbSrc(print) !== undefined}>
