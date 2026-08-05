@@ -7,7 +7,7 @@ import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
 import { micErrorMessage, micPermissionState } from './media-errors'
-import { createSignalingClient } from './signaling'
+import { createSignalingClient, jamSignalingIsMocked } from './signaling'
 import type { JamCallbacks, JamPeer } from './types'
 
 // Audio constraints optimized for music — disable all processing
@@ -47,6 +47,10 @@ const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
 }
 
 export function createJamService(callbacks: JamCallbacks) {
+  // A preview room has no remote endpoint. Keep the local media surface alive
+  // (so a capture can exercise the mic UI), but never fetch ICE credentials or
+  // construct a peer connection for the invented peers.
+  const previewMode = jamSignalingIsMocked()
   let localStream: MediaStream | null = null
   /** The processed clone the peers actually hear -- see makeTransmitTrack. */
   let transmitAudio: MediaStreamTrack | null = null
@@ -71,6 +75,7 @@ export function createJamService(callbacks: JamCallbacks) {
     ...callbacks,
     onPeerJoined: (peer: JamPeer) => {
       callbacks.onPeerJoined(peer)
+      if (previewMode) return
       // Only initiate connection if our ID > peer ID to prevent glare.
       // If our ID is not yet known, always initiate — handleOffer will resolve glare.
       const myId = signaling.getPeerId()
@@ -132,7 +137,7 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return
     localDisplayName = displayName
     openLocalStream()
-    iceServers = await getIceServers()
+    if (!previewMode) iceServers = await getIceServers()
     signaling.createRoom(displayName)
   }
 
@@ -140,7 +145,7 @@ export function createJamService(callbacks: JamCallbacks) {
     if (disposed) return
     localDisplayName = displayName
     openLocalStream()
-    iceServers = await getIceServers()
+    if (!previewMode) iceServers = await getIceServers()
     signaling.connect(roomId, displayName)
   }
 
