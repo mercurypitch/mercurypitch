@@ -8,9 +8,21 @@ Plan: [docs/plans/lrc-mapper-studio-plan.md](../../docs/plans/lrc-mapper-studio-
 
 ## Versioning
 
-`<slug>.v<n>.lrc`, where the slug matches the demo-song slug used on R2
-(`demo/<slug>/…`), so a mapping is always traceable to the audio it was made
+`<asset>.v<n>.lrc`, where `<asset>` is the **R2 asset path segment**
+(`demo/<asset>/…`), so a mapping is always traceable to the audio it was made
 against.
+
+Note this is *not* always the demo-song `slug`. The two disagree for one entry,
+and both are load-bearing:
+
+| Song | R2 asset path | demo-song `slug` |
+|---|---|---|
+| Goodbye to Spring | `demo/goodbye-to-spring/` | `karaoke-night` (the legacy slug) |
+| I'll Be Right Behind You, Josephine | `demo/josephine/` | `josephine` |
+
+The slug keys local db rows via `demoSessionId(slug)` and must never change;
+the asset path names the audio. Fixtures follow the asset path because that is
+what identifies the *recording* a mapping was made against.
 
 **`v2` is the gold reference for both songs.** `v1` existed but is not kept:
 it was a first pass that contained words absent from the actual lyric text
@@ -26,7 +38,13 @@ worth pinning; this directory is for references, not for every experiment.
 | File | Song | Lines | Words |
 |---|---|---|---|
 | `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring | 25 | 288 |
-| `ill-be-right-behind-you-josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+| `josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+
+Both are byte-identical to the `lyricsText` served by
+`GET https://api-dev.mercurypitch.com/api/demo-songs` at `lyricsRevision: 2`,
+verified 2026-08-06. Edit them through the studio at
+`https://dev.mercurypitch.com/#/admin/demo-song`, not by hand here — then
+re-sync this directory.
 
 Format is enhanced LRC (A2): inline `[mm:ss.xx]` stamps carry **word starts
 only**. Word ends and sub-word split points have no representation here — that
@@ -57,3 +75,18 @@ song manifest carries it (`attribution.text` / `.url` / `.license` /
 
 Audio is **not** committed: the stems are served from R2 and pulled on demand.
 This directory holds the mappings only.
+
+## A trap: the R2 `lyrics.lrc` files are stale
+
+Each manifest carries both a `lyrics` **URL** and an optional inline
+`lyricsText`, and **`lyricsText` wins when set**. As of 2026-08-06 both songs
+carry v2 as `lyricsText`, while the R2 URLs still serve older revisions:
+
+- `demo/josephine/lyrics.lrc` → the pre-v2 mapping, including the words that are
+  not in the lyric text (a duplicated `seen`, a stray `you`).
+- `demo/goodbye-to-spring/lyrics.lrc` → an earlier timing revision of the same
+  text, uniformly ~380 ms later than v2.
+
+The app is correct — it reads `lyricsText`. But anyone fetching the R2 URL
+directly gets the old mapping and will not be told. Fetch the API, not the
+bucket, when you want the current reference.
