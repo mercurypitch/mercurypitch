@@ -46,6 +46,22 @@
   color: var(--text-secondary);
 }
 
+.lineProgress {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--jam-glass, rgba(13, 17, 23, 0.6)) 78%,
+    transparent
+  );
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* .buttons / .btn lived here for the stage's own Play and Stop. Those
    moved into the room's single transport bar (JamTransport) -- two sets
    of controls for two engines is how a room ended up with two Play
@@ -119,6 +135,11 @@
 .runScore strong {
   font-size: 1.05rem;
   font-weight: 700;
+}
+
+.runLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
 }
 
 .runLines {

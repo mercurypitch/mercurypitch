@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lineAt, lineIndexAt, notesInWindow, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { lineAt, lineIndexAt, lyricLineProgress, notesInWindow, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 
 const lines: LyricsLineTiming[] = [
@@ -86,6 +86,42 @@ describe('lineAt', () => {
   it('reports the index for the scroller', () => {
     expect(lineIndexAt(lines, 5)).toBe(1)
     expect(lineIndexAt(lines, 50)).toBe(-1)
+  })
+})
+
+describe('lyricLineProgress', () => {
+  const lines: LyricsLineTiming[] = [
+    { text: 'first', startSec: 5, endSec: 7 },
+    { text: 'second', startSec: 9, endSec: 11 },
+  ]
+
+  it('keeps the total fixed and reports 1-based active lines', () => {
+    expect(lyricLineProgress(lines, 0)).toEqual({
+      phase: 'intro',
+      totalLines: 2,
+    })
+    expect(lyricLineProgress(lines, 5)).toEqual({
+      phase: 'line',
+      lineNumber: 1,
+      totalLines: 2,
+    })
+    expect(lyricLineProgress(lines, 9)).toEqual({
+      phase: 'line',
+      lineNumber: 2,
+      totalLines: 2,
+    })
+  })
+
+  it('names breaks and the outro without inventing an active line', () => {
+    expect(lyricLineProgress(lines, 8)).toEqual({
+      phase: 'break',
+      nextLineNumber: 2,
+      totalLines: 2,
+    })
+    expect(lyricLineProgress(lines, 12)).toEqual({
+      phase: 'outro',
+      totalLines: 2,
+    })
   })
 })
 

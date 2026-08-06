@@ -12,7 +12,7 @@ import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamB
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
-import { overallLineScore } from '@/lib/jam/jam-line-scoring'
+import { overallLineScore, scoreableLineIndices, } from '@/lib/jam/jam-line-scoring'
 import { sessionIdOfSong } from '@/lib/jam/jam-lyrics-attach'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
@@ -1040,9 +1040,22 @@ export function resetJamLineScores(): void {
 
 /** The take so far, or null when nothing scoreable has been sung yet. */
 export const jamSongRunScore = createRoot(() => {
-  const memo = createMemo(() =>
-    overallLineScore(Object.values(jamSongLineScores())),
-  )
+  const memo = createMemo(() => {
+    const song = jamSong()
+    if (song === null) return null
+
+    const parts = jamSongParts()
+    const mine = jamPeerId()
+    const ownScoreableLines = scoreableLineIndices(
+      song.lines,
+      song.notes,
+    ).filter((lineIndex) => isMyLine(parts, lineIndex, mine))
+    const ownLineSet = new Set(ownScoreableLines)
+    const completed = Object.values(jamSongLineScores()).filter((score) =>
+      ownLineSet.has(score.lineIndex),
+    )
+    return overallLineScore(completed, ownScoreableLines.length)
+  })
   return memo
 })
 

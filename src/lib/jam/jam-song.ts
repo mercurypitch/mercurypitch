@@ -92,6 +92,40 @@ export function lineIndexAt(
   return line === null ? -1 : lines.indexOf(line)
 }
 
+export type LyricLineProgress =
+  | { phase: 'empty'; totalLines: 0 }
+  | { phase: 'intro'; totalLines: number }
+  | { phase: 'line'; lineNumber: number; totalLines: number }
+  | { phase: 'break'; nextLineNumber: number; totalLines: number }
+  | { phase: 'outro'; totalLines: number }
+
+/**
+ * Human-readable position in the lyric sheet.
+ *
+ * This is deliberately independent of singer assignments: every person in
+ * the room is on the same song line. Per-singer coverage is a separate score
+ * concern, while this number must stay stable when somebody is handed a verse.
+ */
+export function lyricLineProgress(
+  lines: readonly LyricsLineTiming[],
+  positionSec: number,
+): LyricLineProgress {
+  const totalLines = lines.length
+  if (totalLines === 0) return { phase: 'empty', totalLines: 0 }
+
+  const activeIndex = lineIndexAt(lines, positionSec)
+  if (activeIndex >= 0) {
+    return { phase: 'line', lineNumber: activeIndex + 1, totalLines }
+  }
+
+  const nextIndex = lines.findIndex((line) => line.startSec > positionSec)
+  if (nextIndex === 0) return { phase: 'intro', totalLines }
+  if (nextIndex > 0) {
+    return { phase: 'break', nextLineNumber: nextIndex + 1, totalLines }
+  }
+  return { phase: 'outro', totalLines }
+}
+
 /**
  * How far a transport command travelled, in seconds.
  *

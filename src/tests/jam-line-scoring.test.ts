@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lineRange, overallLineScore, scoreLines, scoreLiveLine, toSongTime, } from '@/lib/jam/jam-line-scoring'
+import { lineRange, overallLineScore, scoreableLineIndices, scoreLines, scoreLiveLine, toSongTime, } from '@/lib/jam/jam-line-scoring'
 import type { JamSongNote, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 
 /** A4 = 440Hz = MIDI 69, the note everything below is sung against. */
@@ -130,6 +130,18 @@ describe('scoreLines', () => {
   })
 })
 
+describe('scoreableLineIndices', () => {
+  it('finds the stable song denominator before any line is performed', () => {
+    expect(scoreableLineIndices(LINES, NOTES)).toEqual([0, 1])
+    expect(
+      scoreableLineIndices(
+        [...LINES, { text: 'instrumental', startSec: 8, endSec: 10 }],
+        NOTES,
+      ),
+    ).toEqual([0, 1])
+  })
+})
+
 describe('scoreLiveLine', () => {
   it('anchors to when the line started, so a mid-song line scores like a first one', () => {
     // The playhead reached 30s at wall time 100000, singing the note that
@@ -173,6 +185,7 @@ describe('overallLineScore', () => {
     // drag an otherwise perfect run down to 50.
     const out = overallLineScore([scored(100, 4), scored(0, 0, false)])
     expect(out?.score).toBe(100)
+    expect(out?.completedLines).toBe(1)
     expect(out?.totalLines).toBe(1)
   })
 
@@ -180,7 +193,18 @@ describe('overallLineScore', () => {
     const out = overallLineScore([scored(100, 4), scored(0, 4, false)])
     expect(out?.score).toBe(50)
     expect(out?.sungLines).toBe(1)
+    expect(out?.completedLines).toBe(2)
     expect(out?.totalLines).toBe(2)
+  })
+
+  it('keeps the expected song total stable while completed lines grow', () => {
+    const out = overallLineScore([scored(100, 4)], 8)
+    expect(out).toMatchObject({
+      score: 100,
+      sungLines: 1,
+      completedLines: 1,
+      totalLines: 8,
+    })
   })
 
   it('returns null when nothing was scoreable, which is not the same as zero', () => {

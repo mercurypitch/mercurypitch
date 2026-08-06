@@ -20,6 +20,7 @@ import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
+import { stemTrackIsAudible } from './stem-mix-state'
 import type { PitchNote } from './types'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -606,7 +607,18 @@ export const useStemMixerAudioController = (
         },
       ])
       if (buf.duration > duration()) setDuration(buf.duration)
-      if (playing()) seekTo(elapsed())
+      if (playing()) {
+        seekTo(elapsed())
+      } else {
+        // The source graph is rebuilt by Play, but stopped canvases have no
+        // RAF loop. Redraw now so the new lane and monitor count do not stay
+        // stuck on the pre-add mix until playback begins.
+        requestAnimationFrame(() => {
+          deps.canvas.syncCanvasSizes()
+          deps.canvas.drawWaveformOverview()
+          deps.canvas.drawLiveWaveform()
+        })
+      }
       return true
     } catch (err) {
       console.warn('[StemMixer] add stem failed:', err)
@@ -632,7 +644,7 @@ export const useStemMixerAudioController = (
     for (const track of deps.tracks()) {
       if (!track.buffer) continue
 
-      const isAudible = track.soloed || (!track.muted && !deps.anySoloed())
+      const isAudible = stemTrackIsAudible(track, deps.anySoloed())
 
       // Karaoke: the vocal is the scoring reference but is silenced via the
       // track's `muted` flag (so the mute button + waveform reflect it). We tap
