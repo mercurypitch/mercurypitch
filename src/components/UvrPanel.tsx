@@ -12,12 +12,11 @@ import type { SessionExportStemType, SessionZipInspection, } from '@/db/services
 import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionLibraryExport, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getAuthToken } from '@/db/services/user-service'
-import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
+import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
-import { computeFileHash } from '@/lib/file-hash'
 import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -32,12 +31,13 @@ import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, destroyPipeline, getActiveProvider, isServerPollActive, preInitModel, resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
+import { prepareUvrSong } from '@/lib/uvr-song-preparation'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { PART_STEM_DISPLAY, StemSplitError } from '@/lib/uvr-stem-split'
 import type { UvrUploadQueueWorkerContext } from '@/lib/uvr-upload-queue'
 import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/uvr-upload-queue'
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, getUvrSessionByHash, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
+import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -1228,131 +1228,109 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     context: UvrUploadQueueWorkerContext,
     processingMode: UvrProcessingMode,
   ) => {
-    context.update({ message: 'Checking your library…' })
-    const hash = await computeFileHash(item.file)
-    if (context.cancelled()) return { status: 'cancelled' as const }
-
-    const existing = getUvrSessionByHash(hash)
-    if (existing !== undefined) {
-      return {
-        status: 'skipped' as const,
-        sessionId: existing.sessionId,
-        message: 'Existing stems kept',
-      }
-    }
-
-    const dbMatch = await findSessionByFileHash(hash)
-    if (dbMatch !== null) {
-      const stored = getUvrSession(dbMatch.sessionId)
-      if (stored?.status === 'completed') {
-        return {
-          status: 'skipped' as const,
-          sessionId: stored.sessionId,
-          message: 'Existing stems kept',
-        }
-      }
-    }
-
-    // A recoverable server job for the same file may be running in another
-    // tab or may have been re-attached after a reload. Never submit a duplicate
-    // paid job; leave the existing session to its own poll loop.
-    const inFlight = getAllUvrSessions().find(
-      (session) =>
-        session.fileHash === hash &&
-        session.processingMode === 'server' &&
-        session.apiSessionId !== undefined &&
-        session.apiSessionId !== '' &&
-        (session.status === 'processing' || session.status === 'finalizing'),
-    )
-    if (inFlight !== undefined) {
-      return {
-        status: 'skipped' as const,
-        sessionId: inFlight.sessionId,
-        message: 'Already separating',
-      }
-    }
-
-    if (context.cancelled()) return { status: 'cancelled' as const }
-    const sessionId = startUvrSession(
-      item.file.name,
-      item.file.size,
-      item.file.type,
-      'separate',
-      processingMode,
-      hash,
-      false,
-      // "Full band" upload choice — server only; the browser model is
-      // 2-stem, so a local run ignores it.
-      processingMode === 'server' && bandSplitChoice(),
-    )
-    const groupId = activeGroupId()
-    if (groupId !== null && groupId !== '') {
-      void addSessionToGroup(sessionId, groupId)
-    }
-    context.update({
-      status: 'processing',
-      sessionId,
-      message:
-        processingMode === 'server'
-          ? 'Studio separation starting…'
-          : 'Preparing on-device model…',
-    })
-
-    let serverCancelIssued = false
     const cancelController = new AbortController()
-    const cancelSubmittedServerJob = () => {
-      if (processingMode !== 'server' || serverCancelIssued) return
-      const apiSessionId = getUvrSession(sessionId)?.apiSessionId
-      if (apiSessionId === undefined || apiSessionId === '') return
-      serverCancelIssued = true
-      cancelUvrPipeline('server', apiSessionId)
-    }
-    context.onCancel(() => {
-      cancelController.abort()
-      if (processingMode === 'local') cancelUvrPipeline('local')
-      else cancelSubmittedServerJob()
-      cancelUvrSession(sessionId, false)
-    })
+    context.onCancel(() => cancelController.abort())
 
-    const result = await handleProcessStart(
-      sessionId,
-      processingMode,
-      item.file,
-      {
-        focus: false,
-        onProgress: (progress) => {
-          if (context.cancelled()) cancelSubmittedServerJob()
-          else {
-            context.update({
-              progress,
-              message:
-                progress > 0
-                  ? `${Math.round(progress)}% separated`
+    const result = await prepareUvrSong(item.file, {
+      mode: processingMode,
+      bandSplit: processingMode === 'server' && bandSplitChoice(),
+      focus: false,
+      signal: cancelController.signal,
+      onSessionCreated: (sessionId) => {
+        const groupId = activeGroupId()
+        if (groupId !== null && groupId !== '') {
+          void addSessionToGroup(sessionId, groupId)
+        }
+        context.update({
+          status: 'processing',
+          sessionId,
+          message:
+            processingMode === 'server'
+              ? 'Studio separation starting…'
+              : 'Preparing on-device model…',
+        })
+      },
+      onUpdate: (update) => {
+        if (context.cancelled()) return
+        const message =
+          update.phase === 'checking-library'
+            ? 'Checking your library…'
+            : update.phase === 'saving-original'
+              ? 'Keeping a retry copy…'
+              : update.phase === 'finalizing'
+                ? 'Saving stems…'
+                : update.progress !== null && update.progress > 0
+                  ? `${Math.round(update.progress)}% separated`
                   : processingMode === 'server'
                     ? 'Waiting for a studio worker…'
-                    : 'Loading the separator…',
-            })
-          }
-        },
-        cancelled: context.cancelled,
-        signal: cancelController.signal,
+                    : 'Loading the separator…'
+        context.update({
+          ...(update.progress !== null ? { progress: update.progress } : {}),
+          message,
+        })
       },
-    )
+      onWarning: (warning) => {
+        showNotification(warning.message, 'warning')
+      },
+      onCompleted: (sessionId) => {
+        if (
+          processingMode === 'server' &&
+          getUvrSession(sessionId)?.bandSplit === true
+        ) {
+          void runBandSplitChain(sessionId)
+        }
+        setTimeout(() => {
+          void indexStemFingerprint(sessionId, item.file.name)
+        }, 500)
+      },
+    })
+
+    if (
+      processingMode === 'server' &&
+      result.status !== 'existing' &&
+      result.status !== 'in-flight'
+    ) {
+      refreshBalance()
+    }
 
     if (context.cancelled()) {
-      cancelSubmittedServerJob()
-      return { status: 'cancelled' as const, sessionId }
+      return {
+        status: 'cancelled' as const,
+        ...(result.sessionId !== undefined
+          ? { sessionId: result.sessionId }
+          : {}),
+      }
+    }
+    if (result.status === 'existing' || result.status === 'in-flight') {
+      return {
+        status: 'skipped' as const,
+        sessionId: result.sessionId,
+        message:
+          result.status === 'existing'
+            ? 'Existing stems kept'
+            : 'Already separating',
+      }
+    }
+    if (result.status === 'cancelled') {
+      return {
+        status: 'cancelled' as const,
+        ...(result.sessionId !== undefined
+          ? { sessionId: result.sessionId }
+          : {}),
+      }
     }
     if (result.status === 'error') {
       return {
         status: 'error' as const,
-        sessionId,
-        message: result.message ?? 'Separation failed',
+        ...(result.sessionId !== undefined
+          ? { sessionId: result.sessionId }
+          : {}),
+        message: result.message,
       }
     }
     return {
       status: 'completed' as const,
-      sessionId,
+      sessionId: result.sessionId,
       message: 'Stems saved',
     }
   }

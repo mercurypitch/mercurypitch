@@ -18,7 +18,7 @@ vi.mock('@/db', () => ({
 import type { UvrSessionRecord } from '@/db/entities'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrSession } from '@/stores/app-store'
-import { cleanupStaleUvrSessions, completeUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
+import { cleanupStaleUvrSessions, completeUvrSession, getUvrSession, pruneOrphanedCompletedSessions, reconcileInterruptedSessions, refreshUvrSessionFromDb, resumableServerSessions, saveAllUvrSessions, setFinalizingUvrSession, startUvrSession, } from '@/stores/app-store'
 
 if (typeof Blob.prototype.arrayBuffer !== 'function') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,6 +69,33 @@ describe('completeUvrSession — durable', () => {
     vi.spyOn(repo, 'update').mockRejectedValue(new Error('DB locked'))
     const ok = await completeUvrSession(id, { vocal: 'blob:x' }, {})
     expect(ok).toBe(false)
+  })
+})
+
+describe('refreshUvrSessionFromDb', () => {
+  it('hydrates a recoverable job created after this tab cache initialized', async () => {
+    const repo = adapter.getRepository<UvrSessionRecord>('uvrSessions')
+    await repo.create({
+      appSessionId: 'other-tab-job',
+      userId: 'local-user',
+      apiSessionId: 'rp_gpu_other-tab',
+      status: 'processing',
+      progress: 27,
+      fileHash: 'hash-other-tab',
+      originalFileName: 'other-tab.wav',
+      originalFileSize: 100,
+      originalFileType: 'audio/wav',
+      processingMode: 'server',
+      appCreatedAt: 1_700_000_000_000,
+    })
+
+    expect(getUvrSession('other-tab-job')).toBeUndefined()
+    await expect(refreshUvrSessionFromDb('other-tab-job')).resolves.toBe(true)
+    expect(getUvrSession('other-tab-job')).toMatchObject({
+      status: 'processing',
+      apiSessionId: 'rp_gpu_other-tab',
+      fileHash: 'hash-other-tab',
+    })
   })
 })
 

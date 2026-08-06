@@ -22,6 +22,17 @@ vi.mock('@/lib/uvr-stem-lease', () => ({
 
 import { createUvrGuitarNightSongPort } from '@/features/guitar-night/uvr-song-port'
 
+function deferred<T>(): {
+  promise: Promise<T>
+  resolve(value: T): void
+} {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 function sessionRecord(
   sessionId: string,
   status: string,
@@ -168,5 +179,29 @@ describe('createUvrGuitarNightSongPort', () => {
     await expect(
       port.openSession('velvet', new AbortController().signal),
     ).rejects.toBe(stemFailure)
+  })
+
+  it('keeps the newer catalog when initialize reads resolve out of order', async () => {
+    const olderRead = deferred<UvrSessionRecord[]>()
+    const newerRead = deferred<UvrSessionRecord[]>()
+    adapterReads.readUvrSessionRecords
+      .mockReturnValueOnce(olderRead.promise)
+      .mockReturnValueOnce(newerRead.promise)
+    const port = createUvrGuitarNightSongPort()
+
+    const olderInitialize = port.initialize()
+    const newerInitialize = port.initialize()
+    newerRead.resolve([sessionRecord('newer', 'completed')])
+    await newerInitialize
+    olderRead.resolve([sessionRecord('older', 'completed')])
+    await olderInitialize
+
+    expect(port.completedSongs()).toEqual([
+      {
+        sessionId: 'newer',
+        title: 'newer.wav',
+        createdAt: Date.UTC(2026, 7, 6),
+      },
+    ])
   })
 })

@@ -5,7 +5,7 @@
 import type { Component } from 'solid-js'
 import { isZipFile } from '@/db/services/session-export-service'
 import { formatFileSize } from '@/lib/audio-accept'
-import { AUDIO_UPLOAD_ALLOWED_TYPES } from '@/lib/audio-upload-contract'
+import { acceptsAudioUpload, AUDIO_UPLOAD_ALLOWED_TYPES, } from '@/lib/audio-upload-contract'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, MusicNote } from './icons'
@@ -27,13 +27,8 @@ export const UvrUploadControl: Component<UploadControlProps> = (props) => {
   const maxSize = () => props.maxSize ?? 100 * 1024 * 1024 // 100MB default
   const allowedTypes = () => props.allowedTypes || AUDIO_UPLOAD_ALLOWED_TYPES
 
-  const acceptsAudio = (file: File): boolean => {
-    const mimeType = file.type.toLowerCase()
-    const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
-    return (
-      allowedTypes().includes(mimeType) || allowedTypes().includes(extension)
-    )
-  }
+  const acceptsAudio = (file: File): boolean =>
+    acceptsAudioUpload(file, allowedTypes())
 
   const handleFilesSelect = (files: File[]) => {
     if (props.disabled === true) return

@@ -9,12 +9,14 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
-import { AUDIO_UPLOAD_ACCEPT, formatFileSize, } from '@/lib/audio-upload-contract'
+import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import type { GuitarFirstWinExerciseStepV1 } from './first-win-config'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
+import type { GuitarNightPreparationPort } from './preparation-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
+import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
@@ -22,6 +24,7 @@ type EntryView = 'choices' | 'first-win' | 'song'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadSongPort?: () => Promise<GuitarNightSongPort>
+  loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
 }
 
 const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']
@@ -67,7 +70,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     initialSessionId === null ? 'choices' : 'song',
   )
   const [previewHits, setPreviewHits] = createSignal(0)
-  const [selectedSong, setSelectedSong] = createSignal<File | null>(null)
   let detailHeading: HTMLHeadingElement | undefined
   let songInput: HTMLInputElement | undefined
 
@@ -83,9 +85,31 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         : configuredLoader()
     },
     onRouteSession: () => {
-      setSelectedSong(null)
       setView('song')
       focusDetail()
+    },
+  })
+  const preparationController = useGuitarNightPreparationController({
+    loadPreparationPort: () => {
+      const configuredLoader = props.loadPreparationPort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightPreparationPort()
+        : configuredLoader()
+    },
+    onPrepared: async (sessionId, signal) => {
+      const cancelStaging = () => songController.clearSession('replace')
+      signal.addEventListener('abort', cancelStaging, { once: true })
+      try {
+        const refreshed = await songController.refreshLibrary()
+        if (signal.aborted) return
+        if (!refreshed) {
+          throw new Error('Prepared-song library did not refresh')
+        }
+        await songController.stageSession(sessionId, 'push')
+        if (signal.aborted) cancelStaging()
+      } finally {
+        signal.removeEventListener('abort', cancelStaging)
+      }
     },
   })
   const activeBacking = createMemo(() => {
@@ -95,6 +119,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const unavailableSelection = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
+  })
+  const preparingSong = createMemo(() => {
+    const state = preparationController.state()
+    return state.kind === 'preparing' ? state : null
+  })
+  const preparationError = createMemo(() => {
+    const state = preparationController.state()
+    return state.kind === 'error' ? state : null
+  })
+  const cancelledPreparation = createMemo(() => {
+    const state = preparationController.state()
+    return state.kind === 'cancelled' ? state : null
   })
 
   const openFirstWin = () => {
@@ -117,6 +153,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   const returnToChoices = () => {
+    preparationController.clear()
     if (view() === 'song') songController.clearSession('push')
     setView('choices')
     queueMicrotask(() =>
@@ -155,30 +192,57 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   const handleSongChange = (event: Event) => {
     const input = event.currentTarget as HTMLInputElement
-    songController.clearSession('push')
-    setSelectedSong(input.files?.[0] ?? null)
+    const file = input.files?.[0]
     input.value = ''
+    if (file === undefined) return
+    const accepted = preparationController.start(file)
+    if (accepted) songController.clearSession('push')
     setView('song')
     focusDetail()
   }
 
   const stagePreparedSong = (sessionId: string) => {
-    setSelectedSong(null)
+    preparationController.clear()
     void songController.stageSession(sessionId, 'push')
   }
 
-  const roomStatusCopy = () => {
+  const roomStatus = () => {
+    const preparation = preparationController.state()
+    if (preparation.kind === 'preparing') {
+      return {
+        title: 'Preparing song',
+        detail: guitarNightPreparationMessage(preparation),
+      }
+    }
+    if (preparation.kind === 'error') {
+      return {
+        title: 'Preparation needs attention',
+        detail: 'No playback or listening has started',
+      }
+    }
+    if (preparation.kind === 'cancelled') {
+      return {
+        title: 'Room ready',
+        detail: 'Preparation cancelled; no audio has started',
+      }
+    }
     const selection = songController.selectionState()
     if (selection.kind === 'ready') {
-      return 'Song prepared; playback has not started'
+      return {
+        title: 'Room ready',
+        detail: 'Song prepared; playback has not started',
+      }
     }
     if (selection.kind === 'loading') {
-      return 'Opening local song; no audio has started'
+      return {
+        title: 'Opening song',
+        detail: 'Reading local stems; no audio has started',
+      }
     }
-    if (selectedSong() !== null) {
-      return 'Audio chosen; preparation has not started'
+    return {
+      title: 'Room ready',
+      detail: 'No audio or listening has started',
     }
-    return 'No audio or listening has started'
   }
 
   return (
@@ -385,8 +449,69 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 from this device. Nothing starts playing on its own.
               </p>
 
-              <div class={styles.songWell} aria-live="polite">
+              <div
+                class={styles.songWell}
+                aria-busy={preparingSong() !== null ? 'true' : 'false'}
+              >
                 <Switch>
+                  <Match when={preparingSong()}>
+                    {(preparation) => (
+                      <div class={styles.songState}>
+                        <strong title={preparation().file.name}>
+                          {preparation().file.name}
+                        </strong>
+                        <span role="status" aria-atomic="true">
+                          {guitarNightPreparationMessage(preparation())}
+                        </span>
+                        <Show
+                          when={preparation().progress !== null}
+                          fallback={
+                            <progress
+                              class={styles.songProgress}
+                              max="100"
+                              aria-label={`Preparing ${preparation().file.name}`}
+                            />
+                          }
+                        >
+                          <progress
+                            class={styles.songProgress}
+                            max="100"
+                            value={preparation().progress ?? 0}
+                            aria-label={`Preparing ${preparation().file.name}`}
+                          />
+                        </Show>
+                        <small>
+                          {preparation().warning ??
+                            'Your audio stays on this device. Nothing will play automatically.'}
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={preparationError()}>
+                    {(error) => (
+                      <div class={styles.songState} role="alert">
+                        <strong>{error().title}</strong>
+                        <span title={error().file.name}>
+                          {error().file.name}
+                        </span>
+                        <small>{error().message}</small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={cancelledPreparation()}>
+                    {(cancelled) => (
+                      <div class={styles.songState}>
+                        <strong>Preparation cancelled</strong>
+                        <span title={cancelled().file.name}>
+                          {cancelled().file.name}
+                        </span>
+                        <small>
+                          This song was not staged. The file is ready if you
+                          want to try again.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
                   <Match when={activeBacking()}>
                     {(backing) => (
                       <>
@@ -424,19 +549,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         </small>
                       </>
                     )}
-                  </Match>
-                  <Match when={selectedSong() !== null}>
-                    <strong>{selectedSong()?.name}</strong>
-                    <span>
-                      {selectedSong()?.type === ''
-                        ? 'Audio file'
-                        : (selectedSong()?.type ?? 'Audio file')}{' '}
-                      · {formatFileSize(selectedSong()?.size ?? 0)}
-                    </span>
-                    <small>
-                      Selected on this device. Song preparation is not connected
-                      yet.
-                    </small>
                   </Match>
                   <Match when={true}>
                     <strong>No song selected</strong>
@@ -506,8 +618,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                                   : undefined
                               }
                               disabled={
+                                preparationController.isPreparing() ||
                                 songController.selectionState().kind ===
-                                'loading'
+                                  'loading'
                               }
                               onClick={() => stagePreparedSong(song.sessionId)}
                             >
@@ -531,13 +644,62 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 <button type="button" onClick={returnToChoices}>
                   Back
                 </button>
-                <button
-                  class={styles.completionAction}
-                  type="button"
-                  onClick={() => songInput?.click()}
-                >
-                  {selectedSong() ? 'Choose another' : 'Choose audio'}
-                </button>
+                <Switch>
+                  <Match when={preparingSong() !== null}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={preparationController.cancel}
+                    >
+                      Cancel preparation
+                    </button>
+                  </Match>
+                  <Match when={preparationError()}>
+                    {(error) => (
+                      <>
+                        <Show when={error().retryable}>
+                          <button
+                            class={styles.completionAction}
+                            type="button"
+                            onClick={preparationController.retry}
+                          >
+                            Try again
+                          </button>
+                        </Show>
+                        <button
+                          type="button"
+                          onClick={() => songInput?.click()}
+                        >
+                          Choose another
+                        </button>
+                      </>
+                    )}
+                  </Match>
+                  <Match when={cancelledPreparation() !== null}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={preparationController.retry}
+                    >
+                      Try again
+                    </button>
+                    <button type="button" onClick={() => songInput?.click()}>
+                      Choose another
+                    </button>
+                  </Match>
+                  <Match when={true}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      disabled={
+                        songController.selectionState().kind === 'loading'
+                      }
+                      onClick={() => songInput?.click()}
+                    >
+                      {activeBacking() ? 'Choose another' : 'Choose audio'}
+                    </button>
+                  </Match>
+                </Switch>
               </div>
             </Match>
           </Switch>
@@ -546,11 +708,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
       <div
         class={styles.roomStatus}
-        aria-label={`Room status: ${roomStatusCopy()}`}
+        aria-label={`Room status: ${roomStatus().title}. ${roomStatus().detail}`}
       >
         <span aria-hidden="true" />
-        <strong>Room ready</strong>
-        <small>{roomStatusCopy()}</small>
+        <strong>{roomStatus().title}</strong>
+        <small>{roomStatus().detail}</small>
       </div>
 
       <input
@@ -559,6 +721,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         data-testid="guitar-night-song-input"
         type="file"
         accept={AUDIO_UPLOAD_ACCEPT}
+        disabled={preparationController.isPreparing()}
         onChange={handleSongChange}
         tabindex="-1"
       />

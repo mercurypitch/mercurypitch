@@ -53,14 +53,19 @@ export function useGuitarNightSongController(
   const [routeSessionId, setRouteSessionId] = createSignal<string | null>(
     readGuitarNightSession(),
   )
+  const [catalogVersion, setCatalogVersion] = createSignal(0)
 
   let disposed = false
   let requestGeneration = 0
+  let catalogRequestGeneration = 0
   let activeAbort: AbortController | null = null
   let activeLease: GuitarNightBackingLease | null = null
   let portPromise: Promise<GuitarNightSongPort> | null = null
 
-  const songs = createMemo(() => port()?.completedSongs() ?? [])
+  const songs = createMemo(() => {
+    catalogVersion()
+    return port()?.completedSongs() ?? []
+  })
 
   const releaseSelection = (): void => {
     requestGeneration += 1
@@ -100,6 +105,30 @@ export function useGuitarNightSongController(
 
   const initialize = (): void => {
     void ensurePort()
+  }
+
+  const refreshLibrary = async (): Promise<boolean> => {
+    const generation = ++catalogRequestGeneration
+    const loadedPort = await ensurePort()
+    if (
+      loadedPort === null ||
+      disposed ||
+      generation !== catalogRequestGeneration
+    ) {
+      return false
+    }
+    try {
+      await loadedPort.initialize()
+    } catch {
+      if (!disposed && generation === catalogRequestGeneration) {
+        setLibraryState('error')
+      }
+      return false
+    }
+    if (disposed || generation !== catalogRequestGeneration) return false
+    setCatalogVersion((version) => version + 1)
+    setLibraryState('ready')
+    return true
   }
 
   const stageSession = async (
@@ -215,6 +244,7 @@ export function useGuitarNightSongController(
 
   onCleanup(() => {
     disposed = true
+    catalogRequestGeneration += 1
     releaseSelection()
   })
 
@@ -224,6 +254,7 @@ export function useGuitarNightSongController(
     routeSessionId,
     songs,
     initialize,
+    refreshLibrary,
     stageSession,
     clearSession,
     retry,

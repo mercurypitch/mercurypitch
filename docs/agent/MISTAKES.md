@@ -237,6 +237,23 @@ produces at some zoom levels.
 
 ## Data and billing
 
+### Hydrate a durable job before trying to resume it
+**Symptom:** a standalone route found an already-paid in-flight separation but
+retry remained stuck forever.
+**Cause:** IndexedDB had the provider job id while the tab's app-lifetime cache
+was stale; the resume scanner only inspected that cache.
+**Rule:** when durable dedupe finds an uncached job, hydrate that exact session
+before invoking shared auto-resume.
+**See:** `src/features/guitar-night/uvr-preparation-port.ts`
+
+### Do not report terminal success before the record is durable
+**Symptom:** separation appeared successful, then immediate catalog refresh
+could not open the result.
+**Cause:** stem writes completed but the terminal session-record write failed.
+**Rule:** retain the completed cache for a cheap persistence retry, but return a
+recoverable error and do not run completion handoffs until the record persists.
+**See:** `src/lib/uvr-song-preparation.ts`
+
 ### Treat hibernated socket attachments as persisted authorization state
 
 **Symptom:** a superseded Jam host could regain background controls only after

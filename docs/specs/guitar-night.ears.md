@@ -9,6 +9,11 @@ Guitar runtime.
 began with legacy lifecycle stabilization and runtime extraction; the
 standalone Velvet Rehearsal entry is mounted, and completed local separation
 sessions can be staged under route-owned URL leases without starting playback.
+The current implementation slice also accepts a supported local audio
+file, runs the existing durable on-device separation workflow with visible
+progress and cancellation, refreshes the local catalog, and stages the exact
+completed or reused session without starting playback or listening. The
+route-owned Guitar playback runtime remains a subsequent integration.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -268,6 +273,37 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-GN-SONG-007 — Shared transport:** WHILE a separated song is staged,
   its accompaniment, optional score, loop, drums, bass, visual playhead, and
   scoring shall follow the Guitar session transport.
+- **REQ-GN-SONG-008 — Visible local preparation:** WHEN the player selects a
+  supported local audio file, Guitar Night shall show named preparation
+  phases, determinate percentage where the pipeline provides it, an accessible
+  indeterminate state otherwise, and actionable storage warnings or errors.
+- **REQ-GN-SONG-009 — Cancellable preparation:** WHEN the player cancels an
+  active preparation, replaces its source, or leaves the surface, Guitar
+  Night shall abort the active work, cancel its durable session where
+  appropriate, ignore late progress or completion, and never stage the
+  cancelled result.
+- **REQ-GN-SONG-010 — Silent preparation and staging:** WHILE Guitar Night
+  checks, saves, separates, refreshes, or stages a local song, and WHEN that
+  work completes or reuses an existing session, it shall not automatically
+  start playback, listening, microphone, MIDI, count-in, analysis, or timers.
+- **REQ-GN-SONG-011 — Completion refresh and exact staging:** WHEN local
+  preparation completes or reuses a matching completed session, Guitar Night
+  shall refresh the durable local catalog and then stage that exact session
+  under a route-owned lease, updating its explicit session URL state without
+  starting playback.
+- **REQ-GN-SONG-012 — Stale-result protection:** IF an older preparation,
+  catalog refresh, or hydration settles after a newer selection,
+  cancellation, or route state change, THEN it shall not replace the newest
+  selection, and any stale route-owned URLs shall be released.
+- **REQ-GN-SONG-013 — Saved-stem recovery:** IF separation finishes and its
+  stems are saved but catalog refresh or staging fails, THEN Guitar Night
+  shall explain that the prepared song remains available in Prepared songs
+  and offer a retry or reopen path without requiring separation to run again.
+- **REQ-GN-SONG-014 — Duplicate-work avoidance:** WHEN the selected file
+  matches a completed durable session, Guitar Night shall reuse it. IF the
+  matching session is a recoverable active job, THEN Guitar Night shall report
+  that state, hydrate its durable claim into the current tab, and reattach to
+  it without submitting duplicate separation work.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 
