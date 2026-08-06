@@ -115,6 +115,12 @@ export const SESSION_EXPORT_STEM_ORDER: readonly SessionExportStemType[] = [
   'other',
 ]
 
+export interface SessionLibraryExportInspection {
+  availableStems: SessionExportStemType[]
+  restorableSessions: number
+  skippedSessions: number
+}
+
 const SESSION_EXPORT_STEM_SET = new Set<SessionExportStemType>(
   SESSION_EXPORT_STEM_ORDER,
 )
@@ -134,6 +140,21 @@ export async function listSessionExportStems(
   return SESSION_EXPORT_STEM_ORDER.filter((stem) => stored.has(stem))
 }
 
+/** Apply a library-wide selection to one session's stored stems. A batch can
+ * contain classic and full-band sessions, so optional parts are intersected
+ * per session instead of making the entire archive fail. */
+export function resolveSessionExportStems(
+  storedStems: readonly SessionExportStemType[],
+  selectedStemTypes?: readonly SessionExportStemType[],
+): SessionExportStemType[] {
+  const stored = new Set(storedStems)
+  const selected =
+    selectedStemTypes === undefined ? null : new Set(selectedStemTypes)
+  return SESSION_EXPORT_STEM_ORDER.filter(
+    (stem) => stored.has(stem) && (selected === null || selected.has(stem)),
+  )
+}
+
 function hasRestorableCoreStem(
   stems: ReadonlySet<SessionExportStemType> | readonly SessionExportStemType[],
 ): boolean {
@@ -150,6 +171,7 @@ interface PreparedSessionExport {
 
 async function prepareRestorableBatchSessions(
   sessions: readonly UvrSession[],
+  selectedStemTypes?: readonly SessionExportStemType[],
 ): Promise<{
   ready: PreparedSessionExport[]
   skippedSessions: number
@@ -157,11 +179,33 @@ async function prepareRestorableBatchSessions(
   const ready: PreparedSessionExport[] = []
   for (const session of sessions) {
     if (session.status !== 'completed') continue
-    const stemTypes = await listSessionExportStems(session.sessionId)
+    const stemTypes = resolveSessionExportStems(
+      await listSessionExportStems(session.sessionId),
+      selectedStemTypes,
+    )
     if (!hasRestorableCoreStem(stemTypes)) continue
     ready.push({ session, stemTypes })
   }
   return { ready, skippedSessions: sessions.length - ready.length }
+}
+
+/** Inspect the local library before starting a potentially long batch build. */
+export async function inspectSessionLibraryExport(): Promise<SessionLibraryExportInspection> {
+  const sessions = getAllUvrSessions()
+  const { ready, skippedSessions } =
+    await prepareRestorableBatchSessions(sessions)
+  const available = new Set<SessionExportStemType>()
+  for (const prepared of ready) {
+    for (const stem of prepared.stemTypes) available.add(stem)
+  }
+
+  return {
+    availableStems: SESSION_EXPORT_STEM_ORDER.filter((stem) =>
+      available.has(stem),
+    ),
+    restorableSessions: ready.length,
+    skippedSessions,
+  }
 }
 
 // Types for the JSON payload stored inside the ZIP
@@ -619,11 +663,14 @@ export function exportSession(
  */
 async function exportAllSessionsUnlocked(
   onProgress?: (progress: number) => void,
+  selectedStemTypes?: readonly SessionExportStemType[],
 ): Promise<SessionArchiveExportSummary> {
   try {
     const sessions = getAllUvrSessions()
-    const { ready, skippedSessions } =
-      await prepareRestorableBatchSessions(sessions)
+    const { ready, skippedSessions } = await prepareRestorableBatchSessions(
+      sessions,
+      selectedStemTypes,
+    )
     if (ready.length === 0) throw new NoRestorableSessionsError()
 
     const archive = new StreamingZipArchive()
@@ -666,9 +713,10 @@ async function exportAllSessionsUnlocked(
 
 export function exportAllSessions(
   onProgress?: (progress: number) => void,
+  selectedStemTypes?: readonly SessionExportStemType[],
 ): Promise<SessionArchiveExportSummary> {
   return runExclusiveArchiveDownload(() =>
-    exportAllSessionsUnlocked(onProgress),
+    exportAllSessionsUnlocked(onProgress, selectedStemTypes),
   )
 }
 

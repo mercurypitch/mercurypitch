@@ -20,6 +20,12 @@ interface SessionExportDialogProps {
   progress: number
   busy: boolean
   error: string
+  eyebrow?: string
+  heading?: string
+  description?: string
+  selectionSummary?: string
+  submitLabel?: string
+  progressLabel?: string
   onPresetChange: (preset: SessionExportPreset) => void
   onStemToggle: (stem: SessionExportStemType) => void
   onSubmit: () => void
@@ -81,8 +87,10 @@ export const SessionExportDialog: Component<SessionExportDialogProps> = (
           >
             <div class={styles.header}>
               <div>
-                <p>Session archive</p>
-                <h4 id={titleId}>Choose stems to include</h4>
+                <p>{props.eyebrow ?? 'Session archive'}</p>
+                <h4 id={titleId}>
+                  {props.heading ?? 'Choose stems to include'}
+                </h4>
               </div>
               <button
                 type="button"
@@ -96,9 +104,8 @@ export const SessionExportDialog: Component<SessionExportDialogProps> = (
             </div>
 
             <p id={descriptionId} class={styles.description}>
-              The archive keeps the original upload when stored, plus lyrics,
-              timing, pitch analysis and session details. Account credentials
-              and temporary server handles are never included.
+              {props.description ??
+                'The archive keeps the original upload when stored, plus lyrics, timing, pitch analysis and session details. Account credentials and temporary server handles are never included.'}
             </p>
 
             <div
@@ -191,7 +198,7 @@ export const SessionExportDialog: Component<SessionExportDialogProps> = (
               <div
                 class={styles.progress}
                 role="progressbar"
-                aria-label="Packing session archive"
+                aria-label={props.progressLabel ?? 'Packing session archive'}
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow={props.progress}
@@ -202,8 +209,8 @@ export const SessionExportDialog: Component<SessionExportDialogProps> = (
 
             <div class={styles.actions}>
               <span aria-live="polite">
-                {props.selected.length}{' '}
-                {props.selected.length === 1 ? 'stem' : 'stems'} selected
+                {props.selectionSummary ??
+                  `${props.selected.length} ${props.selected.length === 1 ? 'stem' : 'stems'} selected`}
               </span>
               <button
                 type="button"
@@ -223,7 +230,9 @@ export const SessionExportDialog: Component<SessionExportDialogProps> = (
                 onClick={() => props.onSubmit()}
               >
                 <Download />
-                {props.busy ? `Packing ${props.progress}%` : 'Export session'}
+                {props.busy
+                  ? `Packing ${props.progress}%`
+                  : (props.submitLabel ?? 'Export session')}
               </button>
             </div>
           </div>

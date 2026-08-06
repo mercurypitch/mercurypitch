@@ -120,3 +120,15 @@ omitted stems. **IF** the archive has no Vocal or Instrumental audio,
 restored, **THEN** stale queued, processing or error metadata shall be
 normalized to a completed stored result, and any validated melody fingerprint
 shall be remapped to the new session identity.
+
+### REQ-UVR-015 — Confirm library-wide stem selection
+
+**WHEN** the user requests Export all, **THEN** the system shall inspect the
+restorable local library and open the same accessible stem-selection dialog
+before archive construction begins, with All available stems selected by
+default and Vocal + Instrumental and Custom presets available. **WHEN** the
+user confirms, **THEN** the selected stem types shall be intersected with each
+session's stored audio so optional parts missing from one session do not fail
+the whole batch. **IF** the selection leaves a session without Vocal or
+Instrumental audio, **THEN** that session shall be skipped and disclosed by the
+completion summary.

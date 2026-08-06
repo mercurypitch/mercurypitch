@@ -13,7 +13,7 @@ import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
-import { liveWaveformDisplayGain, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
+import { liveWaveformDisplayGain, liveWaveformLaneLayout, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
 import { clampOverviewWindow, columnSampleRange, timeToX, } from './overview-mapping'
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
 import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
@@ -195,6 +195,9 @@ export const useStemMixerCanvasController = (
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
+    const { labelRailWidth, waveformStartX, waveformWidth } =
+      liveWaveformLaneLayout(w)
+    const waveformEndX = waveformStartX + waveformWidth
     const winStart = deps.windowStart()
     const winEnd = winStart + deps.windowDuration()
     // ONE mapping for waveform columns, playhead and loop markers — the
@@ -214,13 +217,24 @@ export const useStemMixerCanvasController = (
       const bufferDuration = buffer.duration
       const yOff = ti * trackHeight
 
+      ctx.fillStyle = 'rgba(5, 8, 18, 0.82)'
+      ctx.fillRect(0, yOff, labelRailWidth, trackHeight)
+      if (ti > 0) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, yOff + 0.5)
+        ctx.lineTo(w, yOff + 0.5)
+        ctx.stroke()
+      }
+
       // Center line
       const midY = yOff + trackHeight / 2
       ctx.strokeStyle = `${track.color}40`
       ctx.lineWidth = 0.5
       ctx.beginPath()
-      ctx.moveTo(0, midY)
-      ctx.lineTo(w, midY)
+      ctx.moveTo(waveformStartX, midY)
+      ctx.lineTo(waveformEndX, midY)
       ctx.stroke()
 
       // Exact ranges keep transient peaks in the correct column, so the
@@ -231,8 +245,14 @@ export const useStemMixerCanvasController = (
       ctx.strokeStyle = track.color
       ctx.lineWidth = 1
       ctx.beginPath()
-      for (let x = 0; x < w; x++) {
-        const range = columnSampleRange(x, w, win, bufferDuration, totalSamples)
+      for (let localX = 0; localX < waveformWidth; localX++) {
+        const range = columnSampleRange(
+          localX,
+          waveformWidth,
+          win,
+          bufferDuration,
+          totalSamples,
+        )
         // Outside the buffer: silence, never stretched-in neighbours.
         if (range === null) continue
         const { min, max } = queryWaveformPeakRange(
@@ -241,6 +261,7 @@ export const useStemMixerCanvasController = (
           range.sStart,
           range.sEnd,
         )
+        const x = waveformStartX + localX
         ctx.moveTo(x, midY + min * amp)
         ctx.lineTo(x, midY + max * amp)
       }
@@ -249,7 +270,7 @@ export const useStemMixerCanvasController = (
       // Playhead
       const elapsed = deps.elapsed()
       if (elapsed >= winStart && elapsed <= winEnd) {
-        const px = timeToX(elapsed, win, w)
+        const px = waveformStartX + timeToX(elapsed, win, waveformWidth)
         // Glow effect
         ctx.save()
         ctx.shadowColor = 'rgba(56, 189, 248, 0.6)'
@@ -280,11 +301,12 @@ export const useStemMixerCanvasController = (
       if (ti === 0 && (deps.loopStart() > 0 || deps.loopEnd() > 0)) {
         const ls = deps.loopStart()
         const le = deps.loopEnd()
-        const xOf = (t: number) => timeToX(t, win, w)
+        const xOf = (t: number) =>
+          waveformStartX + timeToX(t, win, waveformWidth)
         const drawMarker = (t: number, color: string, label: string) => {
           const x = xOf(t)
-          if (x < -2 || x > w + 2) return
-          const cx = Math.max(0, Math.min(w, x))
+          if (x < waveformStartX - 2 || x > waveformEndX + 2) return
+          const cx = Math.max(waveformStartX, Math.min(waveformEndX, x))
           ctx.strokeStyle = color
           ctx.lineWidth = 1.5
           ctx.beginPath()
@@ -300,10 +322,10 @@ export const useStemMixerCanvasController = (
         if (le > 0) {
           const lx1 = xOf(ls)
           const lx2 = xOf(le)
-          if (lx2 > 0 && lx1 < w) {
+          if (lx2 > waveformStartX && lx1 < waveformEndX) {
             ctx.fillStyle = 'rgba(88, 166, 255, 0.08)'
-            const cX1 = Math.max(0, lx1)
-            ctx.fillRect(cX1, 0, Math.min(w, lx2) - cX1, h)
+            const cX1 = Math.max(waveformStartX, lx1)
+            ctx.fillRect(cX1, 0, Math.min(waveformEndX, lx2) - cX1, h)
           }
         }
         // Boundary lines: the enabled A+B loop keeps its bright markers; an
@@ -326,11 +348,26 @@ export const useStemMixerCanvasController = (
         }
       }
 
-      // Label
+      // Dedicated label rail: names stay readable while dense signals move.
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0, yOff, Math.max(0, labelRailWidth - 5), trackHeight)
+      ctx.clip()
       ctx.fillStyle = track.color
-      ctx.font = '10px monospace'
-      ctx.fillText(track.label, 6, yOff + 14)
+      ctx.beginPath()
+      ctx.arc(8, midY, trackHeight >= 22 ? 2.4 : 1.8, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.font = `${trackHeight >= 22 ? 600 : 550} ${trackHeight >= 22 ? 9 : 8}px ui-monospace, monospace`
+      ctx.fillText(track.label, 15, midY + 3.25)
+      ctx.restore()
     }
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(labelRailWidth + 0.5, 0)
+    ctx.lineTo(labelRailWidth + 0.5, h)
+    ctx.stroke()
   }
 
   const drawLiveWaveform = () => {
@@ -375,6 +412,8 @@ export const useStemMixerCanvasController = (
     }
 
     const trackHeight = h / activeTracks.length
+    const { labelRailWidth, waveformStartX, waveformWidth } =
+      liveWaveformLaneLayout(w)
 
     for (let ti = 0; ti < activeTracks.length; ti++) {
       const track = activeTracks[ti]
@@ -399,6 +438,12 @@ export const useStemMixerCanvasController = (
       ctx.fillStyle = track.color
       ctx.fillRect(0, yOff, w, trackHeight)
       ctx.globalAlpha = 1
+
+      // Names live in a dedicated rail instead of masking the active signal.
+      // The rail remains compact on narrow side panels while the waveform
+      // keeps a protected minimum drawing width.
+      ctx.fillStyle = 'rgba(5, 8, 18, 0.82)'
+      ctx.fillRect(0, yOff, labelRailWidth, trackHeight)
       if (ti > 0) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
         ctx.lineWidth = 1
@@ -411,14 +456,19 @@ export const useStemMixerCanvasController = (
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.17)'
       ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.moveTo(0, midY + 0.5)
-      ctx.lineTo(w, midY + 0.5)
+      ctx.moveTo(waveformStartX, midY + 0.5)
+      ctx.lineTo(waveformStartX + waveformWidth, midY + 0.5)
       ctx.stroke()
 
       const amplitude = trackHeight * 0.42
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(waveformStartX, yOff, waveformWidth, trackHeight)
+      ctx.clip()
       ctx.beginPath()
       for (let i = 0; i < data.length; i++) {
-        const x = (i / data.length) * w
+        const x =
+          waveformStartX + (i / Math.max(1, data.length - 1)) * waveformWidth
         const y = midY + liveWaveformSample(data[i], displayGain) * amplitude
         if (i === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
@@ -437,6 +487,7 @@ export const useStemMixerCanvasController = (
       ctx.shadowBlur = 0
       ctx.stroke()
       ctx.globalAlpha = 1
+      ctx.restore()
 
       // The right-edge peak marker makes activity obvious even at a glance.
       const meterHeight = Math.max(
@@ -448,13 +499,26 @@ export const useStemMixerCanvasController = (
       ctx.fillRect(w - 3, midY - meterHeight / 2, 2, meterHeight)
       ctx.globalAlpha = 1
 
-      ctx.font = '600 9px ui-monospace, monospace'
-      const labelWidth = ctx.measureText(track.label).width
-      ctx.fillStyle = 'rgba(5, 8, 18, 0.72)'
-      ctx.fillRect(4, yOff + 4, labelWidth + 10, 15)
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0, yOff, Math.max(0, labelRailWidth - 5), trackHeight)
+      ctx.clip()
       ctx.fillStyle = track.color
-      ctx.fillText(track.label, 9, yOff + 14)
+      ctx.beginPath()
+      ctx.arc(8, midY, trackHeight >= 22 ? 2.4 : 1.8, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.font = `${trackHeight >= 22 ? 600 : 550} ${trackHeight >= 22 ? 9 : 8}px ui-monospace, monospace`
+      ctx.fillStyle = track.color
+      ctx.fillText(track.label, 15, midY + 3.25)
+      ctx.restore()
     }
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(labelRailWidth + 0.5, 0)
+    ctx.lineTo(labelRailWidth + 0.5, h)
+    ctx.stroke()
 
     if (w >= 180 && trackHeight >= 26) {
       const label = 'MONITORING'
@@ -1052,13 +1116,31 @@ export const useStemMixerCanvasController = (
     scale: PitchCanvasScale
   } | null = null
 
-  /** Convert clientX on the overview canvas to a time value. */
-  const clientXToTime = (
+  const clientXToTimelineRatio = (
     clientX: number,
     canvas: HTMLCanvasElement,
   ): number => {
     const rect = canvas.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const layout =
+      canvas === canvasRefs.overview
+        ? liveWaveformLaneLayout(rect.width)
+        : { waveformStartX: 0, waveformWidth: rect.width }
+    return Math.max(
+      0,
+      Math.min(
+        1,
+        (clientX - rect.left - layout.waveformStartX) /
+          Math.max(1, layout.waveformWidth),
+      ),
+    )
+  }
+
+  /** Convert clientX on a timeline canvas to a time value. */
+  const clientXToTime = (
+    clientX: number,
+    canvas: HTMLCanvasElement,
+  ): number => {
+    const ratio = clientXToTimelineRatio(clientX, canvas)
     return deps.windowStart() + ratio * deps.windowDuration()
   }
 
@@ -1071,10 +1153,16 @@ export const useStemMixerCanvasController = (
     const rect = canvas.getBoundingClientRect()
     const winStart = deps.windowStart()
     const winDur = deps.windowDuration()
-    const w = rect.width
+    const { waveformStartX, waveformWidth } = liveWaveformLaneLayout(rect.width)
 
-    const axPx = ((deps.loopStart() - winStart) / winDur) * w + rect.left
-    const bxPx = ((deps.loopEnd() - winStart) / winDur) * w + rect.left
+    const axPx =
+      ((deps.loopStart() - winStart) / winDur) * waveformWidth +
+      waveformStartX +
+      rect.left
+    const bxPx =
+      ((deps.loopEnd() - winStart) / winDur) * waveformWidth +
+      waveformStartX +
+      rect.left
 
     // Prefer whichever is closer if both are within tolerance
     const distA = Math.abs(clientX - axPx)
@@ -1249,7 +1337,11 @@ export const useStemMixerCanvasController = (
       }
       if (mouseDidPan) {
         const rect = canvas.getBoundingClientRect()
-        const pxPerSec = rect.width / deps.windowDuration()
+        const timelineWidth =
+          canvas === canvasRefs.overview
+            ? liveWaveformLaneLayout(rect.width).waveformWidth
+            : rect.width
+        const pxPerSec = timelineWidth / deps.windowDuration()
         const deltaTime = deltaX / pxPerSec
         const newStart = Math.max(
           0,
@@ -1300,13 +1392,7 @@ export const useStemMixerCanvasController = (
 
       if (!mouseDidPan) {
         // It was a click, not a drag. Seek!
-        const rect = canvas.getBoundingClientRect()
-        const ratio = Math.max(
-          0,
-          Math.min(1, (e.clientX - rect.left) / rect.width),
-        )
-        const newTime = deps.windowStart() + ratio * deps.windowDuration()
-        deps.seekTo(newTime)
+        deps.seekTo(clientXToTime(e.clientX, canvas))
       }
     }
   }
@@ -1316,11 +1402,7 @@ export const useStemMixerCanvasController = (
   const handleCanvasWheel = (e: WheelEvent) => {
     e.preventDefault()
     const canvas = e.currentTarget as HTMLCanvasElement
-    const rect = canvas.getBoundingClientRect()
-    const mouseX = Math.max(
-      0,
-      Math.min(1, (e.clientX - rect.left) / rect.width),
-    )
+    const mouseX = clientXToTimelineRatio(e.clientX, canvas)
     const mouseTime = deps.windowStart() + mouseX * deps.windowDuration()
     const delta = e.deltaY > 0 ? 5 : -5
     const newDuration = Math.max(
@@ -1392,9 +1474,13 @@ export const useStemMixerCanvasController = (
       // One-finger pan: scroll horizontally without changing playback
       const touch = activeTouches[0]
       const canvas = e.currentTarget as HTMLCanvasElement
-      const rect = canvas.getBoundingClientRect()
       const deltaX = touch.startX - touch.clientX
-      const pxPerSec = rect.width / deps.windowDuration()
+      const rect = canvas.getBoundingClientRect()
+      const timelineWidth =
+        canvas === canvasRefs.overview
+          ? liveWaveformLaneLayout(rect.width).waveformWidth
+          : rect.width
+      const pxPerSec = timelineWidth / deps.windowDuration()
       const deltaTime = (deltaX / pxPerSec) * 0.6
       const newStart = Math.max(
         0,
@@ -1438,10 +1524,9 @@ export const useStemMixerCanvasController = (
         const ratio = curDist / pinchStartDistance
         const dampenedRatio = 1 + (ratio - 1) * 0.35
         const canvas = e.currentTarget as HTMLCanvasElement
-        const rect = canvas.getBoundingClientRect()
-        const midX =
-          (activeTouches[0].clientX + activeTouches[1].clientX) / 2 - rect.left
-        const midRatio = midX / rect.width
+        const midClientX =
+          (activeTouches[0].clientX + activeTouches[1].clientX) / 2
+        const midRatio = clientXToTimelineRatio(midClientX, canvas)
         const midTime =
           pinchStartWindowStart + midRatio * pinchStartWindowDuration
         const wanted = pinchStartWindowDuration / dampenedRatio

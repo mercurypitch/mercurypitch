@@ -3401,10 +3401,11 @@ export const StemMixerStyles: string = `
   display: flex;
   gap: 0.4rem;
   min-width: 0;
-  /* Many stems on a short screen (landscape tablet, where height is the
-     scarce axis): the deck scrolls instead of running off the panel.
-     The cap only bites when the space is genuinely too small. */
-  max-height: min(46vh, 420px);
+  min-height: 0;
+  /* Grid workspaces may grow naturally, but still keep one bounded scroll
+     area on short screens. Sidebars override this with their exact remaining
+     height below. */
+  max-height: min(60vh, 640px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -3414,6 +3415,7 @@ export const StemMixerStyles: string = `
 .sm-stem-strip {
   position: relative;
   display: flex;
+  flex: 0 0 auto;
   gap: 0.5rem;
   padding: 0.75rem 0.4rem;
   overflow: hidden;
@@ -3460,6 +3462,8 @@ export const StemMixerStyles: string = `
 .sm-strips-expanded .sm-strips-body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
   justify-items: center;
   overflow-x: auto;
   padding-bottom: 0.25rem;
@@ -3492,13 +3496,29 @@ export const StemMixerStyles: string = `
 }
 
 .sm-strips-many.sm-strips-compact .sm-stem-strip {
-  gap: 0.35rem 0.55rem;
-  padding-block: 0.45rem;
+  gap: 0.4rem 0.6rem;
+  padding-block: 0.55rem;
 }
 
 .sm-strips-many.sm-strips-expanded .sm-strips-body {
-  gap: 0.35rem;
-  max-height: min(54vh, 520px);
+  gap: 0.5rem;
+  max-height: min(64vh, 680px);
+}
+
+/* Fixed and performance layouts know their remaining height. Let the deck
+   use all of it, then scroll the strips—not the whole sidebar—when a dense
+   full-band mix genuinely exceeds the panel. */
+.sm-sidebar .sm-workspace-panel > .sm-strips {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sm-sidebar .sm-strips-body,
+.sm-sidebar .sm-strips-many.sm-strips-expanded .sm-strips-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
 }
 
 @container (min-width: 42rem) {

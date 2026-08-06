@@ -2,9 +2,25 @@
 // UVR Panel Component Tests
 // ============================================================
 
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import type { UvrSession } from '@/stores/app-store'
+import { deleteUvrSession, importUvrSession } from '@/stores/app-store'
 import { UvrPanel } from '../UvrPanel'
+
+const archiveMocks = vi.hoisted(() => ({
+  inspectSessionLibraryExport: vi.fn(),
+  exportAllSessions: vi.fn(),
+}))
+
+vi.mock('@/db/services/session-export-service', async (importOriginal) => {
+  const actual = (await importOriginal()) as object
+  return {
+    ...actual,
+    inspectSessionLibraryExport: archiveMocks.inspectSessionLibraryExport,
+    exportAllSessions: archiveMocks.exportAllSessions,
+  }
+})
 
 // Mock Worker and URL.createObjectURL
 beforeAll(() => {
@@ -154,6 +170,60 @@ describe('UvrPanel Component', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('confirms the stem preset before exporting the full session library', async () => {
+      const sessionId = 'library-export-confirmation'
+      importUvrSession({
+        sessionId,
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now(),
+        originalFile: {
+          name: 'Full band.wav',
+          size: 1024,
+          mimeType: 'audio/wav',
+        },
+      } as UvrSession)
+      archiveMocks.inspectSessionLibraryExport.mockResolvedValueOnce({
+        availableStems: ['vocal', 'instrumental', 'drums', 'bass'],
+        restorableSessions: 1,
+        skippedSessions: 0,
+      })
+      archiveMocks.exportAllSessions.mockResolvedValueOnce({
+        exportedSessions: 1,
+        skippedSessions: 0,
+      })
+
+      try {
+        render(() => <UvrPanel {...defaultProps} />)
+        fireEvent.click(
+          screen.getByTitle(
+            'Choose stems and export all sessions to a ZIP file',
+          ),
+        )
+
+        expect(await screen.findByRole('dialog')).toHaveTextContent(
+          'Choose stems for every session',
+        )
+        expect(
+          screen.getByRole('radio', { name: /All available stems/ }),
+        ).toBeChecked()
+
+        fireEvent.click(
+          screen.getByRole('radio', { name: /Vocal \+ instrumental/ }),
+        )
+        fireEvent.click(screen.getByRole('button', { name: 'Export all' }))
+
+        await waitFor(() =>
+          expect(archiveMocks.exportAllSessions).toHaveBeenCalledWith(
+            expect.any(Function),
+            ['vocal', 'instrumental'],
+          ),
+        )
+      } finally {
+        deleteUvrSession(sessionId)
+      }
     })
   })
 

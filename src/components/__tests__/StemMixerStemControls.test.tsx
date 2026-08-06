@@ -96,7 +96,7 @@ describe('StemMixerStemControls add-stem state', () => {
     )
   })
 
-  it('marks full-band mixes for the dense responsive layout', () => {
+  it('keeps all seven full-band controls in the scrollable dense layout', () => {
     const presentTrack = (label: string, color: string) => ({
       ...emptyTrack(),
       label,
@@ -113,6 +113,8 @@ describe('StemMixerStemControls add-stem state', () => {
           presentTrack('Drums', '#14b8a6'),
           presentTrack('Bass', '#a855f7'),
           presentTrack('Guitar', '#f43f5e'),
+          presentTrack('Piano', '#facc15'),
+          presentTrack('Other', '#94a3b8'),
         ]}
         anySoloed={() => false}
         toggleSolo={vi.fn()}
@@ -124,9 +126,9 @@ describe('StemMixerStemControls add-stem state', () => {
 
     const strips = container.querySelector('.sm-strips')
     expect(strips).toHaveClass('sm-strips-many')
-    expect(strips).toHaveAttribute('data-stem-count', '5')
+    expect(strips).toHaveAttribute('data-stem-count', '7')
     expect(
       screen.getAllByRole('group', { name: /stem controls/ }),
-    ).toHaveLength(5)
+    ).toHaveLength(7)
   })
 })

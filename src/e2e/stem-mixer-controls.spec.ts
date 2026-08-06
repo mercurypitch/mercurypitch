@@ -14,6 +14,13 @@ interface MixerE2EStore {
 }
 
 const SESSION_ID = 'e2e-stem-mix-controls'
+const EXTRA_STEMS = [
+  { key: 'drums', label: 'Drums' },
+  { key: 'piano', label: 'Piano' },
+  { key: 'guitar', label: 'Guitar' },
+  { key: 'bass', label: 'Bass' },
+  { key: 'other', label: 'Other' },
+] as const
 const toneDataUrl = `data:audio/wav;base64,${fs
   .readFileSync(writeToneWav(220, 1))
   .toString('base64')}`
@@ -29,7 +36,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__pp?.appStore !== undefined)
 
   await page.evaluate(
-    async ({ audioUrl, sessionId }) => {
+    async ({ audioUrl, extraStems, sessionId }) => {
       const store = window.__pp?.appStore as unknown as MixerE2EStore
       await store.initSessionStore()
       if (store.getUvrSession(sessionId) === undefined) {
@@ -46,9 +53,52 @@ test.beforeEach(async ({ page }) => {
           createdAt: Date.now(),
         })
       }
+
+      const audioData = await fetch(audioUrl).then((response) =>
+        response.arrayBuffer(),
+      )
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('MercuryPitchDB')
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+      const transaction = db.transaction('uvrStemBlobs', 'readwrite')
+      const blobStore = transaction.objectStore('uvrStemBlobs')
+      const existing = await new Promise<Array<{ stemType: string }>>(
+        (resolve, reject) => {
+          const request = blobStore.index('sessionId').getAll(sessionId)
+          request.onsuccess = () =>
+            resolve(request.result as Array<{ stemType: string }>)
+          request.onerror = () => reject(request.error)
+        },
+      )
+      const storedTypes = new Set(existing.map((record) => record.stemType))
+      const now = new Date().toISOString()
+      for (const part of extraStems) {
+        if (storedTypes.has(part.key)) continue
+        blobStore.add({
+          id: crypto.randomUUID(),
+          sessionId,
+          stemType: part.key,
+          derivedFrom: 'instrumental',
+          producedBy: 'e2e-full-band',
+          mimeType: 'audio/wav',
+          data: audioData,
+          size: audioData.byteLength,
+          fileName: `${part.key}.wav`,
+          createdAt: now,
+          updatedAt: now,
+        })
+      }
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+        transaction.onabort = () => reject(transaction.error)
+      })
+      db.close()
       localStorage.setItem('pitchperfect_mixer_strip_view', 'compact')
     },
-    { audioUrl: toneDataUrl, sessionId: SESSION_ID },
+    { audioUrl: toneDataUrl, extraStems: EXTRA_STEMS, sessionId: SESSION_ID },
   )
 
   await page.goto(`/#/karaoke/session/${SESSION_ID}/mixer`)
@@ -106,4 +156,101 @@ test('preserves solo isolation and mute through a real fader drag @smoke', async
   await vocalSolo.click()
   await expect(vocal).toHaveAttribute('data-audible', 'false')
   await expect(instrumental).toHaveAttribute('data-audible', 'true')
+})
+
+test('keeps seven-stem compact and expanded decks readable while scrolling @smoke', async ({
+  page,
+}) => {
+  for (const part of EXTRA_STEMS) {
+    await page.getByRole('button', { name: `+ ${part.label}` }).click()
+    await expect(
+      page.getByRole('group', { name: `${part.label} stem controls` }),
+    ).toBeVisible()
+  }
+
+  const strips = page.locator('.sm-strips')
+  const body = strips.locator('.sm-strips-body')
+  await expect(strips).toHaveAttribute('data-stem-count', '7')
+
+  await page.setViewportSize({ width: 1440, height: 520 })
+  const compactMetrics = await body.evaluate((element) => {
+    const cards = [...element.querySelectorAll<HTMLElement>('.sm-stem-strip')]
+    return {
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      minCardHeight: Math.min(...cards.map((card) => card.offsetHeight)),
+    }
+  })
+  expect(compactMetrics.scrollHeight).toBeGreaterThan(
+    compactMetrics.clientHeight,
+  )
+  expect(compactMetrics.minCardHeight).toBeGreaterThanOrEqual(48)
+
+  await page
+    .getByRole('button', { name: 'Switch to expanded stem controls' })
+    .click()
+  await expect(strips).toHaveClass(/sm-strips-expanded/)
+  const expandedMetrics = await body.evaluate((element) => {
+    const cards = [...element.querySelectorAll<HTMLElement>('.sm-stem-strip')]
+    return {
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      minCardHeight: Math.min(...cards.map((card) => card.offsetHeight)),
+    }
+  })
+  expect(expandedMetrics.scrollHeight).toBeGreaterThan(
+    expandedMetrics.clientHeight,
+  )
+  expect(expandedMetrics.minCardHeight).toBeGreaterThanOrEqual(190)
+
+  // The overview now reserves a left label rail. Real pointer seeks must map
+  // the remaining waveform width—not the whole canvas—or the playhead drifts.
+  await page
+    .getByRole('button', { name: 'Switch to compact stem controls' })
+    .click()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const overview = page.locator('[data-canvas-id="overview"]').first()
+  const overviewBox = await overview.boundingBox()
+  if (overviewBox === null) throw new Error('Overview has no bounding box')
+  const preferredRail =
+    overviewBox.width >= 320
+      ? 112
+      : overviewBox.width >= 180
+        ? 88
+        : Math.max(36, overviewBox.width * 0.42)
+  const railWidth = Math.round(
+    Math.min(preferredRail, Math.max(0, overviewBox.width - 47)),
+  )
+  const waveformWidth = overviewBox.width - railWidth - 5
+
+  await page.mouse.click(overviewBox.x + 8, overviewBox.y + 24)
+  await expect
+    .poll(async () =>
+      parseFloat(
+        await page
+          .locator('.sm-progress-fill')
+          .evaluate((element) => getComputedStyle(element).width),
+      ),
+    )
+    .toBeLessThan(2)
+
+  await page.mouse.click(
+    overviewBox.x + railWidth + 1 + waveformWidth * 0.015,
+    overviewBox.y + 24,
+  )
+  await expect
+    .poll(async () => {
+      const fill = page.locator('.sm-progress-fill')
+      const progress = page.locator('.sm-progress-bar')
+      const [fillBox, progressBox] = await Promise.all([
+        fill.boundingBox(),
+        progress.boundingBox(),
+      ])
+      if (fillBox === null || progressBox === null) return 0
+      return fillBox.width / progressBox.width
+    })
+    // The one-second fixture sits inside the mixer's default thirty-second
+    // window, so 1.5% of the visible waveform lands at 0.45 seconds. Mapping
+    // against the whole canvas would include the rail and clamp to the end.
+    .toBeCloseTo(0.45, 1)
 })
