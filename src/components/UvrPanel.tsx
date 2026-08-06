@@ -2479,7 +2479,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
         {/* Import Group Selection Modal */}
         <Show when={showImportGroupSelect()}>
-          <div class="uvr-import-overlay" onClick={closeImportModal}>
+          <div class="uvr-import-overlay" data-testid="uvr-import-overlay">
             <div
               class="uvr-import-dialog"
               role="dialog"

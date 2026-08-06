@@ -2,7 +2,7 @@
 // UVR Panel Component Tests
 // ============================================================
 
-import { render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { UvrPanel } from '../UvrPanel'
 
@@ -128,6 +128,32 @@ describe('UvrPanel Component', () => {
       ))
 
       expect(container.querySelector('.results-section')).toBeInTheDocument()
+    })
+
+    it('keeps selected ZIP archives when the import backdrop is clicked', async () => {
+      const { container } = render(() => <UvrPanel {...defaultProps} />)
+      const input = container.querySelector<HTMLInputElement>(
+        'input[type="file"][accept=".zip"]',
+      )
+      expect(input).not.toBeNull()
+
+      const archive = new File(['not-a-real-zip'], 'ten-songs.zip', {
+        type: 'application/zip',
+      })
+      fireEvent.change(input as HTMLInputElement, {
+        target: { files: [archive] },
+      })
+
+      expect(await screen.findByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByText('ten-songs.zip')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('uvr-import-overlay'))
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+      expect(screen.getByText('ten-songs.zip')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     })
   })
 

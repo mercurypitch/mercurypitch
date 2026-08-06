@@ -12,8 +12,9 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
-import { lineIndexAt } from '@/lib/jam/jam-song'
+import { lyricLineProgress } from '@/lib/jam/jam-song'
 import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -65,48 +66,68 @@ export const JamSongStage: Component = () => {
    * samples onto the song clock survives a seek, a pause, or a peer
    * arriving mid-verse -- none of which a single run-wide anchor would.
    */
-  let openLine: { index: number; atMs: number; positionSec: number } | null =
-    null
+  let lineScoreTracker = EMPTY_JAM_LINE_SCORE_TRACKER
 
   createEffect(() => {
     const song = jamSong()
     const pos = jamSongPositionSec()
-    if (song === null) {
-      openLine = null
-      return
-    }
-    const index = lineIndexAt(song.lines, pos)
-    const open = openLine
-    if (open !== null && open.index === index) return
+    const step = advanceJamLineScoreTracker(lineScoreTracker, {
+      songId: song?.id ?? null,
+      lines: song?.lines ?? [],
+      positionSec: pos,
+      nowMs: Date.now(),
+      isPlaying: jamExercisePlaying(),
+      isPaused: jamExercisePaused(),
+      navigation: jamSongSeekRequest(),
+    })
+    lineScoreTracker = step.state
+    const completed = step.completedLine
+    if (song === null || completed === null) return
 
-    if (open !== null) {
-      // Untracked: this effect fires on the PLAYHEAD, and the sample buffer
-      // updates twenty times a second. Reading it as a dependency would
-      // re-run the whole thing on every frame of singing, for a check that
-      // can only change when the line does.
-      untrack(() => {
-        const mine = jamPeerId()
-        // Nothing to score without an identity to look my samples up under.
-        // Peers' trails are never scored here -- see the store's note on
-        // why a score built from what somebody else reports is not evidence.
-        if (mine === null || mine === '') return
-        // Not my line, not my score. Being marked down for staying quiet
-        // through somebody else's verse is the opposite of what assigning
-        // parts is for.
-        if (!jamLineIsMine(open.index)) return
-        recordJamLineScore(
-          scoreLiveLine(
-            song.lines,
-            open.index,
-            song.notes,
-            jamPitchHistory()[mine],
-            { atMs: open.atMs, positionSec: open.positionSec },
-          ),
-        )
-      })
-    }
-    openLine = index < 0 ? null : { index, atMs: Date.now(), positionSec: pos }
+    // Untracked: this effect fires on the PLAYHEAD, and the sample buffer
+    // updates twenty times a second. Reading it as a dependency would
+    // re-run the whole thing on every frame of singing, for a check that
+    // can only change when the line does.
+    untrack(() => {
+      const mine = jamPeerId()
+      // Nothing to score without an identity to look my samples up under.
+      // Peers' trails are never scored here -- see the store's note on
+      // why a score built from what somebody else reports is not evidence.
+      if (mine === null || mine === '') return
+      // Not my line, not my score. Being marked down for staying quiet
+      // through somebody else's verse is the opposite of what assigning
+      // parts is for.
+      if (!jamLineIsMine(completed.index)) return
+      recordJamLineScore(
+        scoreLiveLine(
+          song.lines,
+          completed.index,
+          song.notes,
+          jamPitchHistory()[mine],
+          { atMs: completed.atMs, positionSec: completed.positionSec },
+        ),
+      )
+    })
   })
+
+  const lyricProgress = () =>
+    lyricLineProgress(jamSong()?.lines ?? [], jamSongPositionSec())
+
+  const lyricProgressText = (): string => {
+    const progress = lyricProgress()
+    switch (progress.phase) {
+      case 'empty':
+        return ''
+      case 'intro':
+        return `Intro · ${progress.totalLines} lines`
+      case 'line':
+        return `Line ${progress.lineNumber} / ${progress.totalLines}`
+      case 'break':
+        return `Break · next ${progress.nextLineNumber} / ${progress.totalLines}`
+      case 'outro':
+        return `Outro · ${progress.totalLines} lines`
+    }
+  }
 
   /**
    * Why the audio stopped, when it stops by itself.
@@ -425,6 +446,11 @@ export const JamSongStage: Component = () => {
                 <span class={styles.artist}> · {song().artist}</span>
               </Show>
             </span>
+            <Show when={lyricProgress().phase !== 'empty'}>
+              <span class={styles.lineProgress} aria-label="Lyric position">
+                {lyricProgressText()}
+              </span>
+            </Show>
             {/* Your take so far. Only yours: everyone scores themselves
                 from their own microphone, so this is not a scoreboard and
                 is deliberately not presented as one. */}
@@ -432,11 +458,12 @@ export const JamSongStage: Component = () => {
               {(run) => (
                 <span
                   class={styles.runScore}
-                  aria-label={`Your score: ${run().score} out of 100, across ${run().sungLines} of ${run().totalLines} lines`}
+                  aria-label={`Your take score: ${run().score} out of 100; ${run().completedLines} of ${run().totalLines} assigned scoreable lines completed; singing detected in ${run().sungLines}`}
                 >
+                  <span class={styles.runLabel}>Take</span>
                   <strong>{run().score}</strong>
                   <span class={styles.runLines}>
-                    {run().sungLines}/{run().totalLines} lines
+                    {run().sungLines}/{run().totalLines} sung
                   </span>
                 </span>
               )}

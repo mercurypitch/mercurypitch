@@ -13,6 +13,7 @@ import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
+import { liveWaveformDisplayGain, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
 import { clampOverviewWindow, columnSampleRange, timeToX, } from './overview-mapping'
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
 import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
@@ -164,6 +165,7 @@ export const useStemMixerCanvasController = (
 
   const peakCache = new Map<AudioBuffer, WaveformPeakCache>()
   const liveWaveformData = new WeakMap<AnalyserNode, Uint8Array<ArrayBuffer>>()
+  const liveWaveformGain = new WeakMap<AnalyserNode, number>()
 
   const getPeaks = (buffer: AudioBuffer): WaveformPeakCache => {
     if (peakCache.has(buffer)) return peakCache.get(buffer)!
@@ -183,6 +185,9 @@ export const useStemMixerCanvasController = (
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.globalAlpha = 1
+    ctx.shadowBlur = 0
+    ctx.textAlign = 'start'
 
     ctx.clearRect(0, 0, w, h)
 
@@ -338,13 +343,36 @@ export const useStemMixerCanvasController = (
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.globalAlpha = 1
+    ctx.shadowBlur = 0
+    ctx.textAlign = 'start'
 
     // Background comes from .sm-canvas CSS (var(--bg-primary)) so the
     // karaoke page's stage-glass translucency applies to these panels too.
     ctx.clearRect(0, 0, w, h)
 
     const activeTracks = deps.tracks().filter((t) => t.analyserNode)
-    if (activeTracks.length === 0) return
+    if (activeTracks.length === 0) {
+      const bufferedCount = deps.tracks().filter((track) => track.buffer).length
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(0, h / 2 + 0.5)
+      ctx.lineTo(w, h / 2 + 0.5)
+      ctx.stroke()
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.68)'
+      ctx.font = '600 9px ui-monospace, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText(
+        bufferedCount > 0
+          ? `PLAY TO MONITOR ${bufferedCount} STEM${bufferedCount === 1 ? '' : 'S'}`
+          : 'LIVE SIGNAL APPEARS DURING PLAYBACK',
+        w / 2,
+        h / 2 - 8,
+      )
+      ctx.textAlign = 'start'
+      return
+    }
 
     const trackHeight = h / activeTracks.length
 
@@ -360,20 +388,87 @@ export const useStemMixerCanvasController = (
       const yOff = ti * trackHeight
       const midY = yOff + trackHeight / 2
 
-      ctx.strokeStyle = track.color
-      ctx.lineWidth = 1.5
+      const peak = liveWaveformPeak(data)
+      const targetGain = liveWaveformDisplayGain(peak)
+      const previousGain = liveWaveformGain.get(analyser) ?? targetGain
+      const displayGain = previousGain * 0.78 + targetGain * 0.22
+      liveWaveformGain.set(analyser, displayGain)
+
+      // Each stem owns a quiet lane, so dense full-band mixes remain legible.
+      ctx.globalAlpha = ti % 2 === 0 ? 0.035 : 0.018
+      ctx.fillStyle = track.color
+      ctx.fillRect(0, yOff, w, trackHeight)
+      ctx.globalAlpha = 1
+      if (ti > 0) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, yOff + 0.5)
+        ctx.lineTo(w, yOff + 0.5)
+        ctx.stroke()
+      }
+
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.17)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(0, midY + 0.5)
+      ctx.lineTo(w, midY + 0.5)
+      ctx.stroke()
+
+      const amplitude = trackHeight * 0.42
       ctx.beginPath()
       for (let i = 0; i < data.length; i++) {
         const x = (i / data.length) * w
-        const y = midY + (data[i] / 128 - 1) * (trackHeight * 0.4)
+        const y = midY + liveWaveformSample(data[i], displayGain) * amplitude
         if (i === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
       }
-      ctx.stroke()
 
-      ctx.fillStyle = `${track.color}80`
-      ctx.font = '9px monospace'
-      ctx.fillText(track.label, 4, yOff + 12)
+      // A soft bloom makes small movements readable; the crisp second pass
+      // preserves the real analyser contour rather than fabricating motion.
+      ctx.strokeStyle = track.color
+      ctx.globalAlpha = 0.2
+      ctx.lineWidth = Math.min(6, Math.max(3, trackHeight * 0.13))
+      ctx.shadowColor = track.color
+      ctx.shadowBlur = Math.min(10, Math.max(4, trackHeight * 0.2))
+      ctx.stroke()
+      ctx.globalAlpha = 0.96
+      ctx.lineWidth = Math.min(2.25, Math.max(1.5, trackHeight * 0.055))
+      ctx.shadowBlur = 0
+      ctx.stroke()
+      ctx.globalAlpha = 1
+
+      // The right-edge peak marker makes activity obvious even at a glance.
+      const meterHeight = Math.max(
+        2,
+        Math.min(trackHeight * 0.76, peak * displayGain * trackHeight * 0.76),
+      )
+      ctx.fillStyle = track.color
+      ctx.globalAlpha = peak > 0 ? 0.9 : 0.22
+      ctx.fillRect(w - 3, midY - meterHeight / 2, 2, meterHeight)
+      ctx.globalAlpha = 1
+
+      ctx.font = '600 9px ui-monospace, monospace'
+      const labelWidth = ctx.measureText(track.label).width
+      ctx.fillStyle = 'rgba(5, 8, 18, 0.72)'
+      ctx.fillRect(4, yOff + 4, labelWidth + 10, 15)
+      ctx.fillStyle = track.color
+      ctx.fillText(track.label, 9, yOff + 14)
+    }
+
+    if (w >= 180 && trackHeight >= 26) {
+      const label = 'MONITORING'
+      ctx.font = '600 8px ui-monospace, monospace'
+      const labelWidth = ctx.measureText(label).width
+      const labelX = w - labelWidth - 15
+      ctx.fillStyle = 'rgba(5, 8, 18, 0.74)'
+      ctx.fillRect(labelX - 8, 4, labelWidth + 16, 15)
+      ctx.fillStyle = '#4ade80'
+      ctx.beginPath()
+      ctx.arc(labelX - 1, 11.5, 2.2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.8)'
+      ctx.fillText(label, labelX + 5, 14)
     }
   }
 

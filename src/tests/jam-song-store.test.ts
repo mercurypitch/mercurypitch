@@ -136,6 +136,22 @@ describe('per-line scores', () => {
     store.clearJamSong()
     store.setJamError(null)
     store.setJamPeers([])
+    store.setJamPeerId('me')
+    store.setJamIsHost(true)
+    store.selectJamSong(
+      song({
+        lines: Array.from({ length: 4 }, (_, i) => ({
+          text: `line ${i + 1}`,
+          startSec: i * 2,
+          endSec: i * 2 + 2,
+        })),
+        notes: Array.from({ length: 4 }, (_, i) => ({
+          midi: 69,
+          startSec: i * 2,
+          endSec: i * 2 + 2,
+        })),
+      }),
+    )
   })
 
   it('keeps the latest attempt at a line, not both', () => {
@@ -158,7 +174,20 @@ describe('per-line scores', () => {
     store.recordJamLineScore(scored(0, 100))
     store.recordJamLineScore(scored(1, 50))
     expect(store.jamSongRunScore()?.score).toBe(75)
-    expect(store.jamSongRunScore()?.totalLines).toBe(2)
+    expect(store.jamSongRunScore()?.completedLines).toBe(2)
+    expect(store.jamSongRunScore()?.totalLines).toBe(4)
+  })
+
+  it('counts only scoreable lines currently assigned to me', () => {
+    store.assignJamSongLines(1, 1, 'ada')
+    store.recordJamLineScore(scored(0, 100))
+    store.recordJamLineScore(scored(1, 20))
+
+    expect(store.jamSongRunScore()).toMatchObject({
+      score: 100,
+      completedLines: 1,
+      totalLines: 3,
+    })
   })
 
   it('starts a fresh take when a new song loads', () => {
@@ -168,7 +197,6 @@ describe('per-line scores', () => {
   })
 
   it('clears on a play from the top but survives a resume', () => {
-    store.selectJamSong(song())
     store.recordJamLineScore(scored(0, 100))
     // Resuming after a breath must not cost you the lines you sang.
     store.jamSongPlay(42)

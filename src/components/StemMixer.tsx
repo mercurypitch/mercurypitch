@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component } from 'solid-js'
-import { createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
@@ -11,6 +11,7 @@ import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, }
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
+import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -186,7 +187,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── State ────────────────────────────────────────────────────
   const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
-  const [anySoloed, setAnySoloed] = createSignal(false)
   const [shareToast, setShareToast] = createSignal('')
 
   const updateStageAlpha = (value: number) => {
@@ -301,6 +301,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     t.push(...extras())
     return t.filter((tr) => !!(tr.url || tr.buffer))
   }
+
+  const anySoloed = createMemo(() => stemMixHasSolo(tracks()))
 
   // Mutable holders for audio ctx — backfilled after audio controller is created.
   // Mic controller accesses these dynamically, resolving the circular dependency.
@@ -1475,51 +1477,38 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       setExtras((list) => list.map((t) => (t.label === label ? update(t) : t)))
   }
 
-  const setTrackVolume = (label: string, volume: number) => {
-    setTrackByLabel(label, (prev) => {
-      if (prev.gainNode) prev.gainNode.gain.value = sliderToGain(volume)
-      return { ...prev, volume, muted: false }
+  /** Commit one coherent mixer snapshot to both Solid state and Web Audio.
+   *  Every control uses this path so mute, solo, and faders cannot disagree
+   *  about which tracks should reach the master bus. */
+  const commitStemMix = (nextTracks: readonly StemTrack[]) => {
+    const hasSolo = stemMixHasSolo(nextTracks)
+    batch(() => {
+      for (const next of nextTracks) {
+        if (next.gainNode) {
+          next.gainNode.gain.value = sliderToGain(
+            stemTrackOutputLevel(next, hasSolo),
+          )
+        }
+        setTrackByLabel(next.label, (prev) => ({
+          ...prev,
+          muted: next.muted,
+          soloed: next.soloed,
+          volume: next.volume,
+        }))
+      }
     })
+  }
+
+  const setTrackVolume = (label: string, volume: number) => {
+    commitStemMix(setStemVolume(tracks(), label, volume))
   }
 
   const toggleMute = (label: string) => {
-    const hasSolo = anySoloed()
-    setTrackByLabel(label, (prev) => {
-      const muted = !prev.muted
-      const isAudible = prev.soloed || (!muted && !hasSolo)
-      if (prev.gainNode)
-        prev.gainNode.gain.value = isAudible ? sliderToGain(prev.volume) : 0
-      return { ...prev, muted }
-    })
+    commitStemMix(toggleStemMute(tracks(), label))
   }
 
   const toggleSolo = (label: string) => {
-    const otherTracks = tracks().filter((t) => t.label !== label)
-
-    setTrackByLabel(label, (prev) => {
-      const soloed = !prev.soloed
-      const newAnySoloed = soloed || otherTracks.some((t) => t.soloed)
-      setAnySoloed(newAnySoloed)
-
-      if (prev.gainNode)
-        prev.gainNode.gain.value = soloed
-          ? sliderToGain(prev.volume)
-          : prev.muted || newAnySoloed
-            ? 0
-            : sliderToGain(prev.volume)
-
-      for (const ot of otherTracks) {
-        setTrackByLabel(ot.label, (oPrev) => {
-          if (oPrev.gainNode)
-            oPrev.gainNode.gain.value =
-              oPrev.soloed || (!oPrev.muted && !soloed)
-                ? sliderToGain(oPrev.volume)
-                : 0
-          return oPrev
-        })
-      }
-      return { ...prev, soloed }
-    })
+    commitStemMix(toggleStemSolo(tracks(), label))
   }
 
   // ── Stem controls props bundle ─────────────────────────────────
@@ -3338,6 +3327,8 @@ export const StemMixerStyles: string = `
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+  padding: 0.4rem;
+  container-type: inline-size;
 }
 
 /* "Add stem" pills — session parts on this device not yet in the mix. */
@@ -3408,7 +3399,7 @@ export const StemMixerStyles: string = `
 
 .sm-strips-body {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   min-width: 0;
   /* Many stems on a short screen (landscape tablet, where height is the
      scarce axis): the deck scrolls instead of running off the panel.
@@ -3416,14 +3407,49 @@ export const StemMixerStyles: string = `
   max-height: min(46vh, 420px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 .sm-stem-strip {
+  position: relative;
   display: flex;
   gap: 0.5rem;
   padding: 0.75rem 0.4rem;
-  background: var(--bg-primary, #0d1117);
+  overflow: hidden;
+  background:
+    linear-gradient(
+      110deg,
+      color-mix(in srgb, var(--stem-color) 7%, transparent),
+      transparent 42%
+    ),
+    var(--bg-primary, #0d1117);
+  border: 1px solid color-mix(in srgb, var(--stem-color) 16%, var(--border, #30363d));
   border-radius: 0.6rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.sm-stem-strip::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--stem-color);
+  content: '';
+  opacity: 0.76;
+}
+
+.sm-stem-suppressed {
+  border-color: var(--border, #30363d);
+  background: var(--bg-primary, #0d1117);
+}
+
+.sm-stem-suppressed::before {
+  opacity: 0.22;
+}
+
+.sm-stem-suppressed .sm-stem-dot,
+.sm-stem-suppressed .sm-stem-label {
+  opacity: 0.52;
 }
 
 /* ── Expanded: the classic deck ── */
@@ -3463,6 +3489,24 @@ export const StemMixerStyles: string = `
 /* ── Compact: one row per stem ── */
 .sm-strips-compact .sm-strips-body {
   flex-direction: column;
+}
+
+.sm-strips-many.sm-strips-compact .sm-stem-strip {
+  gap: 0.35rem 0.55rem;
+  padding-block: 0.45rem;
+}
+
+.sm-strips-many.sm-strips-expanded .sm-strips-body {
+  gap: 0.35rem;
+  max-height: min(54vh, 520px);
+}
+
+@container (min-width: 42rem) {
+  .sm-strips-many.sm-strips-compact .sm-strips-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
 }
 
 .sm-strips-compact .sm-stem-strip {
@@ -3506,6 +3550,11 @@ export const StemMixerStyles: string = `
 .sm-strips-compact .sm-volume-slider::-webkit-slider-runnable-track {
   width: 100%;
   height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--stem-color) 0 var(--stem-volume),
+    var(--bg-tertiary, #21262d) var(--stem-volume) 100%
+  );
 }
 
 .sm-strips-compact .sm-volume-slider::-webkit-slider-thumb {
@@ -3516,6 +3565,11 @@ export const StemMixerStyles: string = `
 .sm-strips-compact .sm-volume-slider::-moz-range-track {
   width: 100%;
   height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--stem-color) 0 var(--stem-volume),
+    var(--bg-tertiary, #21262d) var(--stem-volume) 100%
+  );
 }
 
 .sm-stem-header {
@@ -3529,17 +3583,24 @@ export const StemMixerStyles: string = `
   width: 0.65rem;
   height: 0.65rem;
   border-radius: 50%;
+  box-shadow: 0 0 0.55rem color-mix(in srgb, var(--stem-color) 48%, transparent);
+  transition: opacity 0.15s ease;
 }
 
 .sm-stem-label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--fg-primary, #c9d1d9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
 }
 
 .sm-stem-vol-pct {
   font-size: 0.65rem;
   color: var(--fg-tertiary, #484f58);
+  font-variant-numeric: tabular-nums;
 }
 
 .sm-stem-actions {
@@ -3559,7 +3620,11 @@ export const StemMixerStyles: string = `
   border-radius: 0.35rem;
   color: var(--fg-secondary, #8b949e);
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 .sm-action-btn svg {
@@ -3572,9 +3637,15 @@ export const StemMixerStyles: string = `
   color: var(--fg-primary, #c9d1d9);
 }
 
+.sm-action-btn:focus-visible,
+.sm-volume-slider:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--stem-color, var(--accent, #58a6ff)) 72%, white);
+  outline-offset: 2px;
+}
+
 .sm-action-btn.sm-active {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.3);
+  background: color-mix(in srgb, var(--stem-color, #f59e0b) 16%, transparent);
+  border-color: color-mix(in srgb, var(--stem-color, #f59e0b) 42%, transparent);
 }
 
 .sm-action-btn.sm-muted {
@@ -3600,7 +3671,11 @@ export const StemMixerStyles: string = `
 .sm-volume-slider::-webkit-slider-runnable-track {
   width: 4px;
   height: 100%;
-  background: var(--bg-tertiary, #21262d);
+  background: linear-gradient(
+    to top,
+    var(--stem-color) 0 var(--stem-volume),
+    var(--bg-tertiary, #21262d) var(--stem-volume) 100%
+  );
   border-radius: 2px;
   border: none;
 }
@@ -3610,7 +3685,7 @@ export const StemMixerStyles: string = `
   appearance: none;
   width: 14px;
   height: 14px;
-  background: var(--accent, #58a6ff);
+  background: var(--stem-color, var(--accent, #58a6ff));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--on-accent, #0d1117);
@@ -3622,7 +3697,11 @@ export const StemMixerStyles: string = `
 .sm-volume-slider::-moz-range-track {
   width: 4px;
   height: 100%;
-  background: var(--bg-tertiary, #21262d);
+  background: linear-gradient(
+    to top,
+    var(--stem-color) 0 var(--stem-volume),
+    var(--bg-tertiary, #21262d) var(--stem-volume) 100%
+  );
   border-radius: 2px;
   border: none;
 }
@@ -3630,7 +3709,7 @@ export const StemMixerStyles: string = `
 .sm-volume-slider::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: var(--accent, #58a6ff);
+  background: var(--stem-color, var(--accent, #58a6ff));
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid var(--on-accent, #0d1117);

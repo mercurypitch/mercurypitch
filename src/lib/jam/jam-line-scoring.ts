@@ -67,6 +67,23 @@ export function lineRange(
   }
 }
 
+/** Lyric lines that overlap at least one target note. */
+export function scoreableLineIndices(
+  lines: readonly LyricsLineTiming[],
+  notes: readonly JamSongNote[],
+): number[] {
+  const indices: number[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const { startSec, endSec } = lineRange(lines, i)
+    if (
+      notes.some((note) => note.endSec > startSec && note.startSec < endSec)
+    ) {
+      indices.push(i)
+    }
+  }
+  return indices
+}
+
 /**
  * Move samples from the wall clock onto the song clock.
  *
@@ -158,12 +175,19 @@ export function scoreLines(
  *
  * Lines with nothing to sing are excluded from the denominator, so a song
  * whose lyric sheet includes instrumental gaps is not punished for them.
+ * When the caller knows the singer's assigned scoreable-line count, it passes
+ * that stable total separately; completed retakes still replace one another,
+ * while seeking around the lyric sheet cannot grow the denominator.
  * Returns null when nothing was scoreable, which is not the same as zero --
  * zero is a claim about the singing, and there was none to judge.
  */
-export function overallLineScore(scores: readonly JamLineScore[]): {
+export function overallLineScore(
+  scores: readonly JamLineScore[],
+  expectedLineCount?: number,
+): {
   score: number
   sungLines: number
+  completedLines: number
   totalLines: number
 } | null {
   const scorable = scores.filter((s) => s.noteCount > 0)
@@ -172,6 +196,7 @@ export function overallLineScore(scores: readonly JamLineScore[]): {
   return {
     score: Math.round(total / scorable.length),
     sungLines: scorable.filter((s) => s.voiced).length,
-    totalLines: scorable.length,
+    completedLines: scorable.length,
+    totalLines: Math.max(scorable.length, expectedLineCount ?? scorable.length),
   }
 }

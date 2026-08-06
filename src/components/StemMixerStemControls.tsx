@@ -11,6 +11,7 @@
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
 import { createSignal, For, Index, Show } from 'solid-js'
+import { stemTrackIsAudible } from '@/features/stem-mixer/stem-mix-state'
 import { Download, Ear, ListRows, SlidersVertical, Volume2, VolumeX, } from './icons'
 
 interface StemTrack {
@@ -84,6 +85,7 @@ export const StemStripViewToggle: Component = () => {
   }
   return (
     <button
+      type="button"
       class="sm-action-btn sm-strip-view-toggle"
       onClick={toggleView}
       // The grid workspace's header doubles as a drag handle — the toggle
@@ -94,16 +96,18 @@ export const StemStripViewToggle: Component = () => {
           ? 'Switch to the fader deck (vertical sliders)'
           : 'Switch to the compact list'
       }
+      aria-label={
+        stripView() === 'compact'
+          ? 'Switch to expanded stem controls'
+          : 'Switch to compact stem controls'
+      }
     >
       {stripView() === 'compact' ? <SlidersVertical /> : <ListRows />}
     </button>
   )
 }
 
-const calcVolPct = (track: StemTrack, anySoloed: boolean) =>
-  Math.round(
-    track.muted || (anySoloed && !track.soloed) ? 0 : track.volume * 100,
-  )
+const calcVolPct = (track: StemTrack) => Math.round(track.volume * 100)
 
 const StemStrip: Component<{
   track: Accessor<StemTrack>
@@ -116,13 +120,27 @@ const StemStrip: Component<{
   downloadTitle?: string
 }> = (props) => {
   const track = () => props.track()
+  const audible = () => stemTrackIsAudible(track(), props.anySoloed())
   return (
-    <div class="sm-stem-strip">
+    <div
+      class="sm-stem-strip"
+      classList={{ 'sm-stem-suppressed': !audible() }}
+      style={{
+        '--stem-color': track().color,
+        '--stem-volume': `${calcVolPct(track())}%`,
+      }}
+      role="group"
+      aria-label={`${track().label} stem controls`}
+      data-audible={String(audible())}
+    >
       <div class="sm-stem-header">
         <span class="sm-stem-dot" style={{ background: track().color }} />
         <span class="sm-stem-label">{track().label}</span>
-        <span class="sm-stem-vol-pct">
-          {calcVolPct(track(), props.anySoloed())}%
+        <span
+          class="sm-stem-vol-pct"
+          title={audible() ? 'Fader level' : 'Fader level (track not audible)'}
+        >
+          {calcVolPct(track())}%
         </span>
       </div>
       {/* Actions + slider share a wrapper so the compact row can only break
@@ -132,26 +150,34 @@ const StemStrip: Component<{
       <div class="sm-stem-controls">
         <div class="sm-stem-actions">
           <button
+            type="button"
             class={`sm-action-btn ${track().soloed ? 'sm-active' : ''}`}
             onClick={() => props.toggleSolo(props.label)}
-            title="Solo"
+            title={`Solo ${track().label}`}
+            aria-label={`Solo ${track().label}`}
+            aria-pressed={track().soloed}
             style={{ color: track().soloed ? track().color : '' }}
           >
             <Ear />
           </button>
           <button
+            type="button"
             class={`sm-action-btn ${track().muted ? 'sm-muted' : ''}`}
             onClick={() => props.toggleMute(props.label)}
-            title="Mute"
+            title={`Mute ${track().label}`}
+            aria-label={`Mute ${track().label}`}
+            aria-pressed={track().muted}
           >
             {track().muted ? <VolumeX /> : <Volume2 />}
           </button>
           <button
+            type="button"
             class="sm-action-btn"
             onClick={() => {
               void props.handleDownload(track())
             }}
             title={props.downloadTitle ?? 'Download'}
+            aria-label={props.downloadTitle ?? `Download ${track().label}`}
           >
             <Download />
           </button>
@@ -162,6 +188,8 @@ const StemStrip: Component<{
           min="0"
           max="100"
           value={Math.round(track().volume * 100)}
+          aria-label={`${track().label} volume`}
+          aria-valuetext={`${calcVolPct(track())} percent${audible() ? '' : ', track not audible'}`}
           onInput={(e) =>
             props.setTrackVolume(
               props.label,
@@ -215,7 +243,9 @@ export const StemMixerStemControls: Component<StemMixerStemControlsProps> = (
       classList={{
         'sm-strips-compact': stripView() === 'compact',
         'sm-strips-expanded': stripView() === 'expanded',
+        'sm-strips-many': strips().length >= 5,
       }}
+      data-stem-count={strips().length}
       data-tour="mixer.stems"
     >
       {/* Index, not For: a volume/mute commit replaces the track object,
