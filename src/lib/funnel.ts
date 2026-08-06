@@ -27,6 +27,7 @@ import { API_BASE_URL } from '@/lib/defaults'
  * combined funnel unreadable.
  */
 const CLIENT_ID_KEY = 'mirror.clientId.v1'
+const LEGACY_APP_CLIENT_ID_KEY = 'mp.analytics.clientId.v1'
 
 /**
  * The shared anonymous event sink. Named for the Voice Mirror because
@@ -68,12 +69,24 @@ export type TrackFn<E extends string> = (
   metrics?: FunnelMetrics,
 ) => void
 
-function clientId(): string {
+/**
+ * Return the anonymous id shared by every product funnel.
+ *
+ * `mp.analytics.clientId.v1` predates the shared funnel transport. Adopt it
+ * when it is the only id on an existing app-only device; otherwise the shared
+ * id wins and is mirrored back to the legacy key so an older cached bundle
+ * cannot split the same browser into a second visitor.
+ */
+export function getFunnelClientId(): string {
   try {
     let id = localStorage.getItem(CLIENT_ID_KEY)
     if (id === null || id === '') {
-      id = globalThis.crypto.randomUUID()
+      id = localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY)
+      if (id === null || id === '') id = globalThis.crypto.randomUUID()
       localStorage.setItem(CLIENT_ID_KEY, id)
+    }
+    if (localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY) !== id) {
+      localStorage.setItem(LEGACY_APP_CLIENT_ID_KEY, id)
     }
     return id
   } catch {
@@ -94,7 +107,11 @@ function beacon(event: string, metrics?: FunnelMetrics): void {
     void fetch(`${API_BASE_URL}${ENDPOINT}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId: clientId(), event, metrics }),
+      body: JSON.stringify({
+        clientId: getFunnelClientId(),
+        event,
+        metrics,
+      }),
       keepalive: true,
       credentials: 'omit',
     }).catch(() => undefined)

@@ -84,6 +84,36 @@ describe('trackEvent', () => {
     )
     expect(ids[0]).toBe(ids[1])
     expect(localStorage.getItem('mp.analytics.clientId.v1')).toBe(ids[0])
+    expect(localStorage.getItem('mirror.clientId.v1')).toBe(ids[0])
+  })
+
+  it('adopts an existing app-only id into the shared funnel identity', async () => {
+    localStorage.setItem('mp.analytics.clientId.v1', 'legacy-device-123')
+    const { trackEvent } = await loadAnalytics('http://api.test')
+    const fetchFn = stubFetch()
+
+    trackEvent('pricing_view')
+
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
+    const payload = JSON.parse(init.body as string) as { clientId: string }
+    expect(payload.clientId).toBe('legacy-device-123')
+    expect(localStorage.getItem('mirror.clientId.v1')).toBe('legacy-device-123')
+  })
+
+  it('prefers the shared funnel id and keeps the legacy key compatible', async () => {
+    localStorage.setItem('mirror.clientId.v1', 'shared-device-123')
+    localStorage.setItem('mp.analytics.clientId.v1', 'split-device-456')
+    const { trackEvent } = await loadAnalytics('http://api.test')
+    const fetchFn = stubFetch()
+
+    trackEvent('pricing_view')
+
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
+    const payload = JSON.parse(init.body as string) as { clientId: string }
+    expect(payload.clientId).toBe('shared-device-123')
+    expect(localStorage.getItem('mp.analytics.clientId.v1')).toBe(
+      'shared-device-123',
+    )
   })
 
   it('sends app_open once per browser session, other events every time', async () => {

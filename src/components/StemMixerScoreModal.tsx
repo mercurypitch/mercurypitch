@@ -7,12 +7,14 @@
 
 import type { Component } from 'solid-js'
 import type { Accessor } from 'solid-js'
-import { Show } from 'solid-js'
+import { createEffect, Show } from 'solid-js'
 import type { MicScore } from '@/lib/mic-scoring'
+import { hasJudgedComparisons } from '@/lib/mic-scoring'
 
 interface StemMixerScoreModalProps {
   showScore: Accessor<boolean>
   score: Accessor<MicScore | null>
+  onViewed?: (score: MicScore) => void
   onClose: () => void
 }
 
@@ -27,6 +29,20 @@ const GRADE_LABEL: Record<MicScore['grade'], string> = {
 export const StemMixerScoreModal: Component<StemMixerScoreModalProps> = (
   props,
 ) => {
+  let viewedScore: MicScore | null = null
+  createEffect(() => {
+    const score = props.score()
+    if (
+      !props.showScore() ||
+      !hasJudgedComparisons(score) ||
+      score === viewedScore
+    ) {
+      return
+    }
+    viewedScore = score
+    props.onViewed?.(score)
+  })
+
   return (
     <Show when={props.showScore() && props.score()}>
       <div class="sm-mic-score-overlay" onClick={() => props.onClose()}>

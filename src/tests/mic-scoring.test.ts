@@ -4,11 +4,28 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ComparisonPoint } from '@/lib/mic-scoring'
-import { computeScore } from '@/lib/mic-scoring'
+import { computeScore, hasJudgedComparisons } from '@/lib/mic-scoring'
 
 // ── REQ-UV-056: computeScore ──────────────────────────────────
 
 describe('computeScore (REQ-UV-056)', () => {
+  it('distinguishes a genuine judged result from an empty score', () => {
+    expect(hasJudgedComparisons(computeScore([]))).toBe(false)
+    expect(
+      hasJudgedComparisons(
+        computeScore([
+          {
+            time: 0,
+            vocalNote: 'C4',
+            micNote: 'C4',
+            centsOff: 0,
+            inTolerance: true,
+          },
+        ]),
+      ),
+    ).toBe(true)
+  })
+
   it('returns zero/D for empty data', () => {
     const result = computeScore([])
     expect(result).toEqual({

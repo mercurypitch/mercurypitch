@@ -39,7 +39,7 @@ const plan = (over: Partial<PricingPlan>): PricingPlan => ({
   purchasable: true,
   customAmount: false,
   entitlementDays: 30,
-  perks: ['Supporter badge'],
+  perks: ['Supporter badge', 'MercuryPitch Lab: beta and development features'],
   ...over,
 })
 
@@ -78,6 +78,12 @@ describe('DonatePanel', () => {
       expect(screen.getAllByTestId('donate-tier')).toHaveLength(2),
     )
     expect(screen.getByText('Mascot costumes (coming)')).toBeInTheDocument()
+    expect(
+      screen.getAllByText('MercuryPitch Lab: beta and development features'),
+    ).toHaveLength(1)
+    expect(
+      screen.getByText(/Core singing and practice tools stay free/i),
+    ).toBeInTheDocument()
     // 90 days reads as months, not a day count.
     expect(screen.getByText('3 months of perks')).toBeInTheDocument()
   })

@@ -2,8 +2,8 @@
 // DonatePanel — supporter donation tiers, driven by /api/billing/pricing
 // ============================================================
 // One-time donations that grant a time-boxed `supporter` entitlement. They
-// never gate a feature (docs/plans/premium.md) — the badge and the extras are
-// a thank-you, not a paywall.
+// keep every core singing and practice tool free while adding optional art,
+// recognition and early access to experimental Lab tools as a thank-you.
 //
 // The "Other amount" card carries no price of its own: its Stripe price uses
 // custom_unit_amount, so the donor types the figure on Stripe's own page and
@@ -121,8 +121,8 @@ export const DonatePanel: Component = () => {
     <div class={styles.panel} data-testid="donate-panel">
       <h4 class={styles.heading}>Not here for credits? Support the work</h4>
       <p class={styles.intro}>
-        MercuryPitch stays free. Donations fund the servers and the development
-        — they never lock a feature behind a payment.
+        Core singing and practice tools stay free. Supporter status funds the
+        work and adds optional backgrounds, recognition and early Lab access.
       </p>
 
       <Show when={supporter()}>

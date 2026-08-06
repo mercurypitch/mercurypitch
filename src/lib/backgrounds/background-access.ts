@@ -9,6 +9,8 @@ import type { BillingMe } from '@/db/services/billing-service'
 import { fetchBillingMe, supporterEntitlement, } from '@/db/services/billing-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import type { SupporterFeaturePerkId } from '../supporter-feature-catalog'
+import { isSupporterFeaturePerkId } from '../supporter-feature-catalog'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, } from './background-catalog'
 import { BACKGROUND_CATALOG, DEFAULT_BACKGROUND_IDS, defaultBackground, getBackgroundDefinition, isBackgroundId, isBackgroundPerkId, } from './background-catalog'
 
@@ -25,6 +27,7 @@ export interface BackgroundAccessState {
 
 export interface PerksMe {
   perks: readonly string[]
+  features: readonly SupporterFeaturePerkId[]
 }
 
 export const NO_BACKGROUND_ACCESS: BackgroundAccessState = {
@@ -57,6 +60,12 @@ function normalizeExplicitPerks(
   return [...new Set(perks.filter(isBackgroundPerkId))]
 }
 
+function normalizeFeaturePerks(
+  features: readonly unknown[],
+): readonly SupporterFeaturePerkId[] {
+  return [...new Set(features.filter(isSupporterFeaturePerkId))]
+}
+
 /** Explicit cosmetic grants from the authenticated worker. */
 export async function fetchPerksMe(base?: string): Promise<PerksMe | null> {
   const resolved = apiBase(base)
@@ -67,12 +76,28 @@ export async function fetchPerksMe(base?: string): Promise<PerksMe | null> {
       headers: getAuthHeaders(),
     })
     if (!response.ok) return null
-    const data = (await response.json()) as { perks?: unknown }
+    const data = (await response.json()) as {
+      features?: unknown
+      perks?: unknown
+    }
     if (!Array.isArray(data.perks)) return null
-    return { perks: normalizeExplicitPerks(data.perks) }
+    return {
+      features: Array.isArray(data.features)
+        ? normalizeFeaturePerks(data.features)
+        : [],
+      perks: normalizeExplicitPerks(data.perks),
+    }
   } catch {
     return null
   }
+}
+
+/** Feature ids are trusted only after the authenticated response is parsed. */
+export function hasSupporterFeatureAccess(
+  perks: PerksMe | null,
+  featureId: SupporterFeaturePerkId,
+): boolean {
+  return perks?.features.includes(featureId) ?? false
 }
 
 /** Build access only from the two authenticated server responses. */

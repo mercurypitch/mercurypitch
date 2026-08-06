@@ -37,15 +37,13 @@ try {
   }
 }
 
-// The Cloudflare worker rewrites the standalone-entry paths (/mirror +
-// aliases, /karaoke-night + alias, /glass + aliases) to their HTML entries in
-// production; dev and preview servers have no worker, so mirror the rewrites
-// here or the links would land on the SPA shell instead.
-const MIRROR_PATHS = new Set([
-  '/mirror',
-  '/vocal-range-test',
-  '/tone-deaf-test',
-])
+// Production has real HTML entries for Voice Mirror, the vocal-range test and
+// Karaoke Night. Dev and preview servers need equivalent clean-path rewrites;
+// the tone-deaf legacy entry is a redirect because this product measures
+// pitch matching and cannot diagnose amusia (public/_redirects handles prod).
+const MIRROR_PATHS = new Set(['/mirror'])
+const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
+const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 // Glass aliases are worker-routed in production (wrangler `run_worker_first`
 // + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
@@ -60,14 +58,34 @@ function standaloneEntryRewritePlugin() {
   const rewrite = (server: {
     middlewares: {
       use: (
-        fn: (req: { url?: string }, res: unknown, next: () => void) => void,
+        fn: (
+          req: { url?: string },
+          res: {
+            statusCode: number
+            setHeader(name: string, value: string): void
+            end(): void
+          },
+          next: () => void,
+        ) => void,
       ) => void
     }
   }) => {
-    server.middlewares.use((req, _res, next) => {
+    server.middlewares.use((req, res, next) => {
       if (req.url !== undefined) {
-        const path = req.url.split('?')[0]
+        const queryAt = req.url.indexOf('?')
+        const pathname = queryAt === -1 ? req.url : req.url.slice(0, queryAt)
+        const search = queryAt === -1 ? '' : req.url.slice(queryAt)
+        const path =
+          pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname
+        if (path === TONE_DEAF_PATH) {
+          res.statusCode = 301
+          res.setHeader('Location', `/mirror${search}`)
+          res.end()
+          return
+        }
         if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
+        else if (VOCAL_RANGE_PATHS.has(path))
+          req.url = '/vocal-range-test.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -81,32 +99,23 @@ function standaloneEntryRewritePlugin() {
   }
 }
 
-// Production: the Cloudflare asset layer serves files directly, and with
-// `not_found_handling: single-page-application` it returns index.html for any
-// path without a matching file *before the worker runs* — so the worker's
-// /vocal-range-test → mirror.html rewrite never fires for real browser
-// navigations (it only fires for fetch/XHR, which fooled earlier checks). Emit
-// the SEO aliases as real HTML files (byte copies of the built mirror.html) so
-// Cloudflare serves the Voice Mirror for them directly — ad clicks, browser
-// navigations and crawlers alike. base:'/' keeps the copied HTML's absolute
-// asset URLs resolving correctly from any path.
+// Production: the Cloudflare asset layer serves files directly, so every
+// distinct search landing is a real Rollup HTML input. The only byte copy left
+// is /karaoke-night: /karaoke is the source entry filename while the campaign
+// URL is the canonical path. base:'/' keeps absolute asset URLs stable.
 //
 // Glass takes the newer route instead: its aliases are listed in wrangler's
 // `assets.run_worker_first`, which invokes src/worker.ts BEFORE the asset
 // layer for those exact paths — the worker serves glass.html content at the
 // alias URL. One HTML file, no byte copies. (/glass itself needs neither:
 // Cloudflare's html_handling maps it to glass.html, like /karaoke.)
-function mirrorAliasFilesPlugin() {
+function standaloneAliasFilesPlugin() {
   return {
-    name: 'mirror-alias-files',
-    // writeBundle runs after every file is on disk, so dist/mirror.html exists
-    // to copy. (generateBundle is too early: Vite emits the HTML assets after
-    // this plugin's hook, so the mirror.html bundle entry isn't there yet.)
+    name: 'standalone-alias-files',
+    // writeBundle runs after every file is on disk. (generateBundle is too
+    // early: Vite emits the HTML assets after this plugin's hook.)
     writeBundle(options: { dir?: string }) {
       const outDir = options.dir ?? resolve(__dirname, 'dist')
-      for (const fileName of ['vocal-range-test.html', 'tone-deaf-test.html']) {
-        copyFileSync(resolve(outDir, 'mirror.html'), resolve(outDir, fileName))
-      }
       // /karaoke maps to karaoke.html via Cloudflare's html_handling; the
       // canonical /karaoke-night needs its own real file.
       copyFileSync(
@@ -148,7 +157,7 @@ export default defineConfig(({ mode }) => {
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
       standaloneEntryRewritePlugin(),
-      mirrorAliasFilesPlugin(),
+      standaloneAliasFilesPlugin(),
       removeWasmAssetsPlugin(),
     ],
     // Absolute base so asset URLs resolve from the site root. Required for
@@ -225,6 +234,7 @@ export default defineConfig(({ mode }) => {
         input: {
           index: resolve(__dirname, 'index.html'),
           mirror: resolve(__dirname, 'mirror.html'),
+          vocalRangeTest: resolve(__dirname, 'vocal-range-test.html'),
           karaoke: resolve(__dirname, 'karaoke.html'),
           glass: resolve(__dirname, 'glass.html'),
         },

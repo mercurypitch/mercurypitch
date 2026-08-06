@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { BillingMe } from '@/db/services/billing-service'
 import type { BackgroundSelectionStorage } from './background-access'
-import { BACKGROUND_SELECTION_KEYS, deriveBackgroundAccess, deterministicFreeJamBackground, fetchBackgroundAccess, fetchPerksMe, hasBackgroundEntitlement, NO_BACKGROUND_ACCESS, persistBackgroundId, readPersistedBackgroundId, resolveBackgroundSelection, resolvePersistedBackgroundSelection, resolveSharedBackgroundSelection, } from './background-access'
+import { BACKGROUND_SELECTION_KEYS, deriveBackgroundAccess, deterministicFreeJamBackground, fetchBackgroundAccess, fetchPerksMe, hasBackgroundEntitlement, hasSupporterFeatureAccess, NO_BACKGROUND_ACCESS, persistBackgroundId, readPersistedBackgroundId, resolveBackgroundSelection, resolvePersistedBackgroundSelection, resolveSharedBackgroundSelection, } from './background-access'
 import { getBackgroundDefinition, listBackgrounds } from './background-catalog'
 
 function billingMe(entitlements: BillingMe['entitlements'] = []): BillingMe {
@@ -44,7 +44,7 @@ describe('server-evidenced background access', () => {
           expiresAt: '2027-01-01T00:00:00.000Z',
         },
       ]),
-      { perks: [] },
+      { features: [], perks: [] },
       Date.parse('2026-08-05T00:00:00.000Z'),
     )
     expect(access.supporter).toBe(true)
@@ -61,6 +61,7 @@ describe('server-evidenced background access', () => {
 
   it('honors a matching explicit grant without unlocking the whole pack', () => {
     const access = deriveBackgroundAccess(billingMe(), {
+      features: [],
       perks: ['golden-stage'],
     })
     expect(
@@ -83,7 +84,7 @@ describe('server-evidenced background access', () => {
           expiresAt: '2026-01-01T00:00:00.000Z',
         },
       ]),
-      { perks: [] },
+      { features: [], perks: [] },
       Date.parse('2026-08-05T00:00:00.000Z'),
     )
     const malformed = deriveBackgroundAccess(
@@ -94,7 +95,7 @@ describe('server-evidenced background access', () => {
           expiresAt: 'not-a-date',
         },
       ]),
-      { perks: [] },
+      { features: [], perks: [] },
     )
     const empty = deriveBackgroundAccess(
       billingMe([
@@ -104,7 +105,7 @@ describe('server-evidenced background access', () => {
           expiresAt: '',
         },
       ]),
-      { perks: [] },
+      { features: [], perks: [] },
     )
     const abbreviatedFuture = deriveBackgroundAccess(
       billingMe([
@@ -114,7 +115,7 @@ describe('server-evidenced background access', () => {
           expiresAt: '2099',
         },
       ]),
-      { perks: [] },
+      { features: [], perks: [] },
     )
     expect(expired.supporter).toBe(false)
     expect(malformed.supporter).toBe(false)
@@ -124,6 +125,7 @@ describe('server-evidenced background access', () => {
 
   it('filters unknown explicit grants at the client boundary', () => {
     const access = deriveBackgroundAccess(billingMe(), {
+      features: [],
       perks: ['golden-singer', 'made-up-perk', 'golden-singer'],
     })
     expect(access.explicitPerks).toEqual(['golden-singer'])
@@ -192,6 +194,20 @@ describe('server-evidenced background access', () => {
   it('rejects malformed /api/perks/me responses', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(response({ perks: 'all' }))
     expect(await fetchPerksMe('https://api.test')).toBeNull()
+  })
+
+  it('accepts only catalogued server feature ids', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      response({
+        features: ['lab-access', 'all-access', 'lab-access'],
+        perks: [],
+      }),
+    )
+
+    const result = await fetchPerksMe('https://api.test')
+    expect(result).toEqual({ features: ['lab-access'], perks: [] })
+    expect(hasSupporterFeatureAccess(result, 'lab-access')).toBe(true)
+    expect(hasSupporterFeatureAccess(null, 'lab-access')).toBe(false)
   })
 })
 

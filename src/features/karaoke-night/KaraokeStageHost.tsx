@@ -10,7 +10,7 @@ import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { getUvrSession } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
-import { trackKaraoke, trackKaraokeOnce } from './funnel'
+import { trackKaraoke, trackKaraokeOnce, trackKaraokeSessionOnce, } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 /** Inject a component's CSS string once (the studio app injects these at
@@ -86,6 +86,12 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
         isDemoSessionId(props.song.sessionId)
           ? () => trackKaraokeOnce('karaoke_demo_complete')
           : undefined
+      }
+      onMicGranted={() => trackKaraokeSessionOnce('karaoke_mic_granted')}
+      onValidMicPitch={() => trackKaraokeSessionOnce('karaoke_first_pitch')}
+      onScoreCreated={() => trackKaraokeSessionOnce('karaoke_first_score')}
+      onScorecardViewed={() =>
+        trackKaraokeSessionOnce('karaoke_scorecard_view')
       }
       onBack={() => {
         if (isPlaylistActive()) stopPlaylist()

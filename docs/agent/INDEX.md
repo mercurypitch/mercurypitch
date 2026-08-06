@@ -75,16 +75,16 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
-| `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 9.9k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 9.6k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
-| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.4k | Voice Mirror — the guided 3-task flow (spec §2). |
+| `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.1k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
+| `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 9.7k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
+| `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.5k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.4k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.2k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.8k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.5k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
-| `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.3k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
+| `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.4k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
@@ -194,20 +194,20 @@ These are the rules that break things when ignored.
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 449 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 339 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 223 | The app's single pitch-frame stream. |
+| [LabPage.tsx](../../src/pages/LabPage.tsx) | 90 | Supporter research surface. |
 | [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
 | [JamPage.tsx](../../src/pages/JamPage.tsx) | 27 | Jam tab (TAB_JAM). |
 | [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
 | [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 20 | Challenges tab (TAB_CHALLENGES). |
 | [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 20 | Community tab (TAB_COMMUNITY). |
 | [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 19 | One dashboard at every width. |
-| [LabPage.tsx](../../src/pages/LabPage.tsx) | 17 | Hidden research surface. |
 | [SettingsPage.tsx](../../src/pages/SettingsPage.tsx) | 11 | Settings tab (TAB_SETTINGS). |
 
 #### Cloudflare Workers (`workers/`) — backend
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 13.1k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 13.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -301,7 +301,7 @@ Grep for the symbol and read the surrounding range instead.
 
 | File | LOC |
 |---|---|
-| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 6.8k |
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.0k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/App.tsx](../../src/App.tsx) | 3.8k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 3.2k |
@@ -309,28 +309,28 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
-| [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
+| [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.1k |
-| [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.1k |
+| [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
+| [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.9k |
-| [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 1.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.8k |
+| [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
-| [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
+| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |
-| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.2k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.3k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->

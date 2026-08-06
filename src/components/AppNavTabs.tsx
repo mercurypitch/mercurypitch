@@ -12,7 +12,6 @@ export interface AppNavTabsProps {
   activeTab: () => ActiveTab
   handleTabChange: (tab: ActiveTab) => void
   tabLabel: (tab: ActiveTab) => string
-  advancedFeaturesEnabled: () => boolean
 }
 
 // ── Per-tab presentation ────────────────────────────────────────────

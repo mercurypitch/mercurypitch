@@ -14,19 +14,20 @@
 // Entities are validated against the TABLES allowlist; per-table access
 // rules force userId scoping from the JWT, never from the request body.
 
+import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
-import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleGuidedExerciseRequest } from './guided-exercises'
 import { awardForSessionRecord, awardStreakBonuses, getLeagueMe, runWeeklyLeagueCut, } from './league'
 import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, } from './moderation'
 import { getPerksForUser } from './perks'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
 import { handlePremiumBackgroundRequest } from './premium-backgrounds'
+import { resolveSupporterFeatureAccess } from './supporter-feature-access'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { validateWrite } from './validation'
@@ -972,7 +973,7 @@ async function handleLeaderboard(
 // there is no public reader. Keep the event list in sync with
 // src/features/mirror/funnel.ts and src/lib/analytics.ts.
 
-const FUNNEL_EVENTS = new Set([
+export const FUNNEL_EVENTS = new Set([
   // Voice Mirror funnel (src/features/mirror/funnel.ts)
   'mirror_view',
   'howto_view',
@@ -1008,6 +1009,10 @@ const FUNNEL_EVENTS = new Set([
   'karaoke_song_staged',
   'karaoke_playlist_deeplink',
   'karaoke_playlist_start',
+  'karaoke_mic_granted',
+  'karaoke_first_pitch',
+  'karaoke_first_score',
+  'karaoke_scorecard_view',
   'karaoke_cta_studio',
   // Glass funnel (src/features/glass/funnel.ts)
   'glass_view',
@@ -1936,10 +1941,15 @@ async function handleRequest(
     return respond(await getLeagueMe(env, auth.userId))
   }
 
-  // Supporter cosmetic perks (shared dev+prod DB, email-keyed grants).
+  // Supporter perks. Legacy cosmetic grants remain shared/email-keyed; app
+  // feature access is environment-local and resolved from supporter groups.
   if (url.pathname === '/api/perks/me' && request.method === 'GET') {
     if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-    return respond({ perks: await getPerksForUser(env, auth.userId) })
+    const [perks, features] = await Promise.all([
+      getPerksForUser(env, auth.userId),
+      resolveSupporterFeatureAccess(env, auth.userId),
+    ])
+    return respond({ features, perks })
   }
 
   // Everything one grant pass reads, in one request. See handleGrantContext.

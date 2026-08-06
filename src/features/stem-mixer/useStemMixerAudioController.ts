@@ -6,6 +6,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
+import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -111,6 +112,10 @@ export interface StemMixerAudioDeps {
   /** Fired only when playback reaches the end of the track naturally (not on a
    *  manual stop). Used by the karaoke playlist to advance to the next song. */
   onPlaybackEnded?: () => void
+  /** First detector-validated live mic pitch in the supported singing range. */
+  onValidMicPitch?: () => void
+  /** A score built from at least one judged reference/mic comparison frame. */
+  onScoreCreated?: (score: MicScore) => void
 
   showNotification: (
     msg: string,
@@ -196,6 +201,23 @@ const FADE_OUT_MS = 50
 const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
+/** The live-pitch activation milestone uses the same supported range as the
+ * scorer, so detector noise outside the product's singing range cannot count. */
+export function isSupportedLiveMicPitch(
+  pitch: DetectedPitch | null | undefined,
+): pitch is DetectedPitch {
+  if (
+    pitch === null ||
+    pitch === undefined ||
+    !Number.isFinite(pitch.frequency) ||
+    pitch.frequency <= 0
+  ) {
+    return false
+  }
+  const midi = freqToMidi(pitch.frequency)
+  return midi >= MIDI_NOTE_RANGE.min && midi <= MIDI_NOTE_RANGE.max
+}
+
 // ── Controller ─────────────────────────────────────────────────
 
 export const useStemMixerAudioController = (
@@ -243,6 +265,7 @@ export const useStemMixerAudioController = (
   let pauseOffset = 0
   let pitchHistory: PitchNote[] = []
   let mappingWasActive = false
+  let validMicPitchReported = false
   const frameScheduler = createStemMixerFrameScheduler(
     MAX_ANALYSIS_FRAMES_PER_SECOND,
   )
@@ -825,6 +848,7 @@ export const useStemMixerAudioController = (
   const handleStop = () => {
     if (deps.micActive() && deps.comparisonData().length > 0) {
       const s = deps.computeScore()
+      if (hasJudgedComparisons(s)) deps.onScoreCreated?.(s)
       deps.setScore(s)
       deps.setShowScore(true)
     }
@@ -1022,20 +1046,18 @@ export const useStemMixerAudioController = (
                 const mp = smoothPitch(micSmoother, rawMic, elapsedTime)
                 deps.setMicPitch(mp)
                 let micFreq = 0
-                if (mp) {
-                  const midi = freqToMidi(mp.frequency)
-                  if (
-                    midi >= MIDI_NOTE_RANGE.min &&
-                    midi <= MIDI_NOTE_RANGE.max
-                  ) {
-                    micFreq = mp.frequency
-                    deps.getMicPitchHistory().push({
-                      time: elapsedTime,
-                      noteName: mp.noteName,
-                      frequency: mp.frequency,
-                      octave: mp.octave,
-                    })
+                if (isSupportedLiveMicPitch(mp)) {
+                  micFreq = mp.frequency
+                  if (!validMicPitchReported) {
+                    validMicPitchReported = true
+                    deps.onValidMicPitch?.()
                   }
+                  deps.getMicPitchHistory().push({
+                    time: elapsedTime,
+                    noteName: mp.noteName,
+                    frequency: mp.frequency,
+                    octave: mp.octave,
+                  })
                 }
                 deps.pushComparison(elapsedTime, stemFreq, micFreq)
               }

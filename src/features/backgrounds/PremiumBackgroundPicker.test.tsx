@@ -183,4 +183,16 @@ describe('PremiumBackgroundPicker', () => {
     await vi.waitFor(() => expect(trigger).toHaveFocus())
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('opens the Credits section for supporter perks from a standalone gallery', () => {
+    const controller = fakeController()
+    render(() => <PremiumBackgroundPicker controller={controller} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Choose karaoke stage background' }),
+    )
+
+    expect(
+      screen.getByRole('link', { name: 'Explore supporter perks' }),
+    ).toHaveAttribute('href', '/#/settings/credits')
+  })
 })
