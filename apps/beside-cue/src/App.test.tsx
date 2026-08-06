@@ -1,5 +1,6 @@
 import type { BesideCueStateV1 } from '@irchiinnuss/beside-cue-core'
-import type { LocalNotificationActionListener, LocalNotificationRequest, MobileRuntime, NotificationPermissionState, } from '@irchiinnuss/mobile-runtime'
+import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
+import { createMobileRuntimeProbe } from '@irchiinnuss/mobile-runtime/testing'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { describe, expect, it } from 'vitest'
 import { App } from './App'
@@ -29,13 +30,6 @@ function createMemoryRepository(): MemoryRepository {
   }
 }
 
-interface RuntimeProbe {
-  readonly scheduled: LocalNotificationRequest[][]
-  readonly cancelled: number[][]
-  permissionRequests: number
-  actionListener?: LocalNotificationActionListener
-}
-
 interface Deferred {
   readonly promise: Promise<void>
   resolve(): void
@@ -49,41 +43,6 @@ function deferred(): Deferred {
   return { promise, resolve }
 }
 
-function createSilentRuntime(
-  probe?: RuntimeProbe,
-  permission: NotificationPermissionState = 'unsupported',
-  scheduleGate?: Promise<void>,
-): MobileRuntime {
-  return {
-    haptics: {
-      async impact() {},
-      async notification() {},
-    },
-    localNotifications: {
-      async checkPermission() {
-        return permission
-      },
-      async requestPermission() {
-        if (probe !== undefined) probe.permissionRequests += 1
-        return permission
-      },
-      async createChannel() {},
-      async schedule(notifications) {
-        probe?.scheduled.push([...notifications])
-        await scheduleGate
-      },
-      async cancel(ids) {
-        probe?.cancelled.push([...ids])
-      },
-      async removeDelivered() {},
-      async addActionListener(listener) {
-        if (probe !== undefined) probe.actionListener = listener
-        return { async remove() {} }
-      },
-    },
-  }
-}
-
 function createTestServices(
   repository: MemoryRepository,
   options: {
@@ -94,7 +53,9 @@ function createTestServices(
   let nextId = 0
   return {
     repository,
-    runtime: Promise.resolve(options.runtime ?? createSilentRuntime()),
+    runtime: Promise.resolve(
+      options.runtime ?? createMobileRuntimeProbe().runtime,
+    ),
     platform: options.platform ?? 'web',
     now: () => new Date('2026-08-06T10:00:00'),
     createId: () => `test-${String((nextId += 1))}`,
@@ -164,16 +125,12 @@ describe('Beside Cue app', () => {
 
   it('keeps one configurable daily cue through the shared notification port', async () => {
     const repository = createMemoryRepository()
-    const probe: RuntimeProbe = {
-      scheduled: [],
-      cancelled: [],
-      permissionRequests: 0,
-    }
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
     render(() => (
       <App
         services={createTestServices(repository, {
           platform: 'android',
-          runtime: createSilentRuntime(probe, 'granted'),
+          runtime: probe.runtime,
         })}
       />
     ))
@@ -202,22 +159,20 @@ describe('Beside Cue app', () => {
         },
       ])
     })
-    await waitFor(() => expect(probe.scheduled.at(-1)).toHaveLength(1))
-    expect(probe.permissionRequests).toBe(0)
+    await waitFor(() => expect(probe.calls.scheduled.at(-1)).toHaveLength(1))
+    expect(probe.calls.permissionRequests).toBe(0)
     expect(screen.getByRole('status')).toHaveTextContent(
       'Kept for around 09:00. Notifications stay discreet.',
     )
 
-    const scheduled = probe.scheduled.at(-1)?.[0]
-    if (scheduled === undefined || probe.actionListener === undefined) {
-      throw new Error('Expected a planned notification and action listener.')
-    }
+    const scheduled = probe.calls.scheduled.at(-1)?.[0]
+    if (scheduled === undefined) throw new Error('Expected a notification.')
     expect(scheduled.schedule).toEqual({
       kind: 'daily',
       hour: 9,
       minute: 0,
     })
-    await probe.actionListener({
+    await probe.emitNotificationAction({
       notificationId: scheduled.id,
       actionId: 'open',
       extra: scheduled.extra,
@@ -236,16 +191,15 @@ describe('Beside Cue app', () => {
   it('preserves cue history while a native schedule update is still settling', async () => {
     const repository = createMemoryRepository()
     const scheduleGate = deferred()
-    const probe: RuntimeProbe = {
-      scheduled: [],
-      cancelled: [],
-      permissionRequests: 0,
-    }
+    const probe = createMobileRuntimeProbe({
+      permission: 'granted',
+      onSchedule: () => scheduleGate.promise,
+    })
     render(() => (
       <App
         services={createTestServices(repository, {
           platform: 'android',
-          runtime: createSilentRuntime(probe, 'granted', scheduleGate.promise),
+          runtime: probe.runtime,
         })}
       />
     ))
@@ -265,7 +219,7 @@ describe('Beside Cue app', () => {
       }),
     )
 
-    await waitFor(() => expect(probe.scheduled).toHaveLength(1))
+    await waitFor(() => expect(probe.calls.scheduled).toHaveLength(1))
     fireEvent.click(screen.getByRole('button', { name: /back/iu }))
     fireEvent.click(screen.getByRole('button', { name: /cue me now/iu }))
     fireEvent.click(screen.getByRole('button', { name: /choose the b-side/iu }))
