@@ -38,14 +38,16 @@ try {
   }
 }
 
-// Production has real HTML entries for Voice Mirror, the vocal-range test and
-// Karaoke Night. Dev and preview servers need equivalent clean-path rewrites;
-// the tone-deaf legacy entry is a redirect because this product measures
-// pitch matching and cannot diagnose amusia (public/_redirects handles prod).
+// Production has real HTML entries for Voice Mirror, the vocal-range test,
+// Karaoke Night and Guitar Night. Dev and preview servers need equivalent
+// clean-path rewrites; the tone-deaf legacy entry is a redirect because this
+// product measures pitch matching and cannot diagnose amusia
+// (public/_redirects handles prod).
 const MIRROR_PATHS = new Set(['/mirror'])
 const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
+const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
 // Glass aliases are worker-routed in production (wrangler `run_worker_first`
 // + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
 const GLASS_PATHS = new Set([
@@ -87,6 +89,7 @@ function standaloneEntryRewritePlugin() {
         if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
         else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
+        else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
       next()
@@ -236,6 +239,7 @@ export default defineConfig(({ mode }) => {
           mirror: resolve(__dirname, 'mirror.html'),
           vocalRangeTest: resolve(__dirname, 'vocal-range-test.html'),
           karaoke: resolve(__dirname, 'karaoke.html'),
+          guitarNight: resolve(__dirname, 'guitar-night.html'),
           glass: resolve(__dirname, 'glass.html'),
         },
         output: {
