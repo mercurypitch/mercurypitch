@@ -10,6 +10,7 @@
 // ============================================================
 
 import { API_BASE_URL } from '@/lib/defaults'
+import { getFunnelClientId } from '@/lib/funnel'
 
 export type AppFunnelEvent =
   | 'app_open'
@@ -23,22 +24,7 @@ export type AppFunnelEvent =
   | 'weekly_join'
   | 'weekly_attempt'
 
-const CLIENT_ID_KEY = 'mp.analytics.clientId.v1'
 const APP_OPEN_SENT_KEY = 'mp.analytics.appOpenSent.v1'
-
-/** Anonymous, stable-per-device id — random, never tied to an account. */
-function clientId(): string {
-  try {
-    let id = localStorage.getItem(CLIENT_ID_KEY)
-    if (id === null || id === '') {
-      id = globalThis.crypto.randomUUID()
-      localStorage.setItem(CLIENT_ID_KEY, id)
-    }
-    return id
-  } catch {
-    return 'no-storage'
-  }
-}
 
 /** app_open counts browser sessions, not renders/reloads. */
 function alreadySentThisSession(): boolean {
@@ -54,7 +40,7 @@ function alreadySentThisSession(): boolean {
 function beacon(event: AppFunnelEvent): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   const url = `${API_BASE_URL}/api/mirror/event`
-  const payload = JSON.stringify({ clientId: clientId(), event })
+  const payload = JSON.stringify({ clientId: getFunnelClientId(), event })
   try {
     // NOT navigator.sendBeacon: it is always credentialed, and the worker
     // answers CORS with a wildcard origin — the browser then drops the

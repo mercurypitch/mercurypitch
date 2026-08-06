@@ -2,8 +2,8 @@
 // Lab — hidden audio-research surface
 //
 // Not in TAB_GROUPS, so it never appears in the tab bar. Reached by hash
-// route (#lab, #pitch-test, #pitch-algo) and only when advanced features
-// or dev mode are on. Everything here used to sit on the user-facing
+// route (#lab, #pitch-test, #pitch-algo) after a server-held supporter grant
+// or in dev mode. Everything here used to sit on the user-facing
 // Analysis page.
 // ============================================================
 

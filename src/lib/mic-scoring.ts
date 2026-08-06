@@ -25,6 +25,14 @@ export interface MicScore {
   notesHit?: number
 }
 
+/** A result is real only after at least one voiced reference/mic frame passed
+ * the comparison engine's stability and range gates. */
+export function hasJudgedComparisons(
+  score: MicScore | null | undefined,
+): score is MicScore {
+  return score !== null && score !== undefined && score.totalNotes > 0
+}
+
 /**
  * Compute a pitch accuracy score from an array of comparison points.
  *

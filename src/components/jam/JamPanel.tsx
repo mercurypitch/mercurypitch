@@ -12,6 +12,7 @@ import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-so
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import type { JamCatalogEntry } from '@/lib/jam/jam-catalog'
 import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
@@ -53,6 +54,8 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
+  const [pickerError, setPickerError] = createSignal('')
+  const [pickingEntryId, setPickingEntryId] = createSignal<string | null>(null)
 
   /**
    * Close the picker when the click lands anywhere else.
@@ -233,6 +236,9 @@ export const JamPanel: Component = () => {
    * the shelf then renders empty rather than offering a dead row.
    */
   const [demoSong, setDemoSong] = createSignal<JamSong | null>(null)
+  const [demoSongState, setDemoSongState] = createSignal<
+    'loading' | 'ready' | 'unavailable'
+  >('loading')
 
   /**
    * Your own separated sessions. Resolved when the room goes live and
@@ -246,30 +252,48 @@ export const JamPanel: Component = () => {
       : [],
   )
 
-  /** Which row is being read out of the database, for the spinner. */
-  const [hydrating, setHydrating] = createSignal<string | null>(null)
-
   createEffect(() => {
-    if (jamState() !== 'active') return
+    if (jamState() !== 'active') {
+      setDemoSong(null)
+      setDemoSongState('loading')
+      return
+    }
+    setDemoSong(null)
+    setDemoSongState('loading')
     void (async () => {
-      const manifest = await loadDemoSong()
-      if (manifest === null) return
-      let lines: LyricsLineTiming[] = []
-      const lyricsUrl = manifest.lyrics ?? ''
-      if (lyricsUrl.toLowerCase().endsWith('.lrc')) {
-        // Straight from the URL rather than the local lyrics db: the room
-        // wants the timings, not a copy of someone's edits, and every peer
-        // must end up with the same lines.
-        const text = await fetch(lyricsUrl)
-          .then((r) => (r.ok ? r.text() : ''))
-          .catch(() => '')
-        if (text !== '') lines = lrcToSongLines(parseLrcFile(text))
+      try {
+        const manifest = await loadDemoSong()
+        if (manifest === null) {
+          setDemoSongState('unavailable')
+          return
+        }
+        let lines: LyricsLineTiming[] = []
+        const lyricsUrl = manifest.lyrics ?? ''
+        if (lyricsUrl.toLowerCase().endsWith('.lrc')) {
+          // Straight from the URL rather than the local lyrics db: the room
+          // wants the timings, not a copy of someone's edits, and every peer
+          // must end up with the same lines.
+          const text = await fetch(lyricsUrl)
+            .then((r) => (r.ok ? r.text() : ''))
+            .catch(() => '')
+          if (text !== '') lines = lrcToSongLines(parseLrcFile(text))
+        }
+        // The demo is a normal session as far as analysis is concerned, so
+        // if it has been opened in the mixer once there is a vocal line to
+        // aim at; if not, the room still works on lyrics alone.
+        const notes = await sessionSongNotes(DEMO_SESSION_ID)
+        const song = demoSongToJamSong(manifest, lines, notes)
+        if (song === null) {
+          setDemoSongState('unavailable')
+          return
+        }
+        setDemoSong(song)
+        setDemoSongState('ready')
+      } catch {
+        // The picker still has drills and saved melodies. Keep those usable
+        // and say only that the included song is unavailable.
+        setDemoSongState('unavailable')
       }
-      // The demo is a normal session as far as analysis is concerned, so
-      // if it has been opened in the mixer once there is a vocal line to
-      // aim at; if not, the room still works on lyrics alone.
-      const notes = await sessionSongNotes(DEMO_SESSION_ID)
-      setDemoSong(demoSongToJamSong(manifest, lines, notes))
     })()
   })
 
@@ -294,14 +318,9 @@ export const JamPanel: Component = () => {
       { label: 'Songs', entries: jamSongEntries([demoSong()]) },
       {
         label: 'Your songs',
-        entries: jamSessionRowEntries(mySongRows(), async (row) => {
-          setHydrating(row.session.sessionId)
-          try {
-            return await sessionSong(row.session)
-          } finally {
-            setHydrating(null)
-          }
-        }),
+        entries: jamSessionRowEntries(mySongRows(), (row) =>
+          sessionSong(row.session),
+        ),
       },
       {
         label: "This week's challenge",
@@ -418,56 +437,105 @@ export const JamPanel: Component = () => {
     joinJamRoom(roomId, name).finally(() => setJoining(false))
   }
 
+  const togglePicker = (): void => {
+    const opening = !showExercisePicker()
+    if (opening) setPickerError('')
+    setShowExercisePicker(opening)
+  }
+
+  /**
+   * A separated song is hydrated only after it is chosen. Keep the drawer
+   * open while that IndexedDB work runs, and close only after the room truly
+   * accepted the song. The old handler closed first, so a missing stem or a
+   * read failure looked exactly like a picker that had ignored the tap.
+   */
+  const choosePickerEntry = (entry: JamCatalogEntry): void => {
+    setPickerError('')
+    if (entry.kind !== 'song') {
+      selectJamExercise(entry.build())
+      setShowExercisePicker(false)
+      return
+    }
+
+    const entryId = entry.id
+    const entryName = entry.name
+    setPickingEntryId(entryId)
+    void (async () => {
+      try {
+        const song = await entry.buildSong()
+        if (song === null) {
+          setPickerError(
+            `${entryName} is missing its backing track on this device. Open it in Karaoke and try again.`,
+          )
+          return
+        }
+        if (!selectJamSong(song)) {
+          const reason = jamError()?.trim() ?? ''
+          setPickerError(
+            reason !== ''
+              ? reason
+              : `${entryName} cannot be loaded into this room.`,
+          )
+          return
+        }
+        setShowExercisePicker(false)
+      } catch {
+        setPickerError(
+          `${entryName} could not be read from this device. Try opening it in Karaoke first.`,
+        )
+      } finally {
+        setPickingEntryId(null)
+      }
+    })()
+  }
+
   /** The picker's shelves, rendered into the desktop overlay or the
    *  mobile sheet — one list, two containers. */
   const pickerBody = () => (
-    <For each={pickerShelves()}>
-      {(shelf) => (
-        <Show when={shelf.entries.length > 0}>
-          <div class={panelStyles.pickShelf}>
-            <div class={panelStyles.pickShelfLabel}>{shelf.label}</div>
-            <For each={shelf.entries}>
-              {(entry) => (
-                <button
-                  class={panelStyles.pickItem}
-                  onClick={() => {
-                    // A song and a drill run on different
-                    // timelines and go through different
-                    // store actions; the catalogue union
-                    // makes forgetting this a compile error
-                    // rather than a room that loads a song
-                    // and waits for a beat that never comes.
-                    if (entry.kind === 'song') {
-                      void Promise.resolve(entry.buildSong()).then((s) => {
-                        if (s !== null) selectJamSong(s)
-                      })
-                    } else {
-                      selectJamExercise(entry.build())
-                    }
-                    setShowExercisePicker(false)
-                  }}
-                >
-                  <span class={panelStyles.pickName}>
-                    {entry.name}
-                    {/* Reading both stems out of the database
-                                      takes a moment; say so on the row that
-                                      is actually doing it. */}
-                    <Show
-                      when={
-                        entry.id === `song:session:${hydrating() ?? '\u0000'}`
-                      }
-                    >
-                      <span class={panelStyles.pickSpinner} />
-                    </Show>
-                  </span>
-                  <span class={panelStyles.pickMeta}>{entry.detail}</span>
-                </button>
-              )}
-            </For>
+    <>
+      <Show when={pickerError() !== ''}>
+        <div class={panelStyles.pickError} role="alert">
+          {pickerError()}
+        </div>
+      </Show>
+      <Show when={demoSongState() !== 'ready'}>
+        <div class={panelStyles.pickShelf}>
+          <div class={panelStyles.pickShelfLabel}>Songs</div>
+          <div class={panelStyles.pickStatus} role="status">
+            {demoSongState() === 'loading'
+              ? 'Loading the included karaoke song…'
+              : 'The included karaoke song is unavailable. Drills and melodies are still ready.'}
           </div>
-        </Show>
-      )}
-    </For>
+        </div>
+      </Show>
+      <For each={pickerShelves()}>
+        {(shelf) => (
+          <Show when={shelf.entries.length > 0}>
+            <div class={panelStyles.pickShelf}>
+              <div class={panelStyles.pickShelfLabel}>{shelf.label}</div>
+              <For each={shelf.entries}>
+                {(entry) => (
+                  <button
+                    class={panelStyles.pickItem}
+                    disabled={pickingEntryId() !== null}
+                    aria-busy={pickingEntryId() === entry.id}
+                    onClick={() => choosePickerEntry(entry)}
+                  >
+                    <span class={panelStyles.pickName}>
+                      {entry.name}
+                      <Show when={pickingEntryId() === entry.id}>
+                        <span class={panelStyles.pickSpinner} />
+                      </Show>
+                    </span>
+                    <span class={panelStyles.pickMeta}>{entry.detail}</span>
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
+        )}
+      </For>
+    </>
   )
 
   return (
@@ -1098,9 +1166,7 @@ export const JamPanel: Component = () => {
                   </div>
                 </Show>
                 <JamTransport
-                  onSelectExercise={() =>
-                    setShowExercisePicker(!showExercisePicker())
-                  }
+                  onSelectExercise={togglePicker}
                   loopEnabled={jamExerciseLoop()}
                   onToggleLoop={() => setJamExerciseLoop((v) => !v)}
                 />

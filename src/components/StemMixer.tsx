@@ -7,6 +7,7 @@ import { createEffect, createMemo, createResource, createSignal, on, onCleanup, 
 import { getStemBlobUrl, listStemTypes } from '@/db/services/uvr-service'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
+import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
@@ -22,7 +23,7 @@ import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
-import type { ComparisonPoint } from '@/lib/mic-scoring'
+import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
 import { mergeConsecutiveNotes } from '@/lib/midi-generator'
@@ -101,6 +102,14 @@ interface StemMixerProps {
   /** Fires once per mount after ~30s of cumulative playback — the Karaoke
    *  Night page uses it as the demo-engagement funnel milestone. */
   onThirtySecondsPlayed?: () => void
+  /** Successful mic acquisition, after the capture graph is ready. */
+  onMicGranted?: () => void
+  /** First detector-validated live pitch produced during playback. */
+  onValidMicPitch?: () => void
+  /** A score materialized from genuine reference/mic comparison frames. */
+  onScoreCreated?: (score: MicScore) => void
+  /** A genuine score becoming visible in the score-card modal. */
+  onScorecardViewed?: (score: MicScore) => void
   onBack?: () => void
   /** Zen mobile stage: stage another library session from the in-stage song
    *  sheet. Undefined hides the sheet (the studio has its own pickers). */
@@ -175,9 +184,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const background = useBackgroundSurfaceController('karaoke')
 
   // ── State ────────────────────────────────────────────────────
+  const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [midiNotes, setMidiNotes] = createSignal<MidiNoteEvent[]>([])
   const [anySoloed, setAnySoloed] = createSignal(false)
   const [shareToast, setShareToast] = createSignal('')
+
+  const updateStageAlpha = (value: number) => {
+    setStageAlpha(persistKaraokeStageAlpha(value))
+  }
 
   // ── Karaoke Focus Mode ────────────────────────────────────────
   const [showWaveform, setShowWaveform] = createSignal(true)
@@ -304,6 +318,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
   })
+  let micGrantedReported = false
+  createEffect(
+    on(mic.micActive, (active) => {
+      if (!active || micGrantedReported) return
+      micGrantedReported = true
+      props.onMicGranted?.()
+    }),
+  )
 
   // Mutable holders — backfilled after canvas/lyrics controllers are created.
   // Audio controller accesses these dynamically (not at construction time), so
@@ -362,6 +384,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     /* eslint-enable solid/reactivity */
     karaokeReferenceVocal: () => props.karaokeReferenceVocal === true,
     onPlaybackEnded: () => handleSongEnded(),
+    onValidMicPitch: () => props.onValidMicPitch?.(),
+    onScoreCreated: (score) => props.onScoreCreated?.(score),
     showNotification,
   })
 
@@ -1914,7 +1938,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     >
       <div
         class="stem-mixer"
-        style={background.resolvedStyle()}
+        style={{
+          ...background.resolvedStyle(),
+          '--sm-stage-alpha':
+            props.preset === 'performance'
+              ? `var(--kn-alpha, ${KARAOKE_STAGE_ALPHA.defaultValue})`
+              : String(stageAlpha()),
+        }}
         classList={{
           'stem-mixer--focus': karaokeFocus(),
           'stem-mixer--mapping': lrcGenMode(),
@@ -1999,6 +2029,33 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               style={{ display: 'flex', gap: '0.5rem' }}
               data-tour="mixer.header"
             >
+              <Show when={props.preset !== 'performance'}>
+                <label class="sm-stage-glass" title="Stage transparency">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+                    />
+                  </svg>
+                  <input
+                    type="range"
+                    class="sm-stage-glass-slider"
+                    min={KARAOKE_STAGE_ALPHA.min}
+                    max={KARAOKE_STAGE_ALPHA.max}
+                    step={KARAOKE_STAGE_ALPHA.step}
+                    value={stageAlpha()}
+                    aria-label="Stage transparency"
+                    onInput={(event) =>
+                      updateStageAlpha(Number(event.currentTarget.value))
+                    }
+                  />
+                </label>
+              </Show>
               <PremiumBackgroundPicker controller={background} label="Stage" />
               <Show when={props.onOfferTour}>
                 <button
@@ -2417,6 +2474,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         <StemMixerScoreModal
           showScore={mic.showScore}
           score={mic.score}
+          onViewed={(score) => props.onScorecardViewed?.(score)}
           onClose={() => {
             mic.setShowScore(false)
             if (playlist.isPlaylistActive() && pendingAdvance) {
@@ -2664,12 +2722,30 @@ const LoopMetricsBar: Component<{
 
 export const StemMixerStyles: string = `
 .stem-mixer {
+  --sm-stage-alpha: ${KARAOKE_STAGE_ALPHA.defaultValue};
+  --bg-primary: rgba(13, 17, 23, var(--sm-stage-alpha));
+  --bg-secondary: rgba(22, 27, 34, var(--sm-stage-alpha));
+  --bg-tertiary: rgba(
+    33,
+    38,
+    45,
+    min(1, calc(var(--sm-stage-alpha) + 0.08))
+  );
+  --sm-canvas-bg: rgba(
+    13,
+    17,
+    23,
+    min(1, calc(var(--sm-stage-alpha) + 0.12))
+  );
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   background:
-    linear-gradient(rgba(13, 8, 22, 0.84), rgba(13, 8, 22, 0.9)),
+    linear-gradient(
+      rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.08))),
+      rgba(13, 8, 22, min(1, calc(var(--sm-stage-alpha) + 0.18)))
+    ),
     var(--mp-stage-image) var(--mp-stage-position, 50% 50%) / cover no-repeat,
     var(--bg-secondary, #161b22);
   overflow: hidden;
@@ -2686,6 +2762,28 @@ export const StemMixerStyles: string = `
   flex-shrink: 0;
 }
 
+/* The app sidebar leaves the full mixer with a tablet-sized content column
+   before the <=768px Zen stage takes over. Keep every action reachable in
+   that seam instead of letting the right side clip off-screen. */
+@media (max-width: 1100px) {
+  .sm-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+
+  .sm-header-left {
+    min-width: 0;
+  }
+
+  .sm-header-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
 .sm-header-left {
   display: flex;
   align-items: center;
@@ -2696,6 +2794,28 @@ export const StemMixerStyles: string = `
   margin: 0;
   font-size: 1.05rem;
   color: var(--fg-primary, #c9d1d9);
+}
+
+.sm-stage-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-stage-glass svg {
+  flex: none;
+}
+
+.sm-stage-glass-slider {
+  width: 88px;
+  accent-color: var(--accent, #58a6ff);
+  cursor: pointer;
+}
+
+.sm-stage-glass-slider:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
 }
 
 .sm-session-id {

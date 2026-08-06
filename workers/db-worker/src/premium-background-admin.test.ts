@@ -356,7 +356,11 @@ describe('Premium Background Studio admin boundary', () => {
           } as T
         }
         if (this.sql.startsWith('SELECT (SELECT COUNT(*)')) {
-          return { activeMembers: 0, activePerks: 0 } as T
+          return {
+            activeFeatures: 0,
+            activeMembers: 0,
+            activePerks: 0,
+          } as T
         }
         throw new Error(`Unhandled first: ${this.sql}`)
       }
@@ -388,6 +392,80 @@ describe('Premium Background Studio admin boundary', () => {
     expect(batchedSql[0]).toContain(
       'NOT EXISTS ( SELECT 1 FROM premiumSupporterGroupPerks',
     )
+    expect(batchedSql[0]).toContain(
+      'NOT EXISTS ( SELECT 1 FROM premiumSupporterGroupFeatures',
+    )
+  })
+
+  it('assigns a catalogued feature through a guarded, audited admin mutation', async () => {
+    const batchedSql: string[] = []
+    class Statement {
+      constructor(readonly sql: string) {}
+      bind(): Statement {
+        return this
+      }
+      async first<T>(): Promise<T | null> {
+        if (this.sql.startsWith('SELECT id FROM premiumSupporterGroups')) {
+          return { id: 'group-1' } as T
+        }
+        throw new Error(`Unhandled first: ${this.sql}`)
+      }
+    }
+    const db = {
+      prepare: (sql: string) => new Statement(sql.replace(/\s+/g, ' ').trim()),
+      batch: async (statements: Statement[]) => {
+        batchedSql.push(...statements.map((statement) => statement.sql))
+        return statements.map(() => ({ meta: { changes: 1 }, results: [] }))
+      },
+    }
+    const env = { DB: db } as unknown as Env
+    const request = new Request(
+      'https://api.test/api/admin/supporter-groups/group-1/features/lab-access',
+      { method: 'POST' },
+    )
+
+    const response = await handlePremiumBackgroundAdminRequest(
+      request,
+      env,
+      new URL(request.url),
+      adminContext(),
+    )
+
+    expect(response?.status).toBe(200)
+    expect(await response?.json()).toEqual({
+      feature: {
+        assignedAt: expect.any(String),
+        featureId: 'lab-access',
+        revokedAt: null,
+      },
+    })
+    expect(batchedSql[0]).toContain('INSERT INTO premiumSupporterGroupFeatures')
+    expect(batchedSql[0]).toContain('deletedAt IS NULL')
+    expect(batchedSql[1]).toContain('INSERT INTO premiumPerkAudit')
+    expect(batchedSql[1]).toContain('WHERE changes() = 1')
+  })
+
+  it('rejects unknown supporter features before consulting D1', async () => {
+    const touched = () => {
+      throw new Error('An unknown feature touched D1')
+    }
+    const env = { DB: { prepare: touched } } as unknown as Env
+    const request = new Request(
+      'https://api.test/api/admin/supporter-groups/group-1/features/all-access',
+      { method: 'POST' },
+    )
+
+    const response = await handlePremiumBackgroundAdminRequest(
+      request,
+      env,
+      new URL(request.url),
+      adminContext(),
+    )
+
+    expect(response?.status).toBe(404)
+    expect(await response?.json()).toEqual({
+      error: 'Group feature not found',
+    })
   })
 
   it('fails member and perk grants when their group is deleted before the guarded upsert', async () => {

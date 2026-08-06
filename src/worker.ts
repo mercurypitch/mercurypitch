@@ -55,17 +55,16 @@ export interface Env {
   RUNPOD_STEM_PREFIX?: string
 }
 
-// Paths that serve the Voice Mirror entry (mirror.html): the canonical path
-// plus the SEO alias landings. Keep in sync with the dev-server rewrite in
-// vite.config.ts.
-const MIRROR_PATHS = new Set([
-  '/mirror',
-  '/vocal-range-test',
-  '/tone-deaf-test',
-])
+// Voice Mirror and the vocal-range search entry share the same app code but
+// have distinct HTML metadata and visible intent. Static assets normally
+// answer both paths before the Worker; keep this routing correct for requests
+// that do reach it. /tone-deaf-test redirects via public/_redirects because
+// MercuryPitch measures pitch matching but does not diagnose amusia.
+const MIRROR_PATHS = new Set(['/mirror'])
+const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 
 // Paths that serve the Karaoke Night entry (karaoke.html). Keep in sync with
-// vite.config.ts (dev rewrite) and mirrorAliasFilesPlugin (real alias files —
+// vite.config.ts (dev rewrite) and standaloneAliasFilesPlugin (real alias file —
 // Cloudflare's SPA fallback answers browser navigations before this worker,
 // so the emitted karaoke-night.html is what actually serves ad clicks).
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
@@ -306,6 +305,14 @@ export default {
       const mirrorUrl = new URL(request.url)
       mirrorUrl.pathname = '/mirror.html'
       return env.ASSETS.fetch(new Request(mirrorUrl.toString(), request))
+    }
+
+    // Vocal range — same local analysis engine, but a distinct document whose
+    // metadata and first/result H1 answer the range-search intent directly.
+    if (VOCAL_RANGE_PATHS.has(url.pathname) && method === 'GET') {
+      const rangeUrl = new URL(request.url)
+      rangeUrl.pathname = '/vocal-range-test.html'
+      return env.ASSETS.fetch(new Request(rangeUrl.toString(), request))
     }
 
     // Karaoke Night — same standalone-entry treatment as the mirror.

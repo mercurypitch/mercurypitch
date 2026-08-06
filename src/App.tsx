@@ -231,7 +231,6 @@ import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { audioRegistry } from '@/lib/audio-registry'
 import { flushPendingPurchase } from '@/lib/consent'
-import { IS_DEV } from '@/lib/defaults'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash } from '@/lib/hash-router'
@@ -263,7 +262,7 @@ import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, initTheme, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
-import { advancedFeaturesEnabled, getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
+import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
 import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
@@ -1529,10 +1528,9 @@ const AppShell: Component<AppProps> = (props) => {
   // walkthroughActive is tracked, so the guard re-evaluates when it ends.
 
   // Which Lab tool the current route points at, or null when the Lab isn't
-  // showing. The Lab is never in the tab bar — it is reached by hash route,
-  // and only with advanced features on (or in dev).
+  // showing. The Lab is never in the tab bar — it is reached by hash route;
+  // LabPage resolves its server-held supporter access before loading tools.
   const labTab = createMemo<LabTab | null>(() => {
-    if (!advancedFeaturesEnabled() && !IS_DEV) return null
     const tab = activeTab()
     if (tab === TAB_LAB) return 'workbench'
     if (tab === TAB_PITCH_TEST) return 'detection'
@@ -1545,11 +1543,13 @@ const AppShell: Component<AppProps> = (props) => {
     const scope = practiceScope()
     const mode = uiMode()
     if (walkthroughActive()) return
+    if (labTab() !== null) return
     if (isTabVisible(activeTab(), scope, mode)) return
     queueMicrotask(() => {
       const s = untrack(practiceScope)
       const m = untrack(uiMode)
       if (untrack(walkthroughActive)) return
+      if (untrack(labTab) !== null) return
       if (isTabVisible(untrack(activeTab), s, m)) return
       // Drop one-shot intents aimed at the hidden tab.
       setJamRoomToJoin(null)
@@ -2652,7 +2652,6 @@ const AppShell: Component<AppProps> = (props) => {
                   handleTabChange(tab)
                 }}
                 tabLabel={tabLabel}
-                advancedFeaturesEnabled={advancedFeaturesEnabled}
               />
             </Show>
 
@@ -3300,7 +3299,7 @@ const AppShell: Component<AppProps> = (props) => {
               </Show>
 
               {/* Hidden Lab surface — hash route only (#lab / #pitch-test /
-                  #pitch-algo), and only with advanced features or in dev. */}
+                  #pitch-algo); LabPage verifies supporter access. */}
               <Show when={labTab() !== null}>
                 <TabErrorBoundary tabName={tabLabel(TAB_LAB)}>
                   <LabPage initialTab={labTab()!} />

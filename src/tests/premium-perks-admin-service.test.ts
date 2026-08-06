@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { addSupporterGroupMember, loadBackgroundVariantPreview, loadPremiumPerks, normalizeSupporterEmail, revokePremiumBackgroundCapability, uploadBackgroundVariant, } from '@/features/admin/premium-perks-admin-service'
+import { addSupporterGroupMember, assignFeatureToGroup, loadBackgroundVariantPreview, loadPremiumPerks, normalizeSupporterEmail, revokePremiumBackgroundCapability, uploadBackgroundVariant, } from '@/features/admin/premium-perks-admin-service'
 
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'https://api-dev.example.test',
@@ -70,6 +70,18 @@ const rawGroup = {
       revokedAt: null,
     },
   ],
+  features: [
+    {
+      featureId: 'lab-access',
+      assignedAt: now,
+      revokedAt: null,
+    },
+    {
+      featureId: 'unknown-feature',
+      assignedAt: now,
+      revokedAt: null,
+    },
+  ],
 }
 
 const rawCapability = {
@@ -126,6 +138,7 @@ describe('premium perks admin service', () => {
             active: true,
             memberCount: 1,
             backgroundIds: ['golden-stage'],
+            featureIds: ['lab-access'],
           }),
         ],
         capabilities: [rawCapability],
@@ -133,6 +146,14 @@ describe('premium perks admin service', () => {
           kind: 'development',
           label: 'Development · api-dev.example.test',
         },
+        featurePerks: [
+          {
+            id: 'lab-access',
+            label: 'MercuryPitch Lab',
+            description:
+              'Early access to experimental audio tools and development previews.',
+          },
+        ],
       },
     })
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -257,6 +278,34 @@ describe('premium perks admin service', () => {
       'https://api-dev.example.test/api/admin/supporter-groups/group-1/members',
     )
     expect(init?.body).toBe(JSON.stringify({ email: 'singer@example.com' }))
+  })
+
+  it('assigns a catalogued feature and refreshes the group ledger', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ feature: {} }))
+      .mockResolvedValueOnce(jsonResponse({ groups: [rawGroup] }))
+
+    const result = await assignFeatureToGroup(
+      'owner-key',
+      'group-1',
+      'lab-access',
+    )
+
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        featureIds: ['lab-access'],
+        id: 'group-1',
+      }),
+    })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://api-dev.example.test/api/admin/supporter-groups/group-1/features/lab-access',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ 'X-Admin-Key': 'owner-key' }),
+      }),
+    )
   })
 
   it('revokes one room capability and refreshes the owner ledger', async () => {

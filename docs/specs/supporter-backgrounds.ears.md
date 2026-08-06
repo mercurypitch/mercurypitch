@@ -78,6 +78,10 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-SELECT-2** — WHEN a persisted preference is restored, the system shall resolve its access again from current server evidence.
 - **BG-SELECT-3** — IF a selected identifier is unknown, belongs to another surface, is not shipped, or is not currently entitled, THEN the system shall use that surface's shipped free default.
 - **BG-SELECT-4** — IF localStorage is unavailable or malformed, THEN the system shall use the shipped free default without failing the page.
+- **BG-SELECT-5** — WHEN the singer changes Karaoke stage transparency in
+  either the standalone Karaoke Night or the in-app Stem Mixer, the system
+  shall persist one shared bounded preference and apply it to the Karaoke
+  surface glass without changing the selected background.
 
 ## Jam host synchronization seam — `BG-JAM-*`
 

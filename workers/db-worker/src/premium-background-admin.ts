@@ -1,5 +1,5 @@
 // ============================================================
-// Premium Background Studio — immutable assets and supporter groups
+// Premium Perks Studio — immutable assets and supporter groups
 // ============================================================
 //
 // Admins upload bounded WebP bytes to a server-generated immutable R2 key,
@@ -8,6 +8,8 @@
 // ledger in the environment-local main database.
 
 import { getBackgroundDefinition, isBackgroundPerkId, } from '../../../src/lib/backgrounds/background-catalog'
+import type { SupporterFeaturePerkId } from '../../../src/lib/supporter-feature-catalog'
+import { isSupporterFeaturePerkId } from '../../../src/lib/supporter-feature-catalog'
 import type { Env } from './auth'
 import type { PremiumBackgroundId, PremiumBackgroundVariant, } from './premium-background-catalog'
 import { isPremiumBackgroundVariant, PREMIUM_BACKGROUND_VARIANTS, } from './premium-background-catalog'
@@ -83,6 +85,13 @@ interface MemberRow {
 interface GroupPerkRow {
   assignedAt: string
   backgroundId: string
+  groupId: string
+  revokedAt: string | null
+}
+
+interface GroupFeatureRow {
+  assignedAt: string
+  featureId: string
   groupId: string
   revokedAt: string | null
 }
@@ -1133,20 +1142,25 @@ async function listAdminGroups(
   env: Env,
   respond: JsonResponder,
 ): Promise<Response> {
-  const [groupsResult, membersResult, perksResult] = await Promise.all([
-    env.DB.prepare(
-      `SELECT * FROM premiumSupporterGroups
+  const [groupsResult, membersResult, perksResult, featuresResult] =
+    await Promise.all([
+      env.DB.prepare(
+        `SELECT * FROM premiumSupporterGroups
         ORDER BY deletedAt IS NOT NULL, kind, name, id`,
-    ).all<GroupRow>(),
-    env.DB.prepare(
-      `SELECT * FROM premiumSupporterGroupMembers
+      ).all<GroupRow>(),
+      env.DB.prepare(
+        `SELECT * FROM premiumSupporterGroupMembers
         ORDER BY groupId, email`,
-    ).all<MemberRow>(),
-    env.DB.prepare(
-      `SELECT * FROM premiumSupporterGroupPerks
+      ).all<MemberRow>(),
+      env.DB.prepare(
+        `SELECT * FROM premiumSupporterGroupPerks
         ORDER BY groupId, backgroundId`,
-    ).all<GroupPerkRow>(),
-  ])
+      ).all<GroupPerkRow>(),
+      env.DB.prepare(
+        `SELECT * FROM premiumSupporterGroupFeatures
+        ORDER BY groupId, featureId`,
+      ).all<GroupFeatureRow>(),
+    ])
   const membersByGroup = new Map<string, MemberRow[]>()
   for (const member of membersResult.results ?? []) {
     const members = membersByGroup.get(member.groupId) ?? []
@@ -1159,6 +1173,12 @@ async function listAdminGroups(
     perks.push(perk)
     perksByGroup.set(perk.groupId, perks)
   }
+  const featuresByGroup = new Map<string, GroupFeatureRow[]>()
+  for (const feature of featuresResult.results ?? []) {
+    const features = featuresByGroup.get(feature.groupId) ?? []
+    features.push(feature)
+    featuresByGroup.set(feature.groupId, features)
+  }
   return respond({
     groups: (groupsResult.results ?? []).map((group) => ({
       active: group.active === 1,
@@ -1167,6 +1187,11 @@ async function listAdminGroups(
       description: group.description,
       id: group.id,
       kind: group.kind,
+      features: (featuresByGroup.get(group.id) ?? []).map((feature) => ({
+        assignedAt: feature.assignedAt,
+        featureId: feature.featureId,
+        revokedAt: feature.revokedAt,
+      })),
       members: (membersByGroup.get(group.id) ?? []).map((member) => ({
         email: member.email,
         grantedAt: member.grantedAt,
@@ -1249,6 +1274,7 @@ async function createGroup(
       group: {
         ...group,
         active: true,
+        features: [],
         members: [],
         perks: [],
       },
@@ -1373,13 +1399,20 @@ async function deleteGroup(
        (SELECT COUNT(*) FROM premiumSupporterGroupMembers
          WHERE groupId = ?1 AND revokedAt IS NULL) AS activeMembers,
        (SELECT COUNT(*) FROM premiumSupporterGroupPerks
-         WHERE groupId = ?1 AND revokedAt IS NULL) AS activePerks`,
+         WHERE groupId = ?1 AND revokedAt IS NULL) AS activePerks,
+       (SELECT COUNT(*) FROM premiumSupporterGroupFeatures
+         WHERE groupId = ?1 AND revokedAt IS NULL) AS activeFeatures`,
   )
     .bind(groupId)
-    .first<{ activeMembers: number; activePerks: number }>()
+    .first<{
+      activeFeatures: number
+      activeMembers: number
+      activePerks: number
+    }>()
   if (
     (references?.activeMembers ?? 0) > 0 ||
-    (references?.activePerks ?? 0) > 0
+    (references?.activePerks ?? 0) > 0 ||
+    (references?.activeFeatures ?? 0) > 0
   ) {
     return respond(
       { error: 'Revoke active members and perks before deleting this group' },
@@ -1400,6 +1433,10 @@ async function deleteGroup(
           )
           AND NOT EXISTS (
             SELECT 1 FROM premiumSupporterGroupPerks
+             WHERE groupId = ?2 AND revokedAt IS NULL
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM premiumSupporterGroupFeatures
              WHERE groupId = ?2 AND revokedAt IS NULL
           )`,
     ).bind(now, groupId),
@@ -1676,6 +1713,98 @@ async function changeGroupPerk(
     perk: {
       assignedAt: now,
       backgroundId,
+      revokedAt: assign ? null : now,
+    },
+  })
+}
+
+async function changeGroupFeature(
+  groupId: string,
+  featureId: SupporterFeaturePerkId,
+  assign: boolean,
+  actor: PremiumAdminAuditActor,
+  env: Env,
+  respond: JsonResponder,
+): Promise<Response> {
+  const group = await env.DB.prepare(
+    `SELECT id FROM premiumSupporterGroups
+      WHERE id = ?1 AND deletedAt IS NULL LIMIT 1`,
+  )
+    .bind(groupId)
+    .first<{ id: string }>()
+  if (group === null) {
+    return respond({ error: 'Supporter group not found' }, { status: 404 })
+  }
+
+  const now = new Date().toISOString()
+  const statements: D1PreparedStatement[] = []
+  if (assign) {
+    statements.push(
+      env.DB.prepare(
+        `INSERT INTO premiumSupporterGroupFeatures
+          (groupId, featureId, assignedAt, revokedAt)
+         SELECT ?1, ?2, ?3, NULL
+          WHERE EXISTS (
+            SELECT 1 FROM premiumSupporterGroups
+             WHERE id = ?1 AND deletedAt IS NULL
+          )
+         ON CONFLICT(groupId, featureId) DO UPDATE SET
+           assignedAt = excluded.assignedAt,
+           revokedAt = NULL`,
+      ).bind(groupId, featureId, now),
+      premiumAuditAfterMutationStatement(
+        env,
+        actorEvent(
+          actor,
+          'feature.assign',
+          'supporter-group-feature',
+          `${groupId}:${featureId}`,
+          { featureId, groupId },
+        ),
+        now,
+      ),
+    )
+  } else {
+    const current = await env.DB.prepare(
+      `SELECT featureId FROM premiumSupporterGroupFeatures
+        WHERE groupId = ?1 AND featureId = ?2 AND revokedAt IS NULL
+        LIMIT 1`,
+    )
+      .bind(groupId, featureId)
+      .first<{ featureId: string }>()
+    if (current === null) {
+      return respond({ error: 'Group feature not found' }, { status: 404 })
+    }
+    statements.push(
+      env.DB.prepare(
+        `UPDATE premiumSupporterGroupFeatures SET revokedAt = ?1
+          WHERE groupId = ?2 AND featureId = ?3 AND revokedAt IS NULL`,
+      ).bind(now, groupId, featureId),
+      premiumAuditAfterMutationStatement(
+        env,
+        actorEvent(
+          actor,
+          'feature.revoke',
+          'supporter-group-feature',
+          `${groupId}:${featureId}`,
+          { featureId, groupId },
+        ),
+        now,
+      ),
+    )
+  }
+
+  const [changed] = await env.DB.batch(statements)
+  if ((changed?.meta.changes ?? 0) !== 1) {
+    return respond(
+      { error: 'The supporter group changed; reload and try again' },
+      { status: 409 },
+    )
+  }
+  return respond({
+    feature: {
+      assignedAt: now,
+      featureId,
       revokedAt: assign ? null : now,
     },
   })
@@ -2012,6 +2141,33 @@ export async function handlePremiumBackgroundAdminRequest(
         backgroundId,
         request.method === 'POST',
         request,
+        context.auditActor,
+        env,
+        context.respond,
+      )
+    }
+    return context.respond({ error: 'Method not allowed' }, { status: 405 })
+  }
+
+  const groupFeature = url.pathname.match(
+    /^\/api\/admin\/supporter-groups\/([^/]+)\/features\/([^/]+)$/,
+  )
+  if (groupFeature !== null) {
+    const groupId = decodePathComponent(groupFeature[1]!)
+    const rawId = decodePathComponent(groupFeature[2]!)
+    const featureId =
+      rawId !== null && isSupporterFeaturePerkId(rawId) ? rawId : null
+    if (groupId === null || featureId === null) {
+      return context.respond(
+        { error: 'Group feature not found' },
+        { status: 404 },
+      )
+    }
+    if (request.method === 'POST' || request.method === 'DELETE') {
+      return changeGroupFeature(
+        groupId,
+        featureId,
+        request.method === 'POST',
         context.auditActor,
         env,
         context.respond,

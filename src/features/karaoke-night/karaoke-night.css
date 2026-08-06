@@ -29,7 +29,7 @@ body {
      here (app.css never loads on this page), so one alpha variable makes the
      whole stage translucent and the theatre backdrop shine through. The
      topbar slider writes --kn-alpha inline. */
-  --kn-alpha: 0.78;
+  --kn-alpha: 0.45;
   --bg-primary: rgba(13, 17, 23, var(--kn-alpha));
   --bg-secondary: rgba(22, 27, 34, var(--kn-alpha));
   --bg-tertiary: rgba(33, 38, 45, min(1, calc(var(--kn-alpha) + 0.08)));

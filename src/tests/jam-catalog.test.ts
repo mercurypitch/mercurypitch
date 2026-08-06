@@ -4,11 +4,13 @@
 // notes it builds land in the host's range, on the right beats, in the
 // shape MelodyItem actually wants.
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { EXERCISE_LONG_NOTE, EXERCISE_SCALE_RUNNER, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from '@/features/exercises/types'
 import type { PathWeek } from '@/features/path/path-content'
-import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import type { JamSessionRow } from '@/lib/jam/jam-session-songs'
+import type { JamSong } from '@/lib/jam/jam-song'
 import type { MelodyData, MelodyItem } from '@/types'
 
 function entryNamed(octave: number, name: string) {
@@ -138,5 +140,48 @@ describe('jamMelodyEntries', () => {
     const entry = jamMelodyEntries([melody])[0]!
     expect(entry.build()).toBe(melody)
     expect(entry.detail).toBe('120 bpm · G minor')
+  })
+})
+
+describe('jam song catalogue loading boundaries', () => {
+  it('drops an unavailable demo without hiding a playable one', () => {
+    const song: JamSong = {
+      id: 'demo',
+      title: 'Goodbye to Spring',
+      artist: 'Josh Woodward',
+      stems: { instrumental: '/demo/instrumental.mp3' },
+      lines: [],
+      notes: [],
+      durationSec: 246,
+      origin: 'url',
+    }
+
+    const entries = jamSongEntries([null, song])
+    expect(entries).toHaveLength(1)
+    expect(entries[0]?.name).toBe('Goodbye to Spring')
+    expect(entries[0]?.buildSong()).toBe(song)
+  })
+
+  it('lists a separated session without reading its stems until chosen', async () => {
+    const row = {
+      session: {
+        sessionId: 'local-song',
+        status: 'completed',
+        progress: 100,
+        createdAt: 1,
+      },
+      title: 'My rehearsal',
+      durationSec: 0,
+    } as JamSessionRow
+    const hydrate = vi.fn(async () => null)
+
+    const entry = jamSessionRowEntries([row], hydrate)[0]
+    expect(entry?.name).toBe('My rehearsal')
+    expect(entry?.detail).toBe('your separation')
+    expect(hydrate).not.toHaveBeenCalled()
+
+    await expect(entry?.buildSong()).resolves.toBeNull()
+    expect(hydrate).toHaveBeenCalledOnce()
+    expect(hydrate).toHaveBeenCalledWith(row)
   })
 })

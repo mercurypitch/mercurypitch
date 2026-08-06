@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminPremiumPerksPage } from '@/features/admin/AdminPremiumPerksPage'
 import type { AdminPremiumBackground, AdminPremiumCapability, PremiumPerksSnapshot, SupporterGroup, } from '@/features/admin/premium-perks-admin-service'
@@ -18,6 +18,8 @@ const serviceMocks = vi.hoisted(() => ({
   revokeSupporterGroupMember: vi.fn(),
   assignBackgroundToGroup: vi.fn(),
   removeBackgroundFromGroup: vi.fn(),
+  assignFeatureToGroup: vi.fn(),
+  removeFeatureFromGroup: vi.fn(),
   revokePremiumBackgroundCapability: vi.fn(),
 }))
 
@@ -100,6 +102,7 @@ const group = (over: Partial<SupporterGroup> = {}): SupporterGroup => ({
   memberCount: 42,
   members: [],
   backgroundIds: ['golden-stage'],
+  featureIds: ['lab-access'],
   updatedAt: '2026-08-05T10:00:00.000Z',
   ...over,
 })
@@ -129,6 +132,14 @@ function snapshot(
       kind: 'development',
       label: 'Development · api-dev.example.test',
     },
+    featurePerks: [
+      {
+        id: 'lab-access',
+        label: 'MercuryPitch Lab',
+        description:
+          'Early access to experimental audio tools and development previews.',
+      },
+    ],
     ...over,
   }
 }
@@ -198,12 +209,64 @@ describe('AdminPremiumPerksPage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Supporter access' }))
     expect(screen.getAllByText('Active Supporters').length).toBeGreaterThan(0)
     expect(screen.getByText('Automatic group')).toBeInTheDocument()
+    expect(screen.getByText('MercuryPitch Lab')).toBeInTheDocument()
     expect(
       screen.getByText(/billing entitlement is the source of truth/i),
     ).toBeInTheDocument()
     expect(
       screen.queryByLabelText('Supporter account email'),
     ).not.toBeInTheDocument()
+  })
+
+  it('assigns Lab access to a manual supporter group', async () => {
+    const manualGroup = group({
+      id: 'founders',
+      slug: 'founders',
+      name: 'Founders',
+      kind: 'manual',
+      memberCount: 1,
+      members: [
+        {
+          addedAt: '2026-08-05T10:00:00.000Z',
+          email: 'founder@example.com',
+          note: null,
+        },
+      ],
+      backgroundIds: [],
+      featureIds: [],
+    })
+    serviceMocks.loadPremiumPerks.mockResolvedValue({
+      ok: true,
+      value: snapshot({ groups: [manualGroup] }),
+    })
+    serviceMocks.assignFeatureToGroup.mockResolvedValue({
+      ok: true,
+      value: { ...manualGroup, featureIds: ['lab-access'] },
+    })
+    render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
+
+    await screen.findByText('Draft revisions')
+    fireEvent.click(screen.getByRole('tab', { name: 'Supporter access' }))
+    const featureSelect = screen.getByLabelText('Supporter feature')
+    fireEvent.change(featureSelect, { target: { value: 'lab-access' } })
+    fireEvent.click(
+      within(featureSelect.parentElement!).getByRole('button', {
+        name: 'Assign',
+      }),
+    )
+
+    await waitFor(() =>
+      expect(serviceMocks.assignFeatureToGroup).toHaveBeenCalledWith(
+        'owner-key',
+        'founders',
+        'lab-access',
+      ),
+    )
+    expect(
+      await screen.findByText(
+        'Feature access assigned to the supporter group.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('requires explicit confirmation before shipping a complete revision', async () => {
@@ -242,6 +305,7 @@ describe('AdminPremiumPerksPage', () => {
             kind: 'manual',
             memberCount: 0,
             backgroundIds: [],
+            featureIds: [],
           }),
         ],
       }),

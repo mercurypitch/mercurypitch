@@ -18,10 +18,11 @@ import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount,
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { AlertTriangle, CheckCircle, FileUpload, Plus, RotateCcw, Trash2, UserPlus, } from '@/components/icons'
 import type { BackgroundPerkId } from '@/lib/backgrounds/background-catalog'
+import type { SupporterFeaturePerkId } from '@/lib/supporter-feature-catalog'
 import { useConfirm } from '@/lib/use-confirm'
 import styles from './AdminPremiumPerksPage.module.css'
 import type { AdminApiResult, AdminBackgroundVersion, AdminEnvironment, AdminPremiumBackground, AdminPremiumCapability, PremiumBackgroundLifecycle, PremiumBackgroundVariant, PremiumPerksSnapshot, SupporterGroup, SupporterGroupDraft, } from './premium-perks-admin-service'
-import { addSupporterGroupMember, assignBackgroundToGroup, createBackgroundVersion, createSupporterGroup, loadBackgroundVariantPreview, loadPremiumPerks, PREMIUM_BACKGROUND_VARIANTS, publishBackgroundVersion, removeBackgroundFromGroup, removeBackgroundVariant, restoreBackground, retireBackground, revokePremiumBackgroundCapability, revokeSupporterGroupMember, updateSupporterGroup, uploadBackgroundVariant, } from './premium-perks-admin-service'
+import { addSupporterGroupMember, assignBackgroundToGroup, assignFeatureToGroup, createBackgroundVersion, createSupporterGroup, loadBackgroundVariantPreview, loadPremiumPerks, PREMIUM_BACKGROUND_VARIANTS, publishBackgroundVersion, removeBackgroundFromGroup, removeBackgroundVariant, removeFeatureFromGroup, restoreBackground, retireBackground, revokePremiumBackgroundCapability, revokeSupporterGroupMember, updateSupporterGroup, uploadBackgroundVariant, } from './premium-perks-admin-service'
 
 interface AdminPremiumPerksPageProps {
   adminKey: string
@@ -160,6 +161,9 @@ export function AdminPremiumPerksPage(
   const [perkToAssign, setPerkToAssign] = createSignal<BackgroundPerkId | ''>(
     '',
   )
+  const [featureToAssign, setFeatureToAssign] = createSignal<
+    SupporterFeaturePerkId | ''
+  >('')
   const confirm = useConfirm()
   const [passClock, setPassClock] = createSignal(Date.now())
   let previewRequest = 0
@@ -167,6 +171,7 @@ export function AdminPremiumPerksPage(
 
   const backgrounds = createMemo(() => snapshot()?.backgrounds ?? [])
   const groups = createMemo(() => snapshot()?.groups ?? [])
+  const featurePerks = createMemo(() => snapshot()?.featurePerks ?? [])
   const capabilities = createMemo(() => snapshot()?.capabilities ?? [])
   const orderedCapabilities = createMemo(() => {
     const now = passClock()
@@ -236,6 +241,13 @@ export function AdminPremiumPerksPage(
         background.publishedVersion !== null &&
         background.lifecycle !== 'retired' &&
         !group.backgroundIds.includes(background.id),
+    )
+  })
+  const assignableFeatures = createMemo(() => {
+    const group = selectedGroup()
+    if (group === null) return []
+    return featurePerks().filter(
+      (feature) => !group.featureIds.includes(feature.id),
     )
   })
 
@@ -609,6 +621,7 @@ export function AdminPremiumPerksPage(
       setSelectedGroupId(id)
       setMemberEmail('')
       setPerkToAssign('')
+      setFeatureToAssign('')
       closeGroupForm()
     }
     if (!groupFormDirty()) {
@@ -735,6 +748,37 @@ export function AdminPremiumPerksPage(
           () =>
             removeBackgroundFromGroup(props.adminKey, group.id, backgroundId),
           'Background removed from the supporter group.',
+        )
+      },
+    })
+  }
+
+  const assignFeature = async (): Promise<void> => {
+    const group = selectedGroup()
+    const featureId = featureToAssign()
+    if (group === null || featureId === '') return
+    const completed = await runGroupAction(
+      `assign-feature:${featureId}`,
+      () => assignFeatureToGroup(props.adminKey, group.id, featureId),
+      'Feature access assigned to the supporter group.',
+    )
+    if (completed) setFeatureToAssign('')
+  }
+
+  const requestRemoveFeature = (featureId: SupporterFeaturePerkId): void => {
+    const group = selectedGroup()
+    const feature = featurePerks().find((item) => item.id === featureId)
+    if (group === null) return
+    confirm.request({
+      title: `Remove ${feature?.label ?? featureId}?`,
+      message:
+        'Members will lose this feature after their next access refresh unless another active group still grants it.',
+      confirmLabel: 'Remove feature',
+      onConfirm: () => {
+        void runGroupAction(
+          `remove-feature:${featureId}`,
+          () => removeFeatureFromGroup(props.adminKey, group.id, featureId),
+          'Feature access removed from the supporter group.',
         )
       },
     })
@@ -1080,7 +1124,10 @@ export function AdminPremiumPerksPage(
                                   : `Manual · ${group.memberCount} members`}
                               </small>
                             </span>
-                            <b>{group.backgroundIds.length}</b>
+                            <b>
+                              {group.backgroundIds.length +
+                                group.featureIds.length}
+                            </b>
                           </button>
                         )}
                       </For>
@@ -1101,9 +1148,9 @@ export function AdminPremiumPerksPage(
                               <UserPlus />
                               <h3>Create a supporter group</h3>
                               <p>
-                                Manual groups let the owner grant a background
-                                to a specific, normalised list of account
-                                emails.
+                                Manual groups let the owner grant backgrounds
+                                and early-access features to a specific,
+                                normalised list of account emails.
                               </p>
                               <button
                                 type="button"
@@ -1144,6 +1191,92 @@ export function AdminPremiumPerksPage(
                                   </button>
                                 </Show>
                               </div>
+
+                              <section class={styles.accessSection}>
+                                <div class={styles.sectionHeading}>
+                                  <div>
+                                    <h4>Feature access</h4>
+                                    <p>
+                                      Server-authorised app surfaces this group
+                                      can open.
+                                    </p>
+                                  </div>
+                                </div>
+                                <div class={styles.perkList}>
+                                  <For each={group().featureIds}>
+                                    {(featureId) => {
+                                      const feature = () =>
+                                        featurePerks().find(
+                                          (item) => item.id === featureId,
+                                        )
+                                      return (
+                                        <div class={styles.perkRow}>
+                                          <span>
+                                            <strong>
+                                              {feature()?.label ?? featureId}
+                                            </strong>
+                                            <small>
+                                              {feature()?.description ??
+                                                'Unavailable feature'}
+                                            </small>
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              requestRemoveFeature(featureId)
+                                            }
+                                            aria-label={`Remove ${feature()?.label ?? featureId} from ${group().name}`}
+                                          >
+                                            Remove
+                                          </button>
+                                        </div>
+                                      )
+                                    }}
+                                  </For>
+                                  <Show when={group().featureIds.length === 0}>
+                                    <p class={styles.inlineEmpty}>
+                                      No early-access features assigned yet.
+                                    </p>
+                                  </Show>
+                                </div>
+                                <div class={styles.inlineAction}>
+                                  <select
+                                    aria-label="Supporter feature"
+                                    value={featureToAssign()}
+                                    disabled={assignableFeatures().length === 0}
+                                    onChange={(event) =>
+                                      setFeatureToAssign(
+                                        event.currentTarget.value as
+                                          | SupporterFeaturePerkId
+                                          | '',
+                                      )
+                                    }
+                                  >
+                                    <option value="">
+                                      {assignableFeatures().length === 0
+                                        ? 'No unassigned features'
+                                        : 'Choose a feature'}
+                                    </option>
+                                    <For each={assignableFeatures()}>
+                                      {(feature) => (
+                                        <option value={feature.id}>
+                                          {feature.label}
+                                        </option>
+                                      )}
+                                    </For>
+                                  </select>
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      featureToAssign() === '' ||
+                                      busyAction() !== ''
+                                    }
+                                    onClick={() => void assignFeature()}
+                                  >
+                                    Assign
+                                  </button>
+                                </div>
+                              </section>
 
                               <section class={styles.accessSection}>
                                 <div class={styles.sectionHeading}>

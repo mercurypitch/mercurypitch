@@ -1,5 +1,17 @@
 /* Sheet — mobile bottom sheet (skin via --sheet-* props). */
 
+/* The in-place anchor the skin is sampled from. It must occupy no space and
+   paint nothing, but it must stay in the layout tree: `display: none` would
+   still compute inherited custom properties, but reads on a non-rendered
+   element are the kind of thing a browser is free to shortcut, and this is
+   load-bearing for every themed sheet. */
+.anchor {
+  display: block;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
 .backdrop {
   position: fixed;
   inset: 0;

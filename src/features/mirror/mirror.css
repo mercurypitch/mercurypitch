@@ -299,6 +299,16 @@ body {
   padding-top: 24px;
 }
 
+.mirror-range-result {
+  margin: 0 auto 28px;
+}
+
+.mirror-range-note {
+  max-width: 58ch;
+  margin: 14px auto 0;
+  line-height: 1.55;
+}
+
 /* Results layout: card + reveal controls in the hero column, the detail
    "notes" stacked in a slim side rail (desktop) or beneath (mobile) — the
    card keeps its size instead of being squeezed between two flanks. */

@@ -20,6 +20,7 @@ import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
 import { trackKaraoke } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
+import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from './stage-transparency'
 
 // Everything store/db-backed stays out of the first-paint chunk: the rail
 // panels stream in right after mount, the stage host (mixer + playlist
@@ -48,19 +49,7 @@ const KaraokeAccount = lazy(async () => {
   return { default: m.KaraokeAccount }
 })
 
-const ALPHA_KEY = 'pitchperfect_kn_stage_alpha'
 const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
-
-function loadStageAlpha(): number {
-  try {
-    const v = Number(localStorage.getItem(ALPHA_KEY))
-    if (v >= 0.05 && v <= 1) return v
-  } catch {
-    /* localStorage unavailable */
-  }
-  // Middle of the atmospheric range — clearly glassy, still readable.
-  return 0.45
-}
 
 function loadRailCollapsed(): boolean {
   try {
@@ -78,16 +67,11 @@ export function KaraokeNightApp() {
   const [demos, setDemos] = createSignal<DemoSongManifest[]>([])
   const manifest = () => demos()[0] ?? null
   const [activeSong, setActiveSong] = createSignal<KaraokeSong | null>(null)
-  const [stageAlpha, setStageAlpha] = createSignal(loadStageAlpha())
+  const [stageAlpha, setStageAlpha] = createSignal(loadKaraokeStageAlpha())
   const [railCollapsed, setRailCollapsed] = createSignal(loadRailCollapsed())
 
   const updateAlpha = (v: number) => {
-    setStageAlpha(v)
-    try {
-      localStorage.setItem(ALPHA_KEY, String(v))
-    } catch {
-      /* localStorage unavailable */
-    }
+    setStageAlpha(persistKaraokeStageAlpha(v))
   }
 
   const updateRail = (collapsed: boolean) => {
@@ -299,10 +283,11 @@ export function KaraokeNightApp() {
               <input
                 type="range"
                 class="kn-glass-slider"
-                min="0.05"
-                max="1"
-                step="0.02"
+                min={KARAOKE_STAGE_ALPHA.min}
+                max={KARAOKE_STAGE_ALPHA.max}
+                step={KARAOKE_STAGE_ALPHA.step}
                 value={stageAlpha()}
+                aria-label="Stage transparency"
                 onInput={(e) => updateAlpha(Number(e.currentTarget.value))}
               />
             </label>

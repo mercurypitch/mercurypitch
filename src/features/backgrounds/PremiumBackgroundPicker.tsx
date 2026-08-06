@@ -345,7 +345,7 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
                   {lockedCount()} supporter{' '}
                   {lockedCount() === 1 ? 'edition' : 'editions'} in this gallery
                 </span>
-                <a href="/#/settings/account">Explore supporter perks</a>
+                <a href="/#/settings/credits">Explore supporter perks</a>
               </div>
             </Show>
           </div>

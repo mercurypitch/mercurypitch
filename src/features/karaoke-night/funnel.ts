@@ -12,6 +12,7 @@
 
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
+import { getFunnelClientId } from '@/lib/funnel'
 
 export type KaraokeFunnelEvent =
   | 'karaoke_view'
@@ -23,11 +24,17 @@ export type KaraokeFunnelEvent =
   | 'karaoke_song_staged'
   | 'karaoke_playlist_deeplink'
   | 'karaoke_playlist_start'
+  | 'karaoke_mic_granted'
+  | 'karaoke_first_pitch'
+  | 'karaoke_first_score'
+  | 'karaoke_scorecard_view'
   | 'karaoke_cta_studio'
 
-const CLIENT_ID_KEY = 'mirror.clientId.v1' // one anonymous id per device, shared across funnels
 const VIEW_SENT_KEY = 'kn.funnel.viewSent.v1'
 const ONCE_SENT_PREFIX = 'kn.funnel.once.'
+const SESSION_ONCE_SENT_PREFIX = 'kn.funnel.sessionOnce.'
+const deviceOnceMemory = new Set<KaraokeFunnelEvent>()
+const sessionOnceMemory = new Set<KaraokeFunnelEvent>()
 
 /** Milestones that are also Google Ads conversion actions. */
 const AD_CONVERSION_BY_EVENT = new Map<KaraokeFunnelEvent, string>([
@@ -39,19 +46,6 @@ const AD_CONVERSION_BY_EVENT = new Map<KaraokeFunnelEvent, string>([
 ])
 
 const AD_SENT_PREFIX = 'kn.funnel.adSent.'
-
-function clientId(): string {
-  try {
-    let id = localStorage.getItem(CLIENT_ID_KEY)
-    if (id === null || id === '') {
-      id = globalThis.crypto.randomUUID()
-      localStorage.setItem(CLIENT_ID_KEY, id)
-    }
-    return id
-  } catch {
-    return 'no-storage'
-  }
-}
 
 /** karaoke_view counts browser sessions, not renders/reloads. */
 function viewAlreadySentThisSession(): boolean {
@@ -67,7 +61,7 @@ function viewAlreadySentThisSession(): boolean {
 function beacon(event: KaraokeFunnelEvent): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   const url = `${API_BASE_URL}/api/mirror/event`
-  const payload = JSON.stringify({ clientId: clientId(), event })
+  const payload = JSON.stringify({ clientId: getFunnelClientId(), event })
   try {
     // keepalive fetch with credentials omitted, NOT navigator.sendBeacon —
     // sendBeacon is always credentialed and the worker answers CORS with a
@@ -122,6 +116,7 @@ function fireAdConversionOncePerDevice(
 /** Fire an event at most once per device (e.g. the demo-complete conversion —
  *  repeat plays shouldn't stack conversions from one visitor). */
 export function trackKaraokeOnce(event: KaraokeFunnelEvent): void {
+  if (deviceOnceMemory.has(event)) return
   try {
     const key = ONCE_SENT_PREFIX + event
     if (localStorage.getItem(key) === '1') return
@@ -129,5 +124,25 @@ export function trackKaraokeOnce(event: KaraokeFunnelEvent): void {
   } catch {
     // no storage — fall through and send (better a rare double than none)
   }
+  deviceOnceMemory.add(event)
+  trackKaraoke(event)
+}
+
+/**
+ * Fire an activation milestone once per browser session. The denominator is
+ * `karaoke_view`, which is also session-scoped: using a lifetime guard here
+ * would make returning sessions look like views that never activate.
+ */
+export function trackKaraokeSessionOnce(event: KaraokeFunnelEvent): void {
+  if (sessionOnceMemory.has(event)) return
+  try {
+    const key = SESSION_ONCE_SENT_PREFIX + event
+    if (sessionStorage.getItem(key) === '1') return
+    sessionStorage.setItem(key, '1')
+  } catch {
+    // In-memory fallback still prevents repeated RAF/render emissions during
+    // this page lifetime when sessionStorage is unavailable.
+  }
+  sessionOnceMemory.add(event)
   trackKaraoke(event)
 }

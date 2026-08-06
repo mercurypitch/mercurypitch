@@ -20,7 +20,7 @@ import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
 import type { FreeSingResult } from '@/lib/mirror/free-sing'
 import { computeFreeSing } from '@/lib/mirror/free-sing'
-import type { F0Frame, MirrorResult, NoteTakeResult, } from '@/lib/mirror/metrics'
+import type { F0Frame, MirrorResult, NoteTakeResult, RangeResult, } from '@/lib/mirror/metrics'
 import { summarize } from '@/lib/mirror/metrics'
 import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
@@ -32,6 +32,7 @@ import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { CardFormat } from './card-renderer'
 import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
 import { CosmicMode } from './CosmicMode'
+import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
 import { IconCopy, IconGalaxy, IconRocket, IconShare, IconSpark, IconStats, IconTrace, } from './icons'
@@ -100,7 +101,11 @@ const TASK_COPY: Record<string, TaskCopy> = {
   },
 }
 
-export const MirrorApp: Component = () => {
+interface MirrorAppProps {
+  entryIntent: MirrorEntryIntent
+}
+
+export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const [session, setSession] = createSignal<MirrorSessionState>(
     initialSessionState(),
   )
@@ -937,7 +942,8 @@ export const MirrorApp: Component = () => {
           !howtoOpen()
         }
       >
-        <Landing
+        <MirrorLanding
+          entryIntent={props.entryIntent}
           onStart={(selected) => {
             // First guided run detours through the animated overview; the
             // "Let's go" tap there becomes the mic-acquiring gesture.
@@ -1227,6 +1233,7 @@ export const MirrorApp: Component = () => {
         }
       >
         <Results
+          entryIntent={props.entryIntent}
           result={session().result as MirrorResult}
           deltaLine={deltaLine()}
           shareStatus={shareStatus()}
@@ -1267,44 +1274,67 @@ export const MirrorApp: Component = () => {
   )
 }
 
-const Landing: Component<{
+export interface MirrorLandingProps {
+  entryIntent: MirrorEntryIntent
   onStart: (mode: 'guided' | 'free') => void
   onHowItWorks: () => void
-}> = (props) => (
-  <section class="mirror-panel mirror-landing">
-    <p class="mirror-wordmark">MercuryPitch</p>
-    <h1>See your voice. 60 seconds.</h1>
-    <p>
-      Sing three short tasks and get your vocal range, pitch accuracy and
-      steadiness — rendered as a voiceprint you can share.
-    </p>
-    <div class="mirror-actions">
-      <button class="mirror-cta" onClick={() => props.onStart('guided')}>
-        Start singing
-      </button>
-      <button
-        class="mirror-cta mirror-cta-secondary"
-        onClick={() => props.onStart('free')}
+}
+
+export function MirrorLanding(props: MirrorLandingProps) {
+  const isVocalRange = (): boolean => props.entryIntent === 'vocal-range'
+
+  return (
+    <section class="mirror-panel mirror-landing">
+      <p class="mirror-wordmark">MercuryPitch</p>
+      <Show
+        when={isVocalRange()}
+        fallback={
+          <>
+            <h1>See your voice. 60 seconds.</h1>
+            <p>
+              Sing three short tasks and get your vocal range, pitch accuracy
+              and steadiness — rendered as a voiceprint you can share.
+            </p>
+          </>
+        }
       >
-        Just sing · 40 s
+        <h1>Find your vocal range.</h1>
+        <p>
+          Glide from your lowest comfortable note to your highest. Your result
+          leads with both notes, your span in semitones and a broad voice-type
+          guide; two short follow-ups add accuracy and steadiness.
+        </p>
+      </Show>
+      <div class="mirror-actions">
+        <button class="mirror-cta" onClick={() => props.onStart('guided')}>
+          {isVocalRange() ? 'Test my vocal range' : 'Start singing'}
+        </button>
+        <Show when={!isVocalRange()}>
+          <button
+            class="mirror-cta mirror-cta-secondary"
+            onClick={() => props.onStart('free')}
+          >
+            Just sing · 40 s
+          </button>
+        </Show>
+      </div>
+      <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
+        {isVocalRange() ? 'How the test works' : 'How it works'}
       </button>
-    </div>
-    <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
-      How it works
-    </button>
-    <p class="mirror-trust">
-      Your audio never leaves this device — we analyze it right here in your
-      browser.
-    </p>
-    <p class="mirror-crosslink">
-      Or{' '}
-      <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
-        break glass with your voice
-      </a>
-      .
-    </p>
-  </section>
-)
+      <p class="mirror-trust">
+        Your audio never leaves this device — we analyze it right here in your
+        browser.
+      </p>
+      <p class="mirror-crosslink">
+        Or{' '}
+        <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
+          break glass with your voice
+        </a>
+        .
+      </p>
+    </section>
+  )
+}
 
 const FreeResults: Component<{
   result: FreeSingResult | null
@@ -1427,6 +1457,7 @@ const BAND_LABEL: Record<NoteTakeResult['band'], string> = {
 }
 
 const Results: Component<{
+  entryIntent: MirrorEntryIntent
   result: MirrorResult
   deltaLine: string | null
   shareStatus: string | null
@@ -1481,6 +1512,10 @@ const Results: Component<{
     <section class="mirror-panel mirror-results">
       <Show when={props.deltaLine}>
         <p class="mirror-delta">{props.deltaLine}</p>
+      </Show>
+
+      <Show when={props.entryIntent === 'vocal-range' && range() !== null}>
+        <VocalRangeResultSummary range={range() as RangeResult} />
       </Show>
 
       {/* The voiceprint card centered, with the detail "notes" flanking it
@@ -1670,5 +1705,34 @@ const Results: Component<{
         Saved on this device only — come back any time to see your delta.
       </p>
     </section>
+  )
+}
+
+export interface VocalRangeResultSummaryProps {
+  range: RangeResult
+}
+
+/** Semantic, range-first result for visitors who entered through the range
+ *  test. The voiceprint remains the visual hero; this gives the measured
+ *  answer and its limitations a truthful DOM representation before it. */
+export function VocalRangeResultSummary(props: VocalRangeResultSummaryProps) {
+  return (
+    <div class="mirror-range-result">
+      <p class="mirror-progress">Vocal range result</p>
+      <h1 class="mirror-hero">
+        Your vocal range: {props.range.lowNote}–{props.range.highNote}
+      </h1>
+      <p class="mirror-chip">
+        {props.range.semitones} semitones
+        <Show when={props.range.voiceHint !== null}>
+          {' '}
+          · closest overlap: {props.range.voiceHint}
+        </Show>
+      </p>
+      <p class="mirror-dim mirror-range-note">
+        The voice-type overlap is a broad guide, not a verdict; comfortable
+        tessitura and tone matter too. Accuracy and steadiness follow below.
+      </p>
+    </div>
   )
 }

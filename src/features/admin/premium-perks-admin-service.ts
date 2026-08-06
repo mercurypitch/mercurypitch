@@ -10,6 +10,8 @@
 import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { API_BASE_URL, DEV_DOMAIN, PROD_DOMAIN } from '@/lib/defaults'
+import type { SupporterFeaturePerk, SupporterFeaturePerkId, } from '@/lib/supporter-feature-catalog'
+import { isSupporterFeaturePerkId, SUPPORTER_FEATURE_PERKS, } from '@/lib/supporter-feature-catalog'
 
 export const PREMIUM_BACKGROUND_VARIANTS = [
   'landscape-2k',
@@ -78,6 +80,7 @@ export interface SupporterGroup {
   memberCount: number
   members: SupporterGroupMember[]
   backgroundIds: BackgroundPerkId[]
+  featureIds: SupporterFeaturePerkId[]
   updatedAt: string
 }
 
@@ -97,6 +100,7 @@ export interface PremiumPerksSnapshot {
   groups: SupporterGroup[]
   capabilities: AdminPremiumCapability[]
   environment: AdminEnvironment
+  featurePerks: readonly SupporterFeaturePerk[]
 }
 
 export interface SupporterGroupDraft {
@@ -162,6 +166,11 @@ interface GroupResponse {
   }>
   perks: Array<{
     backgroundId: BackgroundPerkId
+    assignedAt: string
+    revokedAt: string | null
+  }>
+  features?: Array<{
+    featureId: string
     assignedAt: string
     revokedAt: string | null
   }>
@@ -297,6 +306,13 @@ function normalizeGroup(row: GroupResponse): SupporterGroup {
     backgroundIds: row.perks
       .filter((perk) => perk.revokedAt === null)
       .map((perk) => perk.backgroundId),
+    featureIds: (row.features ?? [])
+      .filter(
+        (feature) =>
+          feature.revokedAt === null &&
+          isSupporterFeaturePerkId(feature.featureId),
+      )
+      .map((feature) => feature.featureId as SupporterFeaturePerkId),
     updatedAt: row.updatedAt,
   }
 }
@@ -382,6 +398,7 @@ export async function loadPremiumPerks(
       groups,
       capabilities: capabilitiesResult.value,
       environment: inferEnvironment(),
+      featurePerks: SUPPORTER_FEATURE_PERKS,
     },
   }
 }
@@ -649,6 +666,32 @@ export async function removeBackgroundFromGroup(
 ): Promise<AdminApiResult<SupporterGroup>> {
   const result = await request<{ perk: object }>(
     `/api/admin/supporter-groups/${encode(groupId)}/perks/${encode(backgroundId)}`,
+    adminKey,
+    { method: 'DELETE' },
+  )
+  return result.ok ? refreshedGroup(adminKey, groupId) : result
+}
+
+export async function assignFeatureToGroup(
+  adminKey: string,
+  groupId: string,
+  featureId: SupporterFeaturePerkId,
+): Promise<AdminApiResult<SupporterGroup>> {
+  const result = await request<{ feature: object }>(
+    `/api/admin/supporter-groups/${encode(groupId)}/features/${encode(featureId)}`,
+    adminKey,
+    { method: 'POST' },
+  )
+  return result.ok ? refreshedGroup(adminKey, groupId) : result
+}
+
+export async function removeFeatureFromGroup(
+  adminKey: string,
+  groupId: string,
+  featureId: SupporterFeaturePerkId,
+): Promise<AdminApiResult<SupporterGroup>> {
+  const result = await request<{ feature: object }>(
+    `/api/admin/supporter-groups/${encode(groupId)}/features/${encode(featureId)}`,
     adminKey,
     { method: 'DELETE' },
   )
