@@ -102,7 +102,7 @@ pnpm install
 pnpm dev
 ```
 
-MercuryPitch opens at `http://localhost:3000`.
+MercuryPitch opens at `https://localhost:3000`.
 
 ---
 
