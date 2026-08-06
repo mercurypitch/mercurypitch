@@ -20,19 +20,20 @@ try {
   })
     .toString()
     .trim()
-} catch (e) {
+} catch {
   // Fallback to environment variables if git command fails (common in CI/CD like Deno Deploy)
-  const envSha =
-    process.env.VITE_COMMIT_SHA ||
-    process.env.GITHUB_SHA ||
-    process.env.COMMIT_SHA ||
-    process.env.GIT_SHA ||
-    process.env.DENO_DEPLOYMENT_ID ||
-    process.env.DENO_DEPLOY_BUILD_ID ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    process.env.CF_PAGES_COMMIT_SHA
+  const envSha = [
+    process.env.VITE_COMMIT_SHA,
+    process.env.GITHUB_SHA,
+    process.env.COMMIT_SHA,
+    process.env.GIT_SHA,
+    process.env.DENO_DEPLOYMENT_ID,
+    process.env.DENO_DEPLOY_BUILD_ID,
+    process.env.VERCEL_GIT_COMMIT_SHA,
+    process.env.CF_PAGES_COMMIT_SHA,
+  ].find((value): value is string => value !== undefined && value !== '')
 
-  if (envSha) {
+  if (envSha !== undefined) {
     commitSha = envSha.substring(0, 7)
   }
 }
@@ -84,8 +85,7 @@ function standaloneEntryRewritePlugin() {
           return
         }
         if (MIRROR_PATHS.has(path)) req.url = '/mirror.html'
-        else if (VOCAL_RANGE_PATHS.has(path))
-          req.url = '/vocal-range-test.html'
+        else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -189,17 +189,17 @@ export default defineConfig(({ mode }) => {
         },
         '/api/uvr': {
           // 127.0.0.1, not localhost: node resolves localhost to ::1 first,
-        // and the docker container only publishes on IPv4 — the proxy
-        // would hang on the unreachable IPv6 socket.
-        target: `http://127.0.0.1:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
+          // and the docker container only publishes on IPv4 — the proxy
+          // would hang on the unreachable IPv6 socket.
+          target: `http://127.0.0.1:${Number(process.env.VITE_UVR_PROXY_PORT) || 8000}`,
           changeOrigin: true,
           // The FastAPI container serves /process at its root — strip the
-        // prefix. The Cloudflare worker (wrangler dev; VITE_UVR_WORKER=1)
-        // serves the full /api/uvr/* paths — keep it, so the real
-        // auth/metering/RunPod chain can be exercised locally.
-        ...(process.env.VITE_UVR_WORKER === '1'
-          ? {}
-          : { rewrite: (path) => path.replace(/^\/api\/uvr/, '') }),
+          // prefix. The Cloudflare worker (wrangler dev; VITE_UVR_WORKER=1)
+          // serves the full /api/uvr/* paths — keep it, so the real
+          // auth/metering/RunPod chain can be exercised locally.
+          ...(process.env.VITE_UVR_WORKER === '1'
+            ? {}
+            : { rewrite: (path) => path.replace(/^\/api\/uvr/, '') }),
         },
         // Proxy the large model to bypass CORS during development
         '/models/UVR-MDX-NET-Inst_HQ_3.onnx': {
@@ -341,7 +341,6 @@ export default defineConfig(({ mode }) => {
     css: {
       transformer: 'lightningcss',
       lightningcss: {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         drafts: { nesting: true } as Record<string, unknown>,
       },
       modules: {
