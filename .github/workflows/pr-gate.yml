@@ -1,0 +1,235 @@
+name: PR Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: PR Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # This check has no dependency-install requirement and catches the most
+      # common generated-doc failure before the runner does expensive work.
+      - name: Check generated agent index
+        run: node scripts/gen-agent-index.mjs --check
+
+      - name: Resolve validation scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          root=false
+          beside=false
+          db=false
+          jam=false
+          diff_base=""
+
+          # A release tag and a manual audit validate every shipped surface.
+          # For an unusable/missing base SHA, fail safely by doing the same.
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$REF_NAME" == refs/tags/v* ]]; then
+            root=true
+            beside=true
+            db=true
+            jam=true
+          else
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              base_sha="$PR_BASE_SHA"
+            else
+              base_sha="$PUSH_BASE_SHA"
+            fi
+
+            if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]] || ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+              root=true
+              beside=true
+              db=true
+              jam=true
+            else
+              diff_base="$base_sha"
+              git diff --check "$base_sha" "$GITHUB_SHA"
+
+              while IFS= read -r file; do
+                [[ -z "$file" ]] && continue
+
+                case "$file" in
+                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|eslint.config.js|.prettierrc.json|.github/workflows/*.yml|.github/workflows/*.yaml)
+                    root=true
+                    beside=true
+                    db=true
+                    jam=true
+                    ;;
+                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
+                    beside=true
+                    ;;
+                  workers/db-worker/*)
+                    db=true
+                    ;;
+                  workers/jam-worker/*)
+                    jam=true
+                    ;;
+                  docs/*|*.md|.github/*.md|.github/workflows/*.md|.claude/*|.impeccable/*)
+                    # Documentation-only changes still run the generated-index
+                    # check above, but do not require a dependency install.
+                    ;;
+                  *)
+                    root=true
+                    ;;
+                esac
+              done < <(git diff --name-only "$base_sha" "$GITHUB_SHA")
+            fi
+          fi
+
+          install=false
+          if [[ "$root" == true || "$beside" == true || "$db" == true || "$jam" == true ]]; then
+            install=true
+          fi
+
+          {
+            echo "root=$root"
+            echo "beside=$beside"
+            echo "db=$db"
+            echo "jam=$jam"
+            echo "install=$install"
+            echo "diff_base=$diff_base"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Validation scope"
+            echo ""
+            echo "| Surface | Run |"
+            echo "| --- | --- |"
+            echo "| MercuryPitch | $root |"
+            echo "| Beside Cue | $beside |"
+            echo "| DB Worker | $db |"
+            echo "| Jam Worker | $jam |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up pnpm
+        if: steps.scope.outputs.install == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Set up Node.js
+        if: steps.scope.outputs.install == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.scope.outputs.install == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate changed files without mutation
+        if: steps.scope.outputs.install == 'true' && steps.scope.outputs.diff_base != ''
+        env:
+          PR_PREPARE_BASE: ${{ steps.scope.outputs.diff_base }}
+        run: pnpm run pr:validate
+
+      - name: Test PR preparation helper
+        if: steps.scope.outputs.root == 'true'
+        run: pnpm run pr:prepare:test
+
+      # This is check:ci without its already-completed docs:index:check step.
+      # All commands are non-mutating; CI, rather than a local hook, is the
+      # authoritative formatting, lint, and typecheck gate.
+      - name: Check MercuryPitch syntax and formatting
+        if: steps.scope.outputs.root == 'true'
+        run: pnpm run typecheck && pnpm run lint && pnpm run fmt
+
+      - name: Test MercuryPitch units
+        if: steps.scope.outputs.root == 'true'
+        run: pnpm run test:run
+
+      - name: Build MercuryPitch for browser tests
+        if: steps.scope.outputs.root == 'true'
+        run: pnpm run build:e2e
+
+      - name: Install Chromium
+        if: steps.scope.outputs.root == 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test MercuryPitch smoke paths
+        if: steps.scope.outputs.root == 'true' && github.event_name == 'pull_request'
+        run: pnpm run test:e2e --grep @smoke
+
+      - name: Test all MercuryPitch browser paths
+        if: steps.scope.outputs.root == 'true' && github.event_name != 'pull_request'
+        run: pnpm run test:e2e
+
+      - name: Typecheck DB Worker
+        if: steps.scope.outputs.db == 'true'
+        run: pnpm run typecheck:db
+
+      - name: Typecheck Jam Worker
+        if: steps.scope.outputs.jam == 'true'
+        run: pnpm run typecheck:jam
+
+      - name: Check Beside Cue
+        if: steps.scope.outputs.beside == 'true'
+        run: pnpm beside-cue:check
+
+      - name: Test Beside Cue
+        if: steps.scope.outputs.beside == 'true'
+        run: pnpm beside-cue:test
+
+      - name: Build Beside Cue
+        if: steps.scope.outputs.beside == 'true'
+        # beside-cue:check already typechecks every package, including the app.
+        # Invoke Vite directly so the single app build does not repeat tsc.
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+
+      - name: Validate Gradle wrapper
+        if: steps.scope.outputs.beside == 'true'
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Java
+        if: steps.scope.outputs.beside == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        if: steps.scope.outputs.beside == 'true'
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        if: steps.scope.outputs.beside == 'true'
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Synchronize Beside Cue Android project
+        if: steps.scope.outputs.beside == 'true'
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
+
+      - name: Test, lint, and package Beside Cue Android
+        if: steps.scope.outputs.beside == 'true'
+        working-directory: apps/beside-cue/android
+        run: ./gradlew test lint assembleDebug :app:assembleDebugAndroidTest bundleRelease --no-daemon

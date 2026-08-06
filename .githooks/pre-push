@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+# pre-push receives local/remote ref pairs on stdin. Unlike pre-receive, it is
+# a client-side hook, so this guard actually runs from core.hooksPath.
+while read -r _local_ref _local_oid remote_ref _remote_oid; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "[pre-push] Direct pushes to main are prohibited."
+    echo "[pre-push] Push a feature branch and open a PR targeting main."
+    exit 1
+  fi
+done

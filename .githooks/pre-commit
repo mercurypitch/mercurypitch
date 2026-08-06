@@ -1,22 +1,9 @@
-#!/bin/bash
+#!/bin/sh
+set -eu
 
-# Auto-format staged source files with Prettier before commit
-STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|css|js|json)$' | grep '^src/')
-
-if [ -n "$STAGED_TS" ]; then
-  echo "[pre-commit] Running Prettier..."
-  echo "$STAGED_TS" | xargs npx prettier --write --no-error-on-unmatched-pattern
-  echo "$STAGED_TS" | xargs git add
+# Keep commits cheap. Formatting, linting, generated docs, and typechecking run
+# once per work item before the PR; CI is the authoritative full gate.
+if ! git diff --cached --check; then
+  echo "[pre-commit] Staged changes contain whitespace errors."
+  exit 1
 fi
-
-# Lint staged TypeScript files
-STAGED_LINT=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' | grep '^src/' 2>/dev/null || true)
-
-if [ -n "$STAGED_LINT" ]; then
-  echo "[pre-commit] Running ESLint..."
-  echo "$STAGED_LINT" | xargs npx eslint --fix --max-warnings=0
-  echo "$STAGED_LINT" | xargs git add
-  echo "[pre-commit] Lint OK"
-fi
-
-exit 0

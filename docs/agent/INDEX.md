@@ -396,11 +396,15 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm lines` | `cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'` |
 | `pnpm docs:index` | `node scripts/gen-agent-index.mjs` |
 | `pnpm docs:index:check` | `node scripts/gen-agent-index.mjs --check` |
+| `pnpm pr:prepare` | `node scripts/pr-prepare.mjs` |
+| `pnpm pr:validate` | `node scripts/pr-prepare.mjs --check` |
+| `pnpm pr:prepare:test` | `node --test scripts/pr-prepare.test.mjs` |
 | `pnpm assets:legends` | `node scripts/gen-legend-tiers.mjs` |
 | `pnpm assets:legends:check` | `node scripts/gen-legend-tiers.mjs --check` |
 | `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
+| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
 | `pnpm deploy:dev` | `pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |
 | `pnpm deploy:jam:dev` | `cd workers/jam-worker && pnpm exec wrangler deploy --env dev` |

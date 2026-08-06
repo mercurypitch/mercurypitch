@@ -104,6 +104,33 @@ pnpm dev
 
 MercuryPitch opens at `https://localhost:3000`.
 
+## Contributing without heavy local gates
+
+Install the repository's lightweight Git hooks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The commit hook only checks staged whitespace, and the push hook blocks direct
+pushes to `main`. Neither runs a formatter, linter, typechecker, or test suite.
+
+During a work item, run tests focused on the code being changed. Once, before
+the first PR push, prepare the complete branch diff and run its relevant
+typecheck:
+
+```bash
+pnpm pr:prepare
+pnpm typecheck
+```
+
+Use `pnpm beside-cue:typecheck`, `pnpm typecheck:db`, or
+`pnpm typecheck:jam` when one of those workspaces is the change's scope. CI is
+the authoritative full gate after the PR opens, so later commits should run
+only the command needed for the change or a reported failure. See
+[AGENTS.md](AGENTS.md) for the complete check matrix and
+[docs/claude/CLAUDE.md](docs/claude/CLAUDE.md) for hook details.
+
 ---
 
 <p align="center">
