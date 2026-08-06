@@ -1507,11 +1507,16 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
   },
+  // Everything from here on lives on a board view, and the page opens on
+  // League — where the metric tabs, the search box, the podium and the table
+  // are all unrendered. Without `navigate` these four steps spotlighted
+  // nothing at all for anyone who had not already switched tabs by hand.
   {
     title: 'Rank by metric',
     description:
       'Sort the board by overall score, best score, accuracy or sessions — and by streak when you are viewing friends.',
     targetSelector: '.category-tabs',
+    navigate: ['[data-testid="global-tab"]'],
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
   },
@@ -1520,6 +1525,7 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'Search players by name to jump straight to their row on the board.',
     targetSelector: '.search-container',
+    navigate: ['[data-testid="global-tab"]'],
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
   },
@@ -1527,6 +1533,7 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Top of the board',
     description: 'The current top three singers for the selected metric.',
     targetSelector: '.podium-section',
+    navigate: ['[data-testid="global-tab"]'],
     placement: 'bottom',
     requiredTab: TAB_LEADERBOARD,
   },
@@ -1535,6 +1542,7 @@ const LEADERBOARD_TOUR_STEPS: WalkthroughStep[] = [
     description:
       'The complete table — find your row and see what it takes to climb. Tap any player to open their profile and follow them.',
     targetSelector: '.leaderboard-table',
+    navigate: ['[data-testid="global-tab"]'],
     placement: 'top',
     requiredTab: TAB_LEADERBOARD,
   },
@@ -1552,7 +1560,7 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Keep your streak',
     description:
-      'Practise ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free.',
+      'Practise ~5 minutes to keep your streak. Earn freezes that cover a missed day automatically, and if life happens you can repair a broken streak once — free. This week’s drills, average score and best streak read out on the same card.',
     targetSelector: '.home-streak-card',
     placement: 'bottom',
     requiredTab: TAB_HOME,
@@ -1581,14 +1589,11 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'top',
     requiredTab: TAB_HOME,
   },
-  {
-    title: 'Your week at a glance',
-    description:
-      'A quick read on your recent drills, average score and best streak — your progress, growing over time.',
-    targetSelector: '.home-progress',
-    placement: 'top',
-    requiredTab: TAB_HOME,
-  },
+  // No separate "week at a glance" step any more: `.home-progress` was its own
+  // card until this week's numbers were folded into the streak card, and the
+  // step then spotlighted a selector that matches nothing. A third stop on
+  // `.home-streak-card` would only repeat the two above it, so the sentence
+  // moved into "Keep your streak" instead.
   {
     title: 'Choose your next room',
     description:
