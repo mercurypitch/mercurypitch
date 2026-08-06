@@ -463,6 +463,43 @@ sessionRecords(weeklyChallengeId)` throws where the column is absent,
 
 ### Fixed
 
+- **Session export/import was rebuilt around a validating codec**
+  (`src/db/services/session-archive-codec.ts`, `session-export-service.ts`,
+  merged to main as `4e307666` + `023ffbc0`). The bug it closes:
+  `prepareSessionFilesForZip` looped a hardcoded `['vocal', 'instrumental']`,
+  so a `bandSplit` session exported without drums, bass, guitar, piano or
+  other — nothing threw, the cards were simply absent after a re-import.
+  The replacement is broader than the fix: `SessionExportStemType` is
+  `Exclude<UvrStemType, 'original'>` so 'original' cannot be written as a stem
+  by construction; `listSessionExportStems` reads IndexedDB in a deterministic
+  order because part stems are never copied into `outputs`;
+  `isSessionExportStem` gates every name arriving from an untrusted archive;
+  `sanitizeArchiveEntryName` strips traversal and control characters from ZIP
+  entry names; and a session with no restorable core stem is refused rather
+  than exported empty. Stem selection is per session, so a batch of classic
+  and full-band sessions intersects instead of failing whole.
+
+  NOTE for this branch: an independent narrower fix for the same defect was
+  written here first (`listStemTypes` + an import allowlist, four tests) and
+  was DROPPED during the rebase rather than merged — every one of its
+  assertions is covered by the main-side tests, and keeping both would have
+  meant two implementations of one rule. Recorded because the branch history
+  shows the commit and its absence should not read as an oversight.
+
+- **New migrations 0018 and 0019** (`premium_background_studio`,
+  `supporter_feature_perks`) take the chain from 17 files to 20 (0016 is used
+  twice — `demo_song` and `user_suspension` — which is fine, wrangler orders
+  lexicographically, but it means file count and migration number no longer
+  agree). Both land on `DB`; `PERKS_DB` is untouched by them. The prod
+  reconcile verification recorded earlier in this release was done against the
+  17-file chain and must be re-run before tagging.
+
+- **New R2 binding `PREMIUM_BACKGROUNDS_BUCKET`** in
+  `workers/db-worker/wrangler.jsonc` for all three environments; prod points at
+  `mercurypitch-premium-backgrounds-prod`. A deploy against a bucket that does
+  not exist fails at bind time, so its existence is a pre-tag check, not a
+  post-tag discovery.
+
 - **`STARTING_FREEZES` was never granted to a real account**
   (`src/db/services/streak-service.ts`): `streakFieldsOf` spelled the grant
   `p?.streakFreezes ?? STARTING_FREEZES`, but `userProfiles.streakFreezes` is
