@@ -103,7 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   up to `STARTING_FREEZES` is deliberately NOT in the migration:
   `scripts/grant-starting-freezes.sql` is run by hand from the release
   checklist, because a migration CI applies would hand out currency
-  unreviewed against prod at tag time.
+  unreviewed against prod at tag time. (Superseded later in this release —
+  `accrueFreezes` grants the opening balance itself, so the script is marked
+  do-not-run and is off the checklist.)
 
 - **Editable Karaoke Night demo song** (`workers/db-worker/migrations/0016_demo_song.sql`,
   `workers/db-worker/src/demo-song.ts`, `src/features/admin/AdminDemoSongPage.tsx`,
@@ -461,6 +463,31 @@ sessionRecords(weeklyChallengeId)` throws where the column is absent,
 
 ### Fixed
 
+- **`STARTING_FREEZES` was never granted to a real account**
+  (`src/db/services/streak-service.ts`): `streakFieldsOf` spelled the grant
+  `p?.streakFreezes ?? STARTING_FREEZES`, but `userProfiles.streakFreezes` is
+  `INTEGER NOT NULL DEFAULT 0` — every stored profile therefore holds a
+  literal `0`, and `0 ?? 2` is `0`. The default only ever fired for
+  `streakFieldsOf(undefined)`, which is exactly the case the unit test
+  asserted, so the test passed while no account on dev or prod had ever
+  received a freeze. The grant moved into `accrueFreezes`' null-anchor branch,
+  where it is a one-time opening balance: it fires only when
+  `lastFreezeEarnedDate` is unset (so it cannot repeat), is skipped when
+  `lastFreezeUsedDate` is set (so it cannot re-gift to someone who already
+  spent theirs), and uses `Math.max` (so it cannot claw back a larger balance
+  earned by accrual). `streakFieldsOf` now mirrors the column default with
+  `?? 0`. Four tests cover the four cases; the base fixture is anchored at a
+  date so the opening balance is not silently seeded into every other test.
+  Existing accounts self-heal on next read, which makes
+  `scripts/grant-starting-freezes.sql` redundant.
+- **Freeze pips were unreadable** (`src/pages/HomePage.tsx`, `.module.css`):
+  held and unheld differed by colour alone (`--accent` vs `--border`), so
+  three empty sockets read as three banked freezes — the owner reported the
+  honest "no freezes left" warning as the bug because of it. The count is now
+  stated numerically, a held freeze is a lit disc (white plus a glow, with the
+  accent substituted under `[data-theme='light']` where white would vanish),
+  and an unheld one is a dashed empty socket. Shape carries the reading;
+  colour reinforces it.
 - **Circular chunk `vendor -> pitch-core -> vendor`** (`vite.config.ts`):
   `manualChunks` had no rule for Vite's own virtual modules, so
   `vite/preload-helper` — the module that defines `__vitePreload`, and

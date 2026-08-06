@@ -223,6 +223,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Nobody ever received their two starting streak freezes.** The grant only
+  applied to an account with no saved profile at all, so every real account
+  sat at zero from day one and the card kept warning that a missed day would
+  end the streak. Existing accounts pick their two up the next time they open
+  the app.
+- **The streak card no longer looks like it holds freezes it doesn't.** Three
+  grey snowflakes were three _empty_ slots, which read as three banked ones.
+  The number is now stated outright, a held freeze is a lit disc, and an empty
+  one is a dashed socket.
 - **Four achievements could never be won.** Their conditions could not be met
   by any amount of singing, so they sat locked forever. They are winnable now.
 - **The Ascent opens on the week you are on,** not the one above it, and its
