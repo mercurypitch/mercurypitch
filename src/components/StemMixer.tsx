@@ -438,6 +438,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     'sm-karaoke-playlist-sidebar',
     false,
   )
+  // Mount lazily on first use, then retain the drawer so closing/reopening it
+  // keeps the per-song stem inventories and editor state already loaded.
+  // Destroying it on every close re-ran every IndexedDB role query.
+  const [playlistSidebarMounted, setPlaylistSidebarMounted] = createSignal(
+    playlistSidebarOpen(),
+  )
   // Zen-mode autoplay: when on, the next library song plays automatically at
   // end-of-song. Playlists run their own advance flow (scoring/summary), so
   // this governs free-library listening. Persisted as a per-user preference.
@@ -2103,6 +2109,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   const opening = !playlistSidebarOpen()
                   if (opening) {
                     closePitchTools()
+                    setPlaylistSidebarMounted(true)
                   }
                   setPlaylistSidebarOpen(opening)
                 }}
@@ -2615,8 +2622,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         </Show>
 
         {/* ── Karaoke playlist ─────────────────────────────────── */}
-        <Show when={playlistSidebarOpen()}>
-          <div class="sm-left-rail-wrap">
+        <Show when={playlistSidebarMounted()}>
+          <div class="sm-left-rail-wrap" hidden={!playlistSidebarOpen()}>
             <KaraokePlaylistSidebar
               songs={libraryDrawerSongs()}
               currentSessionId={props.sessionId}
@@ -2961,6 +2968,9 @@ export const StemMixerStyles: string = `
   bottom: 0;
   z-index: 30;
   animation: sm-left-rail-in 0.18s ease-out;
+}
+.sm-left-rail-wrap[hidden] {
+  display: none;
 }
 @keyframes sm-left-rail-in {
   from {
@@ -3591,15 +3601,18 @@ export const StemMixerStyles: string = `
   gap: 0.4rem 0.65rem;
   flex: 1 1 14rem;
   min-width: 0;
+  /* A range thumb is wider than its 4px track and extends past the input's
+     endpoint. Reserve half a thumb at the card edge so 100% remains visible. */
+  padding-inline-end: 7px;
 }
 
 /* Fills whatever width the controls row gives it. */
 .sm-strips-compact .sm-volume-slider {
   writing-mode: horizontal-tb;
   direction: ltr;
-  flex: 1 1 7rem;
+  flex: 1 1 5rem;
   width: auto;
-  min-width: 7rem;
+  min-width: 3rem;
   height: 4px;
 }
 

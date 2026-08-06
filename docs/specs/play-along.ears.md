@@ -20,3 +20,5 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **PLAY-ALONG-5** — WHEN an isolated-instrument role launches, the system shall load Vocal and every available isolated part, omit the original Instrumental mix, mute only the selected instrument initially, and begin playback.
 - **PLAY-ALONG-6** — The system shall include the residual Other stem in reconstructed backing but shall not expose Other as a performer role.
 - **PLAY-ALONG-7** — IF a requested role's muted stem is unavailable when loading completes, THEN the system shall not open a misleading partial mix and shall report that the mix is unavailable.
+- **PLAY-ALONG-8** — WHILE a requested song or role is hydrating stored stems, the system shall keep the current surface intact, block conflicting interaction, and show labelled preparation progress with an explicit cancel action.
+- **PLAY-ALONG-9** — IF preparation is cancelled or superseded by a newer request, THEN the system shall not commit the stale mix and shall release any object URLs it created.

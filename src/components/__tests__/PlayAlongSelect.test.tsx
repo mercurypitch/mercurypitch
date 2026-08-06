@@ -1,6 +1,7 @@
 // PlayAlongSelect — async role-discovery regression tests.
 
 import { cleanup, render, screen, waitFor } from '@solidjs/testing-library'
+import { Suspense } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PlayAlongSelect } from '../PlayAlongSelect'
 
@@ -16,6 +17,26 @@ afterEach(() => {
 })
 
 describe('PlayAlongSelect', () => {
+  it('keeps its host visible while stored roles are discovered', () => {
+    listStemTypes.mockReturnValue(new Promise<string[]>(() => {}))
+
+    render(() => (
+      <Suspense fallback={<p>Replacing the mixer…</p>}>
+        <p>Current mixer stays mounted</p>
+        <PlayAlongSelect
+          sessionId="slow-full-band-song"
+          availableStems={['vocal', 'instrumental']}
+          discoverStoredStems
+          onSelect={vi.fn()}
+        />
+      </Suspense>
+    ))
+
+    expect(screen.getByText('Current mixer stays mounted')).toBeVisible()
+    expect(screen.queryByText('Replacing the mixer…')).toBeNull()
+    expect(screen.getByRole('combobox')).toBeDisabled()
+  })
+
   it('waits for stored parts before exposing the final role menu', async () => {
     let finishDiscovery: ((stems: string[]) => void) | undefined
     listStemTypes.mockReturnValue(

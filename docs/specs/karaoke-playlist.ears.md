@@ -62,6 +62,7 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **DRAWER-2** — WHILE the song library is visible, the system shall identify the currently mixed song and allow another locally stored song to open and begin playing directly.
 - **DRAWER-3** — WHERE a song has a supported play-along role, the system shall allow that role to launch directly from its library row.
 - **DRAWER-4** — WHILE the Playlists tab is visible, the system shall preserve playlist creation, editing, deletion, and launch behavior.
+- **DRAWER-5** — WHEN the Stem Mixer song drawer is closed and reopened without leaving the mixer, the system shall retain its hydrated song-role inventory and shall not replace the active mixer with an asynchronous loading fallback.
 
 ## Export / import round-trip — `IMPORT-*`
 
