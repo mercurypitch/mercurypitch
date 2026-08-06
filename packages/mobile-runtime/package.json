@@ -25,6 +25,10 @@
     "./capacitor/local-notifications": {
       "types": "./src/capacitor/local-notifications.ts",
       "import": "./src/capacitor/local-notifications.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts"
     }
   },
   "scripts": {

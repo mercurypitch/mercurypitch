@@ -4,7 +4,6 @@
 
 import { CapacitorException, ExceptionCode } from '@capacitor/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { notificationId } from '../contracts'
 import { createCapacitorLocalNotificationsPort } from './local-notifications'
 
@@ -25,7 +24,7 @@ vi.mock('@capacitor/local-notifications', () => ({
 
 describe('Capacitor local notifications', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('maps recurring daily wall-clock schedules to Capacitor calendar matching', async () => {
@@ -56,6 +55,20 @@ describe('Capacitor local notifications', () => {
         },
       ],
     })
+  })
+
+  it('maps permission checks and requests without prompting implicitly', async () => {
+    localNotifications.checkPermissions.mockResolvedValueOnce({
+      display: 'prompt',
+    })
+    localNotifications.requestPermissions.mockResolvedValueOnce({
+      display: 'granted',
+    })
+    const port = createCapacitorLocalNotificationsPort()
+
+    await expect(port.checkPermission()).resolves.toBe('prompt')
+    expect(localNotifications.requestPermissions).not.toHaveBeenCalled()
+    await expect(port.requestPermission()).resolves.toBe('granted')
   })
 
   it('preserves one-shot dates without sharing their mutable Date object', async () => {
@@ -104,5 +117,109 @@ describe('Capacitor local notifications', () => {
     await expect(
       port.createChannel({ id: 'gentle-cues', name: 'Gentle cues' }),
     ).rejects.toBe(failure)
+  })
+
+  it('cancels selected notifications and treats an empty selection as a no-op', async () => {
+    const port = createCapacitorLocalNotificationsPort()
+
+    await port.cancel([])
+    expect(localNotifications.cancel).not.toHaveBeenCalled()
+
+    await port.cancel([notificationId(12), notificationId(13)])
+    expect(localNotifications.cancel).toHaveBeenCalledWith({
+      notifications: [{ id: 12 }, { id: 13 }],
+    })
+  })
+
+  it('removes only selected delivered notifications', async () => {
+    const first = { id: 21, title: 'First', body: 'First body' }
+    const second = { id: 22, title: 'Second', body: 'Second body' }
+    localNotifications.getDeliveredNotifications.mockResolvedValueOnce({
+      notifications: [first, second],
+    })
+    const port = createCapacitorLocalNotificationsPort()
+
+    await port.removeDelivered([notificationId(22)])
+
+    expect(
+      localNotifications.removeDeliveredNotifications,
+    ).toHaveBeenCalledWith({ notifications: [second] })
+  })
+
+  it('does not query delivered notifications for an empty selection', async () => {
+    const port = createCapacitorLocalNotificationsPort()
+
+    await port.removeDelivered([])
+
+    expect(localNotifications.getDeliveredNotifications).not.toHaveBeenCalled()
+  })
+
+  it('forwards native actions and delegates listener removal', async () => {
+    interface PerformedAction {
+      readonly notification: { readonly id: number; readonly extra?: unknown }
+      readonly actionId: string
+      readonly inputValue?: string
+    }
+
+    let nativeListener: ((action: PerformedAction) => void) | undefined
+    const remove = vi.fn(async () => undefined)
+    localNotifications.addListener.mockImplementationOnce(
+      async (_event: string, listener: (action: PerformedAction) => void) => {
+        nativeListener = listener
+        return { remove }
+      },
+    )
+    const listener = vi.fn()
+    const port = createCapacitorLocalNotificationsPort()
+    const handle = await port.addActionListener(listener)
+
+    nativeListener?.({
+      notification: { id: 31, extra: { route: '/cue/31' } },
+      actionId: 'open',
+      inputValue: 'answer',
+    })
+
+    expect(listener).toHaveBeenCalledWith({
+      notificationId: 31,
+      actionId: 'open',
+      inputValue: 'answer',
+      extra: { route: '/cue/31' },
+    })
+    await handle.remove()
+    expect(remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports synchronous and asynchronous action-listener failures', async () => {
+    interface PerformedAction {
+      readonly notification: { readonly id: number }
+      readonly actionId: string
+    }
+
+    const nativeListeners: Array<(action: PerformedAction) => void> = []
+    localNotifications.addListener.mockImplementation(
+      async (_event: string, listener: (action: PerformedAction) => void) => {
+        nativeListeners.push(listener)
+        return { remove: vi.fn(async () => undefined) }
+      },
+    )
+    const synchronousFailure = new Error('Synchronous listener failure')
+    const asynchronousFailure = new Error('Asynchronous listener failure')
+    const onListenerError = vi.fn()
+    const port = createCapacitorLocalNotificationsPort({ onListenerError })
+
+    await port.addActionListener(() => {
+      throw synchronousFailure
+    })
+    await port.addActionListener(async () => {
+      throw asynchronousFailure
+    })
+
+    for (const listener of nativeListeners) {
+      listener({ notification: { id: 32 }, actionId: 'open' })
+    }
+    await Promise.resolve()
+
+    expect(onListenerError).toHaveBeenCalledWith(synchronousFailure)
+    expect(onListenerError).toHaveBeenCalledWith(asynchronousFailure)
   })
 })

@@ -214,6 +214,9 @@ importers:
       eslint:
         specifier: 9.39.1
         version: 9.39.1
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       jsdom:
         specifier: ^25.0.1
         version: 25.0.1

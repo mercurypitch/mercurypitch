@@ -10,6 +10,11 @@ export interface ResettableBesideCueRepository extends BesideCueRepository {
   clear(): Promise<void>
 }
 
+export interface IndexedDbBesideCueRepositoryOptions {
+  readonly databaseFactory?: IDBFactory
+  readonly databaseName?: string
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -32,9 +37,12 @@ function decodeState(value: unknown): BesideCueStateV1 {
   return state
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+function openDatabase(
+  databaseFactory: IDBFactory,
+  databaseName: string,
+): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION)
+    const request = databaseFactory.open(databaseName, DATABASE_VERSION)
 
     request.addEventListener('upgradeneeded', () => {
       const database = request.result
@@ -73,7 +81,11 @@ function readRequest(request: IDBRequest<unknown>): Promise<unknown> {
   })
 }
 
-export function createIndexedDbBesideCueRepository(): ResettableBesideCueRepository {
+export function createIndexedDbBesideCueRepository(
+  options: IndexedDbBesideCueRepositoryOptions = {},
+): ResettableBesideCueRepository {
+  const databaseFactory = options.databaseFactory ?? window.indexedDB
+  const databaseName = options.databaseName ?? DATABASE_NAME
   let mutationQueue: Promise<void> = Promise.resolve()
 
   function enqueueMutation(mutation: () => Promise<void>): Promise<void> {
@@ -85,7 +97,7 @@ export function createIndexedDbBesideCueRepository(): ResettableBesideCueReposit
   return {
     async loadState() {
       await mutationQueue
-      const database = await openDatabase()
+      const database = await openDatabase(databaseFactory, databaseName)
       try {
         const transaction = database.transaction(SNAPSHOT_STORE, 'readonly')
         const value = await readRequest(
@@ -100,7 +112,7 @@ export function createIndexedDbBesideCueRepository(): ResettableBesideCueReposit
 
     saveState(state) {
       return enqueueMutation(async () => {
-        const database = await openDatabase()
+        const database = await openDatabase(databaseFactory, databaseName)
         try {
           const transaction = database.transaction(SNAPSHOT_STORE, 'readwrite')
           transaction.objectStore(SNAPSHOT_STORE).put(state, SNAPSHOT_KEY)
@@ -113,7 +125,7 @@ export function createIndexedDbBesideCueRepository(): ResettableBesideCueReposit
 
     clear() {
       return enqueueMutation(async () => {
-        const database = await openDatabase()
+        const database = await openDatabase(databaseFactory, databaseName)
         try {
           const transaction = database.transaction(SNAPSHOT_STORE, 'readwrite')
           transaction.objectStore(SNAPSHOT_STORE).delete(SNAPSHOT_KEY)
