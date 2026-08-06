@@ -14,6 +14,7 @@ interface MixerE2EStore {
 }
 
 const SESSION_ID = 'e2e-stem-mix-controls'
+const NEXT_SESSION_ID = 'e2e-stem-mix-drawer-target'
 const EXTRA_STEMS = [
   { key: 'drums', label: 'Drums' },
   { key: 'piano', label: 'Piano' },
@@ -36,7 +37,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__pp?.appStore !== undefined)
 
   await page.evaluate(
-    async ({ audioUrl, extraStems, sessionId }) => {
+    async ({ audioUrl, extraStems, nextSessionId, sessionId }) => {
       const store = window.__pp?.appStore as unknown as MixerE2EStore
       await store.initSessionStore()
       if (store.getUvrSession(sessionId) === undefined) {
@@ -51,6 +52,20 @@ test.beforeEach(async ({ page }) => {
           },
           outputs: { vocal: audioUrl, instrumental: audioUrl },
           createdAt: Date.now(),
+        })
+      }
+      if (store.getUvrSession(nextSessionId) === undefined) {
+        await store.importUvrSessionDurable({
+          sessionId: nextSessionId,
+          status: 'completed',
+          progress: 100,
+          originalFile: {
+            name: 'Drawer navigation target.wav',
+            size: 1,
+            mimeType: 'audio/wav',
+          },
+          outputs: { vocal: audioUrl, instrumental: audioUrl },
+          createdAt: Date.now() - 1_000,
         })
       }
 
@@ -98,7 +113,12 @@ test.beforeEach(async ({ page }) => {
       db.close()
       localStorage.setItem('pitchperfect_mixer_strip_view', 'compact')
     },
-    { audioUrl: toneDataUrl, extraStems: EXTRA_STEMS, sessionId: SESSION_ID },
+    {
+      audioUrl: toneDataUrl,
+      extraStems: EXTRA_STEMS,
+      nextSessionId: NEXT_SESSION_ID,
+      sessionId: SESSION_ID,
+    },
   )
 
   await page.goto(`/#/karaoke/session/${SESSION_ID}/mixer`)
@@ -156,6 +176,55 @@ test('preserves solo isolation and mute through a real fader drag @smoke', async
   await vocalSolo.click()
   await expect(vocal).toHaveAttribute('data-audible', 'false')
   await expect(instrumental).toHaveAttribute('data-audible', 'true')
+})
+
+test('switches songs directly from the Songs drawer @smoke', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Songs' }).click()
+  await expect(
+    page.getByRole('complementary', { name: 'Songs and playlists' }),
+  ).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Songs/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+
+  await page.getByRole('button', { name: /Drawer navigation target/ }).click()
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Drawer navigation target (session)',
+    }),
+  ).toBeVisible()
+})
+
+test('launches a full-band guitar role without doubling the backing @smoke', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Songs' }).click()
+  const role = page.getByRole('combobox', {
+    name: 'Choose what you perform in Stem control regression',
+  })
+  await expect(role).toBeEnabled()
+  await expect(role.locator('option[value="guitar"]')).toHaveText(
+    'I play guitar',
+  )
+
+  await role.selectOption('guitar')
+
+  const guitar = page.getByRole('group', { name: 'Guitar stem controls' })
+  await expect(guitar).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Mute Guitar' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(guitar).toHaveAttribute('data-audible', 'false')
+  await expect(
+    page.getByRole('group', { name: 'Instrumental stem controls' }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('group', { name: 'Drums stem controls' }),
+  ).toHaveAttribute('data-audible', 'true')
 })
 
 test('keeps seven-stem compact and expanded decks readable while scrolling @smoke', async ({

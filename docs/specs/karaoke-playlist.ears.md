@@ -56,6 +56,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **XPORT-14** — The system shall expose the current song and the next song from the queue at the current index.
 - **XPORT-15** — IF the active playlist is deleted, THEN the system shall stop playback.
 
+## Mixer song drawer — `DRAWER-*`
+
+- **DRAWER-1** — WHEN the Stem Mixer song drawer opens, the system shall show the local song library by default and retain playlist management in a separate Playlists tab.
+- **DRAWER-2** — WHILE the song library is visible, the system shall identify the currently mixed song and allow another locally stored song to open and begin playing directly.
+- **DRAWER-3** — WHERE a song has a supported play-along role, the system shall allow that role to launch directly from its library row.
+- **DRAWER-4** — WHILE the Playlists tab is visible, the system shall preserve playlist creation, editing, deletion, and launch behavior.
+
 ## Export / import round-trip — `IMPORT-*`
 
 Verified in `src/tests/karaoke-playlist-import.test.ts`.

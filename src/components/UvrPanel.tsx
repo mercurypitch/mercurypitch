@@ -14,6 +14,7 @@ import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
 import { ensureSessionHydrated, useKaraokePlaylistRunner, } from '@/features/stem-mixer/karaoke-playlist-runner'
+import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { offerTourOnce } from '@/features/tours/offerTourOnce'
 import { formatFileSize } from '@/lib/audio-accept'
 import { computeFileHash } from '@/lib/file-hash'
@@ -565,6 +566,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     number | undefined
   >(undefined)
   const [mixerAutoPlay, setMixerAutoPlay] = createSignal(false)
+  const [mixerInitialMutedStems, setMixerInitialMutedStems] = createSignal<
+    readonly PlayAlongStemKey[]
+  >([])
+  let mixerSelectionToken = 0
 
   // Computed session state
   const session = () => currentUvrSession()
@@ -724,6 +729,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // correct stems are in place — so the mixer never reuses a previous
   // (already-ended) instance or loads stale stems.
   useKaraokePlaylistRunner((hydrated) => {
+    mixerSelectionToken++
     batch(() => {
       setCurrentUvrSession(hydrated)
       setPrevView('results')
@@ -737,6 +743,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       setMixerSessionId(hydrated.sessionId)
       setMixerInitialSeekSec(undefined)
       setMixerAutoPlay(false)
+      setMixerInitialMutedStems([])
       setCurrentView('mixer')
       // Bump last so the remount happens with everything already in place.
       setMixerLoadToken((t) => t + 1)
@@ -1556,6 +1563,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         })
         setMixerExtraStems([])
         setMixerRequestedStems({ vocal: true, instrumental: true })
+        setMixerInitialMutedStems([])
       }
 
       console.log('[UvrPanel] setCurrentView:', targetView)
@@ -1566,15 +1574,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const handlePracticeStart = async (
     mode: 'vocal' | 'instrumental' | 'midi' | 'full',
   ) => {
+    const token = ++mixerSelectionToken
     const current = currentUvrSession()
     if (!current?.outputs && !current?.stemMeta) return
     const s = await ensureHydrated(current)
+    if (token !== mixerSelectionToken) return
 
     setCurrentUvrSession(s)
     setPrevView(currentView())
     setMixerPracticeMode(mode)
     setMixerSessionId(s.sessionId)
     setMixerExtraStems([])
+    setMixerInitialMutedStems([])
 
     // Set stems and requestedStems based on mode
     if (mode === 'vocal') {
@@ -1602,66 +1613,156 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
-  const handleMixStart = async (selectedStems: string[]) => {
-    const current = currentUvrSession()
-    if (!current?.outputs && !current?.stemMeta) return
-    const s = await ensureHydrated(current)
+  const openMixerWithStems = async (
+    sessionId: string,
+    selectedStems: readonly string[],
+    options: {
+      mutedStems?: readonly PlayAlongStemKey[]
+      autoPlay?: boolean
+    } = {},
+  ): Promise<void> => {
+    const token = ++mixerSelectionToken
+    const raw = getUvrSession(sessionId)
+    if (!raw?.outputs && !raw?.stemMeta) {
+      showNotification(
+        'That song is no longer available on this device.',
+        'warning',
+      )
+      return
+    }
+    const s = await ensureHydrated(raw)
+    if (token !== mixerSelectionToken) return
 
-    setCurrentUvrSession(s)
-    setPrevView(currentView())
-    setMixerSessionId(s.sessionId)
-
+    const selected = new Set(selectedStems)
     const stemUrls: { vocal?: string; instrumental?: string } = {}
     const requested: {
       vocal?: boolean
       instrumental?: boolean
       midi?: boolean
     } = {}
-    const extras: ExtraStemInput[] = []
-
-    for (const key of selectedStems) {
-      if (key === 'vocal') {
-        stemUrls.vocal = s.outputs?.vocal
-        requested.vocal = true
-      } else if (key === 'instrumental') {
-        stemUrls.instrumental = s.outputs?.instrumental
-        requested.instrumental = true
-      } else if (key === 'vocalMidi') {
-        // MIDI needs the vocal audio to generate from
-        stemUrls.vocal = s.outputs?.vocal
-        requested.midi = true
-      } else if (key in PART_STEM_DISPLAY) {
-        // Instrument part (drums/bass/guitar/…) — hydrate from IndexedDB.
-        // Any combination is legal, including parts alongside the full
-        // instrumental they came from.
-        const part = key as StemSplitPart
-        const url = await getStemBlobUrl(s.sessionId, part)
-        if (url !== null) {
-          extras.push({
-            key: part,
-            label: PART_STEM_DISPLAY[part].label,
-            color: PART_STEM_DISPLAY[part].color,
-            url,
-          })
-        }
-      }
+    if (selected.has('vocal') && (s.outputs?.vocal ?? '') !== '') {
+      stemUrls.vocal = s.outputs?.vocal
+      requested.vocal = true
+    }
+    if (
+      selected.has('instrumental') &&
+      (s.outputs?.instrumental ?? '') !== ''
+    ) {
+      stemUrls.instrumental = s.outputs?.instrumental
+      requested.instrumental = true
+    }
+    if (selected.has('vocalMidi') && (s.outputs?.vocal ?? '') !== '') {
+      stemUrls.vocal = s.outputs?.vocal
+      requested.midi = true
     }
 
-    setMixerStems(stemUrls)
-    setMixerExtraStems(extras)
-    setMixerRequestedStems(requested)
-    setMixerPracticeMode('full')
-    setMixerMixToken((t) => t + 1)
-    setCurrentView('mixer')
+    const partKeys = [...selected].filter(
+      (key): key is StemSplitPart => key in PART_STEM_DISPLAY,
+    )
+    const loadedParts = await Promise.all(
+      partKeys.map(async (part) => ({
+        part,
+        url: await getStemBlobUrl(s.sessionId, part),
+      })),
+    )
+    if (token !== mixerSelectionToken) {
+      for (const entry of loadedParts) {
+        if (entry.url?.startsWith('blob:') === true) {
+          URL.revokeObjectURL(entry.url)
+        }
+      }
+      return
+    }
+    const extras: ExtraStemInput[] = loadedParts.flatMap(({ part, url }) =>
+      url === null
+        ? []
+        : [
+            {
+              key: part,
+              label: PART_STEM_DISPLAY[part].label,
+              color: PART_STEM_DISPLAY[part].color,
+              url,
+            },
+          ],
+    )
+
+    const loadedKeys = new Set<string>([
+      ...(stemUrls.vocal !== undefined ? ['vocal'] : []),
+      ...(stemUrls.instrumental !== undefined ? ['instrumental'] : []),
+      ...extras.map((extra) => extra.key),
+    ])
+    const mutedStems = options.mutedStems ?? []
+    if (
+      loadedKeys.size === 0 ||
+      mutedStems.some((key) => !loadedKeys.has(key))
+    ) {
+      for (const extra of extras) {
+        if (extra.url.startsWith('blob:')) URL.revokeObjectURL(extra.url)
+      }
+      showNotification(
+        'That play-along mix is missing a stem on this device.',
+        'warning',
+      )
+      return
+    }
+
+    batch(() => {
+      setCurrentUvrSession(s)
+      if (currentView() !== 'mixer') setPrevView(currentView())
+      setMixerSessionId(s.sessionId)
+      setMixerStems(stemUrls)
+      setMixerExtraStems(extras)
+      setMixerRequestedStems(requested)
+      setMixerPracticeMode('full')
+      setMixerInitialMutedStems([...mutedStems])
+      setMixerInitialSeekSec(undefined)
+      setMixerAutoPlay(options.autoPlay === true)
+      setMixerMixToken((value) => value + 1)
+      setCurrentView('mixer')
+    })
+  }
+
+  const handleMixStart = async (selectedStems: string[]) => {
+    const current = currentUvrSession()
+    if (current === null) return
+    await openMixerWithStems(current.sessionId, selectedStems)
+  }
+
+  const handlePlayAlongStart = async (
+    sessionId: string,
+    preset: PlayAlongPreset,
+  ): Promise<void> => {
+    await openMixerWithStems(sessionId, preset.selectedStemKeys, {
+      mutedStems: preset.mutedStemKeys,
+      autoPlay: true,
+    })
+  }
+
+  const handleMixerSongPick = async (sessionId: string): Promise<void> => {
+    const target = getUvrSession(sessionId)
+    if (target === undefined) return
+    const selected: PlayAlongStemKey[] = [
+      ...(target.outputs?.vocal !== undefined ||
+      target.stemMeta?.vocal !== undefined
+        ? (['vocal'] as const)
+        : []),
+      ...(target.outputs?.instrumental !== undefined ||
+      target.stemMeta?.instrumental !== undefined
+        ? (['instrumental'] as const)
+        : []),
+    ]
+    await openMixerWithStems(sessionId, selected, { autoPlay: true })
   }
 
   const handleOpenMixerFromHistory = async (
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
+    const token = ++mixerSelectionToken
     const raw = getUvrSession(sessionId)
     if (!raw?.outputs && !raw?.stemMeta) return
     const s = await ensureHydrated(raw)
+    if (token !== mixerSelectionToken) return
     if (!s.outputs) return
     setCurrentUvrSession(s)
 
@@ -1692,6 +1793,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       instrumental: wantsInst ? s.outputs.instrumental : undefined,
     })
     setMixerExtraStems([])
+    setMixerInitialMutedStems([])
     setMixerRequestedStems(
       Object.keys(filter).length > 0
         ? { vocal: wantsVocal, instrumental: wantsInst, midi: wantsMidi }
@@ -2267,6 +2369,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)
                         }}
+                        onPlayAlong={(sessionId, preset) => {
+                          void handlePlayAlongStart(sessionId, preset)
+                        }}
                         onRetry={(sessionId) => {
                           const s = getUvrSession(sessionId)
                           // Still in flight (e.g. mid auto-resume) → re-attach for
@@ -2443,6 +2548,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     onStartMix={(stems) => {
                       void handleMixStart(stems)
                     }}
+                    onStartPlayAlong={(preset) => {
+                      void handlePlayAlongStart(sess().sessionId, preset)
+                    }}
                     onExport={(type) => {
                       void handleExport(type)
                     }}
@@ -2482,6 +2590,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   }
                   practiceMode={mixerPracticeMode()}
                   requestedStems={mixerRequestedStems()}
+                  initialMutedStems={mixerInitialMutedStems()}
                   initialSeekSec={mixerInitialSeekSec()}
                   autoPlay={mixerAutoPlay()}
                   karaokeReferenceVocal={isPlaylistActive()}
@@ -2496,7 +2605,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                       startTour(STEM_MIXER_TOUR_STEPS)
                     }
                   }}
+                  onPickSession={(sessionId) => {
+                    void handleMixerSongPick(sessionId)
+                  }}
+                  onPlayAlong={(sessionId, preset) => {
+                    void handlePlayAlongStart(sessionId, preset)
+                  }}
                   onBack={() => {
+                    mixerSelectionToken++
                     setMixerAutoPlay(false)
                     setMixerInitialSeekSec(undefined)
                     setCurrentView(prevView())

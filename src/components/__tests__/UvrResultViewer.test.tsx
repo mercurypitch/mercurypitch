@@ -301,6 +301,31 @@ describe('UvrResultViewer Component', () => {
 
       expect(defaultProps.onStartPractice).toHaveBeenCalledWith('full')
     })
+
+    it('starts a role-based backing mix from the play-along picker', () => {
+      const onStartPlayAlong = vi.fn()
+      render(() => (
+        <UvrResultViewer
+          {...defaultProps}
+          onStartPlayAlong={onStartPlayAlong}
+        />
+      ))
+
+      fireEvent.change(
+        screen.getByRole('combobox', {
+          name: 'Choose what you perform in this song',
+        }),
+        { target: { value: 'sing' } },
+      )
+
+      expect(onStartPlayAlong).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'sing',
+          selectedStemKeys: ['vocal', 'instrumental'],
+          mutedStemKeys: ['vocal'],
+        }),
+      )
+    })
   })
 
   describe('Close Handler', () => {

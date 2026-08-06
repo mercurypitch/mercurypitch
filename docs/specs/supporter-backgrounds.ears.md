@@ -82,6 +82,9 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   either the standalone Karaoke Night or the in-app Stem Mixer, the system
   shall persist one shared bounded preference and apply it to the Karaoke
   surface glass without changing the selected background.
+- **BG-SELECT-6** — WHILE the standalone Karaoke Night shell owns the stage
+  controls, its embedded Stem Mixer shall suppress its own stage picker and
+  transparency control so the stage has one control surface.
 
 ## Jam host synchronization seam — `BG-JAM-*`
 

@@ -179,6 +179,16 @@ describe('KaraokeMobileStage background integration', () => {
       screen.getByRole('button', { name: 'Choose karaoke stage background' }),
     ).toBeInTheDocument()
   })
+
+  it('hides its picker when the page shell owns stage settings', () => {
+    render(() => KaraokeMobileStage(makeProps({ showStageSettings: false })))
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'Choose karaoke stage background',
+      }),
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('KaraokeMobileStage rest countdown', () => {

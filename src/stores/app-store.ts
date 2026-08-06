@@ -1312,8 +1312,9 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_KARAOKE,
   },
   {
-    title: 'Karaoke playlist',
-    description: 'Queue up a set of songs to sing back-to-back, party style.',
+    title: 'Songs and playlists',
+    description:
+      'Switch straight to another processed song, choose a play-along role, or build a set to sing back-to-back.',
     targetSelector: '[data-tour="mixer.playlist"]',
     placement: 'bottom',
     requiredTab: TAB_KARAOKE,

@@ -4008,6 +4008,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   padding: 0.75rem 0.85rem;
   background: linear-gradient(
     135deg,
@@ -4027,6 +4029,9 @@
 .rv-full-mix-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
