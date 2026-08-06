@@ -129,6 +129,8 @@ export interface KaraokeMobileStageProps {
 
   /** Stage another library song from the in-stage song sheet. */
   onPickSession?: (sessionId: string) => void
+  /** Hide the embedded picker when the page shell owns stage settings. */
+  showStageSettings?: boolean
 
   // Sing-this-note glyphs (chord-chart labels over the words). When the host
   // provides the alignment, the header shows the notes toggle; enabling it
@@ -457,11 +459,13 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           </Show>
         </div>
         <div class={styles.headerActions}>
-          <PremiumBackgroundPicker
-            controller={background}
-            label="Stage"
-            iconOnly
-          />
+          <Show when={props.showStageSettings !== false}>
+            <PremiumBackgroundPicker
+              controller={background}
+              label="Stage"
+              iconOnly
+            />
+          </Show>
           <Show when={props.alignedWords}>
             <button
               class={styles.autoplayBtn}

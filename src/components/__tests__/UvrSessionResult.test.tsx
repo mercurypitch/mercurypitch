@@ -2,7 +2,7 @@
 // UVR Session Result Component Tests
 // ============================================================
 
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveAllUvrSessions } from '@/stores/app-store'
 import type { UvrSession } from '@/types/uvr'
@@ -576,6 +576,44 @@ describe('UvrSessionResult Component', () => {
       fireEvent.click(document.querySelectorAll('.session-hq-rerun-item')[1])
       expect(onRerunHq).toHaveBeenLastCalledWith('session-123', 'new')
       expect(onRerunHq).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('Play along', () => {
+    it('opens the selected role directly in the mixer', async () => {
+      const onPlayAlong = vi.fn()
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        outputs: {
+          vocal: '/stems/vocal.wav',
+          instrumental: '/stems/instrumental.wav',
+        },
+        originalFile: {
+          name: 'song.mp3',
+          size: 1024,
+          mimeType: 'audio/mpeg',
+        },
+        createdAt: Date.now(),
+      })
+      render(() => (
+        <UvrSessionResult {...defaultProps} onPlayAlong={onPlayAlong} />
+      ))
+
+      const picker = screen.getByRole('combobox', {
+        name: 'Choose what you perform in song.mp3',
+      })
+      await waitFor(() => expect(picker).toBeEnabled())
+      fireEvent.change(picker, { target: { value: 'play' } })
+
+      expect(onPlayAlong).toHaveBeenCalledWith(
+        'session-123',
+        expect.objectContaining({
+          id: 'play',
+          mutedStemKeys: ['instrumental'],
+        }),
+      )
     })
   })
 })

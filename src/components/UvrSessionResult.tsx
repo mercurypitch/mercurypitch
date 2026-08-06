@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import { deleteUvrSessionFromDb } from '@/db/services/uvr-service'
+import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
 import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
@@ -13,6 +14,7 @@ import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReac
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { PlayAlongSelect } from './PlayAlongSelect'
 import { UvrSessionActions } from './UvrSessionActions'
 
 interface SessionResultProps {
@@ -23,6 +25,7 @@ interface SessionResultProps {
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => void
+  onPlayAlong?: (sessionId: string, preset: PlayAlongPreset) => void
   onRetry?: (sessionId: string) => void
   onClose?: () => void
   onReindexStem?: (sessionId: string) => void
@@ -60,6 +63,11 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
   const hasInstrumental = () =>
     session()?.outputs?.instrumental != null ||
     session()?.stemMeta?.instrumental != null
+
+  const playAlongStems = (): PlayAlongStemKey[] => [
+    ...(hasVocal() ? (['vocal'] as const) : []),
+    ...(hasInstrumental() ? (['instrumental'] as const) : []),
+  ]
 
   const [stemBusy, setStemBusy] = createSignal<'vocal' | 'instrumental' | null>(
     null,
@@ -762,6 +770,24 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
                 View Progress
               </Show>
             </button>
+            <Show
+              when={
+                session()?.status === 'completed' &&
+                props.onPlayAlong !== undefined
+              }
+            >
+              <PlayAlongSelect
+                sessionId={props.sessionId}
+                availableStems={playAlongStems()}
+                discoverStoredStems
+                compact
+                disabled={props.disabled}
+                ariaLabel={`Choose what you perform in ${session()?.originalFile?.name ?? 'this song'}`}
+                onSelect={(preset) =>
+                  props.onPlayAlong?.(props.sessionId, preset)
+                }
+              />
+            </Show>
             <Show when={session()?.status === 'completed' && hasSelection()}>
               <button
                 class="session-result-btn session-result-btn-mixer"

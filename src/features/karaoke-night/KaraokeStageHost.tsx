@@ -80,6 +80,7 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
       practiceMode="full"
       requestedStems={{ vocal: true, instrumental: true }}
       preset="performance"
+      showStageSettings={false}
       autoPlay={props.song.autoPlay === true}
       karaokeReferenceVocal={isPlaylistActive()}
       onThirtySecondsPlayed={

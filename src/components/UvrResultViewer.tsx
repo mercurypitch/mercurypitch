@@ -9,6 +9,7 @@ import { fetchBillingMe } from '@/db/services/billing-service'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { StemBlobEntry } from '@/db/services/uvr-service'
 import { getStemBlobEntry } from '@/db/services/uvr-service'
+import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { eventBus } from '@/lib/event-bus'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { createPreviewPlayer } from '@/lib/preview-player'
@@ -22,6 +23,7 @@ import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openSettingsSection } from '@/stores/ui-store'
 import { AudioWave, Clock, Download, Drum, Guitar, Headphones, Midi, Music, MusicBoard, Pause, Play, Repeat, Share, SlidersHorizontal, Voice, X, } from './icons'
+import { PlayAlongSelect } from './PlayAlongSelect'
 import { UvrSessionActions } from './UvrSessionActions'
 
 /** Icons for the part stems the instrumental split produces. */
@@ -117,6 +119,7 @@ interface ResultViewerProps {
   disabled?: boolean
   onStartPractice?: (mode: 'vocal' | 'instrumental' | 'full' | 'midi') => void
   onStartMix?: (selectedStems: string[]) => void
+  onStartPlayAlong?: (preset: PlayAlongPreset) => void
   onOpenMixer?: (sessionId: string) => void
   onExport?: (
     type: 'vocal' | 'instrumental' | 'vocal-midi' | 'instrumental-midi',
@@ -638,6 +641,12 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
     return labels.join(' + ')
   }
 
+  const playAlongStems = (): PlayAlongStemKey[] => [
+    ...(hasVocal() ? (['vocal'] as const) : []),
+    ...(hasInstrumental() ? (['instrumental'] as const) : []),
+    ...partsList().map((entry) => entry.part),
+  ]
+
   return (
     <div class="uvr-result-viewer">
       {/* Header */}
@@ -1052,6 +1061,15 @@ export const UvrResultViewer: Component<ResultViewerProps> = (props) => {
             </div>
           </div>
           <div class="rv-full-mix-actions">
+            <Show when={props.onStartPlayAlong}>
+              <PlayAlongSelect
+                sessionId={props.sessionId}
+                availableStems={playAlongStems()}
+                loading={partsLoading()}
+                ariaLabel="Choose what you perform in this song"
+                onSelect={(preset) => props.onStartPlayAlong?.(preset)}
+              />
+            </Show>
             <button
               class="rv-stem-btn rv-stem-btn-play"
               onClick={() => handleStartPractice('full')}

@@ -11,6 +11,7 @@ import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, }
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
+import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
@@ -48,6 +49,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { AlertTriangle, ChevronLeft, Maximize2, Minimize2, Music, Settings, Share, SkipBack, SkipForward, X, } from './icons'
 import { KaraokeMobileStage } from './KaraokeMobileStage'
 import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
+import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
@@ -85,6 +87,8 @@ interface StemMixerProps {
   /** Which stems the user requested to see -- only these appear in tracks().
    *  Undefined = show all loaded stems (backwards-compat). */
   requestedStems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean }
+  /** Tracks that start silent for a role-based play-along mix. */
+  initialMutedStems?: readonly PlayAlongStemKey[]
   /** Initial seek position in seconds (e.g. from Shazam match offset) */
   initialSeekSec?: number
   /** Auto-play after stems finish loading */
@@ -95,6 +99,9 @@ interface StemMixerProps {
    *  standalone karaoke page uses 'performance' — a clean stage without the
    *  pitch-analysis/edit tooling. */
   preset?: 'studio' | 'performance'
+  /** Render the mixer's own stage picker/transparency controls. A host with
+   *  page-level stage controls sets this false to avoid duplicate ownership. */
+  showStageSettings?: boolean
   /** Guided-tour hook, injected by the studio app ('mount' = the one-time
    *  offer toast, 'button' = the header Tour button). Leaving it undefined
    *  removes the tour UI — and keeps the tour engine (app-store) out of
@@ -115,6 +122,8 @@ interface StemMixerProps {
   /** Zen mobile stage: stage another library session from the in-stage song
    *  sheet. Undefined hides the sheet (the studio has its own pickers). */
   onPickSession?: (sessionId: string) => void
+  /** Launch a library song with one performer role muted. */
+  onPlayAlong?: (sessionId: string, preset: PlayAlongPreset) => void
 }
 
 interface StemTrack {
@@ -234,7 +243,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     sourceNode: null,
     // Karaoke playlist mode: vocal starts muted (kept only as the silent
     // scoring reference). Unmute it to hear a guide vocal.
-    muted: props.karaokeReferenceVocal === true,
+    muted:
+      props.karaokeReferenceVocal === true ||
+      props.initialMutedStems?.includes('vocal') === true,
     soloed: false,
     volume: 0.8,
   })
@@ -247,7 +258,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     gainNode: null,
     analyserNode: null,
     sourceNode: null,
-    muted: false,
+    muted: props.initialMutedStems?.includes('instrumental') === true,
     soloed: false,
     volume: 0.8,
   })
@@ -263,7 +274,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     gainNode: null,
     analyserNode: null,
     sourceNode: null,
-    muted: false,
+    muted: props.initialMutedStems?.includes('vocal') === true,
     soloed: false,
     volume: 0.8,
   })
@@ -280,7 +291,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       gainNode: null,
       analyserNode: null,
       sourceNode: null,
-      muted: false,
+      muted: props.initialMutedStems?.some((key) => key === e.key) === true,
       soloed: false,
       volume: 0.8,
     }))
@@ -545,10 +556,25 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // library (step by createdAt order via onPickSession). Ordering matches the
   // zen song sheet so the controls track the visible list. Nav decisions are
   // the pure helpers in zen-navigation.ts (unit-tested).
+  const orderedLibrary = () =>
+    orderedLibrarySessions(getAllUvrSessionsReactive(), DEMO_SESSION_ID)
   const orderedLibraryIds = (): string[] =>
-    orderedLibrarySessions(getAllUvrSessionsReactive(), DEMO_SESSION_ID).map(
-      (s) => s.sessionId,
-    )
+    orderedLibrary().map((session) => session.sessionId)
+  const libraryDrawerSongs = (): KaraokeLibrarySong[] =>
+    orderedLibrary().map((session) => ({
+      sessionId: session.sessionId,
+      title: extractTitle(session.originalFile?.name ?? session.sessionId),
+      availableStems: [
+        ...(session.outputs?.vocal !== undefined ||
+        session.stemMeta?.vocal !== undefined
+          ? (['vocal'] as const)
+          : []),
+        ...(session.outputs?.instrumental !== undefined ||
+        session.stemMeta?.instrumental !== undefined
+          ? (['instrumental'] as const)
+          : []),
+      ],
+    }))
   const canLibraryNav = (): boolean => props.onPickSession !== undefined
 
   const hasPrevItem = (): boolean =>
@@ -1905,6 +1931,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             audio.handlePause()
             playlist.advance()
           }}
+          showStageSettings={props.showStageSettings !== false}
           onPickSession={props.onPickSession}
           onUploadLyrics={handleLyricsUpload}
           lyricsSuggestion={() => props.songTitle}
@@ -2018,34 +2045,39 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
               style={{ display: 'flex', gap: '0.5rem' }}
               data-tour="mixer.header"
             >
-              <Show when={props.preset !== 'performance'}>
-                <label class="sm-stage-glass" title="Stage transparency">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+              <Show when={props.showStageSettings !== false}>
+                <Show when={props.preset !== 'performance'}>
+                  <label class="sm-stage-glass" title="Stage transparency">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"
+                      />
+                    </svg>
+                    <input
+                      type="range"
+                      class="sm-stage-glass-slider"
+                      min={KARAOKE_STAGE_ALPHA.min}
+                      max={KARAOKE_STAGE_ALPHA.max}
+                      step={KARAOKE_STAGE_ALPHA.step}
+                      value={stageAlpha()}
+                      aria-label="Stage transparency"
+                      onInput={(event) =>
+                        updateStageAlpha(Number(event.currentTarget.value))
+                      }
                     />
-                  </svg>
-                  <input
-                    type="range"
-                    class="sm-stage-glass-slider"
-                    min={KARAOKE_STAGE_ALPHA.min}
-                    max={KARAOKE_STAGE_ALPHA.max}
-                    step={KARAOKE_STAGE_ALPHA.step}
-                    value={stageAlpha()}
-                    aria-label="Stage transparency"
-                    onInput={(event) =>
-                      updateStageAlpha(Number(event.currentTarget.value))
-                    }
-                  />
-                </label>
+                  </label>
+                </Show>
+                <PremiumBackgroundPicker
+                  controller={background}
+                  label="Stage"
+                />
               </Show>
-              <PremiumBackgroundPicker controller={background} label="Stage" />
               <Show when={props.onOfferTour}>
                 <button
                   class="sm-btn sm-btn-secondary"
@@ -2074,10 +2106,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   }
                   setPlaylistSidebarOpen(opening)
                 }}
-                title="Karaoke playlists"
+                title="Open songs and playlists"
                 style={{ gap: '0.4rem' }}
               >
-                <Music /> Playlist
+                <Music /> Songs
               </button>
               <button
                 type="button"
@@ -2586,6 +2618,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         <Show when={playlistSidebarOpen()}>
           <div class="sm-left-rail-wrap">
             <KaraokePlaylistSidebar
+              songs={libraryDrawerSongs()}
+              currentSessionId={props.sessionId}
+              onPickSong={props.onPickSession}
+              onPlayAlong={props.onPlayAlong}
               onClose={() => setPlaylistSidebarOpen(false)}
             />
           </div>

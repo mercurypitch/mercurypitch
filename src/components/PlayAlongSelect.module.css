@@ -1,0 +1,64 @@
+/* PlayAlongSelect — quiet native control with a consistent premium surface. */
+
+.root {
+  display: inline-flex;
+  min-width: 8.8rem;
+}
+
+.select {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.38rem 1.8rem 0.38rem 0.65rem;
+  color: var(--text-primary, var(--fg-primary, #f0f6fc));
+  background: rgba(13, 17, 23, 0.72);
+  border: 1px solid rgba(139, 92, 246, 0.38);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  color-scheme: dark;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.select:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.7);
+}
+
+.select:focus-visible {
+  outline: none;
+  border-color: var(--accent, #8b5cf6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.select:disabled {
+  cursor: default;
+  opacity: 0.46;
+}
+
+.compact {
+  min-width: 7.7rem;
+}
+
+.compact .select {
+  min-height: 2.5rem;
+  padding-block: 0.46rem;
+  font-size: 0.74rem;
+}
+
+@media (max-width: 600px) {
+  .compact .select {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select {
+    transition: none;
+  }
+}
