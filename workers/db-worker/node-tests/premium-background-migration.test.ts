@@ -67,6 +67,26 @@ afterEach(() => {
 })
 
 describe('premium background revision migration', () => {
+  it('replays safely and restores additive indexes for persistent previews', () => {
+    primary.exec('DROP INDEX idx_premiumBackgroundRevisions_one_draft')
+
+    expect(() => primary.exec(readFileSync(MIGRATION, 'utf8'))).not.toThrow()
+    expect(
+      primary
+        .prepare(
+          `SELECT name FROM sqlite_master
+            WHERE type = 'index'
+              AND name = 'idx_premiumBackgroundRevisions_one_draft'`,
+        )
+        .get(),
+    ).toEqual({ name: 'idx_premiumBackgroundRevisions_one_draft' })
+
+    insertDraft(primary, 'replayed-draft', 1)
+    expect(() => insertDraft(contender, 'duplicate-draft', 2)).toThrow(
+      /UNIQUE constraint failed/,
+    )
+  })
+
   it('allows only one draft when concurrent create preflights both see none', () => {
     expect(draftCount(primary)).toBe(0)
     expect(draftCount(contender)).toBe(0)
