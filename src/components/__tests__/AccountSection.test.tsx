@@ -122,6 +122,22 @@ describe('AccountSection', () => {
     expect(await screen.findByTestId('show-register')).toBeTruthy()
   })
 
+  it('labels a managed test account and its expiry', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: {
+        authProvider: 'password',
+        email: 'mc-test-demo@testing.mercurypitch.com',
+        isTestAccount: true,
+        testAccountExpiresAt: '2026-08-30T12:00:00.000Z',
+      },
+      profile: { displayName: 'Campaign Tester' },
+    })
+    render(() => <AccountSection />)
+
+    expect(await screen.findByTestId('test-account-pill')).toBeTruthy()
+    expect(screen.getByText(/Purchases are disabled/)).toBeTruthy()
+  })
+
   it('lets a signed-in (e.g. Google) user pick a display name', async () => {
     mocks.fetchMe.mockResolvedValue({
       user: { authProvider: 'google', email: 'maff@gmail.com' },

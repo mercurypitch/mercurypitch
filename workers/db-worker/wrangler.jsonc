@@ -108,6 +108,11 @@
       ],
       "vars": {
         "GOOGLE_CLIENT_ID": "144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com",
+        // Managed campaign identities exist only in the development database.
+        // Set the dedicated TESTING_PROVISION_KEY with:
+        // `wrangler secret put TESTING_PROVISION_KEY --env dev`.
+        // Production intentionally omits this switch, so the route is a 404.
+        "ALLOW_TEST_ACCOUNT_PROVISIONING": "1",
         // Emailed links (reset/verify) from non-first-party origins (PR
         // previews) land on the dev app, never production.
         "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",

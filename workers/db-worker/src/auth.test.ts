@@ -63,7 +63,7 @@ class AuthStatement {
 
     if (
       this.sql ===
-      'SELECT tokenVersion, lastActiveAt, suspendedAt FROM users WHERE id = ?'
+      'SELECT tokenVersion, lastActiveAt, suspendedAt, email FROM users WHERE id = ?'
     ) {
       const user = this.db.users.get(String(this.values[0]))
       if (!user) return null
@@ -71,6 +71,7 @@ class AuthStatement {
         tokenVersion: user.tokenVersion,
         lastActiveAt: user.lastActiveAt,
         suspendedAt: user.suspendedAt,
+        email: user.email,
       } as T
     }
 

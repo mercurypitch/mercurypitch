@@ -28,13 +28,34 @@ export async function getPerksForUser(
   env: Env,
   userId: string,
 ): Promise<string[]> {
-  if (!env.PERKS_DB) return []
+  const known = new Set<string>(PERK_IDS)
+  let managed: string[] = []
+  try {
+    const rows = await env.DB.prepare(
+      `SELECT p.perkId
+         FROM managedTestAccountPerks p
+         JOIN managedTestAccounts m ON m.userId = p.userId
+        WHERE p.userId = ?1
+          AND m.revokedAt IS NULL
+          AND m.expiresAt > ?2
+          AND p.expiresAt > ?2`,
+    )
+      .bind(userId, new Date().toISOString())
+      .all<{ perkId: string }>()
+    managed = (rows.results ?? [])
+      .map((row) => row.perkId)
+      .filter((id) => known.has(id))
+  } catch {
+    // Migration lag/local bootstrap: shared perks can still resolve below.
+  }
+
+  if (!env.PERKS_DB) return managed
   const user = await env.DB.prepare(
     'SELECT email, emailVerified FROM users WHERE id = ?',
   )
     .bind(userId)
     .first<{ email: string | null; emailVerified: number }>()
-  if (!user?.email || user.emailVerified !== 1) return []
+  if (!user?.email || user.emailVerified !== 1) return managed
   try {
     const rows = await env.PERKS_DB.prepare(
       'SELECT perkId FROM perkGrants WHERE email = ?1 AND revokedAt IS NULL',
@@ -45,13 +66,13 @@ export async function getPerksForUser(
     // row. Granting is a shell script typing a string by hand, so a typo
     // would otherwise publish a perk id nothing can render — and the
     // client would have no way to tell that from a real one.
-    const known = new Set<string>(PERK_IDS)
-    return (rows.results ?? [])
+    const shared = (rows.results ?? [])
       .map((r) => r.perkId)
       .filter((id) => known.has(id))
+    return [...new Set([...managed, ...shared])]
   } catch {
     // Shared DB unreachable — cosmetic feature, degrade to none.
-    return []
+    return managed
   }
 }
 
