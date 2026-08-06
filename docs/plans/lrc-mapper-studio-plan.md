@@ -43,6 +43,10 @@ Four things make this much smaller than it looks:
 - **`overview-mapping.ts`** (76 lines) already owns the single time↔pixel
   mapping for the waveform overview, with `clampOverviewWindow`, `timeToX`,
   `columnSampleRange`, and tests pinning them.
+- **`demo-song.ts`** (276 lines) already fetches a *list* of Cloudflare-served
+  songs — stems, lyrics, attribution — and seeds them into the local db as
+  normal sessions without ever clobbering a user's edits. Phase 7 is wiring,
+  not invention.
 
 ## 2. The blocker to clear first
 
@@ -275,6 +279,84 @@ this is the one phase where the right answer comes from singing to it.
 
 ---
 
+---
+
+## Phase 7 — an Examples library in the session list
+
+The stems are already served from Cloudflare, so the corpus can be **pulled
+into any device's session list** rather than living in one person's Downloads
+folder. Most of this exists already and is currently wired only to Karaoke
+Night.
+
+### What already exists (reuse, do not rebuild)
+
+`src/features/karaoke-night/demo-song.ts` (276 lines) is the mechanism:
+
+- **`GET /api/demo-songs`** already returns a **list** of manifests. Each
+  carries `slug`, `title`, `artist`, `attribution {text, url, license,
+  licenseUrl}`, `stems {vocal, instrumental}` (R2 URLs), `lyrics` (or inline
+  `lyricsText`), `lyricsRevision`, `durationSec`.
+- **`public/karaoke-demo-song.json`** is the shipped floor — an absent, parked,
+  malformed or unreachable row lands here, so the examples cannot be broken
+  from the studio or by an outage.
+- **`demoSessionId(slug)`** namespaces each demo into the local db as a normal
+  separation session; **`isDemoSessionId()`** identifies them anywhere.
+- **`shouldSeedLyrics(existing, stamp, revision)`** already solves the hard
+  part: an authored lyric correction reaches an untouched copy, but a visitor's
+  own edit always outranks the studio. Do not reimplement this.
+
+And grouping exists: `SessionGroupRecord { name, sessionIds[] }` in
+`src/db/entities.ts:488`, plus an optional `groupId` on UVR sessions.
+
+### What is actually new
+
+1. **Surface demos outside Karaoke Night.** Today only that page consumes the
+   manifest list. The session list needs to read the same source.
+2. **An "Examples" group**, created from `SessionGroupRecord` and populated with
+   `demoSessionId(slug)` entries.
+3. **A pull action** — "Add example songs" in the session list, and a per-song
+   pull for users who want one.
+
+### The auto-add question — recommendation: half-yes
+
+Auto-adding *audio* is the wrong default. The stems are large (the local WAVs
+are 24 MB each; even the m4a renders are ~4 MB), and seeding them unasked
+spends a stranger's mobile data on content they never requested.
+
+Recommended split:
+
+- **Auto-create the group and its rows** — cheap, metadata only: title, artist,
+  attribution, duration, lyrics. The Examples group appears for everyone, with
+  each song visible and clearly marked as not-yet-downloaded.
+- **Fetch stems on demand** — first play, or an explicit pull. One tap, obvious
+  cost, nothing downloaded behind the user's back.
+
+That keeps the discovery value (users see there is something to explore) without
+the bandwidth cost, and it sidesteps the "examples crowd out my own sessions"
+problem because the group is collapsible and removable.
+
+Serve the **compressed renders** for pull-in, not the 24 MB WAVs — the WAVs are
+a mapping-accuracy artifact, not a distribution format.
+
+### Requirements that are not optional
+
+- **Attribution must travel with the song.** The corpus is Creative Commons,
+  which requires credit. The manifest already carries
+  `attribution {text, url, license, licenseUrl}`; the session list and the
+  mapper must both surface it, not just Karaoke Night.
+- **Removable and re-pullable.** Deleting an example must not be a one-way
+  door, and re-pulling must not resurrect lyrics the user edited — that is
+  exactly what the seed stamp protects, so route re-pull through it.
+
+### Why this matters beyond exploration
+
+It gives the gold corpus a **distribution path**. Once the two hand-mapped
+songs ship as demo entries, the A/B differ (Phase 5) has real data on any
+device, and a reviewer can reproduce a mapping claim without being handed a
+folder of audio. That turns "trust my numbers" into "run it yourself".
+
+---
+
 ## 8. The gold corpus
 
 `~/Downloads/cc-songs` currently holds **one** song — Josh Woodward, *I'll Be
@@ -284,8 +366,13 @@ A second song is expected.
 
 Josh Woodward's catalogue is Creative Commons (hence `cc-songs`), so the
 **mappings can ship as test fixtures** in-repo. The audio cannot (24 MB per
-stem) — keep audio local or in the models bucket, commit only the `.lrc` /
-`.lyricsfile`.
+stem) — commit only the `.lrc` / `.lyricsfile`, and distribute the audio as
+demo-song manifest entries (Phase 7), which is where it already lives.
+
+So the corpus has two homes, deliberately: the **mappings** are in-repo
+fixtures that tests and the compare CLI run against offline, and the **audio**
+is pulled on demand from R2 through the Examples group. Neither duplicates the
+other.
 
 Two mappings of the same song are needed before the differ has anything to
 show. The natural first pair is *current hand map* vs *the same song remapped
@@ -303,7 +390,10 @@ actually improves the output, not just the experience.
 | Word-string spacing lost by `split(/\s+/)` | Round-trip tests over the gold corpus before anything depends on it |
 | Marker clutter makes the waveform useless | Pixel-gap thinning + zoom threshold + taller line-start ticks |
 | Drag interactions silently broken | Real-mouse Playwright spec, per repo convention |
-| Scope: six phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
+| Examples auto-download burns mobile data | Auto-create rows (metadata only); fetch stems on first play or explicit pull |
+| Re-pulling an example clobbers a user's lyric edits | Route re-pull through the existing `shouldSeedLyrics` stamp — never bypass it |
+| CC attribution lost outside Karaoke Night | Attribution travels in the manifest; session list and mapper must both render it |
+| Scope: seven phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
 
 ## 10. Sequence
 
@@ -315,7 +405,15 @@ Phase 3  waveform word markers         (pure mapping layer first)
 Phase 4  sub-word split points         (editor over existing model)
 Phase 5  A/B differ, lab + mapper      (the measuring instrument)
 Phase 6  start cue for sub-rest gaps   (tune against a real song)
+Phase 7  Examples library              (independent — see below)
 ```
 
-Phases 1 and 2 are independent of each other and can swap. Everything else is
-ordered by dependency.
+Phases 1 and 2 are independent of each other and can swap. Everything else in
+0–6 is ordered by dependency.
+
+**Phase 7 is independent** and can land any time after Phase 1 (so the shipped
+mappings are already in the native format). There is a case for pulling it
+*early*: it is mostly wiring over mechanisms that already exist, and it is what
+lets anyone else reproduce a mapping claim. Doing it before Phase 5 means the
+differ ships with real data on every device instead of a folder of audio only
+one person has.
