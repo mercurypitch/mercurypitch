@@ -225,9 +225,17 @@ describe('startManagedStemSplit', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('persists the job id on start and the split time on success', async () => {
-    await startManagedStemSplit('s1', { reuseApiSessionId: 'rp_gpu_a' })
+    const signal = new AbortController().signal
+    const onProgress = vi.fn()
+    await startManagedStemSplit('s1', {
+      reuseApiSessionId: 'rp_gpu_a',
+      signal,
+      onProgress,
+    })
     const opts = vi.mocked(runStemSplit).mock.calls[0][1]!
     expect(opts.reuseApiSessionId).toBe('rp_gpu_a')
+    expect(opts.signal).toBe(signal)
+    expect(opts.onProgress).toBe(onProgress)
     await opts.onJobStarted?.('rp_gpu_split-9')
     expect(recordUvrSplitJobStarted).toHaveBeenCalledWith(
       's1',

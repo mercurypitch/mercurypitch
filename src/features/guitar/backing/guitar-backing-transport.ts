@@ -5,6 +5,8 @@ import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
 import { createGuitarBackingStreamEngine } from './guitar-backing-stream'
+import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
+import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
 
 export type GuitarBackingTransportStatus =
   | 'idle'
@@ -52,6 +54,7 @@ export interface GuitarBackingTransport {
   setMasterVolume(position: number): void
   setTrackMuted(id: string, muted: boolean): void
   getAudioContext(): AudioContext | null
+  getAudioGraph(): GuitarSessionAudioGraph | null
   getLoadMode(): GuitarBackingLoadMode | null
   getStatus(): GuitarBackingTransportStatus
   getCurrentTime(): number
@@ -197,9 +200,7 @@ export function createGuitarBackingTransport(
   let activeVoices: ActiveVoice[] = []
   let loadMode: GuitarBackingLoadMode | null = null
   let context: AudioContext | null = null
-  let stemsBus: GainNode | null = null
-  let masterGain: GainNode | null = null
-  let output: DynamicsCompressorNode | null = null
+  let audioGraph: GuitarSessionAudioGraph | null = null
   let masterPosition = 0.78
   let duration = 0
   let parkedOffset = 0
@@ -260,23 +261,11 @@ export function createGuitarBackingTransport(
   const ensureGraph = (): AudioContext => {
     if (context !== null) return context
     const created = createContext()
-    const nextStemsBus = created.createGain()
-    const nextMasterGain = created.createGain()
-    const nextOutput = created.createDynamicsCompressor()
-    nextStemsBus.gain.value = 1
-    nextMasterGain.gain.value = sliderToGain(masterPosition)
-    nextOutput.threshold.value = -7
-    nextOutput.knee.value = 5
-    nextOutput.ratio.value = 12
-    nextOutput.attack.value = 0.003
-    nextOutput.release.value = 0.18
-    nextStemsBus.connect(nextMasterGain)
-    nextMasterGain.connect(nextOutput)
-    nextOutput.connect(created.destination)
+    const nextGraph = createGuitarSessionAudioGraph(created, {
+      masterLevel: masterPosition,
+    })
     context = created
-    stemsBus = nextStemsBus
-    masterGain = nextMasterGain
-    output = nextOutput
+    audioGraph = nextGraph
     return created
   }
 
@@ -305,7 +294,7 @@ export function createGuitarBackingTransport(
   const loadStreamed = (requestGeneration: number): boolean => {
     const currentSession = session
     const currentContext = context
-    const currentStemsBus = stemsBus
+    const currentStemsBus = audioGraph?.buses.stems ?? null
     if (
       currentSession === null ||
       currentContext === null ||
@@ -371,7 +360,7 @@ export function createGuitarBackingTransport(
   const load = async (requestGeneration: number): Promise<boolean> => {
     const currentSession = session
     const currentContext = context
-    const currentStemsBus = stemsBus
+    const currentStemsBus = audioGraph?.buses.stems ?? null
     if (
       currentSession === null ||
       currentContext === null ||
@@ -465,7 +454,7 @@ export function createGuitarBackingTransport(
     requestGeneration: number,
   ): Promise<boolean> => {
     const currentContext = context
-    const currentMaster = masterGain
+    const currentMaster = audioGraph?.master ?? null
     const currentStreamEngine = streamEngine
     if (
       currentContext === null ||
@@ -508,7 +497,7 @@ export function createGuitarBackingTransport(
 
   const startAt = (offset: number): boolean => {
     const currentContext = context
-    const currentMaster = masterGain
+    const currentMaster = audioGraph?.master ?? null
     if (
       currentContext === null ||
       currentMaster === null ||
@@ -660,8 +649,9 @@ export function createGuitarBackingTransport(
       if (status !== 'playing') return
       parkedOffset = currentTime()
       const currentContext = context
-      if (currentContext !== null && masterGain !== null) {
-        rampGain(masterGain.gain, 0, currentContext.currentTime, fadeSeconds)
+      const currentMaster = audioGraph?.master ?? null
+      if (currentContext !== null && currentMaster !== null) {
+        rampGain(currentMaster.gain, 0, currentContext.currentTime, fadeSeconds)
         if (loadMode === 'streamed') {
           streamEngine?.pause(fadeSeconds * 1000 + 8)
         } else {
@@ -711,7 +701,7 @@ export function createGuitarBackingTransport(
       }
       if (loadMode === 'streamed') {
         const currentContext = context
-        const currentMaster = masterGain
+        const currentMaster = audioGraph?.master ?? null
         if (currentContext !== null && currentMaster !== null) {
           currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
           currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
@@ -731,9 +721,10 @@ export function createGuitarBackingTransport(
 
     setMasterVolume(position) {
       masterPosition = clamp(position, 0, 1)
-      if (context !== null && masterGain !== null) {
+      const currentMaster = audioGraph?.master ?? null
+      if (context !== null && currentMaster !== null) {
         rampGain(
-          masterGain.gain,
+          currentMaster.gain,
           sliderToGain(masterPosition),
           context.currentTime,
           fadeSeconds,
@@ -755,6 +746,7 @@ export function createGuitarBackingTransport(
     },
 
     getAudioContext: () => context,
+    getAudioGraph: () => audioGraph,
     getLoadMode: () => loadMode,
     getStatus: () => status,
     getCurrentTime: currentTime,
@@ -771,14 +763,10 @@ export function createGuitarBackingTransport(
       disposed = true
       generation += 1
       resetLoadedAudio()
-      stemsBus?.disconnect()
-      masterGain?.disconnect()
-      output?.disconnect()
+      audioGraph?.dispose()
       const ownedContext = context
       context = null
-      stemsBus = null
-      masterGain = null
-      output = null
+      audioGraph = null
       session = null
       listeners.clear()
       if (

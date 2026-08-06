@@ -7,13 +7,15 @@ import type { UvrStemBlob } from '@/db/entities'
 const localReads = vi.hoisted(() => ({
   readAllStrict: vi.fn(),
   readByIndexStrict: vi.fn(),
+  countByCompoundIndexStrict: vi.fn(),
+  readByCompoundIndexStrict: vi.fn(),
 }))
 
 vi.mock('@/db/local-database', () => ({
   getLocalDatabase: () => localReads,
 }))
 
-import { readUvrSessionRecords, readUvrStemSnapshot, } from '@/db/services/uvr-read-service'
+import { readUvrSessionRecords, readUvrStemManifest, readUvrStemSelection, readUvrStemSnapshot, } from '@/db/services/uvr-read-service'
 
 function stemRow(
   stemType: UvrStemBlob['stemType'],
@@ -37,6 +39,8 @@ describe('UVR strict read service', () => {
   beforeEach(() => {
     localReads.readAllStrict.mockReset()
     localReads.readByIndexStrict.mockReset()
+    localReads.countByCompoundIndexStrict.mockReset()
+    localReads.readByCompoundIndexStrict.mockReset()
   })
 
   it('propagates a session-catalog read failure instead of reporting an empty library', async () => {
@@ -84,5 +88,34 @@ describe('UVR strict read service', () => {
     localReads.readByIndexStrict.mockRejectedValue(failure)
 
     await expect(readUvrStemSnapshot('session-1')).rejects.toBe(failure)
+  })
+
+  it('plans with count-only metadata and hydrates only requested kinds', async () => {
+    localReads.countByCompoundIndexStrict.mockImplementation(
+      (_entity: string, _index: string, value: string[]) =>
+        Promise.resolve(value[1] === 'drums' || value[1] === 'guitar' ? 1 : 0),
+    )
+    localReads.readByCompoundIndexStrict.mockImplementation(
+      (_entity: string, _index: string, value: string[]) =>
+        Promise.resolve([
+          stemRow(
+            value[1] as UvrStemBlob['stemType'],
+            '2026-08-06T11:00:00.000Z',
+            24,
+          ),
+        ]),
+    )
+
+    await expect(readUvrStemManifest('session-1')).resolves.toEqual([
+      'drums',
+      'guitar',
+    ])
+    await expect(
+      readUvrStemSelection('session-1', ['drums', 'guitar']),
+    ).resolves.toMatchObject([
+      { kind: 'drums', sizeBytes: 24 },
+      { kind: 'guitar', sizeBytes: 24 },
+    ])
+    expect(localReads.readByCompoundIndexStrict).toHaveBeenCalledTimes(2)
   })
 })
