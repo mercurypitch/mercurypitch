@@ -69,6 +69,21 @@ describe('daily cue coordinator', () => {
     expect(probe.calls.scheduled).toHaveLength(0)
   })
 
+  it('keeps an unchanged installed cue intact during foreground reconciliation', async () => {
+    const probe = createMobileRuntimeProbe({ permission: 'granted' })
+    const coordinator = createDailyCueCoordinator(
+      Promise.resolve(probe.runtime),
+      'android',
+    )
+
+    await expect(coordinator.reconcile(rule, config)).resolves.toBe('scheduled')
+    await expect(coordinator.reconcile(rule, config)).resolves.toBe('scheduled')
+
+    expect(probe.calls.cancelled).toEqual([[DAILY_CUE_NOTIFICATION_ID]])
+    expect(probe.calls.removedDelivered).toEqual([[DAILY_CUE_NOTIFICATION_ID]])
+    expect(probe.calls.scheduled).toHaveLength(1)
+  })
+
   it('runs a newer clear after an in-flight install settles', async () => {
     const scheduleGate = deferred()
     const scheduleStarted = deferred()

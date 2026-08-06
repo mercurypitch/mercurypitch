@@ -35,6 +35,22 @@ async function notificationPermission(
   return current
 }
 
+function installedCueKey(
+  rule: TargetTimeScheduleRule,
+  config: DailyCueConfig,
+  platform: BesideCuePlatform,
+): string {
+  return JSON.stringify([
+    rule.id,
+    rule.cueId,
+    rule.updatedAt,
+    rule.localTime,
+    config.notification.title,
+    config.notification.body,
+    platform === 'android' ? config.channel.id : undefined,
+  ])
+}
+
 /**
  * Serializes every mutation of Beside Cue's reserved notification ID. A newer
  * intent supersedes queued work, while already-running work is always followed
@@ -45,6 +61,7 @@ export function createDailyCueCoordinator(
   platform: BesideCuePlatform,
 ): DailyCueCoordinator {
   let generation = 0
+  let installedKey: string | undefined
   let mutationQueue: Promise<void> = Promise.resolve()
 
   function enqueue(
@@ -83,6 +100,7 @@ export function createDailyCueCoordinator(
 
         if (rule === undefined) {
           await clear(runtime)
+          installedKey = undefined
           return operationGeneration === generation ? 'cleared' : 'superseded'
         }
 
@@ -91,6 +109,7 @@ export function createDailyCueCoordinator(
           if (operationGeneration !== generation) return 'superseded'
           if (permission !== 'granted') {
             await clear(runtime)
+            installedKey = undefined
             if (operationGeneration !== generation) return 'superseded'
             if (
               permission === 'prompt' ||
@@ -113,6 +132,11 @@ export function createDailyCueCoordinator(
           if (operationGeneration !== generation) return 'superseded'
         }
 
+        const nextInstalledKey = installedCueKey(rule, config, platform)
+        if (installedKey === nextInstalledKey) {
+          return platform === 'web' ? 'foreground-only' : 'scheduled'
+        }
+
         const notification = planDailyCueNotification({
           cueId: rule.cueId,
           scheduleRuleId: rule.id,
@@ -124,8 +148,10 @@ export function createDailyCueCoordinator(
         })
 
         await clear(runtime)
+        installedKey = undefined
         if (operationGeneration !== generation) return 'superseded'
         await runtime.localNotifications.schedule([notification])
+        installedKey = nextInstalledKey
         return operationGeneration === generation
           ? platform === 'web'
             ? 'foreground-only'
