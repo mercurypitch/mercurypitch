@@ -364,7 +364,15 @@ Night.
 - **`GET /api/demo-songs`** already returns a **list** of manifests. Each
   carries `slug`, `title`, `artist`, `attribution {text, url, license,
   licenseUrl}`, `stems {vocal, instrumental}` (R2 URLs), `lyrics` (or inline
-  `lyricsText`), `lyricsRevision`, `durationSec`.
+  `lyricsText`), `lyricsRevision`, `durationSec`. Live on dev at
+  `https://api-dev.mercurypitch.com/api/demo-songs`, authored through
+  `https://dev.mercurypitch.com/#/admin/demo-song`, and already serving **two**
+  songs at `lyricsRevision: 2`.
+- **Slug and asset path are different identifiers**, and both matter. Goodbye to
+  Spring has slug `karaoke-night` (the legacy slug, which keys existing local db
+  rows and must never change) but assets under `demo/goodbye-to-spring/`.
+  Josephine agrees on both. Anything deriving one from the other will break the
+  legacy entry — and `demoSessionId()` exists precisely because of this.
 - **`public/karaoke-demo-song.json`** is the shipped floor — an absent, parked,
   malformed or unreachable row lands here, so the examples cannot be broken
   from the studio or by an outage.
@@ -434,7 +442,13 @@ versioning rule and licence terms.
 | File | Song | Lines | Words |
 |---|---|---|---|
 | `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring | 25 | 288 |
-| `ill-be-right-behind-you-josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+| `josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+
+Both are **byte-identical** to the `lyricsText` served by
+`GET https://api-dev.mercurypitch.com/api/demo-songs` at `lyricsRevision: 2`
+(verified 2026-08-06). They are authored through the studio at
+`https://dev.mercurypitch.com/#/admin/demo-song`; this directory is a synced
+copy, not a second source of truth.
 
 **`v2` is the gold reference for both songs.** An earlier `v1` of Josephine was
 deliberately not kept: comparing the two showed near-identical timings (median
@@ -464,6 +478,39 @@ pinning — this directory holds references, not every experiment.
 So the differ's first real job is *auto-mapped vN* vs *hand-mapped v2*, on two
 songs, which is exactly the benchmark that motivated this plan.
 
+### There is already one usable A/B pair
+
+The R2 `lyrics.lrc` URLs still serve **pre-v2 revisions** (see the trap below),
+and for Goodbye to Spring that older revision has *identical text* with
+different timings — which makes it a genuine A/B pair, unlike Josephine's v1:
+
+```
+pnpm lyrics:compare <r2 goodbye-to-spring/lyrics.lrc> fixtures/lrc/goodbye-to-spring.v2.lrc
+  Compared words: 288      Mismatched lines: none
+  Median absolute error: 0.380 s
+  Median bias: -0.380 s    Maximum error: 1.780 s
+```
+
+A **uniform −380 ms bias** across all 288 words, not a scatter. That is the
+signature of a systematic latency correction rather than better tapping — which
+is direct evidence the reaction-calibration shipped in #415 does what it claims.
+Useful as the differ's first fixture case: a known-shape difference to render
+against before trusting it on unknown ones.
+
+### Trap: the R2 lyric URLs are stale
+
+Each manifest carries both a `lyrics` **URL** and an optional inline
+`lyricsText`, and **`lyricsText` wins when set** (`demo-song.ts`). Both songs
+now carry v2 inline, while the bucket files still hold older revisions:
+`demo/josephine/lyrics.lrc` is the pre-v2 mapping with the extra words, and
+`demo/goodbye-to-spring/lyrics.lrc` is the earlier timing revision above.
+
+The app is correct. But anything that reads the URL instead of the API silently
+gets the old mapping — including a future importer, a benchmark script, or a
+person checking a claim. Phase 7 should either re-sync the bucket on publish or
+stop shipping a `lyrics` URL once `lyricsText` is set, so there is one answer to
+"what is the current mapping" rather than two that disagree.
+
 ---
 
 ## 9. Risks
@@ -478,6 +525,8 @@ songs, which is exactly the benchmark that motivated this plan.
 | Examples auto-download burns mobile data | Auto-create rows (metadata only); fetch stems on first play or explicit pull |
 | Re-pulling an example clobbers a user's lyric edits | Route re-pull through the existing `shouldSeedLyrics` stamp — never bypass it |
 | CC attribution lost outside Karaoke Night | Attribution travels in the manifest; session list and mapper must both render it |
+| R2 `lyrics` URL and inline `lyricsText` disagree | Re-sync the bucket on publish, or stop emitting the URL once `lyricsText` is set |
+| Deriving demo slug from asset path (or vice versa) | They differ for the legacy entry; always route local ids through `demoSessionId()` |
 | Resume-merge fix silently changes what a session holds | Pure restore function in `lrc-gen-engine.ts` with tests; `touchedLines` keeps session-vs-existing separable |
 | Scope: eight phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
 
