@@ -1,3 +1,12 @@
+-- SUPERSEDED — do not run. Kept because migration 0017 names it.
+--
+-- `accrueFreezes` now hands the opening balance to any profile with no
+-- accrual anchor, so an account that predates the rule heals itself on its
+-- next read and this has nothing left to do. Running it is harmless but
+-- pointless; it is off the release checklist.
+--
+-- Everything below describes the original intent.
+--
 -- One-time: give existing accounts the new starting balance of streak freezes.
 --
 -- Run BY HAND, from the release checklist, after migration 0017 has applied.
