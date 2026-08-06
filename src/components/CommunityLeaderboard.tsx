@@ -721,6 +721,7 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
         <button
           class={`leaderboard-tab ${activeView() === 'global' ? 'active' : ''}`}
           onClick={() => setActiveView('global')}
+          data-testid="global-tab"
         >
           <IconSearch />
           <span class="tab-name">Global</span>
