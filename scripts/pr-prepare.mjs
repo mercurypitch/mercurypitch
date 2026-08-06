@@ -79,9 +79,10 @@ export function isEslintCandidate(path) {
 }
 
 export function isPrettierCandidate(path) {
-  // The index generator owns this file byte-for-byte. Formatting its generated
-  // Markdown tables after regeneration would make docs:index:check stale again.
-  return path !== 'docs/agent/INDEX.md'
+  // Generators own these files byte-for-byte. Reformatting the index would make
+  // docs:index:check stale, while rewriting the lockfile can produce content
+  // that pnpm itself immediately replaces. git diff --check still covers both.
+  return path !== 'docs/agent/INDEX.md' && path !== 'pnpm-lock.yaml'
 }
 
 export function chunkPaths(paths, size = commandChunkSize) {

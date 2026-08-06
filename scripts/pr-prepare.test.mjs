@@ -45,9 +45,11 @@ test('isEslintCandidate follows the repository lint scopes', () => {
   assert.equal(isEslintCandidate('src/styles.css'), false)
 })
 
-test('isPrettierCandidate leaves the generated index to its generator', () => {
+test('isPrettierCandidate leaves generated files to their owners', () => {
   assert.equal(isPrettierCandidate('docs/agent/INDEX.md'), false)
+  assert.equal(isPrettierCandidate('pnpm-lock.yaml'), false)
   assert.equal(isPrettierCandidate('docs/agent/CONVENTIONS.md'), true)
+  assert.equal(isPrettierCandidate('package.json'), true)
   assert.equal(isPrettierCandidate('src/App.tsx'), true)
 })
 
