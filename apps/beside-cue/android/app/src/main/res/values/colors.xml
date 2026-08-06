@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="beside_cue_paper">#FFF5DD</color>
+    <color name="beside_cue_ink">#241913</color>
+    <color name="beside_cue_orange">#C93513</color>
+    <color name="beside_cue_turquoise">#00777D</color>
+</resources>
