@@ -63,10 +63,10 @@ function authHeaders(): Record<string, string> {
  * queue only. Local (on-device) processing has no transport limit and
  * keeps the 100 MB default.
  */
-export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
-
-/** Local/on-device processing upload cap (in-browser model; no transport). */
-export const LOCAL_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+export {
+  LOCAL_MAX_UPLOAD_BYTES,
+  SERVER_MAX_UPLOAD_BYTES,
+} from './audio-upload-contract'
 
 /**
  * Every stem the server registry can produce. Widen this (and the server

@@ -197,8 +197,17 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
 
   await expect(page.getByText('practice-room.wav')).toBeVisible()
   await expect(
-    page.getByText('Song preparation is not connected yet.'),
+    page.getByRole('progressbar', {
+      name: 'Preparing practice-room.wav',
+    }),
   ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Cancel preparation', exact: true })
+    .click()
+  await expect(
+    page.getByText('Preparation cancelled', { exact: true }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/guitar-night$/)
 
   const microphoneRequests = await page.evaluate(
     () =>

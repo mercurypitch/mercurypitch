@@ -208,4 +208,43 @@ describe('useGuitarNightSongController', () => {
     controller.initialize()
     await waitFor(() => expect(controller.libraryState()).toBe('error'))
   })
+
+  it('refreshes a mutable prepared-song catalog after separation completes', async () => {
+    let catalog: ReturnType<GuitarNightSongPort['completedSongs']> = []
+    const initialize = vi.fn(async () => undefined)
+    const port: GuitarNightSongPort = {
+      initialize,
+      completedSongs: () => catalog,
+      openSession: vi.fn(
+        async (): Promise<GuitarNightOpenBackingResult> => ({
+          ok: false,
+          code: 'not-found',
+        }),
+      ),
+    }
+    let controller!: ReturnType<typeof useGuitarNightSongController>
+    const Harness: Component = () => {
+      controller = useGuitarNightSongController({
+        loadSongPort: async () => port,
+      })
+      return null
+    }
+    render(() => <Harness />)
+
+    controller.initialize()
+    await waitFor(() => expect(controller.libraryState()).toBe('ready'))
+    expect(controller.songs()).toEqual([])
+
+    catalog = [
+      {
+        sessionId: 'session-new',
+        title: 'New Song.wav',
+        createdAt: Date.UTC(2026, 7, 6),
+      },
+    ]
+
+    await expect(controller.refreshLibrary()).resolves.toBe(true)
+    expect(controller.songs()).toEqual(catalog)
+    expect(initialize).toHaveBeenCalledTimes(2)
+  })
 })

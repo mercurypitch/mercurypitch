@@ -6,8 +6,8 @@
 
 import { ensurePersistentStorage } from '@/db/persistent-storage'
 import { saveStemBlobDurable } from '@/db/services/uvr-service'
-import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
-import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/app-store'
+import type { UvrProcessingMode, UvrSession } from '@/stores/uvr-store'
+import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'

@@ -11,7 +11,7 @@ vi.mock('@/lib/uvr-processing-pipeline', () => ({
   isServerPollActive: vi.fn(),
   resumeServerSession: vi.fn(() => Promise.resolve()),
 }))
-vi.mock('@/stores/app-store', () => ({
+vi.mock('@/stores/uvr-store', () => ({
   resumableServerSessions: vi.fn(),
   setUvrSessionResuming: vi.fn(),
   completeUvrSession: vi.fn(() => Promise.resolve(true)),
@@ -39,8 +39,8 @@ vi.mock('@/lib/uvr-stem-split', async (importOriginal) => ({
 import { autoResumeServerSessions, autoResumeStemSplits, startManagedStemSplit, } from '@/lib/uvr-auto-resume'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
 import { attachToStemSplitJob, isStemSplitActive, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
-import type { UvrSession } from '@/stores/app-store'
-import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
+import type { UvrSession } from '@/stores/uvr-store'
+import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/uvr-store'
 
 const mockedResumable = vi.mocked(resumableServerSessions)
 const mockedActive = vi.mocked(isServerPollActive)

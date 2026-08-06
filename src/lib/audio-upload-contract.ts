@@ -23,6 +23,41 @@ export const AUDIO_UPLOAD_ALLOWED_TYPES: string[] = [
 /** Ready-to-use `accept` attribute string (comma-joined). */
 export const AUDIO_UPLOAD_ACCEPT = AUDIO_UPLOAD_ALLOWED_TYPES.join(',')
 
+/** Browser-mode preparation accepts larger source files than cloud mode. */
+export const LOCAL_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
+/** Cloud preparation limit enforced before a paid job is submitted. */
+export const SERVER_MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+/** Match either a browser-provided MIME type or a supported file extension. */
+export function acceptsAudioUpload(
+  file: File,
+  allowedTypes: readonly string[] = AUDIO_UPLOAD_ALLOWED_TYPES,
+): boolean {
+  const mimeType = file.type.toLowerCase()
+  const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
+  return allowedTypes.includes(mimeType) || allowedTypes.includes(extension)
+}
+
+/** Return concrete recovery copy for a rejected source file, otherwise null. */
+export function audioUploadValidationError(
+  file: File,
+  maxBytes: number,
+  allowedTypes: readonly string[] = AUDIO_UPLOAD_ALLOWED_TYPES,
+  limitLabel = 'upload',
+): string | null {
+  if (file.size === 0) {
+    return 'This file is empty. Choose an MP3, WAV, or FLAC song.'
+  }
+  if (!acceptsAudioUpload(file, allowedTypes)) {
+    return 'That format is not supported. Choose MP3, WAV, or FLAC audio.'
+  }
+  if (file.size > maxBytes) {
+    return `This song is over the ${formatFileSize(maxBytes)} ${limitLabel} limit. Choose a smaller file.`
+  }
+  return null
+}
+
 /** Compact human-readable size label used by upload controls and queue rows. */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'

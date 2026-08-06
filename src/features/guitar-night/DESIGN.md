@@ -38,6 +38,27 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - Focus is always visible, touch targets are at least 44px, and room motion is
   removed under reduced-motion preferences.
 
+## Current preparation slice
+
+- Selecting a supported local MP3, WAV, or FLAC file starts the existing
+  durable on-device separation workflow from Guitar Night. The heavy
+  preparation adapter remains outside the first-paint path and loads only
+  when requested.
+- The room shows named preparation phases, available percentage progress,
+  storage warnings, cancellation, retry, and source-replacement actions.
+  Cancellation, unmount, and newer selections invalidate late results.
+- A completed or hash-matched session refreshes Prepared songs and stages that
+  exact session under route-owned object-URL leases. Preparation and staging
+  remain silent: neither starts playback, listening, input capture, analysis,
+  or timers.
+- The current raw-file path produces the available two-stem accompaniment, so
+  guitar remains inside its instrumental mix and no non-functional guitar-mute
+  control is shown. A previously prepared full-band session may still stage a
+  distinct guitar stem muted.
+- If stems are saved but the room cannot refresh or stage them, the player can
+  recover the result from Prepared songs rather than separating the file
+  again.
+
 ## Copy contract
 
 Use concrete capability names: Listening, Coach, Jam Doctor, separation,
@@ -55,13 +76,13 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Extract the hardened raw-file preparation workflow for Guitar Night reuse.
-2. Route-owned Guitar runtime and shared transport contracts.
-3. One output graph for guide, drums, bass, stems, and monitoring.
+1. Route-owned Guitar runtime and shared transport contracts.
+2. One output graph for guide, drums, bass, stems, and monitoring.
+3. A lightweight durable stem manifest or compound session-and-kind index for
+   low-latency playback hydration.
 4. Real configurable first-win count-in and listening input handoff.
 5. Persistent 3D/Tab/Neck stage with evidence-backed Coach and Jam Doctor.
 
-Before playback polish, add a lightweight durable stem manifest or a compound
-session-and-kind index. The current compatibility read materializes every blob
-row for one session, then drops the original and stale duplicates; the room
-must not retain that over-read on its low-latency path.
+The current compatibility read materializes every blob row for one session,
+then drops the original and stale duplicates; the room must not retain that
+over-read on its low-latency playback path.

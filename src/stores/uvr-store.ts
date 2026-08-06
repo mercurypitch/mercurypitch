@@ -1042,6 +1042,32 @@ export function getUvrSession(sessionId: string): UvrSession | undefined {
   return sessions.find((s) => s.sessionId === sessionId)
 }
 
+/** Refresh one session from IndexedDB without rewriting the durable record.
+ * Standalone entries use this when another tab created a recoverable server
+ * job after their app-lifetime cache was initialized. */
+export async function refreshUvrSessionFromDb(
+  sessionId: string,
+): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
+    const records = await repo.findAll({ where: { appSessionId: sessionId } })
+    const record = [...records].sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    )[0]
+    if (record === undefined) return false
+    const session = dbRecordToSession(record)
+    updateSessionCache(session)
+    setCurrentSessionIfActive(session)
+    return true
+  } catch (error) {
+    if (IS_DEV) {
+      console.warn('[SessionStore] refreshUvrSessionFromDb failed:', error)
+    }
+    return false
+  }
+}
+
 /** Find a completed session by file hash */
 export function getUvrSessionByHash(fileHash: string): UvrSession | undefined {
   const sessions = getAllUvrSessions()

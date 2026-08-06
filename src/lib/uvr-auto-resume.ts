@@ -28,7 +28,7 @@ import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
 import type { StemSplitResult } from '@/lib/uvr-stem-split'
 import { attachToStemSplitJob, isStemSplitActive, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
-import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setInterruptedUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
+import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setInterruptedUvrSession, setUvrSessionResuming, } from '@/stores/uvr-store'
 
 export interface AutoResumeHooks {
   /** Fired after a resumed job settles (complete or error) so the host can

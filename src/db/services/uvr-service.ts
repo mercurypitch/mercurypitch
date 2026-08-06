@@ -461,18 +461,44 @@ export async function saveUvrSession(session: {
   }
 }
 
+export interface UvrSessionHashMatch {
+  sessionId: string
+  status: string
+  processingMode: string
+  apiSessionId?: string
+}
+
 export async function findSessionByFileHash(
   fileHash: string,
-): Promise<{ sessionId: string } | null> {
+): Promise<UvrSessionHashMatch | null> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrSessionRecord>('uvrSessions')
     const results = await repo.findAll({
       where: { fileHash },
-      limit: 1,
     })
     if (results.length === 0) return null
-    return { sessionId: results[0].appSessionId }
+    const newestFirst = [...results].sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    )
+    const selected =
+      newestFirst.find((record) => record.status === 'completed') ??
+      newestFirst.find(
+        (record) =>
+          record.processingMode === 'server' &&
+          record.apiSessionId !== undefined &&
+          record.apiSessionId !== '' &&
+          (record.status === 'processing' || record.status === 'finalizing'),
+      ) ??
+      newestFirst[0]
+    return {
+      sessionId: selected.appSessionId,
+      status: selected.status,
+      processingMode: selected.processingMode,
+      ...(selected.apiSessionId !== undefined
+        ? { apiSessionId: selected.apiSessionId }
+        : {}),
+    }
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] findSessionByFileHash failed:', err)
     return null

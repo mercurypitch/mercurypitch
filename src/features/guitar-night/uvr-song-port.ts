@@ -85,10 +85,15 @@ function leaseResult(
 
 export function createUvrGuitarNightSongPort(): GuitarNightSongPort {
   let sessions: readonly UvrSessionRecord[] = []
+  let refreshGeneration = 0
 
   return {
     initialize: async () => {
-      sessions = latestSessionRecords(await readUvrSessionRecords())
+      const generation = ++refreshGeneration
+      const records = await readUvrSessionRecords()
+      if (generation === refreshGeneration) {
+        sessions = latestSessionRecords(records)
+      }
     },
 
     completedSongs: () =>
