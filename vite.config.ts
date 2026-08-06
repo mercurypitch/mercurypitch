@@ -307,7 +307,8 @@ export default defineConfig(({ mode }) => {
             if (
               /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service)/.test(
                 id,
-              ) || /src\/lib\/wav-meta/.test(id)
+              ) ||
+              /src\/lib\/wav-meta/.test(id)
             ) {
               return 'local-song-library'
             }

@@ -1,8 +1,13 @@
 ---
 version: 1
-slug: "src-features-guitar-night-guitarnightapp-tsx"
-primary_target: "src/features/guitar-night/GuitarNightApp.tsx"
-related_targets: ["guitar-night.html","src/features/guitar-night/GuitarNightApp.module.css","docs/specs/guitar-night.ears.md"]
+slug: 'src-features-guitar-night-guitarnightapp-tsx'
+primary_target: 'src/features/guitar-night/GuitarNightApp.tsx'
+related_targets:
+  [
+    'guitar-night.html',
+    'src/features/guitar-night/GuitarNightApp.module.css',
+    'docs/specs/guitar-night.ears.md',
+  ]
 ---
 
 # Guitar Night — Velvet Rehearsal
