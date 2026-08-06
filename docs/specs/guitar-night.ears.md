@@ -5,8 +5,9 @@ Approved target requirements for the standalone Guitar Night experience at
 current `/#/guitar` host is refactored into the first consumer of the shared
 Guitar runtime.
 
-**Status:** approved target contract; not yet implemented. Delivery begins
-with legacy lifecycle stabilization and runtime extraction.
+**Status:** approved target contract; implementation in progress. Delivery
+began with legacy lifecycle stabilization and runtime extraction; the
+standalone Velvet Rehearsal entry is the first route slice.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
