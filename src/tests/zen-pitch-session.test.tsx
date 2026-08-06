@@ -254,6 +254,192 @@ describe('removeRun', () => {
 })
 
 // ============================================================
+// The transport state machine — REQ-ZENP-009..012, 024..028, 033..034
+// ============================================================
+//
+// Owner testing on dev found five ways to get the Zen stage into a state it
+// could not draw. These pin the state machine end of the fixes; the note
+// scheduler's half is in zen-note-playback.test.ts. Spec:
+// docs/specs/zen-exercise-playback.ears.md.
+
+describe('Zen transport', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function mount(): {
+    session: ZenPitchSession
+    feed: (atMs: number, midi: number) => void
+    dispose: () => void
+  } {
+    let listener: (frame: PracticeFrame) => void = () => undefined
+    let session: ZenPitchSession | null = null
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        subscribeFrames: (next) => {
+          listener = next
+          return () => undefined
+        },
+        micActive: () => true,
+        startMic: async () => true,
+        stopMic: () => undefined,
+      })
+      return disposeRoot
+    })
+    return {
+      session: session!,
+      feed: (atMs, midi) => {
+        listener({ atMs, beat: 0, pitch: pitch(midi), micActive: true })
+      },
+      dispose,
+    }
+  }
+
+  /** Three voiced samples — the minimum `finalize` will keep as a take. */
+  const sing = (
+    feed: (atMs: number, midi: number) => void,
+    fromMs: number,
+  ): void => {
+    feed(fromMs, 60)
+    feed(fromMs + 100, 60.2)
+    feed(fromMs + 200, 59.8)
+  }
+
+  // REQ-ZENP-013's root cause, pinned where it actually lives. The stage used
+  // to derive its per-lap dedupe key from `floor(elapsed / loopDuration)`.
+  // This is why that could only ever be 0: elapsed is reset at every seam, so
+  // it never reaches a full lap, while the lap counter is the only thing that
+  // actually distinguishes one pass from the next.
+  it('never lets elapsed time distinguish one lap from the next', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, dispose } = mount()
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    const seen: number[] = []
+    for (let atMs = 100; atMs <= DEFAULT_LOOP_MS * 2 + 400; atMs += 400) {
+      feed(atMs, 60)
+      seen.push(session.elapsedSec())
+    }
+
+    expect(Math.max(...seen)).toBeLessThan(session.loopDurationSec())
+    expect(session.loopsCompleted()).toBe(2)
+    dispose()
+  })
+
+  // REQ-ZENP-024, REQ-ZENP-025. Selecting a take freezes the canvas on it and
+  // drops the playhead, while capture carries on invisibly behind it and each
+  // seam appends a take the singer cannot see — "the playhead dissapears and
+  // things break".
+  it('refuses to move the take selection while running', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, dispose } = mount()
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    sing(feed, 100)
+    feed(DEFAULT_LOOP_MS + 100, 60)
+    expect(session.runs()).toHaveLength(1)
+    expect(session.status()).toBe('running')
+
+    expect(session.previousRun()).toBe(false)
+    expect(session.selectedRunId()).toBeNull()
+    expect(session.nextRun()).toBe(false)
+    expect(session.removeRun(session.runs()[0]!.id)).toBe(false)
+    expect(session.runs()).toHaveLength(1)
+
+    // REQ-ZENP-027: going *to* live is where a running session belongs.
+    session.followLive()
+    expect(session.selectedRunId()).toBeNull()
+    dispose()
+  })
+
+  // REQ-ZENP-026, REQ-ZENP-028.
+  it('allows review while paused and returns to live on resume', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, dispose } = mount()
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    sing(feed, 100)
+    feed(DEFAULT_LOOP_MS + 100, 60)
+    session.pause()
+
+    expect(session.previousRun()).toBe(true)
+    expect(session.selectedRunId()).toBe(session.runs()[0]!.id)
+
+    session.resume()
+    expect(session.status()).toBe('running')
+    // The playhead only draws on the live take; carrying a selection through
+    // a resume is what made it vanish.
+    expect(session.selectedRunId()).toBeNull()
+    dispose()
+  })
+
+  // REQ-ZENP-010, REQ-ZENP-011. The guide button used to read "Restart
+  // exercise" while paused and route through start(), which resets the live
+  // points without finalizing — the take was binned with no record of it.
+  it('restart finalizes the pass in progress instead of binning it', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, dispose } = mount()
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    sing(feed, 100)
+    feed(DEFAULT_LOOP_MS + 100, 60)
+    expect(session.loopsCompleted()).toBe(1)
+    sing(feed, DEFAULT_LOOP_MS + 300)
+    session.pause()
+    expect(session.runs()).toHaveLength(1)
+
+    expect(await session.restart()).toBe(true)
+
+    expect(session.status()).toBe('running')
+    expect(session.runs()).toHaveLength(2)
+    expect(session.runs()[1]!.takeNumber).toBe(2)
+    expect(session.loopsCompleted()).toBe(0)
+    expect(session.selectedRunId()).toBeNull()
+    expect(session.activePoints()).toHaveLength(0)
+    dispose()
+  })
+
+  // REQ-ZENP-012.
+  it('restart from stopped is a plain start and keeps no empty take', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, dispose } = mount()
+    await Promise.resolve()
+
+    expect(await session.restart()).toBe(true)
+    expect(session.status()).toBe('running')
+    expect(session.runs()).toHaveLength(0)
+    expect(session.takeNumber()).toBe(1)
+    dispose()
+  })
+
+  // REQ-ZENP-033, REQ-ZENP-034. Adopting a definition under a live pass would
+  // score the singer against targets they never saw.
+  it('changing exercise stops the pass and resets the lap counter', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { session, feed, dispose } = mount()
+    await Promise.resolve()
+    expect(await session.start()).toBe(true)
+
+    sing(feed, 100)
+    feed(DEFAULT_LOOP_MS + 100, 60)
+    expect(session.loopsCompleted()).toBe(1)
+
+    session.selectExercise(null)
+
+    expect(session.status()).toBe('idle')
+    expect(session.loopsCompleted()).toBe(0)
+    expect(session.runs()).toHaveLength(0)
+    expect(session.takeNumber()).toBe(1)
+    expect(session.selectedRunId()).toBeNull()
+    dispose()
+  })
+})
+
+// ============================================================
 // The step boundary
 // ============================================================
 //

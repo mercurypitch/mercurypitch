@@ -93,6 +93,32 @@ expose one, only warn while playback expects singing, and clear immediately
 when the evidence recovers. Never guess a gate for another detector.
 **See:** `src/features/mic-feedback/useMicInsights.ts`
 
+### A looping stage's lap index cannot come from elapsed time
+**Symptom:** the Zen exercise sounded its guide notes on the first pass and
+went silent on every pass after it, for the whole session.
+**Cause:** the per-lap dedupe key was built from
+`floor(elapsedSec / loopDurationSec)`. A looping session resets `elapsedSec` at
+each seam, so elapsed never reaches a full lap and that expression is
+permanently `0` — lap two reused lap one's keys and found every target already
+played. The code reads as if it counts laps; it counts nothing.
+**Rule:** take the lap index from the session's own counter
+(`loopsCompleted()`), never from a time that is reset per lap. If a signal is
+zeroed at the boundary you are trying to detect, it cannot detect it.
+**See:** `src/features/zen/note-playback.ts`,
+`docs/specs/zen-exercise-playback.ears.md`
+
+### Sample note playback by start crossing, not by "is it active now"
+**Symptom:** dense or fast phrases played partially and stopped, as if timing
+out.
+**Cause:** the scheduler fired a note only when a sample landed inside its
+window. The Zen samples come from mic frames throttled to ~33 ms and stall
+under load, so whole notes fell between two samples and never sounded — the
+same defect `lib/playback-runtime.ts` had fixed for the piano roll.
+**Rule:** fire anything whose start lies in `(previousSample, thisSample]`, and
+never back-fill across a discontinuity — a lap seam, pause, resume or re-arm
+resets the floor. The mirror-image bug is replaying a whole lap at once.
+**See:** `src/features/zen/note-playback.ts`, `src/lib/playback-runtime.ts:76`
+
 ## Framework
 
 ### Do not destructure props

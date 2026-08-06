@@ -1,6 +1,6 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Loader2, MusicNote, Pause, Play, Volume2, VolumeX, X, } from '@/components/icons'
+import { Loader2, MusicNote, Pause, Play, RotateCcw, Volume2, VolumeX, X, } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PitchStageShell } from '@/components/pitch-stage/PitchStageShell'
 import { SafeSelect } from '@/components/shared/SafeSelect'
@@ -14,6 +14,7 @@ import { drawStemPeaks, getStemPeaks } from '@/lib/stem-peaks'
 import { isNarrow } from '@/lib/use-viewport'
 import { getZenExercise, zenExerciseCatalog } from './exercise-catalog'
 import { refreshGuidedContent } from './guided-content-store'
+import { createZenNoteScheduler } from './note-playback'
 import type { ZenExerciseCategory, ZenExerciseDefinition, ZenPitchRun, ZenTargetVisibility, } from './types'
 import { useZenPitchSession } from './useZenPitchSession'
 import type { ZenCanvasRenderModel } from './zen-canvas-renderer'
@@ -31,6 +32,10 @@ import styles from './ZenPitchStage.module.css'
  * guide and the essential loop controls are all visible without scrolling.
  * FORM: instrument workspace, not a dashboard; depth comes from restrained
  * glass rails and luminous pitch layers.
+ *
+ * The transport state machine, guide-note playback and take selection are
+ * specified in `docs/specs/zen-exercise-playback.ears.md` — read it before
+ * changing what a control does in a given state.
  */
 
 interface ZenPitchStageProps {
@@ -216,52 +221,55 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
   // when they are fully shown: hidden or dimmed targets are a deliberate
   // "from memory" mode, and sounding them would defeat it. The mute button
   // is the manual override on top; visibility drives the hard gate.
+  //
+  // Which targets sound at a given sample lives in `note-playback.ts` — it is
+  // pure timing and nothing about it needs an audio device, which is the only
+  // way any of it can be tested. This end owns the gate and the tone.
   const [notesMuted, setNotesMuted] = createSignal(false)
   let toneCtx: AudioContext | null = null
-  let playedTargetKeys = new Set<string>()
+  const noteScheduler = createZenNoteScheduler()
   const notePlaybackActive = (): boolean =>
     !notesMuted() &&
     session.targetVisibility() === 'on' &&
     session.exercise() !== null
 
   createEffect(() => {
-    // Re-arm the played set on every loop restart / exercise change.
+    // A different exercise, or any transport edge, is a discontinuity: the
+    // next sample must start from the playhead rather than back-fill
+    // everything the old position had already passed.
     session.exerciseId()
     session.status()
-    playedTargetKeys = new Set()
+    noteScheduler.rearm()
   })
 
   createEffect(() => {
-    // Unmuting must be audible NOW, not at the next loop: clear the
-    // played keys so a target currently inside its window fires
-    // immediately (passed windows stay silent — the window check gates
-    // them). Without this, pause+resume was the only thing that re-armed
-    // playback mid-run (owner testing). Muting mid-note lets the current
-    // tone's short tail (<=1.2s) ring out — cutting it would pop.
-    if (!notesMuted()) playedTargetKeys = new Set()
+    // Unmuting must be audible NOW, not at the next target: sound whatever
+    // window the playhead is already inside. Passed windows stay silent —
+    // firing those would replay the lap so far in one burst. Muting mid-note
+    // lets the current tone's short tail (<=1.2s) ring out; cutting it pops.
+    if (!notesMuted()) noteScheduler.rearm({ soundCurrent: true })
   })
 
   createEffect(() => {
     if (!notePlaybackActive()) return
     if (session.status() !== 'running') return
-    const elapsed = session.elapsedSec()
-    const loop = Math.floor(elapsed / Math.max(1e-6, session.loopDurationSec()))
-    const inLoop = elapsed - loop * session.loopDurationSec()
-    for (const target of session.targets()) {
-      const key = `${loop}:${target.startSec}:${target.startMidi}`
-      if (playedTargetKeys.has(key)) continue
-      if (inLoop >= target.startSec && inLoop < target.endSec) {
-        playedTargetKeys.add(key)
-        toneCtx ??= new AudioContext()
-        // A context created outside a click can start suspended
-        // (autoplay policy) — resume before scheduling or nothing sounds.
-        if (toneCtx.state === 'suspended') void toneCtx.resume()
-        void playReferenceTone(
-          toneCtx,
-          target.startMidi,
-          Math.min(1.2, Math.max(0.3, target.endSec - target.startSec)),
-        )
-      }
+    // The lap index comes from the session's own counter. Deriving it from
+    // elapsed time cannot work — elapsed is reset at every seam, so the
+    // derived index was permanently 0 and every lap after the first found
+    // its targets already marked as played (owner testing: "plays the notes
+    // only on first pass").
+    const cues = noteScheduler.sample({
+      elapsedSec: session.elapsedSec(),
+      loopIndex: session.loopsCompleted(),
+      targets: session.targets(),
+    })
+    if (cues.length === 0) return
+    toneCtx ??= new AudioContext()
+    // A context created outside a click can start suspended
+    // (autoplay policy) — resume before scheduling or nothing sounds.
+    if (toneCtx.state === 'suspended') void toneCtx.resume()
+    for (const cue of cues) {
+      void playReferenceTone(toneCtx, cue.target.startMidi, cue.durationSec)
     }
   })
 
@@ -292,12 +300,23 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     return id === null ? -1 : session.runs().findIndex((run) => run.id === id)
   }
 
-  const canGoBack = (): boolean =>
-    session.selectedRunId() === null
-      ? session.runs().length > 0
-      : currentRunIndex() > 0
+  // Reviewing a take while the session captures is what broke the stage:
+  // the canvas froze on the selected take, the playhead vanished, and every
+  // seam behind it appended a take the singer never saw. Pause or stop first.
+  const canChangeTake = (): boolean => session.status() !== 'running'
 
-  const canGoForward = (): boolean => session.selectedRunId() !== null
+  const takeLockReason = (): string | undefined =>
+    canChangeTake() ? undefined : 'Pause to review your takes'
+
+  const canGoBack = (): boolean =>
+    !canChangeTake()
+      ? false
+      : session.selectedRunId() === null
+        ? session.runs().length > 0
+        : currentRunIndex() > 0
+
+  const canGoForward = (): boolean =>
+    canChangeTake() && session.selectedRunId() !== null
 
   const canvasModel = createMemo<ZenCanvasRenderModel>(() => {
     const selected = session.selectedRun()
@@ -451,17 +470,26 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     if (examplePreloader !== undefined) examplePreloader.src = url
   })
 
+  const MIC_DENIED =
+    'Microphone access is needed to draw your pitch. Check the browser permission and try again.'
+
   const begin = async (): Promise<void> => {
     setStartError(null)
     const started = await session.start()
     if (!started) {
-      setStartError(
-        'Microphone access is needed to draw your pitch. Check the browser permission and try again.',
-      )
+      setStartError(MIC_DENIED)
       return
     }
     guideOpenPlain = false
     setGuideOpen(false)
+  }
+
+  /** Finalize the pass in progress, then open a fresh one from the seam. */
+  const restart = async (): Promise<void> => {
+    setStartError(null)
+    stopExample()
+    const started = await session.restart()
+    if (!started) setStartError(MIC_DENIED)
   }
 
   const chooseExercise = (exerciseId: string | null): void => {
@@ -723,10 +751,14 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
             <span>Target notes</span>
             <button
               type="button"
-              class={styles.iconButton}
-              onClick={() => setNotesMuted((m) => !m)}
+              class={styles.muteButton}
+              classList={{ [styles.muteEngaged]: notesMuted() }}
+              data-testid="zen-mute-notes"
+              onClick={() => setNotesMuted((muted) => !muted)}
               disabled={session.targetVisibility() !== 'on'}
-              aria-pressed={!notesMuted()}
+              // Pressed means the mute is engaged. This read inverted, so the
+              // control announced "pressed" exactly while notes were audible.
+              aria-pressed={notesMuted()}
               aria-label={
                 notesMuted() ? 'Unmute guide notes' : 'Mute guide notes'
               }
@@ -799,19 +831,20 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           type="button"
           class={styles.beginButton}
           onClick={() => void begin()}
+          // Only ever a *start*, and only from stopped. It used to read
+          // "Restart exercise" while paused and route through start(), which
+          // binned the paused take without finalizing it — meanwhile the
+          // footer offered "Resume" for the same state. Restart now has its
+          // own control in the transport, so the two cannot disagree.
           disabled={
             exampleState() === 'loading' ||
             exampleState() === 'playing' ||
             exampleState() === 'paused' ||
-            session.status() === 'running'
+            session.status() !== 'idle'
           }
         >
           <Play />
-          {session.status() === 'paused'
-            ? 'Restart exercise'
-            : session.runs().length > 0
-              ? 'Start another take'
-              : 'Begin practice'}
+          {session.runs().length > 0 ? 'Start another take' : 'Begin practice'}
         </button>
       </div>
     )
@@ -826,12 +859,15 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           onClick={() => session.previousRun()}
           disabled={!canGoBack()}
           aria-label="Previous take"
+          title={takeLockReason()}
         >
           ‹
         </button>
         <button
           type="button"
           class={styles.takeLabel}
+          // Returning to live is safe in every state — it is where a running
+          // session belongs — so this one is not gated on the transport.
           onClick={() => session.followLive()}
           disabled={session.selectedRunId() === null}
         >
@@ -846,6 +882,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           onClick={() => session.nextRun()}
           disabled={!canGoForward()}
           aria-label="Next take"
+          title={takeLockReason()}
         >
           ›
         </button>
@@ -853,9 +890,9 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
           type="button"
           class={styles.iconButton}
           onClick={() => deleteSelectedRun()}
-          disabled={session.selectedRun() === null}
+          disabled={!canChangeTake() || session.selectedRun() === null}
           aria-label="Delete this take (permanent)"
-          title="Delete this take (permanent)"
+          title={takeLockReason() ?? 'Delete this take (permanent)'}
         >
           ×
         </button>
@@ -882,6 +919,21 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
                 : 'Start'}
           </span>
         </button>
+        {/* Restart is its own verb, available exactly while there is a pass
+            to restart. It finalizes first, so pressing it never bins the
+            take the way "press start again" used to. */}
+        <Show when={session.status() !== 'idle'}>
+          <button
+            type="button"
+            class={styles.iconButton}
+            data-testid="zen-restart"
+            onClick={() => void restart()}
+            aria-label="Restart the exercise from the beginning"
+            title="Restart exercise"
+          >
+            <RotateCcw />
+          </button>
+        </Show>
         <span class={styles.timeReadout}>
           {session.elapsedSec().toFixed(1)} /{' '}
           {session.loopDurationSec().toFixed(1)} sec

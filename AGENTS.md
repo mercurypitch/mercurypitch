@@ -13,7 +13,7 @@ worker — cheaper than grepping, and it will not be stale (CI checks it).
 | [docs/agent/CONVENTIONS.md](docs/agent/CONVENTIONS.md) | Writing code — naming, state, styling, tests |
 | [docs/agent/MISTAKES.md](docs/agent/MISTAKES.md) | Before a first change in an unfamiliar area |
 | [docs/agent/REFACTOR-PLAN.md](docs/agent/REFACTOR-PLAN.md) | Touching one of the oversized files |
-| [docs/specs/](docs/specs/) | Changing behaviour that has an EARS spec — 25 files, `*.ears.md` |
+| [docs/specs/](docs/specs/) | Changing behaviour that has an EARS spec — 32 files, `*.ears.md` |
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md) | Before trusting anything in `docs/plans/` — many "pending" plans have shipped |
 
 ---
