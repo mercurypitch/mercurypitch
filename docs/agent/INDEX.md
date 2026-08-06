@@ -381,6 +381,11 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |
 | `pnpm audit:mobile` | `node scripts/audit-exercises-mobile.mjs` |
+| `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
+| `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
+| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app check` |
+| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app test:run` |
+| `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm fmt` | `prettier src --check` |
