@@ -7,379 +7,173 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
-- **Private stage backgrounds for supporters.** A room's backdrop can now be a
-  supporter-only scene, granted per group and served from protected storage
-  rather than baked into the build. There is an admin page for assigning them,
-  and access is checked at the worker, not in the browser.
-
-- **A songs drawer, and play-along presets.** The stem mixer keeps its songs a
-  drawer away instead of a menu deep, and a preset sets up a play-along mix in
-  one click rather than nine faders.
-
-- **Jam rooms sing songs now, not just exercises.** A room can hold a whole
-  song on its own timeline: the words down the left, a pitch lane per singer
-  down the right, and each line scored as it goes past rather than at the
-  end. Count-in dots carry you through the rests, there is a scrubber for
-  moving around the song, and the room keeps one scoreboard everyone agrees
-  on. A room run counts as practice like anything else — and a room can also
-  run exercises, this week's Legend, or your Ascent week.
-
-- **Hand out the parts.** Assign singers to lines — click a lyric line to
-  take it from there — and everyone can see whose notes are whose. Harmony
-  Stack and Relay give a room parts that cannot be sung alone. If a session
-  has no words, the room can go and find them, and once you have fixed a line
-  you sing the version you fixed.
-
+- **Jam rooms sing whole songs.** Lyrics down the left, a pitch lane per singer
+  down the right, and each line scored as it goes past. Count-in dots, a
+  scrubber, one shared scoreboard — and a room run counts as practice.
+- **Hand out the parts.** Click a lyric line to take it from there. Harmony
+  Stack and Relay give a room parts nobody can sing alone.
 - **Bring your own song into a room.** Your separated sessions and your own
-  songs appear in the picker, and the stem itself is packed small and sent
-  over the connection to the room — with a real progress bar while it moves.
-  A guide vocal only you can hear is a switch away, with the same karaoke pill
-  the rest of the app uses.
-
-- **The Mercury Rooms.** A set of photographic backdrops shot at native 4K,
-  with a transparency slider so the room actually shows the room behind the
-  video — the slider dials the blur along with it. The room says who just
-  walked in, says what it is currently doing, and lets the host put it right
-  when it is wrong. A host who drops out can walk back into their own room.
-
-- **Achievements, properly.** Fifty-two more goals across the groups, laid out
-  as a grid instead of a list, with badges as earned objects you can look at
-  rather than glyphs in a toolbar — and they show up on profiles.
-
-- **Content can be authored in the studio instead of shipped.** Achievements,
-  exercises and their recordings and timelines all have pages now, and a
-  timed `.lrc` can be dropped straight onto the demo song.
-
-- **A podium worth standing on.** The top three get three distinct medals, and
-  the medal is the whole card rather than a thumbnail beside a name. The board
-  also ranks the streak it actually names.
-
-- **The Challenges hub got the room it belongs to,** with art that reflects
-  how the run went and a full after-run card on the tab instead of a modal
-  that vanishes.
-
-- **A dial for picking a note.** The wall of note pills is now a dial: the
-  octave lives on its rim, and tapping the note you are on plays it.
-
-- **Zen sessions can count.** Give a session a fixed number of loops and it
-  stands down when they are done, instead of running until you stop it. Zen
-  exercises can also ask for loudness and for silence, not only for pitch.
-
-- **One tab holds the microphone, and you can see what it hears.** Opening the
-  app in a second tab no longer fights the first one for the device, and there
-  is a live meter so "is it picking me up" is answerable at a glance.
-
-- **Swell shows the loudness it was already scoring.** The measurement existed
-  and was invisible; now the dynamics you are being judged on are on screen.
-
-- **Your Voice Constellation.** Every legend your voice has been matched
-  with now has a place of its own — the one you match today, and every one
-  you matched before. Revealed legends open full-size: the artwork, the
-  vocal range, when you were matched, and arrows through the rest. The
-  twenty-one legends you have not met yet stay as unnamed scenes, so there
-  is something left to find. Reachable from Settings, from your profile, and
-  from the intro when you come back.
-
-- **Streaks can survive a missed day.** You start with two freezes and earn
-  another for every thirty days, up to three held at once. A freeze spends
-  itself automatically on the day you miss, so a streak you have kept for
-  months does not end because of one evening. The card now says when a
-  streak is at risk rather than waiting to tell you it is gone, and while a
-  freeze can still cover you it does not offer the repair — no point
-  spending the rarer thing on a problem the cheaper one already handles.
-
-- **The Karaoke Night demo song can be changed from the admin studio.**
-  Its title, artist, stems, attribution and lyrics used to be fixed in the
-  build, so correcting a single wrong lyric line meant shipping a release.
-  There is now a page for it. Lyrics can be pasted straight in, and a
-  correction reaches anyone who has already sung the demo — unless they
-  have edited their own copy, which always wins. Lyrics files can be
-  dropped straight onto the page — a timed `.lrc` or a plain `.txt` — and
-  the version that ships with the app stays the fallback, so a half-filled
-  entry shows the old demo rather than a broken page.
-
-- **Karaoke Night can offer more than one song.** The studio page holds a
-  list now instead of a single entry: add a song, give it a short link id,
-  paste its vocal and instrumental, its lyrics and its credit, and it
-  appears on the Karaoke Night rail beside the opener. Taking one down is a
-  switch rather than a deletion, and every song on offer is credited in the
-  footer — not just the first one. The opener keeps its own card; anything
-  after it sits in a compact list, so a night with ten songs on the bill
-  still leaves room for your own.
-
-- **Karaoke Night has a proper way back into the app.** The link out was
-  plain text, and on a phone it was not there at all. It is now a button
-  with an icon that says where it goes, and it survives a narrow screen.
-
-- **The weekly Legend now has a run of weeks queued behind it.** Five
-  challenges instead of one, opening on the money note — Puccini's B4 on
-  "Vincerò" — and stepping through a long sustain, a full-octave sweep, a
-  stepwise run and a low-note descent. Each opens automatically when the
-  previous one closes, and once the five are spent the app re-runs a past
-  week as an Encore rather than showing an empty card.
-
-- **Seven more legends to be matched with.** Michael Jackson, Prince, Luciano
-  Pavarotti, Aretha Franklin, Louis Armstrong, Nina Simone and Ariana Grande
-  join the voice-twin roster, each with their own portrait in the same
-  constellation style. Every voice type now has at least three legends behind
-  it instead of two, so the twin you're shown is far less of a coin flip.
-- **A way back to saving your voiceprint.** If you close the account form
-  during the intro — deliberately or by a stray click — the map screen now
-  carries a quiet line offering it again, rather than leaving the only route
-  through your profile settings.
-- **Drum kit mode in Compose.** A new Melody / Drums switch in the Compose
-  header turns the piano roll into a 12-lane drum machine — kick, snare,
-  sidestick, clap, three hats, three toms, crash and ride, each mapped to its
-  General MIDI note and played by synthesized drum voices (the same kit the
-  Guitar beat maker uses, now with clap, sidestick, pedal hat and ride added).
-  Beats save, share, and export like any melody — MIDI files even come out on
-  the drum channel so other apps read them as drum tracks.
-- **The piano keys are playable.** The left edge of the piano roll is now a
-  real black-and-white keyboard: press a key to hear its note, drag up and
-  down for a glissando. In drum mode every key shows its kit piece's icon and
-  auditions the hit.
-- **Hover hints.** Hovering a placed note names it right at the cursor — the
-  note name, or the drum piece (with a preview hit). Toggle them in the
-  toolbar's View group.
-- **Sheet music shows what you're about to add.** In the score's click-to-add
-  mode, a dashed ghost note now follows the cursor — at the exact staff
-  position and beat where the note will land, shaped by the selected length
-  (whole to sixteenth, dots included) and labelled with its name.
-- **Edit / Scrub toggle on the score.** The sheet header now switches the
-  staff between adding notes and acting as a transport: in Scrub, click a
-  bar to jump there or drag across the staff to scrub playback,
-  Guitar-Pro-style. The choice is remembered.
-
-- **See the shape of a take.** Every take now gets a pitch plot: your live
-  contour as you sing, the detected notes of a song you separated in Karaoke,
-  or a practice run drawn note by note and coloured by how close each one
-  landed. Practice notes are laid out by how long you actually spent on each,
-  so a held note is a wide bar.
-- **A real spectrogram for a separated vocal.** Pick a song you've separated
-  and hit "Analyse audio" — it reads the whole vocal in the background and
-  gives you a spectrogram plus breathiness, resonance and harmonics measured
-  across the take, not just the moment.
-- **Depth without clutter on a phone.** The heavier sections start folded on
-  mobile and open on desktop; tap a heading to expand one. Nothing is
-  desktop-only any more — the phone gets every section, just tidier.
-
-- **Exercises show what's coming, not just what you just sang.** The pitch
-  track now draws the notes ahead of the playhead as well as the trace behind
-  it, so you can see the next target arriving instead of finding out about it
-  when you are already late.
-- **Your finished run, shown back to you.** A drill used to end on a number.
-  It now ends on a picture of the attempt — where you were sharp, where you
-  were flat, and where you lost the note — so the score has something to point
-  at.
-- **Choose how long a held note runs before it scores itself.** Pick 5, 10, 15
-  or 30 seconds (or a custom length) before you start, instead of the run
-  ending whenever you remember to press Stop. The choice is remembered, and it
-  follows you to your other devices.
-- **The warm-up is a real warm-up now.** The six warm-up patterns run on the
-  same stage as everything else: targets ahead of the playhead, your voice
-  behind it, a lane for the hiss and an expanding ring to breathe with. The
-  hiss on the exhale is measured for the first time — and the breathing step
-  is left out of your average rather than counted as a zero.
-- **Pick up a half-finished routine.** Home offers to resume a daily routine
-  you started earlier the same day, once at least one segment is done.
-- **The routine carries you to the next segment.** Instead of waiting to be
-  clicked, it counts down five seconds and continues. Cancel stops it; cancel
-  twice and it offers to stop doing that for good.
+  songs are in the picker and stream to the room with a progress bar; a guide
+  vocal only you can hear is one switch away.
+- **The Mercury Rooms.** Photographic 4K backdrops with a transparency slider
+  that dials the blur with it. The room says who walked in and what it is
+  doing, and a host who drops out can walk back in.
+- **Private stage backgrounds for supporters.** Supporter-only backdrops,
+  granted per group, served from protected storage and checked at the worker.
+- **A songs drawer and play-along presets** in the stem mixer — one click
+  instead of nine faders.
+- **Fifty-two more achievements,** as a grid rather than a list, with badges you
+  can look at — and they show on profiles.
+- **Weekly Leagues.** A seven-rung ladder (Mercling to Mercapex, plus a locked
+  seventh). Exercises and challenges earn weekly points; every Monday the top
+  advance and the bottom drop.
+- **Friend codes.** Share a short code to connect and compare on a
+  friends-only leaderboard.
+- **Delete your account.** Settings → Account erases your cloud account and its
+  data for good.
+- **A podium worth standing on.** Three distinct medals for the top three, and
+  the board ranks the streak it names.
+- **The Challenges hub got its own room,** with art that reflects how the run
+  went and a full after-run card instead of a modal that vanishes.
+- **Five weekly Legends queued behind this one,** opening on Puccini's B4. Each
+  unlocks as the last closes, then a past week returns as an Encore.
+- **Content is authored in the studio, not shipped.** Achievements, exercises,
+  recordings and timelines all have pages now.
+- **The Karaoke Night opener is editable from the studio** — title, artist,
+  stems, credit and lyrics, with `.lrc`/`.txt` drop. A correction reaches
+  anyone who has not edited their own copy.
+- **Karaoke Night can offer more than one song.** A list instead of one entry;
+  taking a song down is a switch, and every song on the bill is credited.
+- **Karaoke Night has a real way back into the app** — a button with an icon
+  that survives a narrow screen.
+- **A dial for picking a note,** octave on the rim; tap the note you are on to
+  hear it.
+- **Zen sessions can count loops,** and Zen exercises can ask for loudness and
+  for silence, not only pitch.
+- **Exercises show the notes ahead of the playhead,** not just the trace behind
+  it.
+- **Your finished run, shown back to you** — where you were sharp, where flat,
+  and where you lost the note.
+- **Choose how long a held note runs** — 5, 10, 15, 30 seconds or custom.
+  Remembered, and it follows you between devices.
+- **The warm-up is a real warm-up.** All six patterns run on the main stage,
+  with a lane for the hiss and a ring to breathe with. The hiss is measured for
+  the first time, and breathing is left out of your average.
+- **Pick up a half-finished routine** from Home.
+- **The routine carries itself to the next segment** after a five-second
+  countdown; cancel twice and it stops offering.
+- **Swell shows the loudness it was already scoring.**
+- **One tab holds the microphone,** and a live meter shows what it hears.
+- **Your Voice Constellation.** Every legend your voice has matched has a place
+  of its own, opening full-size with artwork, range and date. Twenty-one you
+  have not met stay unnamed, so there is something left to find.
+- **Seven more legends** — Michael Jackson, Prince, Pavarotti, Aretha Franklin,
+  Louis Armstrong, Nina Simone, Ariana Grande — so every voice type has at
+  least three.
+- **A way back to saving your voiceprint** if you close the account form during
+  the intro.
+- **Streaks survive a missed day.** Two freezes to start, one more every thirty
+  days, three held at once, spent automatically on the day you miss.
+- **Drum kit mode in Compose.** A Melody / Drums switch turns the piano roll
+  into a 12-lane drum machine on General MIDI notes. Beats save, share and
+  export on the drum channel.
+- **The piano keys are playable** — press for the note, drag for a glissando.
+  Drum mode shows each kit piece and auditions the hit.
+- **Hover hints** name a placed note at the cursor, or preview the drum piece.
+- **The score shows what you are about to add** — a dashed ghost note at the
+  exact staff position, beat and length.
+- **Edit / Scrub toggle on the score.** Click a bar to jump there or drag to
+  scrub, Guitar-Pro-style. The choice is remembered.
+- **See the shape of a take.** A pitch plot for every take: your live contour,
+  the detected notes of a song you separated, or a practice run coloured by
+  accuracy and laid out by how long you spent on each note.
+- **A real spectrogram for a separated vocal.** "Analyse audio" reads the whole
+  vocal and measures breathiness, resonance and harmonics across the take.
+- **Depth without clutter on a phone.** Heavy sections start folded; nothing is
+  desktop-only any more.
 
 ### Changed
 
-- **The admin studio can be put behind a Cloudflare sign-in.** Where it is
-  configured, changing site content needs a real account Cloudflare
-  vouched for, not just a shared key — so every change has a name against
-  it and access can be revoked for one person without changing anything
-  for everyone else.
-
-- **Leaderboards are opt-in and for accounts only.** You choose a display
-  name and publish your results deliberately; nothing is listed until you do.
-  Rankings now count real completed exercises and challenges rather than
-  open-ended practice time.
-- **Visiting no longer creates an account.** The app only registers a cloud
-  identity the moment you actually save something, so just looking around
-  leaves nothing behind.
-
-- **Analysis is one page now, and it works on your phone.** The tab used to
-  show three sub-tabs of dense tooling on desktop and something completely
-  different on mobile. It's now a single dashboard at every screen size: pick
-  what you want to look at — your mic right now, a song you separated in
-  Karaoke, or a past practice session — and see the analysis for it.
-- **Every number on the page is real.** The old page showed vibrato rate,
-  breathiness and a "spectrum" for past practice sessions, all calculated from
-  saved note scores rather than any audio — the spectrum was drawn from note
-  frequencies, not measured. Each take now says what depth of analysis its data
-  supports, and sections that would need audio you don't have simply aren't
-  shown. You'll see fewer numbers for old sessions, and the ones you see mean
-  something.
-- **Live singing is measured more accurately.** Breathiness, resonance and
-  harmonic richness now come from the real frequency analysis that was already
-  running, instead of being estimated from the pitch track alongside it.
-
-- **The welcome screen is gone.** Two screens stood between you and the app,
-  and the first one was there to be clicked past. What mattered on it — going
-  straight in without setting anything up, the Terms and Privacy line, and a
-  plain statement of what you get — moved onto the first real step.
-- **The intro arc tracks where you are.** One bead per step, lit up to the one
-  you're on. A short run gets a short arc.
-- **Coming back, you're shown the voice you already mapped.** If you have saved
-  voiceprints, the intro leads with them, and picking one opens a gallery that
-  shows the artwork at full size for the first time.
-- **The Map's rooms wear their artwork.** Backdrops were nearly invisible, a
-  phone could never ask for them at all, and Jam had no art.
+- **The admin studio can sit behind a Cloudflare sign-in,** so every change has
+  a name against it and access can be revoked one person at a time.
+- **Leaderboards are opt-in and for accounts only,** ranked on completed
+  exercises and challenges rather than open-ended practice time.
+- **Visiting no longer creates an account** — an identity is minted the moment
+  you first save something.
+- **Analysis is one page at every screen size.** Pick what to look at: your mic
+  now, a song you separated, or a past session.
+- **Every number on the page is real.** Old sessions show fewer numbers, and
+  sections needing audio you do not have are no longer drawn from note scores.
+- **Live singing is measured from the real frequency analysis,** not estimated
+  from the pitch track beside it.
+- **The welcome screen is gone.** What mattered on it moved to the first real
+  step.
+- **The intro arc tracks where you are,** one bead per step.
+- **Coming back, the intro leads with your saved voiceprints,** and picking one
+  opens the gallery at full size.
+- **The Map's rooms wear their artwork,** Jam included, and a phone can ask for
+  it.
 
 ### Fixed
 
-- **Exporting a session no longer loses its parts.** A song split into drums,
-  bass, guitar and piano exported only the vocal and the instrumental, so
-  re-importing it — or moving it to another device — came back with the parts
-  silently missing. The export now carries every stem it holds, lets you pick
-  which ones to include, and refuses rather than pretending when a stem it was
-  asked for is not there.
-- **The stem mixer holds together when you push it.** Switching songs no longer
-  jumps the audio, and the mixer keeps its state through the interactions that
-  used to leave it half-updated.
-- **Zen guide notes sound on every lap,** not only the first, and play/pause no
-  longer disagrees with what the transport is actually doing.
-- **A jam host stays the host after a reconnect** instead of handing the room to
-  whoever reconnected first.
-- **Nobody ever received their two starting streak freezes.** The grant only
-  applied to an account with no saved profile at all, so every real account
-  sat at zero from day one and the card kept warning that a missed day would
-  end the streak. Existing accounts pick their two up the next time they open
-  the app.
-- **The streak card no longer looks like it holds freezes it doesn't.** Three
-  grey snowflakes were three _empty_ slots, which read as three banked ones.
-  The number is now stated outright, a held freeze is a lit disc, and an empty
-  one is a dashed socket.
-- **Four achievements could never be won.** Their conditions could not be met
-  by any amount of singing, so they sat locked forever. They are winnable now.
-- **The Ascent opens on the week you are on,** not the one above it, and its
-  days no longer read left to right when your week does not start on a Monday.
-- **Repairing a streak tells you whether it worked.** The button reported
-  nothing at all, so a repair that failed looked exactly like one that
-  succeeded — you found out by watching the number not change. It now says,
-  either way.
-- **Switching accounts no longer leaves the last singer's portraits on
-  screen.** The constellation kept showing cards from the account you just
-  left until it caught up, and could flash a stale card on the way in.
-- **Leaving the constellation returns you to the app.** The brand in the
-  corner went to the marketing site rather than back where you came from.
-- **Big songs open properly in Compose.** Loading a long MIDI (hundreds of
-  bars) used to show an empty grid you couldn't scroll — the editor was trying
-  to draw the entire song onto a single canvas far larger than browsers allow,
-  so it drew nothing at all. Compose now draws just the part you're looking at
-  and scrolls smoothly through the rest, with Prev/Next page buttons and a
-  "go to bar" box for getting around long songs. Playback keeps the playhead
-  in view, and a dense song no longer bogs the editor down.
-- **Imported songs land on the right rows.** The grid now positions itself
-  over the song's actual pitch range instead of leaving high and low notes
-  stranded off-grid — while melodies that already fit keep the rows you chose.
-- **You can see which melody you're editing.** Compose shows the melody name
-  next to the view tabs, and the score header names it too, so Split view no
-  longer looks like two different pieces — no need to open the sidebar.
-- **Imports keep their own name.** Importing a MIDI from Compose (or opening a
-  shared link) used to pour the notes into whatever melody was open and keep
-  that melody's old name; imports now become a melody named after the file or
-  the shared song.
-- **Songs play at their own tempo.** Loading a song or melody left the tempo
-  wherever it was — usually the default — so an imported MIDI played at the
-  wrong speed from the first note. Loading now adopts the song's tempo, and
-  Compose's own MIDI import reads the tempo out of the file too.
-
-- **Fast, dense melodies play every note.** At high tempo, notes shorter than
-  one animation frame could fall between two scheduler samples and never
-  sound; playback now back-fills anything that started inside the gap. Also
-  cured a stuck state where pressing Play on a paused session silently did
-  nothing until a full stop — the transport now resumes.
-- **Spacebar works in Zen and the Exercises.** The Zen stage now
-  starts/pauses/resumes with Space, and exercise Space no longer goes dead
-  after clicking any button — it starts, stops and re-runs the exercise no
-  matter where focus sits. (Playback everywhere ignores what scale a note is
-  in — off-scale notes always sounded and still do.)
-- **The Split view's score gets the whole screen.** The notation strip under
-  the piano roll was capped at a 240px sliver with dead space below; it now
-  stretches to the bottom of the panel.
-- **Changing the scale and adding rows no longer fight each other.** Picking
-  a scale in the roll toolbar then clicking Rows + used to silently rebuild
-  the grid in C major (the select still claiming your scale) and hatch every
-  note outside it. Scale choices now stick everywhere, and when a view change
-  does leave notes outside the visible rows, the status bar says so — and
-  that your notes are untouched.
-- **A big Compose polish pass.** Zoom no longer inflates the canvas twice
-  (and Fit finally fits), 1/16 notes can be placed, moved and resized on
-  their own grid, resizing several notes together keeps their lengths,
-  clicking the very start of the grid places a note instead of grabbing an
-  invisible playhead, the bouncing-ball playhead survives Stop, editor
-  shortcuts stop hijacking Ctrl+A/Ctrl+Z while you type anywhere else in the
-  app, the key you chose is respected when the editor rebuilds its rows, the
-  left column renders crisply on HiDPI displays, and long note drags no
-  longer freeze on constant saving (with the "Melody saved!" toast spam
-  gone for good).
-
-- **Weekly Leagues.** Compete on a seven-rung ladder of hand-crafted trophies
-  — Mercling, Sparkwing, Skyvox, Highnova, Starcrest, Mercapex, and a locked
-  seventh league still to be revealed. Finishing exercises and challenges
-  earns weekly points; every Monday the top singers in each league advance
-  and the bottom drop down. Your league lives in a new League tab on the
-  Leaderboard page, with your trophy spotlit and the standings split into
-  promotion and relegation zones.
-- **Friend codes.** Every account gets a short code you can share; enter a
-  friend's code to connect and compare on a friends-only leaderboard.
-- **Delete your account.** Settings → Account can now erase your cloud
-  account and its data completely — type the confirmation word and it's gone.
-
-- **Your practice streak was wrong on the Analysis page.** It counted every day
-  you'd ever practised rather than consecutive days, so "current streak" always
-  matched "best streak". It now uses the same streak as the rest of the app.
-
-- **The microphone stays open between routine segments.** Every segment
-  boundary used to close the device and reopen it — a visible stall, and on
-  some browsers another permission prompt.
-- **Sirens give you a breath before each glide.** The glide used to begin
-  fractions of a second after the reference notes, six times in a row, with
-  barely a rest between rounds. There is now a counted three-second beat that
-  names the note to start on — which doubles as the rest the drill never had.
-- **The siren's guide dot starts where you do.** Which end of the glide it
-  began from depended on how long everything before it had taken, so round one
-  and round two could start it in different places. It now always leaves from
-  the start note.
-- **Daily routines no longer send you somewhere they can't follow.** Generated
-  routines dropped their challenge-prep segment, which led out of the routine
-  and left it stuck.
-
-- **A quiet room is not a broken microphone.** The check ran before you'd been
-  asked to sing, decided the room was silent, and sent perfectly good
-  microphones to the "pick another device" screen. The voiceprint step went
-  further and treated the silence as you refusing permission — which is the
-  whole reason it looked like the step had been skipped.
-- **Community fits your phone.** It was the one tab that never got a mobile
-  pass: it rendered as a small inset panel that scrolled inside itself, clipped
-  at the right and bottom, with a large empty gap in the middle. It now fills
-  the screen and flows like Challenges and Leaderboard.
-- **Karaoke's toolbar no longer buries the page on a phone.** Nine controls
-  wrapped into four rows and scrolled sideways with nothing saying so. The mode
-  tabs stay; everything else moves behind one Options button.
-- **The Jam song picker opens on a phone.** As host, tapping it did nothing —
-  it was a drop-down positioned outside the visible area. It now opens as a
-  drawer, the same one Karaoke Night uses. That drawer then had a second
-  problem on a phone, found on an iPhone before release: it came up as a
-  squashed strip you could not touch, because the Jam room's blurred glass
-  and clipping trapped it inside the transport row. Drawers are now anchored
-  to the page itself, so no screen can pin one down — everywhere they are
-  used, not just here.
-- **"Separate a song" sends a phone somewhere it can actually do that.** From
-  Vocal Analysis with nothing recorded yet, the button now opens Karaoke Night
-  on a phone and the Karaoke tab on a computer.
-- **The pitch tracker has room again.** With the daily routine along the top
-  and a full-width title row under it, the tracker was squeezed to a sliver.
-  The routine strip is one line on a phone, the title shares its row with the
-  controls, and the tracker has a floor it can't be pushed below.
-- **The intro reads properly on a phone.** The arc crossed the headline, and
-  the button at the bottom sat under the browser's own bar. The sign-in form is
-  trimmed for a short screen, so it fits with the keyboard up.
+- **Exporting a session no longer loses its parts.** Every stem is carried, you
+  pick which to include, and a missing stem is refused rather than faked.
+- **The stem mixer holds together when you push it** — switching songs no
+  longer jumps the audio.
+- **Zen guide notes sound on every lap,** and play/pause agrees with the
+  transport.
+- **A jam host stays the host after a reconnect.**
+- **Nobody ever received their two starting streak freezes.** Existing accounts
+  pick theirs up the next time they open the app.
+- **The streak card no longer looks like it holds freezes it doesn't.** The
+  number is stated outright, a held freeze is a lit disc, an empty one a dashed
+  socket.
+- **Four achievements could never be won.** They are winnable now.
+- **The Ascent opens on the week you are on,** and its days follow your week
+  start.
+- **Repairing a streak tells you whether it worked.**
+- **Switching accounts clears the last singer's portraits** instead of showing
+  them until it catches up.
+- **Leaving the constellation returns you to the app,** not the marketing site.
+- **Big songs open properly in Compose.** The editor draws only the part you
+  are looking at, with page buttons and a "go to bar" box.
+- **Imported songs land on the right rows,** while melodies that already fit
+  keep the rows you chose.
+- **You can see which melody you are editing** — named beside the view tabs and
+  in the score header.
+- **Imports keep their own name** instead of pouring into the open melody.
+- **Songs play at their own tempo,** read out of the file on MIDI import.
+- **Fast, dense melodies play every note,** and Play resumes a paused session
+  instead of silently doing nothing.
+- **Spacebar works in Zen and the Exercises** no matter where focus sits.
+- **The Split view's score gets the whole screen.**
+- **Changing the scale and adding rows no longer fight each other.** Scale
+  choices stick, and the status bar says when notes fall outside the rows.
+- **A big Compose polish pass** — zoom and Fit, 1/16 notes, multi-note resize,
+  clicks at the very start of the grid, the playhead surviving Stop, shortcuts
+  hijacking Ctrl+A/Ctrl+Z, HiDPI rendering, and "Melody saved!" toast spam.
+- **Your practice streak was wrong on the Analysis page** — it counted every
+  day you had practised rather than consecutive ones.
+- **The microphone stays open between routine segments.**
+- **Sirens give you a counted breath before each glide,** and the guide dot
+  always leaves from the start note.
+- **Daily routines no longer send you somewhere they can't follow** —
+  challenge-prep is out of generated routines.
+- **A quiet room is not a broken microphone.** The check no longer runs before
+  you have been asked to sing, and the voiceprint step stops reading silence as
+  a refused permission.
+- **Community fits your phone.** It fills the screen instead of scrolling
+  inside a clipped inset panel.
+- **Karaoke's toolbar no longer buries the page on a phone** — everything but
+  the mode tabs moved behind one Options button.
+- **The Jam song picker opens on a phone,** as a drawer. Drawers are now
+  anchored to the page itself, so no blurred, clipping container can pin one
+  down.
+- **"Separate a song" sends a phone to Karaoke Night,** where it can.
+- **The pitch tracker has room again** on a phone, with a floor it can't be
+  pushed below.
+- **The intro reads properly on a phone** — the arc clears the headline and the
+  button clears the browser bar.
 
 ## [0.7.22] - 2026-07-21
 
