@@ -174,6 +174,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   pushed below.
 - **The intro reads properly on a phone** — the arc clears the headline and the
   button clears the browser bar.
+- **Five guided-tour steps highlighted nothing** — one on Home pointing at a
+  card that no longer exists, four on the Leaderboard pointing at a view the
+  page no longer opens on.
 
 ## [0.7.22] - 2026-07-21
 
