@@ -29,10 +29,18 @@ export const PlayAlongSelect: Component<PlayAlongSelectProps> = (props) => {
         ? props.sessionId
         : undefined,
     listStemTypes,
+    // A resource without an initial value suspends its nearest host while the
+    // IndexedDB lookup is pending. In the Songs drawer that replaced the
+    // entire active mixer with a route-level loading screen even though the
+    // playing audio never changed. Keep the picker in its own explicit
+    // "Finding roles" state instead.
+    { initialValue: [] },
   )
   const presets = createMemo(() => {
     const stems = new Set<PlayAlongStemKey>(props.availableStems)
-    for (const key of storedStems() ?? []) {
+    // `latest` remains reactive but deliberately does not register with a
+    // parent Suspense boundary while a refetch is pending.
+    for (const key of storedStems.latest) {
       if (isPlayAlongStemKey(key)) stems.add(key)
     }
     return playAlongPresets([...stems])

@@ -182,13 +182,26 @@ test('switches songs directly from the Songs drawer @smoke', async ({
   page,
 }) => {
   await page.getByRole('button', { name: 'Songs' }).click()
-  await expect(
-    page.getByRole('complementary', { name: 'Songs and playlists' }),
-  ).toBeVisible()
+  const drawer = page.locator('aside[aria-label="Songs and playlists"]')
+  await expect(drawer).toBeVisible()
   await expect(page.getByRole('tab', { name: /Songs/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )
+
+  const currentRole = page.getByRole('combobox', {
+    name: 'Choose what you perform in Stem control regression',
+  })
+  await expect(currentRole).toBeEnabled()
+  await drawer.evaluate((element) => {
+    element.setAttribute('data-mount-probe', 'hydrated')
+  })
+
+  await page.getByRole('button', { name: 'Close songs' }).click()
+  await expect(drawer).toBeHidden()
+  await page.getByRole('button', { name: 'Songs' }).click()
+  await expect(drawer).toHaveAttribute('data-mount-probe', 'hydrated')
+  await expect(currentRole).toBeEnabled()
 
   await page.getByRole('button', { name: /Drawer navigation target/ }).click()
 
@@ -211,6 +224,44 @@ test('launches a full-band guitar role without doubling the backing @smoke', asy
     'I play guitar',
   )
 
+  await page.evaluate(() => {
+    const testWindow = window as unknown as Record<string, unknown>
+    let releaseGate: (() => void) | undefined
+    testWindow.E2E_MIXER_PREPARATION_GATE = new Promise<void>((resolve) => {
+      releaseGate = resolve
+    })
+    testWindow.E2E_RELEASE_MIXER_PREPARATION = () => releaseGate?.()
+  })
+
+  await role.selectOption('guitar')
+  const preparation = page.getByRole('dialog', {
+    name: /Preparing Stem control regression/,
+  })
+  await expect(preparation).toBeVisible()
+  await expect(preparation.getByRole('progressbar')).toHaveAttribute(
+    'aria-valuemax',
+    '6',
+  )
+
+  // Cancelling leaves the current two-stem mixer untouched, even after the
+  // held storage request is released. The same role can then be requested
+  // again normally.
+  await preparation.getByRole('button', { name: 'Cancel' }).click()
+  await expect(preparation).toBeHidden()
+
+  await page.evaluate(() => {
+    const testWindow = window as unknown as Record<string, unknown>
+    const release = testWindow.E2E_RELEASE_MIXER_PREPARATION
+    if (typeof release === 'function') release()
+    delete testWindow.E2E_MIXER_PREPARATION_GATE
+    delete testWindow.E2E_RELEASE_MIXER_PREPARATION
+  })
+  await expect(
+    page.getByRole('group', { name: 'Guitar stem controls' }),
+  ).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Songs' }).click()
+  await expect(role).toBeEnabled()
   await role.selectOption('guitar')
 
   const guitar = page.getByRole('group', { name: 'Guitar stem controls' })
@@ -254,6 +305,38 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
     compactMetrics.clientHeight,
   )
   expect(compactMetrics.minCardHeight).toBeGreaterThanOrEqual(48)
+
+  const vocalCard = page.getByRole('group', {
+    name: 'Vocal stem controls',
+  })
+  const vocalSlider = page.getByRole('slider', { name: 'Vocal volume' })
+  const compactSliderBox = await vocalSlider.boundingBox()
+  if (compactSliderBox === null) {
+    throw new Error('Compact Vocal fader has no bounding box')
+  }
+  await page.mouse.move(
+    compactSliderBox.x + compactSliderBox.width * 0.8,
+    compactSliderBox.y + compactSliderBox.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    compactSliderBox.x + compactSliderBox.width - 1,
+    compactSliderBox.y + compactSliderBox.height / 2,
+    { steps: 5 },
+  )
+  await page.mouse.up()
+  await expect(vocalSlider).toHaveValue('100')
+
+  const [vocalCardBox, maxSliderBox] = await Promise.all([
+    vocalCard.boundingBox(),
+    vocalSlider.boundingBox(),
+  ])
+  if (vocalCardBox === null || maxSliderBox === null) {
+    throw new Error('Compact Vocal fader geometry is unavailable')
+  }
+  expect(
+    vocalCardBox.x + vocalCardBox.width - (maxSliderBox.x + maxSliderBox.width),
+  ).toBeGreaterThanOrEqual(7)
 
   await page
     .getByRole('button', { name: 'Switch to expanded stem controls' })

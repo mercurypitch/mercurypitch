@@ -821,6 +821,169 @@
 }
 
 /* ============================================================
+// Mixer preparation — protects asynchronous song/role switches
+// ============================================================ */
+
+.uvr-mixer-preparation-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above notifications (2000): this transition intentionally blocks every
+     competing mixer action until it completes or the user cancels it. */
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(5, 4, 12, 0.68);
+  backdrop-filter: blur(6px);
+  animation: overlay-in 0.16s ease;
+}
+
+.uvr-mixer-preparation-dialog {
+  --preparation-accent: #a98df8;
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.85rem 0.9rem;
+  width: min(430px, 100%);
+  padding: 1.1rem;
+  color: var(--fg-primary);
+  background:
+    radial-gradient(circle at 0 0, rgba(169, 141, 248, 0.13), transparent 38%),
+    var(--bg-secondary);
+  border: 1px solid
+    color-mix(in srgb, var(--preparation-accent) 32%, var(--border));
+  border-radius: 1rem;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.46);
+  animation: dialog-in 0.2s ease;
+}
+
+.uvr-mixer-preparation-icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #f4f0ff;
+  background: linear-gradient(145deg, #a98df8, #7655d8);
+  border-radius: 0.8rem;
+  box-shadow: 0 9px 24px rgba(118, 85, 216, 0.24);
+}
+
+.uvr-mixer-preparation-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  animation: spin 0.9s linear infinite;
+}
+
+.uvr-mixer-preparation-copy {
+  min-width: 0;
+}
+
+.uvr-mixer-preparation-copy p {
+  margin: 0 0 0.18rem;
+  color: var(--preparation-accent);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.uvr-mixer-preparation-copy h4 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uvr-mixer-preparation-copy > span {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--fg-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.uvr-mixer-preparation-progress-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.1rem;
+  color: var(--fg-secondary);
+  font-size: 0.68rem;
+}
+
+.uvr-mixer-preparation-progress-row strong {
+  color: var(--fg-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.uvr-mixer-preparation-progress {
+  grid-column: 1 / -1;
+  height: 0.35rem;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  border-radius: 999px;
+}
+
+.uvr-mixer-preparation-progress > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #7655d8, #b59cff);
+  border-radius: inherit;
+  transform-origin: left center;
+  transition: transform 0.18s ease;
+}
+
+.uvr-mixer-preparation-cancel {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-height: 2rem;
+  padding: 0.38rem 0.75rem;
+  color: var(--fg-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.uvr-mixer-preparation-cancel:hover {
+  color: var(--fg-primary);
+  background: var(--bg-hover);
+}
+
+.uvr-mixer-preparation-cancel:focus-visible {
+  outline: 2px solid var(--preparation-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .uvr-mixer-preparation-overlay {
+    align-items: end;
+    padding: 0.75rem;
+  }
+
+  .uvr-mixer-preparation-dialog {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uvr-mixer-preparation-overlay,
+  .uvr-mixer-preparation-dialog,
+  .uvr-mixer-preparation-icon svg {
+    animation: none;
+  }
+
+  .uvr-mixer-preparation-progress > span {
+    transition: none;
+  }
+}
+
+/* ============================================================
 // Session archive import — manifest review + destination
 // ============================================================ */
 
