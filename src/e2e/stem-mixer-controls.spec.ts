@@ -22,16 +22,47 @@ const EXTRA_STEMS = [
   { key: 'bass', label: 'Bass' },
   { key: 'other', label: 'Other' },
 ] as const
+const TONE_WAV = writeToneWav(220, 1)
 const toneDataUrl = `data:audio/wav;base64,${fs
-  .readFileSync(writeToneWav(220, 1))
+  .readFileSync(TONE_WAV)
   .toString('base64')}`
 
-test.use({ viewport: { width: 1440, height: 900 } })
+// Cross-tab ownership is the behavior under test, not Chromium's fake-device
+// plumbing. A Web Audio stream is deterministic and still exercises the real
+// MicManager, BroadcastChannel lock, controller graph, and UI in both tabs.
+const SYNTHETIC_MIC_INIT = () => {
+  Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+    configurable: true,
+    value: async () => {
+      const context = new AudioContext()
+      const oscillator = context.createOscillator()
+      const destination = context.createMediaStreamDestination()
+      oscillator.frequency.value = 220
+      oscillator.connect(destination)
+      oscillator.start()
+      const testWindow = window as unknown as {
+        __e2eMicResources?: Array<{
+          context: AudioContext
+          oscillator: OscillatorNode
+        }>
+      }
+      testWindow.__e2eMicResources ??= []
+      testWindow.__e2eMicResources.push({ context, oscillator })
+      return destination.stream
+    },
+  })
+}
+
+test.use({
+  viewport: { width: 1440, height: 900 },
+  permissions: ['microphone'],
+})
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
   })
+  await page.addInitScript(SYNTHETIC_MIC_INIT)
   await page.goto('/')
   await dismissOverlays(page)
   await page.waitForFunction(() => window.__pp?.appStore !== undefined)
@@ -209,6 +240,105 @@ test('switches songs directly from the Songs drawer @smoke', async ({
     page.getByRole('heading', {
       name: 'Drawer navigation target (session)',
     }),
+  ).toBeVisible()
+})
+
+test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
+  page,
+}) => {
+  const micButton = (target: import('@playwright/test').Page) =>
+    target.getByRole('button', {
+      name: /^(?:Enable|Disable|Retry) microphone$/,
+    })
+  const secondPage = await page.context().newPage()
+  await secondPage.addInitScript(() => {
+    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+  })
+  await secondPage.addInitScript(SYNTHETIC_MIC_INIT)
+  await secondPage.goto(`/#/karaoke/session/${SESSION_ID}/mixer`)
+  await dismissOverlays(secondPage)
+  await expect(secondPage.locator('.stem-mixer')).toBeVisible({
+    timeout: 15_000,
+  })
+
+  // Prepare both tabs before opening the mic. Creating/loading the second tab
+  // after capture starts can legitimately trigger the app's 20-second hidden
+  // tab release policy before the handoff assertion is reached.
+  await page.bringToFront()
+  const firstMic = micButton(page)
+  await firstMic.click()
+  await expect(firstMic).toHaveAttribute('aria-pressed', 'true', {
+    timeout: 15_000,
+  })
+
+  await secondPage.bringToFront()
+  const secondMic = micButton(secondPage)
+  await secondMic.click()
+  const handoff = secondPage.getByRole('alertdialog', {
+    name: 'Your mic is open in another tab',
+  })
+  await expect(handoff).toBeVisible()
+  await handoff.getByRole('button', { name: 'Use it here' }).click()
+
+  await expect(secondMic).toBeEnabled()
+  await expect(secondMic).not.toHaveClass(/sm-mic-toggle-btn--error/)
+  await secondMic.click()
+  await expect(secondMic).toHaveAttribute('aria-pressed', 'true')
+
+  // The tab that yielded must visibly become neutral/off. A handoff is
+  // intentional, so presenting it as a red recording/error state is false.
+  await expect(firstMic).toBeEnabled()
+  await expect(firstMic).toHaveAccessibleName('Enable microphone')
+  await expect(firstMic).toHaveAttribute('aria-pressed', 'false')
+  await expect(firstMic).not.toHaveClass(/sm-mic-toggle-btn--(?:active|error)/)
+  await secondPage.close()
+})
+
+test('maps a zoomed waveform context menu without seeking @smoke', async ({
+  page,
+}) => {
+  const overview = page.locator('[data-canvas-id="overview"]').first()
+  const overviewBox = await overview.boundingBox()
+  if (overviewBox === null) throw new Error('Overview has no bounding box')
+
+  const preferredRail =
+    overviewBox.width >= 320
+      ? 112
+      : overviewBox.width >= 180
+        ? 88
+        : Math.max(36, overviewBox.width * 0.42)
+  const railWidth = Math.round(
+    Math.min(preferredRail, Math.max(0, overviewBox.width - 47)),
+  )
+  const waveformWidth = overviewBox.width - railWidth - 5
+  const targetX = overviewBox.x + railWidth + 1 + waveformWidth * 0.02
+  const targetY = overviewBox.y + Math.min(24, overviewBox.height / 2)
+
+  // Zoom around the target first. The menu must use the same window and label
+  // rail mapping as the waveform itself, not the canvas's full CSS box.
+  await page.mouse.move(targetX, targetY)
+  await page.mouse.wheel(0, -100)
+
+  const progressWidth = () =>
+    page
+      .locator('.sm-progress-fill')
+      .evaluate((element) => parseFloat(getComputedStyle(element).width))
+  const before = await progressWidth()
+
+  await page.mouse.click(targetX, targetY, { button: 'right' })
+  const menu = page.locator('.sm-loop-menu')
+  await expect(menu).toBeVisible()
+  await expect(menu).toContainText('Loop point at 0:00')
+  await expect.poll(progressWidth).toBeCloseTo(before, 1)
+
+  await menu.getByRole('button', { name: 'Set loop start here' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Set loop start (A)' }),
+  ).toHaveClass(/sm-loop-btn--a-set/)
+
+  await page.mouse.click(targetX, targetY, { button: 'right' })
+  await expect(
+    page.locator('.sm-loop-menu').getByRole('button', { name: 'Clear loop' }),
   ).toBeVisible()
 })
 

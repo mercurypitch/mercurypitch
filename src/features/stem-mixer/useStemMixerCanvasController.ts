@@ -87,6 +87,7 @@ export interface StemMixerCanvasController {
   drawMidiCanvas: () => void
   redrawAll: () => void
   queueCanvasRedraw: () => void
+  timelineTimeAtClientX: (clientX: number, canvas: HTMLCanvasElement) => number
   handleCanvasWheel: (e: WheelEvent) => void
   handleCanvasTouchStart: (e: TouchEvent) => void
   handleCanvasTouchMove: (e: TouchEvent) => void
@@ -1200,6 +1201,10 @@ export const useStemMixerCanvasController = (
   const handleCanvasPointerDown = (e: PointerEvent) => {
     const canvas = e.currentTarget as HTMLCanvasElement
     if (!deps.duration()) return
+    // Secondary clicks belong exclusively to the loop context menu. Letting
+    // them enter the primary pointer path arms a pan and the matching
+    // pointerup is then mistaken for a click-to-seek.
+    if (e.button !== 0) return
 
     // Pitch edit mode: grab a note to select + drag it (move / resize /
     // retune); empty click deselects (then falls through to pan).
@@ -1627,6 +1632,7 @@ export const useStemMixerCanvasController = (
     drawMidiCanvas,
     redrawAll,
     queueCanvasRedraw,
+    timelineTimeAtClientX: clientXToTime,
     handleCanvasWheel,
     handleCanvasTouchStart,
     handleCanvasTouchMove,

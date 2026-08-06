@@ -918,12 +918,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   } | null>(null)
   const openLoopMenu = (e: MouseEvent) => {
     e.preventDefault()
-    const el = e.currentTarget as HTMLElement | null
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    if (rect.width <= 0) return
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const time = audio.windowStart() + ratio * audio.windowDuration()
+    const targetCanvas = e.currentTarget as HTMLCanvasElement | null
+    if (!targetCanvas) return
+    const time = Math.max(
+      0,
+      Math.min(
+        audio.duration(),
+        canvas.timelineTimeAtClientX(e.clientX, targetCanvas),
+      ),
+    )
     setLoopMenu({ x: e.clientX, y: e.clientY, time })
   }
   const clearLoopFromMenu = () => {
