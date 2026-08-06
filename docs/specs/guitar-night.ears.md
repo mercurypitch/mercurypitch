@@ -7,7 +7,8 @@ Guitar runtime.
 
 **Status:** approved target contract; implementation in progress. Delivery
 began with legacy lifecycle stabilization and runtime extraction; the
-standalone Velvet Rehearsal entry is the first route slice.
+standalone Velvet Rehearsal entry is mounted, and completed local separation
+sessions can be staged under route-owned URL leases without starting playback.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and

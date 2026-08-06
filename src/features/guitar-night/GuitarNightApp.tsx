@@ -9,20 +9,45 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
+import { AUDIO_UPLOAD_ACCEPT, formatFileSize, } from '@/lib/audio-upload-contract'
 import type { GuitarFirstWinExerciseStepV1 } from './first-win-config'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
+import { readGuitarNightSession } from './session-link'
+import type { GuitarNightSongPort } from './song-port'
+import type { GuitarNightSelectionState } from './useGuitarNightSongController'
+import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
 type EntryView = 'choices' | 'first-win' | 'song'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
+  loadSongPort?: () => Promise<GuitarNightSongPort>
 }
 
 const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+function formatPreparedDate(timestamp: number): string {
+  const date = new Date(timestamp)
+  if (!Number.isFinite(date.getTime())) return 'Date unavailable'
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
+}
+
+function unavailableSongCopy(
+  state: Extract<GuitarNightSelectionState, { kind: 'unavailable' }>,
+): string {
+  if (state.reason === 'not-found') {
+    return 'That prepared song is not available on this device.'
+  }
+  if (state.reason === 'not-completed') {
+    return 'That song has not finished preparing yet.'
+  }
+  if (state.reason === 'missing-local-audio') {
+    return 'The song record is here, but its local audio is missing.'
+  }
+  return 'Your prepared-song library could not be opened. Try again.'
 }
 
 function stepFretsForString(
@@ -37,7 +62,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )
   const firstWinStep = createMemo(() => firstWinConfig().exerciseSteps[0])
-  const [view, setView] = createSignal<EntryView>('choices')
+  const initialSessionId = readGuitarNightSession()
+  const [view, setView] = createSignal<EntryView>(
+    initialSessionId === null ? 'choices' : 'song',
+  )
   const [previewHits, setPreviewHits] = createSignal(0)
   const [selectedSong, setSelectedSong] = createSignal<File | null>(null)
   let detailHeading: HTMLHeadingElement | undefined
@@ -46,6 +74,28 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const focusDetail = () => {
     queueMicrotask(() => detailHeading?.focus())
   }
+
+  const songController = useGuitarNightSongController({
+    loadSongPort: () => {
+      const configuredLoader = props.loadSongPort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightSongPort()
+        : configuredLoader()
+    },
+    onRouteSession: () => {
+      setSelectedSong(null)
+      setView('song')
+      focusDetail()
+    },
+  })
+  const activeBacking = createMemo(() => {
+    const state = songController.selectionState()
+    return state.kind === 'ready' ? state.lease : null
+  })
+  const unavailableSelection = createMemo(() => {
+    const state = songController.selectionState()
+    return state.kind === 'unavailable' ? state : null
+  })
 
   const openFirstWin = () => {
     if (!firstWinConfig().enabled) {
@@ -56,9 +106,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     focusDetail()
   }
 
-  const openSongPicker = () => {
+  const openSongLibrary = () => {
     setView('song')
-    songInput?.click()
+    songController.initialize()
     focusDetail()
   }
 
@@ -67,6 +117,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   const returnToChoices = () => {
+    if (view() === 'song') songController.clearSession('push')
     setView('choices')
     queueMicrotask(() =>
       document
@@ -95,6 +146,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const handleCompletion = () => {
     if (completionAction() === 'load-song') {
       setView('song')
+      songController.initialize()
       focusDetail()
       return
     }
@@ -103,9 +155,30 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   const handleSongChange = (event: Event) => {
     const input = event.currentTarget as HTMLInputElement
+    songController.clearSession('push')
     setSelectedSong(input.files?.[0] ?? null)
+    input.value = ''
     setView('song')
     focusDetail()
+  }
+
+  const stagePreparedSong = (sessionId: string) => {
+    setSelectedSong(null)
+    void songController.stageSession(sessionId, 'push')
+  }
+
+  const roomStatusCopy = () => {
+    const selection = songController.selectionState()
+    if (selection.kind === 'ready') {
+      return 'Song prepared; playback has not started'
+    }
+    if (selection.kind === 'loading') {
+      return 'Opening local song; no audio has started'
+    }
+    if (selectedSong() !== null) {
+      return 'Audio chosen; preparation has not started'
+    }
+    return 'No audio or listening has started'
   }
 
   return (
@@ -166,11 +239,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   type="button"
                   aria-label="Load a song"
                   aria-describedby="guitar-night-song-description"
-                  onClick={openSongPicker}
+                  onClick={openSongLibrary}
                 >
                   <strong>Load a song</strong>
                   <span id="guitar-night-song-description">
-                    Choose one audio file from this device
+                    Open a prepared song or choose local audio
                   </span>
                 </button>
                 <button
@@ -303,38 +376,156 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
 
             <Match when={view() === 'song'}>
-              <p class={styles.eyebrow}>Songs · local selection</p>
+              <p class={styles.eyebrow}>Songs · this device</p>
               <h1 ref={detailHeading} tabindex="-1">
-                Bring your own song.
+                Bring a song into the room.
               </h1>
               <p class={styles.detailCopy}>
-                Choose one audio file for this room. Nothing is uploaded or
-                processed at this step.
+                Open a song you already prepared here, or choose one audio file
+                from this device. Nothing starts playing on its own.
               </p>
 
-              <div class={styles.songWell}>
-                <Show
-                  when={selectedSong() !== null}
-                  fallback={
-                    <>
-                      <strong>No song selected</strong>
-                      <span>MP3, WAV, M4A, FLAC, or OGG</span>
-                    </>
-                  }
-                >
-                  <strong>{selectedSong()?.name}</strong>
-                  <span>
-                    {selectedSong()?.type === ''
-                      ? 'Audio file'
-                      : (selectedSong()?.type ?? 'Audio file')}{' '}
-                    · {formatFileSize(selectedSong()?.size ?? 0)}
-                  </span>
-                  <small>
-                    Selected on this device. Song preparation is not connected
-                    yet.
-                  </small>
-                </Show>
+              <div class={styles.songWell} aria-live="polite">
+                <Switch>
+                  <Match when={activeBacking()}>
+                    {(backing) => (
+                      <>
+                        <strong>{backing().title}</strong>
+                        <span>
+                          {backing().stems.length} local{' '}
+                          {backing().stems.length === 1 ? 'stem' : 'stems'}{' '}
+                          ready
+                        </span>
+                        <small>
+                          {backing().defaultMix.kind === 'parts'
+                            ? backing().defaultMix.muted.length > 0
+                              ? 'The guitar part is staged separately and defaults muted.'
+                              : 'The available band parts are staged without a separate guitar track.'
+                            : 'Guitar is still inside this instrumental mix, so no guitar-mute control is shown.'}
+                        </small>
+                      </>
+                    )}
+                  </Match>
+                  <Match
+                    when={songController.selectionState().kind === 'loading'}
+                  >
+                    <strong>Opening the prepared song</strong>
+                    <span>Reading its local stems from this device…</span>
+                    <small>No playback or listening has started.</small>
+                  </Match>
+                  <Match when={unavailableSelection()}>
+                    {(selection) => (
+                      <>
+                        <strong>Song unavailable here</strong>
+                        <span>{unavailableSongCopy(selection())}</span>
+                        <small>
+                          Choose another prepared song or select the audio file
+                          again.
+                        </small>
+                      </>
+                    )}
+                  </Match>
+                  <Match when={selectedSong() !== null}>
+                    <strong>{selectedSong()?.name}</strong>
+                    <span>
+                      {selectedSong()?.type === ''
+                        ? 'Audio file'
+                        : (selectedSong()?.type ?? 'Audio file')}{' '}
+                      · {formatFileSize(selectedSong()?.size ?? 0)}
+                    </span>
+                    <small>
+                      Selected on this device. Song preparation is not connected
+                      yet.
+                    </small>
+                  </Match>
+                  <Match when={true}>
+                    <strong>No song selected</strong>
+                    <span>MP3, WAV, or FLAC</span>
+                    <small>
+                      Prepared songs stay on this device and open without an
+                      upload.
+                    </small>
+                  </Match>
+                </Switch>
               </div>
+
+              <section
+                class={styles.songLibrary}
+                aria-labelledby="guitar-night-library-title"
+              >
+                <div class={styles.songLibraryHeader}>
+                  <h2 id="guitar-night-library-title">Prepared songs</h2>
+                  <Show when={songController.libraryState() === 'ready'}>
+                    <span>{songController.songs().length} on this device</span>
+                  </Show>
+                </div>
+
+                <Switch>
+                  <Match
+                    when={
+                      songController.libraryState() === 'idle' ||
+                      songController.libraryState() === 'loading'
+                    }
+                  >
+                    <p class={styles.songMessage}>
+                      Opening your local library…
+                    </p>
+                  </Match>
+                  <Match when={songController.libraryState() === 'error'}>
+                    <div class={styles.songMessageRow}>
+                      <p>Your local library could not be opened.</p>
+                      <button type="button" onClick={songController.retry}>
+                        Try again
+                      </button>
+                    </div>
+                  </Match>
+                  <Match
+                    when={
+                      songController.libraryState() === 'ready' &&
+                      songController.songs().length === 0
+                    }
+                  >
+                    <p class={styles.songMessage}>
+                      No prepared songs on this device yet.
+                    </p>
+                  </Match>
+                  <Match when={songController.songs().length > 0}>
+                    <ul class={styles.songList}>
+                      <For each={songController.songs()}>
+                        {(song) => (
+                          <li>
+                            <button
+                              type="button"
+                              classList={{
+                                [styles.songChoiceActive]:
+                                  activeBacking()?.sessionId === song.sessionId,
+                              }}
+                              aria-current={
+                                activeBacking()?.sessionId === song.sessionId
+                                  ? 'true'
+                                  : undefined
+                              }
+                              disabled={
+                                songController.selectionState().kind ===
+                                'loading'
+                              }
+                              onClick={() => stagePreparedSong(song.sessionId)}
+                            >
+                              <span>
+                                <strong>{song.title}</strong>
+                                <small>
+                                  {formatPreparedDate(song.createdAt)}
+                                </small>
+                              </span>
+                              <i aria-hidden="true">Open</i>
+                            </button>
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </Match>
+                </Switch>
+              </section>
 
               <div class={styles.detailActions}>
                 <button type="button" onClick={returnToChoices}>
@@ -353,10 +544,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         </section>
       </main>
 
-      <div class={styles.roomStatus} aria-label="Room status: quiet">
+      <div
+        class={styles.roomStatus}
+        aria-label={`Room status: ${roomStatusCopy()}`}
+      >
         <span aria-hidden="true" />
         <strong>Room ready</strong>
-        <small>No audio or listening has started</small>
+        <small>{roomStatusCopy()}</small>
       </div>
 
       <input
@@ -364,7 +558,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         class={styles.fileInput}
         data-testid="guitar-night-song-input"
         type="file"
-        accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg"
+        accept={AUDIO_UPLOAD_ACCEPT}
         onChange={handleSongChange}
         tabindex="-1"
       />

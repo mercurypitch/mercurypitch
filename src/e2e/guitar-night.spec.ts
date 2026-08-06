@@ -139,6 +139,26 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
   }
 })
 
+test('keeps the song actions reachable in a short desktop viewport @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+
+  const chooseAudio = page.getByRole('button', {
+    name: 'Choose audio',
+    exact: true,
+  })
+  await chooseAudio.scrollIntoViewIfNeeded()
+  const buttonBox = await chooseAudio.boundingBox()
+  expect(buttonBox).not.toBeNull()
+  expect((buttonBox?.y ?? 0) + (buttonBox?.height ?? 0)).toBeLessThanOrEqual(
+    720,
+  )
+  await expect(page.locator('main')).toHaveCSS('overflow-y', 'auto')
+})
+
 test('keeps the beginner preview and local song choice honest @smoke', async ({
   page,
 }) => {
@@ -158,8 +178,16 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   ).toBeVisible()
 
   await page.getByRole('button', { name: 'Back', exact: true }).click()
-  const fileChooserPromise = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Bring a song into the room.' }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('Nothing starts playing on its own.'),
+  ).toBeVisible()
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Choose audio', exact: true }).click()
   const fileChooser = await fileChooserPromise
   await fileChooser.setFiles({
     name: 'practice-room.wav',
@@ -167,13 +195,7 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
     buffer: Buffer.from('RIFF'),
   })
 
-  await expect(
-    page.getByRole('heading', { name: 'Bring your own song.' }),
-  ).toBeVisible()
   await expect(page.getByText('practice-room.wav')).toBeVisible()
-  await expect(
-    page.getByText('Nothing is uploaded or processed at this step.'),
-  ).toBeVisible()
   await expect(
     page.getByText('Song preparation is not connected yet.'),
   ).toBeVisible()

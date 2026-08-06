@@ -266,6 +266,28 @@ export class DexieAdapter implements DatabaseAdapter {
     return repo
   }
 
+  /**
+   * Failure-bearing local read for lightweight standalone consumers. The
+   * generic repository intentionally degrades failed reads to an empty list;
+   * this strict path lets a room distinguish "empty" from "unavailable".
+   */
+  readAllStrict<T extends DbEntity>(entityName: string): Promise<T[]> {
+    return this.db.table<T, string>(entityName).toArray()
+  }
+
+  /** Strict indexed read that preserves IndexedDB failures for the caller. */
+  readByIndexStrict<T extends DbEntity>(
+    entityName: string,
+    indexName: string,
+    value: string | number,
+  ): Promise<T[]> {
+    return this.db
+      .table<T, string>(entityName)
+      .where(indexName)
+      .equals(value)
+      .toArray()
+  }
+
   async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {
     // Dexie.transaction()'s scope-callback type (TXWithTables<this>) maps
     // over every member of whatever class it's called on, and — a known

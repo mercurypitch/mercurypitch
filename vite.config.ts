@@ -259,8 +259,16 @@ export default defineConfig(({ mode }) => {
             // has no back-edge for anything to close a cycle through.
             if (id.startsWith('\0vite/') || id.includes('vite/preload-helper'))
               return 'vite-helpers'
+            // Keep the dependency-free picker contract in a tiny shared chunk.
+            // Otherwise Rollup can co-locate it with UvrPanel's `advanced`
+            // chunk and make standalone song pickers download the app UI.
+            if (id.includes('/src/lib/audio-upload-contract.'))
+              return 'audio-upload-contract'
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
+              // IndexedDB is the only third-party runtime the standalone song
+              // readers need. Isolate it from the generic app vendor payload.
+              if (id.includes('/dexie/')) return 'vendor-db'
               // GPU stack rides its own chunk: only the lazily-imported glass
               // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
               // vendor chunk must never drag typegpu into first paints, and
@@ -296,6 +304,13 @@ export default defineConfig(({ mode }) => {
             // app dies at first paint on "Cannot access 'ge' before
             // initialization", with no clue which module 'ge' was. Whatever
             // pitch-core reaches has to be in pitch-core.
+            if (
+              /src\/db\/(local-database|adapters\/dexie-adapter|services\/uvr-read-service)/.test(
+                id,
+              ) || /src\/lib\/wav-meta/.test(id)
+            ) {
+              return 'local-song-library'
+            }
             if (
               /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
                 id,
