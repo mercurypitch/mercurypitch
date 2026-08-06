@@ -44,6 +44,8 @@ export interface AuthUserInfo {
   email: string | null
   emailVerified: boolean
   lastLoginAt: string | null
+  isTestAccount: boolean
+  testAccountExpiresAt: string | null
 }
 
 export interface AuthResponse {

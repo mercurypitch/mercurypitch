@@ -23,6 +23,7 @@ import { sendEmailVerification, sendPasswordReset, sendSignupWelcome, } from './
 import { shouldTouchLastActive } from './last-active'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { purgePerksByEmail } from './perks'
+import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, type ManagedTestAccountState, } from './testing-account-state'
 
 export interface Env {
   /** Where emailed links land when the request Origin is not a first-party
@@ -112,11 +113,17 @@ export interface Env {
    *  means Stripe webhook delivery is broken). Optional — unset logs only.
    *  `wrangler secret put BILLING_ALERT_EMAIL` (kept out of the public repo). */
   BILLING_ALERT_EMAIL?: string
+  /** Explicit development-only switch for Mission Control test identities. */
+  ALLOW_TEST_ACCOUNT_PROVISIONING?: string
+  /** Dedicated service secret for managed testing-account operations. */
+  TESTING_PROVISION_KEY?: string
 }
 
 export interface AuthUser {
   userId: string
   provider: string
+  isTestAccount?: boolean
+  testAccountExpiresAt?: string | null
 }
 
 interface UserRow {
@@ -286,13 +293,14 @@ export async function getAuth(
   // treated as version 0 so a single tokenVersion bump also revokes legacy
   // tokens.
   const user = await env.DB.prepare(
-    'SELECT tokenVersion, lastActiveAt, suspendedAt FROM users WHERE id = ?',
+    'SELECT tokenVersion, lastActiveAt, suspendedAt, email FROM users WHERE id = ?',
   )
     .bind(payload.sub)
     .first<{
       tokenVersion: number
       lastActiveAt: string | null
       suspendedAt: string | null
+      email: string | null
     }>()
   if (!user) return null
   // Check this before tokenVersion: suspension bumps that counter too, but the
@@ -300,6 +308,12 @@ export async function getAuth(
   // anonymous identity. Once restored, the old token falls through to the
   // ordinary version check and stays revoked.
   assertAccountActive(user)
+  const testAccount = await managedStateForIdentity(
+    env.DB,
+    payload.sub,
+    user.email,
+  )
+  assertManagedTestAccountActive(testAccount)
   if (user.tokenVersion > (payload.v ?? 0)) return null
 
   // Throttled last-active touch: at most one write per user per window (see
@@ -318,7 +332,12 @@ export async function getAuth(
     }
   }
 
-  return { userId: payload.sub, provider: payload.provider }
+  return {
+    userId: payload.sub,
+    provider: payload.provider,
+    isTestAccount: testAccount !== null,
+    testAccountExpiresAt: testAccount?.expiresAt ?? null,
+  }
 }
 
 // ── Password hashing (PBKDF2-SHA256) ─────────────────────────────────
@@ -342,7 +361,7 @@ async function pbkdf2(
   )
 }
 
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const bits = await pbkdf2(password, salt, PBKDF2_ITERATIONS)
   return `pbkdf2$${PBKDF2_ITERATIONS}$${b64urlEncode(salt)}$${b64urlEncode(bits)}`
@@ -487,7 +506,10 @@ async function touchLogin(db: D1Database, userId: string): Promise<void> {
     .run()
 }
 
-function publicUser(row: UserRow): object {
+function publicUser(
+  row: UserRow,
+  testAccount: ManagedTestAccountState | null = null,
+): object {
   return {
     id: row.id,
     createdAt: row.createdAt,
@@ -496,6 +518,8 @@ function publicUser(row: UserRow): object {
     email: row.email,
     emailVerified: !!row.emailVerified,
     lastLoginAt: row.lastLoginAt,
+    isTestAccount: testAccount !== null,
+    testAccountExpiresAt: testAccount?.expiresAt ?? null,
   }
 }
 
@@ -628,6 +652,8 @@ type Respond = (body: object | null, init?: ResponseInit) => Response
 
 async function createSession(env: Env, row: UserRow): Promise<string> {
   assertAccountActive(row)
+  const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
+  assertManagedTestAccountActive(testAccount)
   const now = Math.floor(Date.now() / 1000)
   const token = await signJwt(
     {
@@ -649,8 +675,15 @@ async function issueSession(
   respond: Respond,
   isNew = false,
 ): Promise<Response> {
+  const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
+  assertManagedTestAccountActive(testAccount)
   const token = await createSession(env, row)
-  return respond({ token, userId: row.id, isNew, user: publicUser(row) })
+  return respond({
+    token,
+    userId: row.id,
+    isNew,
+    user: publicUser(row, testAccount),
+  })
 }
 
 interface AuthBody {
@@ -870,6 +903,9 @@ async function handleForgotPassword(
   if (!email || !EMAIL_RE.test(email)) {
     return respond({ error: 'Valid email required' }, { status: 400 })
   }
+  if (isManagedTestEmail(email)) {
+    return respond({ error: 'Email address is reserved' }, { status: 400 })
+  }
   // Per-address cap on top of the per-IP one (rotating IPs must not be able
   // to bomb one inbox). Applied silently — a visible 429 here would reveal
   // that the address exists.
@@ -993,6 +1029,9 @@ async function handleRegister(
   const email = body.email?.trim().toLowerCase()
   if (!email || !EMAIL_RE.test(email)) {
     return respond({ error: 'Valid email required' }, { status: 400 })
+  }
+  if (isManagedTestEmail(email)) {
+    return respond({ error: 'Email address is reserved' }, { status: 400 })
   }
   if (!body.password) {
     return respond({ error: 'Password required' }, { status: 400 })
@@ -1512,7 +1551,9 @@ async function handleMe(
           leaderboardOptIn:
             profile.leaderboardOptIn === 1 || profile.leaderboardOptIn === true,
         }
-  return respond({ user: publicUser(row), profile: normalized })
+  const testAccount = await managedStateForIdentity(env.DB, row.id, row.email)
+  assertManagedTestAccountActive(testAccount)
+  return respond({ user: publicUser(row, testAccount), profile: normalized })
 }
 
 async function handleLogout(

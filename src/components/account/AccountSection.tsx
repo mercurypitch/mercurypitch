@@ -186,6 +186,17 @@ export const AccountSection: Component = () => {
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
   const isUpgraded = (): boolean =>
     provider() === 'password' || provider() === 'google'
+  const isTestAccount = (): boolean => me()?.user.isTestAccount === true
+  const testAccountExpiry = (): string => {
+    const value = me()?.user.testAccountExpiresAt
+    if (value == null) return ''
+    const parsed = new Date(value)
+    if (!Number.isFinite(parsed.getTime())) return ''
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(parsed)
+  }
 
   return (
     <div class={styles.accountSection} data-testid="account-section">
@@ -203,7 +214,9 @@ export const AccountSection: Component = () => {
           <Match when={me() != null && isUpgraded()}>
             <div class={styles.accountCard}>
               <span class={styles.accountType}>
-                Signed in with {provider() === 'google' ? 'Google' : 'email'}
+                {isTestAccount()
+                  ? 'Managed test account'
+                  : `Signed in with ${provider() === 'google' ? 'Google' : 'email'}`}
               </span>
               <div class={styles.accountIdentity}>
                 <span
@@ -212,6 +225,14 @@ export const AccountSection: Component = () => {
                 >
                   {profileName() !== '' ? profileName() : 'Signed in'}
                 </span>
+                <Show when={isTestAccount()}>
+                  <span
+                    class={styles.testAccountPill}
+                    data-testid="test-account-pill"
+                  >
+                    Test account
+                  </span>
+                </Show>
                 <Show when={supporter()}>
                   {(grant) => (
                     <span data-testid="account-supporter-pill">
@@ -248,6 +269,12 @@ export const AccountSection: Component = () => {
                   </button>
                 </div>
               </div>
+              <Show when={isTestAccount() && testAccountExpiry() !== ''}>
+                <p class={styles.testAccountNote}>
+                  Campaign access expires {testAccountExpiry()}. Purchases are
+                  disabled for this account.
+                </p>
+              </Show>
 
               <div class={styles.accountField}>
                 <label

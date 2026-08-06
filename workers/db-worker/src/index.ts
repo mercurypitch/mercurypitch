@@ -30,6 +30,8 @@ import { handlePremiumBackgroundRequest } from './premium-backgrounds'
 import { resolveSupporterFeatureAccess } from './supporter-feature-access'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
+import { ManagedTestAccountInactiveError, managedTestAccountErrorResponse, } from './testing-account-state'
+import { handleTestingAccountRequest } from './testing-accounts'
 import { validateWrite } from './validation'
 
 const CORS: Record<string, string> = {
@@ -39,7 +41,7 @@ const CORS: Record<string, string> = {
   // Spec quirk: a `*` wildcard does NOT cover the Authorization header
   // (Firefox already warns it will block it) — list everything we use.
   'Access-Control-Allow-Headers':
-    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key, X-Jam-Background-Capability, X-Jam-Room-Id',
+    'Authorization, Content-Type, If-None-Match, Range, X-Admin-Key, X-Jam-Background-Capability, X-Jam-Room-Id, X-Testing-Provision-Key',
   'Access-Control-Expose-Headers':
     'Accept-Ranges, Content-Length, Content-Range, ETag',
 }
@@ -1778,6 +1780,9 @@ export default {
       if (err instanceof AccountSuspendedError) {
         return accountSuspendedResponse(respond)
       }
+      if (err instanceof ManagedTestAccountInactiveError) {
+        return managedTestAccountErrorResponse(respond, err)
+      }
       // Without this boundary an unhandled throw returns Cloudflare's error
       // page with no CORS headers, which the browser surfaces to the app as
       // an opaque "Failed to fetch". Log it (visible via `wrangler tail`) and
@@ -1811,6 +1816,14 @@ async function handleRequest(
   ctx?: ExecutionContext,
 ): Promise<Response> {
   const url = new URL(request.url)
+
+  const testingAccountResponse = await handleTestingAccountRequest(
+    request,
+    env,
+    url,
+    respondNoStore,
+  )
+  if (testingAccountResponse !== null) return testingAccountResponse
 
   if (url.pathname === '/api/admin/user-suspension') {
     return handleUserSuspension(

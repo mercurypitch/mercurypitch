@@ -29,24 +29,7 @@ import type { Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
 import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { PricingRow } from './billing-core'
-import {
-  UVR_TIER_PLAN_IDS,
-  bestSupporterLevel,
-  creditBalance,
-  donationDays,
-  extendSupporterExpiry,
-  isUvrTier,
-  isValidJobRef,
-  mapPricingPlans,
-  sourcePlanId,
-  supporterLevel,
-  timingSafeEqualStr,
-  uvrDebitKey,
-  uvrJobCost,
-  uvrModelCredits,
-  uvrRefundKey,
-  verifyStripeSignature,
-} from './billing-core'
+import { UVR_TIER_PLAN_IDS, bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from './billing-core'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -200,6 +183,12 @@ async function handleCheckout(
   }
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  if (auth.isTestAccount) {
+    return respond(
+      { error: 'Billing is disabled for managed testing accounts' },
+      { status: 403 },
+    )
+  }
   // Anonymous accounts can't be billed — they must upgrade (email/Google)
   // first so receipts and the customer record have a real identity.
   if (auth.provider === 'anonymous') {
@@ -291,6 +280,12 @@ async function handlePortal(
   }
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  if (auth.isTestAccount) {
+    return respond(
+      { error: 'Billing is disabled for managed testing accounts' },
+      { status: 403 },
+    )
+  }
 
   const user = await env.DB.prepare(
     'SELECT stripeCustomerId FROM users WHERE id = ?',
@@ -371,7 +366,12 @@ async function grantSupporterEntitlement(
     console.error(
       `[billing] donation ${eventId}: no grant (userId=${userId || 'missing'}, days=${days})`,
     )
-    return { granted: 0, userId: null, duplicate: false, unit: 'supporter days' }
+    return {
+      granted: 0,
+      userId: null,
+      duplicate: false,
+      unit: 'supporter days',
+    }
   }
 
   const now = new Date().toISOString()
@@ -580,7 +580,10 @@ const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
 
 /** Sane declared-duration bounds: positive, finite, under a day. */
 const isValidDuration = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value) && value > 0 && value < 86_400
+  typeof value === 'number' &&
+  Number.isFinite(value) &&
+  value > 0 &&
+  value < 86_400
 
 async function getUvrQuote(
   env: Env,
@@ -619,9 +622,10 @@ async function handleUvrAdmission(
 
   let body: Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
   try {
-    body = await request.json<
-      Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
-    >()
+    body =
+      await request.json<
+        Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
+      >()
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
   }
@@ -631,7 +635,10 @@ async function handleUvrAdmission(
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
   }
-  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+  if (
+    body.durationSeconds !== undefined &&
+    !isValidDuration(body.durationSeconds)
+  ) {
     return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
   }
 
@@ -707,7 +714,10 @@ async function handleDebit(
   if (body.model !== undefined && !MODEL_NAME_RE.test(body.model)) {
     return respond({ error: 'Invalid model' }, { status: 400 })
   }
-  if (body.durationSeconds !== undefined && !isValidDuration(body.durationSeconds)) {
+  if (
+    body.durationSeconds !== undefined &&
+    !isValidDuration(body.durationSeconds)
+  ) {
     return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
   }
 
@@ -754,7 +764,12 @@ async function handleDebit(
       .bind(key)
       .first<{ delta: number }>()
     if (existing) {
-      return respond({ debited: -existing.delta, cost, balance, duplicate: true })
+      return respond({
+        debited: -existing.delta,
+        cost,
+        balance,
+        duplicate: true,
+      })
     }
     console.warn(
       `[billing] debit ${body.jobRef}: refused (user=${auth.userId} balance=${balance} required=${cost})`,
@@ -877,7 +892,11 @@ async function handleWebhook(
   if (seen) return respond({ received: true, duplicate: true })
 
   if (event.type === 'checkout.session.completed') {
-    const outcome = await grantForCheckout(env, event.id, event.data?.object ?? {})
+    const outcome = await grantForCheckout(
+      env,
+      event.id,
+      event.data?.object ?? {},
+    )
     // Only the claim winner may mark the event processed. A duplicate here
     // means another delivery (or the sweep) holds the claim RIGHT NOW - if
     // that winner fails and releases it, recording the event on the loser's
@@ -954,7 +973,11 @@ export async function reconcileBilling(env: Env): Promise<void> {
       // for every OTHER missed grant. The failed event stays unrecorded, so
       // the next sweep retries it.
       try {
-        const outcome = await grantForCheckout(env, ev.id, ev.data?.object ?? {})
+        const outcome = await grantForCheckout(
+          env,
+          ev.id,
+          ev.data?.object ?? {},
+        )
         // A duplicate = the webhook (or a parallel sweep) holds the claim;
         // recording it here would strand the grant if that winner fails.
         // It also is not a recovery, so it does not belong in the alert.
