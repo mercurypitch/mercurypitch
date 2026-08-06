@@ -5,6 +5,12 @@ import { loadEnv } from 'vite'
 const env = loadEnv('', process.cwd(), '')
 Object.assign(process.env, env)
 
+function numericEnv(value: string | undefined, fallback: number): number {
+  return value === undefined || value === '' ? fallback : Number(value)
+}
+
+const e2ePort = numericEnv(process.env.VITE_E2E_PORT, 3001)
+
 export default defineConfig({
   testDir: './src/e2e',
   fullyParallel: true,
@@ -12,13 +18,13 @@ export default defineConfig({
   retries: process.env.CI !== undefined ? 2 : 0,
   workers: process.env.CI !== undefined ? 4 : undefined,
   reporter: 'html',
-  timeout: process.env.VITE_E2E_TIMEOUT ? Number(process.env.VITE_E2E_TIMEOUT) : 30000,
+  timeout: numericEnv(process.env.VITE_E2E_TIMEOUT, 30000),
   expect: {
-    timeout: process.env.VITE_E2E_EXPECT_TIMEOUT ? Number(process.env.VITE_E2E_EXPECT_TIMEOUT) : 5000,
+    timeout: numericEnv(process.env.VITE_E2E_EXPECT_TIMEOUT, 5000),
   },
   use: {
     // Use production build served on e2e port (default 3001)
-    baseURL: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
+    baseURL: `http://localhost:${e2ePort}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -33,9 +39,9 @@ export default defineConfig({
     // now sets VITE_API_BASE_URL (HybridAdapter), whose stores aren't seeded locally.
     // Also empty the Ads/GA4 ids so the headless-browser e2e build stays inert —
     // otherwise every CI run fires real GA4 hits (hostName=localhost) into prod.
-    command: `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= VITE_JAM_MOCK_SIGNALING=1 pnpm run build && pnpm dlx serve dist -l ${process.env.VITE_E2E_PORT || 3001}`,
-    url: `http://localhost:${process.env.VITE_E2E_PORT || 3001}`,
+    command: `cross-env VITE_API_BASE_URL= VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= VITE_JAM_MOCK_SIGNALING=1 pnpm run build && pnpm dlx serve dist -l ${e2ePort}`,
+    url: `http://localhost:${e2ePort}`,
     reuseExistingServer: true,
-    timeout: process.env.VITE_E2E_WEBSERVER_TIMEOUT ? Number(process.env.VITE_E2E_WEBSERVER_TIMEOUT) : 120000,
+    timeout: numericEnv(process.env.VITE_E2E_WEBSERVER_TIMEOUT, 120000),
   },
 })
