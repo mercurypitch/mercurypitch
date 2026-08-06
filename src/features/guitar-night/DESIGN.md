@@ -28,7 +28,9 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 ## Interaction contract
 
 - `Start` first demonstrates the configurable one-string tab win with touch
-  and keyboard available before any listening permission.
+  and keyboard available before any listening permission. Its explicit
+  count-in starts a local percussion pulse; progress and expert skip are
+  versioned and stored locally.
 - `Load a song` opens completed separation sessions already on this device or
   selects one new local audio file. A distinct durable guitar stem may be
   staged muted; a two-stem instrumental must say that guitar remains in its
@@ -38,7 +40,7 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - Focus is always visible, touch targets are at least 44px, and room motion is
   removed under reduced-motion preferences.
 
-## Current preparation and play-along slice
+## Current integrated slice
 
 - Selecting a supported local MP3, WAV, or FLAC file starts the existing
   durable on-device separation workflow from Guitar Night. The heavy
@@ -51,10 +53,11 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   exact session under route-owned object-URL leases. Preparation and staging
   remain silent: neither starts playback, listening, input capture, analysis,
   or timers.
-- The current raw-file path produces the available two-stem accompaniment, so
+- The first raw-file pass produces the available two-stem accompaniment, so
   guitar remains inside its instrumental mix and no non-functional guitar-mute
-  control is shown. A previously prepared full-band session may still stage a
-  distinct guitar stem muted.
+  control is shown. From that honest fallback, `Separate guitar` can run the
+  existing full-band pipeline. Failure retains the original two-stem mix;
+  completion refreshes and restages the exact upgraded session.
 - If stems are saved but the room cannot refresh or stage them, the player can
   recover the result from Prepared songs rather than separating the file
   again.
@@ -62,13 +65,19 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   silent and keeps the Velvet Rehearsal backdrop dominant; the song identity,
   honest mix description, time rail, and one amber Play control sit in a low
   pedalboard-like deck derived from the approved showcase.
-- Play creates the route-owned Web Audio graph from the initiating gesture,
-  checks a duration-aware decoded-memory estimate, decodes the available
-  stems, verifies their actual decoded footprint, and starts them on one
-  shared context epoch. Unknown compressed formats use a conservative
-  estimate; persisted preparation duration is preferred when available.
-  Pause, resume, pointer seeking, master volume, and real per-stem mute
-  controls all follow that audio clock.
+- The durable catalog reads a lightweight stem manifest first and hydrates
+  only the selected session-and-kind rows. It does not materialize unrelated
+  blobs merely to decide which room mix is available.
+- Play creates the route-owned Web Audio graph from the initiating gesture.
+  Memory-safe mixes decode and start on one shared context epoch. Oversized
+  mixes use synchronized media-element streams routed through the same Web
+  Audio buses instead of allocating the full decoded PCM footprint. Unknown
+  compressed formats use a conservative estimate; persisted duration is
+  preferred when available. Pause, resume, pointer seeking, master volume,
+  drift correction, and real per-stem mute controls follow that audio clock.
+- One shared output graph exposes guide, drums, bass, stems, and monitor buses
+  through a master limiter. Room consumers reuse that graph instead of opening
+  competing audio clocks.
 - Full-band sessions expose the distinct Guitar channel muted by default.
   Two-stem sessions expose only Vocals and Backing, never a synthetic Guitar
   control. Returning to Songs cancels a pending start or pauses active voices
@@ -77,6 +86,17 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - Source replacement invalidates pending fetch/decode generations and stops
   voices before the song controller revokes its route-owned URLs. Route
   disposal closes only the standalone context.
+- The room keeps a persistent stage above the transport. `Flow` adapts the
+  existing 3D renderer to the Velvet palette and direct mouse/touch camera;
+  `Tab` and `Neck` provide quieter alternate views. A song without an attached
+  score says so and remains a useful free-play fretboard rather than inventing
+  notation.
+- `Listening` is explicit and local. It reuses the room context, pauses pitched
+  backing for a clean assessed take, and runs the existing guitar-range MPM
+  detector. The on-demand Jam Doctor reports only captured attack count,
+  median detector clarity, attack-spacing variation, and detected pitch range.
+  It stores no audio and makes no phrase, string, fret, or quality claim that
+  the evidence cannot support.
 
 ## Copy contract
 
@@ -95,15 +115,14 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Adapt the shared backing transport beneath the legacy Guitar host without
-   changing its current presentation.
-2. Extend the route-owned output graph with guide, synchronized room drums,
-   generated bass, and monitoring buses.
-3. A lightweight durable stem manifest or compound session-and-kind index for
-   low-latency playback hydration.
-4. Real configurable first-win count-in and listening input handoff.
-5. Persistent 3D/Tab/Neck stage with evidence-backed Coach and Jam Doctor.
-
-The current compatibility read materializes every blob row for one session,
-then drops the original and stale duplicates; the room must not retain that
-over-read on its low-latency playback path.
+1. Prove the shared backing/session contracts under the legacy Guitar host
+   without changing its current presentation, then plan the separate cutover.
+2. Attach local tab/score references to prepared songs so Flow, Tab, and Neck
+   can follow verified song notes and beat ranges instead of free-play motion.
+3. Add loop and playback-rate ownership to the shared session clock, followed
+   by richer room drums and generated bass behind the existing buses.
+4. Move high-rate pitch/onset analysis behind an AudioWorklet or worker seam,
+   then validate latency and rapid-articulation accuracy against named guitar
+   fixtures before publishing speed or quality claims.
+5. Add phrase-aware evidence and take history to Jam Doctor without retaining
+   raw audio or turning the room into an analysis dashboard.
