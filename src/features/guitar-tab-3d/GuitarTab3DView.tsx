@@ -41,6 +41,13 @@ export interface GuitarTab3DViewProps {
   isActive: Accessor<boolean>
   /** Playback/display controls; when provided, renders the HUD overlay. */
   controls?: Tab3DControls
+  /** Surface-owned display settings; legacy Guitar defaults remain unchanged. */
+  display?: Accessor<TabScene['display']>
+  /** Override the legacy navigation gizmo without requiring the legacy HUD. */
+  showGizmo?: Accessor<boolean>
+  /** Accessible canvas name and fallback summary owned by the host surface. */
+  ariaLabel?: Accessor<string>
+  fallbackText?: Accessor<string>
 }
 
 export function GuitarTab3DView(props: GuitarTab3DViewProps) {
@@ -48,6 +55,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   let renderer: TabRenderer | null = null
   let rafId = 0
   const [camera, setCamera] = createSignal<CameraState>(DEFAULT_CAMERA)
+  const [interactive, setInteractive] = createSignal(false)
 
   // A direct manipulation (drag/wheel/pinch) cancels any in-flight tween so
   // the camera never fights the user's hand.
@@ -241,7 +249,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       showFretboard: props.showFretboard(),
       hits,
       detected,
-      display: DEFAULT_DISPLAY,
+      display: props.display?.() ?? DEFAULT_DISPLAY,
     }
   }
 
@@ -299,7 +307,11 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
     const onPointerDown = (e: PointerEvent) => {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-      hw.setPointerCapture(e.pointerId)
+      try {
+        hw.setPointerCapture(e.pointerId)
+      } catch {
+        // Some browser/device pairs reject capture while still delivering the drag.
+      }
       e.preventDefault()
       if (pointers.size === 1) {
         dragMode = e.button === 2 || e.shiftKey ? 'pan' : 'orbit'
@@ -337,7 +349,11 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     }
     const onPointerUp = (e: PointerEvent) => {
       pointers.delete(e.pointerId)
-      hw.releasePointerCapture?.(e.pointerId)
+      try {
+        hw.releasePointerCapture?.(e.pointerId)
+      } catch {
+        // A cancelled or uncaptured pointer is already safe to forget.
+      }
       if (pointers.size === 1) {
         // Dropped back to one finger: resume orbiting from its position.
         const [p] = [...pointers.values()]
@@ -363,8 +379,10 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     hw.addEventListener('pointercancel', onPointerUp)
     hw.addEventListener('wheel', onWheel, { passive: false })
     hw.addEventListener('contextmenu', onContextMenu)
+    setInteractive(true)
 
     onCleanup(() => {
+      setInteractive(false)
       hw.removeEventListener('pointerdown', onPointerDown)
       hw.removeEventListener('pointermove', onPointerMove)
       hw.removeEventListener('pointerup', onPointerUp)
@@ -396,6 +414,11 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     >
       <canvas
         ref={canvas}
+        role="img"
+        aria-label={props.ariaLabel?.() ?? 'Interactive guitar tab fretboard'}
+        data-camera-ready={interactive()}
+        data-camera-yaw={camera().yaw.toFixed(4)}
+        data-camera-radius={camera().radius.toFixed(4)}
         style={{
           display: 'block',
           width: '100%',
@@ -403,8 +426,16 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
           cursor: 'grab',
           'touch-action': 'none',
         }}
-      />
-      <Show when={props.controls === undefined || props.controls.showGizmo()}>
+      >
+        {props.fallbackText?.() ??
+          'An interactive guitar fretboard with notes approaching the play line.'}
+      </canvas>
+      <Show
+        when={
+          props.showGizmo?.() ??
+          (props.controls === undefined || props.controls.showGizmo())
+        }
+      >
         <NavGizmo
           camera={camera}
           onOrbit={orbit}
