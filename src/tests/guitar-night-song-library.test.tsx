@@ -96,6 +96,7 @@ function fakeBackingTransport() {
       emit()
     }),
     getAudioContext: () => null,
+    getLoadMode: () => null,
     getStatus: () => status,
     getCurrentTime: () => 0,
     getDuration: () =>

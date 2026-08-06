@@ -3,6 +3,8 @@
 
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { sliderToGain } from '@/lib/volume-curve'
+import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
+import { createGuitarBackingStreamEngine } from './guitar-backing-stream'
 
 export type GuitarBackingTransportStatus =
   | 'idle'
@@ -13,6 +15,8 @@ export type GuitarBackingTransportStatus =
   | 'paused'
   | 'complete'
   | 'error'
+
+export type GuitarBackingLoadMode = 'buffered' | 'streamed'
 
 export interface GuitarBackingTrack {
   id: string
@@ -48,6 +52,7 @@ export interface GuitarBackingTransport {
   setMasterVolume(position: number): void
   setTrackMuted(id: string, muted: boolean): void
   getAudioContext(): AudioContext | null
+  getLoadMode(): GuitarBackingLoadMode | null
   getStatus(): GuitarBackingTransportStatus
   getCurrentTime(): number
   getDuration(): number
@@ -72,9 +77,13 @@ interface GuitarBackingTransportOptions {
   contextFactory?: () => AudioContext
   activateContext?: (context: AudioContext) => Promise<void>
   fetchArrayBuffer?: (url: string, signal: AbortSignal) => Promise<ArrayBuffer>
+  mediaElementFactory?: () => HTMLAudioElement
   memoryBudgetBytes?: number
+  streamingFallback?: boolean
   fadeSeconds?: number
   scheduleLeadSeconds?: number
+  streamSyncIntervalMs?: number
+  streamDriftToleranceSeconds?: number
   closeContextOnDispose?: boolean
 }
 
@@ -85,6 +94,8 @@ const UNKNOWN_ENCODING_EXPANSION = 64
 
 const MEMORY_ERROR =
   'This mix is too large to open safely on this device. Prepare a shorter song or fewer parts.'
+const STREAM_ERROR =
+  'This browser could not open the large room mix. Try a shorter song or fewer band parts.'
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value))
@@ -131,6 +142,13 @@ async function defaultFetchArrayBuffer(
   return response.arrayBuffer()
 }
 
+function defaultMediaElementFactory(): HTMLAudioElement {
+  if (typeof document === 'undefined') {
+    throw new Error('Streaming audio requires a browser document')
+  }
+  return document.createElement('audio')
+}
+
 async function defaultActivateContext(context: AudioContext): Promise<void> {
   await activateAudioPlayback({
     getAudioContext: () => context,
@@ -158,9 +176,15 @@ export function createGuitarBackingTransport(
     (() => new AudioContext({ latencyHint: 'interactive' }))
   const activateContext = options.activateContext ?? defaultActivateContext
   const fetchArrayBuffer = options.fetchArrayBuffer ?? defaultFetchArrayBuffer
+  const createMediaElement =
+    options.mediaElementFactory ?? defaultMediaElementFactory
   const memoryBudgetBytes = options.memoryBudgetBytes ?? defaultMemoryBudget()
+  const streamingFallback = options.streamingFallback ?? true
   const fadeSeconds = options.fadeSeconds ?? 0.018
   const scheduleLeadSeconds = options.scheduleLeadSeconds ?? 0.012
+  const streamSyncIntervalMs = options.streamSyncIntervalMs ?? 400
+  const streamDriftToleranceSeconds =
+    options.streamDriftToleranceSeconds ?? 0.06
   const closeContextOnDispose = options.closeContextOnDispose ?? true
 
   const listeners = new Set<() => void>()
@@ -169,7 +193,9 @@ export function createGuitarBackingTransport(
   let session: GuitarBackingSession | null = null
   let trackStates: GuitarBackingTrackState[] = []
   let decodedTracks: DecodedTrack[] = []
+  let streamEngine: GuitarBackingStreamEngine | null = null
   let activeVoices: ActiveVoice[] = []
+  let loadMode: GuitarBackingLoadMode | null = null
   let context: AudioContext | null = null
   let stemsBus: GainNode | null = null
   let masterGain: GainNode | null = null
@@ -202,6 +228,11 @@ export function createGuitarBackingTransport(
     decodedTracks = []
   }
 
+  const disconnectStreamedTracks = (): void => {
+    streamEngine?.dispose()
+    streamEngine = null
+  }
+
   const stopVoices = (atTime?: number): void => {
     voiceGeneration += 1
     const voices = activeVoices
@@ -222,6 +253,8 @@ export function createGuitarBackingTransport(
     loadAbort = null
     stopVoices()
     disconnectDecodedTracks()
+    disconnectStreamedTracks()
+    loadMode = null
   }
 
   const ensureGraph = (): AudioContext => {
@@ -250,16 +283,89 @@ export function createGuitarBackingTransport(
   const trackState = (id: string): GuitarBackingTrackState | undefined =>
     trackStates.find((candidate) => candidate.id === id)
 
-  const applyTrackGain = (decoded: DecodedTrack, immediate = false): void => {
-    const state = trackState(decoded.track.id)
-    const target =
-      state === undefined || state.muted ? 0 : sliderToGain(state.level)
+  const targetTrackGain = (id: string): number => {
+    const state = trackState(id)
+    return state === undefined || state.muted ? 0 : sliderToGain(state.level)
+  }
+
+  const applyGain = (id: string, gain: GainNode, immediate = false): void => {
+    const target = targetTrackGain(id)
     const currentContext = context
     if (currentContext === null || immediate) {
-      decoded.gain.gain.value = target
+      gain.gain.value = target
       return
     }
-    rampGain(decoded.gain.gain, target, currentContext.currentTime, fadeSeconds)
+    rampGain(gain.gain, target, currentContext.currentTime, fadeSeconds)
+  }
+
+  const applyTrackGain = (decoded: DecodedTrack, immediate = false): void => {
+    applyGain(decoded.track.id, decoded.gain, immediate)
+  }
+
+  const loadStreamed = (requestGeneration: number): boolean => {
+    const currentSession = session
+    const currentContext = context
+    const currentStemsBus = stemsBus
+    if (
+      currentSession === null ||
+      currentContext === null ||
+      currentStemsBus === null ||
+      disposed ||
+      requestGeneration !== generation
+    ) {
+      return false
+    }
+
+    const engine = createGuitarBackingStreamEngine({
+      createMediaElement,
+      syncIntervalMs: streamSyncIntervalMs,
+      driftToleranceSeconds: streamDriftToleranceSeconds,
+      onEnded: () => {
+        if (disposed || status !== 'playing') return
+        streamEngine?.pause()
+        parkedOffset = duration
+        setStatus('complete')
+      },
+      onTrackError: (trackId, streamState) => {
+        const state = trackState(trackId)
+        if (state !== undefined) state.available = false
+        if (streamState.fatal && status === 'playing') {
+          parkedOffset = clamp(streamState.currentTime, 0, duration)
+          streamEngine?.pause()
+          setStatus(
+            'error',
+            'The local backing stopped. Reopen the song and try again.',
+          )
+          return
+        }
+        emit()
+      },
+    })
+    const loadedIds = engine.load(
+      currentContext,
+      currentStemsBus,
+      currentSession.tracks,
+      targetTrackGain,
+    )
+    if (loadedIds.length === 0) {
+      engine.dispose()
+      setStatus('error', STREAM_ERROR)
+      return false
+    }
+
+    streamEngine = engine
+    loadMode = 'streamed'
+    duration = Math.max(
+      duration,
+      ...currentSession.tracks.map((track) => track.durationSeconds ?? 0),
+    )
+    trackStates = trackStates.map((state) => ({
+      ...state,
+      available: loadedIds.includes(state.id),
+    }))
+    parkedOffset = clamp(parkedOffset, 0, duration)
+    setStatus('ready')
+    return true
   }
 
   const load = async (requestGeneration: number): Promise<boolean> => {
@@ -279,6 +385,7 @@ export function createGuitarBackingTransport(
       currentContext.sampleRate,
     )
     if (estimatedBytes > memoryBudgetBytes) {
+      if (streamingFallback) return loadStreamed(requestGeneration)
       setStatus('error', MEMORY_ERROR)
       return false
     }
@@ -312,6 +419,7 @@ export function createGuitarBackingTransport(
         if (decodedBytes > memoryBudgetBytes) {
           for (const decoded of loaded) decoded.gain.disconnect()
           loadAbort = null
+          if (streamingFallback) return loadStreamed(requestGeneration)
           setStatus('error', MEMORY_ERROR)
           return false
         }
@@ -341,6 +449,7 @@ export function createGuitarBackingTransport(
 
     disconnectDecodedTracks()
     decodedTracks = loaded
+    loadMode = 'buffered'
     duration = Math.max(...loaded.map((decoded) => decoded.buffer.duration))
     trackStates = trackStates.map((state) => ({
       ...state,
@@ -348,6 +457,52 @@ export function createGuitarBackingTransport(
     }))
     parkedOffset = clamp(parkedOffset, 0, duration)
     setStatus('ready')
+    return true
+  }
+
+  const startStreamedAt = async (
+    offset: number,
+    requestGeneration: number,
+  ): Promise<boolean> => {
+    const currentContext = context
+    const currentMaster = masterGain
+    const currentStreamEngine = streamEngine
+    if (
+      currentContext === null ||
+      currentMaster === null ||
+      currentStreamEngine === null
+    ) {
+      return false
+    }
+
+    const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
+    setStatus('loading')
+    currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
+    currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
+    const started = await currentStreamEngine.play(safeOffset, targetTrackGain)
+    if (disposed || requestGeneration !== generation) {
+      currentStreamEngine.pause()
+      return false
+    }
+    if (started === null) {
+      setStatus('error', STREAM_ERROR)
+      return false
+    }
+
+    const playableIds = new Set(started.playableTrackIds)
+    trackStates = trackStates.map((state) => ({
+      ...state,
+      available: playableIds.has(state.id),
+    }))
+    duration = Math.max(duration, started.durationSeconds)
+    startedOffset = safeOffset
+    parkedOffset = safeOffset
+    startedAtContextTime = currentContext.currentTime
+    currentMaster.gain.linearRampToValueAtTime(
+      sliderToGain(masterPosition),
+      currentContext.currentTime + fadeSeconds,
+    )
+    setStatus('playing')
     return true
   }
 
@@ -415,6 +570,12 @@ export function createGuitarBackingTransport(
 
   const currentTime = (): number => {
     if (status !== 'playing' || context === null) return parkedOffset
+    if (loadMode === 'streamed' && streamEngine !== null) {
+      const mediaTime = streamEngine.getCurrentTime()
+      if (mediaTime !== null && Number.isFinite(mediaTime)) {
+        return clamp(mediaTime, 0, duration)
+      }
+    }
     return clamp(
       startedOffset + Math.max(0, context.currentTime - startedAtContextTime),
       0,
@@ -470,11 +631,15 @@ export function createGuitarBackingTransport(
       if (disposed || requestGeneration !== generation) return false
 
       if (decodedTracks.length === 0) {
-        const loaded = await load(requestGeneration)
+        const loaded =
+          streamEngine !== null ? true : await load(requestGeneration)
         if (!loaded) return false
       }
       if (disposed || requestGeneration !== generation) return false
       const offset = replayFromStart ? 0 : parkedOffset
+      if (loadMode === 'streamed') {
+        return startStreamedAt(offset, requestGeneration)
+      }
       return startAt(offset)
     },
 
@@ -484,7 +649,12 @@ export function createGuitarBackingTransport(
         loadAbort?.abort()
         loadAbort = null
         stopVoices()
-        setStatus(decodedTracks.length > 0 ? 'paused' : 'armed')
+        streamEngine?.pause()
+        setStatus(
+          decodedTracks.length > 0 || streamEngine !== null
+            ? 'paused'
+            : 'armed',
+        )
         return
       }
       if (status !== 'playing') return
@@ -492,9 +662,14 @@ export function createGuitarBackingTransport(
       const currentContext = context
       if (currentContext !== null && masterGain !== null) {
         rampGain(masterGain.gain, 0, currentContext.currentTime, fadeSeconds)
-        stopVoices(currentContext.currentTime + fadeSeconds)
+        if (loadMode === 'streamed') {
+          streamEngine?.pause(fadeSeconds * 1000 + 8)
+        } else {
+          stopVoices(currentContext.currentTime + fadeSeconds)
+        }
       } else {
         stopVoices()
+        streamEngine?.pause()
       }
       setStatus('paused')
     },
@@ -507,8 +682,13 @@ export function createGuitarBackingTransport(
       }
       parkedOffset = 0
       stopVoices()
+      streamEngine?.pause()
+      streamEngine?.seek(0)
       if (session === null) setStatus('idle')
-      else setStatus(decodedTracks.length > 0 ? 'ready' : 'armed')
+      else
+        setStatus(
+          decodedTracks.length > 0 || streamEngine !== null ? 'ready' : 'armed',
+        )
     },
 
     seek(seconds) {
@@ -517,6 +697,7 @@ export function createGuitarBackingTransport(
       const wasPlaying = status === 'playing'
       parkedOffset = target
       if (!wasPlaying) {
+        streamEngine?.seek(target)
         if (target >= duration && duration > 0) setStatus('complete')
         else if (status === 'complete') setStatus('paused')
         else emit()
@@ -524,7 +705,25 @@ export function createGuitarBackingTransport(
       }
       if (target >= duration) {
         stopVoices()
+        streamEngine?.pause()
         setStatus('complete')
+        return
+      }
+      if (loadMode === 'streamed') {
+        const currentContext = context
+        const currentMaster = masterGain
+        if (currentContext !== null && currentMaster !== null) {
+          currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
+          currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
+          streamEngine?.seek(target)
+          startedOffset = target
+          startedAtContextTime = currentContext.currentTime
+          currentMaster.gain.linearRampToValueAtTime(
+            sliderToGain(masterPosition),
+            currentContext.currentTime + fadeSeconds,
+          )
+          emit()
+        }
         return
       }
       startAt(target)
@@ -551,10 +750,12 @@ export function createGuitarBackingTransport(
         (candidate) => candidate.track.id === id,
       )
       if (decoded !== undefined) applyTrackGain(decoded)
+      streamEngine?.setTrackGain(id, targetTrackGain(id), fadeSeconds)
       emit()
     },
 
     getAudioContext: () => context,
+    getLoadMode: () => loadMode,
     getStatus: () => status,
     getCurrentTime: currentTime,
     getDuration: () => duration,

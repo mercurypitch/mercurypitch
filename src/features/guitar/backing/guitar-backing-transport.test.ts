@@ -52,6 +52,31 @@ class FakeBufferSourceNode {
   readonly stop = vi.fn((_when?: number) => undefined)
 }
 
+class FakeMediaElementSourceNode {
+  readonly connect = vi.fn((destination: unknown) => destination)
+  readonly disconnect = vi.fn()
+}
+
+class FakeMediaElement extends EventTarget {
+  currentTime = 0
+  duration = 240
+  paused = true
+  preload = ''
+  src = ''
+  playbackRate = 1
+  readonly play = vi.fn(async () => {
+    this.paused = false
+  })
+  readonly pause = vi.fn(() => {
+    this.paused = true
+  })
+  readonly load = vi.fn()
+
+  removeAttribute(name: string): void {
+    if (name === 'src') this.src = ''
+  }
+}
+
 function decodedBuffer(duration = 12): AudioBuffer {
   return {
     duration,
@@ -67,6 +92,7 @@ class FakeAudioContext {
   readonly destination = {} as AudioDestinationNode
   readonly gains: FakeGainNode[] = []
   readonly sources: FakeBufferSourceNode[] = []
+  readonly mediaSources: FakeMediaElementSourceNode[] = []
   readonly resume = vi.fn(async () => {
     this.state = 'running'
   })
@@ -101,6 +127,14 @@ class FakeAudioContext {
     const source = new FakeBufferSourceNode()
     this.sources.push(source)
     return source as unknown as AudioBufferSourceNode
+  }
+
+  createMediaElementSource(
+    _element: HTMLMediaElement,
+  ): MediaElementAudioSourceNode {
+    const source = new FakeMediaElementSourceNode()
+    this.mediaSources.push(source)
+    return source as unknown as MediaElementAudioSourceNode
   }
 }
 
@@ -150,10 +184,17 @@ function audioHarness(options: { fadeSeconds?: number } = {}) {
   const fetchArrayBuffer = vi.fn(
     async (_url: string, _signal: AbortSignal) => new ArrayBuffer(8),
   )
+  const mediaElements: FakeMediaElement[] = []
+  const mediaElementFactory = vi.fn(() => {
+    const element = new FakeMediaElement()
+    mediaElements.push(element)
+    return element as unknown as HTMLAudioElement
+  })
   const transport = createGuitarBackingTransport({
     contextFactory,
     activateContext,
     fetchArrayBuffer,
+    mediaElementFactory,
     fadeSeconds: options.fadeSeconds ?? 0,
     scheduleLeadSeconds: 0.012,
   })
@@ -162,6 +203,8 @@ function audioHarness(options: { fadeSeconds?: number } = {}) {
     context,
     contextFactory,
     fetchArrayBuffer,
+    mediaElementFactory,
+    mediaElements,
     transport,
   }
 }
@@ -333,6 +376,7 @@ describe('createGuitarBackingTransport', () => {
       activateContext: harness.activateContext,
       fetchArrayBuffer: harness.fetchArrayBuffer,
       memoryBudgetBytes: estimatedBytes - 1,
+      streamingFallback: false,
     })
     transport.configure(session('too-large', [oversizedTrack]))
 
@@ -344,6 +388,42 @@ describe('createGuitarBackingTransport', () => {
     expect(transport.getError()).toMatch(/too large|memory|safely/i)
   })
 
+  it('streams a realistic full band instead of rejecting its decoded PCM size', async () => {
+    const harness = audioHarness()
+    const fullBand = [
+      track('vocal'),
+      track('drums'),
+      track('bass'),
+      track('guitar', { muted: true }),
+      track('piano'),
+      track('other'),
+    ].map((candidate) => ({
+      ...candidate,
+      durationSeconds: 240,
+      sizeBytes: 92 * 1024 * 1024,
+    }))
+    const transport = createGuitarBackingTransport({
+      contextFactory: harness.contextFactory,
+      activateContext: harness.activateContext,
+      fetchArrayBuffer: harness.fetchArrayBuffer,
+      mediaElementFactory: harness.mediaElementFactory,
+      memoryBudgetBytes: 512 * 1024 * 1024,
+      fadeSeconds: 0,
+      streamSyncIntervalMs: 0,
+    })
+    transport.configure(session('full-band', fullBand))
+
+    await expect(transport.play()).resolves.toBe(true)
+
+    expect(estimateGuitarBackingPcmBytes(fullBand)).toBe(552_960_000)
+    expect(harness.fetchArrayBuffer).not.toHaveBeenCalled()
+    expect(harness.context.decodeAudioData).not.toHaveBeenCalled()
+    expect(harness.mediaElements).toHaveLength(6)
+    expect(harness.mediaElements.every((element) => !element.paused)).toBe(true)
+    expect(transport.getLoadMode()).toBe('streamed')
+    expect(transport.getStatus()).toBe('playing')
+  })
+
   it('rejects a mix whose decoded buffers exceed the gate despite sparse metadata', async () => {
     const harness = audioHarness()
     const transport = createGuitarBackingTransport({
@@ -351,6 +431,7 @@ describe('createGuitarBackingTransport', () => {
       activateContext: harness.activateContext,
       fetchArrayBuffer: harness.fetchArrayBuffer,
       memoryBudgetBytes: 1_024,
+      streamingFallback: false,
     })
     transport.configure(
       session('decoded-too-large', [
