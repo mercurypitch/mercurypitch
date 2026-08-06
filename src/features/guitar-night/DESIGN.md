@@ -29,8 +29,10 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 
 - `Start` first demonstrates the configurable one-string tab win with touch
   and keyboard available before any listening permission.
-- `Load a song` may select one local audio file, but must not claim separation
-  or guitar removal until the existing separation runtime is connected.
+- `Load a song` opens completed separation sessions already on this device or
+  selects one new local audio file. A distinct durable guitar stem may be
+  staged muted; a two-stem instrumental must say that guitar remains in its
+  mix. Neither path starts playback.
 - `I know my way around` preserves continuity by opening the current Guitar
   workspace during the incremental migration.
 - Focus is always visible, touch targets are at least 44px, and room motion is
@@ -53,8 +55,13 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Route-owned Guitar runtime and shared transport contracts.
-2. Existing durable separation session selection and hydration.
+1. Extract the hardened raw-file preparation workflow for Guitar Night reuse.
+2. Route-owned Guitar runtime and shared transport contracts.
 3. One output graph for guide, drums, bass, stems, and monitoring.
 4. Real configurable first-win count-in and listening input handoff.
 5. Persistent 3D/Tab/Neck stage with evidence-backed Coach and Jam Doctor.
+
+Before playback polish, add a lightweight durable stem manifest or a compound
+session-and-kind index. The current compatibility read materializes every blob
+row for one session, then drops the original and stale duplicates; the room
+must not retain that over-read on its low-latency path.

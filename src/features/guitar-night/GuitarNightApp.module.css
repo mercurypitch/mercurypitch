@@ -211,6 +211,7 @@
 }
 
 .entryPanel h1 {
+  position: relative;
   max-width: 12ch;
   margin: 0;
   color: var(--ivory);
@@ -228,9 +229,19 @@
 }
 
 .entryPanel h1:focus-visible {
-  outline: 2px solid rgba(240, 189, 120, 0.72);
-  outline-offset: 0.35rem;
-  border-radius: 0.08rem;
+  outline: none;
+}
+
+.entryPanel h1:focus-visible::before {
+  position: absolute;
+  top: 0.08em;
+  bottom: 0.08em;
+  left: -0.32em;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--amber-bright);
+  box-shadow: 0 0 0.65rem rgba(240, 189, 120, 0.35);
+  content: '';
 }
 
 .lede,
@@ -505,6 +516,122 @@
   color: rgba(244, 234, 219, 0.56);
 }
 
+.songLibrary {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.songLibraryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.songLibraryHeader h2 {
+  margin: 0;
+  color: #e9dece;
+  font-size: 0.82rem;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+}
+
+.songLibraryHeader > span {
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.7rem;
+}
+
+.songList {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 10.5rem;
+  margin: 0;
+  padding: 0 0.2rem 0 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-color: rgba(224, 164, 93, 0.42) transparent;
+}
+
+.songList button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.48rem;
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.035);
+  cursor: pointer;
+  text-align: left;
+}
+
+.songList button:hover:not(:disabled),
+.songList .songChoiceActive {
+  border-color: rgba(106, 202, 189, 0.45);
+  background: rgba(106, 202, 189, 0.08);
+}
+
+.songList button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.songList button > span {
+  display: grid;
+  min-width: 0;
+}
+
+.songList strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.songList small {
+  margin-top: 0.14rem;
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.68rem;
+}
+
+.songList i {
+  flex: none;
+  color: var(--teal);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.songMessage,
+.songMessageRow p {
+  margin: 0;
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.songMessageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.songMessageRow button {
+  min-height: var(--touch-target);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.05);
+  cursor: pointer;
+}
+
 .roomStatus {
   z-index: 2;
   display: grid;
@@ -698,7 +825,7 @@
   }
 }
 
-@media (max-height: 700px) and (min-width: 721px) {
+@media (max-height: 820px) and (min-width: 721px) {
   .main {
     align-items: flex-start;
     overflow-y: auto;

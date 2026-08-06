@@ -4,7 +4,8 @@
 
 import type { Component } from 'solid-js'
 import { isZipFile } from '@/db/services/session-export-service'
-import { AUDIO_UPLOAD_ALLOWED_TYPES, formatFileSize } from '@/lib/audio-accept'
+import { formatFileSize } from '@/lib/audio-accept'
+import { AUDIO_UPLOAD_ALLOWED_TYPES } from '@/lib/audio-upload-contract'
 import { CONTENT_POLICY_URL } from '@/lib/legal-links'
 import { showActionNotification } from '@/stores/notifications-store'
 import { FileUpload, MusicNote } from './icons'
