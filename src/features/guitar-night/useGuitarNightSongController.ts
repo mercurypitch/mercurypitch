@@ -24,6 +24,7 @@ export type GuitarNightSelectionState =
 interface GuitarNightSongControllerOptions {
   loadSongPort?: () => Promise<GuitarNightSongPort>
   onRouteSession?: (sessionId: string) => void
+  onBackingWillRelease?: (lease: GuitarNightBackingLease) => void
 }
 
 type HistoryMode = 'push' | 'replace' | 'none'
@@ -71,6 +72,7 @@ export function useGuitarNightSongController(
     requestGeneration += 1
     activeAbort?.abort()
     activeAbort = null
+    if (activeLease !== null) options.onBackingWillRelease?.(activeLease)
     activeLease?.release()
     activeLease = null
   }

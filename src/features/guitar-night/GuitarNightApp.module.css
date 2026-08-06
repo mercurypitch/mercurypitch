@@ -678,6 +678,350 @@
   cursor: pointer;
 }
 
+/* Prepared-song room: a quiet pedalboard deck over the same Velvet stage. */
+
+.entryPanelRoom {
+  align-self: flex-end;
+  width: min(64rem, 100%);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.roomPanel {
+  position: relative;
+  width: 100%;
+  padding: clamp(1.35rem, 2.4vw, 2.2rem);
+  overflow: hidden;
+  border: 1px solid rgba(224, 164, 93, 0.24);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.026), transparent 46%),
+    rgba(17, 14, 12, 0.92);
+  box-shadow:
+    0 2rem 7rem rgba(0, 0, 0, 0.52),
+    inset 0 1px rgba(255, 255, 255, 0.045);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(22px) saturate(1.08);
+}
+
+.roomHeadingRow {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.roomHeadingRow > div {
+  min-width: 0;
+}
+
+.roomHeadingRow h1 {
+  max-width: 22ch;
+  overflow: hidden;
+  font-size: clamp(2.15rem, 4vw, 3.7rem);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trackCount {
+  flex: none;
+  padding-bottom: 0.3rem;
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.roomMixCopy {
+  max-width: 56ch;
+  margin: 0.7rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.transportDeck {
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.68rem;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 3px,
+      rgba(255, 255, 255, 0.012) 4px
+    ),
+    rgba(8, 8, 8, 0.74);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.035),
+    inset 0 -1.2rem 3rem rgba(0, 0, 0, 0.2);
+}
+
+.timeRail {
+  display: grid;
+  grid-template-columns: 2.8rem 1fr 2.8rem;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.timeRail span {
+  color: rgba(244, 234, 219, 0.58);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.66rem;
+}
+
+.timeRail span:last-child {
+  text-align: right;
+}
+
+.timeRail input,
+.masterVolume input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-height: var(--touch-target);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.timeRail input::-webkit-slider-runnable-track,
+.masterVolume input::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.2);
+}
+
+.timeRail input::-webkit-slider-thumb,
+.masterVolume input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.40625rem;
+  border: 2px solid #26190e;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  box-shadow: 0 0 0.9rem rgba(224, 164, 93, 0.3);
+}
+
+.timeRail input::-moz-range-track,
+.masterVolume input::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.2);
+}
+
+.timeRail input::-moz-range-progress,
+.masterVolume input::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(224, 164, 93, 0.76);
+}
+
+.timeRail input::-moz-range-thumb,
+.masterVolume input::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #26190e;
+  border-radius: 50%;
+  background: var(--amber-bright);
+  box-shadow: 0 0 0.9rem rgba(224, 164, 93, 0.3);
+}
+
+.transportControls {
+  display: grid;
+  grid-template-columns: minmax(3rem, 1fr) auto minmax(8rem, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+
+.transportControls button,
+.channelStrip button,
+.roomFooter > button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: 0;
+  cursor: pointer;
+}
+
+.restartControl {
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  width: var(--touch-target);
+  border-radius: 50%;
+  color: rgba(244, 234, 219, 0.72);
+  background: rgba(244, 234, 219, 0.06);
+}
+
+.restartControl svg,
+.masterVolume svg,
+.channelStrip svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.playControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-width: 11.5rem !important;
+  padding: 0.85rem 1.35rem;
+  border-radius: 999px;
+  color: #1a1109;
+  background: var(--amber-bright);
+  box-shadow:
+    0 0.8rem 2.6rem rgba(224, 164, 93, 0.22),
+    inset 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.playControl:hover:not(:disabled) {
+  background: #f7c98a;
+  transform: translateY(-1px);
+}
+
+.playControl:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.playControl svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.playControl strong {
+  font-size: 0.8rem;
+}
+
+.masterVolume {
+  display: grid;
+  grid-template-columns: 1rem minmax(5.5rem, 8rem);
+  align-items: center;
+  gap: 0.6rem;
+  justify-self: start;
+  color: rgba(244, 234, 219, 0.6);
+}
+
+.channelStrip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.08);
+}
+
+.channelStrip button {
+  display: grid;
+  grid-template-columns: 1rem auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.05rem 0.45rem;
+  min-width: 7rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(106, 202, 189, 0.2);
+  border-radius: 0.48rem;
+  color: #e7f4f1;
+  background: rgba(106, 202, 189, 0.07);
+  text-align: left;
+}
+
+.channelStrip button > span {
+  grid-row: 1 / 3;
+}
+
+.channelStrip strong {
+  font-size: 0.7rem;
+}
+
+.channelStrip small {
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.58rem;
+}
+
+.channelStrip .channelMuted {
+  border-color: rgba(244, 234, 219, 0.1);
+  color: rgba(244, 234, 219, 0.62);
+  background: rgba(244, 234, 219, 0.025);
+}
+
+.playbackError {
+  margin: 0.75rem 0 0;
+  color: #f3c39b;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.roomFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.roomFooter > button {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.42rem;
+  color: var(--muted);
+  background: transparent;
+}
+
+.roomFooter > button:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.05);
+}
+
+.roomFooter p {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.02rem 0.5rem;
+  margin: 0;
+  text-align: left;
+}
+
+.roomFooter p > span {
+  grid-row: 1 / 3;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0.7rem rgba(106, 202, 189, 0.6);
+}
+
+.roomFooter strong {
+  color: #e8dfd2;
+  font-size: 0.68rem;
+}
+
+.roomFooter small {
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.62rem;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .roomStatus {
   z-index: 2;
   display: grid;
@@ -724,7 +1068,8 @@
 }
 
 .app button:focus-visible,
-.app a:focus-visible {
+.app a:focus-visible,
+.app input:focus-visible {
   outline: 3px solid var(--amber-bright);
   outline-offset: 3px;
 }
@@ -866,6 +1211,98 @@
     flex: 1;
   }
 
+  .entryPanelRoom {
+    align-self: end;
+  }
+
+  .roomPanel {
+    padding: 1.1rem;
+    border-radius: 0.78rem;
+    background: rgba(17, 14, 12, 0.94);
+  }
+
+  .roomHeadingRow {
+    display: block;
+  }
+
+  .roomHeadingRow h1 {
+    display: -webkit-box;
+    max-width: 100%;
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+    line-height: 0.98;
+    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .trackCount {
+    display: block;
+    margin-top: 0.45rem;
+    padding: 0;
+  }
+
+  .roomMixCopy {
+    margin: 0.65rem 0 0.9rem;
+    font-size: 0.76rem;
+  }
+
+  .transportDeck {
+    padding: 0.7rem 0.75rem 0.8rem;
+  }
+
+  .timeRail {
+    grid-template-columns: 2.5rem 1fr 2.5rem;
+    gap: 0.4rem;
+  }
+
+  .transportControls {
+    grid-template-columns: var(--touch-target) minmax(0, 1fr) 4.25rem;
+    gap: 0.45rem;
+    margin-top: 0.2rem;
+  }
+
+  .restartControl {
+    justify-self: center;
+  }
+
+  .playControl {
+    min-width: 0 !important;
+    min-height: 3.35rem !important;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .masterVolume {
+    grid-template-columns: 1rem var(--touch-target);
+    gap: 0.25rem;
+    justify-self: center;
+    width: 4.25rem;
+    min-height: var(--touch-target);
+  }
+
+  .masterVolume input {
+    width: var(--touch-target);
+  }
+
+  .channelStrip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .channelStrip button {
+    min-width: 0;
+    min-height: var(--touch-target);
+  }
+
+  .roomFooter {
+    margin-top: 0.55rem;
+  }
+
+  .roomFooter p {
+    display: grid;
+  }
+
   .roomStatus {
     display: none;
   }
@@ -880,6 +1317,10 @@
 
   .entryPanel {
     padding: 1.35rem 1.65rem;
+  }
+
+  .entryPanelRoom {
+    padding: 0;
   }
 
   .entryPanel h1 {

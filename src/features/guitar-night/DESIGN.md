@@ -38,7 +38,7 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - Focus is always visible, touch targets are at least 44px, and room motion is
   removed under reduced-motion preferences.
 
-## Current preparation slice
+## Current preparation and play-along slice
 
 - Selecting a supported local MP3, WAV, or FLAC file starts the existing
   durable on-device separation workflow from Guitar Night. The heavy
@@ -58,6 +58,25 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - If stems are saved but the room cannot refresh or stage them, the player can
   recover the result from Prepared songs rather than separating the file
   again.
+- A staged song exposes one explicit `Enter room` handoff. Entering remains
+  silent and keeps the Velvet Rehearsal backdrop dominant; the song identity,
+  honest mix description, time rail, and one amber Play control sit in a low
+  pedalboard-like deck derived from the approved showcase.
+- Play creates the route-owned Web Audio graph from the initiating gesture,
+  checks a duration-aware decoded-memory estimate, decodes the available
+  stems, verifies their actual decoded footprint, and starts them on one
+  shared context epoch. Unknown compressed formats use a conservative
+  estimate; persisted preparation duration is preferred when available.
+  Pause, resume, pointer seeking, master volume, and real per-stem mute
+  controls all follow that audio clock.
+- Full-band sessions expose the distinct Guitar channel muted by default.
+  Two-stem sessions expose only Vocals and Backing, never a synthetic Guitar
+  control. Returning to Songs cancels a pending start or pauses active voices
+  while retaining the staged lease, decoded buffers, mix, and playhead for a
+  true Resume.
+- Source replacement invalidates pending fetch/decode generations and stops
+  voices before the song controller revokes its route-owned URLs. Route
+  disposal closes only the standalone context.
 
 ## Copy contract
 
@@ -76,8 +95,10 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Route-owned Guitar runtime and shared transport contracts.
-2. One output graph for guide, drums, bass, stems, and monitoring.
+1. Adapt the shared backing transport beneath the legacy Guitar host without
+   changing its current presentation.
+2. Extend the route-owned output graph with guide, synchronized room drums,
+   generated bass, and monitoring buses.
 3. A lightweight durable stem manifest or compound session-and-kind index for
    low-latency playback hydration.
 4. Real configurable first-win count-in and listening input handoff.
