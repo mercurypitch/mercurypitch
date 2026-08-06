@@ -5,17 +5,16 @@ Approved target requirements for the standalone Guitar Night experience at
 current `/#/guitar` host is refactored into the first consumer of the shared
 Guitar runtime.
 
-**Status:** approved target contract; implementation in progress. Delivery
-began with legacy lifecycle stabilization and runtime extraction; the
-standalone Velvet Rehearsal entry is mounted, completed local separation
-sessions can be staged under route-owned URL leases, and an explicit room
-handoff opens a route-owned synchronized stem transport. The implementation
-accepts a supported local audio file, runs the existing durable on-device
-separation workflow with visible progress and cancellation, refreshes the
-local catalog, and stages the exact completed or reused session without
-starting playback or listening. Entering the room remains silent; only the
-primary Play action creates or resumes Web Audio, decodes within a bounded
-memory estimate, and starts the available stems on one audio-clock epoch.
+**Status:** approved target contract; standalone foundation implemented,
+legacy cutover still pending. The Velvet Rehearsal entry, configurable first
+win, durable local-song preparation, exact lightweight stem hydration,
+two-stem-to-full-band upgrade, synchronized buffered/streamed transport,
+shared output buses, Flow/Tab/Neck stage, explicit local Listening, and
+evidence-only Jam Doctor are integrated. Entry, preparation, staging, and room
+handoff remain silent. Playback, count-in, and microphone capture each begin
+only from their explicit player actions; assessed listening pauses pitched
+backing. A distinct guitar stem defaults muted, while two-stem fallback copy
+states that guitar remains in the accompaniment.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
