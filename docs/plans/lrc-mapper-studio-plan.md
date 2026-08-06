@@ -59,6 +59,75 @@ is the difference between each later phase costing one file read or four.
 
 ---
 
+## Phase A — fix mapper resume state (do this first)
+
+**This is a live bug in shipped code**, found while auditing the behaviour
+reported on 2026-08-06: "I mapped a few lines, closed it, and now the mapper
+only shows those few — I can't preview the rest even though the song is fully
+mapped."
+
+### Root cause — verified, not suspected
+
+`startLrcGen` (`useStemMixerLyricsController.ts:1672`) has two ways to populate
+gen state, and it picks **one**:
+
+1. Saved in-progress blob from `localStorage` (`lyrics_gen_v1_<sessionId>`),
+   restored at line ~1700 — this also sets `resumeLineIdx` / `resumeWordIdx`.
+2. Seed from what is already saved on the session — `editBuffer()`, else
+   `wordTimings()` — at line ~1740.
+
+Branch 2 is guarded by:
+
+```ts
+if (resumeLineIdx === 0 && resumeWordIdx === 0) {
+```
+
+So the moment a previous session stopped anywhere other than the very start,
+`resumeLineIdx > 0` and **the seed-from-existing-timings branch is skipped
+entirely**. Gen state then contains only the handful of lines from the
+abandoned session. Every other line reads as unmapped — which is why preview
+and live highlight have nothing to play: `lrcGenLineTimes` genuinely does not
+hold those times.
+
+The user's second observation — "if I open the mapper on a fully-mapped song I
+can't preview without remapping" — is the same defect. With no stale progress
+the seed branch does run and preview works; with stale progress it does not.
+
+### The fix is a merge, not a choice
+
+`mergePartialLineTimes` and `mergePartialWordTimings` already exist in
+`lrc-gen-engine.ts` and already do exactly this job — but they are only called
+at **finish** (line ~2354), never at **restore**. So the partial session is
+merged back into the full map when you complete it, and is treated as an island
+when you resume it. That asymmetry is the whole bug.
+
+Restore should: seed from existing saved timings **first**, then overlay the
+partial progress blob on top, then apply the cursor. `touchedLines` already
+distinguishes "mapped in this session" from "already known", so the two are
+separable and the UI can still show which is which.
+
+### Also in scope for this audit
+
+- **Where the mapper opens from.** Today it is reachable only from the session
+  edit list. Decide whether that is the intended single door — the full-screen
+  surface (Phase 2) changes this question, so answer it before building that.
+- **Show mapped vs unmapped honestly.** Once resume merges correctly, the view
+  should distinguish already-mapped, mapped-this-session, and unmapped lines,
+  rather than implying "not in my blob" means "not mapped".
+- **Stale progress lifetime.** A blob keyed to a session survives indefinitely.
+  Decide when it is discarded (on finish it is cleared; on abandon it is not)
+  and whether resuming should ever be offered explicitly rather than silently.
+
+### Regression test
+
+The pure seam is easy: the restore/merge decision belongs in `lrc-gen-engine.ts`
+as a pure function over (savedBlob, existingTimings, lines) → gen state, tested
+directly. The current defect is invisible to the existing suite because the
+decision lives inline in a 3,229-line controller with no test harness — the
+same gap that let the single-word-line regression through in #415.
+
+---
+
 ## Phase 0 — split the lyrics controller
 
 **Why first:** every later phase edits this file.
@@ -359,10 +428,24 @@ folder of audio. That turns "trust my numbers" into "run it yourself".
 
 ## 8. The gold corpus
 
-`~/Downloads/cc-songs` currently holds **one** song — Josh Woodward, *I'll Be
-Right Behind You, Josephine* — with vocal and instrumental stems already
-separated, plus one hand-made enhanced-LRC mapping (38 lines, word-level).
-A second song is expected.
+Committed at [`fixtures/lrc/`](../../fixtures/lrc/) — see its README for the
+versioning rule and licence terms.
+
+| File | Song | Lines | Words |
+|---|---|---|---|
+| `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring | 25 | 288 |
+| `ill-be-right-behind-you-josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+
+**`v2` is the gold reference for both songs.** An earlier `v1` of Josephine was
+deliberately not kept: comparing the two showed near-identical timings (median
+absolute error 0.000 s over 304 words) but **two mismatched lines** — v1
+contained words absent from the lyric text, a duplicated `seen` and a stray
+`you`. A baseline with wrong *text* cannot measure timing, so it is
+disqualified as a reference rather than useful as an A/B side.
+
+That comparison is also the first real proof the differ's metrics work: a
+mismatched line means the **text** differs, not the timing, and that is the
+first thing to check when a comparison looks impossibly bad.
 
 Josh Woodward's catalogue is Creative Commons (hence `cc-songs`), so the
 **mappings can ship as test fixtures** in-repo. The audio cannot (24 MB per
@@ -374,10 +457,12 @@ fixtures that tests and the compare CLI run against offline, and the **audio**
 is pulled on demand from R2 through the Examples group. Neither duplicates the
 other.
 
-Two mappings of the same song are needed before the differ has anything to
-show. The natural first pair is *current hand map* vs *the same song remapped
-in the new full-screen mapper* — which also measures whether the new tooling
-actually improves the output, not just the experience.
+Automatic mappings take the **next free version number** (`v3`, `v4`, …) and are
+scored against `v2`. They are not committed unless a specific result is worth
+pinning — this directory holds references, not every experiment.
+
+So the differ's first real job is *auto-mapped vN* vs *hand-mapped v2*, on two
+songs, which is exactly the benchmark that motivated this plan.
 
 ---
 
@@ -393,11 +478,13 @@ actually improves the output, not just the experience.
 | Examples auto-download burns mobile data | Auto-create rows (metadata only); fetch stems on first play or explicit pull |
 | Re-pulling an example clobbers a user's lyric edits | Route re-pull through the existing `shouldSeedLyrics` stamp — never bypass it |
 | CC attribution lost outside Karaoke Night | Attribution travels in the manifest; session list and mapper must both render it |
-| Scope: seven phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
+| Resume-merge fix silently changes what a session holds | Pure restore function in `lrc-gen-engine.ts` with tests; `touchedLines` keeps session-vs-existing separable |
+| Scope: eight phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
 
 ## 10. Sequence
 
 ```
+Phase A  fix mapper resume state       (live bug -- do this first)
 Phase 0  split the controller          (no behaviour change)
 Phase 1  lyricsfile native + offset_ms (unblocks precision storage)
 Phase 2  full-screen mapper shell      (the space everything else needs)
@@ -410,6 +497,10 @@ Phase 7  Examples library              (independent — see below)
 
 Phases 1 and 2 are independent of each other and can swap. Everything else in
 0–6 is ordered by dependency.
+
+**Phase A is first** — it is a live bug affecting mapping work right now, and
+it is small. It lands before the refactor because waiting for Phase 0 would
+leave the mapper broken for however long that takes.
 
 **Phase 7 is independent** and can land any time after Phase 1 (so the shipped
 mappings are already in the native format). There is a case for pulling it
