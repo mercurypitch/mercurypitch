@@ -58,6 +58,12 @@
   background: var(--night);
 }
 
+.appRoom {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .backdrop {
   position: absolute;
   z-index: -4;
@@ -726,15 +732,7 @@
 /* Prepared-song room: a quiet pedalboard deck over the same Velvet stage. */
 
 .entryPanelRoom {
-  align-self: flex-end;
-  width: min(76rem, 100%);
-  padding: 0;
-  overflow: visible;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  display: contents;
 }
 
 .roomPanel {
@@ -742,32 +740,40 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: calc(100dvh - 6.5rem);
-  padding: clamp(1.1rem, 2vw, 1.65rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  border: 1px solid rgba(224, 164, 93, 0.24);
-  border-radius: 0.9rem;
-  background:
-    linear-gradient(110deg, rgba(255, 255, 255, 0.026), transparent 46%),
-    rgba(17, 14, 12, 0.92);
-  box-shadow:
-    0 2rem 7rem rgba(0, 0, 0, 0.52),
-    inset 0 1px rgba(255, 255, 255, 0.045);
-  -webkit-backdrop-filter: blur(22px) saturate(1.08);
-  backdrop-filter: blur(22px) saturate(1.08);
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mainRoom {
   align-items: stretch;
-  padding-block: 1rem;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
 }
 
 .roomHeadingRow {
   display: flex;
-  align-items: end;
+  flex: none;
+  align-items: center;
   justify-content: space-between;
   gap: 2rem;
+  min-height: 3.8rem;
+  padding: 0.45rem max(1rem, var(--safe-right)) 0.45rem
+    max(1rem, var(--safe-left));
+  border-bottom: 1px solid rgba(244, 234, 219, 0.09);
+  background: linear-gradient(
+    90deg,
+    rgba(13, 10, 8, 0.88),
+    rgba(13, 10, 8, 0.58) 62%,
+    rgba(13, 10, 8, 0.82)
+  );
 }
 
 .roomHeadingRow > div {
@@ -777,10 +783,15 @@
 .roomHeadingRow h1 {
   max-width: 28ch;
   overflow: hidden;
-  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.roomHeadingRow .eyebrow {
+  margin-bottom: 0.22rem;
+  font-size: 0.57rem;
 }
 
 .roomHeadingMeta {
@@ -853,29 +864,41 @@
 }
 
 .performanceStage {
-  flex: none;
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
-  margin-top: 0.9rem;
+  margin: 0;
   overflow: hidden;
-  border: 1px solid rgba(224, 164, 93, 0.2);
-  border-radius: 0.72rem;
-  background: #0b0908;
+  border: 0;
+  border-radius: 0;
+  background: rgba(7, 6, 5, 0.52);
   box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.035),
-    0 1.4rem 4rem rgba(0, 0, 0, 0.26);
+    inset 0 1px rgba(255, 255, 255, 0.028),
+    inset 0 -2rem 5rem rgba(0, 0, 0, 0.24);
 }
 
 .doctorPanel {
+  position: absolute;
+  z-index: 8;
+  top: 4.55rem;
+  right: max(0.9rem, var(--safe-right));
   display: grid;
   gap: 0.75rem;
-  margin-top: 0.65rem;
+  width: min(34rem, calc(100% - 1.8rem));
+  max-height: calc(100% - 10rem);
+  margin: 0;
   padding: 0.75rem 0.85rem;
+  overflow-y: auto;
   border: 1px solid rgba(106, 202, 189, 0.18);
   border-radius: 0.62rem;
   background:
     linear-gradient(100deg, rgba(106, 202, 189, 0.05), transparent 55%),
-    rgba(8, 10, 9, 0.78);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+    rgba(8, 10, 9, 0.95);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.025),
+    0 1.2rem 4rem rgba(0, 0, 0, 0.46);
 }
 
 .doctorHeading {
@@ -959,40 +982,60 @@
 
 .doctorObservations small {
   grid-column: 1 / -1;
-  color: rgba(244, 234, 219, 0.4);
+  color: rgba(244, 234, 219, 0.62);
   font-size: 0.56rem;
   line-height: 1.35;
 }
 
 .doctorPanel > .doctorPrivacy {
-  color: rgba(244, 234, 219, 0.38);
+  color: rgba(244, 234, 219, 0.62);
   font-size: 0.57rem;
 }
 
 .listeningError {
-  margin: 0.65rem 0 0;
+  position: absolute;
+  z-index: 9;
+  top: 4.6rem;
+  left: 50%;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(243, 195, 155, 0.24);
+  border-radius: 0.45rem;
   color: #f3c39b;
+  background: rgba(23, 13, 9, 0.94);
   font-size: 0.72rem;
   line-height: 1.45;
+  transform: translateX(-50%);
 }
 
 .stageHeader {
+  position: absolute;
+  z-index: 4;
+  top: 0.75rem;
+  right: max(0.85rem, var(--safe-right));
+  left: max(0.85rem, var(--safe-left));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 3.35rem;
-  padding: 0.45rem 0.6rem 0.45rem 0.9rem;
-  border-bottom: 1px solid rgba(244, 234, 219, 0.08);
-  background:
-    linear-gradient(90deg, rgba(224, 164, 93, 0.055), transparent 45%),
-    rgba(244, 234, 219, 0.018);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
 }
 
 .stageHeader > div:first-child {
   display: grid;
   min-width: 0;
   gap: 0.1rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(244, 234, 219, 0.09);
+  border-radius: 0.5rem;
+  background: rgba(7, 6, 5, 0.72);
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .stageHeader span {
@@ -1019,7 +1062,11 @@
   padding: 0.2rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
   border-radius: 0.5rem;
-  background: rgba(0, 0, 0, 0.24);
+  background: rgba(7, 6, 5, 0.72);
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
 }
 
 .stageModes button {
@@ -1050,7 +1097,9 @@
 
 .stageViewport {
   position: relative;
-  height: clamp(14rem, 35vh, 24rem);
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
   min-height: 0;
   overflow: hidden;
   background:
@@ -1059,7 +1108,7 @@
       rgba(224, 164, 93, 0.08),
       transparent 42%
     ),
-    #0a0807;
+    linear-gradient(180deg, rgba(8, 7, 6, 0.42), rgba(8, 7, 6, 0.7));
 }
 
 .stageLoading {
@@ -1088,7 +1137,7 @@
   margin: 0;
   padding: 0.35rem 0.5rem;
   border-radius: 0.32rem;
-  color: rgba(244, 234, 219, 0.38);
+  color: rgba(244, 234, 219, 0.64);
   background: rgba(7, 6, 5, 0.62);
   font-size: 0.56rem;
   pointer-events: none;
@@ -1317,10 +1366,19 @@
 }
 
 .transportDeck {
-  margin-top: 0.75rem;
-  padding: 0.65rem 0.85rem 0.8rem;
-  border: 1px solid rgba(244, 234, 219, 0.11);
-  border-radius: 0.68rem;
+  display: grid;
+  grid-template-areas:
+    'identity rail controls'
+    'channels channels channels';
+  grid-template-columns: minmax(13rem, 0.85fr) minmax(17rem, 1.4fr) auto;
+  flex: none;
+  gap: 0.3rem 1rem;
+  margin: 0;
+  padding: 0.5rem max(1rem, var(--safe-right)) 0.55rem
+    max(1rem, var(--safe-left));
+  border: 0;
+  border-top: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0;
   background:
     repeating-linear-gradient(
       0deg,
@@ -1328,13 +1386,27 @@
       transparent 3px,
       rgba(255, 255, 255, 0.012) 4px
     ),
-    rgba(8, 8, 8, 0.74);
+    rgba(8, 8, 8, 0.9);
   box-shadow:
     inset 0 1px rgba(255, 255, 255, 0.035),
     inset 0 -1.2rem 3rem rgba(0, 0, 0, 0.2);
 }
 
+.transportIdentity {
+  grid-area: identity;
+  min-width: 0;
+  margin: 0;
+}
+
+.transportIdentity > span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .timeRail {
+  grid-area: rail;
   display: grid;
   grid-template-columns: 2.8rem 1fr 2.8rem;
   align-items: center;
@@ -1407,11 +1479,16 @@
 }
 
 .transportControls {
+  grid-area: controls;
   display: grid;
-  grid-template-columns: minmax(3rem, 1fr) auto minmax(8rem, 1fr);
+  grid-template-columns:
+    var(--touch-target)
+    minmax(8.5rem, 11rem)
+    minmax(7.8rem, auto)
+    minmax(6rem, 8rem);
   align-items: center;
-  gap: 1rem;
-  margin-top: 0.4rem;
+  gap: 0.55rem;
+  margin: 0;
 }
 
 .transportControls button,
@@ -1445,7 +1522,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  min-width: 11.5rem !important;
+  min-width: 9rem !important;
   padding: 0.85rem 1.35rem;
   border-radius: 999px;
   color: #1a1109;
@@ -1474,6 +1551,61 @@
   font-size: 0.8rem;
 }
 
+.playbackSpeed {
+  display: grid;
+  grid-template-columns:
+    var(--touch-target) minmax(3.2rem, auto)
+    var(--touch-target);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(244, 234, 219, 0.1);
+  border-radius: 999px;
+  background: rgba(244, 234, 219, 0.035);
+}
+
+.playbackSpeed button {
+  display: grid;
+  place-items: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  color: rgba(244, 234, 219, 0.74);
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.playbackSpeed button:hover:not(:disabled) {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.06);
+}
+
+.playbackSpeed button:disabled {
+  cursor: default;
+  opacity: 0.34;
+}
+
+.playbackSpeed output {
+  display: grid;
+  justify-items: center;
+  line-height: 1;
+}
+
+.playbackSpeed strong {
+  color: #e9dfd2;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.playbackSpeed small {
+  margin-top: 0.16rem;
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.52rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .masterVolume {
   display: grid;
   grid-template-columns: 1rem minmax(5.5rem, 8rem);
@@ -1484,13 +1616,17 @@
 }
 
 .channelStrip {
+  grid-area: channels;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
   gap: 0.45rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  margin: 0;
+  padding-top: 0.45rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
   border-top: 1px solid rgba(244, 234, 219, 0.08);
+  scrollbar-width: thin;
 }
 
 .channelStrip button {
@@ -1528,8 +1664,17 @@
 }
 
 .playbackError {
-  margin: 0.75rem 0 0;
+  position: absolute;
+  z-index: 9;
+  right: max(0.9rem, var(--safe-right));
+  bottom: 8.5rem;
+  max-width: min(30rem, calc(100% - 1.8rem));
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(243, 195, 155, 0.24);
+  border-radius: 0.45rem;
   color: #f3c39b;
+  background: rgba(23, 13, 9, 0.94);
   font-size: 0.76rem;
   line-height: 1.45;
 }
@@ -1539,7 +1684,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 0.85rem;
+  flex: none;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.15rem max(1rem, var(--safe-right)) max(0.15rem, var(--safe-bottom))
+    max(1rem, var(--safe-left));
+  border-top: 1px solid rgba(244, 234, 219, 0.07);
+  background: rgba(8, 7, 6, 0.94);
 }
 
 .roomFooter > button {
@@ -1677,10 +1828,42 @@
   }
 }
 
+@media (min-width: 721px) and (max-width: 1100px) {
+  .transportDeck {
+    grid-template-areas:
+      'identity rail'
+      'controls controls'
+      'channels channels';
+    grid-template-columns: minmax(14rem, 0.8fr) minmax(0, 1.2fr);
+    gap: 0.35rem 0.8rem;
+  }
+
+  .transportControls {
+    grid-template-columns:
+      var(--touch-target)
+      minmax(8rem, 1fr)
+      minmax(7.8rem, auto)
+      minmax(5.5rem, 7rem);
+  }
+
+  .channelStrip {
+    align-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 0;
+    border-top: 0;
+    overflow-x: visible;
+  }
+}
+
 @media (max-width: 720px) {
   .app {
     grid-template-rows: auto 1fr;
     overflow-y: auto;
+  }
+
+  .appRoom {
+    overflow: hidden;
   }
 
   .backdrop {
@@ -1735,8 +1918,7 @@
   .mainRoom {
     align-items: stretch;
     min-height: 0;
-    padding: 0.45rem max(0.55rem, var(--safe-right))
-      max(0.55rem, var(--safe-bottom)) max(0.55rem, var(--safe-left));
+    padding: 0;
     overflow: hidden;
   }
 
@@ -1799,48 +1981,51 @@
   }
 
   .entryPanelRoom {
-    align-self: end;
-    height: 100%;
+    display: contents;
   }
 
   .roomPanel {
     height: 100%;
+    min-height: 0;
     max-height: none;
-    padding: 0.85rem;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border-radius: 0.78rem;
-    background: rgba(17, 14, 12, 0.94);
+    padding: 0;
+    overflow: hidden;
+    border-radius: 0;
+    background: transparent;
   }
 
   .roomHeadingRow {
-    display: block;
+    display: flex;
+    gap: 0.55rem;
+    min-height: 3.55rem;
+    padding: 0.35rem max(0.55rem, var(--safe-right)) 0.35rem
+      max(0.55rem, var(--safe-left));
   }
 
   .roomHeadingRow h1 {
-    display: -webkit-box;
-    max-width: 100%;
-    font-size: clamp(1.9rem, 9vw, 2.7rem);
-    line-height: 0.98;
-    overflow-wrap: anywhere;
+    display: block;
+    max-width: min(46vw, 18rem);
+    font-size: clamp(1rem, 4.8vw, 1.35rem);
+    line-height: 1.05;
     text-overflow: ellipsis;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    white-space: nowrap;
+  }
+
+  .roomHeadingRow .eyebrow {
+    margin-bottom: 0.14rem;
+    font-size: 0.5rem;
   }
 
   .trackCount {
-    display: block;
-    margin: 0;
-    padding: 0;
+    display: none;
   }
 
   .roomHeadingMeta {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.65rem;
-    margin-top: 0.5rem;
+    margin: 0;
   }
 
   .roomTools {
@@ -1860,11 +2045,20 @@
   }
 
   .performanceStage {
-    margin-top: 0.7rem;
+    flex: 1 1 auto;
+    margin: 0;
   }
 
   .doctorPanel {
-    padding: 0.7rem;
+    position: absolute;
+    top: auto;
+    right: max(0.45rem, var(--safe-right));
+    bottom: max(0.45rem, var(--safe-bottom));
+    left: max(0.45rem, var(--safe-left));
+    width: auto;
+    max-height: min(66%, 31rem);
+    padding: 0.8rem;
+    border-radius: 0.72rem;
   }
 
   .doctorObservations {
@@ -1872,12 +2066,15 @@
   }
 
   .stageHeader {
-    min-height: 3.15rem;
-    padding: 0.3rem 0.35rem 0.3rem 0.65rem;
+    top: 0.42rem;
+    right: max(0.45rem, var(--safe-right));
+    left: max(0.45rem, var(--safe-left));
+    min-height: var(--touch-target);
+    padding: 0;
   }
 
   .stageHeader strong {
-    max-width: 9.5rem;
+    max-width: min(34vw, 9.5rem);
   }
 
   .stageModes {
@@ -1889,7 +2086,9 @@
   }
 
   .stageViewport {
-    height: clamp(13rem, 32dvh, 18rem);
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 10rem;
   }
 
   .stageGestureHint {
@@ -1922,13 +2121,28 @@
   }
 
   .transportDeck {
-    padding: 0.7rem 0.75rem 0.8rem;
+    grid-template-areas:
+      'identity'
+      'rail'
+      'controls'
+      'channels';
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.05rem;
+    padding: 0.28rem max(0.55rem, var(--safe-right)) 0.35rem
+      max(0.55rem, var(--safe-left));
   }
 
   .transportIdentity {
-    align-items: flex-start;
-    margin-bottom: 0.15rem;
+    min-height: 1.4rem;
+    margin: 0;
     font-size: 0.62rem;
+  }
+
+  .transportIdentity > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .timeRail {
@@ -1937,9 +2151,9 @@
   }
 
   .transportControls {
-    grid-template-columns: var(--touch-target) minmax(0, 1fr) 4.25rem;
+    grid-template-columns: var(--touch-target) minmax(0, 1fr) 7.8rem 4.25rem;
     gap: 0.45rem;
-    margin-top: 0.2rem;
+    margin: 0;
   }
 
   .restartControl {
@@ -1966,7 +2180,10 @@
 
   .channelStrip {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(6.25rem, 1fr));
+    gap: 0.35rem;
+    padding-top: 0.25rem;
+    overflow-x: visible;
   }
 
   .channelStrip button {
@@ -1975,7 +2192,10 @@
   }
 
   .roomFooter {
-    margin-top: 0.55rem;
+    min-height: 2.6rem;
+    margin: 0;
+    padding: 0 max(0.55rem, var(--safe-right)) max(0.1rem, var(--safe-bottom))
+      max(0.55rem, var(--safe-left));
   }
 
   .roomFooter p {
@@ -2002,6 +2222,12 @@
     padding: 0;
   }
 
+  .mainRoom {
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+  }
+
   .entryPanel h1 {
     font-size: 3rem;
   }
@@ -2010,6 +2236,22 @@
 @media (max-height: 680px) and (max-width: 720px) {
   .main {
     padding-top: 4rem;
+  }
+
+  .mainRoom {
+    padding: 0;
+  }
+
+  .roomHeadingRow {
+    min-height: 3.1rem;
+  }
+
+  .transportIdentity > span {
+    display: none;
+  }
+
+  .roomFooter small {
+    display: none;
   }
 }
 
