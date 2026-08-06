@@ -79,6 +79,12 @@ export function useGuitarBackingTransportController(
     return started
   }
 
+  const activate = async (): Promise<boolean> => {
+    const activated = await transport.activate()
+    sync()
+    return activated
+  }
+
   const pause = (): void => {
     transport.pause()
     sync()
@@ -121,6 +127,7 @@ export function useGuitarBackingTransportController(
     tracks,
     error,
     configure,
+    activate,
     play,
     pause,
     stop,

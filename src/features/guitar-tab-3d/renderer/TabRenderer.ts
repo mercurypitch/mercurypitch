@@ -25,11 +25,27 @@ export interface DisplaySettings {
   stringColors: readonly string[]
   /** Mirror the board for left-handed players. */
   leftHanded: boolean
+  /** Surface palette; standalone rooms can reuse the renderer without its legacy blue world. */
+  theme?: 'midnight' | 'velvet'
 }
 
 export const DEFAULT_DISPLAY: DisplaySettings = {
   stringColors: DEFAULT_STRING_COLORS,
   leftHanded: false,
+  theme: 'midnight',
+}
+
+export const VELVET_DISPLAY: DisplaySettings = {
+  stringColors: [
+    '#f2c98f',
+    '#dda969',
+    '#bd8b58',
+    '#89cfc4',
+    '#6fb7ae',
+    '#d8c8af',
+  ],
+  leftHanded: false,
+  theme: 'velvet',
 }
 
 /** A single note to render, derived from the guitar engine's falling notes. */

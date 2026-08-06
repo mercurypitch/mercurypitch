@@ -1,17 +1,21 @@
 // Guitar Night Room turns a prepared backing into a deliberate, silent-until-play stage.
 // ============================================================
 
-import { createMemo, For, onMount, Show } from 'solid-js'
-import { Pause, Play, SkipBack, Volume2, VolumeX } from '@/components/icons'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
+import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
+import { useGuitarListeningController } from './useGuitarListeningController'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease
   transport: GuitarBackingTransportController
   onSongs(): void
+  onSeparateGuitar?(): void
 }
 
 const STEM_LABELS: Record<GuitarNightStemKind, string> = {
@@ -23,6 +27,8 @@ const STEM_LABELS: Record<GuitarNightStemKind, string> = {
   piano: 'Keys',
   other: 'Other',
 }
+
+const EMPTY_STAGE_NOTES: readonly GuitarNote[] = []
 
 export function guitarNightBackingSession(
   backing: GuitarNightBackingLease,
@@ -67,7 +73,16 @@ function statusCopy(status: GuitarBackingTransportStatus): string {
 
 export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
+  const [doctorOpen, setDoctorOpen] = createSignal(false)
+  const listening = useGuitarListeningController({
+    activateAudio: () => props.transport.activate(),
+    getAudioGraph: () => props.transport.getAudioGraph(),
+  })
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
+  const isListening = createMemo(
+    () =>
+      listening.status() === 'listening' || listening.status() === 'requesting',
+  )
   const duration = createMemo(() =>
     Math.max(0, props.transport.durationSeconds()),
   )
@@ -89,7 +104,22 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       props.transport.pause()
       return
     }
+    if (isListening()) listening.stop()
     void props.transport.play()
+  }
+
+  const toggleListening = (): void => {
+    if (isListening()) {
+      listening.stop()
+      return
+    }
+    if (isPlaying()) props.transport.pause()
+    void listening.start()
+  }
+
+  const leaveRoom = (): void => {
+    listening.stop()
+    props.onSongs()
   }
 
   const seek = (event: InputEvent): void => {
@@ -123,16 +153,126 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             {props.backing.title}
           </h1>
         </div>
-        <span class={styles.trackCount}>
-          {props.backing.stems.length}{' '}
-          {props.backing.stems.length === 1 ? 'track' : 'tracks'} · on this
-          device
-        </span>
+        <div class={styles.roomHeadingMeta}>
+          <span class={styles.trackCount}>
+            {props.backing.stems.length}{' '}
+            {props.backing.stems.length === 1 ? 'track' : 'tracks'} · on this
+            device
+          </span>
+          <div class={styles.roomTools} aria-label="Room tools">
+            <button
+              type="button"
+              classList={{ [styles.listeningActive]: isListening() }}
+              aria-pressed={isListening()}
+              onClick={toggleListening}
+            >
+              <span aria-hidden="true">
+                <Mic />
+              </span>
+              <strong>
+                {listening.status() === 'requesting'
+                  ? 'Opening input'
+                  : 'Listening'}
+              </strong>
+            </button>
+            <button
+              type="button"
+              aria-expanded={doctorOpen()}
+              aria-controls="guitar-night-doctor"
+              onClick={() => setDoctorOpen((open) => !open)}
+            >
+              <span aria-hidden="true">
+                <Ear />
+              </span>
+              <strong>Jam Doctor</strong>
+              <Show when={listening.events().length > 0}>
+                <small>{listening.events().length}</small>
+              </Show>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <p class={styles.roomMixCopy}>{mixCopy()}</p>
+      <GuitarNightStage
+        title={props.backing.title}
+        notes={() => EMPTY_STAGE_NOTES}
+        playheadBeat={() => position() * 2}
+        active={() => true}
+        listening={isListening}
+        heardNote={listening.currentNote}
+        heardClarity={listening.clarity}
+      />
+
+      <Show when={doctorOpen()}>
+        <aside
+          class={styles.doctorPanel}
+          id="guitar-night-doctor"
+          aria-labelledby="guitar-night-doctor-title"
+        >
+          <div class={styles.doctorHeading}>
+            <div>
+              <span>Jam Doctor</span>
+              <strong id="guitar-night-doctor-title">
+                {listening.events().length > 0
+                  ? 'What this take reveals'
+                  : 'No take yet'}
+              </strong>
+            </div>
+            <Show when={listening.events().length > 0}>
+              <button type="button" onClick={listening.clearTake}>
+                Clear take
+              </button>
+            </Show>
+          </div>
+          <Show
+            when={listening.observations().length > 0}
+            fallback={
+              <p>
+                Turn on Listening and play a few clean attacks. Headphones or an
+                instrument input keep the reading focused on your guitar.
+              </p>
+            }
+          >
+            <dl class={styles.doctorObservations}>
+              <For each={listening.observations()}>
+                {(observation) => (
+                  <div>
+                    <dt>{observation.label}</dt>
+                    <dd>{observation.value}</dd>
+                    <small>{observation.detail}</small>
+                  </div>
+                )}
+              </For>
+            </dl>
+            <p class={styles.doctorPrivacy}>
+              Measured from this take on this device. Audio is not saved.
+            </p>
+          </Show>
+        </aside>
+      </Show>
+
+      <Show when={listening.error()}>
+        {(message) => (
+          <p class={styles.listeningError} role="alert">
+            {message()}
+          </p>
+        )}
+      </Show>
 
       <div class={styles.transportDeck}>
+        <div class={styles.transportIdentity}>
+          <span>{mixCopy()}</span>
+          <Show
+            when={
+              props.backing.defaultMix.kind === 'mixed-instrumental' &&
+              props.onSeparateGuitar !== undefined
+            }
+          >
+            <button type="button" onClick={() => props.onSeparateGuitar?.()}>
+              Separate guitar
+            </button>
+          </Show>
+        </div>
         <div class={styles.timeRail}>
           <span>{formatTime(position())}</span>
           <input
@@ -217,7 +357,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </Show>
 
       <div class={styles.roomFooter}>
-        <button type="button" onClick={() => props.onSongs()}>
+        <button type="button" onClick={leaveRoom}>
           Songs
         </button>
         <p>

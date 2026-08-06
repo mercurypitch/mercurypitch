@@ -73,6 +73,7 @@ function fakeBackingTransport() {
   })
   const transport: GuitarBackingTransport = {
     configure,
+    activate: async () => true,
     play: vi.fn(async () => {
       if (currentSession === null) return false
       status = 'playing'

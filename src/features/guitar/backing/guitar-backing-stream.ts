@@ -150,7 +150,6 @@ export function createGuitarBackingStreamEngine(
         try {
           const element = options.createMediaElement()
           element.preload = 'auto'
-          element.playsInline = true
           element.src = track.url
           const source = nextContext.createMediaElementSource(element)
           const gain = nextContext.createGain()

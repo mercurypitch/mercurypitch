@@ -47,6 +47,7 @@ export interface GuitarBackingTrackState {
 
 export interface GuitarBackingTransport {
   configure(session: GuitarBackingSession | null): void
+  activate(): Promise<boolean>
   play(): Promise<boolean>
   pause(): void
   stop(): void
@@ -572,6 +573,24 @@ export function createGuitarBackingTransport(
     )
   }
 
+  const activate = async (): Promise<boolean> => {
+    if (disposed) return false
+    const requestGeneration = generation
+    try {
+      const currentContext = ensureGraph()
+      await activateContext(currentContext)
+    } catch {
+      if (!disposed && requestGeneration === generation) {
+        setStatus(
+          'error',
+          "Audio could not start. Check this browser's audio permission and try again.",
+        )
+      }
+      return false
+    }
+    return !disposed && requestGeneration === generation
+  }
+
   return {
     configure(nextSession) {
       if (disposed) return
@@ -597,6 +616,8 @@ export function createGuitarBackingTransport(
       setStatus(nextSession === null ? 'idle' : 'armed')
     },
 
+    activate,
+
     async play() {
       if (disposed || session === null) return false
       if (status === 'playing') return true
@@ -604,20 +625,11 @@ export function createGuitarBackingTransport(
       const replayFromStart = status === 'complete'
       const requestGeneration = generation
       setStatus('loading')
-      let currentContext: AudioContext
-      try {
-        currentContext = ensureGraph()
-        await activateContext(currentContext)
-      } catch {
-        if (!disposed && requestGeneration === generation) {
-          setStatus(
-            'error',
-            "Playback could not start. Check this browser's audio permission and try again.",
-          )
-        }
+      if (!(await activate())) return false
+      const currentContext = context
+      if (currentContext === null || requestGeneration !== generation) {
         return false
       }
-      if (disposed || requestGeneration !== generation) return false
 
       if (decodedTracks.length === 0) {
         const loaded =

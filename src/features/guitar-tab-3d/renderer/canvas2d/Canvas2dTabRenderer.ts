@@ -179,7 +179,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     const ph = scene.playheadBeat
     const beatWindow = Math.max(1, scene.visibleBeatWindow)
 
-    this.drawBackground(ctx)
+    this.drawBackground(ctx, scene)
 
     // ── Readability scaffolding ──────────────────────────────
     const bucketKey = (b: number) => Math.round(b / CHORD_TOL)
@@ -231,13 +231,19 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
   }
 
-  private drawBackground(ctx: CanvasRenderingContext2D): void {
+  private drawBackground(ctx: CanvasRenderingContext2D, scene: TabScene): void {
     const W = this.cssWidth
     const H = this.cssHeight
     ctx.clearRect(0, 0, W, H)
     const grad = ctx.createLinearGradient(0, 0, 0, H)
-    grad.addColorStop(0, '#05050a')
-    grad.addColorStop(1, '#0e0e17')
+    if (scene.display.theme === 'velvet') {
+      grad.addColorStop(0, '#090806')
+      grad.addColorStop(0.62, '#17110d')
+      grad.addColorStop(1, '#0d0b09')
+    } else {
+      grad.addColorStop(0, '#05050a')
+      grad.addColorStop(1, '#0e0e17')
+    }
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, W, H)
   }
@@ -248,9 +254,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
     scene: TabScene,
     maxFret: number,
   ): void {
+    const velvet = scene.display.theme === 'velvet'
+    const laneColor = velvet
+      ? 'rgba(224,164,93,0.105)'
+      : 'rgba(120,150,220,0.1)'
     for (let f = 0; f <= maxFret; f++) {
       const x = this.fretX(f, maxFret)
-      this.line(ctx, x, 0, 0, x, 0, -FLOOR_DEPTH, 'rgba(120,150,220,0.1)', 1)
+      this.line(ctx, x, 0, 0, x, 0, -FLOOR_DEPTH, laneColor, 1)
     }
     const left = this.fretX(0, maxFret)
     const right = this.fretX(maxFret, maxFret)
@@ -274,7 +284,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
         right,
         0,
         z,
-        downbeat ? 'rgba(140,170,235,0.22)' : 'rgba(120,150,220,0.07)',
+        downbeat
+          ? velvet
+            ? 'rgba(106,202,189,0.24)'
+            : 'rgba(140,170,235,0.22)'
+          : velvet
+            ? 'rgba(224,164,93,0.07)'
+            : 'rgba(120,150,220,0.07)',
         downbeat ? 2 : 1,
       )
     }

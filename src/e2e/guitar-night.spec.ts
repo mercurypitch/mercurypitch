@@ -433,12 +433,36 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
   page,
 }) => {
   await instrumentMicrophoneRequests(page)
+  await instrumentAudioContext(page)
   await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
 
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Start with one string.' }),
   ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+  await page
+    .getByRole('button', { name: 'Start count-in', exact: true })
+    .click()
+  await expect(
+    page.getByRole('button', { name: 'Stop groove', exact: true }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __guitarNightAudioContexts: number })
+            .__guitarNightAudioContexts,
+      ),
+    )
+    .toBe(1)
+  await page.getByRole('button', { name: 'Stop groove', exact: true }).click()
   const rhythmButton = page.getByRole('button', {
     name: 'Tap each low E note',
   })
@@ -522,6 +546,37 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await expect(
     room.getByRole('heading', { name: 'midnight-drums.wav' }),
   ).toBeFocused()
+  const flowCanvas = room.getByRole('img', {
+    name: 'midnight-drums.wav flowing guitar fretboard',
+    exact: true,
+  })
+  await expect(flowCanvas).toBeVisible()
+  await expect(flowCanvas).toHaveAttribute('data-camera-ready', 'true')
+  await flowCanvas.scrollIntoViewIfNeeded()
+  const initialYaw = await flowCanvas.getAttribute('data-camera-yaw')
+  const canvasBox = await flowCanvas.boundingBox()
+  expect(canvasBox).not.toBeNull()
+  await page.mouse.move(
+    (canvasBox?.x ?? 0) + (canvasBox?.width ?? 0) * 0.45,
+    (canvasBox?.y ?? 0) + (canvasBox?.height ?? 0) * 0.55,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    (canvasBox?.x ?? 0) + (canvasBox?.width ?? 0) * 0.62,
+    (canvasBox?.y ?? 0) + (canvasBox?.height ?? 0) * 0.46,
+    { steps: 4 },
+  )
+  await page.mouse.up()
+  await expect
+    .poll(() => flowCanvas.getAttribute('data-camera-yaw'))
+    .not.toBe(initialYaw)
+
+  await room.getByRole('button', { name: 'Neck', exact: true }).click()
+  await expect(room.locator('[data-stage-mode="neck"]')).toBeVisible()
+  await room.getByRole('button', { name: 'Tab', exact: true }).click()
+  await expect(room.locator('[data-stage-mode="tab"]')).toBeVisible()
+  await room.getByRole('button', { name: 'Flow', exact: true }).click()
+  await expect(room.locator('[data-stage-mode="flow"]')).toBeVisible()
   const playBacking = room.getByRole('button', {
     name: 'Play backing',
     exact: true,
@@ -591,6 +646,18 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
         .__guitarNightMicCalls,
   )
   expect(microphoneRequests).toBe(0)
+
+  await room.getByRole('button', { name: 'Listening', exact: true }).click()
+  await expect(room.getByRole('alert')).toContainText(
+    'Unexpected microphone request',
+  )
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMicCalls: number })
+          .__guitarNightMicCalls,
+    ),
+  ).toBe(1)
 })
 
 test('keeps the prepared-song room controls touchable without phone overflow @smoke', async ({
