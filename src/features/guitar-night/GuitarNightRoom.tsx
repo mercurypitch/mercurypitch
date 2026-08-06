@@ -105,7 +105,11 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   onMount(() => roomHeading.focus({ preventScroll: true }))
 
   return (
-    <section class={styles.roomPanel} data-testid="guitar-night-room">
+    <section
+      class={styles.roomPanel}
+      data-testid="guitar-night-room"
+      data-playback-mode={props.transport.loadMode() ?? 'unloaded'}
+    >
       <div class={styles.panelEdge} aria-hidden="true" />
       <div class={styles.roomHeadingRow}>
         <div>

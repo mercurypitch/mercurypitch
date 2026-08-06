@@ -3,7 +3,7 @@
 
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock } from '@/lib/audio-unlock'
-import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
+import type { GuitarBackingLoadMode, GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from './guitar-backing-transport'
 import { createGuitarBackingTransport } from './guitar-backing-transport'
 
 interface GuitarBackingTransportControllerOptions {
@@ -17,6 +17,9 @@ export function useGuitarBackingTransportController(
     options.createTransport?.() ?? createGuitarBackingTransport()
   const [status, setStatus] = createSignal<GuitarBackingTransportStatus>(
     transport.getStatus(),
+  )
+  const [loadMode, setLoadMode] = createSignal<GuitarBackingLoadMode | null>(
+    transport.getLoadMode(),
   )
   const [positionSeconds, setPositionSeconds] = createSignal(
     transport.getCurrentTime(),
@@ -48,6 +51,7 @@ export function useGuitarBackingTransportController(
   const sync = (): void => {
     const nextStatus = transport.getStatus()
     setStatus(nextStatus)
+    setLoadMode(transport.getLoadMode())
     setPositionSeconds(transport.getCurrentTime())
     setDurationSeconds(transport.getDuration())
     setTracks(transport.getTrackStates())
@@ -109,6 +113,7 @@ export function useGuitarBackingTransportController(
 
   return {
     status,
+    loadMode,
     positionSeconds,
     durationSeconds,
     tracks,
