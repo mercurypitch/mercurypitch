@@ -3,10 +3,14 @@
 -- The environment-local main DB owns lifecycle, supporter groups and
 -- revocable Jam capabilities. The separately bound PERKS_DB remains the
 -- backwards-compatible ledger for individual verified-email grants.
+--
+-- Objects use IF NOT EXISTS so persistent preview databases that applied the
+-- same schema under its pre-rebase migration filename can safely replay this
+-- migration and still receive any newly added indexes.
 
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE premiumBackgroundAssets (
+CREATE TABLE IF NOT EXISTS premiumBackgroundAssets (
   id TEXT PRIMARY KEY,
   surface TEXT NOT NULL CHECK (surface IN ('karaoke', 'jam')),
   title TEXT NOT NULL,
@@ -19,7 +23,7 @@ CREATE TABLE premiumBackgroundAssets (
   retiredAt TEXT
 );
 
-CREATE TABLE premiumBackgroundRevisions (
+CREATE TABLE IF NOT EXISTS premiumBackgroundRevisions (
   id TEXT PRIMARY KEY,
   backgroundId TEXT NOT NULL,
   version INTEGER NOT NULL CHECK (version >= 1),
@@ -34,16 +38,16 @@ CREATE TABLE premiumBackgroundRevisions (
     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_premiumBackgroundRevisions_asset
+CREATE INDEX IF NOT EXISTS idx_premiumBackgroundRevisions_asset
   ON premiumBackgroundRevisions (backgroundId, lifecycle, version DESC);
-CREATE UNIQUE INDEX idx_premiumBackgroundRevisions_one_draft
+CREATE UNIQUE INDEX IF NOT EXISTS idx_premiumBackgroundRevisions_one_draft
   ON premiumBackgroundRevisions (backgroundId)
   WHERE lifecycle = 'draft';
-CREATE UNIQUE INDEX idx_premiumBackgroundRevisions_one_published
+CREATE UNIQUE INDEX IF NOT EXISTS idx_premiumBackgroundRevisions_one_published
   ON premiumBackgroundRevisions (backgroundId)
   WHERE lifecycle = 'published';
 
-CREATE TABLE premiumBackgroundVariants (
+CREATE TABLE IF NOT EXISTS premiumBackgroundVariants (
   id TEXT PRIMARY KEY,
   revisionId TEXT NOT NULL,
   variant TEXT NOT NULL
@@ -61,10 +65,10 @@ CREATE TABLE premiumBackgroundVariants (
     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_premiumBackgroundVariants_revision
+CREATE INDEX IF NOT EXISTS idx_premiumBackgroundVariants_revision
   ON premiumBackgroundVariants (revisionId, variant);
 
-CREATE TABLE premiumSupporterGroups (
+CREATE TABLE IF NOT EXISTS premiumSupporterGroups (
   id TEXT PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
@@ -76,7 +80,7 @@ CREATE TABLE premiumSupporterGroups (
   deletedAt TEXT
 );
 
-CREATE TABLE premiumSupporterGroupMembers (
+CREATE TABLE IF NOT EXISTS premiumSupporterGroupMembers (
   groupId TEXT NOT NULL,
   email TEXT NOT NULL COLLATE NOCASE,
   note TEXT,
@@ -87,10 +91,10 @@ CREATE TABLE premiumSupporterGroupMembers (
     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_premiumSupporterGroupMembers_email
+CREATE INDEX IF NOT EXISTS idx_premiumSupporterGroupMembers_email
   ON premiumSupporterGroupMembers (email, revokedAt);
 
-CREATE TABLE premiumSupporterGroupPerks (
+CREATE TABLE IF NOT EXISTS premiumSupporterGroupPerks (
   groupId TEXT NOT NULL,
   backgroundId TEXT NOT NULL,
   assignedAt TEXT NOT NULL,
@@ -102,10 +106,10 @@ CREATE TABLE premiumSupporterGroupPerks (
     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_premiumSupporterGroupPerks_background
+CREATE INDEX IF NOT EXISTS idx_premiumSupporterGroupPerks_background
   ON premiumSupporterGroupPerks (backgroundId, revokedAt);
 
-CREATE TABLE premiumBackgroundCapabilities (
+CREATE TABLE IF NOT EXISTS premiumBackgroundCapabilities (
   id TEXT PRIMARY KEY,
   backgroundId TEXT NOT NULL,
   revisionId TEXT NOT NULL,
@@ -123,15 +127,15 @@ CREATE TABLE premiumBackgroundCapabilities (
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE INDEX idx_premiumBackgroundCapabilities_scope
+CREATE INDEX IF NOT EXISTS idx_premiumBackgroundCapabilities_scope
   ON premiumBackgroundCapabilities
     (backgroundId, version, roomId, expiresAt, revokedAt);
-CREATE INDEX idx_premiumBackgroundCapabilities_issuer
+CREATE INDEX IF NOT EXISTS idx_premiumBackgroundCapabilities_issuer
   ON premiumBackgroundCapabilities (issuerUserId, expiresAt, revokedAt);
-CREATE INDEX idx_premiumBackgroundCapabilities_expiry
+CREATE INDEX IF NOT EXISTS idx_premiumBackgroundCapabilities_expiry
   ON premiumBackgroundCapabilities (expiresAt, revokedAt);
 
-CREATE TABLE premiumPerkAudit (
+CREATE TABLE IF NOT EXISTS premiumPerkAudit (
   id TEXT PRIMARY KEY,
   actorType TEXT NOT NULL,
   actorId TEXT,
@@ -142,9 +146,9 @@ CREATE TABLE premiumPerkAudit (
   createdAt TEXT NOT NULL
 );
 
-CREATE INDEX idx_premiumPerkAudit_entity
+CREATE INDEX IF NOT EXISTS idx_premiumPerkAudit_entity
   ON premiumPerkAudit (entityType, entityId, createdAt DESC);
-CREATE INDEX idx_premiumPerkAudit_created
+CREATE INDEX IF NOT EXISTS idx_premiumPerkAudit_created
   ON premiumPerkAudit (createdAt DESC);
 
 -- Stable catalog identities. Publishing remains impossible until an admin
