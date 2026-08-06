@@ -853,10 +853,24 @@ function upsertSessionInCache(session: UvrSession): void {
   persistSessionToDb(session)
 }
 
-/** Remove a session from the in-memory cache (DB delete is separate). */
-function removeSessionFromCache(sessionId: string): void {
+/** Remove a session from the in-memory cache after its DB rows were deleted. */
+export function removeUvrSessionFromCache(sessionId: string): void {
   _setSessionsCache((prev) => prev.filter((s) => s.sessionId !== sessionId))
   bumpSessions()
+  const groups = _groupsCache()
+  const nextGroups = groups.map((group) => {
+    const sessionIds = group.sessionIds.filter((id) => id !== sessionId)
+    return sameIds(group.sessionIds, sessionIds)
+      ? group
+      : { ...group, sessionIds }
+  })
+  if (nextGroups.some((group, index) => group !== groups[index])) {
+    _setGroupsCache(nextGroups)
+    bumpGroups()
+  }
+  if (currentUvrSession()?.sessionId === sessionId) {
+    setCurrentUvrSession(null)
+  }
 }
 
 const [sessionStoreReady, setSessionStoreReady] = createSignal(false)
@@ -1003,7 +1017,7 @@ export async function pruneOrphanedCompletedSessions(): Promise<number> {
     if (!(await sessionHasPlayableStems(s.sessionId))) {
       const ok = await deleteUvrSessionFromDb(s.sessionId)
       if (ok) {
-        removeSessionFromCache(s.sessionId)
+        removeUvrSessionFromCache(s.sessionId)
         pruned++
       }
     }
@@ -1455,6 +1469,23 @@ export function importUvrSession(session: UvrSession): void {
     // in the background.
     upsertSessionInCache(session)
   }
+}
+
+/** Import a session and wait until its canonical row is durable. Archive
+ * restore uses this path so a failed IndexedDB write cannot be reported as a
+ * successful import or leave an in-memory-only ghost. */
+export async function importUvrSessionDurable(
+  session: UvrSession,
+): Promise<boolean> {
+  const exists = getAllUvrSessions().some(
+    (candidate) => candidate.sessionId === session.sessionId,
+  )
+  if (exists) return false
+
+  updateSessionCache(session)
+  if (await persistSessionDurable(session)) return true
+  removeUvrSessionFromCache(session.sessionId)
+  return false
 }
 
 // Intentionally NO cancel-on-unload for in-flight server jobs. Cancelling a

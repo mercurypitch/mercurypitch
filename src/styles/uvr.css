@@ -3217,6 +3217,18 @@
   border-color: rgba(239, 68, 68, 0.3);
 }
 
+.session-result-btn-export {
+  color: color-mix(in srgb, var(--accent) 72%, var(--fg-primary));
+  background: var(--accent-dim);
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+.session-result-btn-export:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--accent-hover) 72%, var(--fg-primary));
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+}
+
 /* HQ re-run (cloud GPU) button + its two-option dropdown */
 .session-hq-rerun {
   position: relative;
@@ -3621,6 +3633,34 @@
 .rv-close-btn svg {
   width: 0.9rem;
   height: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .rv-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .rv-header-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .rv-header-right .session-result-btn,
+  .rv-share-btn {
+    min-height: 2.75rem;
+    padding-inline: 0.65rem;
+  }
+
+  .rv-header-right .session-hq-rerun .session-result-btn-hq,
+  .rv-close-btn {
+    min-height: 2.75rem;
+  }
+
+  .rv-close-btn {
+    margin-left: auto;
+  }
 }
 
 /* Stem Cards Grid */
@@ -4826,6 +4866,11 @@
 
   .history-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .session-result-actions .session-result-btn,
+  .session-result-actions .session-hq-rerun .session-result-btn-hq {
+    min-height: 2.75rem;
   }
 
   .panel-header {

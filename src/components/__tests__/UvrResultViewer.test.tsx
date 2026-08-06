@@ -70,6 +70,7 @@ describe('UvrResultViewer Component', () => {
         <UvrResultViewer {...defaultProps} sessionId="session-123" />
       ))
       expect(screen.getByText('Original')).toBeInTheDocument()
+      expect(screen.getByText('Export ZIP')).toBeInTheDocument()
     })
 
     it('hides Original button when session has no originalFile', () => {

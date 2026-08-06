@@ -50,12 +50,18 @@ export function createPlaylistExportController(
       notify(`“${request.playlistName}” ZIP is ready to save.`, 'success', {
         durationMs: 7000,
       })
-    } catch {
+    } catch (error) {
       setTask((current) =>
         current?.playlistId === request.playlistId
           ? { ...current, status: 'error' }
           : current,
       )
+      if (error instanceof Error && error.name === 'ArchiveExportBusyError') {
+        notify(
+          'Another archive is already being prepared. Try again when it finishes.',
+          'error',
+        )
+      }
     }
   }
 
