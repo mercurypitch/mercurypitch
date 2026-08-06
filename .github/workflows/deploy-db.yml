@@ -6,8 +6,9 @@ name: Deploy DB Worker
 #   (mercury-pitch-db-dev + mercurypitch-db-dev)
 # - Manual dispatch → dev or prod
 # - workflow_call from build.yml on a v* release tag → prod
-#   (migrations always run in this job BEFORE the worker deploys, so the
-#   erasure/award code never runs against a database missing its tables)
+# - Every path deploys the Jam Worker first, because the DB Worker binds its
+#   JamHostVerifier named entrypoint. Migrations then run before the DB Worker
+#   deploy, so application code never runs against a database missing tables.
 #
 # Schema changes ship as tracked migrations in workers/db-worker/migrations/,
 # applied here by `wrangler d1 migrations apply` (wrangler records applied
@@ -60,8 +61,16 @@ permissions:
   contents: read
 
 jobs:
+  deploy-jam-worker:
+    name: Deploy Jam Worker prerequisite
+    uses: ./.github/workflows/deploy-jam.yml
+    with:
+      environment: ${{ inputs.environment || 'dev' }}
+    secrets: inherit
+
   deploy-db-worker:
     name: Deploy DB Worker
+    needs: deploy-jam-worker
     runs-on: ubuntu-latest
     env:
       # `inputs` is populated by workflow_dispatch AND workflow_call; a plain

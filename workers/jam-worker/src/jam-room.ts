@@ -15,8 +15,47 @@ interface PeerInfo {
 const MAX_PEERS = 12 // occupancy cap per room (bounds an unauthenticated channel)
 const MSG_RATE_LIMIT = 120 // max messages per window, per connection
 const MSG_RATE_WINDOW_MS = 1000
+const MAX_SIGNAL_MESSAGE_BYTES = 64 * 1024
+const MAX_DISPLAY_NAME_LENGTH = 24
+const MAX_OWNER_TOKEN_LENGTH = 128
+const MAX_PEER_TARGET_LENGTH = 64
+const MAX_SDP_LENGTH = 48 * 1024
+const MAX_ICE_CANDIDATE_LENGTH = 8 * 1024
 const ROOM_BACKGROUND_KEY = 'roomBackground'
 const JAM_BACKGROUND_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const signalTextEncoder = new TextEncoder()
+
+interface CreateRoomMessage {
+  displayName: string
+  type: 'create-room'
+}
+
+interface JoinRoomMessage {
+  displayName: string
+  ownerToken?: string
+  type: 'join-room'
+}
+
+interface SessionDescriptionMessage {
+  sdp: string
+  target: string
+  type: 'answer' | 'offer'
+}
+
+interface IceCandidateMessage {
+  candidate: string
+  target: string
+  type: 'ice-candidate'
+}
+
+type RelayMessage = IceCandidateMessage | SessionDescriptionMessage
+
+type ClientSignalingMessage =
+  | CreateRoomMessage
+  | JoinRoomMessage
+  | RelayMessage
+  | { backgroundId: string; type: 'set-background' }
+  | { type: 'leave-room' }
 
 interface RoomBackgroundState {
   backgroundId: string
@@ -35,6 +74,101 @@ function timingSafeEqual(a: string, b: string): boolean {
   let diff = ab.length ^ bb.length
   for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ (bb[i] ?? 0)
   return diff === 0
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isBoundedString(
+  value: unknown,
+  maxLength: number,
+  allowEmpty = false,
+): value is string {
+  return (
+    typeof value === 'string' &&
+    (allowEmpty || value.length > 0) &&
+    value.length <= maxLength
+  )
+}
+
+function isDisplayName(value: unknown): value is string {
+  return (
+    isBoundedString(value, MAX_DISPLAY_NAME_LENGTH, true) &&
+    !hasAsciiControlCharacter(value)
+  )
+}
+
+function hasAsciiControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const codePoint = value.charCodeAt(index)
+    if (codePoint <= 0x1f || codePoint === 0x7f) return true
+  }
+  return false
+}
+
+function parseClientSignalingMessage(
+  value: unknown,
+  roomId: string,
+): ClientSignalingMessage | null {
+  if (!isRecord(value) || typeof value.type !== 'string') return null
+
+  switch (value.type) {
+    case 'create-room':
+      return isDisplayName(value.displayName)
+        ? { type: value.type, displayName: value.displayName }
+        : null
+    case 'join-room': {
+      if (
+        !isDisplayName(value.displayName) ||
+        (value.ownerToken !== undefined &&
+          !isBoundedString(value.ownerToken, MAX_OWNER_TOKEN_LENGTH, true)) ||
+        (value.roomId !== undefined && value.roomId !== roomId)
+      ) {
+        return null
+      }
+      return {
+        type: value.type,
+        displayName: value.displayName,
+        ...(value.ownerToken === undefined
+          ? {}
+          : { ownerToken: value.ownerToken }),
+      }
+    }
+    case 'offer':
+    case 'answer':
+      if (
+        !isBoundedString(value.target, MAX_PEER_TARGET_LENGTH) ||
+        !isBoundedString(value.sdp, MAX_SDP_LENGTH) ||
+        (value.from !== undefined &&
+          !isBoundedString(value.from, MAX_PEER_TARGET_LENGTH, true))
+      ) {
+        return null
+      }
+      return { type: value.type, target: value.target, sdp: value.sdp }
+    case 'ice-candidate':
+      if (
+        !isBoundedString(value.target, MAX_PEER_TARGET_LENGTH) ||
+        !isBoundedString(value.candidate, MAX_ICE_CANDIDATE_LENGTH) ||
+        (value.from !== undefined &&
+          !isBoundedString(value.from, MAX_PEER_TARGET_LENGTH, true))
+      ) {
+        return null
+      }
+      return {
+        type: value.type,
+        target: value.target,
+        candidate: value.candidate,
+      }
+    case 'set-background':
+      return typeof value.backgroundId === 'string'
+        ? { type: value.type, backgroundId: value.backgroundId }
+        : null
+    case 'leave-room':
+      return { type: value.type }
+    default:
+      return null
+  }
 }
 
 interface JamEnv {
@@ -166,9 +300,25 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   override async webSocketMessage(
     ws: WebSocket,
-    message: string,
+    message: ArrayBuffer | string,
   ): Promise<void> {
     this.hydrate()
+
+    if (typeof message !== 'string') {
+      this.rejectSocket(
+        ws,
+        'Binary signaling messages are not supported',
+        1003,
+      )
+      return
+    }
+    if (
+      message.length > MAX_SIGNAL_MESSAGE_BYTES ||
+      signalTextEncoder.encode(message).byteLength > MAX_SIGNAL_MESSAGE_BYTES
+    ) {
+      this.rejectSocket(ws, 'Signaling message too large', 1009)
+      return
+    }
 
     // Cheap per-connection flood guard: drop messages above the budget so a
     // single peer can't amplify a flood via relay/broadcast. The ceiling is
@@ -182,18 +332,15 @@ export class JamRoom extends DurableObject<JamEnv> {
       if (rate.count > MSG_RATE_LIMIT) return
     }
 
-    let msg: { type: string; [k: string]: unknown }
+    let msg: ClientSignalingMessage | null
     try {
       const parsed = JSON.parse(message) as unknown
-      if (
-        typeof parsed !== 'object' ||
-        parsed === null ||
-        typeof (parsed as { type?: unknown }).type !== 'string'
-      ) {
-        return
-      }
-      msg = parsed as { type: string; [k: string]: unknown }
+      msg = parseClientSignalingMessage(parsed, this.roomId)
     } catch {
+      msg = null
+    }
+    if (msg === null) {
+      this.rejectSocket(ws, 'Invalid signaling message')
       return
     }
 
@@ -207,26 +354,15 @@ export class JamRoom extends DurableObject<JamEnv> {
 
     switch (msg.type) {
       case 'create-room':
-        await this.handleCreateRoom(
-          ws,
-          msg as { type: string; displayName: string },
-        )
+        await this.handleCreateRoom(ws, msg)
         break
       case 'join-room':
-        await this.handleJoinRoom(
-          ws,
-          msg as {
-            type: string
-            roomId: string
-            displayName: string
-            ownerToken?: string
-          },
-        )
+        await this.handleJoinRoom(ws, msg)
         break
       case 'offer':
       case 'answer':
       case 'ice-candidate':
-        this.relayToPeer(ws, msg as { type: string; target?: string })
+        this.relayToPeer(ws, msg)
         break
       case 'set-background':
         await this.handleSetBackground(ws, msg.backgroundId)
@@ -335,7 +471,7 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   private async handleCreateRoom(
     ws: WebSocket,
-    msg: { displayName: string },
+    msg: CreateRoomMessage,
   ): Promise<void> {
     const expired = await this.expireOverdueOwnership()
     if (
@@ -389,7 +525,7 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   private async handleJoinRoom(
     ws: WebSocket,
-    msg: { displayName: string; ownerToken?: string },
+    msg: JoinRoomMessage,
   ): Promise<void> {
     // Cap occupancy to bound the cost of an unauthenticated channel.
     if (this.peers.size >= MAX_PEERS) {
@@ -597,10 +733,10 @@ export class JamRoom extends DurableObject<JamEnv> {
     }
   }
 
-  private rejectSocket(ws: WebSocket, message: string): void {
+  private rejectSocket(ws: WebSocket, message: string, code = 1008): void {
     this.send(ws, { type: 'error', message })
     try {
-      ws.close(1008, message)
+      ws.close(code, message)
     } catch {
       // already closing
     }
@@ -610,9 +746,8 @@ export class JamRoom extends DurableObject<JamEnv> {
 
   private relayToPeer(
     sender: WebSocket,
-    msg: { type: string; target?: string },
+    msg: RelayMessage,
   ): void {
-    if (!msg.target) return
     const peer = this.peers.get(msg.target)
     if (peer?.ws.readyState !== 1) return
     const senderId = this.wsToPeerId.get(sender)

@@ -1033,11 +1033,16 @@ async function publishRevision(
       { status: 409 },
     )
   }
-  const {
-    assetStatus: _assetStatus,
-    selectedRevisionId: _selected,
-    ...revision
-  } = published
+  const revision: RevisionRow = {
+    backgroundId: published.backgroundId,
+    createdAt: published.createdAt,
+    id: published.id,
+    lifecycle: published.lifecycle,
+    publishedAt: published.publishedAt,
+    supersededAt: published.supersededAt,
+    updatedAt: published.updatedAt,
+    version: published.version,
+  }
   return respond({
     revision: {
       ...revision,

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
 import { getAuth, handleAuth } from './auth'
 import { AccountSuspendedError } from './moderation'
+import { resolvePremiumBackgroundAccess } from './premium-background-access'
 
 interface UserRecord {
   id: string
@@ -17,6 +18,22 @@ interface UserRecord {
   tokenVersion: number
   suspendedAt: string | null
   suspensionReason: string | null
+}
+
+interface PremiumGroupMemberRecord {
+  email: string
+  groupId: string
+  grantedAt: string
+  note: string | null
+  revokedAt: string | null
+}
+
+interface PremiumAuditRecord {
+  actorId: string | null
+  actorType: 'access' | 'admin-key' | 'system' | 'user'
+  details: Record<string, unknown>
+  entityId: string
+  entityType: string
 }
 
 class AuthStatement {
@@ -84,7 +101,45 @@ class AuthStatement {
       } as T
     }
 
+    if (
+      this.sql ===
+      'SELECT email, emailVerified FROM users WHERE id = ?1 LIMIT 1'
+    ) {
+      const user = this.db.users.get(String(this.values[0]))
+      if (!user) return null
+      return {
+        email: user.email,
+        emailVerified: user.emailVerified,
+      } as T
+    }
+
+    if (
+      this.sql ===
+      "SELECT expiresAt FROM entitlements WHERE userId = ?1 AND feature = 'supporter' LIMIT 1"
+    ) {
+      return null
+    }
+
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
+  }
+
+  async all<T>(): Promise<{ results: T[] }> {
+    if (this.sql.includes('FROM premiumSupporterGroupMembers m')) {
+      const email = String(this.values[0]).toLowerCase()
+      const backgroundIds = [...this.db.premiumGroupMembers.values()]
+        .filter(
+          (member) =>
+            member.email.toLowerCase() === email && member.revokedAt === null,
+        )
+        .flatMap(
+          (member) => this.db.premiumGroupPerks.get(member.groupId) ?? [],
+        )
+      return {
+        results: backgroundIds.map((backgroundId) => ({ backgroundId })) as T[],
+      }
+    }
+
+    throw new Error(`Unexpected all() SQL: ${this.sql}`)
   }
 
   async run(): Promise<{ success: true }> {
@@ -156,6 +211,63 @@ class AuthStatement {
       return { success: true }
     }
 
+    if (
+      this.sql ===
+      'DELETE FROM premiumSupporterGroupMembers WHERE email = ?1 COLLATE NOCASE'
+    ) {
+      const email = String(this.values[0]).toLowerCase()
+      for (const [key, member] of this.db.premiumGroupMembers) {
+        if (member.email.toLowerCase() === email) {
+          this.db.premiumGroupMembers.delete(key)
+        }
+      }
+      return { success: true }
+    }
+
+    if (
+      this.sql ===
+      "DELETE FROM premiumPerkAudit WHERE actorType = 'user' AND actorId = ?1"
+    ) {
+      const userId = String(this.values[0])
+      for (let index = this.db.premiumAudit.length - 1; index >= 0; index--) {
+        const audit = this.db.premiumAudit[index]
+        if (audit?.actorType === 'user' && audit.actorId === userId) {
+          this.db.premiumAudit.splice(index, 1)
+        }
+      }
+      return { success: true }
+    }
+
+    if (
+      this.sql ===
+      'UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1'
+    ) {
+      const userId = String(this.values[0])
+      for (const audit of this.db.premiumAudit) {
+        if (audit.actorId === userId) audit.actorId = null
+      }
+      return { success: true }
+    }
+
+    if (this.sql.startsWith('UPDATE premiumPerkAudit SET actorId = CASE')) {
+      const email = String(this.values[0]).toLowerCase()
+      for (const audit of this.db.premiumAudit) {
+        if (audit.actorId?.toLowerCase() === email) audit.actorId = null
+        if (
+          audit.entityType === 'supporter-group-member' &&
+          String(audit.details.email ?? '').toLowerCase() === email
+        ) {
+          const groupId =
+            typeof audit.details.groupId === 'string'
+              ? audit.details.groupId
+              : 'supporter-group-member'
+          audit.entityId = `${groupId}:[erased]`
+          delete audit.details.email
+        }
+      }
+      return { success: true }
+    }
+
     if (this.sql.startsWith('DELETE FROM ')) {
       const id = String(this.values[0])
       if (this.sql === 'DELETE FROM userProfiles WHERE id = ?') {
@@ -168,6 +280,10 @@ class AuthStatement {
 
     throw new Error(`Unexpected run() SQL: ${this.sql}`)
   }
+
+  get normalizedSql(): string {
+    return this.sql
+  }
 }
 
 class AuthDatabase {
@@ -175,6 +291,9 @@ class AuthDatabase {
   // Raw rows, exactly as D1 returns them - booleans stay 0/1 on purpose so
   // the /me normalization regression below tests the real shape.
   readonly profiles = new Map<string, Record<string, unknown>>()
+  readonly premiumAudit: PremiumAuditRecord[] = []
+  readonly premiumGroupMembers = new Map<string, PremiumGroupMemberRecord>()
+  readonly premiumGroupPerks = new Map<string, string[]>()
   failProviderLookup = false
 
   prepare(sql: string): AuthStatement {
@@ -189,7 +308,13 @@ class AuthDatabase {
   }
 
   async batch(statements: AuthStatement[]): Promise<unknown[]> {
-    return Promise.all(statements.map((statement) => statement.run()))
+    return Promise.all(
+      statements.map((statement) =>
+        statement.normalizedSql.startsWith('SELECT')
+          ? statement.all()
+          : statement.run(),
+      ),
+    )
   }
 
   seedAnonymous(id: string): void {
@@ -238,6 +363,16 @@ class PerksStatement {
     if (this.db.failDeletes) throw new Error('shared perks unavailable')
     this.db.deletedEmails.push(String(this.values[0]))
     return { success: true }
+  }
+
+  async all<T>(): Promise<{ results: T[] }> {
+    if (
+      this.sql !==
+      'SELECT perkId FROM perkGrants WHERE email = ?1 AND revokedAt IS NULL'
+    ) {
+      throw new Error(`Unexpected perks all() SQL: ${this.sql}`)
+    }
+    return { results: [] }
   }
 }
 
@@ -864,6 +999,96 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
 
   it('purges an email-keyed grant after mailbox ownership is verified', async () => {
     expect(await registerAndDelete(1)).toEqual(['donor@example.com'])
+  })
+
+  it('erases manual membership and personal audit email before same-email re-registration', async () => {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    const env = makeEnv(db, perks)
+    const first = await postAuth(
+      'register',
+      {
+        email: 'donor@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+    const firstUserId = String((first.user as Record<string, unknown>).id)
+    db.user(firstUserId).emailVerified = 1
+    db.premiumGroupMembers.set('early-supporters:donor@example.com', {
+      email: 'donor@example.com',
+      grantedAt: '2026-08-01T00:00:00.000Z',
+      groupId: 'early-supporters',
+      note: 'Launch donor',
+      revokedAt: null,
+    })
+    db.premiumGroupPerks.set('early-supporters', ['golden-stage'])
+    db.premiumAudit.push({
+      actorId: 'donor@example.com',
+      actorType: 'access',
+      details: {
+        email: 'donor@example.com',
+        groupId: 'early-supporters',
+      },
+      entityId: 'early-supporters:donor@example.com',
+      entityType: 'supporter-group-member',
+    })
+    db.premiumAudit.push({
+      actorId: firstUserId,
+      actorType: 'user',
+      details: {
+        backgroundId: 'golden-stage',
+        expiresAt: '2026-08-01T00:05:00.000Z',
+        roomId: 'private-room-id',
+        version: 1,
+      },
+      entityId: 'capability-id',
+      entityType: 'background-capability',
+    })
+
+    await expect(
+      resolvePremiumBackgroundAccess(env, firstUserId),
+    ).resolves.toMatchObject({ backgroundIds: ['golden-stage'] })
+
+    const deletion = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(first.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    expect(deletion?.status).toBe(200)
+    expect(db.premiumGroupMembers.size).toBe(0)
+    expect(db.premiumAudit).toEqual([
+      {
+        actorId: null,
+        actorType: 'access',
+        details: { groupId: 'early-supporters' },
+        entityId: 'early-supporters:[erased]',
+        entityType: 'supporter-group-member',
+      },
+    ])
+
+    const second = await postAuth(
+      'register',
+      {
+        email: 'donor@example.com',
+        password: 'Sing1ngPass',
+        deviceId: '00000000-0000-4000-8000-000000000003',
+      },
+      env,
+    )
+    const secondUserId = String((second.user as Record<string, unknown>).id)
+    expect(secondUserId).not.toBe(firstUserId)
+    db.user(secondUserId).emailVerified = 1
+
+    await expect(
+      resolvePremiumBackgroundAccess(env, secondUserId),
+    ).resolves.toMatchObject({ backgroundIds: [] })
   })
 
   it('keeps the account retryable when the shared perks binding is unavailable', async () => {

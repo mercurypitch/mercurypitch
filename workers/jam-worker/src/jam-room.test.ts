@@ -148,6 +148,199 @@ describe('JamRoom signaling and ownership lifecycle', () => {
     })
   })
 
+  it('rejects binary and oversized signaling frames before dispatch', async () => {
+    const cases: Array<{
+      code: number
+      message: ArrayBuffer | string
+      reason: string
+    }> = [
+      {
+        code: 1003,
+        message: new Uint8Array([1, 2, 3]).buffer,
+        reason: 'Binary signaling messages are not supported',
+      },
+      {
+        code: 1009,
+        message: JSON.stringify({
+          type: 'create-room',
+          displayName: 'Ada',
+          padding: 'x'.repeat(64 * 1024),
+        }),
+        reason: 'Signaling message too large',
+      },
+    ]
+
+    for (const testCase of cases) {
+      const ctx = new FakeContext()
+      const ws = socket('create')
+      ctx.sockets = [ws]
+
+      await room(ctx).webSocketMessage(
+        ws as unknown as WebSocket,
+        testCase.message,
+      )
+
+      expect(ws.closeCalls).toEqual([
+        { code: testCase.code, reason: testCase.reason },
+      ])
+      expect(ctx.storage.values.has('ownerToken')).toBe(false)
+    }
+  })
+
+  it('rejects wrong-type and over-bound signaling fields', async () => {
+    const cases: Array<{
+      intent: JamSocketAttachment['connectionIntent']
+      message: Record<string, unknown>
+      peerId?: string
+    }> = [
+      {
+        intent: 'create',
+        message: { type: 'create-room', displayName: 42 },
+      },
+      {
+        intent: 'create',
+        message: { type: 'create-room', displayName: 'A'.repeat(25) },
+      },
+      {
+        intent: 'join',
+        message: {
+          type: 'join-room',
+          displayName: 'Grace',
+          ownerToken: 42,
+        },
+      },
+      {
+        intent: 'join',
+        message: {
+          type: 'join-room',
+          displayName: 'Grace',
+          roomId: 42,
+        },
+      },
+      {
+        intent: 'established',
+        message: { type: 'offer', target: 42, sdp: 'offer-sdp' },
+        peerId: 'sender-peer',
+      },
+      {
+        intent: 'established',
+        message: { type: 'answer', target: 'target-peer', sdp: {} },
+        peerId: 'sender-peer',
+      },
+      {
+        intent: 'established',
+        message: {
+          type: 'ice-candidate',
+          target: 'target-peer',
+          candidate: [],
+        },
+        peerId: 'sender-peer',
+      },
+      {
+        intent: 'established',
+        message: {
+          type: 'offer',
+          target: 't'.repeat(65),
+          sdp: 'offer-sdp',
+        },
+        peerId: 'sender-peer',
+      },
+      {
+        intent: 'established',
+        message: {
+          type: 'answer',
+          target: 'target-peer',
+          sdp: 's'.repeat(48 * 1024 + 1),
+        },
+        peerId: 'sender-peer',
+      },
+      {
+        intent: 'established',
+        message: {
+          type: 'ice-candidate',
+          target: 'target-peer',
+          candidate: 'c'.repeat(8 * 1024 + 1),
+        },
+        peerId: 'sender-peer',
+      },
+    ]
+
+    for (const testCase of cases) {
+      const ctx = new FakeContext()
+      const ws = socket(testCase.intent, testCase.peerId)
+      ctx.sockets = [ws]
+
+      await room(ctx).webSocketMessage(
+        ws as unknown as WebSocket,
+        JSON.stringify(testCase.message),
+      )
+
+      expect(ws.closeCalls).toEqual([
+        { code: 1008, reason: 'Invalid signaling message' },
+      ])
+    }
+  })
+
+  it('relays only validated signaling fields and stamps the real sender', async () => {
+    const ctx = new FakeContext()
+    const sender = socket('established', 'sender-peer')
+    const target = socket('established', 'target-peer')
+    ctx.sockets = [sender, target]
+    const instance = room(ctx)
+
+    await instance.webSocketMessage(
+      sender as unknown as WebSocket,
+      JSON.stringify({
+        type: 'offer',
+        target: 'target-peer',
+        from: 'spoofed-peer',
+        sdp: 'offer-sdp',
+        ignored: 'do-not-relay',
+      }),
+    )
+    await instance.webSocketMessage(
+      sender as unknown as WebSocket,
+      JSON.stringify({
+        type: 'answer',
+        target: 'target-peer',
+        from: 'spoofed-peer',
+        sdp: 'answer-sdp',
+        ignored: 'do-not-relay',
+      }),
+    )
+    await instance.webSocketMessage(
+      sender as unknown as WebSocket,
+      JSON.stringify({
+        type: 'ice-candidate',
+        target: 'target-peer',
+        from: 'spoofed-peer',
+        candidate: 'candidate-json',
+        ignored: 'do-not-relay',
+      }),
+    )
+
+    expect(sentMessages(target)).toEqual([
+      {
+        type: 'offer',
+        target: 'target-peer',
+        from: 'sender-peer',
+        sdp: 'offer-sdp',
+      },
+      {
+        type: 'answer',
+        target: 'target-peer',
+        from: 'sender-peer',
+        sdp: 'answer-sdp',
+      },
+      {
+        type: 'ice-candidate',
+        target: 'target-peer',
+        from: 'sender-peer',
+        candidate: 'candidate-json',
+      },
+    ])
+  })
+
   it('accepts one create handshake and rejects ownership replacement', async () => {
     const ctx = new FakeContext()
     const ws = socket('create')

@@ -31,27 +31,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Release tags migrate the prod database and deploy the prod db-worker via
-  # the same reusable workflow the dev path uses (migrations apply before the
-  # worker inside that job). The frontend prod deploy below runs in parallel;
-  # that is safe because the migration chain is additive-only and the app
-  # tolerates a briefly older API (bundled-seed fallbacks) - the invariant
-  # that matters, migrations-before-worker, is guaranteed in-job.
+  # Release tags deploy Jam first, then migrate the prod database and deploy
+  # the prod DB Worker through the same reusable workflow the dev path uses.
+  # The order matters because the DB Worker binds the JamHostVerifier named
+  # entrypoint. The frontend prod deploy below can still run in parallel.
   deploy-db-prod:
-    name: Prod DB migrations + worker
+    name: Prod Jam + DB migrations + worker
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     uses: ./.github/workflows/deploy-db.yml
-    with:
-      environment: prod
-    secrets: inherit
-
-  # The jam signaling worker ships on the same release tag. Independent of
-  # the db-worker job: they share no state, and the jam worker has no
-  # migrations to order against anything.
-  deploy-jam-prod:
-    name: Prod jam worker
-    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
-    uses: ./.github/workflows/deploy-jam.yml
     with:
       environment: prod
     secrets: inherit

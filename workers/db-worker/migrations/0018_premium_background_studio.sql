@@ -36,6 +36,9 @@ CREATE TABLE premiumBackgroundRevisions (
 
 CREATE INDEX idx_premiumBackgroundRevisions_asset
   ON premiumBackgroundRevisions (backgroundId, lifecycle, version DESC);
+CREATE UNIQUE INDEX idx_premiumBackgroundRevisions_one_draft
+  ON premiumBackgroundRevisions (backgroundId)
+  WHERE lifecycle = 'draft';
 CREATE UNIQUE INDEX idx_premiumBackgroundRevisions_one_published
   ON premiumBackgroundRevisions (backgroundId)
   WHERE lifecycle = 'published';
