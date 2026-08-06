@@ -86,6 +86,13 @@ jobs:
                   apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
                     beside=true
                     ;;
+                  src/*)
+                    # The DB Worker imports shared catalogs and validators from
+                    # the root application, so root source changes must validate
+                    # both consumers.
+                    root=true
+                    db=true
+                    ;;
                   workers/db-worker/*)
                     db=true
                     ;;
