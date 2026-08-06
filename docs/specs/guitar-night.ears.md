@@ -9,12 +9,16 @@ Guitar runtime.
 legacy cutover still pending. The Velvet Rehearsal entry, configurable first
 win, durable local-song preparation, exact lightweight stem hydration,
 two-stem-to-full-band upgrade, synchronized buffered/streamed transport,
-shared output buses, Flow/Tab/Neck stage, explicit local Listening, and
-evidence-only Jam Doctor are integrated. Entry, preparation, staging, and room
-handoff remain silent. Playback, count-in, and microphone capture each begin
-only from their explicit player actions; assessed listening pauses pitched
-backing. A distinct guitar stem defaults muted, while two-stem fallback copy
-states that guitar remains in the accompaniment.
+pitch-preserving practice speed, shared output buses, a full-viewport
+Flow/Tab/Neck stage, explicit local Listening, and evidence-only Jam Doctor are
+integrated. The legacy tab and standalone room now share the host-neutral 3D
+performance source and pure renderer-scene boundary; the broader runtime
+lifecycle cutover remains pending. Entry, preparation, staging, room handoff,
+and speed changes before Play remain silent. Playback, count-in, and
+microphone capture each begin only from their explicit player actions;
+assessed listening pauses pitched backing. A distinct guitar stem defaults
+muted, while two-stem fallback copy states that guitar remains in the
+accompaniment.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -114,6 +118,12 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-GN-RUNTIME-008 — Responsive persistence:** WHEN the viewport,
   orientation, room, sheet, or Flow/Tab/Neck view changes, the active runtime
   and transport shall survive without restarting audio or capture.
+- **REQ-GN-RUNTIME-009 — Pitch-preserving practice speed:** WHEN playback
+  speed differs from `1×`, separated stems shall remain synchronized and keep
+  their musical pitch. WHEN speed changes during buffered playback, the room
+  shall preserve the visible song position while handing off to a
+  pitch-preserving playback path; changing speed before Play shall not create
+  or activate audio.
 
 ## Configurable first win — `GN-FIRST-*`
 
@@ -342,6 +352,14 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-GN-STAGE-007 — Motion and power:** WHERE reduced motion or a low-power
   fallback is active, room ambience and 3D motion shall reduce without hiding
   the current beat, next note, or performance result.
+- **REQ-GN-STAGE-008 — Full-room topology:** WHILE a prepared song room is
+  open, the entry faceplate shall not constrain it. A compact session bar,
+  flexible musical stage, edge-to-edge pedalboard, and status rail shall fit
+  inside the bounded first viewport at supported desktop and phone sizes.
+- **REQ-GN-STAGE-009 — Truthful score time:** IF a verified tab or score is not
+  attached, THEN the shared performance source shall expose no beat or tempo;
+  Flow, Tab, and Neck shall remain useful in an explicit free-play state and
+  shall not infer score time from backing seconds.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 
