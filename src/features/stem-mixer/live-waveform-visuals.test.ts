@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { liveWaveformDisplayGain, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
+import { liveWaveformDisplayGain, liveWaveformLaneLayout, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
 
 describe('live waveform visuals', () => {
   it('leaves digital silence perfectly flat', () => {
@@ -25,5 +25,16 @@ describe('live waveform visuals', () => {
   it('caps the display while preserving the sample direction', () => {
     expect(liveWaveformSample(255, 8)).toBe(1)
     expect(liveWaveformSample(0, 8)).toBe(-1)
+  })
+
+  it('keeps stem labels out of the waveform drawing area', () => {
+    const desktop = liveWaveformLaneLayout(600)
+    const narrow = liveWaveformLaneLayout(100)
+
+    expect(desktop.labelRailWidth).toBe(112)
+    expect(desktop.waveformStartX).toBeGreaterThan(desktop.labelRailWidth)
+    expect(desktop.waveformWidth).toBeGreaterThan(400)
+    expect(narrow.labelRailWidth).toBeGreaterThanOrEqual(40)
+    expect(narrow.waveformWidth).toBeGreaterThanOrEqual(42)
   })
 })

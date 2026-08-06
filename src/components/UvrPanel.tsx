@@ -8,8 +8,8 @@ import { OptionsSheet } from '@/components/mobile/OptionsSheet'
 import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
-import type { SessionZipInspection } from '@/db/services/session-export-service'
-import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
+import type { SessionExportStemType, SessionZipInspection, } from '@/db/services/session-export-service'
+import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionLibraryExport, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -43,6 +43,8 @@ import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrSettings, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
 import { CheckCircle, ChevronDown, ChevronUp, Cpu, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
+import type { SessionExportPreset } from './SessionExportDialog'
+import { SessionExportDialog } from './SessionExportDialog'
 import type { ExtraStemInput } from './StemMixer'
 
 const ShazamListen = lazy(async () =>
@@ -63,6 +65,11 @@ export type UvrView =
   | 'mixer'
   | 'shazam-listen'
   | 'shazam-results'
+
+const CORE_LIBRARY_EXPORT_STEMS: readonly SessionExportStemType[] = [
+  'vocal',
+  'instrumental',
+]
 
 interface UvrPanelProps {
   /** Initial view from hash route — only used on first mount */
@@ -186,6 +193,23 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   const [prevView, setPrevView] = createSignal<UvrView>('upload')
   const [isExporting, setIsExporting] = createSignal(false)
   const [exportProgress, setExportProgress] = createSignal(0)
+  const [libraryExportInspecting, setLibraryExportInspecting] =
+    createSignal(false)
+  const [libraryExportDialogOpen, setLibraryExportDialogOpen] =
+    createSignal(false)
+  const [libraryExportAvailable, setLibraryExportAvailable] = createSignal<
+    SessionExportStemType[]
+  >([])
+  const [libraryExportSelected, setLibraryExportSelected] = createSignal<
+    SessionExportStemType[]
+  >([])
+  const [libraryExportPreset, setLibraryExportPreset] =
+    createSignal<SessionExportPreset>('all')
+  const [libraryExportError, setLibraryExportError] = createSignal('')
+  const [libraryExportSessionCount, setLibraryExportSessionCount] =
+    createSignal(0)
+  const [libraryExportSkippedCount, setLibraryExportSkippedCount] =
+    createSignal(0)
   const [isImporting, setIsImporting] = createSignal(false)
   const [activeGroupId, setActiveGroupId] = createSignal<string | null>(null)
   const [sessionSearch, setSessionSearch] = createSignal('')
@@ -244,14 +268,98 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     onCleanup(() => window.removeEventListener('keydown', onKeyDown))
   })
 
-  const handleExportAll = async () => {
+  const libraryExportHasCoreStem = (): boolean =>
+    libraryExportSelected().some((stem) =>
+      CORE_LIBRARY_EXPORT_STEMS.includes(stem),
+    )
+
+  const closeLibraryExportDialog = (): void => {
     if (isExporting()) return
+    setLibraryExportDialogOpen(false)
+    setLibraryExportError('')
+  }
+
+  const setLibraryPreset = (preset: SessionExportPreset): void => {
+    const available = libraryExportAvailable()
+    setLibraryExportPreset(preset)
+    if (preset === 'all') setLibraryExportSelected([...available])
+    if (preset === 'core') {
+      setLibraryExportSelected(
+        CORE_LIBRARY_EXPORT_STEMS.filter((stem) => available.includes(stem)),
+      )
+    }
+  }
+
+  const toggleLibraryExportStem = (stem: SessionExportStemType): void => {
+    setLibraryExportPreset('custom')
+    setLibraryExportSelected((current) =>
+      current.includes(stem)
+        ? current.filter((candidate) => candidate !== stem)
+        : libraryExportAvailable().filter(
+            (candidate) => current.includes(candidate) || candidate === stem,
+          ),
+    )
+  }
+
+  const archiveExportFailureMessage = (error: unknown): string =>
+    error instanceof Error && error.name === 'ArchiveExportBusyError'
+      ? 'Another archive is already being prepared. Try again when it finishes.'
+      : error instanceof Error && error.name === 'NoRestorableSessionsError'
+        ? 'No completed sessions with Vocal or Instrumental audio are ready to export.'
+        : 'The session archive could not be created. Please try again.'
+
+  const notifyArchiveExportFailure = (error: unknown): string => {
+    console.error('[UvrPanel] archive export failed:', error)
+    const message = archiveExportFailureMessage(error)
+    showNotification(message, 'error')
+    return message
+  }
+
+  const openLibraryExportDialog = async (): Promise<void> => {
+    if (isExporting() || libraryExportInspecting()) return
+    setLibraryExportInspecting(true)
+    try {
+      const inspection = await inspectSessionLibraryExport()
+      if (inspection.restorableSessions === 0) {
+        showNotification(
+          'No completed sessions with Vocal or Instrumental audio are ready to export.',
+          'warning',
+        )
+        return
+      }
+      batch(() => {
+        setLibraryExportAvailable(inspection.availableStems)
+        setLibraryExportSelected([...inspection.availableStems])
+        setLibraryExportPreset('all')
+        setLibraryExportError('')
+        setExportProgress(0)
+        setLibraryExportSessionCount(inspection.restorableSessions)
+        setLibraryExportSkippedCount(inspection.skippedSessions)
+        setLibraryExportDialogOpen(true)
+      })
+    } catch (error) {
+      console.error('[UvrPanel] library export inspection failed:', error)
+      showNotification('Stored session stems could not be read.', 'error')
+    } finally {
+      setLibraryExportInspecting(false)
+    }
+  }
+
+  const handleExportAll = async (
+    selectedStemTypes: readonly SessionExportStemType[],
+  ) => {
+    if (isExporting()) return
+    const selected = [...selectedStemTypes]
     setIsExporting(true)
     setExportProgress(0)
+    setLibraryExportError('')
     try {
-      const summary = await exportAllSessions((pct) => setExportProgress(pct))
+      const summary = await exportAllSessions(
+        (pct) => setExportProgress(Math.round(pct)),
+        selected,
+      )
       setExportProgress(100)
-      await new Promise((r) => setTimeout(r, 1500))
+      setLibraryExportDialogOpen(false)
       showNotification(
         summary.skippedSessions > 0
           ? `Exported ${summary.exportedSessions} completed ${summary.exportedSessions === 1 ? 'session' : 'sessions'}; skipped ${summary.skippedSessions} unfinished or incomplete ${summary.skippedSessions === 1 ? 'session' : 'sessions'}.`
@@ -259,22 +367,16 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
         summary.skippedSessions > 0 ? 'warning' : 'success',
       )
     } catch (error) {
-      notifyArchiveExportFailure(error)
+      setLibraryExportError(notifyArchiveExportFailure(error))
     } finally {
       setIsExporting(false)
     }
   }
 
-  const notifyArchiveExportFailure = (error: unknown): void => {
-    console.error('[UvrPanel] archive export failed:', error)
-    showNotification(
-      error instanceof Error && error.name === 'ArchiveExportBusyError'
-        ? 'Another archive is already being prepared. Try again when it finishes.'
-        : error instanceof Error && error.name === 'NoRestorableSessionsError'
-          ? 'No completed sessions with Vocal or Instrumental audio are ready to export.'
-          : 'The session archive could not be created. Please try again.',
-      'error',
-    )
+  const submitLibraryExport = (): void => {
+    const selected = libraryExportSelected()
+    if (selected.length === 0 || !libraryExportHasCoreStem()) return
+    void handleExportAll(selected)
   }
 
   const handleExportGroup = async (groupId: string): Promise<void> => {
@@ -2064,9 +2166,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     </Show>
                     <button
                       class="section-action-btn icon-only"
-                      onClick={() => void handleExportAll()}
-                      disabled={isExporting()}
-                      title="Export all sessions to a ZIP file"
+                      onClick={() => void openLibraryExportDialog()}
+                      disabled={isExporting() || libraryExportInspecting()}
+                      aria-busy={libraryExportInspecting() ? true : undefined}
+                      title="Choose stems and export all sessions to a ZIP file"
                     >
                       <ExportFile />
                     </button>
@@ -2476,6 +2579,26 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             </Suspense>
           </Show>
         </div>
+
+        <SessionExportDialog
+          open={libraryExportDialogOpen()}
+          available={libraryExportAvailable()}
+          selected={libraryExportSelected()}
+          preset={libraryExportPreset()}
+          progress={exportProgress()}
+          busy={isExporting()}
+          error={libraryExportError()}
+          eyebrow="Session library"
+          heading="Choose stems for every session"
+          description={`Apply one stem preset to ${libraryExportSessionCount()} restorable ${libraryExportSessionCount() === 1 ? 'session' : 'sessions'}. Optional parts are included wherever stored; sessions without a selected Vocal or Instrumental stem are skipped.${libraryExportSkippedCount() > 0 ? ` ${libraryExportSkippedCount()} unfinished or incomplete ${libraryExportSkippedCount() === 1 ? 'session is' : 'sessions are'} already excluded.` : ''}`}
+          selectionSummary={`${libraryExportSessionCount()} ${libraryExportSessionCount() === 1 ? 'session' : 'sessions'} · ${libraryExportSelected().length} ${libraryExportSelected().length === 1 ? 'stem type' : 'stem types'}`}
+          submitLabel="Export all"
+          progressLabel="Packing session library"
+          onPresetChange={setLibraryPreset}
+          onStemToggle={toggleLibraryExportStem}
+          onSubmit={submitLibraryExport}
+          onClose={closeLibraryExportDialog}
+        />
 
         {/* Import Group Selection Modal */}
         <Show when={showImportGroupSelect()}>

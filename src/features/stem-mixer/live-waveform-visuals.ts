@@ -4,6 +4,34 @@
 
 const TARGET_DISPLAY_PEAK = 0.62
 const MAX_DISPLAY_GAIN = 5.5
+const MIN_WAVEFORM_WIDTH = 42
+
+export interface LiveWaveformLaneLayout {
+  labelRailWidth: number
+  waveformStartX: number
+  waveformWidth: number
+}
+
+/** Reserve a dedicated label rail while protecting useful signal width.
+ * Narrow canvases yield space to the waveform first; desktop panels give long
+ * stem names enough room to remain readable without covering the signal. */
+export const liveWaveformLaneLayout = (
+  canvasWidth: number,
+): LiveWaveformLaneLayout => {
+  const width = Math.max(0, canvasWidth)
+  const preferredRail =
+    width >= 320 ? 112 : width >= 180 ? 88 : Math.max(36, width * 0.42)
+  const labelRailWidth = Math.round(
+    Math.min(preferredRail, Math.max(0, width - MIN_WAVEFORM_WIDTH - 5)),
+  )
+  const waveformStartX = labelRailWidth > 0 ? labelRailWidth + 1 : 0
+
+  return {
+    labelRailWidth,
+    waveformStartX,
+    waveformWidth: Math.max(0, width - waveformStartX - 4),
+  }
+}
 
 /** Peak distance from the Web Audio byte-domain centre, normalized to 0–1. */
 export const liveWaveformPeak = (data: ArrayLike<number>): number => {
