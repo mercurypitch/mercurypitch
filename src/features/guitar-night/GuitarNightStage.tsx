@@ -3,21 +3,20 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarNightApp.module.css'
 
-const GuitarTab3DView = lazy(async () => {
-  const module = await import('@/features/guitar-tab-3d/GuitarTab3DView')
-  return { default: module.GuitarTab3DView }
+const Guitar3DStage = lazy(async () => {
+  const module = await import('@/features/guitar/ui/Guitar3DStage')
+  return { default: module.Guitar3DStage }
 })
 
 export type GuitarNightStageMode = 'flow' | 'tab' | 'neck'
 
 interface GuitarNightStageProps {
-  title: string
-  notes: Accessor<readonly GuitarNote[]>
-  playheadBeat: Accessor<number>
+  source: GuitarPerformanceStageSource
   active: Accessor<boolean>
   listening?: Accessor<boolean>
   heardNote?: Accessor<string | null>
@@ -30,8 +29,9 @@ const FRET_LABELS = Array.from({ length: 13 }, (_, index) => index)
 
 function noteAtPlayhead(
   notes: readonly GuitarNote[],
-  playheadBeat: number,
+  playheadBeat: number | null,
 ): GuitarNote | null {
+  if (playheadBeat === null) return null
   return (
     notes.find(
       (note) =>
@@ -45,9 +45,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
-  const notes = createMemo(() => [...props.notes()])
+  const notes = createMemo(() => [...props.source.notes()])
   const activeNote = createMemo(() =>
-    noteAtPlayhead(notes(), props.playheadBeat()),
+    noteAtPlayhead(notes(), props.source.timeline.playheadBeat()),
   )
   const hasGuide = createMemo(() => notes().length > 0)
   const isListening = createMemo(() => props.listening?.() ?? false)
@@ -61,12 +61,16 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   })
   const canvasSummary = createMemo(() =>
     hasGuide()
-      ? `${props.title}. ${notes().length} guided notes approach a six-string fretboard.`
-      : `${props.title}. Interactive six-string fretboard; no song tab is attached.`,
+      ? `${props.source.title()}. ${notes().length} guided notes approach a six-string fretboard.`
+      : `${props.source.title()}. Interactive six-string fretboard; no song tab is attached.`,
   )
 
   return (
-    <section class={styles.performanceStage} aria-label="Guitar stage">
+    <section
+      class={styles.performanceStage}
+      aria-label="Guitar stage"
+      data-testid="guitar-night-stage"
+    >
       <header class={styles.stageHeader}>
         <div>
           <span>
@@ -115,17 +119,19 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               </div>
             }
           >
-            <GuitarTab3DView
-              fallingNotes={() => notes()}
-              playheadBeat={props.playheadBeat}
+            <Guitar3DStage
+              source={props.source}
               visibleBeatWindow={() => 8}
               showNoteLabels={() => true}
               showFretboard={() => true}
               isActive={() => props.active() && mode() === 'flow'}
               display={() => VELVET_DISPLAY}
               showGizmo={() => false}
-              ariaLabel={() => `${props.title} flowing guitar fretboard`}
+              ariaLabel={() =>
+                `${props.source.title()} flowing guitar fretboard`
+              }
               fallbackText={canvasSummary}
+              borderRadius={() => '0'}
             />
           </Suspense>
           <Show when={!hasGuide()}>

@@ -54,6 +54,7 @@ function mixedBackingResult(
 
 function fakeBackingTransport() {
   let status: GuitarBackingTransportStatus = 'idle'
+  let playbackRate = 1
   let currentSession: GuitarBackingSession | null = null
   let trackStates: GuitarBackingTrackState[] = []
   const listeners = new Set<() => void>()
@@ -89,6 +90,11 @@ function fakeBackingTransport() {
       emit()
     }),
     seek: vi.fn(),
+    setPlaybackRate: vi.fn(async (rate) => {
+      playbackRate = rate
+      emit()
+      return true
+    }),
     setMasterVolume: vi.fn(),
     setTrackMuted: vi.fn((id, muted) => {
       trackStates = trackStates.map((track) =>
@@ -107,6 +113,7 @@ function fakeBackingTransport() {
         ...(currentSession?.tracks.map((track) => track.durationSeconds ?? 0) ??
           []),
       ),
+    getPlaybackRate: () => playbackRate,
     getTrackStates: () => trackStates,
     getError: () => null,
     subscribe(listener) {

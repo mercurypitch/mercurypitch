@@ -64,6 +64,7 @@ class FakeMediaElement extends EventTarget {
   preload = ''
   src = ''
   playbackRate = 1
+  preservesPitch = false
   readonly play = vi.fn(async () => {
     this.paused = false
   })
@@ -422,6 +423,33 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.mediaElements.every((element) => !element.paused)).toBe(true)
     expect(transport.getLoadMode()).toBe('streamed')
     expect(transport.getStatus()).toBe('playing')
+  })
+
+  it('uses pitch-preserving streams for practice speed and keeps the song position when changing live', async () => {
+    const harness = audioHarness()
+    harness.transport.configure(
+      session('speed-trainer', [track('drums'), track('guitar')]),
+    )
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.transport.getLoadMode()).toBe('buffered')
+
+    const firstStartTime = harness.context.sources[0].start.mock.calls[0][0]!
+    harness.context.currentTime = firstStartTime + 3.25
+    await expect(harness.transport.setPlaybackRate(0.75)).resolves.toBe(true)
+
+    expect(harness.transport.getPlaybackRate()).toBe(0.75)
+    expect(harness.transport.getLoadMode()).toBe('streamed')
+    expect(harness.context.sources[0].stop).toHaveBeenCalled()
+    expect(harness.mediaElements).toHaveLength(2)
+    expect(
+      harness.mediaElements.every(
+        (element) =>
+          element.playbackRate === 0.75 && element.preservesPitch === true,
+      ),
+    ).toBe(true)
+    expect(harness.mediaElements[0].currentTime).toBeCloseTo(3.25)
+    expect(harness.transport.getCurrentTime()).toBeCloseTo(3.25)
+    expect(harness.transport.getStatus()).toBe('playing')
   })
 
   it('rejects a mix whose decoded buffers exceed the gate despite sparse metadata', async () => {

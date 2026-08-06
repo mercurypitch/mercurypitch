@@ -19,7 +19,8 @@ import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatus
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import { useEngines } from '@/contexts/EngineContext'
 import { useGuitar } from '@/contexts/GuitarContext'
-import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
+import { createLegacyGuitarPerformanceAdapter } from '@/features/guitar/legacy/createLegacyGuitarPerformanceAdapter'
+import { Guitar3DStage } from '@/features/guitar/ui/Guitar3DStage'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { TAB_GUITAR } from '@/features/tabs/constants'
@@ -82,6 +83,7 @@ export function GuitarPage(props: GuitarPageProps) {
   const { audioEngine } = useEngines()
   const ctx = useGuitar()
   const guitar = ctx.guitar
+  const guitarPerformance = createLegacyGuitarPerformanceAdapter(guitar)
 
   // Start the guitar mic and SAY so when it fails — the toggles used to
   // discard startMic's boolean, leaving a dead click with no explanation.
@@ -984,9 +986,8 @@ export function GuitarPage(props: GuitarPageProps) {
                 />
               }
             >
-              <GuitarTab3DView
-                fallingNotes={guitar.fallingNotes}
-                playheadBeat={guitar.playheadBeat}
+              <Guitar3DStage
+                source={guitarPerformance.stage}
                 visibleBeatWindow={guitar.visibleBeatWindow}
                 showNoteLabels={guitar.showNoteLabels}
                 showFretboard={show3dFretboard}
