@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/beside_cue_orange</item>
+        <item name="colorPrimaryDark">@color/beside_cue_ink</item>
+        <item name="colorAccent">@color/beside_cue_turquoise</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:navigationBarColor">@color/beside_cue_ink</item>
+        <item name="android:statusBarColor">@color/beside_cue_paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="android:navigationBarColor">@color/beside_cue_ink</item>
+        <item name="android:statusBarColor">@color/beside_cue_paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_beside_cue_splash</item>
+        <item name="windowSplashScreenBackground">@color/beside_cue_paper</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

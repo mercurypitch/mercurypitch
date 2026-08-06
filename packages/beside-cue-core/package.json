@@ -1,0 +1,24 @@
+{
+  "name": "@irchiinnuss/beside-cue-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "eslint": "9.39.1",
+    "prettier": "^3.8.3",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.5"
+  }
+}
