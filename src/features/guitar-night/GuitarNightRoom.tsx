@@ -5,7 +5,9 @@ import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
 import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
+import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
@@ -78,16 +80,24 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
   })
+  const performance = createGuitarNightPerformanceAdapter(
+    () => props.transport,
+    () => props.backing.title,
+    () => EMPTY_STAGE_NOTES,
+  )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isListening = createMemo(
     () =>
       listening.status() === 'listening' || listening.status() === 'requesting',
   )
   const duration = createMemo(() =>
-    Math.max(0, props.transport.durationSeconds()),
+    Math.max(0, performance.transport.timeline.durationSeconds()),
   )
   const position = createMemo(() =>
-    Math.min(duration(), Math.max(0, props.transport.positionSeconds())),
+    Math.min(
+      duration(),
+      Math.max(0, performance.transport.timeline.positionSeconds()),
+    ),
   )
   const mixCopy = createMemo(() => {
     if (props.backing.defaultMix.kind === 'mixed-instrumental') {
@@ -98,6 +108,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     }
     return 'Band parts are ready. No separate guitar track was found.'
   })
+  const rateLabel = createMemo(
+    () => `${performance.transport.playbackRate().toFixed(2)}×`,
+  )
+
+  const nudgeRate = (delta: number): void => {
+    const next = clampRate(
+      Math.round((performance.transport.playbackRate() + delta) * 100) / 100,
+    )
+    void performance.transport.setPlaybackRate(next)
+  }
 
   const togglePlayback = (): void => {
     if (isPlaying()) {
@@ -105,7 +125,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       return
     }
     if (isListening()) listening.stop()
-    void props.transport.play()
+    void performance.transport.play()
   }
 
   const toggleListening = (): void => {
@@ -124,7 +144,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
   const seek = (event: InputEvent): void => {
     const input = event.currentTarget as HTMLInputElement
-    props.transport.seek(Number(input.value))
+    performance.transport.seekSeconds(Number(input.value))
   }
 
   const changeVolume = (event: InputEvent): void => {
@@ -194,9 +214,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </div>
 
       <GuitarNightStage
-        title={props.backing.title}
-        notes={() => EMPTY_STAGE_NOTES}
-        playheadBeat={() => position() * 2}
+        source={performance.stage}
         active={() => true}
         listening={isListening}
         heardNote={listening.currentNote}
@@ -259,7 +277,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         )}
       </Show>
 
-      <div class={styles.transportDeck}>
+      <div class={styles.transportDeck} data-testid="guitar-night-deck">
         <div class={styles.transportIdentity}>
           <span>{mixCopy()}</span>
           <Show
@@ -307,6 +325,38 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             <span aria-hidden="true">{isPlaying() ? <Pause /> : <Play />}</span>
             <strong>{playLabel(props.transport.status())}</strong>
           </button>
+          <div
+            class={styles.playbackSpeed}
+            role="group"
+            aria-label="Playback speed"
+          >
+            <button
+              type="button"
+              aria-label={`Slow down from ${rateLabel()}`}
+              disabled={
+                props.transport.status() === 'loading' ||
+                performance.transport.playbackRate() <= MIN_RATE
+              }
+              onClick={() => nudgeRate(-0.05)}
+            >
+              <span aria-hidden="true">−</span>
+            </button>
+            <output aria-label={`Playback speed ${rateLabel()}`}>
+              <strong>{rateLabel()}</strong>
+              <small>Speed</small>
+            </output>
+            <button
+              type="button"
+              aria-label={`Speed up from ${rateLabel()}`}
+              disabled={
+                props.transport.status() === 'loading' ||
+                performance.transport.playbackRate() >= MAX_RATE
+              }
+              onClick={() => nudgeRate(0.05)}
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          </div>
           <label class={styles.masterVolume}>
             <span aria-hidden="true">
               <Volume2 />

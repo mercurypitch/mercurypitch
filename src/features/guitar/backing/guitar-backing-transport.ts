@@ -1,6 +1,7 @@
 // Guitar backing transport keeps separated stems on one route-owned Web Audio clock.
 // ============================================================
 
+import { clampRate } from '@/features/guitar-practice/practice-rate'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarBackingStreamEngine } from './guitar-backing-stream'
@@ -52,6 +53,7 @@ export interface GuitarBackingTransport {
   pause(): void
   stop(): void
   seek(seconds: number): void
+  setPlaybackRate(rate: number): Promise<boolean>
   setMasterVolume(position: number): void
   setTrackMuted(id: string, muted: boolean): void
   getAudioContext(): AudioContext | null
@@ -60,6 +62,7 @@ export interface GuitarBackingTransport {
   getStatus(): GuitarBackingTransportStatus
   getCurrentTime(): number
   getDuration(): number
+  getPlaybackRate(): number
   getTrackStates(): readonly GuitarBackingTrackState[]
   getError(): string | null
   subscribe(listener: () => void): () => void
@@ -203,6 +206,7 @@ export function createGuitarBackingTransport(
   let context: AudioContext | null = null
   let audioGraph: GuitarSessionAudioGraph | null = null
   let masterPosition = 0.78
+  let playbackRate = 1
   let duration = 0
   let parkedOffset = 0
   let startedOffset = 0
@@ -344,6 +348,7 @@ export function createGuitarBackingTransport(
     }
 
     streamEngine = engine
+    engine.setPlaybackRate(playbackRate)
     loadMode = 'streamed'
     duration = Math.max(
       duration,
@@ -367,6 +372,15 @@ export function createGuitarBackingTransport(
       currentContext === null ||
       currentStemsBus === null
     ) {
+      return false
+    }
+
+    if (playbackRate !== 1) {
+      if (streamingFallback) return loadStreamed(requestGeneration)
+      setStatus(
+        'error',
+        'Pitch-preserving speed control is unavailable in this browser.',
+      )
       return false
     }
 
@@ -591,6 +605,49 @@ export function createGuitarBackingTransport(
     return !disposed && requestGeneration === generation
   }
 
+  const currentStreamEngine = (): GuitarBackingStreamEngine | null =>
+    streamEngine
+
+  const setPlaybackRate = async (nextRate: number): Promise<boolean> => {
+    const safeRate = Number.isFinite(nextRate) ? clampRate(nextRate) : 1
+    if (safeRate === playbackRate) return true
+    if (!streamingFallback && safeRate !== 1) return false
+
+    const previousStatus = status
+    const wasPlaying = status === 'playing'
+    const offset = currentTime()
+    playbackRate = safeRate
+
+    if (streamEngine !== null) {
+      streamEngine.setPlaybackRate(safeRate)
+      emit()
+      return true
+    }
+    if (loadMode !== 'buffered') {
+      emit()
+      return true
+    }
+
+    const requestGeneration = generation
+    if (!loadStreamed(requestGeneration)) return false
+    const loadedStreamEngine = currentStreamEngine()
+    if (loadedStreamEngine === null) return false
+    loadedStreamEngine.setPlaybackRate(safeRate)
+    parkedOffset = offset
+    stopVoices()
+    disconnectDecodedTracks()
+
+    if (wasPlaying) return startStreamedAt(offset, requestGeneration)
+    setStatus(
+      previousStatus === 'complete'
+        ? 'complete'
+        : previousStatus === 'paused'
+          ? 'paused'
+          : 'ready',
+    )
+    return true
+  }
+
   return {
     configure(nextSession) {
       if (disposed) return
@@ -731,6 +788,8 @@ export function createGuitarBackingTransport(
       startAt(target)
     },
 
+    setPlaybackRate,
+
     setMasterVolume(position) {
       masterPosition = clamp(position, 0, 1)
       const currentMaster = audioGraph?.master ?? null
@@ -763,6 +822,7 @@ export function createGuitarBackingTransport(
     getStatus: () => status,
     getCurrentTime: currentTime,
     getDuration: () => duration,
+    getPlaybackRate: () => playbackRate,
     getTrackStates: () => trackStates.map((state) => ({ ...state })),
     getError: () => error,
     subscribe(listener) {

@@ -10,7 +10,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
-import type { GuitarHitResult } from '@/features/guitar-practice/useGuitarPracticeController'
+import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { createPersistedSignal } from '@/lib/storage'
 import { isMobile } from '@/lib/use-viewport'

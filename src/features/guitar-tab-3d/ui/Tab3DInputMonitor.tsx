@@ -18,7 +18,7 @@ const GOOD_MS = 150
 
 export function Tab3DInputMonitor(props: {
   controls: Tab3DControls
-  fallingNotes: Accessor<GuitarNote[]>
+  fallingNotes: Accessor<readonly GuitarNote[]>
   playheadBeat: Accessor<number>
   songBpm: Accessor<number>
 }) {

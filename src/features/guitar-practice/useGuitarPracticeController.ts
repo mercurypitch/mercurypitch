@@ -3,6 +3,7 @@
 // ============================================================
 
 import { createEffect, createSignal, onCleanup } from 'solid-js'
+import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import { clampRate, rampedRate } from '@/features/guitar-practice/practice-rate'
 import type { AudioEngine, InstrumentType } from '@/lib/audio-engine'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -115,15 +116,7 @@ function revoiceNotes(
   })
 }
 
-export interface GuitarHitResult {
-  itemIndex: string
-  midiNote: number
-  noteName: string
-  stringIndex: number
-  timing: 'perfect' | 'great' | 'good' | 'miss'
-  score: number
-  timestamp: number
-}
+export type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 
 /** Logical Guitar-surface consumers of the one shared microphone capture. */
 export type GuitarMicOwner = 'manual' | 'interactive-auto'
@@ -1276,3 +1269,7 @@ export function useGuitarPracticeController(
     stopPracticeLoop,
   }
 }
+
+export type GuitarPracticeController = ReturnType<
+  typeof useGuitarPracticeController
+>

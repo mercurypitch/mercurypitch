@@ -11,11 +11,10 @@
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
-import type { TabDetected, TabRenderer, TabScene } from './renderer/TabRenderer'
-import { DEFAULT_DISPLAY } from './renderer/TabRenderer'
+import type { TabRenderer, TabScene } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
 import type { Tab3DControls } from './ui/Tab3DHud'
@@ -25,13 +24,8 @@ import { Tab3DInputMonitor } from './ui/Tab3DInputMonitor'
 const ORBIT_SENS = 0.008 // radians per pixel dragged
 const ZOOM_SENS = 0.0012 // per wheel delta unit
 
-/** Standard guitar; widened automatically if a tab uses more strings. */
-const MIN_STRING_COUNT = 6
-/** Fallback open-string tuning (high→low), extended for 7/8-string tabs. */
-const DEFAULT_OPEN: readonly number[] = [64, 59, 55, 50, 45, 40, 35, 30]
-
 export interface GuitarTab3DViewProps {
-  fallingNotes: Accessor<GuitarNote[]>
+  fallingNotes: Accessor<readonly GuitarNote[]>
   playheadBeat: Accessor<number>
   visibleBeatWindow: Accessor<number>
   showNoteLabels: Accessor<boolean>
@@ -48,6 +42,8 @@ export interface GuitarTab3DViewProps {
   /** Accessible canvas name and fallback summary owned by the host surface. */
   ariaLabel?: Accessor<string>
   fallbackText?: Accessor<string>
+  /** Host-owned edge treatment; the legacy stage keeps its rounded default. */
+  borderRadius?: Accessor<string>
 }
 
 export function GuitarTab3DView(props: GuitarTab3DViewProps) {
@@ -163,94 +159,24 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   }
 
   const buildScene = (): TabScene => {
-    const source = props.fallingNotes()
-    let stringCount = MIN_STRING_COUNT
-    let maxFret = 0
-    const observedOpen: number[] = []
-    for (const n of source) {
-      if (n.stringIndex + 1 > stringCount) stringCount = n.stringIndex + 1
-      if (n.fret > maxFret) maxFret = n.fret
-      observedOpen[n.stringIndex] = n.midi - n.fret
-    }
-    const openMidi: number[] = []
-    for (let i = 0; i < stringCount; i++) {
-      openMidi[i] = observedOpen[i] ?? DEFAULT_OPEN[i] ?? 40
-    }
-    const laidMaxFret = Math.min(24, Math.max(12, maxFret))
-    const clampFret = (f: number) => Math.max(0, Math.min(laidMaxFret, f))
-    const ph = props.playheadBeat()
     const ctrls = props.controls
-
-    // Input scoring feedback (mic/MIDI): recent successful-hit flashes + the
-    // player's detected note placed on the neck.
-    const now = Date.now()
-    const hits = (ctrls?.hitResults() ?? [])
-      .filter((h) => h.timing !== 'miss' && now - h.timestamp < 600)
-      .map((h) => ({
-        stringIndex: h.stringIndex,
-        fret: clampFret(h.midiNote - (openMidi[h.stringIndex] ?? 40)),
-        timing: h.timing as 'perfect' | 'great' | 'good',
-        at: h.timestamp,
-      }))
-
-    let detected: TabDetected | null = null
-    const dMidi = ctrls?.detectedMidi() ?? null
-    if (dMidi !== null && (ctrls?.showUserNotes() ?? true)) {
-      // Snap to a hittable target of the same pitch-class near the hit line.
-      const matched = source.find(
-        (n) =>
-          (n.isBacking ?? false) === false &&
-          n.startBeat - ph <= 0.35 &&
-          n.startBeat + n.duration - ph >= -0.35 &&
-          dMidi % 12 === n.midi % 12,
-      )
-      const clarity = ctrls?.detectedClarity() ?? 1
-      if (matched) {
-        detected = {
-          stringIndex: matched.stringIndex,
-          fret: clampFret(matched.fret),
-          matchesTarget: true,
-          clarity,
-        }
-      } else {
-        // Approximate a lane: first string that can play the pitch (low fret).
-        let lane = stringCount - 1
-        for (let s = 0; s < stringCount; s++) {
-          if (dMidi >= openMidi[s] && dMidi - openMidi[s] <= laidMaxFret) {
-            lane = s
-            break
-          }
-        }
-        detected = {
-          stringIndex: lane,
-          fret: clampFret(dMidi - openMidi[lane]),
-          matchesTarget: false,
-          clarity,
-        }
-      }
-    }
-
-    return {
-      notes: source.map((n) => ({
-        stringIndex: n.stringIndex,
-        fret: n.fret,
-        startBeat: n.startBeat,
-        durationBeats: n.duration,
-        // Always derive name+octave from MIDI so the label is exact (e.g. "C3").
-        noteName: midiToNoteNameOctave(n.midi),
-        isBacking: n.isBacking ?? false,
-      })),
-      playheadBeat: ph,
-      visibleBeatWindow: Math.max(1, props.visibleBeatWindow()),
-      stringCount,
-      openMidi,
-      maxFret: laidMaxFret,
+    return buildTabScene({
+      notes: props.fallingNotes(),
+      playheadBeat: props.playheadBeat(),
+      visibleBeatWindow: props.visibleBeatWindow(),
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
-      hits,
-      detected,
-      display: props.display?.() ?? DEFAULT_DISPLAY,
-    }
+      display: props.display?.(),
+      feedback:
+        ctrls === undefined
+          ? undefined
+          : {
+              hitResults: ctrls.hitResults(),
+              detectedMidi: ctrls.detectedMidi(),
+              detectedClarity: ctrls.detectedClarity(),
+              showUserNotes: ctrls.showUserNotes(),
+            },
+    })
   }
 
   onMount(() => {
@@ -408,7 +334,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         // is flex:1, so the canvas scales with the window.
         height: '100%',
         'min-height': '0',
-        'border-radius': '12px',
+        'border-radius': props.borderRadius?.() ?? '12px',
         overflow: 'hidden',
       }}
     >

@@ -237,9 +237,11 @@ export class Canvas2dTabRenderer implements TabRenderer {
     ctx.clearRect(0, 0, W, H)
     const grad = ctx.createLinearGradient(0, 0, 0, H)
     if (scene.display.theme === 'velvet') {
-      grad.addColorStop(0, '#090806')
-      grad.addColorStop(0.62, '#17110d')
-      grad.addColorStop(1, '#0d0b09')
+      // The room owns the photographic world. Keep the highway legible while
+      // allowing that environment to breathe through the canvas.
+      grad.addColorStop(0, 'rgba(9, 8, 6, 0.5)')
+      grad.addColorStop(0.62, 'rgba(23, 17, 13, 0.68)')
+      grad.addColorStop(1, 'rgba(13, 11, 9, 0.82)')
     } else {
       grad.addColorStop(0, '#05050a')
       grad.addColorStop(1, '#0e0e17')

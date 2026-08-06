@@ -30,6 +30,7 @@ export interface GuitarBackingStreamEngine {
   ): Promise<GuitarBackingStreamStart | null>
   pause(delayMs?: number): void
   seek(seconds: number): void
+  setPlaybackRate(rate: number): void
   setTrackGain(trackId: string, gain: number, fadeSeconds: number): void
   getCurrentTime(): number | null
   dispose(): void
@@ -76,7 +77,18 @@ export function createGuitarBackingStreamEngine(
   let syncTimer: ReturnType<typeof setInterval> | null = null
   let pauseTimer: ReturnType<typeof setTimeout> | null = null
   let generation = 0
+  let playbackRate = 1
   let disposed = false
+
+  const applyPlaybackRate = (element: HTMLMediaElement): void => {
+    element.playbackRate = playbackRate
+    element.preservesPitch = true
+    if ('webkitPreservesPitch' in element) {
+      ;(
+        element as HTMLMediaElement & { webkitPreservesPitch: boolean }
+      ).webkitPreservesPitch = true
+    }
+  }
 
   const clearTimers = (): void => {
     if (syncTimer !== null) clearInterval(syncTimer)
@@ -151,6 +163,7 @@ export function createGuitarBackingStreamEngine(
           const element = options.createMediaElement()
           element.preload = 'auto'
           element.src = track.url
+          applyPlaybackRate(element)
           const source = nextContext.createMediaElementSource(element)
           const gain = nextContext.createGain()
           source.connect(gain)
@@ -202,6 +215,7 @@ export function createGuitarBackingStreamEngine(
       pauseNow()
       const starts = streamedTracks.map((streamed) => {
         setElementTime(streamed.element, offsetSeconds)
+        applyPlaybackRate(streamed.element)
         streamed.gain.gain.value = targetGain(streamed.track.id)
         try {
           return Promise.resolve(streamed.element.play())
@@ -256,6 +270,13 @@ export function createGuitarBackingStreamEngine(
     seek(seconds) {
       for (const streamed of streamedTracks) {
         setElementTime(streamed.element, seconds)
+      }
+    },
+
+    setPlaybackRate(rate) {
+      playbackRate = rate
+      for (const streamed of streamedTracks) {
+        applyPlaybackRate(streamed.element)
       }
     },
 

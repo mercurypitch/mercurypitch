@@ -12,6 +12,8 @@ import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount,
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
+import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
+import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
@@ -68,6 +70,28 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const firstWinController = useGuitarFirstWinController({
     config: firstWinConfig,
   })
+  const firstWinStage: GuitarPerformanceStageSource = {
+    title: () => 'Your first low E bar',
+    notes: firstWinController.notes,
+    timeline: {
+      positionSeconds: () =>
+        beatToSeconds(
+          firstWinController.playheadBeat(),
+          firstWinController.tempoBpm(),
+        ),
+      durationSeconds: () => {
+        const finalBeat = firstWinController
+          .notes()
+          .reduce(
+            (latest, note) => Math.max(latest, note.startBeat + note.duration),
+            0,
+          )
+        return beatToSeconds(finalBeat, firstWinController.tempoBpm())
+      },
+      playheadBeat: firstWinController.playheadBeat,
+      tempoBpm: firstWinController.tempoBpm,
+    },
+  }
   const initialSessionId = readGuitarNightSession()
   const [view, setView] = createSignal<EntryView>(
     initialSessionId === null ? 'choices' : 'song',
@@ -365,7 +389,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   return (
-    <div class={styles.app} data-testid="guitar-night-shell">
+    <div
+      class={styles.app}
+      classList={{ [styles.appRoom]: view() === 'room' }}
+      data-testid="guitar-night-shell"
+    >
       <a class={styles.skipLink} href="#guitar-night-main">
         Skip to Guitar Night
       </a>
@@ -467,9 +495,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               </p>
 
               <GuitarNightStage
-                title="Your first low E bar"
-                notes={() => firstWinController.notes()}
-                playheadBeat={firstWinController.playheadBeat}
+                source={firstWinStage}
                 active={() => view() === 'first-win'}
               />
 
