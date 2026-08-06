@@ -138,11 +138,6 @@
     background 150ms ease;
 }
 
-.songRow:hover {
-  background: rgba(255, 255, 255, 0.045);
-  border-color: rgba(88, 166, 255, 0.28);
-}
-
 .songActive {
   background: linear-gradient(
     120deg,
@@ -157,16 +152,28 @@
   min-width: 0;
   flex-direction: column;
   gap: 0.17rem;
-  padding: 0.14rem 0.18rem;
+  padding: 0.3rem 0.35rem;
   color: var(--text-primary);
   background: transparent;
   border: 0;
+  border-radius: 0.45rem;
   text-align: left;
   cursor: pointer;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
 }
 
 .songButton:disabled {
   cursor: default;
+}
+
+/* Highlight only the action under the pointer. Highlighting the whole row
+   made the adjacent role picker look like it would also switch songs and
+   caused a visible flash as the native select menu took pointer ownership. */
+.songButton:not(:disabled):hover {
+  color: var(--accent, #58a6ff);
+  background: rgba(88, 166, 255, 0.09);
 }
 
 .songButton:focus-visible {
@@ -421,6 +428,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .songRow,
+  .songButton,
   .tab {
     transition: none;
   }

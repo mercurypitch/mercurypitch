@@ -6,6 +6,7 @@ import { listStemTypes } from '@/db/services/uvr-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { isPlayAlongStemKey, playAlongPresets, } from '@/features/stem-mixer/play-along'
 import styles from './PlayAlongSelect.module.css'
+import { SafeSelect } from './shared/SafeSelect'
 
 interface PlayAlongSelectProps {
   sessionId?: string
@@ -62,7 +63,7 @@ export const PlayAlongSelect: Component<PlayAlongSelectProps> = (props) => {
       title="Choose what you perform; MercuryPitch mutes that part"
       aria-busy={isLoading()}
     >
-      <select
+      <SafeSelect
         class={styles.select}
         value=""
         aria-label={props.ariaLabel ?? 'Choose a play-along role'}
@@ -81,7 +82,7 @@ export const PlayAlongSelect: Component<PlayAlongSelectProps> = (props) => {
             </option>
           )}
         </For>
-      </select>
+      </SafeSelect>
     </span>
   )
 }

@@ -511,18 +511,26 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
 
           {/* ── Mic toggle (always visible) ────────────────── */}
           <button
+            type="button"
             class={`sm-mic-toggle-btn${props.micActive() ? ' sm-mic-toggle-btn--active' : ''}${props.micError() ? ' sm-mic-toggle-btn--error' : ''}`}
             onClick={() => {
               void props.onToggleMic()
             }}
             title={
               props.micError()
-                ? props.micError()
+                ? `${props.micError()} Tap to try again.`
                 : props.micActive()
                   ? 'Disable microphone'
                   : 'Enable microphone pitch comparison'
             }
-            disabled={!!props.micError()}
+            aria-label={
+              props.micError()
+                ? 'Retry microphone'
+                : props.micActive()
+                  ? 'Disable microphone'
+                  : 'Enable microphone'
+            }
+            aria-pressed={props.micActive()}
           >
             <Mic />
           </button>

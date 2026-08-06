@@ -344,21 +344,41 @@ export const useStemMixerMicController = (
   // read — the "icon on over a dead mic" state must be impossible.
   // Deliberately non-reactive: the manager notifies this callback itself.
   // eslint-disable-next-line solid/reactivity
-  const unsubscribeManager = micManager.subscribe(() => {
-    if (!micActive() || micManager.getStream() !== null) return
-    micGainNode?.disconnect()
-    micAnalyserNode?.disconnect()
-    monitorGainNode?.disconnect()
-    micGainNode = null
-    micAnalyserNode = null
-    monitorGainNode = null
-    micPitchDetector = null
-    micPitchHistory = []
-    micManager.release('stem-mixer')
-    setMicActive(false)
-    setMicEnabled(false)
-    setMicPitch(null)
-    setMicError('Microphone was disconnected.')
+  const unsubscribeManager = micManager.subscribe((state) => {
+    if (micActive() && !state.active) {
+      // forceReleaseAll clears consumers before it emits (cross-tab handoff or
+      // intentional background release). That is a normal off transition,
+      // not a red device-error state. An unexpected track/OS loss keeps the
+      // consumer registered, so it still gets the useful retry treatment.
+      const intentionallyReleased = !state.consumers.includes('stem-mixer')
+      micGainNode?.disconnect()
+      micAnalyserNode?.disconnect()
+      monitorGainNode?.disconnect()
+      micGainNode = null
+      micAnalyserNode = null
+      monitorGainNode = null
+      micPitchDetector = null
+      micPitchHistory = []
+      micManager.release('stem-mixer')
+      setMicActive(false)
+      setMicEnabled(false)
+      setMicPitch(null)
+      setMicError(intentionallyReleased ? '' : 'Microphone was disconnected.')
+      return
+    }
+
+    // A refused cross-tab acquire copies MicManager's message into this
+    // controller. The root handoff prompt later clears the manager error when
+    // it wins the lock, but this controller used to keep the stale copy and
+    // leave the mixer mic button red/disabled until a reload.
+    if (
+      !micActive() &&
+      micError() !== '' &&
+      state.error === null &&
+      state.blockedBy === null
+    ) {
+      setMicError('')
+    }
   })
 
   // Watchdog registration: the karaoke mic button + pitch ribbon read

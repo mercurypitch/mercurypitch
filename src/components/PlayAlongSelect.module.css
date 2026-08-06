@@ -3,6 +3,7 @@
 .root {
   display: inline-flex;
   min-width: 8.8rem;
+  color-scheme: dark;
 }
 
 .select {
@@ -10,7 +11,7 @@
   min-height: 2rem;
   padding: 0.38rem 1.8rem 0.38rem 0.65rem;
   color: var(--text-primary, var(--fg-primary, #f0f6fc));
-  background: rgba(13, 17, 23, 0.72);
+  background-color: rgba(13, 17, 23, 0.92);
   border: 1px solid rgba(139, 92, 246, 0.38);
   border-radius: 0.5rem;
   font-family: inherit;
@@ -26,8 +27,21 @@
 }
 
 .select:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.12);
+  background-color: rgba(31, 24, 52, 0.96);
   border-color: rgba(139, 92, 246, 0.7);
+}
+
+/* Desktop engines paint the opened option list separately from the closed
+   control. Give that native layer an opaque theme surface so it cannot fall
+   back to the light/grey OS palette inside the retained Songs drawer. iOS
+   still gets its stable system picker via app.css's WebKit safety override. */
+.select option {
+  color: var(--text-primary, var(--fg-primary, #f0f6fc));
+  background-color: var(--bg-secondary, #161b22);
+}
+
+.select option:disabled {
+  color: var(--text-muted, var(--fg-tertiary, #768390));
 }
 
 .select:focus-visible {
