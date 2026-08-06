@@ -62,9 +62,12 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   recover the result from Prepared songs rather than separating the file
   again.
 - A staged song exposes one explicit `Enter room` handoff. Entering remains
-  silent and keeps the Velvet Rehearsal backdrop dominant; the song identity,
-  honest mix description, time rail, and one amber Play control sit in a low
-  pedalboard-like deck derived from the approved showcase.
+  silent and cuts over from the setup faceplate to a bounded `100dvh`
+  workspace. The song identity becomes a compact signal bar, the photographic
+  room and 3D highway own the flexible centre, and the honest mix description,
+  time rail, speed stepper, one amber Play control, and channels form an
+  edge-to-edge pedalboard derived from the approved showcase. The live room is
+  not nested inside the entry card.
 - The durable catalog reads a lightweight stem manifest first and hydrates
   only the selected session-and-kind rows. It does not materialize unrelated
   blobs merely to decide which room mix is available.
@@ -75,6 +78,11 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   compressed formats use a conservative estimate; persisted duration is
   preferred when available. Pause, resume, pointer seeking, master volume,
   drift correction, and real per-stem mute controls follow that audio clock.
+- Playback speed reuses the proven legacy Guitar practice-rate bounds. A
+  non-default rate deliberately uses synchronized media-element stems with
+  pitch preservation, including a position-preserving live handoff from an
+  already playing buffered mix. Changing speed before Play remains silent and
+  does not create an audio context.
 - One shared output graph exposes guide, drums, bass, stems, and monitor buses
   through a master limiter. Room consumers reuse that graph instead of opening
   competing audio clocks.
@@ -86,11 +94,20 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - Source replacement invalidates pending fetch/decode generations and stops
   voices before the song controller revokes its route-owned URLs. Route
   disposal closes only the standalone context.
-- The room keeps a persistent stage above the transport. `Flow` adapts the
-  existing 3D renderer to the Velvet palette and direct mouse/touch camera;
-  `Tab` and `Neck` provide quieter alternate views. A song without an attached
-  score says so and remains a useful free-play fretboard rather than inventing
-  notation.
+- The room keeps a persistent, flexible stage above the transport. Both the
+  legacy Guitar tab and Guitar Night now consume the host-neutral
+  `Guitar3DStage` and performance timeline/source contract. The renderer scene
+  conversion is a pure tested boundary; legacy controls remain unchanged.
+  `Flow` adapts that renderer to a translucent Velvet palette and direct
+  mouse/touch camera while the rehearsal room remains visible; `Tab` and
+  `Neck` provide quieter alternate views. A song without an attached score
+  exposes a nullable beat, says no tab is attached, and remains a useful
+  free-play fretboard instead of deriving a fake beat from elapsed seconds.
+- Jam Doctor is an on-demand overlay/sheet rather than normal-flow content, so
+  opening it never collapses the instrument. Desktop, tablet, and phone
+  regressions keep the stage and pedalboard in the first viewport, preserve
+  44px controls, and wrap a six-part band without horizontal page or channel
+  discovery scrolling.
 - `Listening` is explicit and local. It reuses the room context, pauses pitched
   backing for a clean assessed take, and runs the existing guitar-range MPM
   detector. The on-demand Jam Doctor reports only captured attack count,
@@ -115,12 +132,13 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Prove the shared backing/session contracts under the legacy Guitar host
-   without changing its current presentation, then plan the separate cutover.
+1. Extend the proved shared performance surface into an explicit runtime
+   lifecycle/transport adapter beneath the remaining legacy Guitar controls,
+   without changing their current presentation.
 2. Attach local tab/score references to prepared songs so Flow, Tab, and Neck
    can follow verified song notes and beat ranges instead of free-play motion.
-3. Add loop and playback-rate ownership to the shared session clock, followed
-   by richer room drums and generated bass behind the existing buses.
+3. Add A/B loop ownership to the shared session clock, followed by richer room
+   drums and generated bass behind the existing buses.
 4. Move high-rate pitch/onset analysis behind an AudioWorklet or worker seam,
    then validate latency and rapid-articulation accuracy against named guitar
    fixtures before publishing speed or quality claims.
