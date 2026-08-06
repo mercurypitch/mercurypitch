@@ -1,3 +1,13 @@
+// ============================================================
+// useZenPitchSession — the Zen stage's capture and transport state machine
+// ============================================================
+//
+// Owns `idle | running | paused`, the lap clock, the take history and which
+// take is selected. Specified in `docs/specs/zen-exercise-playback.ears.md`;
+// the transitions with teeth are restart (finalizes before it starts again)
+// and take selection (refused while running, because a selected take freezes
+// the canvas while capture carries on invisibly behind it).
+
 import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { PracticeFrame } from '@/features/practice/usePracticeController'
@@ -82,12 +92,30 @@ export interface ZenPitchSession {
   start: () => Promise<boolean>
   pause: () => void
   resume: () => void
+  /**
+   * Finalize the pass in progress and immediately begin a new one.
+   *
+   * The stage used to spell this as "press start again", which routed through
+   * `start()` — and `start()` throws `livePoints` away without finalizing, so
+   * restarting from a pause silently binned the take (owner testing). Restart
+   * is its own verb precisely so nothing is lost by pressing it.
+   */
+  restart: () => Promise<boolean>
   finish: () => void
-  previousRun: () => void
-  nextRun: () => void
+  /** Move the take selection one older. Returns false when refused — see
+   *  `nextRun`. */
+  previousRun: () => boolean
+  /**
+   * Move the take selection one newer, or back to live past the newest.
+   *
+   * Refused (false) while running: a selected take freezes the canvas while
+   * capture carries on behind it, so the playhead vanishes and every seam
+   * appends a take the singer cannot see. Review is a paused/stopped act.
+   */
+  nextRun: () => boolean
   /** Delete a finished take from this session's strip. Returns true when
-   *  the id was present. Persistence is the caller's job (the session
-   *  doesn't know whether a run was ever saved). */
+   *  the id was present and the session was not running. Persistence is the
+   *  caller's job (the session doesn't know whether a run was ever saved). */
   removeRun: (runId: string) => boolean
   followLive: () => void
   hydrateRuns: (history: readonly ZenPitchRun[]) => void
@@ -358,6 +386,11 @@ export function useZenPitchSession(
   }
 
   const selectExercise = (nextId: string | null): void => {
+    // Adopting a new definition under a live pass would score the singer's
+    // current take against targets they never saw. Stop first; `finish` is a
+    // no-op when already idle and finalizes anything worth keeping when not.
+    finish()
+
     const nextExercise = resolveExercise(nextId)
     const nextRoot = nextExercise?.defaultRootMidi ?? 60
     const nextTargets =
@@ -398,6 +431,10 @@ export function useZenPitchSession(
     setRuns([])
     setSelectedRunId(null)
     setTakeNumber(1)
+    // The mirror above is reset too; leaving the signal behind let the lap
+    // counter read from the previous exercise, and the note scheduler keys
+    // its per-lap state on it.
+    setLoopsCompleted(0)
   }
 
   const setRootMidi = (midi: number): void => {
@@ -492,8 +529,17 @@ export function useZenPitchSession(
     const resumedAt = nowMs()
     loopStartedAtMs += Math.max(0, resumedAt - pausedAtMs)
     pausedAtMs = 0
+    // Reviewing a take is a paused activity. Carrying the selection into a
+    // running session is what made the playhead disappear and the canvas
+    // freeze while capture ran on behind it — so resuming returns to live.
+    setSelectedRunId(null)
     liveStatus = 'running'
     setStatus('running')
+  }
+
+  const restart = async (): Promise<boolean> => {
+    finish()
+    return start()
   }
 
   const finish = (): void => {
@@ -510,35 +556,54 @@ export function useZenPitchSession(
     setStatus('idle')
   }
 
-  const previousRun = (): void => {
+  /**
+   * Take review is only coherent when nothing is being captured.
+   *
+   * Selecting a take swaps the canvas to frozen points and drops the
+   * playhead, but a running session keeps sampling, keeps advancing the
+   * clock and keeps finalizing takes at each seam — all of it invisible
+   * behind the take the singer is looking at. Rather than reconcile two
+   * playheads, the session declines.
+   */
+  const canChangeTake = (): boolean => liveStatus !== 'running'
+
+  const previousRun = (): boolean => {
+    if (!canChangeTake()) return false
     const history = runs()
-    if (history.length === 0) return
+    if (history.length === 0) return false
     const currentId = selectedRunId()
     if (currentId === null) {
       setSelectedRunId(history[history.length - 1]!.id)
-      return
+      return true
     }
     const index = history.findIndex((run) => run.id === currentId)
-    if (index > 0) setSelectedRunId(history[index - 1]!.id)
+    if (index <= 0) return false
+    setSelectedRunId(history[index - 1]!.id)
+    return true
   }
 
-  const nextRun = (): void => {
+  const nextRun = (): boolean => {
+    if (!canChangeTake()) return false
     const history = runs()
     const currentId = selectedRunId()
-    if (currentId === null) return
+    if (currentId === null) return false
     const index = history.findIndex((run) => run.id === currentId)
     if (index < 0 || index >= history.length - 1) {
       setSelectedRunId(null)
-      return
+      return true
     }
     setSelectedRunId(history[index + 1]!.id)
+    return true
   }
 
+  // Always allowed: this moves *to* live, which is the state a running
+  // session is supposed to be in.
   const followLive = (): void => {
     setSelectedRunId(null)
   }
 
   const removeRun = (runId: string): boolean => {
+    if (!canChangeTake()) return false
     const history = runs()
     const index = history.findIndex((run) => run.id === runId)
     if (index < 0) return false
@@ -629,6 +694,7 @@ export function useZenPitchSession(
     start,
     pause,
     resume,
+    restart,
     finish,
     previousRun,
     nextRun,

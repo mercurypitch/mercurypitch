@@ -633,3 +633,57 @@
   min-width: 30px;
   font-size: 0.66rem;
 }
+
+/* The mute toggle sits inside .visibilityControl, whose bare-element rule
+   (0-1-1) outranks a plain .iconButton (0-1-0) — so it inherited the On/Dim/
+   Off segment styling and read as an inert part of that group. Its only state
+   cue was a 16px icon swap, which is why the mute "was not changing" in owner
+   testing. Two-class selectors below to win that fight, plus a real engaged
+   state. */
+.visibilityControl .muteButton {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--zen-border);
+  border-radius: 8px;
+  color: #b7c2d3;
+  background: #111722;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.visibilityControl .muteButton svg {
+  width: 15px;
+  height: 15px;
+}
+
+.visibilityControl .muteEngaged {
+  border-color: color-mix(in srgb, var(--pitch-reference) 62%, transparent);
+  color: #ffd79a;
+  background: color-mix(in srgb, var(--pitch-reference) 20%, #111722);
+}
+
+.visibilityControl .muteButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visibilityControl .muteButton {
+    transition: none;
+  }
+}
+
+/* Matches the touch-target block above, which raises every
+   `.visibilityControl button` to 44px via min-width/min-height — those would
+   otherwise override the 30px box set above. */
+@media (max-width: 760px) {
+  .visibilityControl .muteButton {
+    width: 44px;
+    height: 44px;
+  }
+}
