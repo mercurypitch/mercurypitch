@@ -207,7 +207,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 13.1k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
-| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.2k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
+| `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
 
@@ -302,12 +302,12 @@ Grep for the symbol and read the surrounding range instead.
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.1k |
-| [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.1k |
+| [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.9k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 1.8k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.7k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.8k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |

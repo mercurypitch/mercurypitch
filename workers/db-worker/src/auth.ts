@@ -1576,13 +1576,17 @@ async function handleDeleteMe(
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
 
-  // Read the email before the user row disappears — the perks purge
-  // (separate shared DB, keyed by email) needs it afterwards.
+  // Read the email before the user row disappears. Both the shared legacy
+  // grant ledger and main-DB Premium Studio membership are keyed by it.
   const userRow = await env.DB.prepare(
     'SELECT email, emailVerified FROM users WHERE id = ?',
   )
     .bind(userId)
     .first<{ email: string | null; emailVerified: number }>()
+  const verifiedEmail =
+    userRow?.emailVerified === 1 && userRow.email !== null
+      ? userRow.email.trim().toLowerCase()
+      : null
 
   // Purge the shared, email-keyed row first. There is no transaction across
   // two D1 databases: deleting this operator-restorable cosmetic grant before
@@ -1590,10 +1594,7 @@ async function handleDeleteMe(
   // Password accounts work before mailbox verification, so an unverified
   // address must never be allowed to delete somebody else's shared grant.
   try {
-    await purgePerksByEmail(
-      env,
-      userRow?.emailVerified === 1 ? userRow.email : null,
-    )
+    await purgePerksByEmail(env, verifiedEmail)
   } catch {
     return respond(
       { error: 'Account deletion temporarily unavailable' },
@@ -1607,6 +1608,59 @@ async function handleDeleteMe(
         userId,
       ),
     ),
+    // Capability-mint audit rows identify the account and its private Jam
+    // room. They have no useful anonymous lifecycle context once the issuing
+    // account and capability rows are erased.
+    env.DB.prepare(
+      `DELETE FROM premiumPerkAudit
+        WHERE actorType = 'user' AND actorId = ?1`,
+    ).bind(userId),
+    // Preserve non-user lifecycle audit while removing the deleted account
+    // as an actor (for example, an authenticated Premium Studio operator).
+    env.DB.prepare(
+      `UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1`,
+    ).bind(userId),
+    ...(verifiedEmail === null
+      ? []
+      : [
+          // Membership is an email-keyed entitlement, not historical
+          // account state. Hard-delete active and revoked rows alike so a
+          // later account registering the same address cannot inherit it.
+          env.DB.prepare(
+            `DELETE FROM premiumSupporterGroupMembers
+              WHERE email = ?1 COLLATE NOCASE`,
+          ).bind(verifiedEmail),
+          // Premium Studio audit remains useful after erasure, but it must
+          // not retain the member's address in either its actor, entity key,
+          // or structured details. Preserve the group and action context.
+          env.DB.prepare(
+            `UPDATE premiumPerkAudit
+                SET actorId = CASE
+                      WHEN actorId = ?1 COLLATE NOCASE THEN NULL
+                      ELSE actorId
+                    END,
+                    entityId = CASE
+                      WHEN entityType = 'supporter-group-member'
+                       AND json_extract(detailsJson, '$.email') = ?1 COLLATE NOCASE
+                      THEN COALESCE(
+                        json_extract(detailsJson, '$.groupId') || ':[erased]',
+                        'supporter-group-member:[erased]'
+                      )
+                      ELSE entityId
+                    END,
+                    detailsJson = CASE
+                      WHEN entityType = 'supporter-group-member'
+                       AND json_extract(detailsJson, '$.email') = ?1 COLLATE NOCASE
+                      THEN json_remove(detailsJson, '$.email')
+                      ELSE detailsJson
+                    END
+              WHERE actorId = ?1 COLLATE NOCASE
+                 OR (
+                   entityType = 'supporter-group-member'
+                   AND json_extract(detailsJson, '$.email') = ?1 COLLATE NOCASE
+                 )`,
+          ).bind(verifiedEmail),
+        ]),
     env.DB.prepare(
       'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
     ).bind(userId, userId),

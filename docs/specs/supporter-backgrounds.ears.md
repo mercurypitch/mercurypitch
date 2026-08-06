@@ -53,7 +53,13 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-ACCESS-6** — The system shall not derive supporter or explicit-perk access from localStorage, query parameters, room messages, or any other client-controlled value.
 - **BG-ACCESS-7** — The system shall ignore unknown or malformed explicit perk identifiers returned at the client boundary.
 - **BG-ACCESS-8** — IF a password account has not verified ownership of its email address, THEN the system shall not return or authorize an email-keyed explicit perk for that account.
-- **BG-ACCESS-9** — WHEN an account is deleted, the system shall purge shared email-keyed perks only if that account had verified ownership of the email address.
+- **BG-ACCESS-9** — WHEN an account is deleted, the system shall purge shared
+  email-keyed perks and hard-delete every manual supporter-group membership
+  for that email only if the account had verified ownership of the address;
+  the system shall anonymize that personal email in Premium Studio audit rows,
+  hard-delete user-authored capability audit rows that identify private Jam
+  rooms, anonymize the deleted user id in retained audit rows, and ensure later
+  registration of the same email does not restore the membership.
 - **BG-ACCESS-10** — WHEN an anonymous account upgrades through password or Google authentication, the system shall increment its token version and reject every session issued before the upgrade.
 - **BG-ACCESS-11** — IF a verified account's shared email-keyed perk purge is unavailable or fails during account deletion, THEN the system shall return `503` without deleting the account so the operation can be retried safely.
 - **BG-ACCESS-12** — WHILE a verified email belongs to an active manual
@@ -123,7 +129,9 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 ## Premium Background Studio — `BG-STUDIO-*`
 
 - **BG-STUDIO-1** — Every Studio route shall use the existing admin resolver,
-  and every successful mutation shall append an immutable audit event.
+  and every successful mutation shall append an immutable audit event; account
+  erasure may anonymize the deleted account's personal identifiers while
+  preserving the event, action, time, and non-personal entity context.
 - **BG-STUDIO-2** — WHEN an admin creates a revision, the system shall assign
   the next integer version and keep at most one draft revision per asset.
 - **BG-STUDIO-3** — WHEN an admin uploads a variant, the system shall accept
