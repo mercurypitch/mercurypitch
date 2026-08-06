@@ -82,6 +82,31 @@ describe('playlist export controller', () => {
     })
   })
 
+  it('explains when another archive download already owns the export lock', async () => {
+    const notify = vi.fn()
+    const busyError = new Error('busy')
+    busyError.name = 'ArchiveExportBusyError'
+
+    await new Promise<void>((resolveTest) => {
+      createRoot((dispose) => {
+        const controller = createPlaylistExportController({
+          exportPlaylists: vi.fn().mockRejectedValue(busyError),
+          notify,
+        })
+
+        void controller.start(request).then(() => {
+          expect(controller.task()?.status).toBe('error')
+          expect(notify).toHaveBeenCalledWith(
+            'Another archive is already being prepared. Try again when it finishes.',
+            'error',
+          )
+          dispose()
+          resolveTest()
+        })
+      })
+    })
+  })
+
   it('ignores duplicate starts while an export is active', async () => {
     let finishExport: (() => void) | undefined
     const exportPlaylists = vi.fn(

@@ -9,7 +9,7 @@ import { FancyDivider } from '@/components/shared'
 import { hasRoomFor } from '@/db/durable-write'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import type { SessionZipInspection } from '@/db/services/session-export-service'
-import { exportAllSessions, exportGroup, exportSession, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
+import { exportAllSessions, exportGroup, importSessionsFromZip, inspectSessionZip, isZipFile, } from '@/db/services/session-export-service'
 import { deletePitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { deleteAllUvrSessionsFromDb, deleteUvrSessionFromDb, findSessionByFileHash, getOriginalFileBlob, getStemBlobUrl, hydrateStemUrls, saveStemBlobDurable, saveStemFingerprintData, } from '@/db/services/uvr-service'
@@ -249,10 +249,50 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     setIsExporting(true)
     setExportProgress(0)
     try {
-      await exportAllSessions((pct) => setExportProgress(pct))
+      const summary = await exportAllSessions((pct) => setExportProgress(pct))
       setExportProgress(100)
       await new Promise((r) => setTimeout(r, 1500))
-      showNotification('All sessions successfully exported.', 'success')
+      showNotification(
+        summary.skippedSessions > 0
+          ? `Exported ${summary.exportedSessions} completed ${summary.exportedSessions === 1 ? 'session' : 'sessions'}; skipped ${summary.skippedSessions} unfinished or incomplete ${summary.skippedSessions === 1 ? 'session' : 'sessions'}.`
+          : `Exported all ${summary.exportedSessions} completed ${summary.exportedSessions === 1 ? 'session' : 'sessions'}.`,
+        summary.skippedSessions > 0 ? 'warning' : 'success',
+      )
+    } catch (error) {
+      notifyArchiveExportFailure(error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const notifyArchiveExportFailure = (error: unknown): void => {
+    console.error('[UvrPanel] archive export failed:', error)
+    showNotification(
+      error instanceof Error && error.name === 'ArchiveExportBusyError'
+        ? 'Another archive is already being prepared. Try again when it finishes.'
+        : error instanceof Error && error.name === 'NoRestorableSessionsError'
+          ? 'No completed sessions with Vocal or Instrumental audio are ready to export.'
+          : 'The session archive could not be created. Please try again.',
+      'error',
+    )
+  }
+
+  const handleExportGroup = async (groupId: string): Promise<void> => {
+    if (isExporting()) return
+    setIsExporting(true)
+    setExportProgress(0)
+    try {
+      const summary = await exportGroup(groupId, (pct) =>
+        setExportProgress(pct),
+      )
+      showNotification(
+        summary.skippedSessions > 0
+          ? `Exported ${summary.exportedSessions} completed group ${summary.exportedSessions === 1 ? 'session' : 'sessions'}; skipped ${summary.skippedSessions} unfinished or incomplete ${summary.skippedSessions === 1 ? 'session' : 'sessions'}.`
+          : `Exported ${summary.exportedSessions} completed group ${summary.exportedSessions === 1 ? 'session' : 'sessions'}.`,
+        summary.skippedSessions > 0 ? 'warning' : 'success',
+      )
+    } catch (error) {
+      notifyArchiveExportFailure(error)
     } finally {
       setIsExporting(false)
     }
@@ -2014,11 +2054,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         onClick={() => {
                           const gid = activeGroupId()
                           if (gid == null) return
-                          setIsExporting(true)
-                          setExportProgress(0)
-                          void exportGroup(gid, (pct: number) =>
-                            setExportProgress(pct),
-                          ).finally(() => setIsExporting(false))
+                          void handleExportGroup(gid)
                         }}
                         disabled={isExporting()}
                         title="Export this group's sessions to a ZIP file"
@@ -2124,14 +2160,6 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                         )}
                         onView={() => {
                           void handleSessionView(s.sessionId)
-                        }}
-                        onExport={(sessionId) => {
-                          if (isExporting()) return
-                          setIsExporting(true)
-                          setExportProgress(0)
-                          void exportSession(sessionId, (pct) =>
-                            setExportProgress(pct),
-                          ).finally(() => setIsExporting(false))
                         }}
                         onOpenMixer={(sessionId, stems) => {
                           void handleOpenMixerFromHistory(sessionId, stems)

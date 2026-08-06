@@ -34,7 +34,7 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 - **FEATURE-LAB-1** — WHILE the Lab access check is pending, the Lab deep link shall show a compact, nonblank checking state.
 - **FEATURE-LAB-2** — IF Lab access is unavailable or denied, THEN the Lab deep link shall show a compact explanation, a retry action, and a link to Settings Credits supporter benefits.
-- **FEATURE-LAB-3** — The production app shall not import or render `LabSurface` until the authenticated Worker grants `lab-access`; an explicit development build may bypass the grant.
+- **FEATURE-LAB-3** — In every environment, the app shall not import or render `LabSurface` until the authenticated Worker grants `lab-access`; development mode, hostnames, client storage, and query parameters shall not bypass the entitlement gate.
 - **FEATURE-LAB-4** — WHILE `lab-access` is granted, the existing `lab`, `pitch-test`, and `pitch-algo` deep links shall open their matching Lab tool without adding Lab to the normal tab bar.
 
 ## Administration and donation copy — `FEATURE-STUDIO-*`

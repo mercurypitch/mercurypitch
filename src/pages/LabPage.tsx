@@ -4,8 +4,8 @@ import { Lock } from '@/components/icons'
 import { SkeletonTabContent } from '@/components/Skeleton'
 import { authVersion } from '@/db/services/user-service'
 import type { LabTab } from '@/features/lab/LabSurface'
+import type { PerksMe } from '@/lib/backgrounds/background-access'
 import { fetchPerksMe, hasSupporterFeatureAccess, } from '@/lib/backgrounds/background-access'
-import { IS_DEV } from '@/lib/defaults'
 import styles from './LabPage.module.css'
 
 const LabSurface = lazy(async () =>
@@ -13,17 +13,28 @@ const LabSurface = lazy(async () =>
 )
 
 /** Supporter research surface. The heavy spectral tooling is requested only
- * after the authenticated Worker grants access (or in an explicit dev build). */
+ * after the authenticated Worker grants access in every environment. */
 export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
-  const [perks, { refetch }] = createResource(
-    () => (IS_DEV ? false : `auth:${authVersion()}`),
-    () => fetchPerksMe(),
+  const authKey = (): string => `auth:${authVersion()}`
+  const [access, { refetch }] = createResource(
+    authKey,
+    async (
+      requestedAuthKey,
+    ): Promise<{
+      authKey: string
+      perks: PerksMe | null
+    }> => ({
+      authKey: requestedAuthKey,
+      perks: await fetchPerksMe(),
+    }),
   )
-  const granted = () =>
-    IS_DEV || hasSupporterFeatureAccess(perks() ?? null, 'lab-access')
+  const currentPerks = (): PerksMe | null => {
+    const resolved = access()
+    return resolved?.authKey === authKey() ? resolved.perks : null
+  }
+  const granted = () => hasSupporterFeatureAccess(currentPerks(), 'lab-access')
 
   onMount(() => {
-    if (IS_DEV) return
     const refreshAccess = (): void => {
       if (document.visibilityState === 'visible') void refetch()
     }
@@ -42,7 +53,7 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
           <LabSurface initialTab={props.initialTab} />
         </Suspense>
       </Match>
-      <Match when={perks.loading}>
+      <Match when={access.loading}>
         <section class={styles.gate} aria-live="polite" aria-busy="true">
           <span class={styles.checking} aria-hidden="true" />
           <div>
@@ -70,14 +81,14 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
               <button
                 type="button"
                 class={styles.retryAction}
-                disabled={perks.loading}
+                disabled={access.loading}
                 onClick={() => void refetch()}
               >
                 Check again
               </button>
             </div>
             <p class={styles.hint}>
-              {perks() === null
+              {currentPerks() === null
                 ? 'Access could not be verified. Sign in, then try again.'
                 : 'Already assigned this perk? Sign in with the matching verified account.'}
             </p>

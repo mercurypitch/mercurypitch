@@ -3,8 +3,8 @@
 //
 // Not in TAB_GROUPS, so it never appears in the tab bar. Reached by hash
 // route (#lab, #pitch-test, #pitch-algo) after a server-held supporter grant
-// or in dev mode. Everything here used to sit on the user-facing
-// Analysis page.
+// in every environment. Everything here used to sit on the user-facing
+// Analysis page. Server-backed Lab capabilities must enforce the same grant.
 // ============================================================
 
 import type { Component } from 'solid-js'

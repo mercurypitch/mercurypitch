@@ -20,53 +20,104 @@ export interface LyricsData {
   activeVersionKind?: LyricsVersionKind
 }
 
+/**
+ * Save or update lyrics, propagating storage and serialization failures.
+ * Use this variant when the caller must know whether persistence succeeded.
+ */
+export async function saveLyricsToDbStrict(
+  sessionId: string,
+  data: LyricsData,
+): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+
+  // Upsert as create-then-delete so a failed write never wipes existing
+  // lyrics (delete-then-create loses them if the create throws).
+  const existing = await repo.findAll({
+    where: { sessionId } as Record<string, unknown>,
+  })
+  const created = await repo.create({
+    sessionId,
+    text: data.text,
+    format: data.format,
+    filename: data.filename,
+    wordTimingsJson:
+      data.wordTimings !== undefined && Object.keys(data.wordTimings).length > 0
+        ? JSON.stringify(data.wordTimings)
+        : undefined,
+    originalText: data.originalText,
+    blocksJson:
+      data.blocks !== undefined && data.blocks.length > 0
+        ? JSON.stringify(data.blocks)
+        : undefined,
+    blockInstancesJson:
+      data.blockInstances !== undefined &&
+      Object.keys(data.blockInstances).length > 0
+        ? JSON.stringify(data.blockInstances)
+        : undefined,
+    fontSize: data.fontSize,
+    versionsJson:
+      data.versions !== undefined && data.versions.length > 0
+        ? JSON.stringify(data.versions)
+        : undefined,
+    activeVersionKind: data.activeVersionKind,
+  })
+  for (const entry of existing) {
+    if (entry.id !== created.id) await repo.delete(entry.id)
+  }
+}
+
 /** Save or update lyrics for a session in IndexedDB. */
 export async function saveLyricsToDb(
   sessionId: string,
   data: LyricsData,
 ): Promise<void> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
-
-    // Upsert as create-then-delete so a failed write never wipes existing
-    // lyrics (delete-then-create loses them if the create throws).
-    const existing = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
-    })
-    const created = await repo.create({
-      sessionId,
-      text: data.text,
-      format: data.format,
-      filename: data.filename,
-      wordTimingsJson:
-        data.wordTimings !== undefined &&
-        Object.keys(data.wordTimings).length > 0
-          ? JSON.stringify(data.wordTimings)
-          : undefined,
-      originalText: data.originalText,
-      blocksJson:
-        data.blocks !== undefined && data.blocks.length > 0
-          ? JSON.stringify(data.blocks)
-          : undefined,
-      blockInstancesJson:
-        data.blockInstances !== undefined &&
-        Object.keys(data.blockInstances).length > 0
-          ? JSON.stringify(data.blockInstances)
-          : undefined,
-      fontSize: data.fontSize,
-      versionsJson:
-        data.versions !== undefined && data.versions.length > 0
-          ? JSON.stringify(data.versions)
-          : undefined,
-      activeVersionKind: data.activeVersionKind,
-    })
-    for (const entry of existing) {
-      if (entry.id !== created.id) await repo.delete(entry.id)
-    }
+    await saveLyricsToDbStrict(sessionId, data)
   } catch (err) {
     console.error('[LyricsDB] saveLyricsToDb failed:', err)
   }
+}
+
+/**
+ * Load lyrics, propagating storage failures and malformed persisted JSON.
+ * A missing record is represented by `null` rather than an error.
+ */
+export async function loadLyricsFromDbStrict(
+  sessionId: string,
+): Promise<LyricsData | null> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+  const results = await repo.findAll({
+    where: { sessionId } as Record<string, unknown>,
+    limit: 1,
+  })
+  if (results.length === 0) return null
+
+  const entry = results[0]
+  const data: LyricsData = {
+    text: entry.text,
+    format: entry.format,
+    filename: entry.filename,
+  }
+  if (entry.wordTimingsJson !== undefined) {
+    data.wordTimings = JSON.parse(entry.wordTimingsJson)
+  }
+  if (entry.originalText !== undefined) data.originalText = entry.originalText
+  if (entry.blocksJson !== undefined) {
+    data.blocks = JSON.parse(entry.blocksJson)
+  }
+  if (entry.blockInstancesJson !== undefined) {
+    data.blockInstances = JSON.parse(entry.blockInstancesJson)
+  }
+  if (entry.fontSize !== undefined) data.fontSize = entry.fontSize
+  if (entry.versionsJson !== undefined) {
+    data.versions = JSON.parse(entry.versionsJson)
+  }
+  if (entry.activeVersionKind !== undefined) {
+    data.activeVersionKind = entry.activeVersionKind as LyricsVersionKind
+  }
+  return data
 }
 
 /** Load lyrics for a session from IndexedDB. */

@@ -12,14 +12,13 @@ import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
-import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Download, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
+import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 import { UvrSessionActions } from './UvrSessionActions'
 
 interface SessionResultProps {
   sessionId: string
   disabled?: boolean
   onView?: (sessionId: string) => void
-  onExport?: (sessionId: string) => void
   onOpenMixer?: (
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
@@ -318,19 +317,6 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
               disabled={props.disabled}
             >
               <Trash2 />
-            </button>
-            <button
-              class="session-share-btn"
-              onClick={(e) => {
-                e.stopPropagation()
-                props.onExport?.(props.sessionId)
-              }}
-              title="Export session to ZIP"
-              disabled={
-                props.disabled === true || session()?.status !== 'completed'
-              }
-            >
-              <Download />
             </button>
             <button
               class="session-share-btn"

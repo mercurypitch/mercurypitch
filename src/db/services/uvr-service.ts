@@ -5,7 +5,7 @@
 import { getDb } from '@/db'
 import type { DurableWriteResult } from '@/db/durable-write'
 import { durableWrite } from '@/db/durable-write'
-import type { SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, UvrStemType, } from '@/db/entities'
+import type { OfflinePitchAnalysisRecord, SessionGroupRecord, UvrSessionLyrics, UvrSessionRecord, UvrStemBlob, UvrStemFingerprint, UvrStemType, WhisperTranscriptionRecord, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import type { DatabaseAdapter } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
@@ -109,12 +109,21 @@ export async function countStemBlobs(sessionId: string): Promise<number> {
  * stemMeta (which only ever describes the original separation) — so
  * anything asking "what else could we load?" must ask here.
  */
+/** Strict stem inventory for archive/data-integrity work. Unlike the UI-safe
+ * wrapper below, storage failures reject so callers cannot mistake an unread
+ * database for a session with no stems. */
+export async function listStemTypesStrict(
+  sessionId: string,
+): Promise<UvrStemType[]> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+  const blobs = await repo.findAll({ where: { sessionId } })
+  return [...new Set(blobs.map((blob) => blob.stemType))]
+}
+
 export async function listStemTypes(sessionId: string): Promise<UvrStemType[]> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const blobs = await repo.findAll({ where: { sessionId } })
-    return [...new Set(blobs.map((b) => b.stemType))]
+    return await listStemTypesStrict(sessionId)
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] listStemTypes failed:', err)
     return []
@@ -214,44 +223,59 @@ export async function deleteStemBlobs(
   }
 }
 
+/** Read one stored stem while preserving storage failures for archive work. */
+export async function getStemBlobStrict(
+  sessionId: string,
+  stemType: UvrStemType,
+): Promise<Blob | null> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+  const results = await repo.findAll({
+    where: { sessionId, stemType } as Record<string, unknown>,
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    limit: 1,
+  })
+  if (results.length === 0) return null
+  const entry = results[0]
+  return new Blob([entry.data], { type: entry.mimeType })
+}
+
 export async function getStemBlob(
   sessionId: string,
   stemType: UvrStemType,
 ): Promise<Blob | null> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-    const results = await repo.findAll({
-      where: { sessionId, stemType } as Record<string, unknown>,
-      orderBy: 'createdAt',
-      orderDir: 'desc',
-      limit: 1,
-    })
-    if (results.length === 0) return null
-    const entry = results[0]
-    return new Blob([entry.data], { type: entry.mimeType })
+    return await getStemBlobStrict(sessionId, stemType)
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getStemBlob failed:', err)
     return null
   }
 }
 
+/** Read the retained original while preserving storage failures for archives. */
+export async function getOriginalFileBlobStrict(
+  sessionId: string,
+): Promise<File | null> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
+
+  const results = await repo.findAll({
+    where: { sessionId, stemType: 'original' },
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    limit: 1,
+  })
+  if (results.length === 0) return null
+  const entry = results[0]
+  return new File([entry.data], entry.fileName, { type: entry.mimeType })
+}
+
 export async function getOriginalFileBlob(
   sessionId: string,
 ): Promise<File | null> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemBlob>('uvrStemBlobs')
-
-    const results = await repo.findAll({
-      where: { sessionId, stemType: 'original' },
-      orderBy: 'createdAt',
-      orderDir: 'desc',
-      limit: 1,
-    })
-    if (results.length === 0) return null
-    const entry = results[0]
-    return new File([entry.data], entry.fileName, { type: entry.mimeType })
+    return await getOriginalFileBlobStrict(sessionId)
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getOriginalFileBlob failed:', err)
     return null
@@ -288,20 +312,7 @@ export async function saveStemFingerprintData(
   fingerprint: MelodyFingerprint,
 ): Promise<boolean> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
-
-    // Upsert as create-then-delete: write the new row first, and only prune the
-    // old ones once it succeeds. Delete-then-create would wipe the existing
-    // fingerprint if the create threw (quota, lock), losing recoverable data.
-    const existing = await repo.findAll({ where: { sessionId } })
-    const created = await repo.create({
-      sessionId,
-      fingerprintJson: JSON.stringify(fingerprint),
-    })
-    for (const entry of existing) {
-      if (entry.id !== created.id) await repo.delete(entry.id)
-    }
+    await saveStemFingerprintDataStrict(sessionId, fingerprint)
     return true
   } catch (err) {
     if (IS_DEV)
@@ -310,24 +321,52 @@ export async function saveStemFingerprintData(
   }
 }
 
+/** Persist a fingerprint while preserving failures for restorable archives. */
+export async function saveStemFingerprintDataStrict(
+  sessionId: string,
+  fingerprint: MelodyFingerprint,
+): Promise<void> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+
+  // Upsert as create-then-delete: write the new row first, and only prune the
+  // old ones once it succeeds. Delete-then-create would wipe the existing
+  // fingerprint if the create threw (quota, lock), losing recoverable data.
+  const existing = await repo.findAll({ where: { sessionId } })
+  const created = await repo.create({
+    sessionId,
+    fingerprintJson: JSON.stringify(fingerprint),
+  })
+  for (const entry of existing) {
+    if (entry.id !== created.id) await repo.delete(entry.id)
+  }
+}
+
 export async function getStemFingerprintData(
   sessionId: string,
 ): Promise<MelodyFingerprint | null> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
-    const results = await repo.findAll({
-      where: { sessionId },
-      orderBy: 'createdAt',
-      orderDir: 'desc',
-      limit: 1,
-    })
-    if (results.length === 0) return null
-    return JSON.parse(results[0].fingerprintJson) as MelodyFingerprint
+    return await getStemFingerprintDataStrict(sessionId)
   } catch (err) {
     if (IS_DEV) console.warn('[UvrService] getStemFingerprintData failed:', err)
     return null
   }
+}
+
+/** Read a fingerprint while preserving storage and JSON failures for export. */
+export async function getStemFingerprintDataStrict(
+  sessionId: string,
+): Promise<MelodyFingerprint | null> {
+  const db = await getDb()
+  const repo = db.getRepository<UvrStemFingerprint>('uvrStemFingerprints')
+  const results = await repo.findAll({
+    where: { sessionId },
+    orderBy: 'createdAt',
+    orderDir: 'desc',
+    limit: 1,
+  })
+  if (results.length === 0) return null
+  return JSON.parse(results[0].fingerprintJson) as MelodyFingerprint
 }
 
 export async function getAllStemFingerprintData(): Promise<
@@ -468,6 +507,86 @@ export async function deleteUvrSessionFromDb(
   } catch (err) {
     console.error('[UvrService] deleteUvrSessionFromDb failed:', err)
     return false
+  }
+}
+
+/**
+ * Strict, transaction-backed deletion for an archive import that must be
+ * rolled back completely. Every local row created or restored for the session
+ * is removed in one transaction; unlike the ordinary UI deletion helpers,
+ * failures reject so the importer cannot claim a rollback that did not land.
+ */
+export async function deleteImportedUvrSessionDataStrict(
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb()
+  const deleteRecords = async (
+    transactionDb: DatabaseAdapter,
+  ): Promise<void> => {
+    const blobRepo = transactionDb.getRepository<UvrStemBlob>('uvrStemBlobs')
+    const fingerprintRepo = transactionDb.getRepository<UvrStemFingerprint>(
+      'uvrStemFingerprints',
+    )
+    const lyricsRepo =
+      transactionDb.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+    const transcriptionRepo =
+      transactionDb.getRepository<WhisperTranscriptionRecord>(
+        'whisperTranscriptions',
+      )
+    const pitchRepo = transactionDb.getRepository<OfflinePitchAnalysisRecord>(
+      'offlinePitchAnalysis',
+    )
+    const sessionRepo =
+      transactionDb.getRepository<UvrSessionRecord>('uvrSessions')
+    const groupRepo =
+      transactionDb.getRepository<SessionGroupRecord>('sessionGroups')
+
+    const blobs = await blobRepo.findAll({ where: { sessionId } })
+    for (const blob of blobs) await blobRepo.delete(blob.id)
+
+    const fingerprints = await fingerprintRepo.findAll({
+      where: { sessionId },
+    })
+    for (const fingerprint of fingerprints) {
+      await fingerprintRepo.delete(fingerprint.id)
+    }
+
+    const lyrics = await lyricsRepo.findAll({ where: { sessionId } })
+    for (const entry of lyrics) await lyricsRepo.delete(entry.id)
+
+    const transcriptions = await transcriptionRepo.findAll({
+      where: { sessionId },
+    })
+    for (const transcription of transcriptions) {
+      await transcriptionRepo.delete(transcription.id)
+    }
+
+    const pitchRecords = await pitchRepo.findAll({
+      where: { fileHash: `session:${sessionId}` },
+    })
+    for (const pitch of pitchRecords) await pitchRepo.delete(pitch.id)
+
+    const groups = await groupRepo.findAll({})
+    for (const group of groups) {
+      if (!group.sessionIds.includes(sessionId)) continue
+      await groupRepo.update(group.id, {
+        sessionIds: group.sessionIds.filter((id) => id !== sessionId),
+      })
+    }
+
+    // Keep the canonical session row until every dependent row is gone. On an
+    // adapter without transactions, a failure still leaves a visible record
+    // that can be retried instead of an invisible orphaned payload.
+    const sessions = await sessionRepo.findAll({
+      where: { appSessionId: sessionId },
+    })
+    for (const session of sessions) await sessionRepo.delete(session.id)
+  }
+
+  if (supportsLocalTransactions(db)) {
+    await db.transactionLocal(deleteRecords)
+  } else {
+    await db.transaction(deleteRecords)
   }
 }
 
