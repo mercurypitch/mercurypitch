@@ -7,6 +7,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Added
 
+- **Private stage backgrounds for supporters.** A room's backdrop can now be a
+  supporter-only scene, granted per group and served from protected storage
+  rather than baked into the build. There is an admin page for assigning them,
+  and access is checked at the worker, not in the browser.
+
+- **A songs drawer, and play-along presets.** The stem mixer keeps its songs a
+  drawer away instead of a menu deep, and a preset sets up a play-along mix in
+  one click rather than nine faders.
+
 - **Jam rooms sing songs now, not just exercises.** A room can hold a whole
   song on its own timeline: the words down the left, a pitch lane per singer
   down the right, and each line scored as it goes past rather than at the
@@ -223,6 +232,19 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Exporting a session no longer loses its parts.** A song split into drums,
+  bass, guitar and piano exported only the vocal and the instrumental, so
+  re-importing it — or moving it to another device — came back with the parts
+  silently missing. The export now carries every stem it holds, lets you pick
+  which ones to include, and refuses rather than pretending when a stem it was
+  asked for is not there.
+- **The stem mixer holds together when you push it.** Switching songs no longer
+  jumps the audio, and the mixer keeps its state through the interactions that
+  used to leave it half-updated.
+- **Zen guide notes sound on every lap,** not only the first, and play/pause no
+  longer disagrees with what the transport is actually doing.
+- **A jam host stays the host after a reconnect** instead of handing the room to
+  whoever reconnected first.
 - **Nobody ever received their two starting streak freezes.** The grant only
   applied to an account with no saved profile at all, so every real account
   sat at zero from day one and the card kept warning that a missed day would
