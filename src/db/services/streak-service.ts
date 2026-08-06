@@ -32,9 +32,11 @@ export const MAX_FREEZES = 3
  * them nothing: freezes accrued at streak multiples of seven, so forgiveness
  * went to whoever was already doing well and none to whoever needed it.
  *
- * Applied by the profile that creates the row. Accounts that predate this are
- * topped up once, by hand, from `scripts/grant-starting-freezes.sql` — a
- * numbered migration is the wrong home for a one-off gift of currency.
+ * Handed out by `accrueFreezes` when a profile has no accrual anchor yet, so
+ * an account that predates the rule picks it up on its next read. It used to
+ * be spelled as a default in `streakFieldsOf` — see the note there for why
+ * that quietly gave it to nobody. `scripts/grant-starting-freezes.sql` was
+ * written to top those accounts up by hand and is no longer needed.
  */
 export const STARTING_FREEZES = 2
 /** One freeze per whole thirty days waited, banked or not. */
@@ -94,11 +96,12 @@ export function streakFieldsOf(
   return {
     currentStreak: p?.currentStreak ?? 0,
     longestStreak: p?.longestStreak ?? p?.currentStreak ?? 0,
-    // `STARTING_FREEZES`, not zero: a profile with no stored count is one
-    // nobody has spent from yet. Accounts that stored a literal 0 under the
-    // old rules are a separate, one-time concern — see the release script
-    // named on the constant.
-    streakFreezes: p?.streakFreezes ?? STARTING_FREEZES,
+    // Mirror the column default (0) rather than defaulting to
+    // `STARTING_FREEZES` here. Granting the opening balance is `accrueFreezes`'
+    // job and only its job — doing it at read time looked equivalent and was
+    // not, because a stored `0` is not nullish, so the fallback only ever fired
+    // for a profile that did not exist.
+    streakFreezes: p?.streakFreezes ?? 0,
     lastPracticeDate: p?.lastPracticeDate ?? null,
     lastFreezeUsedDate: p?.lastFreezeUsedDate ?? null,
     previousStreak: p?.previousStreak ?? 0,
@@ -127,10 +130,32 @@ function addDays(date: string, days: number): string {
  */
 export function accrueFreezes(f: StreakFields, today: string): StreakFields {
   const anchor = f.lastFreezeEarnedDate
-  // No clock yet: start it, and grant nothing. A profile created this morning
-  // has not waited a month, and `STARTING_FREEZES` is what covers day one.
+  // No clock yet: start it, and hand over the opening balance.
+  //
+  // This is the ONLY place `STARTING_FREEZES` is granted, and it has to be a
+  // grant rather than a read-time default. `streakFieldsOf` used to spell it
+  // `p?.streakFreezes ?? STARTING_FREEZES`, which never fired for a real
+  // account: `streakFreezes` is `INTEGER NOT NULL DEFAULT 0`, so every stored
+  // profile holds a literal 0 and `0 ?? 2` is 0. The constant only applied to
+  // `streakFieldsOf(undefined)` — no profile at all — which is exactly what
+  // the unit test asserted, so the test passed while no user on dev or prod
+  // had ever received a starting freeze.
+  //
+  // A null anchor is precisely "this profile has never taken part in the
+  // freeze economy", so it is the right moment to seed. `lastFreezeUsedDate`
+  // guards it: somebody who has already spent their two must not be handed
+  // two more the next time the anchor happens to be missing. `Math.max`
+  // rather than assignment so an older balance earned under the milestone
+  // rules is never taken away.
   if (anchor === null || anchor === '') {
-    return { ...f, lastFreezeEarnedDate: today }
+    return {
+      ...f,
+      streakFreezes:
+        f.lastFreezeUsedDate === null
+          ? Math.max(f.streakFreezes, STARTING_FREEZES)
+          : f.streakFreezes,
+      lastFreezeEarnedDate: today,
+    }
   }
   const elapsed = daysBetween(anchor, today)
   if (!Number.isFinite(elapsed) || elapsed < FREEZE_ACCRUAL_DAYS) return f
