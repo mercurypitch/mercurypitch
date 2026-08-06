@@ -52,8 +52,8 @@ Use the `@/` alias for anything outside the current directory — 2458 uses
 versus 204 relative `../` imports. Relative imports are for siblings only
 (`./types`, `./demo-song`).
 
-Import order follows the Prettier plugin already configured; run `pnpm check`
-rather than sorting by hand.
+Import order follows the Prettier plugin already configured; let the once-per-
+work-item `pnpm pr:prepare` pass sort changed files rather than sorting by hand.
 
 ## 3. SolidJS
 

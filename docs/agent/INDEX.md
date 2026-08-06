@@ -49,8 +49,9 @@ These are the rules that break things when ignored.
    trailers, in commits, PR bodies, or any artifact.
 4. **No emojis** in code, UI, logs, commits, or PR text. Use an SVG icon
    component instead.
-5. **Run `pnpm check` after every code change.** It is typecheck + lint --fix +
-   format. CI runs `pnpm check:syntax` (non-mutating).
+5. **Keep local gates proportional.** Run focused tests while developing. Once
+   per work item, before its first PR push, run `pnpm pr:prepare` and the
+   relevant workspace typecheck. CI is the authoritative full gate after that.
 6. **Schema changes ship as a numbered migration** — a new
    `workers/db-worker/migrations/NNNN_name.sql`, applied by
    `wrangler d1 migrations apply` from `deploy-db.yml` (dev on merge, prod at
@@ -273,11 +274,19 @@ a bare state string. Use the `isPlaying` signal to detect pause/stop.
 
 | Change touches                               | Required check                                                        |
 | -------------------------------------------- | --------------------------------------------------------------------- |
-| Any code                                     | `pnpm check`                                                          |
+| Root app (`src/`, root config)               | `pnpm typecheck` once before the first PR push                        |
+| Beside Cue or shared mobile packages         | `pnpm beside-cue:typecheck` once before the first PR push             |
+| DB Worker                                    | `pnpm typecheck:db` once before the first PR push                     |
+| Jam Worker                                   | `pnpm typecheck:jam` once before the first PR push                    |
 | Tour steps or tour-targeted DOM              | Verify the affected `targetSelector`s resolve. **Not** the full walk. |
 | Exercise chrome / mobile layout              | `pnpm audit:mobile`                                                   |
 | Pointer-driven controls (drag, scrub, swipe) | A real-mouse Playwright spec, red→green, tagged `@smoke`              |
 | Release                                      | `/prod-upd`, which includes the full `pnpm test:tours` walk           |
+
+Before the first PR push, also run `pnpm pr:prepare` once for every work item.
+For cross-workspace changes, run each affected typecheck once. After the PR is
+open, use CI as the authoritative full gate and rerun only the targeted command
+for a failure.
 
 `pnpm test:tours` is a **release gate, not a per-PR gate** — it takes 20+
 minutes. Do not run it per change, even when editing tour steps.
