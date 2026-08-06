@@ -1,0 +1,41 @@
+name: Cleanup Merged Branch
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Delete merged branch
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'feat/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete merged branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ref = `heads/${context.payload.pull_request.head.ref}`
+
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref,
+              })
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Branch ${ref} is already absent.`)
+                return
+              }
+
+              throw error
+            }

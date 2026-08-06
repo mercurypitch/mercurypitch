@@ -6,6 +6,27 @@ on:
       - opened
       - synchronize
       - reopened
+    # A preview deploys the MercuryPitch frontend and DB Worker. Documentation
+    # and the independently packaged Beside Cue app are validated by PR Gate,
+    # but cannot affect this deployment.
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'assets/**'
+      - 'workers/db-worker/**'
+      - 'scripts/gen-preview-definitions-sql.mjs'
+      - '*.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'wrangler.jsonc'
+      - '.env.development'
+      - '.env.production'
+      - '.env'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/pr-deployment-table.md'
   push:
     branches:
       - main
@@ -50,8 +71,69 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # The lockfile is shared by the monorepo, so a Beside-only dependency
+      # change necessarily matches this workflow's path filter. Detect that
+      # combination before installing dependencies and leave its validation to
+      # PR Gate. A lockfile-only change remains deploy-relevant by default.
+      - name: Resolve preview scope
+        id: preview-scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          deploy=true
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            deploy=false
+            beside=false
+            shared_manifest=false
+
+            if [[ -z "$BASE_SHA" ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+              deploy=true
+            else
+              while IFS= read -r file; do
+                [[ -z "$file" ]] && continue
+
+                case "$file" in
+                  apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*)
+                    beside=true
+                    ;;
+                  pnpm-lock.yaml|pnpm-workspace.yaml)
+                    shared_manifest=true
+                    ;;
+                  .github/workflows/build.yml|.github/workflows/pr-deployment-table.md)
+                    deploy=true
+                    ;;
+                  .github/workflows/*)
+                    ;;
+                  docs/*|*.md|.githooks/*|.claude/*|.impeccable/*)
+                    ;;
+                  *)
+                    deploy=true
+                    ;;
+                esac
+              done < <(git diff --name-only "$BASE_SHA" "$GITHUB_SHA")
+
+              if [[ "$deploy" == false && "$shared_manifest" == true && "$beside" == false ]]; then
+                deploy=true
+              fi
+            fi
+          fi
+
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+          if [[ "$EVENT_NAME" == "pull_request" && "$deploy" == false ]]; then
+            echo "Preview skipped: this pull request changes only Beside Cue or documentation." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Debug Info
+        if: steps.preview-scope.outputs.deploy == 'true'
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
@@ -62,24 +144,26 @@ jobs:
           echo "Target Branch: $BASE_REF"
 
       - uses: pnpm/action-setup@v4
+        if: steps.preview-scope.outputs.deploy == 'true'
         with:
           version: 11.12.0
 
       - name: Setup Node.js
+        if: steps.preview-scope.outputs.deploy == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
+        if: steps.preview-scope.outputs.deploy == 'true'
         run: pnpm install --frozen-lockfile
 
-      # A GATE, not the deployed artifact. Wrangler re-builds from
-      # wrangler.jsonc's build.command and ships that bundle instead; this
-      # step exists so a broken build fails the run before anything reaches
-      # Cloudflare. Deliberate -- see docs/agent/MISTAKES.md, "Build-time env
-      # vars go on the wrangler step". VITE_* needed at runtime goes there.
-      - name: Build app
+      # PR Gate owns pull-request build validation. Direct main, tag, and
+      # manual deployments keep a pre-deploy gate; PR previews skip it because
+      # `wrangler versions upload` builds the exact artifact it uploads below.
+      - name: Build app before direct deployment
+        if: steps.preview-scope.outputs.deploy == 'true' && github.event_name != 'pull_request'
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -94,13 +178,12 @@ jobs:
             fi
           elif [[ "$REF" == "refs/heads/main" ]]; then
             pnpm run build:dev
-          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
-            pnpm run build:dev
           else
             pnpm run build
           fi
 
       - name: Verify build output
+        if: steps.preview-scope.outputs.deploy == 'true' && github.event_name != 'pull_request'
         run: |
           test -f dist/index.html || exit 1
           ls dist/assets/*.js >/dev/null 2>&1 || exit 1
@@ -139,7 +222,7 @@ jobs:
       # route disabled.
       - name: Deploy PR Preview (versioned)
         id: deploy-preview
-        if: github.event_name == 'pull_request'
+        if: steps.preview-scope.outputs.deploy == 'true' && github.event_name == 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

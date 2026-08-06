@@ -41,7 +41,12 @@ export default defineConfig(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.mjs'],
+          allowDefaultProject: [
+            '*.js',
+            '*.mjs',
+            'scripts/pr-prepare.mjs',
+            'scripts/pr-prepare.test.mjs',
+          ],
         },
       },
     },
@@ -276,6 +281,21 @@ export default defineConfig(
         'webkitResolveLocalFileSystemURL',
         'webkitStorageInfo',
       ],
+    },
+  },
+  // The PR helper is a Node.js script. Type-aware browser rules make its plain
+  // JavaScript control flow appear as `any`, so keep the normal correctness
+  // rules while declaring Node globals and disabling that TS-only check.
+  {
+    files: ['scripts/pr-prepare.mjs', 'scripts/pr-prepare.test.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/strict-boolean-expressions': 'off',
     },
   },
   // Web Workers legitimately use self, postMessage, and other worker globals

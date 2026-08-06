@@ -12,18 +12,18 @@ Companion docs: [INDEX.md](INDEX.md) for the module map,
 
 ## 1. Naming
 
-| Thing | Convention | Evidence |
-|---|---|---|
-| Component files | `PascalCase.tsx` | 121 / 124 in `src/components/` |
-| Library files | `kebab-case.ts` | 117 / 125 in `src/lib/` |
-| Store files | `<domain>-store.ts` | 25 / 26 in `src/stores/` |
-| Hooks | `useThing.ts`, one hook per file | 41 in `src/features/` |
-| Controllers | `use<Feature><Concern>Controller.ts` | 6 in `src/features/stem-mixer/` |
-| Props interfaces | `interface <Component>Props` | 195 vs 0 using `type` |
-| Module constants | `SCREAMING_SNAKE_CASE` | 180 exported |
-| Internal handlers | `handleThing` | 251 distinct |
-| Callback props | `onThing` | 266 distinct |
-| CSS modules | `<Component>.module.css`, beside the component | 120 files |
+| Thing             | Convention                                     | Evidence                        |
+| ----------------- | ---------------------------------------------- | ------------------------------- |
+| Component files   | `PascalCase.tsx`                               | 121 / 124 in `src/components/`  |
+| Library files     | `kebab-case.ts`                                | 117 / 125 in `src/lib/`         |
+| Store files       | `<domain>-store.ts`                            | 25 / 26 in `src/stores/`        |
+| Hooks             | `useThing.ts`, one hook per file               | 41 in `src/features/`           |
+| Controllers       | `use<Feature><Concern>Controller.ts`           | 6 in `src/features/stem-mixer/` |
+| Props interfaces  | `interface <Component>Props`                   | 195 vs 0 using `type`           |
+| Module constants  | `SCREAMING_SNAKE_CASE`                         | 180 exported                    |
+| Internal handlers | `handleThing`                                  | 251 distinct                    |
+| Callback props    | `onThing`                                      | 266 distinct                    |
+| CSS modules       | `<Component>.module.css`, beside the component | 120 files                       |
 
 Tab identifiers come from `src/features/tabs/constants.ts` (`TAB_SINGING`,
 `TAB_KARAOKE`, …). Never write a raw tab string.
@@ -62,9 +62,13 @@ Destructuring reads the value once and severs reactivity.
 
 ```tsx
 // wrong
-export function Card({ title }: CardProps) { return <h2>{title}</h2> }
+export function Card({ title }: CardProps) {
+  return <h2>{title}</h2>
+}
 // right
-export function Card(props: CardProps) { return <h2>{props.title}</h2> }
+export function Card(props: CardProps) {
+  return <h2>{props.title}</h2>
+}
 ```
 
 **Read accessors synchronously.** Calling a signal inside an async callback
@@ -85,12 +89,12 @@ the event target after the reset. Capture the value first.
 
 ## 4. State
 
-| Scope | Use | Where |
-|---|---|---|
-| Component-local | `createSignal` | in the component |
-| Shared across one feature | a controller hook returning an object | `src/features/<name>/use*Controller.ts` |
-| App-wide | a store module of exported signals + functions | `src/stores/<domain>-store.ts` |
-| Persisted | `createPersistedSignal` from `@/lib/storage` | any store |
+| Scope                     | Use                                            | Where                                   |
+| ------------------------- | ---------------------------------------------- | --------------------------------------- |
+| Component-local           | `createSignal`                                 | in the component                        |
+| Shared across one feature | a controller hook returning an object          | `src/features/<name>/use*Controller.ts` |
+| App-wide                  | a store module of exported signals + functions | `src/stores/<domain>-store.ts`          |
+| Persisted                 | `createPersistedSignal` from `@/lib/storage`   | any store                               |
 
 Stores export bare signal pairs and plain functions — there is no store class
 or context wrapper. Clamp in the exported setter, not at every call site (see
@@ -114,12 +118,12 @@ tags. Pages inside `.main-content` need `flex-shrink: 0`.
 
 ## 6. Tests
 
-| Kind | Location | Runner |
-|---|---|---|
-| Unit, algorithmic | `src/tests/` (197 files) | Vitest |
-| Unit, colocated | `<module>.test.ts` beside source (38 in `src/lib/`) | Vitest |
-| End-to-end | `src/e2e/` (34 files) | Playwright |
-| Behavioural specs | `docs/specs/*.ears.md` | prose, EARS format |
+| Kind              | Location                                            | Runner             |
+| ----------------- | --------------------------------------------------- | ------------------ |
+| Unit, algorithmic | `src/tests/` (197 files)                            | Vitest             |
+| Unit, colocated   | `<module>.test.ts` beside source (38 in `src/lib/`) | Vitest             |
+| End-to-end        | `src/e2e/` (34 files)                               | Playwright         |
+| Behavioural specs | `docs/specs/*.ears.md`                              | prose, EARS format |
 
 **New unit tests are colocated** — `<module>.test.ts` beside the source.
 `src/tests/` keeps cross-module and integration tests. A colocated test moves
@@ -164,11 +168,16 @@ start accumulating, that is the signal to do a pass, not to add a CI rule.
 
 ## 8. Formatting
 
-`pnpm check` is the authority — typecheck, ESLint `--fix`, Prettier `--write`.
-CI runs `pnpm check:ci` (formerly `check:syntax`, kept as an alias), the same set non-mutating **plus the
-index freshness check**. Moving or renaming a module without running
-`pnpm docs:index` fails CI. Do not hand-format; do not argue with the
-formatter.
+CI is the affected-code formatting authority. PR Gate checks the generated
+index and diff whitespace before installing dependencies, then runs
+non-mutating changed-file Prettier and ESLint plus the typecheck, tests, and
+builds for each affected workspace. Root `pnpm check:ci` remains available as
+the equivalent non-mutating syntax gate for the main app. Once per work item,
+before its first PR push, run `pnpm pr:prepare`; it regenerates the index and
+applies Prettier and ESLint fixes only to files changed from `origin/main`. Run
+the relevant workspace typecheck separately, also once. `pnpm check` remains
+available as a full-tree local fix pass, but it is not a per-commit gate. Do
+not hand-format; do not argue with the formatter.
 
 No emojis anywhere — code, UI, logs, commits, PR text. Use an SVG icon
 component from `src/components/icons`.
@@ -194,7 +203,7 @@ Settled 2026-08-01: real D1 migrations (Q8) — the tracked chain in
 
 Still open — see [QUESTIONNAIRE.md](QUESTIONNAIRE.md):
 
-| # | Question | Current state |
-|---|---|---|
-| 4 | File size ceiling | 24 files over 1.2k LOC (recounted 2026-08-01); refactor pass tracked in #379 |
-| 5 | Global CSS growth | `uvr.css` 88 KB, `vocal-analysis.css` 79 KB; split tracked in #379 |
+| #   | Question          | Current state                                                                |
+| --- | ----------------- | ---------------------------------------------------------------------------- |
+| 4   | File size ceiling | 24 files over 1.2k LOC (recounted 2026-08-01); refactor pass tracked in #379 |
+| 5   | Global CSS growth | `uvr.css` 88 KB, `vocal-analysis.css` 79 KB; split tracked in #379           |
