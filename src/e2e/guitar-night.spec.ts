@@ -3,6 +3,276 @@
 
 import { devices, expect, test } from '@playwright/test'
 
+const TEST_SONG_DURATION_SECONDS = 4
+
+function createTestWav(
+  frequencyHz: number,
+  durationSeconds = TEST_SONG_DURATION_SECONDS,
+): Buffer {
+  const sampleRate = 8_000
+  const sampleCount = sampleRate * durationSeconds
+  const bytesPerSample = 2
+  const wav = Buffer.alloc(44 + sampleCount * bytesPerSample)
+
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(wav.length - 8, 4)
+  wav.write('WAVE', 8)
+  wav.write('fmt ', 12)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(1, 22)
+  wav.writeUInt32LE(sampleRate, 24)
+  wav.writeUInt32LE(sampleRate * bytesPerSample, 28)
+  wav.writeUInt16LE(bytesPerSample, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(sampleCount * bytesPerSample, 40)
+
+  for (let sample = 0; sample < sampleCount; sample += 1) {
+    const seconds = sample / sampleRate
+    const fade = Math.min(1, seconds * 20, (durationSeconds - seconds) * 20)
+    const amplitude = Math.sin(seconds * frequencyHz * Math.PI * 2) * fade
+    wav.writeInt16LE(Math.round(amplitude * 3_000), 44 + sample * 2)
+  }
+
+  return wav
+}
+
+async function instrumentAudioContext(
+  page: import('@playwright/test').Page,
+): Promise<void> {
+  await page.addInitScript(() => {
+    const trackedWindow = window as unknown as {
+      __guitarNightAudioContexts: number
+      AudioContext?: typeof AudioContext
+      webkitAudioContext?: typeof AudioContext
+    }
+    trackedWindow.__guitarNightAudioContexts = 0
+
+    const NativeAudioContext =
+      trackedWindow.AudioContext ?? trackedWindow.webkitAudioContext
+    if (NativeAudioContext === undefined) return
+
+    const TrackedAudioContext = new Proxy(NativeAudioContext, {
+      construct(target, args, newTarget) {
+        trackedWindow.__guitarNightAudioContexts += 1
+        return Reflect.construct(target, args, newTarget)
+      },
+    })
+    trackedWindow.AudioContext = TrackedAudioContext
+    trackedWindow.webkitAudioContext = TrackedAudioContext
+  })
+}
+
+async function initializeGuitarNightDatabase(
+  page: import('@playwright/test').Page,
+): Promise<void> {
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Prepared songs', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(/on this device$/)).toBeVisible()
+}
+
+async function seedCompletedTwoStemSong(
+  page: import('@playwright/test').Page,
+  sessionId: string,
+): Promise<void> {
+  const vocalWav = createTestWav(330)
+  const instrumentalWav = createTestWav(110)
+
+  await page.evaluate(
+    async ({
+      durationSeconds,
+      instrumentalBase64,
+      sessionId: seededSessionId,
+      vocalBase64,
+    }) => {
+      const decodeBase64 = (encoded: string): ArrayBuffer => {
+        const bytes = Uint8Array.from(atob(encoded), (character) =>
+          character.charCodeAt(0),
+        )
+        return bytes.buffer
+      }
+      const vocalData = decodeBase64(vocalBase64)
+      const instrumentalData = decodeBase64(instrumentalBase64)
+      const now = new Date().toISOString()
+      const sessionRecordId = `${seededSessionId}-record`
+      const vocalStemId = `${seededSessionId}-vocal`
+      const instrumentalStemId = `${seededSessionId}-instrumental`
+
+      await new Promise<void>((resolve, reject) => {
+        const openRequest = indexedDB.open('MercuryPitchDB')
+        openRequest.onerror = () => reject(openRequest.error)
+        openRequest.onsuccess = () => {
+          const database = openRequest.result
+          const transaction = database.transaction(
+            ['uvrSessions', 'uvrStemBlobs'],
+            'readwrite',
+          )
+          transaction.objectStore('uvrSessions').put({
+            id: sessionRecordId,
+            appSessionId: seededSessionId,
+            userId: 'guitar-night-e2e',
+            status: 'completed',
+            progress: 100,
+            originalFileName: 'midnight-drums.wav',
+            originalFileSize: instrumentalData.byteLength,
+            originalFileType: 'audio/wav',
+            processingMode: 'local',
+            provider: 'local',
+            vocalStemId,
+            instrumentalStemId,
+            stemMetaJson: JSON.stringify({
+              vocal: {
+                duration: durationSeconds,
+                size: vocalData.byteLength,
+              },
+              instrumental: {
+                duration: durationSeconds,
+                size: instrumentalData.byteLength,
+              },
+            }),
+            appCreatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
+          })
+          transaction.objectStore('uvrStemBlobs').put({
+            id: vocalStemId,
+            sessionId: seededSessionId,
+            stemType: 'vocal',
+            mimeType: 'audio/wav',
+            data: vocalData,
+            size: vocalData.byteLength,
+            fileName: 'midnight-drums-vocal.wav',
+            createdAt: now,
+            updatedAt: now,
+          })
+          transaction.objectStore('uvrStemBlobs').put({
+            id: instrumentalStemId,
+            sessionId: seededSessionId,
+            stemType: 'instrumental',
+            mimeType: 'audio/wav',
+            data: instrumentalData,
+            size: instrumentalData.byteLength,
+            fileName: 'midnight-drums-instrumental.wav',
+            createdAt: now,
+            updatedAt: now,
+          })
+          transaction.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error)
+          }
+        }
+      })
+    },
+    {
+      durationSeconds: TEST_SONG_DURATION_SECONDS,
+      instrumentalBase64: instrumentalWav.toString('base64'),
+      sessionId,
+      vocalBase64: vocalWav.toString('base64'),
+    },
+  )
+}
+
+async function seedCompletedFullBandSong(
+  page: import('@playwright/test').Page,
+  sessionId: string,
+): Promise<void> {
+  const stemWav = createTestWav(165)
+
+  await page.evaluate(
+    async ({ durationSeconds, sessionId: seededSessionId, stemBase64 }) => {
+      const bytes = Uint8Array.from(atob(stemBase64), (character) =>
+        character.charCodeAt(0),
+      )
+      const stemKinds = [
+        'vocal',
+        'drums',
+        'bass',
+        'guitar',
+        'piano',
+        'other',
+      ] as const
+      const now = new Date().toISOString()
+
+      await new Promise<void>((resolve, reject) => {
+        const openRequest = indexedDB.open('MercuryPitchDB')
+        openRequest.onerror = () => reject(openRequest.error)
+        openRequest.onsuccess = () => {
+          const database = openRequest.result
+          const transaction = database.transaction(
+            ['uvrSessions', 'uvrStemBlobs'],
+            'readwrite',
+          )
+          transaction.objectStore('uvrSessions').put({
+            id: `${seededSessionId}-record`,
+            appSessionId: seededSessionId,
+            userId: 'guitar-night-e2e',
+            status: 'completed',
+            progress: 100,
+            originalFileName: 'full-band-tablet.wav',
+            originalFileSize: bytes.byteLength,
+            originalFileType: 'audio/wav',
+            processingMode: 'local',
+            provider: 'local',
+            stemMetaJson: JSON.stringify(
+              Object.fromEntries(
+                stemKinds.map((kind) => [
+                  kind,
+                  { duration: durationSeconds, size: bytes.byteLength },
+                ]),
+              ),
+            ),
+            appCreatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
+          })
+          for (const kind of stemKinds) {
+            transaction.objectStore('uvrStemBlobs').put({
+              id: `${seededSessionId}-${kind}`,
+              sessionId: seededSessionId,
+              stemType: kind,
+              mimeType: 'audio/wav',
+              data: bytes.buffer,
+              size: bytes.byteLength,
+              fileName: `full-band-${kind}.wav`,
+              createdAt: now,
+              updatedAt: now,
+            })
+          }
+          transaction.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error)
+          }
+        }
+      })
+    },
+    {
+      durationSeconds: TEST_SONG_DURATION_SECONDS,
+      sessionId,
+      stemBase64: stemWav.toString('base64'),
+    },
+  )
+}
+
 async function instrumentMicrophoneRequests(
   page: import('@playwright/test').Page,
 ) {
@@ -215,4 +485,221 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
         .__guitarNightMicCalls,
   )
   expect(microphoneRequests).toBe(0)
+})
+
+test('enters a silent prepared-song room, plays, pauses, and seeks with a real pointer @smoke', async ({
+  page,
+}) => {
+  const sessionId = `guitar-night-two-stem-${Date.now()}`
+  await instrumentMicrophoneRequests(page)
+  await instrumentAudioContext(page)
+  await initializeGuitarNightDatabase(page)
+  await seedCompletedTwoStemSong(page, sessionId)
+
+  await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+  await expect(page.getByText('2 local stems ready')).toBeVisible()
+  const enterRoom = page.getByRole('button', {
+    name: 'Enter room',
+    exact: true,
+  })
+  await expect(enterRoom).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Play backing' })).toHaveCount(
+    0,
+  )
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await enterRoom.click()
+  const room = page.getByTestId('guitar-night-room')
+  await expect(room).toBeVisible()
+  await expect(
+    room.getByRole('heading', { name: 'midnight-drums.wav' }),
+  ).toBeFocused()
+  const playBacking = room.getByRole('button', {
+    name: 'Play backing',
+    exact: true,
+  })
+  await expect(playBacking).toBeVisible()
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await playBacking.click()
+  await expect(
+    room.getByRole('button', { name: 'Pause backing', exact: true }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __guitarNightAudioContexts: number })
+            .__guitarNightAudioContexts,
+      ),
+    )
+    .toBe(1)
+
+  const songPosition = room.getByRole('slider', {
+    name: 'Song position',
+    exact: true,
+  })
+  await expect(songPosition).toBeVisible()
+  await expect
+    .poll(async () => Number(await songPosition.inputValue()))
+    .toBeGreaterThan(0)
+
+  const sliderBox = await songPosition.boundingBox()
+  expect(sliderBox).not.toBeNull()
+  await page.mouse.click(
+    (sliderBox?.x ?? 0) + (sliderBox?.width ?? 0) * 0.75,
+    (sliderBox?.y ?? 0) + (sliderBox?.height ?? 0) / 2,
+  )
+  await expect
+    .poll(async () => Number(await songPosition.inputValue()))
+    .toBeGreaterThan(TEST_SONG_DURATION_SECONDS * 0.6)
+
+  await room.getByRole('button', { name: 'Pause backing', exact: true }).click()
+  await expect(
+    room.getByRole('button', { name: 'Resume backing', exact: true }),
+  ).toBeVisible()
+  const pausedPosition = Number(await songPosition.inputValue())
+  await page.waitForTimeout(250)
+  expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
+
+  await room.getByRole('button', { name: 'Songs', exact: true }).click()
+  const resumeSong = page.getByRole('button', { name: /midnight-drums\.wav/ })
+  await expect(resumeSong).toContainText('Resume')
+  await resumeSong.click()
+  await expect(
+    room.getByRole('button', { name: 'Resume backing', exact: true }),
+  ).toBeVisible()
+  expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
+
+  const microphoneRequests = await page.evaluate(
+    () =>
+      (window as unknown as { __guitarNightMicCalls: number })
+        .__guitarNightMicCalls,
+  )
+  expect(microphoneRequests).toBe(0)
+})
+
+test('keeps the prepared-song room controls touchable without phone overflow @smoke', async ({
+  browser,
+}) => {
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    ...devices['iPhone 12'],
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+  const sessionId = `guitar-night-mobile-two-stem-${Date.now()}`
+
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await initializeGuitarNightDatabase(page)
+    await seedCompletedTwoStemSong(page, sessionId)
+    await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await page.getByRole('button', { name: 'Enter room', exact: true }).click()
+
+    const room = page.getByTestId('guitar-night-room')
+    await expect(room).toBeVisible()
+    await expect(
+      room.getByRole('button', { name: 'Play backing', exact: true }),
+    ).toBeVisible()
+    await expect(
+      room.getByRole('slider', { name: 'Song position', exact: true }),
+    ).toBeVisible()
+
+    const viewportMetrics = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewportMetrics.scrollWidth).toBeLessThanOrEqual(
+      viewportMetrics.clientWidth + 2,
+    )
+
+    const controls = room.locator('button, input[type="range"]')
+    expect(await controls.count()).toBeGreaterThanOrEqual(4)
+    for (let index = 0; index < (await controls.count()); index += 1) {
+      const control = controls.nth(index)
+      await control.scrollIntoViewIfNeeded()
+      const box = await control.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box?.width).toBeGreaterThanOrEqual(44)
+      expect(box?.height).toBeGreaterThanOrEqual(44)
+      expect(box?.x).toBeGreaterThanOrEqual(0)
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
+        viewportMetrics.clientWidth,
+      )
+    }
+  } finally {
+    await context.close()
+  }
+})
+
+test('wraps a full band inside the room at tablet width @smoke', async ({
+  browser,
+}) => {
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 768, height: 900 },
+  })
+  const page = await context.newPage()
+  const sessionId = `guitar-night-tablet-band-${Date.now()}`
+
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await initializeGuitarNightDatabase(page)
+    await seedCompletedFullBandSong(page, sessionId)
+    await page.goto(`/guitar-night?session=${encodeURIComponent(sessionId)}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await page.getByRole('button', { name: 'Enter room', exact: true }).click()
+
+    const room = page.getByTestId('guitar-night-room')
+    const channels = room.locator('[aria-label="Backing tracks"] button')
+    await expect(channels).toHaveCount(6)
+
+    const layout = await room.evaluate((element) => {
+      const panel = element.getBoundingClientRect()
+      const strip = element.querySelector<HTMLElement>(
+        '[aria-label="Backing tracks"]',
+      )
+      const buttons = [
+        ...element.querySelectorAll<HTMLElement>(
+          '[aria-label="Backing tracks"] button',
+        ),
+      ]
+      return {
+        allChannelsInside: buttons.every((button) => {
+          const bounds = button.getBoundingClientRect()
+          return (
+            bounds.left >= panel.left - 1 && bounds.right <= panel.right + 1
+          )
+        }),
+        stripClientWidth: strip?.clientWidth ?? 0,
+        stripScrollWidth: strip?.scrollWidth ?? 0,
+      }
+    })
+    expect(layout.allChannelsInside).toBe(true)
+    expect(layout.stripScrollWidth).toBeLessThanOrEqual(
+      layout.stripClientWidth + 1,
+    )
+  } finally {
+    await context.close()
+  }
 })

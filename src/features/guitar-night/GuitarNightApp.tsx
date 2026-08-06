@@ -8,11 +8,15 @@ FIRST VIEWPORT: One calm amp-faceplate entry surface leaves the approved room an
 FORM: A grounded rehearsal-room welcome with three deliberately unequal paths and no synthetic activity.
 */
 
-import { createMemo, createSignal, For, Match, Show, Switch } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Match, Show, Switch, } from 'solid-js'
+import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
+import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
+import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import type { GuitarFirstWinExerciseStepV1 } from './first-win-config'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
+import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
@@ -20,11 +24,12 @@ import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, u
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
-type EntryView = 'choices' | 'first-win' | 'song'
+type EntryView = 'choices' | 'first-win' | 'song' | 'room'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadSongPort?: () => Promise<GuitarNightSongPort>
   loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
+  createBackingTransport?: () => GuitarBackingTransport
 }
 
 const TAB_STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E']
@@ -70,8 +75,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     initialSessionId === null ? 'choices' : 'song',
   )
   const [previewHits, setPreviewHits] = createSignal(0)
+  const [visitedRoomSessionId, setVisitedRoomSessionId] = createSignal<
+    string | null
+  >(null)
   let detailHeading: HTMLHeadingElement | undefined
   let songInput: HTMLInputElement | undefined
+
+  const createConfiguredBackingTransport = (): GuitarBackingTransport => {
+    const configuredFactory = props.createBackingTransport
+    return configuredFactory?.() ?? createGuitarBackingTransport()
+  }
+  const playbackController = useGuitarBackingTransportController({
+    createTransport: createConfiguredBackingTransport,
+  })
 
   const focusDetail = () => {
     queueMicrotask(() => detailHeading?.focus())
@@ -85,8 +101,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         : configuredLoader()
     },
     onRouteSession: () => {
+      playbackController.configure(null)
+      setVisitedRoomSessionId(null)
       setView('song')
       focusDetail()
+    },
+    onBackingWillRelease: () => {
+      playbackController.configure(null)
+      setVisitedRoomSessionId(null)
     },
   })
   const preparationController = useGuitarNightPreparationController({
@@ -152,9 +174,29 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     window.location.assign('/#/guitar')
   }
 
+  const enterRoom = () => {
+    const backing = activeBacking()
+    if (backing === null) return
+    if (visitedRoomSessionId() !== backing.sessionId) {
+      playbackController.configure(guitarNightBackingSession(backing))
+      setVisitedRoomSessionId(backing.sessionId)
+    }
+    setView('room')
+  }
+
+  const returnToSongs = () => {
+    playbackController.pause()
+    setView('song')
+    focusDetail()
+  }
+
   const returnToChoices = () => {
     preparationController.clear()
-    if (view() === 'song') songController.clearSession('push')
+    playbackController.configure(null)
+    setVisitedRoomSessionId(null)
+    if (view() === 'song' || view() === 'room') {
+      songController.clearSession('push')
+    }
     setView('choices')
     queueMicrotask(() =>
       document
@@ -202,9 +244,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
 
   const stagePreparedSong = (sessionId: string) => {
+    if (activeBacking()?.sessionId === sessionId) {
+      enterRoom()
+      return
+    }
     preparationController.clear()
+    setVisitedRoomSessionId(null)
     void songController.stageSession(sessionId, 'push')
   }
+
+  createEffect(() => {
+    if (view() !== 'room' || activeBacking() !== null) return
+    playbackController.configure(null)
+    setView('song')
+  })
 
   const roomStatus = () => {
     const preparation = preparationController.state()
@@ -269,8 +322,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       </div>
 
       <main class={styles.main} id="guitar-night-main">
-        <section class={styles.entryPanel}>
-          <div class={styles.panelEdge} aria-hidden="true" />
+        <div
+          class={styles.entryPanel}
+          classList={{ [styles.entryPanelRoom]: view() === 'room' }}
+        >
+          <Show when={view() !== 'room'}>
+            <div class={styles.panelEdge} aria-hidden="true" />
+          </Show>
 
           <Switch>
             <Match when={view() === 'choices'}>
@@ -630,7 +688,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                                   {formatPreparedDate(song.createdAt)}
                                 </small>
                               </span>
-                              <i aria-hidden="true">Open</i>
+                              <i aria-hidden="true">
+                                {activeBacking()?.sessionId === song.sessionId
+                                  ? visitedRoomSessionId() === song.sessionId
+                                    ? 'Resume'
+                                    : 'Selected'
+                                  : 'Open'}
+                              </i>
                             </button>
                           </li>
                         )}
@@ -687,6 +751,18 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       Choose another
                     </button>
                   </Match>
+                  <Match when={activeBacking()}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={enterRoom}
+                    >
+                      Enter room
+                    </button>
+                    <button type="button" onClick={() => songInput?.click()}>
+                      Choose another
+                    </button>
+                  </Match>
                   <Match when={true}>
                     <button
                       class={styles.completionAction}
@@ -702,18 +778,28 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 </Switch>
               </div>
             </Match>
+
+            <Match when={view() === 'room' && activeBacking()}>
+              <GuitarNightRoom
+                backing={activeBacking()!}
+                transport={playbackController}
+                onSongs={returnToSongs}
+              />
+            </Match>
           </Switch>
-        </section>
+        </div>
       </main>
 
-      <div
-        class={styles.roomStatus}
-        aria-label={`Room status: ${roomStatus().title}. ${roomStatus().detail}`}
-      >
-        <span aria-hidden="true" />
-        <strong>{roomStatus().title}</strong>
-        <small>{roomStatus().detail}</small>
-      </div>
+      <Show when={view() !== 'room'}>
+        <div
+          class={styles.roomStatus}
+          aria-label={`Room status: ${roomStatus().title}. ${roomStatus().detail}`}
+        >
+          <span aria-hidden="true" />
+          <strong>{roomStatus().title}</strong>
+          <small>{roomStatus().detail}</small>
+        </div>
+      </Show>
 
       <input
         ref={songInput}

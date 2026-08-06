@@ -46,18 +46,59 @@ function sessionCreatedAt(record: UvrSessionRecord): number {
   return record.appCreatedAt ?? Date.parse(record.createdAt)
 }
 
+function persistedStemDurations(
+  stemMetaJson: string | undefined,
+): ReadonlyMap<GuitarNightStemKind, number> {
+  const durations = new Map<GuitarNightStemKind, number>()
+  if (stemMetaJson === undefined) return durations
+  try {
+    const parsed: unknown = JSON.parse(stemMetaJson)
+    if (typeof parsed !== 'object' || parsed === null) return durations
+    for (const [kind, metadata] of Object.entries(parsed)) {
+      if (
+        !GUITAR_NIGHT_STEM_KINDS.has(kind as GuitarNightStemKind) ||
+        typeof metadata !== 'object' ||
+        metadata === null
+      ) {
+        continue
+      }
+      const duration = (metadata as { duration?: unknown }).duration
+      if (
+        typeof duration === 'number' &&
+        Number.isFinite(duration) &&
+        duration > 0
+      ) {
+        durations.set(kind as GuitarNightStemKind, duration)
+      }
+    }
+  } catch {
+    // Corrupt optional metadata cannot hide otherwise playable local stems.
+  }
+  return durations
+}
+
 function leaseResult(
   sessionId: string,
   title: string,
   stemLease: Awaited<ReturnType<typeof openUvrStemLease>>,
+  storedDurations: ReadonlyMap<GuitarNightStemKind, number>,
 ): GuitarNightOpenBackingResult {
   if (stemLease === null || stemLease.assets.length === 0) {
     return { ok: false, code: 'missing-local-audio' }
   }
 
-  const stems = stemLease.assets.filter((asset) =>
-    isGuitarNightStemKind(asset.kind),
-  ) as readonly GuitarNightStemAsset[]
+  const stems = stemLease.assets.flatMap<GuitarNightStemAsset>((asset) => {
+    if (!isGuitarNightStemKind(asset.kind)) return []
+    return [
+      {
+        kind: asset.kind,
+        url: asset.url,
+        sizeBytes: asset.sizeBytes,
+        durationSeconds:
+          asset.durationSeconds ?? storedDurations.get(asset.kind),
+      },
+    ]
+  })
   if (stems.length === 0) {
     stemLease.release()
     return { ok: false, code: 'missing-local-audio' }
@@ -143,7 +184,12 @@ export function createUvrGuitarNightSongPort(): GuitarNightSongPort {
         return aborted()
       }
 
-      return leaseResult(sessionId, title, stemLease)
+      return leaseResult(
+        sessionId,
+        title,
+        stemLease,
+        persistedStemDurations(session.stemMetaJson),
+      )
     },
   }
 }

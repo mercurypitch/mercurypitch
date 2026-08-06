@@ -7,13 +7,15 @@ Guitar runtime.
 
 **Status:** approved target contract; implementation in progress. Delivery
 began with legacy lifecycle stabilization and runtime extraction; the
-standalone Velvet Rehearsal entry is mounted, and completed local separation
-sessions can be staged under route-owned URL leases without starting playback.
-The current implementation slice also accepts a supported local audio
-file, runs the existing durable on-device separation workflow with visible
-progress and cancellation, refreshes the local catalog, and stages the exact
-completed or reused session without starting playback or listening. The
-route-owned Guitar playback runtime remains a subsequent integration.
+standalone Velvet Rehearsal entry is mounted, completed local separation
+sessions can be staged under route-owned URL leases, and an explicit room
+handoff opens a route-owned synchronized stem transport. The implementation
+accepts a supported local audio file, runs the existing durable on-device
+separation workflow with visible progress and cancellation, refreshes the
+local catalog, and stages the exact completed or reused session without
+starting playback or listening. Entering the room remains silent; only the
+primary Play action creates or resumes Web Audio, decodes within a bounded
+memory estimate, and starts the available stems on one audio-clock epoch.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -304,6 +306,16 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   matching session is a recoverable active job, THEN Guitar Night shall report
   that state, hydrate its durable claim into the current tab, and reattach to
   it without submitting duplicate separation work.
+- **REQ-GN-SONG-015 — Deliberate room handoff:** WHEN a prepared backing is
+  staged, Guitar Night shall offer an explicit `Enter room` action. Entering
+  the room shall configure the visible mix and transport without creating an
+  audio context or starting playback; only the player's Play action may
+  activate and begin audible audio.
+- **REQ-GN-SONG-016 — Silent exit and true resume:** WHEN the player returns
+  to Songs during activation, decoding, or playback, Guitar Night shall cancel
+  any pending start or pause every active stem before hiding the room. WHEN
+  the player re-enters the same staged session, its decoded buffers, mix, and
+  parked playhead shall be retained rather than reconfigured from zero.
 
 ## Stage and mobile experience — `GN-STAGE-*`
 

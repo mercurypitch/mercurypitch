@@ -104,9 +104,12 @@ describe('createUvrGuitarNightSongPort', () => {
       snapshotStem('guitar'),
     ]
     const release = vi.fn()
-    adapterReads.readUvrSessionRecords.mockResolvedValue([
-      sessionRecord('velvet', 'completed'),
-    ])
+    const record = sessionRecord('velvet', 'completed')
+    record.stemMetaJson = JSON.stringify({
+      drums: { duration: 183.25 },
+      guitar: { duration: 'invalid' },
+    })
+    adapterReads.readUvrSessionRecords.mockResolvedValue([record])
     adapterReads.readUvrStemSnapshot.mockResolvedValue(snapshot)
     adapterReads.openUvrStemLease.mockResolvedValue({
       assets: [
@@ -137,6 +140,16 @@ describe('createUvrGuitarNightSongPort', () => {
           audible: ['drums', 'bass'],
           muted: ['guitar'],
         },
+        stems: expect.arrayContaining([
+          expect.objectContaining({
+            kind: 'drums',
+            durationSeconds: 183.25,
+          }),
+          expect.objectContaining({
+            kind: 'guitar',
+            durationSeconds: undefined,
+          }),
+        ]),
       },
     })
   })

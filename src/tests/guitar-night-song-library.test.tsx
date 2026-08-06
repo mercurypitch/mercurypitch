@@ -3,6 +3,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightPreparationPort, GuitarNightPreparationResult, } from '@/features/guitar-night/preparation-port'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, } from '@/features/guitar-night/song-port'
@@ -49,6 +50,69 @@ function mixedBackingResult(
       release,
     },
   }
+}
+
+function fakeBackingTransport() {
+  let status: GuitarBackingTransportStatus = 'idle'
+  let currentSession: GuitarBackingSession | null = null
+  let trackStates: GuitarBackingTrackState[] = []
+  const listeners = new Set<() => void>()
+  const emit = () => listeners.forEach((listener) => listener())
+  const configure = vi.fn((session: GuitarBackingSession | null) => {
+    currentSession = session
+    status = session === null ? 'idle' : 'armed'
+    trackStates =
+      session?.tracks.map((track) => ({
+        id: track.id,
+        label: track.label,
+        muted: track.muted ?? false,
+        level: track.level ?? 1,
+        available: true,
+      })) ?? []
+    emit()
+  })
+  const transport: GuitarBackingTransport = {
+    configure,
+    play: vi.fn(async () => {
+      if (currentSession === null) return false
+      status = 'playing'
+      emit()
+      return true
+    }),
+    pause: vi.fn(() => {
+      status = 'paused'
+      emit()
+    }),
+    stop: vi.fn(() => {
+      status = currentSession === null ? 'idle' : 'ready'
+      emit()
+    }),
+    seek: vi.fn(),
+    setMasterVolume: vi.fn(),
+    setTrackMuted: vi.fn((id, muted) => {
+      trackStates = trackStates.map((track) =>
+        track.id === id ? { ...track, muted } : track,
+      )
+      emit()
+    }),
+    getAudioContext: () => null,
+    getStatus: () => status,
+    getCurrentTime: () => 0,
+    getDuration: () =>
+      Math.max(
+        0,
+        ...(currentSession?.tracks.map((track) => track.durationSeconds ?? 0) ??
+          []),
+      ),
+    getTrackStates: () => trackStates,
+    getError: () => null,
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    dispose: vi.fn(async () => undefined),
+  }
+  return { configure, transport }
 }
 
 describe('GuitarNightApp prepared songs', () => {
@@ -112,6 +176,137 @@ describe('GuitarNightApp prepared songs', () => {
 
     cleanup()
     expect(release).toHaveBeenCalledTimes(1)
+  })
+
+  it('enters a quiet play-along room and exposes only real stem controls', async () => {
+    const backingTransport = fakeBackingTransport()
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [
+        {
+          sessionId: 'session-room',
+          title: 'Quiet Room.wav',
+          createdAt: Date.UTC(2026, 7, 6),
+        },
+      ],
+      openSession: vi.fn(
+        async (): Promise<GuitarNightOpenBackingResult> => ({
+          ok: true,
+          lease: {
+            sessionId: 'session-room',
+            title: 'Quiet Room.wav',
+            stems: [
+              {
+                kind: 'drums',
+                url: 'blob:drums',
+                sizeBytes: 100,
+                durationSeconds: 12,
+              },
+              {
+                kind: 'guitar',
+                url: 'blob:guitar',
+                sizeBytes: 100,
+                durationSeconds: 12,
+              },
+            ],
+            defaultMix: {
+              kind: 'parts',
+              audible: ['drums'],
+              muted: ['guitar'],
+            },
+            release: vi.fn(),
+          },
+        }),
+      ),
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(port)}
+        createBackingTransport={() => backingTransport.transport}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Quiet Room\.wav/ }),
+    )
+
+    const enterRoom = await screen.findByRole('button', {
+      name: 'Enter room',
+    })
+    expect(backingTransport.configure).not.toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: 'session-room' }),
+    )
+    fireEvent.click(enterRoom)
+
+    expect(screen.getByTestId('guitar-night-room')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Quiet Room.wav' }),
+    ).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Play backing' })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Guitar muted' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(backingTransport.configure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId: 'session-room',
+        tracks: expect.arrayContaining([
+          expect.objectContaining({ id: 'guitar', muted: true }),
+        ]),
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play backing' }))
+    expect(
+      await screen.findByRole('button', { name: 'Pause backing' }),
+    ).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
+    expect(backingTransport.transport.pause).toHaveBeenCalledOnce()
+    const resumeSong = await screen.findByRole('button', {
+      name: /Quiet Room\.wav/,
+    })
+    expect(resumeSong).toHaveTextContent('Resume')
+    fireEvent.click(resumeSong)
+
+    expect(
+      await screen.findByRole('button', { name: 'Resume backing' }),
+    ).toBeVisible()
+    expect(backingTransport.configure).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a two-stem room honest and omits a fake guitar channel', async () => {
+    const backingTransport = fakeBackingTransport()
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [
+        {
+          sessionId: 'session-mixed',
+          title: 'Drums Only.wav',
+          createdAt: Date.UTC(2026, 7, 6),
+        },
+      ],
+      openSession: vi.fn(async () => mixedBackingResult('session-mixed')),
+    }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(port)}
+        createBackingTransport={() => backingTransport.transport}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Drums Only\.wav/ }),
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'Enter room' }))
+
+    expect(
+      screen.getByText(
+        'Backing ready. Guitar remains inside this mix, so it cannot be muted independently.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Guitar/ })).toBeNull()
   })
 
   it('describes available band parts honestly when no separate guitar stem exists', async () => {
