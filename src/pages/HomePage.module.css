@@ -73,15 +73,76 @@
 .freezes {
   margin-left: auto;
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 5px;
+
+  /* A held freeze lights up white. Every theme here but one is dark, so white
+     is the brightest thing on the card and needs no accent to compete with. */
+  --freeze-lit: #fff;
+  --freeze-lit-fill: rgb(255 255 255 / 0.13);
+  --freeze-lit-edge: rgb(255 255 255 / 0.62);
+  --freeze-lit-glow: rgb(255 255 255 / 0.4);
+}
+/* White on a near-white card is not "lit", it is gone. The light theme keeps
+   the same treatment and swaps the ink for the accent. */
+:global([data-theme='light']) .freezes {
+  --freeze-lit: var(--accent);
+  --freeze-lit-fill: var(--accent-dim);
+  --freeze-lit-edge: var(--accent);
+  --freeze-lit-glow: var(--accent-glow);
+}
+/* The count says it in words; the chips are the at-a-glance echo, not the
+   source of truth. Tabular so 0/1/2/3 do not shift the row. */
+.freezeCount {
+  margin-right: 2px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+/* Holding any at all is worth reading from across the room. */
+.freezeCountHas {
+  color: var(--freeze-lit);
+  text-shadow: 0 0 8px var(--freeze-lit-glow);
 }
 .freezeChip {
-  color: var(--border);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .freezeOn {
-  color: var(--accent);
+  color: var(--freeze-lit);
+  background: var(--freeze-lit-fill);
+  border-color: var(--freeze-lit-edge);
+  box-shadow:
+    0 0 10px var(--freeze-lit-glow),
+    inset 0 0 6px var(--freeze-lit-fill);
+}
+.freezeOn svg {
+  filter: drop-shadow(0 0 4px var(--freeze-lit-glow));
+}
+/* Held and unheld must not differ by colour alone — that is what made three
+   empty slots read as three freezes. An unheld one is a dashed empty socket:
+   it still shows how many you could bank, and it never looks filled. */
+.freezeOff {
+  color: var(--text-muted);
+  background: none;
+  border-style: dashed;
+  opacity: 0.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .freezeChip {
+    transition: none;
+  }
 }
 
 .goalRow {

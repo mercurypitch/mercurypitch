@@ -164,15 +164,37 @@ const HomePage: Component = () => {
                   so there is nothing to pluralise. */}
               <div class={styles.streakLabel}>day streak</div>
             </div>
+            {/* Three grey snowflakes read as "three freezes" — the owner read
+                them that way on dev while holding none, then reported the
+                honest "no freezes left" warning as the bug. Empty slots that
+                differ from full ones only by colour are not a count. So the
+                number is stated outright, a held freeze is a lit white disc,
+                and an empty one is a dashed socket. Shape carries the reading;
+                colour only reinforces it. */}
             <div
               class={styles.freezes}
-              title="Streak freezes protect a missed day"
+              title={`${streak()?.freezes ?? 0} of ${
+                streak()?.maxFreezes ?? MAX_FREEZES
+              } streak freezes — each covers one missed day`}
             >
-              <For each={Array.from({ length: streak()?.maxFreezes ?? 2 })}>
+              <span
+                class={`${styles.freezeCount} ${
+                  (streak()?.freezes ?? 0) > 0 ? styles.freezeCountHas : ''
+                }`}
+              >
+                {streak()?.freezes ?? 0}
+              </span>
+              <For
+                each={Array.from({
+                  length: streak()?.maxFreezes ?? MAX_FREEZES,
+                })}
+              >
                 {(_, i) => (
                   <span
                     class={`${styles.freezeChip} ${
-                      i() < (streak()?.freezes ?? 0) ? styles.freezeOn : ''
+                      i() < (streak()?.freezes ?? 0)
+                        ? styles.freezeOn
+                        : styles.freezeOff
                     }`}
                   >
                     <IconSnowflake size={13} />
