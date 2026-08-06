@@ -11,6 +11,16 @@ export interface UvrStemSnapshotEntry {
   sizeBytes: number
 }
 
+const PLAYABLE_STEM_KINDS: readonly Exclude<UvrStemType, 'original'>[] = [
+  'vocal',
+  'instrumental',
+  'drums',
+  'bass',
+  'guitar',
+  'piano',
+  'other',
+]
+
 /** Read session metadata while preserving IndexedDB failures for the caller. */
 export function readUvrSessionRecords(): Promise<UvrSessionRecord[]> {
   return getLocalDatabase().readAllStrict<UvrSessionRecord>('uvrSessions')
@@ -46,5 +56,65 @@ export async function readUvrStemSnapshot(
         data: row.data,
         sizeBytes: row.size,
       })),
+  )
+}
+
+/**
+ * Discover playable kinds with index counts only. No audio payload is copied
+ * into JavaScript while Guitar Night decides between a two-stem and part mix.
+ */
+export async function readUvrStemManifest(
+  sessionId: string,
+): Promise<readonly Exclude<UvrStemType, 'original'>[]> {
+  const database = getLocalDatabase()
+  const counts = await Promise.all(
+    PLAYABLE_STEM_KINDS.map((kind) =>
+      database.countByCompoundIndexStrict(
+        'uvrStemBlobs',
+        '[sessionId+stemType]',
+        [sessionId, kind],
+      ),
+    ),
+  )
+  return Object.freeze(
+    PLAYABLE_STEM_KINDS.filter((_, index) => (counts[index] ?? 0) > 0),
+  )
+}
+
+/** Hydrate only the selected kinds, retaining the newest row per kind. */
+export async function readUvrStemSelection(
+  sessionId: string,
+  requested: readonly UvrStemType[],
+): Promise<readonly UvrStemSnapshotEntry[]> {
+  const database = getLocalDatabase()
+  const uniqueKinds = [...new Set(requested)].filter(
+    (kind) => kind !== 'original',
+  )
+  const rowsByKind = await Promise.all(
+    uniqueKinds.map((kind) =>
+      database.readByCompoundIndexStrict<UvrStemBlob>(
+        'uvrStemBlobs',
+        '[sessionId+stemType]',
+        [sessionId, kind],
+      ),
+    ),
+  )
+
+  return Object.freeze(
+    rowsByKind.flatMap((rows) => {
+      const newest = rows.reduce<UvrStemBlob | null>((latest, row) => {
+        if (latest === null || row.createdAt > latest.createdAt) return row
+        return latest
+      }, null)
+      if (newest === null) return []
+      return [
+        {
+          kind: newest.stemType,
+          mimeType: newest.mimeType,
+          data: newest.data,
+          sizeBytes: newest.size,
+        },
+      ]
+    }),
   )
 }

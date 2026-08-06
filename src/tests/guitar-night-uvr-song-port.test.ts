@@ -7,13 +7,15 @@ import type { UvrStemSnapshotEntry } from '@/db/services/uvr-read-service'
 
 const adapterReads = vi.hoisted(() => ({
   readUvrSessionRecords: vi.fn(),
-  readUvrStemSnapshot: vi.fn(),
+  readUvrStemManifest: vi.fn(),
+  readUvrStemSelection: vi.fn(),
   openUvrStemLease: vi.fn(),
 }))
 
 vi.mock('@/db/services/uvr-read-service', () => ({
   readUvrSessionRecords: adapterReads.readUvrSessionRecords,
-  readUvrStemSnapshot: adapterReads.readUvrStemSnapshot,
+  readUvrStemManifest: adapterReads.readUvrStemManifest,
+  readUvrStemSelection: adapterReads.readUvrStemSelection,
 }))
 
 vi.mock('@/lib/uvr-stem-lease', () => ({
@@ -68,7 +70,8 @@ function snapshotStem(
 describe('createUvrGuitarNightSongPort', () => {
   beforeEach(() => {
     adapterReads.readUvrSessionRecords.mockReset()
-    adapterReads.readUvrStemSnapshot.mockReset()
+    adapterReads.readUvrStemManifest.mockReset()
+    adapterReads.readUvrStemSelection.mockReset()
     adapterReads.openUvrStemLease.mockReset()
   })
 
@@ -110,7 +113,10 @@ describe('createUvrGuitarNightSongPort', () => {
       guitar: { duration: 'invalid' },
     })
     adapterReads.readUvrSessionRecords.mockResolvedValue([record])
-    adapterReads.readUvrStemSnapshot.mockResolvedValue(snapshot)
+    adapterReads.readUvrStemManifest.mockResolvedValue(
+      snapshot.map((stem) => stem.kind),
+    )
+    adapterReads.readUvrStemSelection.mockResolvedValue(snapshot)
     adapterReads.openUvrStemLease.mockResolvedValue({
       assets: [
         { kind: 'drums', url: 'blob:drums', sizeBytes: 8 },
@@ -159,7 +165,11 @@ describe('createUvrGuitarNightSongPort', () => {
     adapterReads.readUvrSessionRecords.mockResolvedValue([
       sessionRecord('velvet', 'completed'),
     ])
-    adapterReads.readUvrStemSnapshot.mockResolvedValue([
+    adapterReads.readUvrStemManifest.mockResolvedValue([
+      'vocal',
+      'instrumental',
+    ])
+    adapterReads.readUvrStemSelection.mockResolvedValue([
       snapshotStem('vocal'),
       snapshotStem('instrumental'),
     ])
@@ -186,7 +196,7 @@ describe('createUvrGuitarNightSongPort', () => {
       sessionRecord('velvet', 'completed'),
     ])
     const stemFailure = new Error('stem transaction failed')
-    adapterReads.readUvrStemSnapshot.mockRejectedValue(stemFailure)
+    adapterReads.readUvrStemManifest.mockRejectedValue(stemFailure)
     const port = createUvrGuitarNightSongPort()
     await port.initialize()
     await expect(

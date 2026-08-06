@@ -2,7 +2,7 @@
 // ============================================================
 
 import type { UvrSessionRecord, UvrStemType } from '@/db/entities'
-import { readUvrSessionRecords, readUvrStemSnapshot, } from '@/db/services/uvr-read-service'
+import { readUvrSessionRecords, readUvrStemManifest, readUvrStemSelection, } from '@/db/services/uvr-read-service'
 import { openUvrStemLease } from '@/lib/uvr-stem-lease'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, GuitarNightStemAsset, GuitarNightStemKind, } from './song-port'
 import { planGuitarNightBacking, resolveGuitarNightDefaultMix, } from './song-port'
@@ -164,16 +164,18 @@ export function createUvrGuitarNightSongPort(): GuitarNightSongPort {
       }
       const title = songTitle(session.originalFileName)
 
-      const snapshot = await readUvrStemSnapshot(sessionId)
-      const available = snapshot
-        .map((stem) => stem.kind)
-        .filter(isGuitarNightStemKind)
+      const available = (await readUvrStemManifest(sessionId)).filter(
+        isGuitarNightStemKind,
+      )
       if (signal.aborted) return aborted()
 
       const plan = planGuitarNightBacking(available)
       if (plan.requested.length === 0) {
         return { ok: false, code: 'missing-local-audio' }
       }
+
+      const snapshot = await readUvrStemSelection(sessionId, plan.requested)
+      if (signal.aborted) return aborted()
 
       const stemLease = await openUvrStemLease(sessionId, plan.requested, {
         signal,

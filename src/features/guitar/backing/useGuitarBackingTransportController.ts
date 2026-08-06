@@ -104,6 +104,8 @@ export function useGuitarBackingTransportController(
     sync()
   }
 
+  const getAudioGraph = () => transport.getAudioGraph()
+
   onCleanup(() => {
     cancelFrame()
     uninstallAudioUnlock()
@@ -125,6 +127,7 @@ export function useGuitarBackingTransportController(
     seek,
     setMasterVolume,
     setTrackMuted,
+    getAudioGraph,
   }
 }
 

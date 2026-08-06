@@ -55,6 +55,11 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
+    // v6: exact session-and-stem reads let standalone playback rooms hydrate
+    // only the band parts they selected instead of materializing every blob.
+    this.version(6).stores({
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+    })
   }
 }
 
@@ -285,6 +290,32 @@ export class DexieAdapter implements DatabaseAdapter {
       .table<T, string>(entityName)
       .where(indexName)
       .equals(value)
+      .toArray()
+  }
+
+  /** Count an exact compound-index match without materializing blob values. */
+  countByCompoundIndexStrict(
+    entityName: string,
+    indexName: string,
+    value: readonly (string | number)[],
+  ): Promise<number> {
+    return this.db
+      .table(entityName)
+      .where(indexName)
+      .equals([...value])
+      .count()
+  }
+
+  /** Read exact compound-index matches while preserving IndexedDB failures. */
+  readByCompoundIndexStrict<T extends DbEntity>(
+    entityName: string,
+    indexName: string,
+    value: readonly (string | number)[],
+  ): Promise<T[]> {
+    return this.db
+      .table<T, string>(entityName)
+      .where(indexName)
+      .equals([...value])
       .toArray()
   }
 

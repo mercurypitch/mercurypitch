@@ -13,6 +13,7 @@ import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-ba
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
+import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import type { GuitarFirstWinExerciseStepV1 } from './first-win-config'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
@@ -20,6 +21,7 @@ import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
+import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
@@ -29,6 +31,7 @@ type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadSongPort?: () => Promise<GuitarNightSongPort>
   loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
+  loadBandPreparationPort?: () => Promise<GuitarNightBandPreparationPort>
   createBackingTransport?: () => GuitarBackingTransport
 }
 
@@ -134,6 +137,26 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       }
     },
   })
+  const bandPreparationController = useGuitarNightBandPreparationController({
+    loadPort: () => {
+      const configuredLoader = props.loadBandPreparationPort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightBandPreparationPort()
+        : configuredLoader()
+    },
+    onPrepared: async (sessionId, signal) => {
+      const refreshed = await songController.refreshLibrary()
+      if (signal.aborted) return
+      if (!refreshed) {
+        throw new Error(
+          'The band parts were saved, but the song library could not reopen them. Open this song again from Prepared songs.',
+        )
+      }
+      setVisitedRoomSessionId(null)
+      playbackController.configure(null)
+      await songController.stageSession(sessionId, 'replace')
+    },
+  })
   const activeBacking = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'ready' ? state.lease : null
@@ -153,6 +176,14 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const cancelledPreparation = createMemo(() => {
     const state = preparationController.state()
     return state.kind === 'cancelled' ? state : null
+  })
+  const bandPreparation = createMemo(() => {
+    const state = bandPreparationController.state()
+    return state.kind === 'preparing' ? state : null
+  })
+  const bandPreparationError = createMemo(() => {
+    const state = bandPreparationController.state()
+    return state.kind === 'error' ? state : null
   })
 
   const openFirstWin = () => {
@@ -192,6 +223,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   const returnToChoices = () => {
     preparationController.clear()
+    bandPreparationController.clear()
     playbackController.configure(null)
     setVisitedRoomSessionId(null)
     if (view() === 'song' || view() === 'room') {
@@ -237,6 +269,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const file = input.files?.[0]
     input.value = ''
     if (file === undefined) return
+    bandPreparationController.clear()
     const accepted = preparationController.start(file)
     if (accepted) songController.clearSession('push')
     setView('song')
@@ -249,8 +282,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       return
     }
     preparationController.clear()
+    bandPreparationController.clear()
     setVisitedRoomSessionId(null)
     void songController.stageSession(sessionId, 'push')
+  }
+
+  const prepareGuitarFreeBand = () => {
+    const backing = activeBacking()
+    if (backing === null || backing.defaultMix.kind !== 'mixed-instrumental') {
+      return
+    }
+    playbackController.configure(null)
+    setVisitedRoomSessionId(null)
+    bandPreparationController.start(backing.sessionId)
   }
 
   createEffect(() => {
@@ -509,9 +553,55 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
               <div
                 class={styles.songWell}
-                aria-busy={preparingSong() !== null ? 'true' : 'false'}
+                aria-busy={
+                  preparingSong() !== null || bandPreparation() !== null
+                    ? 'true'
+                    : 'false'
+                }
               >
                 <Switch>
+                  <Match when={bandPreparation()}>
+                    {(preparation) => (
+                      <div class={styles.songState}>
+                        <strong>Building the guitar-free band</strong>
+                        <span role="status" aria-atomic="true">
+                          {guitarNightBandPreparationMessage(preparation())}
+                        </span>
+                        <Show
+                          when={preparation().progress !== null}
+                          fallback={
+                            <progress
+                              class={styles.songProgress}
+                              max="100"
+                              aria-label="Preparing full-band parts"
+                            />
+                          }
+                        >
+                          <progress
+                            class={styles.songProgress}
+                            max="100"
+                            value={preparation().progress ?? 0}
+                            aria-label="Preparing full-band parts"
+                          />
+                        </Show>
+                        <small>
+                          The current mix stays safe on this device while its
+                          drums, bass, and guitar parts are separated.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={bandPreparationError()}>
+                    {(error) => (
+                      <div class={styles.songState} role="alert">
+                        <strong>Couldn’t build the full band</strong>
+                        <span>{error().message}</span>
+                        <small>
+                          Your existing vocals and accompaniment are unchanged.
+                        </small>
+                      </div>
+                    )}
+                  </Match>
                   <Match when={preparingSong()}>
                     {(preparation) => (
                       <div class={styles.songState}>
@@ -709,6 +799,28 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   Back
                 </button>
                 <Switch>
+                  <Match when={bandPreparation() !== null}>
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={bandPreparationController.cancel}
+                    >
+                      Keep current mix
+                    </button>
+                  </Match>
+                  <Match when={bandPreparationError()}>
+                    {(error) => (
+                      <button
+                        class={styles.completionAction}
+                        type="button"
+                        onClick={() =>
+                          bandPreparationController.start(error().sessionId)
+                        }
+                      >
+                        Try full band again
+                      </button>
+                    )}
+                  </Match>
                   <Match when={preparingSong() !== null}>
                     <button
                       class={styles.completionAction}
@@ -752,16 +864,36 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     </button>
                   </Match>
                   <Match when={activeBacking()}>
-                    <button
-                      class={styles.completionAction}
-                      type="button"
-                      onClick={enterRoom}
-                    >
-                      Enter room
-                    </button>
-                    <button type="button" onClick={() => songInput?.click()}>
-                      Choose another
-                    </button>
+                    {(backing) => (
+                      <>
+                        <button
+                          class={styles.completionAction}
+                          type="button"
+                          onClick={enterRoom}
+                        >
+                          Enter room
+                        </button>
+                        <Show
+                          when={
+                            backing().defaultMix.kind === 'mixed-instrumental'
+                          }
+                        >
+                          <button
+                            class={styles.bandPreparationAction}
+                            type="button"
+                            onClick={prepareGuitarFreeBand}
+                          >
+                            Separate guitar
+                          </button>
+                        </Show>
+                        <button
+                          type="button"
+                          onClick={() => songInput?.click()}
+                        >
+                          Choose another
+                        </button>
+                      </>
+                    )}
                   </Match>
                   <Match when={true}>
                     <button
@@ -807,7 +939,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         data-testid="guitar-night-song-input"
         type="file"
         accept={AUDIO_UPLOAD_ACCEPT}
-        disabled={preparationController.isPreparing()}
+        disabled={
+          preparationController.isPreparing() ||
+          bandPreparationController.isPreparing()
+        }
         onChange={handleSongChange}
         tabindex="-1"
       />
