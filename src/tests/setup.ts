@@ -35,6 +35,11 @@ class MockAudioContext {
   createDynamicsCompressor() {
     return new MockDynamicsCompressorNode()
   }
+  // tone-player builds a piano-ish PeriodicWave per context and caches it in
+  // a WeakMap keyed by the context, so this only has to be a distinct object.
+  createPeriodicWave(_real?: Float32Array, _imag?: Float32Array) {
+    return {} as PeriodicWave
+  }
   destination = {}
 
   resume() {
@@ -88,6 +93,7 @@ class MockOscillator {
   disconnect() {}
   start() {}
   stop() {}
+  setPeriodicWave(_wave: PeriodicWave) {}
   onended: (() => void) | null = null
 }
 
