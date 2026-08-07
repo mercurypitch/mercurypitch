@@ -137,14 +137,76 @@ describe('HybridAdapter', () => {
       expect(cloud.calls).toEqual([])
     })
 
-    it('rejects writes without network when signed out', async () => {
+    it('rejects writes without network when provisioning is refused', async () => {
       const cloud = trackingAdapter()
-      const hybrid = new HybridAdapter(cloud, stubAdapter(), () => false)
+      const hybrid = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => false,
+        () => Promise.resolve(false),
+      )
       const repo = hybrid.getRepository('sessionRecords')
 
       await expect(repo.create({})).rejects.toThrow(/Signed out/)
       await expect(repo.update('x', {})).rejects.toThrow(/Signed out/)
       await expect(repo.delete('x')).rejects.toThrow(/Signed out/)
+      expect(cloud.calls).toEqual([])
+    })
+
+    // The regression this guards is the whole reason writes provision at all.
+    // Startup stopped minting an identity eagerly this release (restoreAuth,
+    // not ensureAuth), so a first-time visitor reaches their first write with
+    // no token. The guard used to throw here, which meant the ServerAdapter's
+    // `beforeWrite: requireAuth` hook — the only lazy mint point on the
+    // practice path — could never run. `saveSessionRecord` swallows the throw,
+    // so every session, streak and badge a new user earned was discarded in
+    // silence, forever. Local mode never reproduces it: DexieAdapter is
+    // unguarded, which is why the suite stayed green while prod would not have
+    // saved a thing.
+    it('provisions on a write instead of failing when never signed in', async () => {
+      const cloud = trackingAdapter()
+      let minted = 0
+      let authed = false
+      const hybrid = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => authed,
+        async () => {
+          minted += 1
+          authed = true
+          return true
+        },
+      )
+      const repo = hybrid.getRepository('sessionRecords')
+
+      await repo.create({})
+      expect(minted).toBe(1)
+      expect(cloud.calls).toEqual(['create'])
+
+      // Provisioned once, then it is a plain sync check — no second mint.
+      await repo.update('x', {})
+      expect(minted).toBe(1)
+      expect(cloud.calls).toEqual(['create', 'update'])
+    })
+
+    it('never provisions on a read — browsing leaves no server-side row', async () => {
+      const cloud = trackingAdapter()
+      let minted = 0
+      const hybrid = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => false,
+        async () => {
+          minted += 1
+          return true
+        },
+      )
+      const repo = hybrid.getRepository('sessionRecords')
+
+      expect(await repo.findAll()).toEqual([])
+      expect(await repo.findById('x')).toBeNull()
+      expect(await repo.count()).toBe(0)
+      expect(minted).toBe(0)
       expect(cloud.calls).toEqual([])
     })
 
