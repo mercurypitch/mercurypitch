@@ -407,6 +407,36 @@
   overflow: hidden;
 }
 
+/* Idle is the state whose content has no natural height limit: a note dial, a
+   pile of pickers and the Start button all stack up.
+
+   `safe center` is what makes this work. Plain `justify-content: center` on a
+   scroll container pushes the overflow past BOTH edges, and the top half
+   becomes unreachable — no scrollbar reaches it. `safe` falls back to
+   flex-start the moment the content stops fitting, so tall setups scroll from
+   the top and Start is always reachable at the bottom.
+
+   This is deliberately not inside a media query. The mobile block below fixed
+   the same thing at <=768px, which left every short-but-not-narrow viewport
+   broken — a tablet, or any window whose height the browser chrome ate. The
+   condition was never "narrow", it was "the content does not fit". */
+.exercise-canvas-area.is-idle {
+  justify-content: safe center;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Active gets the same guarantee. Its canvas is sized to the box, so most of
+   the time nothing overflows and this changes nothing — but an exercise with
+   its own metrics row under the tracker can outgrow a short card, and clipping
+   a run in progress hides the Stop button. Being unable to END a run is worse
+   than being unable to start one. Same `safe` for the same reason. */
+.exercise-canvas-area.is-active {
+  justify-content: safe center;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .exercise-controls {
   display: flex;
   gap: 12px;
@@ -524,15 +554,17 @@
 
 /* ── ExerciseShell: idle / active control groups ───────────── */
 
-/* Idle: description + settings + Start grouped and centred in the panel. */
+/* Idle: description + settings + Start grouped and centred in the panel.
+   `min-height` rather than `height` so the group can grow past the card and
+   let the scroll container above it do its job; a hard 100% clipped instead. */
 .exercise-idle-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   gap: 20px;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   padding: 20px;
 }
 
