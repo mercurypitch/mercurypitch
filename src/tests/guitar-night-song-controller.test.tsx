@@ -209,6 +209,80 @@ describe('useGuitarNightSongController', () => {
     await waitFor(() => expect(controller.libraryState()).toBe('error'))
   })
 
+  it('force restages the routed session and swaps its lease (band upgrade path)', async () => {
+    const releases: Array<ReturnType<typeof vi.fn>> = []
+    const openSession = vi.fn(async (sessionId: string) => {
+      const release = vi.fn()
+      releases.push(release)
+      return { ok: true as const, lease: backingLease(sessionId, release) }
+    })
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [],
+      openSession,
+    }
+    let controller!: ReturnType<typeof useGuitarNightSongController>
+    const Harness: Component = () => {
+      controller = useGuitarNightSongController({
+        loadSongPort: async () => port,
+      })
+      return null
+    }
+    render(() => <Harness />)
+
+    await controller.stageSession('session-a', 'none')
+    expect(openSession).toHaveBeenCalledTimes(1)
+
+    // Without force, restaging the ready session is a no-op.
+    await controller.stageSession('session-a', 'none')
+    expect(openSession).toHaveBeenCalledTimes(1)
+
+    // With force (the full-band upgrade), the same id must reopen: the old
+    // two-stem lease is released and the fresh lease becomes the selection.
+    await controller.stageSession('session-a', 'none', { force: true })
+    expect(openSession).toHaveBeenCalledTimes(2)
+    expect(releases[0]).toHaveBeenCalledTimes(1)
+    expect(releases[1]).not.toHaveBeenCalled()
+    expect(controller.selectionState()).toMatchObject({
+      kind: 'ready',
+      lease: { sessionId: 'session-a' },
+    })
+  })
+
+  it('re-staging the routed session never grows history', async () => {
+    const port: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => [],
+      openSession: vi.fn(
+        async (): Promise<GuitarNightOpenBackingResult> => ({
+          ok: false,
+          code: 'missing-local-audio',
+        }),
+      ),
+    }
+    const pushState = vi.spyOn(window.history, 'pushState')
+    let controller!: ReturnType<typeof useGuitarNightSongController>
+    const Harness: Component = () => {
+      controller = useGuitarNightSongController({
+        loadSongPort: async () => port,
+      })
+      return null
+    }
+    render(() => <Harness />)
+
+    await controller.stageSession('session-a', 'push')
+    expect(controller.selectionState()).toMatchObject({
+      kind: 'unavailable',
+      sessionId: 'session-a',
+    })
+    // Clicking the unavailable song again retries it but replaces the URL
+    // instead of pushing a duplicate entry.
+    await controller.stageSession('session-a', 'push')
+    await controller.stageSession('session-a', 'push')
+    expect(pushState).toHaveBeenCalledTimes(1)
+    pushState.mockRestore()
+  })
+
   it('refreshes a mutable prepared-song catalog after separation completes', async () => {
     let catalog: ReturnType<GuitarNightSongPort['completedSongs']> = []
     const initialize = vi.fn(async () => undefined)
