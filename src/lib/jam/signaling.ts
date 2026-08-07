@@ -56,9 +56,27 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
   let currentOwnerToken: string | null = null
   /** The secret offered on the last join, so a refusal is detectable. */
   let presentedToken: string | null = null
+  // True once the DO has answered room-created or room-joined. An `error`
+  // frame before that is a refusal of the join itself, not a hiccup in an
+  // established session, and retrying it is pointless.
+  let admitted = false
+  // Consecutive failed reconnects, for backoff. A refused join used to
+  // re-open the socket every 2s for ever: the 13th person to open an invite
+  // to a full room was bounced to an idle lobby with no Leave button while
+  // their tab hammered that room's Durable Object ~30 times a minute.
+  let reconnectAttempts = 0
   let connecting = false
 
+  /** Join a room because the user asked to. Clears the backoff: the give-up
+   *  path leaves the counter at its ceiling, and a fresh, deliberate join
+   *  must not inherit the previous room's exhausted budget. */
   function connect(roomId: string, displayName: string): void {
+    reconnectAttempts = 0
+    openSocket(roomId, displayName)
+  }
+
+  /** Open the socket without touching the backoff — the retry path. */
+  function openSocket(roomId: string, displayName: string): void {
     // Close any stale connection before opening a new one
     if (ws) {
       clearReconnect()
@@ -71,6 +89,7 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
 
     currentRoomId = roomId
     currentDisplayName = displayName
+    admitted = false
     connecting = true
 
     const url = getWsUrl(`${SIGNALING_URL}/rooms/${roomId}/signal`)
@@ -103,14 +122,7 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
 
     ws.onclose = () => {
       connecting = false
-      if (currentRoomId !== null && currentDisplayName !== null) {
-        // Auto-reconnect after 2 seconds
-        reconnectTimer = setTimeout(() => {
-          if (currentRoomId !== null && currentDisplayName !== null) {
-            connect(currentRoomId, currentDisplayName)
-          }
-        }, 2000)
-      }
+      scheduleReconnect()
     }
 
     ws.onerror = () => {
@@ -141,6 +153,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
     }
 
     currentDisplayName = displayName
+    admitted = false
+    reconnectAttempts = 0
     connecting = true
 
     const url = getWsUrl(`${SIGNALING_URL}/rooms/new`)
@@ -159,14 +173,7 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
 
     ws.onclose = () => {
       connecting = false
-      if (currentRoomId !== null && currentDisplayName !== null) {
-        // Auto-reconnect to the created room via the signal endpoint
-        reconnectTimer = setTimeout(() => {
-          if (currentRoomId !== null && currentDisplayName !== null) {
-            connect(currentRoomId, currentDisplayName)
-          }
-        }, 2000)
-      }
+      scheduleReconnect()
     }
 
     ws.onerror = () => {
@@ -179,6 +186,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
     console.info('[jam:signaling] recv', msg.type)
     switch (msg.type) {
       case 'room-created':
+        admitted = true
+        reconnectAttempts = 0
         currentRoomId = msg.roomId
         currentPeerId = msg.peerId
         currentOwnerToken = msg.ownerToken ?? null
@@ -203,6 +212,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
         break
 
       case 'room-joined':
+        admitted = true
+        reconnectAttempts = 0
         currentPeerId = msg.peerId
         // An ownerless room adopts its first joiner, so a fresh token can
         // arrive here too -- that is how walking back into a room whose DO
@@ -308,6 +319,14 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
 
       case 'error':
         console.info('[jam:signaling] error', msg.message)
+        // Refused before admission — a full room, a duplicate room id, a
+        // rejected signaling sequence. The DO will refuse the identical join
+        // again, so forget the room and let onclose find nothing to re-arm.
+        if (!admitted) {
+          clearReconnect()
+          currentRoomId = null
+          currentDisplayName = null
+        }
         callbacks.onError(msg.message)
         break
     }
@@ -354,6 +373,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
     currentPeerId = null
     currentDisplayName = null
     currentOwnerToken = null
+    admitted = false
+    reconnectAttempts = 0
   }
 
   function clearReconnect(): void {
@@ -361,6 +382,32 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
     }
+  }
+
+  const RECONNECT_BASE_MS = 2000
+  const RECONNECT_MAX_MS = 30_000
+  const RECONNECT_MAX_ATTEMPTS = 8
+
+  /** Re-arm the socket, backing off and eventually giving up. */
+  function scheduleReconnect(): void {
+    if (currentRoomId === null || currentDisplayName === null) return
+    if (reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
+      console.info('[jam:signaling] giving up after', reconnectAttempts)
+      callbacks.onError('Lost the room. Rejoin to try again.')
+      currentRoomId = null
+      currentDisplayName = null
+      return
+    }
+    const delay = Math.min(
+      RECONNECT_BASE_MS * 2 ** reconnectAttempts,
+      RECONNECT_MAX_MS,
+    )
+    reconnectAttempts += 1
+    reconnectTimer = setTimeout(() => {
+      if (currentRoomId !== null && currentDisplayName !== null) {
+        openSocket(currentRoomId, currentDisplayName)
+      }
+    }, delay)
   }
 
   function disconnect(): void {
@@ -376,6 +423,8 @@ function createRealSignalingClient(callbacks: JamCallbacks) {
     currentPeerId = null
     currentDisplayName = null
     currentOwnerToken = null
+    admitted = false
+    reconnectAttempts = 0
   }
 
   function getRoomId(): string | null {
