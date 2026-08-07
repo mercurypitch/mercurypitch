@@ -15,14 +15,17 @@
   color: var(--text-secondary);
 }
 
+/* The bar is 4px; the hit strip is 20px, and 32px once the pointer is a
+   finger. A 4px target is a miss most of the time, and a mis-seek in a
+   shared room interrupts everybody, not just the person who missed.
+   The whole strip drags — the knob is somewhere to aim, not the only
+   place that works, which is what the "handle is a tiny area" report was
+   really about. touch-action comes from the drag gesture binding. */
 .track {
   position: relative;
   flex: 1;
   min-width: 0;
-  /* The bar is 4px but the hit area is 14px: a 4px click target is a
-     miss most of the time, and a mis-seek in a shared room interrupts
-     everybody, not just the person who missed. */
-  height: 14px;
+  height: 20px;
   display: flex;
   align-items: center;
   cursor: default;
@@ -33,6 +36,8 @@
   position: absolute;
   left: 0;
   right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   height: 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.14);
@@ -51,6 +56,8 @@
 .fill {
   position: absolute;
   left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   height: 4px;
   border-radius: 2px;
   background: var(--accent);
@@ -59,11 +66,45 @@
 
 .knob {
   position: absolute;
-  width: 11px;
-  height: 11px;
-  margin-left: -5.5px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 3px rgba(13, 17, 23, 0.7);
   pointer-events: none;
+  transform: translateY(-50%);
+  transition: transform 0.12s ease;
+}
+
+/* Grown under the thumb, where the finger is covering it. */
+.trackScrubbing .knob {
+  transform: translateY(-50%) scale(1.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knob {
+    transition: none;
+  }
+}
+
+/* A finger needs a target it can hit without looking, and in a jam room
+   you are looking at the lyrics. */
+@media (pointer: coarse) {
+  .track {
+    height: 32px;
+  }
+
+  .track::before,
+  .fill {
+    height: 5px;
+    border-radius: 2.5px;
+  }
+
+  .knob {
+    width: 16px;
+    height: 16px;
+    margin-left: -8px;
+  }
 }

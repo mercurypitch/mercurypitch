@@ -184,9 +184,9 @@
   align-items: stretch;
 }
 
-/* One dot per step, up to MAX_DOTS in Walkthrough.tsx — eight of these are
-   127px against a 268px line even on the narrowest phone, so this row is
-   single by construction. Longer tours render the meter below instead.
+/* One mark per step, up to MAX_DOTS in Walkthrough.tsx — eight of these
+   are 147px against a 268px line even on the narrowest phone, so this row
+   is single by construction. Longer tours render the meter below instead.
    Do not put flex-wrap back: wrapping is the bug, not the safety net. */
 .walkthroughDots {
   display: flex;
@@ -195,14 +195,22 @@
   min-width: 0;
 }
 
-/* A dot is a button; content-box padding gives a tappable hit area while
-   background-clip keeps the visible dot small. Modifiers use background-color
-   (not the `background` shorthand) so the content-box clip survives. */
+/* A step is a dash and where you are is a circle. It used to be the other
+   way round — round steps with the current one stretched into a long pill,
+   which reads as a smeared dot rather than a position. Two shapes carry
+   "step" and "you are here" better than one shape at two lengths.
+
+   Each is a button; content-box padding gives a tappable strip while
+   background-clip keeps the visible mark small. Radius stays at 999px on
+   both: the clip reduces the corner radius by the padding, so a smaller
+   value would square off the content box. Shape comes from the aspect
+   ratio, not the radius. Modifiers use background-color (not the
+   `background` shorthand) so the content-box clip survives. */
 .walkthroughDot {
   box-sizing: content-box;
-  width: 6px;
-  height: 6px;
-  padding: 6px 3px;
+  width: 10px;
+  height: 4px;
+  padding: 7px 3px;
   border: none;
   border-radius: 999px;
   background-color: var(--border);
@@ -210,6 +218,7 @@
   cursor: pointer;
   transition:
     width 0.2s ease,
+    height 0.2s ease,
     background-color 0.2s ease;
 }
 
@@ -222,7 +231,8 @@
 }
 
 .walkthroughDotActive {
-  width: 16px;
+  width: 8px;
+  height: 8px;
   background-color: var(--accent);
 }
 
@@ -244,8 +254,12 @@
   min-width: 0;
 }
 
-/* Same content-box trick as the dots: vertical padding is the tap strip,
-   the visible bar is the 4px content. */
+/* Same language as the dots — dash for a step, circle for where you are —
+   and the same content-box trick: vertical padding is the tap strip, the
+   visible bar is the content. The only difference is that a step flexes to
+   fill the line instead of being a fixed 10px, which is what lets fifteen
+   of them sit on one row. The circle is pulled out of the flex at a fixed
+   8px so it stays round however many steps share the line. */
 .walkthroughSeg {
   box-sizing: content-box;
   flex: 1 1 0;
@@ -257,7 +271,10 @@
   background-color: var(--border);
   background-clip: content-box;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition:
+    flex-basis 0.2s ease,
+    height 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .walkthroughSeg:hover {
@@ -269,6 +286,8 @@
 }
 
 .walkthroughSegActive {
+  flex: 0 0 8px;
+  height: 8px;
   background-color: var(--accent);
 }
 

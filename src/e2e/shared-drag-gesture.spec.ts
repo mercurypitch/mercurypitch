@@ -238,3 +238,67 @@ test.describe('shared drag gesture verification', () => {
     await expectCaptureReleased(scrubber)
   })
 })
+
+// A real touch context, not just a narrow one: the bar's hit strip grows
+// under `pointer: coarse`, and that query is false in a desktop Chromium
+// however small the window is.
+test.describe('jam song bar on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+  // The bar carried a bare onClick until this spec: a tap jumped, a drag
+  // did nothing, on a mouse or a finger. Reported from a phone, so the
+  // touch half is the half that matters.
+  test('drags with a finger and does not seek the room on a cancelled touch (REQ-DRAG-002, REQ-DRAG-005)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+    })
+    await page.goto('/#/jam')
+    await dismissOverlays(page)
+
+    await page.getByRole('button', { name: 'Create Room' }).click()
+    await page.getByRole('button', { name: 'Choose a drill or a song' }).click()
+    const drawer = page.getByRole('dialog', {
+      name: 'Choose a song or a drill',
+    })
+    await drawer.getByRole('button', { name: /Goodbye to Spring/ }).click()
+
+    const bar = page.getByRole('slider', { name: 'Song position' })
+    await expect(bar).toBeVisible()
+    // The room creator is the host, so the bar is live rather than a
+    // read-only readout.
+    await expect(bar).toHaveAttribute('aria-disabled', 'false')
+    await rememberCapturedPointer(bar)
+
+    const box = await bar.boundingBox()
+    if (box === null) throw new Error('Jam song bar has no bounding box')
+    const y = box.y + box.height / 2
+
+    // A phone-sized target. 4px was the visible bar, not the hit strip.
+    expect(box.height).toBeGreaterThanOrEqual(28)
+
+    const session = await page.context().newCDPSession(page)
+    const touchStartX = box.x + box.width * 0.1
+    await dispatchTouch(session, 'touchStart', touchStartX, y)
+    await dispatchTouch(session, 'touchMove', box.x + box.width * 0.5, y)
+    // Mid-drag the bar previews the target -- it does not seek the room on
+    // every move, because a jam seek is audible everywhere at once.
+    const midDrag = await readSliderValue(bar)
+    expect(midDrag).toBeGreaterThan(0)
+    await dispatchTouch(session, 'touchMove', box.x + box.width * 0.85, y)
+    await dispatchTouch(session, 'touchEnd')
+    const afterTouch = await readSliderValue(bar)
+    // Release commits where the finger ended, not where it passed through.
+    expect(afterTouch).toBeGreaterThan(midDrag)
+    await expectCaptureReleased(bar)
+
+    // A snatched-away gesture -- a system swipe, an incoming call -- must
+    // leave the song where it was. Everybody in the room hears a seek.
+    await dispatchTouch(session, 'touchStart', touchStartX, y)
+    await dispatchTouch(session, 'touchMove', box.x + box.width * 0.95, y)
+    await dispatchTouch(session, 'touchCancel')
+    await expectCaptureReleased(bar)
+    expect(await readSliderValue(bar)).toBe(afterTouch)
+  })
+})
