@@ -12,22 +12,22 @@ Plan: [docs/plans/lrc-mapper-studio-plan.md](../../docs/plans/lrc-mapper-studio-
 (`demo/<asset>/…`), so a mapping is always traceable to the audio it was made
 against.
 
-Note this is *not* always the demo-song `slug`. The two disagree for one entry,
+Note this is _not_ always the demo-song `slug`. The two disagree for one entry,
 and both are load-bearing:
 
-| Song | R2 asset path | demo-song `slug` |
-|---|---|---|
-| Goodbye to Spring | `demo/goodbye-to-spring/` | `karaoke-night` (the legacy slug) |
-| I'll Be Right Behind You, Josephine | `demo/josephine/` | `josephine` |
+| Song                                | R2 asset path             | demo-song `slug`                  |
+| ----------------------------------- | ------------------------- | --------------------------------- |
+| Goodbye to Spring                   | `demo/goodbye-to-spring/` | `karaoke-night` (the legacy slug) |
+| I'll Be Right Behind You, Josephine | `demo/josephine/`         | `josephine`                       |
 
 The slug keys local db rows via `demoSessionId(slug)` and must never change;
 the asset path names the audio. Fixtures follow the asset path because that is
-what identifies the *recording* a mapping was made against.
+what identifies the _recording_ a mapping was made against.
 
 **`v2` is the gold reference for both songs.** `v1` existed but is not kept:
 it was a first pass that contained words absent from the actual lyric text
 (a duplicated `seen`, a stray `you`), which disqualifies it as a reference —
-a baseline with wrong *text* cannot measure timing.
+a baseline with wrong _text_ cannot measure timing.
 
 Automatically produced mappings get the **next free version number** and are
 compared against `v2`. They are not committed here unless a specific result is
@@ -35,10 +35,10 @@ worth pinning; this directory is for references, not for every experiment.
 
 ## Files
 
-| File | Song | Lines | Words |
-|---|---|---|---|
-| `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring | 25 | 288 |
-| `josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+| File                       | Song                                                | Lines | Words |
+| -------------------------- | --------------------------------------------------- | ----- | ----- |
+| `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring                   | 25    | 288   |
+| `josephine.v2.lrc`         | Josh Woodward — I'll Be Right Behind You, Josephine | 38    | 322   |
 
 Both are byte-identical to the `lyricsText` served by
 `GET https://api-dev.mercurypitch.com/api/demo-songs` at `lyricsRevision: 2`,
