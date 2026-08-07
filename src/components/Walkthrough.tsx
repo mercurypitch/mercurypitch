@@ -603,13 +603,12 @@ export const Walkthrough: Component = () => {
     return { current: walkthroughStep() + 1, total: steps().length }
   })
 
-  // Above this many steps a dot each stops being readable: you cannot count
-  // fifteen specks to find out where you are, and at the tooltip's 340px they
-  // no longer fit on one line. Long runs get a segmented meter instead — one
-  // row whatever the count, still jumpable, with the position spelled out.
-  // Sections of the full walkthrough run 5 to 15 steps and the Stem mixer
-  // tour is 14, so this is the common case, not an edge one.
-  const MAX_DOTS = 8
+  // Above this many steps, counting the marks to find out where you are stops
+  // working, so the position gets spelled out beside them. The marks stay the
+  // same either way — sections of the full walkthrough run 5 to 15 steps and
+  // the Stem mixer tour is 14, so a long tour is the common case here, not an
+  // edge one, and it does not deserve a different-looking control.
+  const COUNT_FROM = 9
 
   // Jump straight to a step by clicking its progress dot. Dots are
   // section-scoped (full walkthrough), so map the dot index back to the step's
@@ -629,32 +628,6 @@ export const Walkthrough: Component = () => {
     )
     if (overallIdx >= 0) setWalkthroughStep(overallIdx)
   }
-
-  // One step control per step, shared by both progress shapes so the jump
-  // target, the labels and the current-step semantics can only be written
-  // once. Only the skin differs.
-  const stepControls = (skin: {
-    base: string
-    active: string
-    done: string
-  }) => (
-    <Index each={Array.from({ length: dotProgress().total })}>
-      {(_, i) => (
-        <button
-          type="button"
-          class={skin.base}
-          classList={{
-            [skin.active]: i === dotProgress().current - 1,
-            [skin.done]: i < dotProgress().current - 1,
-          }}
-          onClick={() => goToDot(i)}
-          title={`Step ${i + 1}`}
-          aria-label={`Go to step ${i + 1}`}
-          aria-current={i === dotProgress().current - 1 ? 'step' : undefined}
-        />
-      )}
-    </Index>
-  )
 
   return (
     <Show when={walkthroughActive()}>
@@ -694,39 +667,39 @@ export const Walkthrough: Component = () => {
                 a labelled "Continue to …" button) there was no step count
                 that reliably fit. A fifteen-step section wrapped into a
                 three-row block of specks. Click any step to jump to it. */}
-            <Show
-              when={dotProgress().total <= MAX_DOTS}
-              fallback={
-                <div class={styles.walkthroughMeter}>
-                  <div
-                    class={styles.walkthroughMeterTrack}
-                    role="group"
-                    aria-label="Tour steps"
-                  >
-                    {stepControls({
-                      base: styles.walkthroughSeg,
-                      active: styles.walkthroughSegActive,
-                      done: styles.walkthroughSegDone,
-                    })}
-                  </div>
-                  <span class={styles.walkthroughMeterCount}>
-                    {dotProgress().current}/{dotProgress().total}
-                  </span>
-                </div>
-              }
-            >
+            <div class={styles.walkthroughProgress}>
               <div
                 class={styles.walkthroughDots}
                 role="group"
                 aria-label="Tour steps"
               >
-                {stepControls({
-                  base: styles.walkthroughDot,
-                  active: styles.walkthroughDotActive,
-                  done: styles.walkthroughDotDone,
-                })}
+                <Index each={Array.from({ length: dotProgress().total })}>
+                  {(_, i) => (
+                    <button
+                      type="button"
+                      class={styles.walkthroughDot}
+                      classList={{
+                        [styles.walkthroughDotActive]:
+                          i === dotProgress().current - 1,
+                        [styles.walkthroughDotDone]:
+                          i < dotProgress().current - 1,
+                      }}
+                      onClick={() => goToDot(i)}
+                      title={`Step ${i + 1}`}
+                      aria-label={`Go to step ${i + 1}`}
+                      aria-current={
+                        i === dotProgress().current - 1 ? 'step' : undefined
+                      }
+                    />
+                  )}
+                </Index>
               </div>
-            </Show>
+              <Show when={dotProgress().total >= COUNT_FROM}>
+                <span class={styles.walkthroughDotCount}>
+                  {dotProgress().current}/{dotProgress().total}
+                </span>
+              </Show>
+            </div>
 
             {/* Icon-only controls: back · skip section · next/finish */}
             <div class={styles.walkthroughActionsCenter}>

@@ -184,15 +184,30 @@
   align-items: stretch;
 }
 
-/* One mark per step, up to MAX_DOTS in Walkthrough.tsx — eight of these
-   are 147px against a 268px line even on the narrowest phone, so this row
-   is single by construction. Longer tours render the meter below instead.
-   Do not put flex-wrap back: wrapping is the bug, not the safety net. */
+/* The progress line: the step marks, then the position spelled out once
+   there are too many marks to count by eye. */
+.walkthroughProgress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* No `gap`: each mark's own horizontal padding is both the gap and the tap
+   area, which keeps the whole strip clickable instead of leaving dead
+   stripes between marks.
+
+   Do not put flex-wrap back. Wrapping was the original bug, and it cannot
+   happen now: the marks never grow, and the longest tour there is (the
+   walkthrough's fifteen-step practice section) measures 238px against the
+   268px line of the narrowest phone. */
 .walkthroughDots {
   display: flex;
   align-items: center;
-  gap: 3px;
-  min-width: 0;
+  /* `0 0 auto`, not the default `0 1 auto`: the marks inside cannot shrink,
+     so a shrinking box does not shrink the row — it just slides the count
+     readout back over the last mark. */
+  flex: 0 0 auto;
 }
 
 /* A step is a dash and where you are is a circle. It used to be the other
@@ -200,24 +215,33 @@
    which reads as a smeared dot rather than a position. Two shapes carry
    "step" and "you are here" better than one shape at two lengths.
 
+   `flex: 0 0 10px` is the important part, and both zeros are load-bearing.
+   No grow, so a mark cannot stretch with the step count — a row of 5:1
+   slivers was the first attempt at this and read as a bar chart. No
+   shrink either: these buttons are empty, so their max-content width is
+   0, and any shrink factor lets the whole row collapse to `min-width`
+   even with room to spare. (That is not a hypothetical. `0 1 10px`
+   rendered every mark at 3px.) The row fits by arithmetic instead —
+   see the mark budget asserted in walkthrough-progress.test.ts.
+
    Each is a button; content-box padding gives a tappable strip while
-   background-clip keeps the visible mark small. Radius stays at 999px on
-   both: the clip reduces the corner radius by the padding, so a smaller
-   value would square off the content box. Shape comes from the aspect
-   ratio, not the radius. Modifiers use background-color (not the
-   `background` shorthand) so the content-box clip survives. */
+   background-clip keeps the visible mark small. Radius stays at 999px:
+   the clip reduces the corner radius by the padding, so a smaller value
+   would square off the content box. Shape comes from the aspect ratio,
+   not the radius. Modifiers use background-color (not the `background`
+   shorthand) so the content-box clip survives. */
 .walkthroughDot {
   box-sizing: content-box;
-  width: 10px;
+  flex: 0 0 10px;
   height: 4px;
-  padding: 7px 3px;
+  padding: 7px 2px;
   border: none;
   border-radius: 999px;
   background-color: var(--border);
   background-clip: content-box;
   cursor: pointer;
   transition:
-    width 0.2s ease,
+    flex-basis 0.2s ease,
     height 0.2s ease,
     background-color 0.2s ease;
 }
@@ -230,68 +254,15 @@
   background-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
+/* Pulled out of the flex so it is exactly 8 by 8 — a circle at four steps
+   and at fifteen, never a squashed one. */
 .walkthroughDotActive {
-  width: 8px;
-  height: 8px;
-  background-color: var(--accent);
-}
-
-/* Long tours: the same step buttons, flexed to fill one line whatever the
-   count. Fifteen segments fit where fifteen dots could not, and the count
-   is spelled out beside them because slivers cannot be counted by eye. */
-.walkthroughMeter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.walkthroughMeterTrack {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-/* Same language as the dots — dash for a step, circle for where you are —
-   and the same content-box trick: vertical padding is the tap strip, the
-   visible bar is the content. The only difference is that a step flexes to
-   fill the line instead of being a fixed 10px, which is what lets fifteen
-   of them sit on one row. The circle is pulled out of the flex at a fixed
-   8px so it stays round however many steps share the line. */
-.walkthroughSeg {
-  box-sizing: content-box;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 4px;
-  padding: 7px 0;
-  border: none;
-  border-radius: 999px;
-  background-color: var(--border);
-  background-clip: content-box;
-  cursor: pointer;
-  transition:
-    flex-basis 0.2s ease,
-    height 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.walkthroughSeg:hover {
-  background-color: var(--text-secondary);
-}
-
-.walkthroughSegDone {
-  background-color: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-.walkthroughSegActive {
   flex: 0 0 8px;
   height: 8px;
   background-color: var(--accent);
 }
 
-.walkthroughMeterCount {
+.walkthroughDotCount {
   flex: none;
   font-size: 11px;
   font-weight: 600;
