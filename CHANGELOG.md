@@ -122,6 +122,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   down.
 - **A jam host stays the host after a reconnect** instead of handing the room
   to whoever reconnected first.
+- **A full room says it is full** instead of dropping you into an empty lobby
+  with no way out while the tab kept knocking.
+- **Your jam score is your own.** Another singer in the room can no longer land
+  their pitch in your lane.
+- **A separation that loses its connection is picked back up,** not charged
+  again. One dropped check used to mark a finished job as failed.
 - **The stem mixer holds together when you push it** — switching songs no
   longer jumps the audio.
 - **Zen guide notes sound on every lap,** and play/pause agrees with the
