@@ -505,7 +505,47 @@ this is the one phase where the right answer comes from singing to it.
 
 ---
 
-## Phase 7 — an Examples library in the session list
+## Phase 7 — an Examples library in the session list (DONE)
+
+`examples-library.ts` holds the decisions (which manifests earn a row, what
+that row is, what the group should contain); `seed-examples.ts` writes them,
+called once from `App.tsx` after the session and group stores hydrate.
+
+**The auto-add question resolved itself.** The plan's "half-yes" — create rows
+now, fetch stems later — assumed the audio had to be downloaded into
+IndexedDB. It does not: `outputs.vocal` / `outputs.instrumental` take the R2
+URLs directly, which is how Karaoke Night has always played the demo. So a row
+costs nothing to create and the audio moves the first time somebody opens the
+song. There is no separate pull step, and nobody's mobile data is spent on a
+song they never asked for. The rows are `status: 'completed'` because that is
+the truth — separation is done and the stems exist.
+
+Three things that had to be got right:
+
+- **The legacy slug.** Goodbye to Spring's row is keyed by the bare
+  `DEMO_SESSION_ID`, not by its slug. Everything goes through
+  `demoSessionId()`; anything deriving one from the other would seed a
+  duplicate on every device that has ever sung the demo.
+- **Group membership is reconciled, never rebuilt.** A parked song stops being
+  listed, and a session the visitor moved out by hand stays out — so the
+  answer is the intersection of "still a live example" and "still a session
+  that exists", and only additions are written.
+- **Attribution travels with the song.** `ExampleCredit` renders the CC credit
+  on the session card and in the full-screen mapper, and returns null for
+  anything that is not an example, so it can be dropped into any surface that
+  names a song.
+
+A deleted example comes back on the next visit. That is deliberate: the
+alternative is remembering every deletion forever, and re-adding is the
+cheaper mistake than a library that cannot be repaired. The visitor's *lyrics*
+are safe either way — `shouldSeedLyrics` protects an edited copy regardless of
+what happens to the row.
+
+Not verified in a browser.
+
+---
+
+## Phase 7 (original) — an Examples library in the session list
 
 The stems are already served from Cloudflare, so the corpus can be **pulled
 into any device's session list** rather than living in one person's Downloads
@@ -696,7 +736,7 @@ Phase 3  waveform word markers         (pure mapping layer first)
 Phase 4  sub-word split points         (DONE)
 Phase 5  A/B differ, lab + mapper      (the measuring instrument)
 Phase 6  start cue for sub-rest gaps   (tune against a real song)
-Phase 7  Examples library              (independent — see below)
+Phase 7  Examples library              (DONE)
 ```
 
 Phases 1 and 2 are independent of each other and can swap. Everything else in

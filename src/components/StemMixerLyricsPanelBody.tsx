@@ -183,6 +183,8 @@ export interface StemMixerLyricsPanelBodyProps {
 
   // Misc
   songTitle: string
+  /** Surfaces the licence credit when the song is an example. */
+  sessionId: string
   lrclibSearchUrl: Accessor<string | undefined>
   cancelSearch: () => void
   handleLyricsUpload: (result: LyricsUploadResult) => void
@@ -506,6 +508,7 @@ export const StemMixerLyricsPanelBody: Component<
             setPlaybackSpeed={props.setPlaybackSpeed}
             setPreviewLoop={props.setPreviewLoop}
             shiftGenTimings={props.shiftGenTimings}
+            sessionId={props.sessionId}
             songTitle={props.songTitle}
             toggleLinePreview={props.toggleLinePreview}
             wordPassProgress={props.wordPassProgress}

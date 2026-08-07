@@ -7,6 +7,21 @@
   padding: 14px 18px 22px;
 }
 
+/* Creative Commons credit for an example song. Absent for everything else,
+   so the rows keep the full height they had. */
+.credit {
+  margin: 0;
+  padding: 8px 18px 0;
+  font-size: 0.7rem;
+  color: var(--fg-tertiary, #484f58);
+}
+
+/* The list is height:100% of the canvas, so a credit above it has to come out
+   of that height rather than push the list off the bottom. */
+.credit + .lines {
+  height: calc(100% - 26px);
+}
+
 .footer {
   display: contents;
 }
