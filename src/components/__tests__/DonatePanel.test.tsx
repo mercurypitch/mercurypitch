@@ -54,7 +54,7 @@ const pricing = (donations: PricingPlan[]): Pricing => ({
 /** Signed-in with a real (non-anonymous) account. */
 const upgraded = { user: { authProvider: 'password' } }
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => vi.resetAllMocks())
 
 describe('DonatePanel', () => {
   it('renders a card per donation tier with its perk bullets', async () => {
@@ -146,6 +146,24 @@ describe('DonatePanel', () => {
       '#/settings/account',
     )
     expect(screen.queryByTestId('donate-button')).not.toBeInTheDocument()
+  })
+
+  it('does not offer donations to managed testing accounts', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(pricing([plan({})]))
+    vi.mocked(fetchBillingMe).mockResolvedValue({
+      creditBalance: 10,
+      entitlements: [],
+      stripeConfigured: false,
+    })
+    vi.mocked(fetchMe).mockResolvedValue({
+      user: { authProvider: 'password', isTestAccount: true },
+    } as never)
+
+    render(() => <DonatePanel />)
+    const button = await screen.findByRole('button', {
+      name: 'Managed account',
+    })
+    expect(button).toBeDisabled()
   })
 
   it('greets a current supporter with their expiry', async () => {

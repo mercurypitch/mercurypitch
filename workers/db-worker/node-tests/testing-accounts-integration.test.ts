@@ -288,6 +288,15 @@ describe('managed testing accounts', () => {
       perks: [PERK_IDS[0]],
     })
 
+    const billingMe = await workerRequest('/api/billing/me', {
+      headers: { Authorization: `Bearer ${session.token}` },
+    })
+    expect(billingMe.status).toBe(200)
+    await expect(billingMe.json()).resolves.toMatchObject({
+      creditBalance: 10,
+      stripeConfigured: false,
+    })
+
     const checkout = await workerRequest('/api/billing/checkout', {
       method: 'POST',
       headers: {

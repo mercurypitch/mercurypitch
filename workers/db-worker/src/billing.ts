@@ -165,7 +165,10 @@ async function handleMe(
   return respond({
     creditBalance: creditBalance(ledger.results),
     entitlements,
-    stripeConfigured: isStripeConfigured(env),
+    // Managed testers receive synthetic credits and perks from Mission
+    // Control. Report billing as unavailable for this caller so the client
+    // does not present purchase controls that checkout will reject.
+    stripeConfigured: isStripeConfigured(env) && !auth.isTestAccount,
   })
 }
 

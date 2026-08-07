@@ -57,6 +57,7 @@ export const PricingPanel: Component = () => {
   // renders as the friendly "unavailable" note below.
   const loadedPricing = () =>
     !pricing.loading && pricing.error == null ? pricing() : undefined
+  const checkoutUnavailable = (): boolean => me()?.stripeConfigured === false
 
   async function buy(plan: PricingPlan): Promise<void> {
     try {
@@ -251,11 +252,15 @@ export const PricingPanel: Component = () => {
                       </p>
                       <button
                         class={styles.buyBtn}
-                        disabled={!pack.purchasable}
+                        disabled={!pack.purchasable || checkoutUnavailable()}
                         onClick={() => void buy(pack)}
                         data-testid="pricing-buy"
                       >
-                        {pack.purchasable ? 'Buy' : 'Soon'}
+                        {!pack.purchasable
+                          ? 'Soon'
+                          : checkoutUnavailable()
+                            ? 'Unavailable'
+                            : 'Buy'}
                       </button>
                     </div>
                   )}
