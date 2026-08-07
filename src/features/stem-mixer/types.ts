@@ -90,6 +90,10 @@ export interface GenViewLine {
   isCurrent: boolean
   isDone: boolean
   isFuture: boolean
+  /** Carries a line start, from this session or from the song already. */
+  isMapped: boolean
+  /** Mapped in this sitting — the subset of `isMapped` that is your work. */
+  isSessionMapped: boolean
   lineTime: number | undefined
   wordTimes: number[]
   wordEndTimes: number[]
