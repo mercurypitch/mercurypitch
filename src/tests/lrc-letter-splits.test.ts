@@ -216,3 +216,95 @@ describe('letter mode state', () => {
     expect(harness.gen.letterTarget()).toBeNull()
   })
 })
+
+// ── The syllable pre-fill ────────────────────────────────────────
+//
+// It writes into the singer's mapping without being asked twice, so what
+// matters is that it refuses when it would be guessing: no span to spread
+// across means no suggestion, not a pile of splits on one timestamp.
+
+describe('suggestSyllableSplits', () => {
+  let harness: ReturnType<typeof makeController>
+
+  const SYL_LINES = ['Josephine waits', 'hold on']
+
+  /** Give a word both edges, which is what the suggestion spreads across. */
+  const withSpan = (
+    lineIdx: number,
+    wordIdx: number,
+    from: number,
+    to: number,
+  ) => {
+    harness.gen.setLetterSplit(lineIdx, wordIdx, 0, from)
+    const word = SYL_LINES[lineIdx].split(' ')[wordIdx]
+    harness.gen.setLetterSplit(lineIdx, wordIdx, word.length, to)
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    harness = makeLrcGenHarness({
+      lines: SYL_LINES,
+      sessionId: 'syllable-test',
+    })
+    harness.gen.startLrcGen()
+    harness.gen.setLrcTimingOffsetMs(0)
+  })
+
+  it('places a split at every syllable of a timed word', () => {
+    withSpan(0, 0, 10, 14)
+    expect(harness.gen.suggestSyllableSplits(0, 0)).toBeGreaterThanOrEqual(2)
+    const points = harness.sweeps()[0]?.[0] ?? []
+    // The two edges plus the syllables between them.
+    expect(points.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('spreads them across the span the word already occupies', () => {
+    withSpan(0, 0, 10, 14)
+    harness.gen.suggestSyllableSplits(0, 0)
+    for (const point of harness.sweeps()[0]?.[0] ?? []) {
+      expect(point.time).toBeGreaterThanOrEqual(10)
+      expect(point.time).toBeLessThanOrEqual(14)
+    }
+  })
+
+  it('keeps the word own start and end exactly where they were', () => {
+    // The suggestion refines the inside of a word. Moving its edges would
+    // silently retime the words either side of it.
+    withSpan(0, 0, 10, 14)
+    harness.gen.suggestSyllableSplits(0, 0)
+    const points = harness.sweeps()[0]?.[0] ?? []
+    expect(points[0].time).toBe(10)
+    expect(points.at(-1)?.time).toBe(14)
+  })
+
+  it('leaves the times in order', () => {
+    withSpan(0, 0, 10, 14)
+    harness.gen.suggestSyllableSplits(0, 0)
+    const times = (harness.sweeps()[0]?.[0] ?? []).map((p) => p.time)
+    expect([...times].sort((a, b) => a - b)).toEqual(times)
+  })
+
+  it('does nothing to a word with no end to spread across', () => {
+    // Only a start means no span. Suggesting anyway would pile every
+    // syllable onto one timestamp.
+    harness.gen.setLetterSplit(0, 0, 0, 10)
+    expect(harness.gen.suggestSyllableSplits(0, 0)).toBe(0)
+  })
+
+  it('does nothing to a word with no syllables to find', () => {
+    withSpan(1, 0, 2, 3)
+    expect(harness.gen.suggestSyllableSplits(1, 0)).toBe(0)
+  })
+
+  it('does nothing for a word that is not there', () => {
+    expect(harness.gen.suggestSyllableSplits(0, 9)).toBe(0)
+  })
+
+  it('marks the line, so the suggestion survives finishing', () => {
+    // Untouched lines fall back to their pre-session times on finish, which
+    // would throw the whole suggestion away.
+    withSpan(0, 0, 10, 14)
+    harness.gen.suggestSyllableSplits(0, 0)
+    expect(harness.gen.isLineTouched(0)).toBe(true)
+  })
+})

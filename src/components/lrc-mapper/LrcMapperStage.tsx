@@ -78,6 +78,8 @@ export interface LrcMapperStageProps {
     wordIdx: number,
     letterIdx: number,
   ) => void
+  /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
+  suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
   handleLyricLineClick: (idx: number) => void
 
   lrcGenPass: Accessor<LrcGenPass>
@@ -113,13 +115,19 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
   const [settingsOpen, setSettingsOpen] = createSignal(false)
   let settingsRef: HTMLDivElement | undefined
 
-  // Escape closes the menu before it closes the stage, so the first press is
-  // never a surprise exit from a session someone is mid-way through.
+  // Escape unwinds one layer at a time — menu, then the open word, then the
+  // stage itself — so the first press is never a surprise exit from a session
+  // someone is mid-way through.
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return
     if (settingsOpen()) {
       e.stopPropagation()
       setSettingsOpen(false)
+      return
+    }
+    if (props.letterTarget() !== null) {
+      e.stopPropagation()
+      props.closeLetterTarget()
     }
   }
 
@@ -171,6 +179,7 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
               lrcGenLineIdx={props.lrcGenLineIdx}
               lrcGenWordIdx={props.lrcGenWordIdx}
               clearLetterSplit={props.clearLetterSplit}
+              suggestSyllableSplits={props.suggestSyllableSplits}
               closeLetterTarget={props.closeLetterTarget}
               letterMode={props.letterMode}
               letterSplits={props.letterSplits}

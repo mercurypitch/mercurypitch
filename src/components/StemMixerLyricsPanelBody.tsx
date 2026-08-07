@@ -115,6 +115,8 @@ export interface StemMixerLyricsPanelBodyProps {
     wordIdx: number,
     letterIdx: number,
   ) => void
+  /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
+  suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
   highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -490,6 +492,7 @@ export const StemMixerLyricsPanelBody: Component<
             lrcTimingOffsetMs={props.lrcTimingOffsetMs}
             lyricsFontSize={props.lyricsFontSize}
             clearLetterSplit={props.clearLetterSplit}
+            suggestSyllableSplits={props.suggestSyllableSplits}
             closeLetterTarget={props.closeLetterTarget}
             letterSplits={props.letterSplits}
             letterTarget={props.letterTarget}
@@ -534,6 +537,7 @@ export const StemMixerLyricsPanelBody: Component<
             lrcGenLineIdx={props.lrcGenLineIdx}
             lrcGenWordIdx={props.lrcGenWordIdx}
             clearLetterSplit={props.clearLetterSplit}
+            suggestSyllableSplits={props.suggestSyllableSplits}
             closeLetterTarget={props.closeLetterTarget}
             letterMode={props.letterMode}
             letterSplits={props.letterSplits}

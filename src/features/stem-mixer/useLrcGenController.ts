@@ -25,6 +25,7 @@ import type { LrcLine } from '@/lib/lyrics-service'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import type { LyricsVersionKind } from '@/lib/lyrics-versions'
 import { createPersistedSignal } from '@/lib/storage'
+import { syllableBoundaries } from '@/lib/syllable-split'
 import { letterBoundaryCount, letterSplitTimes, progressForLetter, } from '@/lib/word-letters'
 import { autoSyncWordTimings } from './auto-word-sync'
 import { fillBlockInstance } from './block-fill'
@@ -187,6 +188,8 @@ export interface LrcGenController {
     wordIdx: number,
     letterIdx: number,
   ) => void
+  /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
+  suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
 
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
@@ -1440,6 +1443,41 @@ export function useLrcGenController(
     saveLrcGenProgress()
   }
 
+  /**
+   * Pre-fill this word's syllable boundaries, spread evenly across the span
+   * it already occupies.
+   *
+   * It saves the boring half of sub-word mapping — placing four boundaries by
+   * eye before timing any of them — and nothing more. The times are a guess
+   * the singer then drags; only the positions are worth anything, and even
+   * those are a heuristic (see `syllableBoundaries`).
+   *
+   * Needs the word to have both a start and an end, because there is nothing
+   * to spread the syllables across otherwise. Returns how many it placed, so
+   * a caller can say "nothing to suggest" rather than looking broken.
+   */
+  const suggestSyllableSplits = (lineIdx: number, wordIdx: number): number => {
+    const word = genWordAt(lineIdx, wordIdx)
+    if (word === undefined) return 0
+    const cuts = syllableBoundaries(word)
+    if (cuts.length === 0) return 0
+
+    const existing = lrcGenWordSweepTimings()[lineIdx]?.[wordIdx] ?? []
+    const start = existing[0]?.time
+    const end = existing.at(-1)?.time
+    if (start === undefined || end === undefined || end <= start) return 0
+
+    markTouched(lineIdx)
+    for (const letterIdx of cuts) {
+      const progress = progressForLetter(word, letterIdx)
+      updateSweep(lineIdx, wordIdx, (prev) =>
+        setSplitPoint(prev, start + progress * (end - start), progress),
+      )
+    }
+    saveLrcGenProgress()
+    return cuts.length
+  }
+
   /** Drop the whole session. The lyrics underneath it have changed. */
   const resetGenState = () => {
     setLrcGenMode(false)
@@ -1516,6 +1554,7 @@ export function useLrcGenController(
     letterSplits,
     setLetterSplit,
     clearLetterSplit,
+    suggestSyllableSplits,
     focusGenLine,
     resetGenState,
 
