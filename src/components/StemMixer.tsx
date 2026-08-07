@@ -812,6 +812,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     applyAutoWordSync,
     handleLrcGenReset,
     handleDownloadLrc,
+    handleDownloadLyricsfile,
     getGenLines,
 
     // Lyric versions
@@ -2422,6 +2423,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             generatingFromVocal={generatingFromVocal}
             generatingLabel={generatingLabel}
             handleDownloadLrc={handleDownloadLrc}
+            handleDownloadLyricsfile={handleDownloadLyricsfile}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
             }}
@@ -2486,6 +2488,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             generatingFromVocal={generatingFromVocal}
             generatingLabel={generatingLabel}
             handleDownloadLrc={handleDownloadLrc}
+            handleDownloadLyricsfile={handleDownloadLyricsfile}
             lyricsFileInputRef={(el) => {
               lyricsFileInputRef = el
             }}
