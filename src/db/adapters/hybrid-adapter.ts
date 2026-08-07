@@ -8,7 +8,7 @@
 // analysis — to the local DexieAdapter. Audio data is huge and never
 // syncs to the cloud by design.
 
-import { hasValidToken } from '@/db/services/auth-service'
+import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
 /**
@@ -68,6 +68,7 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
   constructor(
     private inner: Repository<T>,
     private isAuthed: () => boolean,
+    private ensureAuthed: () => Promise<boolean>,
   ) {}
 
   async findById(id: string): Promise<T | null> {
@@ -83,7 +84,7 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    this.assertAuthed()
+    await this.assertWritable()
     return this.inner.create(entity)
   }
 
@@ -91,19 +92,43 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
-    this.assertAuthed()
+    await this.assertWritable()
     return this.inner.update(id, patch)
   }
 
   async delete(id: string): Promise<void> {
-    this.assertAuthed()
+    await this.assertWritable()
     return this.inner.delete(id)
   }
 
-  private assertAuthed(): void {
-    if (!this.isAuthed()) {
-      throw new Error('Signed out — personal data is not being saved')
-    }
+  /**
+   * A write is the moment a visitor becomes a user, so "not signed in" is
+   * not the same answer as "cannot write". Try to provision first.
+   *
+   * This used to be a bare `isAuthed()` throw, which was correct only for
+   * somebody who had signed out of a real account and wrong for everybody
+   * arriving for the first time. The identity is minted lazily by the
+   * ServerAdapter's `beforeWrite: requireAuth` hook — but that hook lives on
+   * `inner`, so throwing here meant it could never run, and a fresh
+   * visitor's first practice session died in this method. Nothing else on
+   * the practice path calls `requireAuth`, and `saveSessionRecord` swallows
+   * the throw, so the loss was silent and permanent: no session, no streak,
+   * no badges, ever. Startup provisioned eagerly until this release, which
+   * is what had been hiding it.
+   *
+   * `requireAuth` still says no for the cases that must stay a refusal — an
+   * upgraded account signed out, a suspended token, the window between
+   * account erasure and its reload, no API configured — and it de-dupes
+   * concurrent first writes, so a session save racing a settings push mints
+   * one identity rather than two.
+   *
+   * Reads deliberately do NOT do this. Browsing must leave no server-side
+   * row, so an unprovisioned read resolves empty instead of minting.
+   */
+  private async assertWritable(): Promise<void> {
+    if (this.isAuthed()) return
+    if (await this.ensureAuthed()) return
+    throw new Error('Signed out — personal data is not being saved')
   }
 }
 
@@ -115,6 +140,7 @@ export class HybridAdapter implements DatabaseAdapter {
     private cloud: DatabaseAdapter,
     private local: DatabaseAdapter,
     private isAuthed: () => boolean = hasValidToken,
+    private ensureAuthed: () => Promise<boolean> = requireAuth,
   ) {}
 
   getRepository<T extends DbEntity>(entityName: string): Repository<T> {
@@ -129,6 +155,7 @@ export class HybridAdapter implements DatabaseAdapter {
     const guarded = new SignedOutAwareRepository<T>(
       this.cloud.getRepository<T>(entityName),
       this.isAuthed,
+      this.ensureAuthed,
     )
     this.guarded.set(entityName, guarded as Repository<DbEntity>)
     return guarded
