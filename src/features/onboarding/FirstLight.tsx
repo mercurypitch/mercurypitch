@@ -58,12 +58,19 @@ const RENDERABLE: readonly Beat[] = [
 export interface FirstLightProps {
   /** True when opened as a replay (#/map) rather than on first run. */
   replay?: boolean
+  /**
+   * Called once the flow's shell is in the DOM. App.tsx holds an opaque
+   * boot veil over a first visit until this fires, so the app shell
+   * never flashes while this lazy chunk is still on the wire.
+   */
+  onReady?: () => void
 }
 
 export const FirstLight: Component<FirstLightProps> = (props) => {
   const [twin, setTwin] = createSignal<string | null>(null)
 
   onMount(() => {
+    props.onReady?.()
     // The account ask is a renderable beat only while it is due. A
     // visitor who declined last week walks the same flow without being
     // asked again — and the progress bar shortens to match, rather than

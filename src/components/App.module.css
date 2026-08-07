@@ -844,3 +844,53 @@
   outline: 2px solid #6cc7ff;
   outline-offset: 3px;
 }
+
+/* First Light boot veil ------------------------------------------------
+   A first visit must never flash the app shell before the flow: the
+   opener effect runs post-render and FirstLight is a lazy chunk. The
+   veil shares the flow's obsidian ground (--ob-ground in
+   onboarding.module.css) and its z-layer, sitting just before it in
+   the DOM, so the sky paints over it with no visible seam. The hint
+   fades in late — a fast load never shows it. */
+.firstLightBootVeil {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  background: #0d1117;
+  transition: opacity 0.4s ease;
+}
+
+.firstLightBootVeilLeaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.firstLightBootVeilHint {
+  margin: 0;
+  color: #6e7681;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  animation: firstLightBootHint 2.2s ease-in-out 0.45s infinite;
+}
+
+@keyframes firstLightBootHint {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .firstLightBootVeilHint {
+    opacity: 0.6;
+    animation: none;
+  }
+}
