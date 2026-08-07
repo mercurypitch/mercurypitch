@@ -40,7 +40,7 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
   const onClose = vi.fn()
   const [lines] = createSignal([makeLine(0), makeLine(1)])
   const [playing, setPlaying] = createSignal(false)
-  render(() => (
+  const rendered = render(() => (
     <LrcMapperStage
       blockInstances={() => ({})}
       clearLetterSplit={() => {}}
@@ -101,7 +101,7 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
       {...over}
     />
   ))
-  return { onClose, playing }
+  return { onClose, playing, unmount: rendered.unmount }
 }
 
 describe('LrcMapperStage', () => {
@@ -161,5 +161,39 @@ describe('LrcMapperStage', () => {
     expect(playing()).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
     expect(playing()).toBe(false)
+  })
+
+  describe('the vocal reference strip', () => {
+    const stripName = 'Vocal waveform, with the mapped word ticks'
+
+    it('registers its canvas under its own id, not the workspace one', () => {
+      const seen: string[] = []
+      renderStage({ setCanvasRef: (id) => (_el) => void seen.push(id) })
+      // Stealing `overview` would leave the workspace strip underneath this
+      // overlay drawing into a canvas the controller no longer points at.
+      expect(seen).toEqual(['mapperOverview'])
+      expect(screen.getByLabelText(stripName)).toBeInTheDocument()
+    })
+
+    it('hands the canvas back when the stage closes', () => {
+      const calls: (HTMLCanvasElement | null)[] = []
+      const { unmount } = renderStage({
+        setCanvasRef: () => (el) => void calls.push(el),
+      })
+      expect(calls).toHaveLength(1)
+      expect(calls[0]).toBeInstanceOf(HTMLCanvasElement)
+
+      // Solid never calls a ref with null itself, so without the explicit
+      // release the controller would keep drawing into a detached canvas.
+      unmount()
+      expect(calls).toEqual([expect.any(HTMLCanvasElement), null])
+    })
+
+    it('renders without a strip when there is no canvas controller', () => {
+      renderStage()
+      expect(screen.queryByLabelText(stripName)).toBeNull()
+      // The rows still get their stage — a missing strip is not a blank one.
+      expect(screen.getAllByText('line').length).toBeGreaterThan(0)
+    })
   })
 })

@@ -398,6 +398,53 @@ commit, so there is never a moment when two copies exist.
 **See:** `src/features/stem-mixer/lrc-gen-engine.ts` (`composeGenResult` now
 calls it)
 
+### An explicit `min-height` removes a flex item's min-content floor
+
+**Symptom:** in the mapper's marker mode with the font zoomed up, a lyric line
+long enough to wrap onto two rows was drawn over the lines above and below it,
+so the timestamps of the neighbouring rows showed through the text.
+**Cause:** `.sm-lyrics-gen-lines` is a column flex container, so its rows
+default to `flex-shrink: 1`. Normally `min-height: auto` stops a flex item
+shrinking past its content — but `.sm-lyrics-gen-line-marker-mode` sets
+`min-height: 4rem`, and a specified `min-height` **replaces** that automatic
+minimum. The row was then free to be squashed to 4rem while its content needed
+more, and the overflow painted over its neighbours.
+**Rule:** rows in a scrolling flex column get `flex-shrink: 0`. And treat any
+`min-height` on a flex item as also opting out of the min-content floor —
+if you set one, set `flex-shrink: 0` too, or the value becomes a maximum in
+disguise.
+**See:** `src/components/StemMixer.tsx` (`.sm-lyrics-gen-line`)
+
+### A canvas ref is never handed back — Solid does not call it with `null`
+
+**Symptom:** the full-screen mapper registers its own waveform strip with the
+canvas controller. Opening and closing the stage repeatedly left the
+controller drawing into detached canvases, with the wheel and touch listeners
+still attached to each one.
+**Cause:** Solid does not invoke a `ref` callback with `null` on teardown, so
+a controller whose `setCanvasRef(id)` has a null branch never sees it fire.
+**Rule:** when a ref registers something with a longer-lived owner, release it
+from an `onCleanup` inside the ref callback. The same fact is why the stage
+registers under its own `mapperOverview` id instead of reusing `overview` —
+the workspace canvas underneath the overlay is still mounted and still owns
+that entry.
+**See:** `src/components/lrc-mapper/LrcMapperStage.tsx` (`registerWaveform`)
+
+### Imperative canvas drawing goes stale the moment playback stops
+
+**Symptom:** toggling word ticks, or nudging every timing with the ±100 ms
+buttons, changed nothing on the waveform until the user pressed play.
+**Cause:** `redrawAll` reads the display accessors but is called from a frame
+loop, so while audio runs every change lands on the next frame for free.
+Paused, nothing calls it, and no handler queued a redraw itself.
+**Rule:** a canvas controller needs one `createEffect` that touches the
+display state and queues a redraw — not a `queueCanvasRedraw()` sprinkled
+through each handler, which is the same bug waiting for the next toggle. Keep
+per-frame data (elapsed, pitch history) out of it: that would queue a redraw
+from inside a redraw.
+**See:** `src/features/stem-mixer/useStemMixerCanvasController.ts`,
+`src/tests/stem-mixer-canvas-redraw.test.ts`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked

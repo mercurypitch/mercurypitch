@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { onCleanup } from 'solid-js'
+import { createEffect, onCleanup } from 'solid-js'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
 import type { MergedNote, MidiNoteEvent, PitchDetection, } from '@/lib/midi-generator'
 import { DEFAULT_BPM, mergeConsecutiveNotes, TICKS_PER_BEAT, } from '@/lib/midi-generator'
@@ -88,7 +88,7 @@ export interface StemMixerCanvasDeps {
 }
 
 export interface StemMixerCanvasController {
-  setCanvasRef: (id: string) => (el: HTMLCanvasElement) => void
+  setCanvasRef: (id: string) => (el: HTMLCanvasElement | null) => void
   formatTime: (secs: number) => string
   syncCanvasSizes: () => void
   drawWaveformOverview: () => void
@@ -121,10 +121,25 @@ export const useStemMixerCanvasController = (
   // correct entry regardless of which Show block renders them.
   const canvasRefs: Record<string, HTMLCanvasElement | undefined> = {
     overview: undefined,
+    // The full-screen mapper's own strip. A second element rather than a
+    // moved one: the stage is an overlay, so the workspace canvas is still
+    // mounted underneath it, and Solid does not call a ref with null on
+    // teardown — stealing the id would leave the workspace drawing to a
+    // canvas nobody owns once the stage closed.
+    mapperOverview: undefined,
     live: undefined,
     pitch: undefined,
     midi: undefined,
   }
+
+  /**
+   * Both overview strips answer to the same gestures. Every hit-test below
+   * asks this rather than comparing against one ref, so the mapper's copy is
+   * scrubbable and its ticks draggable exactly like the workspace's.
+   */
+  const isOverviewCanvas = (canvas: HTMLCanvasElement | null): boolean =>
+    canvas !== null &&
+    (canvas === canvasRefs.overview || canvas === canvasRefs.mapperOverview)
 
   // Declared ahead of setCanvasRef, which (un)observes canvases as SolidJS
   // swaps them in and out of the DOM. Created by initObserver on mount.
@@ -200,8 +215,29 @@ export const useStemMixerCanvasController = (
   /** Whether the pointer actually moved — a still press is a click. */
   let markerDragMoved = false
 
+  /**
+   * The stems the mapper's strip shows: the vocal alone.
+   *
+   * It is the thing being mapped against, and the strip is a fraction of the
+   * workspace's height — three lanes in it would be three unreadable ones.
+   * Falls back to everything if no track calls itself a vocal, because an
+   * empty strip is worse than a busy one.
+   */
+  const mapperTracks = (): StemTrackView[] => {
+    const all = deps.tracks()
+    const vocals = all.filter((t) => /vocal/i.test(t.label))
+    return vocals.length > 0 ? vocals : all
+  }
+
   const drawWaveformOverview = () => {
-    const canvas = canvasRefs.overview
+    drawOverviewInto(canvasRefs.overview, deps.tracks())
+    drawOverviewInto(canvasRefs.mapperOverview, mapperTracks())
+  }
+
+  const drawOverviewInto = (
+    canvas: HTMLCanvasElement | undefined,
+    tracks: StemTrackView[],
+  ) => {
     if (!canvas) return
     const dpr = window.devicePixelRatio || 1
     const w = canvas.width / dpr
@@ -216,7 +252,7 @@ export const useStemMixerCanvasController = (
 
     ctx.clearRect(0, 0, w, h)
 
-    const activeTracks = deps.tracks().filter((t) => t.buffer)
+    const activeTracks = tracks.filter((t) => t.buffer)
     if (activeTracks.length === 0) return
 
     const trackHeight = h / activeTracks.length
@@ -1163,6 +1199,40 @@ export const useStemMixerCanvasController = (
     redrawScheduler.queue()
   }
 
+  /**
+   * Repaint when what the canvases are *supposed to show* changes.
+   *
+   * Drawing is imperative here — `redrawAll` reads these accessors but is
+   * called from a frame loop, so while audio runs every change appears on the
+   * next frame for free. Paused, that loop is not running, and a toggle or a
+   * timing nudge sat invisible until playback resumed. Tracking the display
+   * state in one effect fixes the whole class rather than sprinkling
+   * `queueCanvasRedraw()` through every handler that owns one of them.
+   *
+   * Only inputs the user changes deliberately belong here. Per-frame data
+   * (elapsed, pitch history) is already carried by the frame loop, and adding
+   * it would queue a redraw from inside a redraw.
+   */
+  createEffect(() => {
+    deps.showNoteLabels()
+    deps.showLyricLabels()
+    deps.showMicLine()
+    deps.showUserNoteLabels()
+    deps.showScoreDiffBars()
+    deps.showWordMarkers?.()
+    // Both the tick positions and which one is lit: a shift of every timing
+    // by -100 ms changes the array, and stepping to the next word changes
+    // only the highlight.
+    deps.wordMarkers?.()
+    deps.activeWordMarker?.()
+    deps.loopEnabled()
+    deps.loopStart()
+    deps.loopEnd()
+    deps.pitchView?.()
+    deps.selectedNoteId?.()
+    queueCanvasRedraw()
+  })
+
   // ── Loop marker drag state (mutable refs — no rendering) ─────
 
   const LOOP_HIT_PX = 8 // pixel tolerance for hit-testing markers
@@ -1192,10 +1262,9 @@ export const useStemMixerCanvasController = (
     canvas: HTMLCanvasElement,
   ): number => {
     const rect = canvas.getBoundingClientRect()
-    const layout =
-      canvas === canvasRefs.overview
-        ? liveWaveformLaneLayout(rect.width)
-        : { waveformStartX: 0, waveformWidth: rect.width }
+    const layout = isOverviewCanvas(canvas)
+      ? liveWaveformLaneLayout(rect.width)
+      : { waveformStartX: 0, waveformWidth: rect.width }
     return Math.max(
       0,
       Math.min(
@@ -1343,7 +1412,7 @@ export const useStemMixerCanvasController = (
       queueCanvasRedraw()
     }
 
-    const isOverview = canvas === canvasRefs.overview
+    const isOverview = isOverviewCanvas(canvas)
     const hit = isOverview ? getLoopMarkerAtX(e.clientX, canvas) : null
 
     if (hit && deps.loopEnabled()) {
@@ -1419,7 +1488,7 @@ export const useStemMixerCanvasController = (
       return
     }
 
-    if (markerDrag !== null && canvas === canvasRefs.overview) {
+    if (markerDrag !== null && isOverviewCanvas(canvas)) {
       e.preventDefault()
       const time = Math.max(
         0,
@@ -1431,7 +1500,7 @@ export const useStemMixerCanvasController = (
       return
     }
 
-    if (loopDragTarget && canvas === canvasRefs.overview) {
+    if (loopDragTarget && isOverviewCanvas(canvas)) {
       // Active drag — update loop boundary
       e.preventDefault()
       const time = clientXToTime(e.clientX, canvas)
@@ -1465,10 +1534,9 @@ export const useStemMixerCanvasController = (
       }
       if (mouseDidPan) {
         const rect = canvas.getBoundingClientRect()
-        const timelineWidth =
-          canvas === canvasRefs.overview
-            ? liveWaveformLaneLayout(rect.width).waveformWidth
-            : rect.width
+        const timelineWidth = isOverviewCanvas(canvas)
+          ? liveWaveformLaneLayout(rect.width).waveformWidth
+          : rect.width
         const pxPerSec = timelineWidth / deps.windowDuration()
         const deltaTime = deltaX / pxPerSec
         const newStart = Math.max(
@@ -1483,7 +1551,7 @@ export const useStemMixerCanvasController = (
       }
     } else {
       // Hover — update cursor
-      const isOverview = canvas === canvasRefs.overview
+      const isOverview = isOverviewCanvas(canvas)
       if (isOverview && getWordMarkerAtX(e.clientX, canvas) !== null) {
         canvas.style.cursor = 'ew-resize'
       } else if (isOverview && deps.loopEnabled() && deps.loopEnd() > 0) {
@@ -1511,7 +1579,7 @@ export const useStemMixerCanvasController = (
       return
     }
 
-    if (markerDrag !== null && canvas === canvasRefs.overview) {
+    if (markerDrag !== null && isOverviewCanvas(canvas)) {
       const { lineIdx, wordIdx, time } = markerDrag
       markerDrag = null
       try {
@@ -1532,7 +1600,7 @@ export const useStemMixerCanvasController = (
       return
     }
 
-    if (loopDragTarget && canvas === canvasRefs.overview) {
+    if (loopDragTarget && isOverviewCanvas(canvas)) {
       canvas.releasePointerCapture(e.pointerId)
       loopDragTarget = null
     } else if (mousePanActive && activePanCanvas === canvas) {
@@ -1627,10 +1695,9 @@ export const useStemMixerCanvasController = (
       const canvas = e.currentTarget as HTMLCanvasElement
       const deltaX = touch.startX - touch.clientX
       const rect = canvas.getBoundingClientRect()
-      const timelineWidth =
-        canvas === canvasRefs.overview
-          ? liveWaveformLaneLayout(rect.width).waveformWidth
-          : rect.width
+      const timelineWidth = isOverviewCanvas(canvas)
+        ? liveWaveformLaneLayout(rect.width).waveformWidth
+        : rect.width
       const pxPerSec = timelineWidth / deps.windowDuration()
       const deltaTime = (deltaX / pxPerSec) * 0.6
       const newStart = Math.max(
