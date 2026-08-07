@@ -809,6 +809,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleNextWord,
     handleMarkerSample,
     handleRedoCurrentLine,
+    redoTargetLine,
     handleLrcGenFinish,
     applyAutoWordSync,
     handleLrcGenReset,
@@ -1410,6 +1411,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleNextWord,
     handleMarkerSample,
     handleRedoCurrentLine,
+    redoTargetLine,
     handleLrcGenFinish,
     handleLrcGenReset,
     handleSaveEdits,
@@ -5357,8 +5359,18 @@ export const StemMixerStyles: string = `
   font-size: 0.58rem;
 }
 
+/* The gauge stands in for the word "Speed". Its own line box is taller than
+   the glyph, so a flex box centres it against the select rather than letting
+   the label's baseline decide. */
+.sm-lyrics-gen-speed-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg-tertiary, #8b949e);
+}
+
 .sm-lyrics-gen-speed-select {
-  min-width: 5.6rem;
+  /* Was 5.6rem to fit "1x natural". The options are multipliers now. */
+  min-width: 3.6rem;
   height: 1.45rem;
   color: var(--fg-primary, #c9d1d9);
   background: var(--bg-tertiary, #21262d);
@@ -6030,9 +6042,17 @@ export const StemMixerStyles: string = `
   cursor: pointer;
 }
 
-.sm-lyrics-letter-action:hover {
+.sm-lyrics-letter-action:hover:not(:disabled) {
   border-color: var(--accent, #58a6ff);
   color: var(--fg-primary, #e6edf3);
+}
+
+/* The syllable suggestion has nothing to offer on a one-syllable word, which
+   is most of a lyric. Kept in place rather than hidden so the row does not
+   reflow word to word. */
+.sm-lyrics-letter-action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .sm-lyrics-letter-action svg {

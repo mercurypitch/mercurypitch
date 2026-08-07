@@ -31,7 +31,7 @@ import { autoSyncWordTimings } from './auto-word-sync'
 import { fillBlockInstance } from './block-fill'
 import { composeGenResult, restoreGenLineTimes, restoreGenMap, } from './lrc-gen-engine'
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
-import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
+import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, wordSpan, } from './lrc-gen-passes'
 import type { SavedGenProgress } from './lrc-gen-progress'
 import { createGenProgressStore, genProgressKey, parseSavedGenProgress, } from './lrc-gen-progress'
 import { shiftTimings } from './lrc-offset'
@@ -144,6 +144,8 @@ export interface LrcGenController {
     phase: 'start' | 'move' | 'end',
   ) => void
   handleRedoCurrentLine: () => void
+  /** The line "Redo line" would clear, so the button can name it. */
+  redoTargetLine: () => number | null
   handleLrcGenFinish: () => void
   handleLrcGenReset: () => void
   applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
@@ -204,6 +206,14 @@ export interface LrcGenController {
   flushLrcGenProgress: () => void
   clearLrcGenProgress: () => void
 }
+
+/**
+ * Shortest word a syllable suggestion will touch. Below this the boundaries
+ * would land inside the same few milliseconds, which is a worse starting
+ * point than none at all — and it is the guard that catches a word with no
+ * usable end time, where the fallback span collapses to nothing.
+ */
+const MIN_SUGGEST_SPAN_SEC = 0.12
 
 export function useLrcGenController(
   deps: LrcGenControllerDeps,
@@ -998,23 +1008,59 @@ export function useLrcGenController(
     advanceAfterMarkerLine(lineIdx, lines)
   }
 
-  const handleRedoCurrentLine = () => {
+  /** Whether this session has put anything on `lineIdx` yet. */
+  const hasGenTiming = (lineIdx: number): boolean =>
+    lrcGenLineTimes()[lineIdx] !== undefined ||
+    (lrcGenWordTimings()[lineIdx]?.length ?? 0) > 0
+
+  /**
+   * The line "Redo line" would clear, or null when there is none.
+   *
+   * Exposed so the button can name it. It reads as doing nothing far too
+   * often — it acts on the line behind the cursor about half the time, and a
+   * silent edit two rows above where you are looking is indistinguishable
+   * from no edit at all.
+   */
+  const redoTargetLine = (): number | null => {
     const lines = getGenLines()
-    let lineIdx = Math.min(lrcGenLineIdx(), lines.length - 1)
-    if (lrcGenWordIdx() === 0 && lineIdx > 0) lineIdx--
+    let lineIdx = lrcGenLineIdx()
+    if (lineIdx >= lines.length) {
+      // The session has run off the end. The line to redo is the last one —
+      // clamping and THEN stepping back for word 0, as this used to do, moved
+      // twice and skipped the line that was just mapped.
+      lineIdx = lines.length - 1
+    } else if (lrcGenWordIdx() === 0 && lineIdx > 0 && !hasGenTiming(lineIdx)) {
+      // Standing at the start of an EMPTY line: nothing has landed on it yet,
+      // so the line worth redoing is the one behind the cursor. The emptiness
+      // test is what makes that safe — clicking a mapped line to redo it also
+      // parks the cursor at word 0, and stepping back there wiped the line
+      // above the one the user had just chosen while leaving theirs untouched.
+      lineIdx--
+    }
     while (
       lineIdx >= 0 &&
       (!lines[lineIdx]?.trim() || lines[lineIdx].trim() === '~Rest~')
     ) {
       lineIdx--
     }
-    if (lineIdx < 0 || !lines[lineIdx]?.trim()) return
+    if (lineIdx < 0 || !lines[lineIdx]?.trim()) return null
+    return lineIdx
+  }
+
+  const handleRedoCurrentLine = () => {
+    const lineIdx = redoTargetLine()
+    if (lineIdx === null) return
 
     // The word pass treats line starts as settled, so a redo there clears the
     // words from 1 on and leaves word 0 (and the line time) alone. Clearing
     // them would silently undo the line pass from a button labelled "redo
     // line".
     const wordPass = lrcGenPass() === 'words'
+
+    // Captured before the clears below, which is the whole point: after a
+    // line-pass redo the line has no start of its own left to read.
+    const mappedStart =
+      lrcGenLineTimes()[lineIdx] ?? lrcGenWordTimings()[lineIdx]?.[0]
     if (!wordPass) {
       unmarkTouched(lineIdx)
       setLrcGenLineTimes((prev) => {
@@ -1047,9 +1093,22 @@ export function useLrcGenController(
     setLrcGenLineIdx(lineIdx)
     setLrcGenWordIdx(wordPass ? 1 : 0)
 
-    const originalTime =
-      deps.canonicalLrcLines()[lineIdx]?.time ?? lrcGenLineTimes()[lineIdx] ?? 0
-    deps.seekToWithWindow(preRollTarget(originalTime))
+    // Where to rewind to.
+    //
+    // In the word pass the line start is settled, so replay from the one this
+    // session mapped — the canonical time is where the line was BEFORE pass 1
+    // moved it, which on a re-timed song is the wrong place entirely.
+    //
+    // In the line pass the line is being timed from scratch, so the time it
+    // arrived with is the honest reference; a song imported as plain text has
+    // none, and the mapped start is then all there is. Seeking to 0 as a last
+    // resort, which is what this used to do, jumped to the top of the song
+    // from a button called "redo line".
+    const canonicalStart = deps.canonicalLrcLines()[lineIdx]?.time
+    const target = wordPass
+      ? (mappedStart ?? canonicalStart)
+      : (canonicalStart ?? mappedStart)
+    if (target !== undefined) deps.seekToWithWindow(preRollTarget(target))
     saveLrcGenProgress()
   }
 
@@ -1444,6 +1503,43 @@ export function useLrcGenController(
   }
 
   /**
+   * The window a suggestion can spread syllables across, or null when the
+   * word is too short — or not mapped at all — for splitting it to mean
+   * anything.
+   *
+   * An edited curve wins: once the operator has placed boundaries by hand,
+   * its own first and last points are the word, whatever the stored word
+   * times still say.
+   */
+  const suggestSpan = (
+    lineIdx: number,
+    wordIdx: number,
+  ): { start: number; end: number } | null => {
+    const curve = lrcGenWordSweepTimings()[lineIdx]?.[wordIdx] ?? []
+    const curveStart = curve[0]?.time
+    const curveEnd = curve.length > 1 ? curve.at(-1)?.time : undefined
+    if (
+      curveStart !== undefined &&
+      curveEnd !== undefined &&
+      curveEnd - curveStart >= MIN_SUGGEST_SPAN_SEC
+    ) {
+      return { start: curveStart, end: curveEnd }
+    }
+
+    const span = wordSpan(
+      lrcGenWordTimings()[lineIdx],
+      lrcGenWordEndTimings()[lineIdx],
+      // No line end means nothing downstream to borrow from; the guard below
+      // then rejects rather than inventing a window.
+      previewEnd(lineIdx) ?? Number.NEGATIVE_INFINITY,
+      wordIdx,
+    )
+    if (span === null) return null
+    if (span.end - span.start < MIN_SUGGEST_SPAN_SEC) return null
+    return span
+  }
+
+  /**
    * Pre-fill this word's syllable boundaries, spread evenly across the span
    * it already occupies.
    *
@@ -1452,9 +1548,14 @@ export function useLrcGenController(
    * the singer then drags; only the positions are worth anything, and even
    * those are a heuristic (see `syllableBoundaries`).
    *
-   * Needs the word to have both a start and an end, because there is nothing
-   * to spread the syllables across otherwise. Returns how many it placed, so
-   * a caller can say "nothing to suggest" rather than looking broken.
+   * Needs a span to spread them across. That span comes from the same rule
+   * the highlighter uses — recorded end, else the next word's start, else the
+   * line's end — because insisting on an explicit end time made this refuse
+   * on almost every word: the word pass records starts and nothing else, so
+   * a freshly mapped song has no end times anywhere.
+   *
+   * Returns how many it placed, so a caller can say "nothing to suggest"
+   * rather than looking broken.
    */
   const suggestSyllableSplits = (lineIdx: number, wordIdx: number): number => {
     const word = genWordAt(lineIdx, wordIdx)
@@ -1462,10 +1563,9 @@ export function useLrcGenController(
     const cuts = syllableBoundaries(word)
     if (cuts.length === 0) return 0
 
-    const existing = lrcGenWordSweepTimings()[lineIdx]?.[wordIdx] ?? []
-    const start = existing[0]?.time
-    const end = existing.at(-1)?.time
-    if (start === undefined || end === undefined || end <= start) return 0
+    const span = suggestSpan(lineIdx, wordIdx)
+    if (span === null) return 0
+    const { start, end } = span
 
     markTouched(lineIdx)
     for (const letterIdx of cuts) {
@@ -1533,6 +1633,7 @@ export function useLrcGenController(
     handleNextWord,
     handleMarkerSample,
     handleRedoCurrentLine,
+    redoTargetLine,
     handleLrcGenFinish,
     handleLrcGenReset,
     applyAutoWordSync,

@@ -132,6 +132,7 @@ export interface StemMixerLyricsPanelBodyProps {
     phase: 'start' | 'move' | 'end',
   ) => void
   handleRedoCurrentLine: () => void
+  redoTargetLine: () => number | null
   handleLrcGenFinish: () => void
   handleLrcGenReset: () => void
   handleSaveEdits: () => void
@@ -431,6 +432,7 @@ export const StemMixerLyricsPanelBody: Component<
             handlePause={props.handlePause}
             handlePlay={props.handlePlay}
             handleRedoCurrentLine={props.handleRedoCurrentLine}
+            redoTargetLine={props.redoTargetLine}
             letterMode={props.letterMode}
             liveHighlight={props.liveHighlight}
             setLetterMode={props.setLetterMode}
@@ -479,6 +481,7 @@ export const StemMixerLyricsPanelBody: Component<
             handlePause={props.handlePause}
             handlePlay={props.handlePlay}
             handleRedoCurrentLine={props.handleRedoCurrentLine}
+            redoTargetLine={props.redoTargetLine}
             handleSeekToTime={props.handleSeekToTime}
             highlightWord={props.highlightWord}
             letterMode={props.letterMode}

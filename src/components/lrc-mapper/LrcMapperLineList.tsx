@@ -427,11 +427,14 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                           onClick={(e) => {
                             if (!props.letterMode()) return
                             e.stopPropagation()
-                            // Click the open word again to collapse it: the
-                            // expanded row is wide, and there is nowhere else
-                            // obvious to click to be rid of it.
-                            if (isLetterTarget()) props.closeLetterTarget()
-                            else props.openLetterTarget(item.index, wi)
+                            // Opens only. Closing lives on the row's own X
+                            // button — every glyph in the expanded word
+                            // bubbles up to here, so a click-to-collapse made
+                            // the whole row a dismiss target and the only
+                            // safe things to press were the hairline
+                            // boundaries between the letters.
+                            if (!isLetterTarget())
+                              props.openLetterTarget(item.index, wi)
                           }}
                         >
                           <span class="sm-lyrics-gen-word-time">

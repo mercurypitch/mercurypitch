@@ -27,6 +27,7 @@
 import type { Accessor, Component } from 'solid-js'
 import { For, onCleanup, Show } from 'solid-js'
 import { X } from '@/components/icons'
+import { syllableBoundaries } from '@/lib/syllable-split'
 import { splitGraphemes } from '@/lib/word-letters'
 
 /** How long a press has to hold before it counts as the alt action. */
@@ -58,6 +59,9 @@ export const LrcWordLetters: Component<LrcWordLettersProps> = (props) => {
     Array.from({ length: graphemes().length + 1 }, (_v, i) => i)
 
   const isEdge = (i: number) => i === 0 || i === graphemes().length
+
+  /** Where the suggestion would put boundaries — empty on a monosyllable. */
+  const syllableCuts = () => syllableBoundaries(props.word)
 
   /**
    * How much of glyph i the highlighter has covered, 0 to 1.
@@ -181,8 +185,20 @@ export const LrcWordLetters: Component<LrcWordLettersProps> = (props) => {
           <button
             type="button"
             class="sm-lyrics-letter-action"
-            aria-label="Split this word at its syllables"
-            title="Split at syllables — a starting guess you can then adjust"
+            // Most words in a lyric are one syllable, so this button spends
+            // most of its life with nothing to do. Disabled and saying so
+            // beats live-looking and inert.
+            disabled={syllableCuts().length === 0}
+            aria-label={
+              syllableCuts().length === 0
+                ? 'One syllable — nothing to split'
+                : 'Split this word at its syllables'
+            }
+            title={
+              syllableCuts().length === 0
+                ? 'One syllable — nothing to split'
+                : 'Split at syllables — a starting guess you can then adjust'
+            }
             onClick={(e) => {
               e.stopPropagation()
               props.onSuggestSyllables?.()

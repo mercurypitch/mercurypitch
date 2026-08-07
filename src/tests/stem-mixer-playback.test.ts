@@ -8,7 +8,9 @@ describe('stem mixer playback helpers', () => {
     expect([...STEM_MIXER_PLAYBACK_SPEEDS]).toEqual([
       0.5, 0.75, 0.85, 1, 1.2, 1.5, 1.75, 2,
     ])
-    expect(formatPlaybackSpeed(1)).toBe('1x natural')
+    // Multipliers alone. "1x natural" spent a word saying what "1x" says,
+    // and the word "speed" belongs on the control, not inside every option.
+    expect(formatPlaybackSpeed(1)).toBe('1x')
     expect(formatPlaybackSpeed(0.85)).toBe('0.85x')
   })
 

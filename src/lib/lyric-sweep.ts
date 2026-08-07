@@ -101,15 +101,22 @@ export function setSplitPoint(
 /**
  * Drop the split at `progress`.
  *
- * The first and last points are the word's own onset and end, not splits, so
- * they survive — removing them would leave a word with no interval at all.
+ * The word's own onset and end are not splits, so they survive — removing one
+ * would leave the word with no interval at all. They are identified by their
+ * PROGRESS (0 and 1), never by their position in the array: a curve built
+ * only from interior clicks has an interior split sitting at index 0, and the
+ * index test this used to do refused to remove it. Clearing the only split in
+ * a word was impossible, which is exactly the case the letter editor's
+ * right-click and long-press are for.
  */
 export function removeSplitPoint(
   points: readonly WordSweepPoint[],
   progress: number,
 ): WordSweepPoint[] {
-  const at = indexOfProgress(points, roundMillis(clampProgress(progress)))
-  if (at < 0 || at === 0 || at === points.length - 1) return [...points]
+  const target = roundMillis(clampProgress(progress))
+  if (target <= 0 || target >= 1) return [...points]
+  const at = indexOfProgress(points, target)
+  if (at < 0) return [...points]
   return points.filter((_point, i) => i !== at)
 }
 

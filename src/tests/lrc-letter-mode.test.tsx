@@ -138,7 +138,7 @@ describe('LrcWordLetters', () => {
   })
 
   it('offers the syllable pre-fill only when a caller can handle it', () => {
-    renderWord()
+    renderWord({}, { word: 'Josephine' })
     expect(
       screen.getByLabelText('Split this word at its syllables'),
     ).toBeVisible()
@@ -152,12 +152,26 @@ describe('LrcWordLetters', () => {
         onSet={() => {}}
         progress={() => 0}
         splits={() => ({})}
-        word="soul"
+        word="Josephine"
       />
     ))
     expect(
       screen.queryByLabelText('Split this word at its syllables'),
     ).toBeNull()
+  })
+
+  // Most words in a lyric are one syllable, so this button spends most of its
+  // life with nothing to do. It looked broken rather than inapplicable.
+  it('disables the pre-fill on a word with one syllable', () => {
+    renderWord()
+    const button = screen.getByLabelText('One syllable — nothing to split')
+    expect(button).toBeDisabled()
+  })
+
+  it('does not call out to the suggestion when it is disabled', () => {
+    const { onSuggestSyllables } = renderWord()
+    fireEvent.click(screen.getByLabelText('One syllable — nothing to split'))
+    expect(onSuggestSyllables).not.toHaveBeenCalled()
   })
 
   // ── The live highlight ─────────────────────────────────────────
@@ -286,15 +300,24 @@ describe('letter mode in the row list', () => {
     expect(screen.getAllByText('on').length).toBeGreaterThan(0)
   })
 
-  it('collapses the open word when it is clicked again', () => {
+  // Closing used to live on the word itself, and every glyph bubbles up to
+  // it — so the whole expanded row was a dismiss target and the only safe
+  // things to press were the hairline boundaries between the letters.
+  it('keeps the open word open when a letter is clicked', () => {
     const { closeLetterTarget, openLetterTarget } = renderList({
       letterTarget: () => ({ lineIdx: 0, wordIdx: 1 }),
     })
-    fireEvent.click(screen.getByLabelText('Time the start of the word'))
-    // The boundary itself stamps a time; the surrounding word closes.
     fireEvent.click(screen.getAllByText('o')[0])
-    expect(closeLetterTarget).toHaveBeenCalled()
+    expect(closeLetterTarget).not.toHaveBeenCalled()
     expect(openLetterTarget).not.toHaveBeenCalled()
+  })
+
+  it('closes it from the row own X button', () => {
+    const { closeLetterTarget } = renderList({
+      letterTarget: () => ({ lineIdx: 0, wordIdx: 1 }),
+    })
+    fireEvent.click(screen.getByLabelText('Close the letter editor'))
+    expect(closeLetterTarget).toHaveBeenCalled()
   })
 
   it('stamps the playhead at the boundary that was clicked', () => {

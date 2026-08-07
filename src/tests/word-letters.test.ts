@@ -227,6 +227,33 @@ describe('removeSplitPoint', () => {
     expect(split).toHaveLength(4)
     expect(removeSplitPoint(split, progressForLetter('you', 2))).toEqual(points)
   })
+
+  // Every case above hands in a curve that already carries the word's own
+  // edges. A curve authored purely by clicking inside the word does not, and
+  // the guard used to be an index test — so the only split in a word sat at
+  // index 0 AND at length-1, and right-click and long-press both refused it.
+  it('drops the only split in a word', () => {
+    const lone: WordSweepPoint[] = [{ time: 11, progress: 0.5 }]
+    expect(removeSplitPoint(lone, 0.5)).toEqual([])
+  })
+
+  it('drops either of two splits with no edges around them', () => {
+    const bare: WordSweepPoint[] = [
+      { time: 11, progress: 0.25 },
+      { time: 12, progress: 0.75 },
+    ]
+    expect(removeSplitPoint(bare, 0.25)).toEqual([bare[1]])
+    expect(removeSplitPoint(bare, 0.75)).toEqual([bare[0]])
+  })
+
+  it('still refuses the edges when they are the only points', () => {
+    const edges: WordSweepPoint[] = [
+      { time: 10, progress: 0 },
+      { time: 12, progress: 1 },
+    ]
+    expect(removeSplitPoint(edges, 0)).toEqual(edges)
+    expect(removeSplitPoint(edges, 1)).toEqual(edges)
+  })
 })
 
 describe('retimeWordStart', () => {

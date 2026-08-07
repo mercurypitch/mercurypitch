@@ -1376,3 +1376,27 @@ export const Info: Component<{ size?: number }> = (p) => (
     <path d="M12 10v10" />
   </svg>
 )
+
+// Playback speed — a gauge sweeping from slow to fast with the needle past
+// the middle. "1x natural" used to carry this meaning as a word inside every
+// dropdown option; the gauge says it once, beside the control, and leaves the
+// options to be plain multipliers.
+//
+// aria-hidden: it labels a select that already names itself.
+export const SpeedGauge: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M4 18a9 9 0 1 1 16 0" />
+    <path d="M12 14l4.5-4" />
+    <circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none" />
+  </svg>
+)

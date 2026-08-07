@@ -250,6 +250,7 @@ export interface StemMixerLyricsController {
     phase: 'start' | 'move' | 'end',
   ) => void
   handleRedoCurrentLine: () => void
+  redoTargetLine: () => number | null
   handleLrcGenFinish: () => void
   applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
   handleLrcGenReset: () => void
@@ -1328,6 +1329,7 @@ export function useStemMixerLyricsController(
     handleNextWord,
     handleMarkerSample,
     handleRedoCurrentLine,
+    redoTargetLine,
     handleLrcGenFinish,
     handleLrcGenReset,
     applyAutoWordSync,
@@ -1861,6 +1863,7 @@ export function useStemMixerLyricsController(
     handleNextWord,
     handleMarkerSample,
     handleRedoCurrentLine,
+    redoTargetLine,
     handleLrcGenFinish,
     applyAutoWordSync,
     handleLrcGenReset,
