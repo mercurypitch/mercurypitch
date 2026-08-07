@@ -1,0 +1,87 @@
+/* ============================================================
+   Short viewports — wider than they are tall
+   ============================================================
+
+   A tablet held in landscape and used as a small laptop, a phone turned
+   sideways, a half-height desktop window: plenty of width, very little
+   height, and less again once the browser chrome takes its cut. A Samsung
+   Tab S9+ in landscape lands near 1280x660 by the time the address bar and
+   tab strip are drawn.
+
+   These layouts were already solved once — in `mobile-polish.css`, behind
+   `@media (max-width: 768px)`. Every one of those fixes reads "the content
+   does not fit"; none of them reads "the screen is narrow". So a phone got a
+   compact pitch tracker, a corner Stop button and clearance beneath it, and a
+   tablet with a hundred fewer pixels of height got none of it.
+
+   This file is the missing half: the same treatments, keyed on the axis that
+   actually ran out. It is imported after `mobile-polish.css`, so where the two
+   overlap (a phone in landscape is both narrow and short) these win the tie
+   with identical values rather than fighting.
+
+   The threshold is 720px. A 768px-tall window still has room for the full
+   layout; below about 720 the exercise card stops being able to hold a 200px
+   tracker, an exercise's own visuals and a centred button row at once.
+
+   Rules that belong here: anything whose trigger is vertical space. Rules
+   that do NOT: anything a scroll container should have handled — fix the
+   container instead, unconditionally, so no breakpoint has to know about it. */
+
+@media (max-height: 720px) {
+  /* ── Exercise stage ─────────────────────────────────────────
+     Mirrors the `max-width: 768px` block in mobile-polish.css. See the
+     comments there for what each of these is for; the difference here is only
+     which measurement triggered it. */
+
+  /* The tracker is a flex item in a column, so `height` alone never held it:
+     the exercise's own visuals squeezed it down to a band too short to read.
+     A floor, not a preference. */
+  .exercise-pitch-tracker {
+    height: 148px;
+    min-height: 148px;
+    flex-shrink: 0;
+  }
+
+  /* Stop becomes a round icon button in the bottom-right corner, and the card
+     reserves a strip so an exercise's metrics row never renders behind it. The
+     centred full-width pill sat right on top of that row. */
+  .exercise-canvas-area.is-active {
+    padding-bottom: 76px;
+  }
+
+  .exercise-active-controls {
+    left: auto;
+    right: 14px;
+    bottom: 14px;
+    transform: none;
+    gap: 8px;
+  }
+
+  .exercise-btn-stop {
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
+    box-shadow: 0 6px 20px rgba(248, 81, 73, 0.35);
+  }
+
+  .exercise-btn-stop svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .exercise-btn-stop-label {
+    display: none;
+  }
+
+  /* The card's 320px floor is taller than the space left after the header, the
+     routine ribbon and the score history, which pushed the whole card past the
+     fold before its own content had a say. Let it use what there is; the
+     tracker's floor above still guarantees the run stays readable, and the
+     card scrolls when the two disagree. */
+  .exercise-canvas-area {
+    min-height: 240px;
+  }
+}
