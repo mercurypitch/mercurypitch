@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { computeBackingSize } from '@/lib/canvas-size-sync'
+import { computeBackingSize, createRedrawScheduler, } from '@/lib/canvas-size-sync'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
@@ -317,6 +317,9 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
         }, ENVELOPE_DEFAULTS.seekFadeMs + 5)
       } else {
         audio.currentTime = target
+        // Paused: no loop is running and currentTime is not reactive, so the
+        // playhead would stay where it was until something else redrew.
+        redraw.queue()
       }
     }
   }
@@ -345,11 +348,13 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     }
   }
 
+  /** Coalesces every event-driven repaint into at most one frame. */
+  const redraw = createRedrawScheduler(() => draw())
+
   onMount(() => {
     if (!canvasRef) return
     ctx = canvasRef.getContext('2d')
     resizeCanvas()
-    startDrawLoop()
 
     canvasRef.addEventListener('wheel', handleWheel, { passive: false })
     canvasRef.addEventListener('pointerdown', handlePointerDown)
@@ -371,8 +376,30 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
       window.removeEventListener('keydown', handleKeyDown)
       resizeObserver?.disconnect()
       if (animFrameId !== null) cancelAnimationFrame(animFrameId)
+      redraw.cancel()
       audioCtx?.close()
     })
+  })
+
+  // Frames while the playhead is moving, and one more when it stops so the
+  // playhead is painted where it actually landed. Guarded on animFrameId
+  // because a second loop would double the frame rate, not restart it.
+  createEffect(() => {
+    if (isPlaying()) {
+      if (animFrameId === null) startDrawLoop()
+    } else {
+      redraw.queue()
+    }
+  })
+
+  // The visual state a person can change while nothing is playing. draw()
+  // reads these, so a change to any of them needs a frame; without this the
+  // canvas would sit still through a pan or a zoom.
+  createEffect(() => {
+    zoom()
+    scrollX()
+    hiddenAlgos()
+    redraw.queue()
   })
 
   const resizeCanvas = () => {
@@ -411,10 +438,20 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     return Math.max(0, Math.min(h, h - pct * h))
   }
 
+  /**
+   * A frame loop, for as long as there is a reason for one.
+   *
+   * The playhead is the only thing on this canvas that moves by itself, so
+   * it is the only thing that needs frames it did not ask for. Everything
+   * else -- zoom, pan, hiding an algorithm, a seek, a resize -- changes on
+   * an event and can queue a single frame. This used to run forever at 60fps
+   * doing a full clearRect and a full-canvas blit even with nothing playing
+   * and nothing changed.
+   */
   const startDrawLoop = () => {
     const loop = () => {
       draw()
-      animFrameId = requestAnimationFrame(loop)
+      animFrameId = isPlaying() ? requestAnimationFrame(loop) : null
     }
     animFrameId = requestAnimationFrame(loop)
   }
