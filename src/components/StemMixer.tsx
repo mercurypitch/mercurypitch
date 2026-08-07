@@ -3184,6 +3184,13 @@ export const StemMixerStyles: string = `
   transition: box-shadow 0.15s ease;
 }
 
+/* The panel that takes the column's leftover height. A class, not an inline
+   style, so the floors below can still apply — see StemMixerFixedWorkspace. */
+.sm-panel-fill {
+  flex: 1;
+  min-height: 0;
+}
+
 .sm-workspace-panel.dragging {
   opacity: 0.5;
   box-shadow: 0 0 0 2px var(--accent, #58a6ff);
@@ -6176,14 +6183,40 @@ export const StemMixerStyles: string = `
   min-height: 0;
 }
 
+/* auto, not hidden. Every box between the panel and the results list is
+   flex: 1 with min-height: 0, so a deficit is passed straight down and the
+   list — the only element left that can shrink — absorbs all of it. On a
+   short window that measured 40px at 1280x800 and 0px at 1280x660: the search
+   box was there, the results were laid out, and nothing could reach them,
+   because the one scroll container in the chain had no height to scroll.
+   Clipping is only safe when something above guaranteed the room first.
+   (No backticks in here: this stylesheet is a template literal.) */
 .sm-workspace-panel > .sm-song-picker,
 .sm-perf-lyrics > .sm-song-picker {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+/* The panel drops the 320px cap so the list can fill a tall panel — which
+   also removed the only thing stopping it collapsing in a short one. A floor
+   of roughly two rows replaces it: the list still grows to fill, and when the
+   panel cannot spare even that, the picker above scrolls to it. */
 .sm-workspace-panel > .sm-song-picker .sm-song-picker-list,
 .sm-perf-lyrics > .sm-song-picker .sm-song-picker-list {
   max-height: none;
+  min-height: 6rem;
+}
+
+/* A panel holding the picker is not "whatever space is left" — it is a task
+   with a search box, results and a footer. Claim the height that needs, and
+   let the column scroll if the window cannot spare it. Only applies while the
+   picker is open, so the lyrics panel is free to be short the rest of the
+   time. This must be a floor in CSS rather than a bigger flex-basis: the
+   panel's height arrives as an inline style (a resize the singer chose, or a
+   plain flex: 1), and min-height is the one thing that outranks inline. */
+.sm-workspace-panel:has(> .sm-song-picker),
+.sm-perf-lyrics:has(> .sm-song-picker) {
+  min-height: 22rem;
 }
 
 /* Column toggle */
