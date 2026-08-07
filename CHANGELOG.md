@@ -96,6 +96,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Guided tours say where you are.** The step markers used to stack into a
+  block of specks on any tour longer than about eight steps — which is most of
+  them. A step is now a dash and where you are is a circle, on one line
+  whatever the length, with the number spelled out on the long ones.
 - **Big songs open properly in Compose.** A long MIDI used to show an empty
   grid you could not scroll; the editor now draws only the part you are looking
   at, with page buttons and a "go to bar" box.
