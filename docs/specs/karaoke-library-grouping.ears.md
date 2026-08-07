@@ -64,4 +64,3 @@ and the library count pill shall continue to report the total song count.
 
 ### REQ-KLG-011 — Durable deletion persistence
 **WHEN** a group deletion is confirmed, **THEN** the system shall await DB deletion of the group record and its member sessions/references before updating UI state, ensuring that a full page reload or store rehydration does not restore the deleted group or leave dangling references.
-
