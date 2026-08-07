@@ -1310,6 +1310,30 @@ export async function clearUvrSplitJob(sessionId: string): Promise<boolean> {
   return persistSessionDurable(updated)
 }
 
+/**
+ * Park a still-recoverable server job as `interrupted` rather than `error`.
+ *
+ * The distinction is money. `resumableServerSessions` deliberately excludes
+ * `error`, so a session parked there is never re-attached by any later
+ * trigger — reload, foreground, back online — and the only visible button
+ * starts a fresh BILLED run. A single transient first poll (a 15s timeout on
+ * a flaky radio, one 502 during a worker deploy) used to be enough to land
+ * there, stranding a job whose stems were sitting in R2 the whole time.
+ * Mirrors the stem-split rule: only a definitive verdict burns the marker.
+ */
+export function setInterruptedUvrSession(sessionId: string): void {
+  const session = getUvrSession(sessionId)
+  if (session) {
+    const updated: UvrSession = {
+      ...session,
+      status: 'interrupted',
+      error: undefined,
+    }
+    upsertSessionInCache(updated)
+    setCurrentSessionIfActive(updated)
+  }
+}
+
 /** Set UVR session error */
 export function setErrorUvrSession(sessionId: string, error: string): void {
   const session = getUvrSession(sessionId)
