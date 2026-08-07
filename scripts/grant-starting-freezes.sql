@@ -1,11 +1,25 @@
--- SUPERSEDED — do not run. Kept because migration 0017 names it.
+-- NOT part of the prod release. Off the checklist, kept for one narrow case.
 --
--- `accrueFreezes` now hands the opening balance to any profile with no
+-- `accrueFreezes` hands the opening balance to any profile with a null
 -- accrual anchor, so an account that predates the rule heals itself on its
--- next read and this has nothing left to do. Running it is harmless but
--- pointless; it is off the release checklist.
+-- next read and needs nothing from this file. Prod is entirely in that
+-- category: `lastFreezeEarnedDate` arrives with migration 0017 and nothing
+-- has been deployed there since v0.7.22, so every prod row reaches the new
+-- code with a null anchor.
 --
--- Everything below describes the original intent.
+-- The case that is not self-healing is an anchor already stamped by a build
+-- that set it without granting — possible only where migration 0017 was
+-- applied and an interim build then ran against it, which means dev, and
+-- only if someone pointed a local session at remote dev D1. Those rows sit
+-- at an anchored zero for ever, because the null branch is the only one that
+-- seeds. This file is the fix for exactly them. Check before running:
+--
+--   SELECT COUNT(*) FROM userProfiles
+--    WHERE streakFreezes = 0 AND lastFreezeUsedDate IS NULL
+--      AND lastFreezeEarnedDate IS NOT NULL;
+--
+-- Zero rows means there is nothing to do. Everything below describes the
+-- original intent.
 --
 -- One-time: give existing accounts the new starting balance of streak freezes.
 --
