@@ -9,7 +9,8 @@
 // Tests: src/tests/lrc-gen-partial-merge.test.ts
 
 import type { CanonicalLrcEntry, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
-import { estimateUnmappedTimes } from '@/lib/lrc-generator'
+import { buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
+import { buildLrcTextFromCanonical, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 
 function isMappableLine(line: string | undefined): boolean {
   const text = line?.trim()
@@ -367,4 +368,215 @@ export function buildFinalPartialTimes(params: {
   result = enforceMonotonicTimes(result)
 
   return result
+}
+
+// ── Composing what the finished session saves ────────────────────
+
+/**
+ * The song's timings as they stood before the session opened, keyed by LRC
+ * index the way they were persisted. Everything the merge does is relative to
+ * this: an untouched line keeps what is here, a touched one replaces it.
+ */
+export interface GenPreSnapshot {
+  wordTimings?: WordTimingsMap
+  wordEndTimings?: WordTimingsMap
+  wordSweepTimings?: WordSweepTimingsMap
+}
+
+export interface ComposeGenResultInput {
+  canonical: CanonicalLrcEntry[]
+  lines: string[]
+  /** The session's line starts, canonical-indexed. */
+  lineTimes: (number | undefined)[]
+  wordTimes: WordTimingsMap
+  wordEnds: WordTimingsMap
+  wordSweeps: WordSweepTimingsMap
+  touchedLines: ReadonlySet<number>
+  snapshot: GenPreSnapshot | null
+  duration: number
+}
+
+/** Everything the finished session hands back, LRC-indexed and ready to save. */
+export interface ComposedGenResult {
+  lrcText: string
+  wordTimings: WordTimingsMap
+  wordEndTimings: WordTimingsMap
+  wordSweepTimings: WordSweepTimingsMap
+  /** Canonical-indexed line starts, for callers that want them. */
+  lineTimes: (number | undefined)[]
+}
+
+/**
+ * Re-key an LRC-indexed map onto canonical indices, dropping entries whose
+ * line no longer exists. `clone` is per-map because word arrays only need a
+ * shallow copy while sweep curves are nested.
+ */
+function toCanonicalMap<T>(
+  source: Record<number, T> | undefined,
+  lrcToCanon: ReadonlyMap<number, number>,
+  clone: (value: T) => T,
+): Record<number, T> {
+  const out: Record<number, T> = {}
+  if (source === undefined) return out
+  for (const key of Object.keys(source)) {
+    const canonicalIdx = lrcToCanon.get(+key)
+    if (canonicalIdx !== undefined) out[canonicalIdx] = clone(source[+key])
+  }
+  return out
+}
+
+/** Word-level LRC for a line that has starts, line-level for one that does not. */
+function plainLineToLrc(
+  line: string,
+  wordTimes: number[] | undefined,
+  lineTime: number,
+): string {
+  if (line.trim() === '') return ''
+  const words = line.split(/\s+/).filter((word) => word.length > 0)
+  if (wordTimes !== undefined && wordTimes.length > 0 && words.length > 0) {
+    return words
+      .map((word, wordIdx) => {
+        const time = wordTimes[wordIdx]
+        return time !== undefined ? `[${formatTimeLrc(time)}] ${word}` : word
+      })
+      .join(' ')
+  }
+  return `[${formatTimeLrc(lineTime)}] ${line}`
+}
+
+/**
+ * Turn a finished mapping session into the LRC text and timing maps that get
+ * saved. Pure, because this is the step that decides what the singer keeps:
+ * it merges the session over the pre-session snapshot, fills the lines nobody
+ * touched, and re-keys everything from canonical indices back to LRC ones.
+ *
+ * The caller still owns the decisions around it — whether the session counts
+ * as a cancel, and what to do if `lrcText` comes back empty.
+ */
+export function composeGenResult(
+  input: ComposeGenResultInput,
+): ComposedGenResult {
+  const { canonical, lines, touchedLines, snapshot, duration } = input
+
+  const lrcToCanon = buildLrcToCanonicalMap(canonical)
+  const copyTimes = (times: number[]): number[] => [...times]
+
+  const origWtCanon: WordTimingsMap | undefined =
+    snapshot?.wordTimings === undefined
+      ? undefined
+      : toCanonicalMap(snapshot.wordTimings, lrcToCanon, copyTimes)
+  const origEndsCanon = toCanonicalMap(
+    snapshot?.wordEndTimings,
+    lrcToCanon,
+    copyTimes,
+  )
+  const origSweepsCanon = toCanonicalMap(
+    snapshot?.wordSweepTimings,
+    lrcToCanon,
+    (sweeps: Record<number, WordSweepPoint[]>) => structuredClone(sweeps),
+  )
+
+  // Honest "all mapped": every line explicitly touched — the cursor reaching
+  // the end only means the user finished at the end, not that they started
+  // there (see isSessionFullyMapped).
+  const allMapped = isSessionFullyMapped(lines.length, touchedLines)
+
+  let finalTimes: (number | undefined)[]
+  let wordTimesCanon: WordTimingsMap
+  let wordEndsCanon: WordTimingsMap
+  let wordSweepsCanon: WordSweepTimingsMap
+
+  if (allMapped) {
+    finalTimes = enforceMonotonicTimes(
+      duration > 0
+        ? estimateUnmappedTimes(input.lineTimes.slice(), lines, duration)
+        : input.lineTimes.slice(),
+    )
+    wordTimesCanon = input.wordTimes
+    wordEndsCanon = input.wordEnds
+    wordSweepsCanon = input.wordSweeps
+  } else {
+    // Only touched lines get the session's times. The canonical fallback
+    // inside mergePartialLineTimes is what keeps line-level LRC alive: without
+    // it an untouched line goes undefined, gets re-estimated, and the singer's
+    // original timestamp is gone.
+    finalTimes = buildFinalPartialTimes({
+      lines,
+      lineTimes: input.lineTimes,
+      touchedLines,
+      origWtCanon,
+      canonical,
+      duration,
+    })
+    wordTimesCanon = mergePartialWordTimings(
+      touchedLines,
+      origWtCanon,
+      input.wordTimes,
+    )
+    wordEndsCanon = mergePartialWordTimings(
+      touchedLines,
+      origEndsCanon,
+      input.wordEnds,
+    )
+    wordSweepsCanon = {}
+    for (const [lineIdx, sweeps] of Object.entries(origSweepsCanon)) {
+      if (!touchedLines.has(+lineIdx)) {
+        wordSweepsCanon[+lineIdx] = structuredClone(sweeps)
+      }
+    }
+    for (const [lineIdx, sweeps] of Object.entries(input.wordSweeps)) {
+      if (touchedLines.has(+lineIdx)) {
+        wordSweepsCanon[+lineIdx] = structuredClone(sweeps)
+      }
+    }
+  }
+
+  const wordTimings: WordTimingsMap = {}
+  const wordEndTimings: WordTimingsMap = {}
+  const wordSweepTimings: WordSweepTimingsMap = {}
+
+  if (canonical.length === 0) {
+    // Plain-text source: there is no canonical list to index against, so the
+    // session's own indices are already the LRC ones.
+    Object.assign(wordTimings, wordTimesCanon)
+    Object.assign(wordEndTimings, wordEndsCanon)
+    Object.assign(wordSweepTimings, wordSweepsCanon)
+    const lrcText = lines
+      .map((line, i) =>
+        plainLineToLrc(line, wordTimings[i], finalTimes[i] ?? 0),
+      )
+      .filter((line) => line !== '')
+      .join('\n')
+    return {
+      lrcText,
+      wordTimings,
+      wordEndTimings,
+      wordSweepTimings,
+      lineTimes: finalTimes,
+    }
+  }
+
+  for (const entry of canonical) {
+    if (entry.lrcIndex < 0) continue // synthetic ~Rest~ rows have no LRC line
+    const canonicalIdx = entry.canonicalIndex
+    const starts = wordTimesCanon[canonicalIdx]
+    if (starts !== undefined) wordTimings[entry.lrcIndex] = starts
+    const ends = wordEndsCanon[canonicalIdx]
+    if (ends !== undefined) wordEndTimings[entry.lrcIndex] = ends
+    const sweeps = wordSweepsCanon[canonicalIdx]
+    if (sweeps !== undefined) wordSweepTimings[entry.lrcIndex] = sweeps
+  }
+
+  const lrcText = buildLrcTextFromCanonical(
+    canonical,
+    finalTimes.map((time) => time ?? 0),
+    wordTimings,
+  )
+  return {
+    lrcText,
+    wordTimings,
+    wordEndTimings,
+    wordSweepTimings,
+    lineTimes: finalTimes,
+  }
 }
