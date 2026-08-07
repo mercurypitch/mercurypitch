@@ -8,7 +8,7 @@
 // melody in the URL and never reaches this registry at all.
 
 import { describe, expect, it } from 'vitest'
-import { blockedForAnonymous, TABLES } from './tables'
+import { blockedForAnonymous, maskPublicRow, TABLES } from './tables'
 
 const anon = { provider: 'anonymous' }
 const account = { provider: 'password' }
@@ -51,5 +51,75 @@ describe('blockedForAnonymous', () => {
       .map(([name]) => name)
       .sort()
     expect(shared).toEqual(gated)
+  })
+})
+
+// The generic CRUD reader is a second door onto tables that a dedicated
+// endpoint already guards. /api/billing/pricing withholds stripePriceId and
+// hands out a `purchasable` flag instead; GET /api/pricingPlans served the
+// column to anyone who asked. These tests pin the door shut.
+describe('maskPublicRow — privateCols', () => {
+  const plan = {
+    id: 'sup-fund',
+    kind: 'donation',
+    label: 'Chime',
+    amount: 500,
+    currency: 'eur',
+    stripePriceId: 'price_live_secret',
+    active: true,
+  }
+
+  it('withholds stripePriceId from an anonymous pricing read', () => {
+    const seen = maskPublicRow(TABLES.pricingPlans!, plan, null, false)
+    expect(seen).not.toHaveProperty('stripePriceId')
+    // The price itself is the pricing page — it has to survive.
+    expect(seen.amount).toBe(500)
+    expect(seen.label).toBe('Chime')
+    expect(seen.currency).toBe('eur')
+  })
+
+  it('still withholds it from a signed-in reader', () => {
+    // 'admin' tables have no owner, but a token must not widen the read.
+    const seen = maskPublicRow(TABLES.pricingPlans!, plan, 'user-1', false)
+    expect(seen).not.toHaveProperty('stripePriceId')
+  })
+
+  it('gives it to the admin studio, which edits these rows', () => {
+    const seen = maskPublicRow(TABLES.pricingPlans!, plan, null, true)
+    expect(seen.stripePriceId).toBe('price_live_secret')
+  })
+
+  it('does not mutate the row it was handed', () => {
+    // Both read paths map over rows straight out of D1; a mask that deleted
+    // in place would corrupt whatever else read the same object.
+    const row = { ...plan }
+    maskPublicRow(TABLES.pricingPlans!, row, null, false)
+    expect(row.stripePriceId).toBe('price_live_secret')
+  })
+
+  it('leaves a table with no privateCols exactly as it was', () => {
+    const flag = { id: 'f1', value: true }
+    expect(maskPublicRow(TABLES.featureFlags!, flag, null, false)).toEqual(flag)
+  })
+
+  it('keeps the owner exemption on publicCols intact', () => {
+    // privateCols must not have changed how profiles mask: the owner still
+    // sees their whole row, a stranger still gets the public subset only.
+    const profile = { id: 'me', displayName: 'Ada', friendCode: 'ABC-123' }
+    expect(maskPublicRow(TABLES.userProfiles!, profile, 'me', false)).toEqual(
+      profile,
+    )
+    const stranger = maskPublicRow(TABLES.userProfiles!, profile, 'you', false)
+    expect(stranger).not.toHaveProperty('friendCode')
+    expect(stranger.displayName).toBe('Ada')
+  })
+
+  it('names every column the CRUD reader holds back', () => {
+    // Same reasoning as the requiresAccount check above: the registry is the
+    // assertion, so a table that starts carrying a secret has to be listed.
+    const withPrivate = Object.entries(TABLES)
+      .filter(([, def]) => def.privateCols !== undefined)
+      .map(([name, def]) => [name, def.privateCols] as const)
+    expect(withPrivate).toEqual([['pricingPlans', ['stripePriceId']]])
   })
 })

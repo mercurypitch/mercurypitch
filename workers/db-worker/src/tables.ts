@@ -52,6 +52,19 @@ export interface TableDef {
    * public, which is only acceptable for non-personal tables.
    */
   publicCols?: string[]
+  /**
+   * Columns no one but an admin may read, on a table that is otherwise
+   * public. The inverse of `publicCols`: name the few things that must not
+   * leave, rather than re-listing every harmless column.
+   *
+   * That direction matters here. `publicCols` fails closed — a column added
+   * later is invisible until someone remembers the allowlist — which is right
+   * for a profile, where the cost of forgetting is a hidden field. On a config
+   * table read by the pricing page, failing closed would instead break the UI
+   * for a column that was never secret. `privateCols` fails open on new
+   * columns and keeps the named ones out, which matches how these tables grow.
+   */
+  privateCols?: string[]
 }
 
 /**
@@ -98,8 +111,13 @@ export function blockedForAnonymous(
 }
 
 /**
- * Project a row down to its public columns for a non-owner, non-admin
- * reader. Tables without a publicCols list pass through untouched.
+ * Project a row down to what this reader may see. Tables that declare
+ * neither publicCols nor privateCols pass through untouched.
+ *
+ * An admin sees whole rows — the studio edits these tables. Everyone else
+ * gets publicCols applied (unless they own the row) and then privateCols
+ * removed. Owning a row does not buy you a privateCol: those are the
+ * server's own plumbing, never the subject's data.
  */
 export function maskPublicRow<T extends Record<string, unknown>>(
   def: TableDef,
@@ -107,13 +125,23 @@ export function maskPublicRow<T extends Record<string, unknown>>(
   requesterId: string | null,
   admin: boolean,
 ): Partial<T> {
-  if (def.publicCols === undefined) return row
-  if (admin || (requesterId !== null && row.id === requesterId)) return row
-  const masked: Partial<T> = {}
-  for (const col of def.publicCols) {
-    if (col in row) masked[col as keyof T] = row[col as keyof T]
+  if (admin) return row
+  const owner = requesterId !== null && row.id === requesterId
+  let visible: Partial<T> = row
+  if (def.publicCols !== undefined && !owner) {
+    visible = {}
+    for (const col of def.publicCols) {
+      if (col in row) visible[col as keyof T] = row[col as keyof T]
+    }
   }
-  return masked
+  if (def.privateCols !== undefined) {
+    // Copy before deleting: `visible` may still be the caller's own row,
+    // and a mask that mutated its input would strip the column from
+    // whatever else holds a reference to it.
+    if (visible === (row as Partial<T>)) visible = { ...row }
+    for (const col of def.privateCols) delete visible[col as keyof T]
+  }
+  return visible
 }
 
 export const TABLES: Record<string, TableDef> = {
@@ -164,7 +192,18 @@ export const TABLES: Record<string, TableDef> = {
   // X-Admin-Key — so prices/tiers are editable without a deploy. The credit
   // ledger, entitlements, and billing events are deliberately NOT here: only
   // the server (billing webhook) may write them. See src/billing.ts.
-  pricingPlans: { access: 'admin', boolCols: ['active'] },
+  //
+  // stripePriceId stays behind the admin key. Amounts are meant to be seen —
+  // they are the pricing page — but the price id is our live Stripe
+  // configuration, and `mapPricingPlans` already withholds it from
+  // /api/billing/pricing in favour of a `purchasable` flag. Serving it here
+  // undid that. Nothing client-side wants it: checkout posts a planId and the
+  // worker looks the price up itself, so this is invisible to the app.
+  pricingPlans: {
+    access: 'admin',
+    boolCols: ['active'],
+    privateCols: ['stripePriceId'],
+  },
   // Leaderboard rules: public reads so the client can show the same
   // thresholds it will be judged by; writes require the X-Admin-Key, so
   // sources and thresholds are tunable without a deploy.
