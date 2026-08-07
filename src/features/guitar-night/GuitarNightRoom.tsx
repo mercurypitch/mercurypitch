@@ -1,12 +1,13 @@
 // Guitar Night Room turns a prepared backing into a deliberate, silent-until-play stage.
 // ============================================================
 
-import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightStage } from './GuitarNightStage'
@@ -152,7 +153,17 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     props.transport.setMasterVolume(Number(input.value))
   }
 
-  onMount(() => roomHeading.focus({ preventScroll: true }))
+  onMount(() => {
+    roomHeading.focus({ preventScroll: true })
+    // Space is the transport wherever the room is open — a focused mute chip
+    // or slider must not steal it. Typing surfaces keep the key (see helper).
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: togglePlayback,
+        enabled: () => props.transport.status() !== 'loading',
+      }),
+    )
+  })
 
   return (
     <section
@@ -319,11 +330,11 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             class={styles.playControl}
             type="button"
             aria-label={playLabel(props.transport.status())}
+            title={playLabel(props.transport.status())}
             disabled={props.transport.status() === 'loading'}
             onClick={togglePlayback}
           >
             <span aria-hidden="true">{isPlaying() ? <Pause /> : <Play />}</span>
-            <strong>{playLabel(props.transport.status())}</strong>
           </button>
           <div
             class={styles.playbackSpeed}
@@ -417,7 +428,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           </strong>
           <small>
             {props.transport.status() === 'armed'
-              ? 'Press Play backing to start audio'
+              ? 'Press Play or Space to start audio'
               : `${formatTime(position())} of ${formatTime(duration())}`}
           </small>
         </p>

@@ -116,6 +116,20 @@ existing user on upgrade.
 Never `<header>` or `<footer>` for page content — global rules target those
 tags. Pages inside `.main-content` need `flex-shrink: 0`.
 
+## 5a. Playback surfaces
+
+On any surface whose primary object is a running transport (Guitar Night room,
+karaoke stage, song practice), **Space toggles play/pause — always**. A focused
+mute chip, slider or panel button must not steal the key; only real typing
+surfaces (text inputs, textareas, selects, contenteditable) and modifier
+chords keep it. Install
+[`installSpacePlaybackToggle`](../../src/lib/space-playback.ts) from the
+component that owns the transport, for exactly its lifetime — do not hand-roll
+per-page Space handlers. It listens in the capture phase and suppresses the
+focused button's own Space activation (Enter still works for keyboard users).
+The main-app tab shell already routes Space via
+`useKeyboardShortcuts` — this rule is for standalone entries and new surfaces.
+
 ## 6. Tests
 
 | Kind              | Location                                            | Runner             |

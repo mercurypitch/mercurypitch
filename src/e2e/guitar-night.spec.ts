@@ -688,6 +688,25 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   ).toBeVisible()
   expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
 
+  // Space owns the transport even while another control holds focus — the
+  // focused button must not be activated on top of the toggle.
+  const restartControl = room.getByRole('button', {
+    name: 'Restart song',
+    exact: true,
+  })
+  await restartControl.focus()
+  await page.keyboard.press('Space')
+  await expect(
+    room.getByRole('button', { name: 'Pause backing', exact: true }),
+  ).toBeVisible()
+  expect(Number(await songPosition.inputValue())).toBeGreaterThanOrEqual(
+    pausedPosition - 0.2,
+  )
+  await page.keyboard.press('Space')
+  await expect(
+    room.getByRole('button', { name: 'Resume backing', exact: true }),
+  ).toBeVisible()
+
   const microphoneRequests = await page.evaluate(
     () =>
       (window as unknown as { __guitarNightMicCalls: number })
