@@ -329,6 +329,43 @@ describe('suggestSyllableSplits', () => {
     expect(harness.gen.suggestSyllableSplits(0, 9)).toBe(0)
   })
 
+  // The button reads this to decide whether to disable itself and what to
+  // say. It shares `suggestSpan` with the action, so the tooltip can never
+  // promise something the click then refuses.
+  describe('syllableSuggestState', () => {
+    it('is ready once the word has syllables and somewhere to spread them', () => {
+      harness.gen.setLetterSplit(0, 0, 0, 10)
+      harness.gen.setLetterSplit(0, 1, 0, 14)
+      expect(harness.gen.syllableSuggestState(0, 0)).toBe('ready')
+    })
+
+    it('reports a one-syllable word as having nothing to split', () => {
+      withSpan(1, 0, 2, 3)
+      expect(harness.gen.syllableSuggestState(1, 0)).toBe('no-syllables')
+    })
+
+    it('reports an unmapped word as needing a start first', () => {
+      expect(harness.gen.syllableSuggestState(0, 0)).toBe('unmapped')
+    })
+
+    it('reports a mapped word with nowhere to end as needing an end', () => {
+      // The harness starts line 1 at 10 s, so a word stamped at 10 with no
+      // next word of its own has the line ending on top of it: a start, and
+      // nothing to run to.
+      harness.gen.setLetterSplit(0, 0, 0, 10)
+      expect(harness.gen.syllableSuggestState(0, 0)).toBe('no-span')
+    })
+
+    it('reports a word too short to hold its syllables apart', () => {
+      withSpan(0, 0, 10, 10.04)
+      expect(harness.gen.syllableSuggestState(0, 0)).toBe('no-span')
+    })
+
+    it('treats a word that is not there as nothing to split', () => {
+      expect(harness.gen.syllableSuggestState(0, 9)).toBe('no-syllables')
+    })
+  })
+
   it('marks the line, so the suggestion survives finishing', () => {
     // Untouched lines fall back to their pre-session times on finish, which
     // would throw the whole suggestion away.

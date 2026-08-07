@@ -6,7 +6,7 @@ import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { LrcGenPass, PreviewWordHighlight, } from '@/features/stem-mixer/lrc-gen-passes'
+import type { LrcGenPass, PreviewWordHighlight, SyllableSuggestState, } from '@/features/stem-mixer/lrc-gen-passes'
 import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, GenViewLine, LrcGenInputMode, LyricsBlock, WordSweepPoint, WordTimingsMap, } from '@/features/stem-mixer/types'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { noteForWord } from '@/features/stem-mixer/zen-note-glyphs'
@@ -117,6 +117,11 @@ export interface StemMixerLyricsPanelBodyProps {
   ) => void
   /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
   suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
+  /** Why a suggestion cannot act on a word, so the button can say so. */
+  syllableSuggestState: (
+    lineIdx: number,
+    wordIdx: number,
+  ) => SyllableSuggestState
   highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -498,6 +503,7 @@ export const StemMixerLyricsPanelBody: Component<
             lyricsFontSize={props.lyricsFontSize}
             clearLetterSplit={props.clearLetterSplit}
             suggestSyllableSplits={props.suggestSyllableSplits}
+            syllableSuggestState={props.syllableSuggestState}
             closeLetterTarget={props.closeLetterTarget}
             letterSplits={props.letterSplits}
             letterTarget={props.letterTarget}
@@ -544,6 +550,7 @@ export const StemMixerLyricsPanelBody: Component<
             lrcGenWordIdx={props.lrcGenWordIdx}
             clearLetterSplit={props.clearLetterSplit}
             suggestSyllableSplits={props.suggestSyllableSplits}
+            syllableSuggestState={props.syllableSuggestState}
             closeLetterTarget={props.closeLetterTarget}
             letterMode={props.letterMode}
             letterSplits={props.letterSplits}

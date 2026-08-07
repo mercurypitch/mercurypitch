@@ -13,7 +13,7 @@
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { For, onCleanup, onMount, Show } from 'solid-js'
-import type { PreviewWordHighlight } from '@/features/stem-mixer/lrc-gen-passes'
+import type { PreviewWordHighlight, SyllableSuggestState, } from '@/features/stem-mixer/lrc-gen-passes'
 import type { BlockInfo, BlockInstancesMap, GenViewLine, LrcGenInputMode, LyricsBlock, } from '@/features/stem-mixer/types'
 import { RestCountdownDots } from '../RestCountdownDots'
 import { LrcWordLetters } from './LrcWordLetters'
@@ -78,6 +78,11 @@ export interface LrcMapperLineListProps {
   ) => void
   /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
   suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
+  /** Why a suggestion cannot act on a word, so the button can say so. */
+  syllableSuggestState: (
+    lineIdx: number,
+    wordIdx: number,
+  ) => SyllableSuggestState
 
   /** Extra classes on the scroll container, for the full-screen surface. */
   class?: string
@@ -473,6 +478,9 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                               onClose={props.closeLetterTarget}
                               onSuggestSyllables={() =>
                                 props.suggestSyllableSplits(item.index, wi)
+                              }
+                              suggestState={() =>
+                                props.syllableSuggestState(item.index, wi)
                               }
                             />
                           </Show>

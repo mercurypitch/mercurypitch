@@ -30,7 +30,7 @@ import { letterBoundaryCount, letterSplitTimes, progressForLetter, } from '@/lib
 import { autoSyncWordTimings } from './auto-word-sync'
 import { fillBlockInstance } from './block-fill'
 import { composeGenResult, restoreGenLineTimes, restoreGenMap, } from './lrc-gen-engine'
-import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
+import type { GenCursor, LrcGenPass, PreviewWordHighlight, SyllableSuggestState, } from './lrc-gen-passes'
 import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, wordSpan, } from './lrc-gen-passes'
 import type { SavedGenProgress } from './lrc-gen-progress'
 import { createGenProgressStore, genProgressKey, parseSavedGenProgress, } from './lrc-gen-progress'
@@ -192,6 +192,11 @@ export interface LrcGenController {
   ) => void
   /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
   suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
+  /** Whether a suggestion could act on a word, and if not, why. */
+  syllableSuggestState: (
+    lineIdx: number,
+    wordIdx: number,
+  ) => SyllableSuggestState
 
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
@@ -1540,6 +1545,27 @@ export function useLrcGenController(
   }
 
   /**
+   * Whether a suggestion could act on this word, and if not, why.
+   *
+   * Shares `suggestSpan` with the action itself, so the button's tooltip can
+   * never promise something the click then refuses.
+   */
+  const syllableSuggestState = (
+    lineIdx: number,
+    wordIdx: number,
+  ): SyllableSuggestState => {
+    const word = genWordAt(lineIdx, wordIdx)
+    if (word === undefined || syllableBoundaries(word).length === 0) {
+      return 'no-syllables'
+    }
+    if (suggestSpan(lineIdx, wordIdx) !== null) return 'ready'
+    // Distinguished because they ask for different things: one wants the word
+    // mapped at all, the other wants it to have somewhere to end.
+    const start = lrcGenWordTimings()[lineIdx]?.[wordIdx]
+    return start === undefined ? 'unmapped' : 'no-span'
+  }
+
+  /**
    * Pre-fill this word's syllable boundaries, spread evenly across the span
    * it already occupies.
    *
@@ -1656,6 +1682,7 @@ export function useLrcGenController(
     setLetterSplit,
     clearLetterSplit,
     suggestSyllableSplits,
+    syllableSuggestState,
     focusGenLine,
     resetGenState,
 
