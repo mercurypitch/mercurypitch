@@ -90,6 +90,8 @@ export interface StemMixerLyricsPanelBodyProps {
   lrcGenPass: Accessor<LrcGenPass>
   setLrcGenPass: (pass: LrcGenPass) => void
   wordPassProgress: Accessor<{ done: number; total: number }>
+  genShiftMs: Accessor<number>
+  shiftGenTimings: (deltaMs: number) => number
   previewLineIdx: Accessor<number | null>
   liveHighlight: Accessor<boolean>
   setLiveHighlight: (on: boolean) => void
@@ -832,6 +834,54 @@ export const StemMixerLyricsPanelBody: Component<
                   Calibrate
                 </button>
               </label>
+              {/* Reaction corrects the taps you are about to make. This moves
+                  the ones already placed — a different job, so it gets its own
+                  field rather than another number in that one. */}
+              <div
+                class="sm-lyrics-gen-shift"
+                role="group"
+                aria-label="Shift every mapped timing"
+              >
+                <span class="sm-lyrics-gen-field-label">Shift all</span>
+                <For each={[-100, -10] as const}>
+                  {(step) => (
+                    <button
+                      class="sm-lyrics-gen-shift-btn"
+                      onClick={() => props.shiftGenTimings(step)}
+                      title={`Move every mapped timing ${-step} ms earlier`}
+                    >
+                      {step}
+                    </button>
+                  )}
+                </For>
+                <span
+                  class="sm-lyrics-gen-shift-readout"
+                  aria-live="polite"
+                  title="How far this session has moved the whole mapping"
+                >
+                  {props.genShiftMs() > 0 ? '+' : ''}
+                  {props.genShiftMs()} ms
+                </span>
+                <For each={[10, 100] as const}>
+                  {(step) => (
+                    <button
+                      class="sm-lyrics-gen-shift-btn"
+                      onClick={() => props.shiftGenTimings(step)}
+                      title={`Move every mapped timing ${step} ms later`}
+                    >
+                      +{step}
+                    </button>
+                  )}
+                </For>
+                <button
+                  class="sm-lyrics-gen-shift-btn"
+                  disabled={props.genShiftMs() === 0}
+                  onClick={() => props.shiftGenTimings(-props.genShiftMs())}
+                  title="Undo this session's shift"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
           <Show when={showCalibration()}>

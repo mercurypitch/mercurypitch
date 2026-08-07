@@ -723,6 +723,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenPass,
     setLrcGenPass,
     wordPassProgress,
+    genShiftMs,
+    shiftGenTimings,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -1340,6 +1342,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     lrcGenPass,
     setLrcGenPass,
     wordPassProgress,
+    genShiftMs,
+    shiftGenTimings,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -5322,6 +5326,45 @@ export const StemMixerStyles: string = `
 .sm-lyrics-gen-calib-btn:hover {
   color: var(--fg-primary, #c9d1d9);
   border-color: #f4d35e;
+}
+
+.sm-lyrics-gen-shift {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  color: var(--fg-tertiary, #8b949e);
+  font-size: 0.58rem;
+}
+
+.sm-lyrics-gen-shift-btn {
+  height: 1.45rem;
+  padding: 0 0.35rem;
+  color: var(--fg-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  font: 600 0.55rem/1 monospace;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-shift-btn:hover:not(:disabled) {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--accent-lighter, #79c0ff);
+}
+
+.sm-lyrics-gen-shift-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Tabular figures: the readout changes under the cursor as you nudge, and
+   proportional digits make the buttons either side of it jump. */
+.sm-lyrics-gen-shift-readout {
+  min-width: 4.2rem;
+  text-align: center;
+  color: var(--fg-primary, #c9d1d9);
+  font: 0.58rem/1 monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .sm-lyrics-gen-toggle {

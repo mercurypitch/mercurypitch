@@ -361,8 +361,58 @@ export function parseTextLyrics(text: string): string[] {
 
 const LRC_LINE_RE = /^\[(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?\](.*)/
 
+/**
+ * The `[offset:±ms]` ID tag from the LRC spec, as seconds to add to every
+ * timestamp in the file. A positive tag means the lyrics should appear
+ * *earlier*, so the returned shift is negative — that sign flip is the whole
+ * reason this is a named function and not an inline parse.
+ *
+ * Returns 0 for a file with no tag, or one we cannot read: an offset we are
+ * unsure of is worse than no offset.
+ */
+export function parseLrcOffsetTag(content: string): number {
+  const match = content.match(/^\[offset:\s*([+-]?\d+)\s*\]\s*$/m)
+  if (match === null) return 0
+  const ms = Number(match[1])
+  if (!Number.isFinite(ms)) return 0
+  return -ms / 1000
+}
+
+/** Seconds to `mm:ss.xx`, the form the inline word stamps are written in. */
+function toLrcStamp(time: number): string {
+  const clamped = Math.max(0, time)
+  const mins = Math.floor(clamped / 60)
+  const secs = clamped - mins * 60
+  return `${String(mins).padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`
+}
+
+/**
+ * Move the enhanced-LRC word stamps embedded in a line's text.
+ *
+ * Applying a file offset to line starts alone would be worse than ignoring
+ * it: `parseLrcWordTimings` reads these stamps as absolute times, so the
+ * words would keep their original timing while their line moved.
+ */
+function shiftInlineLrcTimestamps(text: string, shiftSec: number): string {
+  return text.replace(
+    LRC_TS_GLOBAL,
+    (_whole, min: string, sec: string, frac?: string) => {
+      let ms = 0
+      if (frac !== undefined) {
+        ms = parseInt(frac, 10)
+        if (frac.length === 2) ms *= 10
+      }
+      const time = parseInt(min, 10) * 60 + parseInt(sec, 10) + ms / 1000
+      return `[${toLrcStamp(time + shiftSec)}]`
+    },
+  )
+}
+
 export function parseLrcFile(content: string): LrcLine[] {
   const lines: LrcLine[] = []
+  // Authored into the file, so it applies before anything downstream sees a
+  // time. Zero for the overwhelming majority of files, and free when it is.
+  const shift = parseLrcOffsetTag(content)
 
   for (const raw of content.split('\n')) {
     const match = raw.match(LRC_LINE_RE)
@@ -376,8 +426,10 @@ export function parseLrcFile(content: string): LrcLine[] {
       if (match[3].length === 2) ms *= 10
     }
 
-    const time = mins * 60 + secs + ms / 1000
-    const text = match[4].trim()
+    const time = Math.max(0, mins * 60 + secs + ms / 1000 + shift)
+    const text = (
+      shift === 0 ? match[4] : shiftInlineLrcTimestamps(match[4], shift)
+    ).trim()
     if (text) {
       lines.push({ time, text })
     }

@@ -29,6 +29,7 @@ import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreGenLineTimes, restoreGenMap, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
 import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, normalizePass, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
+import { shiftTimings } from './lrc-offset'
 import type { BlockInfo, BlockInstancesMap, CanonicalLrcEntry, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 /**
@@ -142,6 +143,10 @@ export interface LrcGenController {
   wordPassProgress: () => { done: number; total: number }
   /** Whether `idx` was mapped in this sitting rather than inherited. */
   isLineTouched: (idx: number) => boolean
+  /** Cumulative global shift applied this session, in milliseconds. */
+  genShiftMs: Accessor<number>
+  /** Move the whole mapping; returns the shift actually applied, in seconds. */
+  shiftGenTimings: (deltaMs: number) => number
 
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
@@ -202,6 +207,10 @@ export function useLrcGenController(
     createSignal<WordTimingsMap>({})
   const [lrcGenWordSweepTimings, setLrcGenWordSweepTimings] =
     createSignal<WordSweepTimingsMap>({})
+  // How far this session has moved the whole mapping, for the readout. Not
+  // persisted: it describes the session's edits, and the edits themselves are
+  // already in the timings.
+  const [genShiftMs, setGenShiftMs] = createSignal(0)
 
   // Snapshot of pre-gen LRC state so Cancel can restore
   let preGenSnapshot: {
@@ -618,6 +627,7 @@ export function useLrcGenController(
     setLrcGenPassSignal(saved?.pass ?? 'all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setGenShiftMs(0)
     setLrcGenLineIdx(saved?.lineIdx ?? 0)
     setLrcGenWordIdx(saved?.wordIdx ?? 0)
     deps.setEditMode(false)
@@ -1346,6 +1356,7 @@ export function useLrcGenController(
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setGenShiftMs(0)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
@@ -1406,6 +1417,48 @@ export function useLrcGenController(
     return { linesSynced: synced }
   }
 
+  // ── Global offset ────────────────────────────────────────────────
+
+  /**
+   * Move the whole mapping in time.
+   *
+   * Every line that carries a timing is marked touched, because it is: a
+   * shift that left them untouched would be dropped for all of them at
+   * finish, where untouched lines fall back to their pre-session times.
+   *
+   * Returns the shift actually applied — `clampShift` refuses to push the
+   * first word before the start of the track, and the readout has to show
+   * what happened rather than what was asked for.
+   */
+  const shiftGenTimings = (deltaMs: number): number => {
+    const { timings, applied } = shiftTimings(
+      {
+        lineTimes: lrcGenLineTimes(),
+        wordTimings: lrcGenWordTimings(),
+        wordEndTimings: lrcGenWordEndTimings(),
+        wordSweepTimings: lrcGenWordSweepTimings(),
+      },
+      deltaMs / 1000,
+    )
+    if (applied === 0) return 0
+
+    setLrcGenLineTimes([...timings.lineTimes])
+    setLrcGenWordTimings(timings.wordTimings)
+    setLrcGenWordEndTimings(timings.wordEndTimings)
+    setLrcGenWordSweepTimings(timings.wordSweepTimings)
+
+    timings.lineTimes.forEach((time, idx) => {
+      if (time !== undefined) markTouched(idx)
+    })
+    for (const lineIdx of Object.keys(timings.wordTimings)) {
+      markTouched(+lineIdx)
+    }
+
+    setGenShiftMs((prev) => Math.round(prev + applied * 1000))
+    saveLrcGenProgress()
+    return applied
+  }
+
   const handleLrcGenReset = () => {
     // Cancel: restore pre-gen LRC state, don't touch anything
     if (preGenSnapshot) {
@@ -1428,6 +1481,7 @@ export function useLrcGenController(
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setGenShiftMs(0)
     touchedLines = new Set()
     bumpTouched()
     clearLrcGenProgress()
@@ -1466,6 +1520,7 @@ export function useLrcGenController(
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setGenShiftMs(0)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
     setLrcGenLineTimes([])
@@ -1517,6 +1572,8 @@ export function useLrcGenController(
     applyAutoWordSync,
     wordPassProgress,
     isLineTouched,
+    genShiftMs,
+    shiftGenTimings,
     focusGenLine,
     resetGenState,
 
