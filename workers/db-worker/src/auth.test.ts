@@ -987,6 +987,50 @@ describe('GET /api/auth/me profile shape', () => {
     // re-opts in - so opting OUT from the UI was impossible.
     expect(body.profile.leaderboardOptIn).toBe(true)
   })
+
+  // `publicUser` is a hand-written whitelist, which is the right shape but a
+  // fragile one: the day somebody replaces it with `{ ...row }` to add a
+  // field, the password hash and the revocation counter go out over the wire
+  // with it, on every register, login and /me. Naming the forbidden keys
+  // means that edit fails here instead of shipping.
+  it.each(['register', 'me'] as const)(
+    'never returns a credential or a revocation counter from %s',
+    async (surface) => {
+      const db = new AuthDatabase()
+      const env = makeEnv(db)
+      const auth = await postAuth(
+        'register',
+        {
+          email: 'shape@example.com',
+          password: 'Sing1ngPass',
+          deviceId: FRESH_DEVICE_ID,
+        },
+        env,
+      )
+
+      let user = auth.user as Record<string, unknown>
+      if (surface === 'me') {
+        const response = await handleAuth(
+          new Request('https://api.test/api/auth/me', {
+            headers: { Authorization: `Bearer ${String(auth.token)}` },
+          }),
+          env,
+          '/api/auth/me',
+          respond,
+        )
+        user = ((await response!.json()) as { user: Record<string, unknown> })
+          .user
+      }
+
+      // The stored hash is real, so an accidental spread would carry a value
+      // here rather than an undefined that a weaker assertion would pass.
+      expect(db.user(String(user.id)).passwordHash).toBeTruthy()
+      for (const forbidden of ['passwordHash', 'tokenVersion', 'providerId']) {
+        expect(user).not.toHaveProperty(forbidden)
+      }
+      expect(JSON.stringify(user)).not.toContain('pbkdf2')
+    },
+  )
 })
 
 describe('DELETE /api/auth/me shared perk ownership', () => {
