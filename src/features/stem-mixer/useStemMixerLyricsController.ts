@@ -92,6 +92,8 @@ export interface StemMixerLyricsController {
   lrcGenPass: () => LrcGenPass
   setLrcGenPass: (pass: LrcGenPass) => void
   wordPassProgress: () => { done: number; total: number }
+  genShiftMs: () => number
+  shiftGenTimings: (deltaMs: number) => number
   previewLineIdx: () => number | null
   previewLoop: () => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -1626,6 +1628,8 @@ export function useStemMixerLyricsController(
     lrcGenPass,
     setLrcGenPass,
     wordPassProgress,
+    genShiftMs: gen.genShiftMs,
+    shiftGenTimings: gen.shiftGenTimings,
     previewLineIdx,
     previewLoop,
     setPreviewLoop,
