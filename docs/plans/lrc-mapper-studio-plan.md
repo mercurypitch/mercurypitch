@@ -198,7 +198,33 @@ Ship as its own PR. Do not combine with Phase 1.
 
 ---
 
-## Phase 1 — `lyricsfile` as the native format
+## Phase 1 — `lyricsfile` as the native format (PART DONE)
+
+**Done:** the global offset, which this phase called the highest
+value-per-line change in the plan. `src/features/stem-mixer/lrc-offset.ts`
+holds the arithmetic; a Shift all control sits with the mapper settings.
+
+Two decisions worth keeping:
+
+- The delta is bounded, not each time clamped. Clamping individual times at
+  zero would bunch the head of the song against 0:00 while the rest kept its
+  spacing — destroying the mapping it was asked to move.
+- Every shifted line is marked touched. Untouched lines fall back to their
+  pre-session times when a partial session finishes, so a shift that skipped
+  this would be silently dropped for most of the song.
+
+Also now honours the LRC `[offset:]` ID tag on import, which was being
+ignored outright, rewriting the inline word stamps by the same amount.
+
+**Still to do:** `parseLyricsfile` / `serialiseLyricsfile`. It needs a YAML
+parser, which is a new client dependency — hand-rolling one for lyrics (full
+of apostrophes, quotes and colons) is the classic version of this mistake.
+Decide between a dynamically imported `yaml` package and dropping the import
+half, before starting.
+
+---
+
+## Phase 1 (original) — `lyricsfile` as the native format
 
 **New:** `src/lib/lyricsfile.ts` — `parseLyricsfile` / `serialiseLyricsfile`,
 plus round-trip tests over the gold corpus (§8).
@@ -279,7 +305,29 @@ strip. Reuse `use-viewport`'s `isMobile()`/`isNarrow()` — do not re-implement
 
 ---
 
-## Phase 3 — waveform word markers
+## Phase 3 — waveform word markers (DONE)
+
+Shipped in `80aec96a`. `xToTime`, `nearestMarker`, `visibleMarkers` and
+`wordMarkersFrom` landed in `overview-mapping.ts` as planned, and the
+clutter mitigation is the one the plan predicted: thin inner words inside a
+4 px gap, never thin a line start, and draw line starts full height against
+stubs for inner words.
+
+Two things worth knowing:
+
+- Only the ticks actually drawn are grabbable. A thinned-away word has no
+  pixel to aim at, and hitting it reads as a misfire.
+- The dragged position is held locally and committed once on release, so a
+  drag does not write and persist a few hundred timings.
+
+**Outstanding: the real-mouse Playwright spec.** The decision logic is unit
+tested; what the spec adds is that pointer events reach the canvas and the
+DPR/layout coordinate maths survives. Per repo memory this is required
+before merge, and it is not done.
+
+---
+
+## Phase 3 (original) — waveform word markers
 
 **Pure layer first** — extend `overview-mapping.ts`:
 
@@ -349,7 +397,20 @@ the payoff: with real split points the renderer stops guessing at held vowels.
 
 ---
 
-## Phase 5 — the A/B differ
+## Phase 5 — the A/B differ (DONE)
+
+Shipped in `8dfef36b` as a `lrc-diff` Lab tab plus `src/lib/lrc-compare.ts`.
+`scripts/compare-lrc-timing.mjs` is now a CLI over the same module rather
+than a second implementation — it imports the TypeScript directly and lets
+Node strip the types (Node >= 22.18).
+
+Not built: the in-mapper `Compare` menu. The Lab tab is where a measurement
+belongs; putting it in the mapper too is worth doing only once there is a
+reason to compare without leaving the session.
+
+---
+
+## Phase 5 (original) — the A/B differ
 
 **Step 1 — lift the logic.** Move the comparison core out of
 `scripts/compare-lrc-timing.mjs` into `src/lib/lrc-compare.ts`, and have the
