@@ -134,12 +134,6 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               borderRadius={() => '0'}
             />
           </Suspense>
-          <Show when={!hasGuide()}>
-            <div class={styles.freePlayNeck} aria-hidden="true">
-              <span />
-              <i>Play anywhere</i>
-            </div>
-          </Show>
           <p class={styles.stageGestureHint} aria-hidden="true">
             Drag to change the view · scroll to move closer
           </p>

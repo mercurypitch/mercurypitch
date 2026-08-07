@@ -37,6 +37,12 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   mix. Neither path starts playback.
 - `I know my way around` preserves continuity by opening the current Guitar
   workspace during the incremental migration.
+- Inside the room, Space always toggles the backing transport — a focused
+  mute chip, slider or panel button never steals the key; typing surfaces and
+  modifier chords do (shared rule: `src/lib/space-playback.ts`).
+- The amber Play control is icon-only; its state names (Play, Pause, Resume)
+  live in the accessible label and tooltip so the pedalboard never reflows
+  between states.
 - Focus is always visible, touch targets are at least 44px, and room motion is
   removed under reduced-motion preferences.
 

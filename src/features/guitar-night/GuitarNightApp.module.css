@@ -1143,66 +1143,6 @@
   pointer-events: none;
 }
 
-.freePlayNeck {
-  position: absolute;
-  inset: 11% 7% 8%;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  perspective: 34rem;
-}
-
-.freePlayNeck > span {
-  position: absolute;
-  inset: 8% 3% 4%;
-  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
-  background:
-    linear-gradient(
-      180deg,
-      transparent 0 7%,
-      rgba(242, 201, 143, 0.5) 7.4% 7.8%,
-      transparent 8.2% 22%,
-      rgba(221, 169, 105, 0.42) 22.4% 22.9%,
-      transparent 23.3% 38%,
-      rgba(189, 139, 88, 0.38) 38.4% 39%,
-      transparent 39.4% 55%,
-      rgba(137, 207, 196, 0.34) 55.4% 56%,
-      transparent 56.4% 72%,
-      rgba(111, 183, 174, 0.34) 72.4% 73%,
-      transparent 73.4% 89%,
-      rgba(216, 200, 175, 0.34) 89.4% 90%,
-      transparent 90.4%
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 7.5%,
-      rgba(244, 234, 219, 0.075) 7.7% 8%,
-      transparent 8.2% 15.5%
-    );
-  filter: drop-shadow(0 1rem 2.5rem rgba(224, 164, 93, 0.08));
-}
-
-.freePlayNeck::after {
-  position: absolute;
-  right: 2%;
-  bottom: 3.5%;
-  left: 2%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--teal), transparent);
-  box-shadow: 0 0 1.2rem rgba(106, 202, 189, 0.5);
-  content: '';
-}
-
-.freePlayNeck i {
-  z-index: 1;
-  margin-top: 22%;
-  color: rgba(244, 234, 219, 0.44);
-  font-size: 0.62rem;
-  font-style: normal;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .stageTab {
   position: relative;
   display: grid;
@@ -1483,10 +1423,11 @@
   display: grid;
   grid-template-columns:
     var(--touch-target)
-    minmax(8.5rem, 11rem)
+    3.4rem
     minmax(7.8rem, auto)
     minmax(6rem, 8rem);
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
   margin: 0;
 }
@@ -1517,13 +1458,14 @@
   height: 1rem;
 }
 
+/* The one amber Play control is icon-only: its state labels live in the
+   aria-label/title, so the button never reflows between Play and Pause. */
 .playControl {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  min-width: 9rem !important;
-  padding: 0.85rem 1.35rem;
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  padding: 0;
   border-radius: 999px;
   color: #1a1109;
   background: var(--amber-bright);
@@ -1543,12 +1485,8 @@
 }
 
 .playControl svg {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-
-.playControl strong {
-  font-size: 0.8rem;
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 .playbackSpeed {
@@ -1841,7 +1779,7 @@
   .transportControls {
     grid-template-columns:
       var(--touch-target)
-      minmax(8rem, 1fr)
+      3.4rem
       minmax(7.8rem, auto)
       minmax(5.5rem, 7rem);
   }
@@ -2151,7 +2089,7 @@
   }
 
   .transportControls {
-    grid-template-columns: var(--touch-target) minmax(0, 1fr) 7.8rem 4.25rem;
+    grid-template-columns: var(--touch-target) 3.35rem 7.8rem 4.25rem;
     gap: 0.45rem;
     margin: 0;
   }
@@ -2161,9 +2099,8 @@
   }
 
   .playControl {
-    min-width: 0 !important;
-    min-height: 3.35rem !important;
-    padding: 0.7rem 0.8rem;
+    width: 3.35rem;
+    height: 3.35rem;
   }
 
   .masterVolume {
