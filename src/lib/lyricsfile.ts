@@ -8,19 +8,21 @@
 // LRCLib's live API already returns one, so writing it is a door rather than a
 // fork.
 //
-// **This module writes only.** Reading needs a YAML parser, which is a new
-// client dependency; hand-rolling one for text that is full of apostrophes,
-// quotes and colons is the classic version of this mistake. The decision is
-// recorded as open in docs/plans/lrc-mapper-studio-plan.md (Phase 1) — until
-// it is taken, an export that no reader here can round-trip is still worth
-// having, because the readers that matter are elsewhere.
+// Writing needs no dependency: every scalar is double-quoted and JSON-escaped,
+// which is exactly the subset YAML and JSON agree on. **Reading does** — real
+// files come from other tools and use the whole language — so `parseLyricsfile`
+// imports the `yaml` package dynamically. It is on nobody's first-paint path;
+// the parser loads the first time somebody opens a `.lyricsfile` and never
+// otherwise. Hand-rolling one for text full of apostrophes, quotes and colons
+// is the classic version of this mistake.
 //
 // The one real trap, called out in the spec: **concatenating a line's word
 // texts must reconstruct the line exactly.** Spacing lives inside the word
 // strings. The app's `split(/\s+/)` model throws it away, so `splitWithSpacing`
 // exists to put it back rather than assuming one space between words.
 
-import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
+import { formatTimeLrc } from './lrc-generator'
 import type { LrcLine } from './lyrics-service'
 
 /** Sweeps have no home in the 1.0 spec — see `LYRICSFILE_SWEEPS_KEY`. */
@@ -139,17 +141,19 @@ export function serialiseLyricsfile(input: SerialiseLyricsfileInput): string {
     if (starts === undefined) continue
 
     const words = splitWithSpacing(line.text)
-    // A word with no start has no place in the spec's model, and guessing one
-    // would put a fabricated timing in an interchange file.
-    const timed = words.some((_word, i) => starts[i] !== undefined)
-    if (!timed) continue
+    // All or nothing. `start_ms` is required on a word, so an untimed one
+    // could only be fabricated or omitted — and omitting it shifts every word
+    // after it by a position, which lands the rest of the line's timings on
+    // the wrong words. A half-mapped line has no faithful word-level form in
+    // this spec, so it ships with its line timing alone.
+    const fullyTimed =
+      words.length > 0 && words.every((_word, i) => starts[i] !== undefined)
+    if (!fullyTimed) continue
 
     out.push('    words:')
     for (const [wordIdx, word] of words.entries()) {
-      const start = starts[wordIdx]
-      if (start === undefined) continue
       out.push(`      - text: ${scalar(word)}`)
-      out.push(`        start_ms: ${ms(start)}`)
+      out.push(`        start_ms: ${ms(starts[wordIdx])}`)
       const end = ends?.[wordIdx]
       if (end !== undefined) out.push(`        end_ms: ${ms(end)}`)
     }
@@ -207,4 +211,186 @@ function serialiseSweeps(
     }
   }
   return out.join('\n')
+}
+
+// ── Reading ──────────────────────────────────────────────────────
+
+export interface ParsedLyricsfile {
+  metadata: LyricsfileMetadata
+  lines: LrcLine[]
+  wordTimings: WordTimingsMap
+  wordEndTimings: WordTimingsMap
+  wordSweepTimings: WordSweepTimingsMap
+}
+
+/**
+ * Read a lyricsfile 1.0 document.
+ *
+ * Returns null for anything that is not one rather than throwing: the caller
+ * is an upload handler, and a mistyped file is a normal thing for a person to
+ * do. Every field is validated on the way in — a file from another tool is
+ * untrusted input, and a `start_ms` of `"soon"` must not become `NaN`
+ * timestamps three layers down.
+ *
+ * The parser is imported here rather than at module scope so it stays off the
+ * path of everyone who never opens one of these.
+ */
+export async function parseLyricsfile(
+  text: string,
+): Promise<ParsedLyricsfile | null> {
+  let doc: unknown
+  try {
+    const { parse } = await import('yaml')
+    doc = parse(text)
+  } catch {
+    return null
+  }
+  if (!isRecord(doc)) return null
+
+  const rawLines = doc.lines
+  if (!Array.isArray(rawLines)) return null
+
+  const lines: LrcLine[] = []
+  const wordTimings: WordTimingsMap = {}
+  const wordEndTimings: WordTimingsMap = {}
+
+  for (const raw of rawLines) {
+    if (!isRecord(raw)) continue
+    const lineText = typeof raw.text === 'string' ? raw.text : null
+    const startMs = finiteNumber(raw.start_ms)
+    if (lineText === null || startMs === null) continue
+
+    const lineIdx = lines.length
+    lines.push({ time: startMs / 1000, text: lineText })
+
+    if (!Array.isArray(raw.words)) continue
+    // Word indices come from position in the list, which is what the spec
+    // says and what makes the writer's all-or-nothing rule matter: a list with
+    // a word missing would silently shift every timing after it.
+    const starts: number[] = []
+    const ends: number[] = []
+    let sawStart = false
+    let sawEnd = false
+    for (const [wordIdx, word] of raw.words.entries()) {
+      if (!isRecord(word)) continue
+      const wordStart = finiteNumber(word.start_ms)
+      if (wordStart !== null) {
+        starts[wordIdx] = wordStart / 1000
+        sawStart = true
+      }
+      const wordEnd = finiteNumber(word.end_ms)
+      if (wordEnd !== null) {
+        ends[wordIdx] = wordEnd / 1000
+        sawEnd = true
+      }
+    }
+    if (sawStart) wordTimings[lineIdx] = starts
+    if (sawEnd) wordEndTimings[lineIdx] = ends
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    metadata: parseMetadata(doc.metadata),
+    lines,
+    wordTimings,
+    wordEndTimings,
+    wordSweepTimings: parseSweeps(doc[LYRICSFILE_SWEEPS_KEY]),
+  }
+}
+
+function parseMetadata(raw: unknown): LyricsfileMetadata {
+  if (!isRecord(raw)) return {}
+  const out: LyricsfileMetadata = {}
+  if (typeof raw.title === 'string') out.title = raw.title
+  if (typeof raw.artist === 'string') out.artist = raw.artist
+  if (typeof raw.album === 'string') out.album = raw.album
+  if (typeof raw.language === 'string') out.language = raw.language
+  if (typeof raw.instrumental === 'boolean') out.instrumental = raw.instrumental
+  const duration = finiteNumber(raw.duration_ms)
+  if (duration !== null) out.durationMs = duration
+  const offset = finiteNumber(raw.offset_ms)
+  if (offset !== null) out.offsetMs = offset
+  return out
+}
+
+/**
+ * Read back the namespaced sweep block.
+ *
+ * Lossy-optional in both directions: anything malformed is dropped rather than
+ * failing the file, because a reader that ignores this key entirely is still a
+ * conforming reader.
+ */
+function parseSweeps(raw: unknown): WordSweepTimingsMap {
+  const out: WordSweepTimingsMap = {}
+  if (!isRecord(raw)) return out
+  for (const [lineKey, words] of Object.entries(raw)) {
+    const lineIdx = Number(lineKey)
+    if (!Number.isInteger(lineIdx) || lineIdx < 0 || !isRecord(words)) continue
+    const perWord: Record<number, WordSweepPoint[]> = {}
+    for (const [wordKey, points] of Object.entries(words)) {
+      const wordIdx = Number(wordKey)
+      if (!Number.isInteger(wordIdx) || wordIdx < 0 || !Array.isArray(points)) {
+        continue
+      }
+      const curve: WordSweepPoint[] = []
+      for (const point of points) {
+        if (!isRecord(point)) continue
+        const time = finiteNumber(point.t)
+        const progress = finiteNumber(point.p)
+        if (time === null || progress === null) continue
+        curve.push({
+          time: time / 1000,
+          progress: Math.max(0, Math.min(1, progress)),
+        })
+      }
+      if (curve.length > 0) perWord[wordIdx] = curve
+    }
+    if (Object.keys(perWord).length > 0) out[lineIdx] = perWord
+  }
+  return out
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** A real number, or null. Rejects NaN, Infinity, strings and booleans. */
+function finiteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+/**
+ * A parsed lyricsfile as enhanced LRC text.
+ *
+ * The rest of the app speaks LRC — the parser, the canonical builder, the
+ * version store and every renderer. Converting on the way in means a
+ * `.lyricsfile` import reuses all of it instead of growing a second pipeline
+ * that has to be kept in step.
+ *
+ * `offset_ms` becomes an `[offset:]` ID tag rather than being applied here, so
+ * it goes through `parseLrcOffsetTag` — the one place that already knows the
+ * sign convention and shifts the embedded word stamps to match.
+ */
+export function lyricsfileToLrc(parsed: ParsedLyricsfile): string {
+  const head =
+    parsed.metadata.offsetMs !== undefined && parsed.metadata.offsetMs !== 0
+      ? [`[offset:${Math.round(parsed.metadata.offsetMs)}]`]
+      : []
+
+  const body = parsed.lines.map((line, lineIdx) => {
+    const words = splitWithSpacing(line.text).map((word) => word.trim())
+    const starts = parsed.wordTimings[lineIdx]
+    if (starts === undefined || words.length === 0) {
+      return `[${formatTimeLrc(line.time)}] ${line.text}`
+    }
+    return words
+      .map((word, wordIdx) => {
+        const start = starts[wordIdx]
+        return start === undefined ? word : `[${formatTimeLrc(start)}] ${word}`
+      })
+      .join(' ')
+  })
+
+  return [...head, ...body].join('\n')
 }

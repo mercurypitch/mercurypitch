@@ -419,7 +419,7 @@ export const StemMixerFixedWorkspace: Component<
                   </Show>
                   <input
                     type="file"
-                    accept=".txt,.lrc"
+                    accept=".txt,.lrc,.lyricsfile"
                     ref={props.lyricsFileInputRef}
                     hidden
                     onChange={(e) => props.handleLyricsChange(e)}

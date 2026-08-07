@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 import { parseLrcFile, parseLrcWordTimings } from '@/lib/lyrics-service'
-import { LYRICSFILE_SWEEPS_KEY, serialiseLyricsfile, splitWithSpacing, } from '@/lib/lyricsfile'
+import { LYRICSFILE_SWEEPS_KEY, lyricsfileToLrc, parseLyricsfile, serialiseLyricsfile, splitWithSpacing, } from '@/lib/lyricsfile'
 
 const LINES = [
   { time: 2, text: 'hold on' },
@@ -98,8 +98,11 @@ describe('serialiseLyricsfile', () => {
     expect(out).toContain('end_ms: 5500')
   })
 
-  it('skips a word that was never timed rather than inventing one', () => {
-    // A fabricated timestamp in an interchange file is worse than a gap.
+  it('writes no words at all for a half-mapped line', () => {
+    // start_ms is required on a word, so an untimed one could only be
+    // fabricated or omitted — and omitting it shifts every word after it by a
+    // position, landing the rest of the line's timings on the wrong words.
+    // A half-mapped line has no faithful word-level form here.
     const sparse: number[] = []
     sparse[0] = 2
     sparse[2] = 8
@@ -107,9 +110,8 @@ describe('serialiseLyricsfile', () => {
       lines: [{ time: 2, text: 'one two three' }],
       wordTimings: { 0: sparse },
     })
-    expect(out).toContain('- text: "one "')
-    expect(out).toContain('- text: "three"')
-    expect(out).not.toContain('- text: "two "')
+    expect(out).not.toContain('words:')
+    expect(out).toContain('start_ms: 2000')
   })
 
   it('leaves out the words block for a line with no timings at all', () => {
@@ -228,5 +230,262 @@ describe('the gold corpus', () => {
     const out = serialiseLyricsfile({ lines, wordTimings })
     expect(out).toContain('"I\'ll be right behind you, Josephine"')
     expect(out).toContain('- text: "you, "')
+  })
+})
+
+// ── Reading ──────────────────────────────────────────────────────
+
+describe('parseLyricsfile', () => {
+  it('round-trips a mapping through the format', async () => {
+    const input = {
+      lines: [
+        { time: 2, text: 'hold on' },
+        { time: 11, text: 'soul mate' },
+      ],
+      metadata: { title: 'Josephine', durationMs: 214_000, offsetMs: -200 },
+      wordTimings: { 0: [2, 6], 1: [11, 16] },
+      wordEndTimings: { 0: [5.5, 9], 1: [15, 19] },
+    }
+    const parsed = await parseLyricsfile(serialiseLyricsfile(input))
+
+    expect(parsed?.lines).toEqual(input.lines)
+    expect(parsed?.wordTimings).toEqual(input.wordTimings)
+    expect(parsed?.wordEndTimings).toEqual(input.wordEndTimings)
+    expect(parsed?.metadata).toEqual(input.metadata)
+  })
+
+  it('round-trips sub-word split points', async () => {
+    const wordSweepTimings: WordSweepTimingsMap = {
+      0: {
+        1: [
+          { time: 6, progress: 0 },
+          { time: 6.5, progress: 0.5 },
+          { time: 7, progress: 1 },
+        ],
+      },
+    }
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({
+        lines: LINES,
+        wordTimings: { 0: [2, 6] },
+        wordSweepTimings,
+      }),
+    )
+    expect(parsed?.wordSweepTimings).toEqual(wordSweepTimings)
+  })
+
+  it('round-trips the lyrics that would break bare YAML', async () => {
+    const lines = [
+      { time: 0, text: 'no' },
+      { time: 1, text: '- and then: this' },
+      { time: 2, text: '"quoted" and \\escaped\\' },
+      { time: 3, text: 'yes # not a comment' },
+      { time: 4, text: "I'll be right behind you, Josephine" },
+    ]
+    const parsed = await parseLyricsfile(serialiseLyricsfile({ lines }))
+    expect(parsed?.lines).toEqual(lines)
+  })
+
+  it('does not shift a half-mapped line onto the wrong words', async () => {
+    // The alternative — writing only the timed words — round-trips "three"
+    // back as word 1, and every later word with it. Losing the partial word
+    // timings is the honest outcome; moving them is not.
+    const sparse: number[] = []
+    sparse[0] = 2
+    sparse[2] = 8
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({
+        lines: [{ time: 2, text: 'one two three' }],
+        wordTimings: { 0: sparse },
+      }),
+    )
+    expect(parsed?.lines).toEqual([{ time: 2, text: 'one two three' }])
+    expect(parsed?.wordTimings).toEqual({})
+  })
+
+  it('round-trips a fully mapped line word for word', async () => {
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({
+        lines: [{ time: 2, text: 'one two three' }],
+        wordTimings: { 0: [2, 5, 8] },
+      }),
+    )
+    expect(parsed?.wordTimings).toEqual({ 0: [2, 5, 8] })
+  })
+
+  it('round-trips the gold corpus word for word', async () => {
+    const raw = parseLrcFile(
+      readFileSync('fixtures/lrc/josephine.v2.lrc', 'utf8'),
+    )
+    const parsedLrc = raw.map((l) => parseLrcWordTimings(l.text, l.time))
+    const lines = raw.map((line, i) => ({
+      time: line.time,
+      text: parsedLrc[i]?.words.join(' ') ?? line.text,
+    }))
+    const wordTimings: WordTimingsMap = {}
+    for (const [i, wt] of parsedLrc.entries()) {
+      if (wt !== null) wordTimings[i] = wt.wordTimes
+    }
+
+    const back = await parseLyricsfile(
+      serialiseLyricsfile({ lines, wordTimings }),
+    )
+    expect(back?.lines).toEqual(lines)
+    expect(back?.wordTimings).toEqual(wordTimings)
+  })
+
+  it('reads a file written by hand, not only by us', async () => {
+    // Bare scalars, single quotes, a block string — all legal YAML that our
+    // writer never emits, and exactly what another tool will hand over.
+    const parsed = await parseLyricsfile(
+      [
+        'version: 1.0',
+        'metadata:',
+        '  title: Goodbye to Spring',
+        '  duration_ms: 180000',
+        'lines:',
+        '  - text: hold on',
+        '    start_ms: 2000',
+        '    words:',
+        '      - text: hold',
+        '        start_ms: 2000',
+        "      - text: 'on'",
+        '        start_ms: 6000',
+      ].join('\n'),
+    )
+    expect(parsed?.metadata.title).toBe('Goodbye to Spring')
+    expect(parsed?.lines).toEqual([{ time: 2, text: 'hold on' }])
+    expect(parsed?.wordTimings[0]).toEqual([2, 6])
+  })
+
+  it('is null for a file that is not one of these', async () => {
+    // The caller is an upload handler; a mistyped file is a normal mistake.
+    expect(await parseLyricsfile('')).toBeNull()
+    expect(await parseLyricsfile('[00:02.00] hold on')).toBeNull()
+    expect(await parseLyricsfile('{ not: [valid')).toBeNull()
+    expect(await parseLyricsfile('version: "1.0"\nlines: []\n')).toBeNull()
+    expect(await parseLyricsfile('version: "1.0"\nlines: "nope"\n')).toBeNull()
+  })
+
+  it('drops a line whose timing is not a number', async () => {
+    // Untrusted input: "soon" must not become NaN timestamps three layers
+    // down, where the failure looks like a rendering bug.
+    const parsed = await parseLyricsfile(
+      [
+        'lines:',
+        '  - text: "good"',
+        '    start_ms: 1000',
+        '  - text: "bad"',
+        '    start_ms: soon',
+        '  - text: "worse"',
+        '    start_ms: .inf',
+      ].join('\n'),
+    )
+    expect(parsed?.lines).toEqual([{ time: 1, text: 'good' }])
+  })
+
+  it('ignores a malformed sweep block rather than failing the file', async () => {
+    // The key is lossy-optional both ways: a reader may drop it entirely, so
+    // a broken one must never cost the visitor their word timings.
+    const parsed = await parseLyricsfile(
+      [
+        'lines:',
+        '  - text: "hold on"',
+        '    start_ms: 2000',
+        `${LYRICSFILE_SWEEPS_KEY}:`,
+        '  "0":',
+        '    "1":',
+        '      - { t: nope, p: 0.5 }',
+      ].join('\n'),
+    )
+    expect(parsed?.lines).toHaveLength(1)
+    expect(parsed?.wordSweepTimings).toEqual({})
+  })
+
+  it('clamps a progress value that escaped its range', async () => {
+    const parsed = await parseLyricsfile(
+      [
+        'lines:',
+        '  - text: "hold on"',
+        '    start_ms: 2000',
+        `${LYRICSFILE_SWEEPS_KEY}:`,
+        '  "0":',
+        '    "1":',
+        '      - { t: 6000, p: 4 }',
+        '      - { t: 6500, p: -1 }',
+      ].join('\n'),
+    )
+    expect(parsed?.wordSweepTimings[0][1].map((p) => p.progress)).toEqual([
+      1, 0,
+    ])
+  })
+})
+
+describe('lyricsfileToLrc', () => {
+  it('produces enhanced LRC the app can already parse', async () => {
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({
+        lines: [{ time: 2, text: 'hold on' }],
+        wordTimings: { 0: [2, 6] },
+      }),
+    )
+    const lrc = lyricsfileToLrc(parsed!)
+    expect(lrc).toBe('[00:02.00] hold [00:06.00] on')
+
+    // Round-trips through the app's own parser back to the same timings.
+    const back = parseLrcFile(lrc)
+    expect(parseLrcWordTimings(back[0].text, back[0].time)?.wordTimes).toEqual([
+      2, 6,
+    ])
+  })
+
+  it('keeps a line that has only a line time', async () => {
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({ lines: [{ time: 65.5, text: 'hold on' }] }),
+    )
+    expect(lyricsfileToLrc(parsed!)).toBe('[01:05.50] hold on')
+  })
+
+  it('hands offset_ms to the ID tag rather than applying it here', async () => {
+    // parseLrcOffsetTag is the one place that knows the sign convention and
+    // shifts the embedded word stamps to match; a second copy would drift.
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({ lines: LINES, metadata: { offsetMs: -200 } }),
+    )
+    expect(lyricsfileToLrc(parsed!).split('\n')[0]).toBe('[offset:-200]')
+  })
+
+  it('writes no offset tag when there is nothing to shift', async () => {
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({ lines: LINES, metadata: { offsetMs: 0 } }),
+    )
+    expect(lyricsfileToLrc(parsed!)).not.toContain('[offset:')
+  })
+
+  it('carries the gold corpus through the whole loop', async () => {
+    // LRC -> lyricsfile -> LRC, comparing the timings the app actually reads.
+    const raw = parseLrcFile(
+      readFileSync('fixtures/lrc/josephine.v2.lrc', 'utf8'),
+    )
+    const parsedLrc = raw.map((l) => parseLrcWordTimings(l.text, l.time))
+    const lines = raw.map((line, i) => ({
+      time: line.time,
+      text: parsedLrc[i]?.words.join(' ') ?? line.text,
+    }))
+    const wordTimings: WordTimingsMap = {}
+    for (const [i, wt] of parsedLrc.entries()) {
+      if (wt !== null) wordTimings[i] = wt.wordTimes
+    }
+
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({ lines, wordTimings }),
+    )
+    const rebuilt = parseLrcFile(lyricsfileToLrc(parsed!))
+    expect(rebuilt).toHaveLength(raw.length)
+    for (const [i, line] of rebuilt.entries()) {
+      const wt = parseLrcWordTimings(line.text, line.time)
+      expect(wt?.words.join(' ')).toBe(lines[i].text)
+      expect(wt?.wordTimes).toEqual(wordTimings[i])
+    }
   })
 })

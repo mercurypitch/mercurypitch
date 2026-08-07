@@ -19,10 +19,11 @@ import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyri
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
-import { serialiseLyricsfile } from '@/lib/lyricsfile'
+import { lyricsfileToLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
+import { showNotification } from '@/stores/notifications-store'
 import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
 import type { WordMarker } from './overview-mapping'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
@@ -890,16 +891,53 @@ export function useStemMixerLyricsController(
     setShowSongPicker(false)
   }
 
+  /**
+   * Import a lyricsfile 1.0 document.
+   *
+   * Converted to enhanced LRC on the way in so it reuses the whole existing
+   * pipeline — parser, canonical builder, version store, renderers — rather
+   * than growing a second one to keep in step. Word ends and sub-word splits
+   * ride along in the LRC timing metadata, which is where the app already
+   * keeps them.
+   *
+   * Returns false for a file that is not one, so the caller can say so.
+   */
+  const importLyricsfile = async (
+    text: string,
+    filename: string,
+  ): Promise<boolean> => {
+    const parsed = await parseLyricsfile(text)
+    if (parsed === null) return false
+
+    handleLyricsUpload({
+      text: withLrcTimingMetadata(lyricsfileToLrc(parsed), {
+        wordEndTimings: parsed.wordEndTimings,
+        wordSweepTimings: parsed.wordSweepTimings,
+      }),
+      format: 'lrc',
+      filename: `${filename.replace(/\.[^.]+$/, '')}.lrc`,
+    })
+    return true
+  }
+
   const handleLyricsChange = (e: Event) => {
     const input = e.currentTarget as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
     const ext = file.name.split('.').pop()?.toLowerCase()
-    if (ext !== 'txt' && ext !== 'lrc') return
+    if (ext !== 'txt' && ext !== 'lrc' && ext !== 'lyricsfile') return
     const reader = new FileReader()
     reader.onload = () => {
       const text = reader.result as string
       if (!text.trim()) return
+      if (ext === 'lyricsfile') {
+        void importLyricsfile(text, file.name).then((ok) => {
+          if (!ok) {
+            showNotification('That is not a valid .lyricsfile', 'error')
+          }
+        })
+        return
+      }
       handleLyricsUpload({
         text,
         format: ext as 'txt' | 'lrc',
