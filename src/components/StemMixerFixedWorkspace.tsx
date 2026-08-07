@@ -144,9 +144,13 @@ export const StemMixerFixedWorkspace: Component<
               </div>
             </Show>
             <Show when={!karaokeFocus() || props.showLyrics()}>
+              {/* `sm-panel-fill` carries what used to be an inline
+                  `flex: 1; min-height: 0`. Inline styles outrank every
+                  stylesheet rule, so while that lived here no CSS could give
+                  the panel a floor — and on a short window it collapsed to a
+                  couple of pixels, taking the lyrics search results with it. */}
               <div
-                class="sm-workspace-panel"
-                style={{ flex: '1', 'min-height': '0' }}
+                class="sm-workspace-panel sm-panel-fill"
                 data-tour="mixer.lyrics"
               >
                 <div class="sm-panel-header" data-tour="mixer.lyrics-actions">
