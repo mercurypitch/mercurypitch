@@ -463,6 +463,27 @@ sessionRecords(weeklyChallengeId)` throws where the column is absent,
 
 ### Fixed
 
+- **PR Gate no longer dies on whitespace in files a PR never touched.**
+  The gate runs `git diff --check base..merge` under `set -e`, and the
+  `pull_request` payload's `base.sha` is the base tip at PR creation —
+  stale. Any PR opened before the vendored Gradle wrapper landed diffed a
+  range containing `apps/beside-cue/android/gradlew.bat`, whose 94 CRLF
+  lines each read as trailing whitespace, so the gate failed in 21 seconds
+  under an `UNKNOWN STEP` label. Fixed with a `.gitattributes` opting
+  `*.bat` out of whitespace checks plus the only two genuine nits in the
+  whole `v0.7.22..HEAD` range (a trailing space in beside-cue's
+  `build.gradle`, a blank line at EOF in a spec doc).
+
+- **Five guided-tour steps spotlighted nothing.** Home's "Your week at a
+  glance" targeted `.home-progress`, a card deleted when this week's
+  numbers folded into the streak card; its sentence moved into "Keep your
+  streak". The Leaderboard's last four steps target board-view elements,
+  but the page now opens on League where none of them render — they now
+  `navigate` to Global first. The podium and full-table steps additionally
+  need a cloud-populated board, which a `build:tours` bundle never has, so
+  `walk-tours.mjs` records those two as reasoned skips (the same exclusion
+  the Karaoke mixer tour already has). Desktop and mobile walks: 0 misses.
+
 - **Session export/import was rebuilt around a validating codec**
   (`src/db/services/session-archive-codec.ts`, `session-export-service.ts`,
   merged to main as `4e307666` + `023ffbc0`). The bug it closes:
