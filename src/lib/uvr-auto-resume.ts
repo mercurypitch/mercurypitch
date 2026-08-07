@@ -28,7 +28,7 @@ import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { isServerPollActive, resumeServerSession, } from '@/lib/uvr-processing-pipeline'
 import type { StemSplitResult } from '@/lib/uvr-stem-split'
 import { attachToStemSplitJob, isStemSplitActive, runStemSplit, StemSplitError, } from '@/lib/uvr-stem-split'
-import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
+import { clearUvrSplitJob, completeUvrSession, getAllUvrSessions, getUvrSession, isSessionStoreReady, recordUvrSplitJobStarted, recordUvrSplitTime, resumableServerSessions, setErrorUvrSession, setInterruptedUvrSession, setUvrSessionResuming, } from '@/stores/app-store'
 
 export interface AutoResumeHooks {
   /** Fired after a resumed job settles (complete or error) so the host can
@@ -81,8 +81,18 @@ export async function autoResumeServerSessions(
       apiId,
       backgroundCallbacks(session.sessionId, hooks),
     ).catch((err) => {
-      // pollForCompletion already routed a terminal failure through onError;
-      // just don't leave the rejection unhandled.
+      // pollForCompletion already routed the failure through onError, which
+      // persisted `error`. But onError cannot tell a dead job from a dropped
+      // packet — only the pipeline can, and it says so by clearing the
+      // apiSessionId on a TerminalPollError and keeping it otherwise. That
+      // catch has run by the time we get here, so the surviving id is the
+      // verdict: the job may still be alive (or already finished, with its
+      // stems in R2 for 24h), and `error` would freeze it out of every future
+      // resume trigger while offering the user a second charge.
+      const still = getUvrSession(session.sessionId)
+      if (still?.apiSessionId !== undefined && still.apiSessionId !== '') {
+        setInterruptedUvrSession(session.sessionId)
+      }
       console.warn('[uvr-auto-resume] resume failed:', err)
     })
   }
