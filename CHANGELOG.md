@@ -50,6 +50,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Karaoke Night can offer more than one song,** and the whole bill is
   authored from the studio — stems, lyrics and credits — instead of shipped in
   the build. Everything on offer is credited.
+- **Map lyrics to the beat, on a full screen.** Tap words in against the vocal
+  waveform, split a word at any letter, shift a whole mapping in time, and see
+  at a glance which lines are done. Demo songs sit in the session list to work
+  on.
+- **A mapping is a file.** Export it as a `.lyricsfile` and read it back in.
+- **A cue before you come back in** after a long instrumental gap — in the
+  studio and on the karaoke stage.
 - **Content is authored in the studio, not shipped.** Achievements, exercises,
   recordings and timelines all have pages now.
 - **Drum kit mode in Compose.** A Melody / Drums switch turns the piano roll
