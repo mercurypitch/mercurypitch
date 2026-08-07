@@ -107,6 +107,7 @@ export interface LrcMapperStageProps {
   handleNextLine: () => void
   handleNextWord: () => void
   handleRedoCurrentLine: () => void
+  redoTargetLine?: () => number | null
   handleLrcGenFinish: () => void
   handleLrcGenReset: () => void
 
@@ -179,6 +180,10 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
   return (
     <div onKeyDown={onKeyDown}>
       <PitchStageShell
+        // A work surface, not a scene: the inset panel with its rounded
+        // corners left the app showing through around the edges, which read
+        // as the stage not having opened properly.
+        flush
         ariaLabel={`Lyric mapper — ${props.songTitle}`}
         canvas={
           <>
@@ -272,6 +277,7 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
                 handlePause={props.handlePause}
                 handlePlay={props.handlePlay}
                 handleRedoCurrentLine={props.handleRedoCurrentLine}
+                redoTargetLine={props.redoTargetLine}
                 letterMode={props.letterMode}
                 liveHighlight={props.liveHighlight}
                 setLetterMode={props.setLetterMode}
@@ -321,6 +327,7 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
                     handlePause={props.handlePause}
                     handlePlay={props.handlePlay}
                     handleRedoCurrentLine={props.handleRedoCurrentLine}
+                    redoTargetLine={props.redoTargetLine}
                     letterMode={props.letterMode}
                     liveHighlight={props.liveHighlight}
                     setLetterMode={props.setLetterMode}

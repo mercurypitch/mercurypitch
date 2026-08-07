@@ -242,6 +242,47 @@ export interface PreviewWordHighlight {
   progress: number
 }
 
+export interface WordSpan {
+  start: number
+  end: number
+}
+
+/**
+ * When word `idx` starts and ends, from what has actually been mapped.
+ *
+ * An end is usually missing: the word pass records starts and nothing else,
+ * and only Tap mode or sub-word editing ever writes one. So it falls back to
+ * the next word that starts later, and then to the line's own end — the rule
+ * the runtime highlighter has always used, which is why it lives here rather
+ * than being re-derived by each caller.
+ *
+ * Never returns a zero-width span; callers divide by it.
+ */
+export function wordSpan(
+  wordTimes: number[] | undefined,
+  wordEndTimes: number[] | undefined,
+  lineEnd: number,
+  idx: number,
+): WordSpan | null {
+  const start = wordTimes?.[idx]
+  if (typeof start !== 'number') return null
+
+  let end = wordEndTimes?.[idx]
+  if (typeof end !== 'number' || end <= start) {
+    end = undefined
+    for (let i = idx + 1; i < (wordTimes?.length ?? 0); i++) {
+      const nextStart = wordTimes?.[i]
+      if (typeof nextStart === 'number' && nextStart > start) {
+        end = nextStart
+        break
+      }
+    }
+  }
+  if (end === undefined) end = lineEnd
+
+  return { start, end: Math.max(end, start + 0.05) }
+}
+
 /**
  * Which word is sounding at `time`, and how far through it we are.
  *
@@ -269,21 +310,12 @@ export function previewWordAt(
   }
   if (active < 0) return null
 
-  const start = wordTimes[active]
-  let end = wordEndTimes?.[active]
-  if (typeof end !== 'number' || end <= start) {
-    end = undefined
-    for (let i = active + 1; i < wordTimes.length; i++) {
-      const nextStart = wordTimes[i]
-      if (typeof nextStart === 'number' && nextStart > start) {
-        end = nextStart
-        break
-      }
-    }
-  }
-  if (end === undefined) end = Math.max(lineEnd, start + 0.05)
+  const span = wordSpan(wordTimes, wordEndTimes, lineEnd, active)
+  if (span === null) return null
 
-  const span = Math.max(0.05, end - start)
-  const progress = Math.max(0, Math.min(1, (time - start) / span))
+  const progress = Math.max(
+    0,
+    Math.min(1, (time - span.start) / (span.end - span.start)),
+  )
   return { wordIdx: active, progress }
 }

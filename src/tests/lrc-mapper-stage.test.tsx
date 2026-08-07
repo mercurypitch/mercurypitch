@@ -118,6 +118,16 @@ describe('LrcMapperStage', () => {
     expect(screen.getAllByText('line').length).toBeGreaterThan(0)
   })
 
+  it('fills the viewport rather than floating over the app', () => {
+    renderStage()
+    // The shell's default is an inset rounded panel, which on a working
+    // surface leaves the app visible in the margins and reads as a stage that
+    // did not open properly.
+    expect(
+      screen.getByRole('region', { name: 'Lyric mapper — Josephine' }),
+    ).toHaveAttribute('data-flush', 'true')
+  })
+
   it('reports progress in the units of the pass being mapped', () => {
     renderStage()
     expect(screen.getByText('0/2 lines')).toBeInTheDocument()
@@ -146,6 +156,19 @@ describe('LrcMapperStage', () => {
   it('does not offer to expand a mapper that is already full screen', () => {
     renderStage()
     expect(screen.queryByTitle('Map full screen')).toBeNull()
+  })
+
+  it('names the line Redo would clear', () => {
+    // Redo acts on the line BEHIND the cursor about half the time, and a
+    // silent edit a row above where you are looking is indistinguishable from
+    // the button doing nothing at all.
+    renderStage({ redoTargetLine: () => 1 })
+    expect(screen.getByTitle('Clear and replay line 2: "line 1"')).toBeVisible()
+  })
+
+  it('disables Redo when there is nothing mapped to redo', () => {
+    renderStage({ redoTargetLine: () => null })
+    expect(screen.getByTitle('Nothing mapped yet to redo')).toBeDisabled()
   })
 
   it('closes on Done without ending the mapping session', () => {

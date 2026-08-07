@@ -284,10 +284,39 @@ describe('suggestSyllableSplits', () => {
     expect([...times].sort((a, b) => a - b)).toEqual(times)
   })
 
-  it('does nothing to a word with no end to spread across', () => {
-    // Only a start means no span. Suggesting anyway would pile every
-    // syllable onto one timestamp.
+  // The reported bug: the button did nothing on almost every word. It wanted
+  // an explicit end time, and the word pass records starts and nothing else —
+  // so a freshly mapped song had no end times anywhere to find.
+  it('takes the end from the next word when the word has none of its own', () => {
     harness.gen.setLetterSplit(0, 0, 0, 10)
+    harness.gen.setLetterSplit(0, 1, 0, 14)
+    expect(harness.gen.suggestSyllableSplits(0, 0)).toBeGreaterThanOrEqual(2)
+    for (const point of harness.sweeps()[0]?.[0] ?? []) {
+      expect(point.time).toBeGreaterThanOrEqual(10)
+      expect(point.time).toBeLessThanOrEqual(14)
+    }
+  })
+
+  it('falls back to the line end for the last word of a line', () => {
+    // 'waits' is one syllable, so use line 1's multi-syllable stand-in: the
+    // point is only that a last word still finds a span.
+    harness.gen.setLetterSplit(0, 0, 0, 1)
+    harness.gen.setLetterSplit(0, 1, 0, 5)
+    // Line 1 starts at 10 (the harness spaces lines ten seconds apart), which
+    // is where line 0 ends.
+    expect(harness.gen.suggestSyllableSplits(0, 0)).toBeGreaterThanOrEqual(2)
+  })
+
+  it('does nothing to a word with nowhere to spread at all', () => {
+    // No start means the word is unmapped: suggesting anyway would pile every
+    // syllable onto one invented timestamp.
+    expect(harness.gen.suggestSyllableSplits(0, 0)).toBe(0)
+  })
+
+  it('does nothing to a word too short to hold its syllables apart', () => {
+    // 40 ms of span across three syllables is three boundaries in the same
+    // millisecond — a worse starting point than none.
+    withSpan(0, 0, 10, 10.04)
     expect(harness.gen.suggestSyllableSplits(0, 0)).toBe(0)
   })
 

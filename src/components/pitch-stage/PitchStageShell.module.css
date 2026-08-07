@@ -166,6 +166,32 @@
   right: 16px;
 }
 
+/* ── Flush variant ─────────────────────────────────────────────
+   Edge to edge, for the working surfaces. The inset panel with its shadow
+   reads as depth over a photograph and as a half-opened window over the app,
+   so a stage that is a tool rather than a scene opts out of it: the backdrop
+   goes opaque, the canvas takes the whole area between header and footer, and
+   the corners and shadow — both of which say "there is something behind me" —
+   come off. The header's and footer's own borders keep the regions apart. */
+.stage[data-flush='true'] {
+  background: var(--studio-void);
+  pointer-events: auto;
+}
+
+/* Only the horizontal insets go. The vertical ones stay as the shell set
+   them, at both breakpoints: the strips they leave are the same
+   `--studio-void` as the surface itself, so they are invisible anyway, and
+   pulling the canvas up under a header that wrapped to two lines would hide
+   the top of it behind opaque chrome. */
+.stage[data-flush='true'] .canvasSurface,
+.stage[data-flush='true'][data-has-sidecar='false'] .canvasSurface {
+  right: 0;
+  left: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .sidecar {
   z-index: 2;
   right: 16px;

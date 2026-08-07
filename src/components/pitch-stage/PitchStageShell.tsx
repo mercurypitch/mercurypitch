@@ -32,6 +32,17 @@ export interface PitchStageShellProps {
   sidecar?: JSX.Element
   sidecarAriaLabel?: string
   footer?: JSX.Element
+  /**
+   * Fill the viewport edge to edge instead of floating the canvas as an inset
+   * panel.
+   *
+   * The default look — a rounded surface with a shadow, the page showing
+   * through around it — reads as depth on the atmospheric stages, where a
+   * photograph or a gradient is meant to be behind the work. On a working
+   * surface it reads as "this did not open properly": the app is visible in
+   * the margins and it is not obvious the stage is modal.
+   */
+  flush?: boolean
 }
 
 /**
@@ -67,6 +78,7 @@ export const PitchStageShell: Component<PitchStageShellProps> = (props) => {
       data-has-canvas={hasCanvas() ? 'true' : 'false'}
       data-has-sidecar={hasSidecar() ? 'true' : 'false'}
       data-has-footer={hasFooter() ? 'true' : 'false'}
+      data-flush={props.flush === true ? 'true' : 'false'}
       aria-label={props.ariaLabel}
       style={{
         '--pitch-reference': props.referenceColor,

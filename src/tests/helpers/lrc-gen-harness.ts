@@ -20,6 +20,8 @@ export interface LrcGenHarness {
   starts: Accessor<WordTimingsMap>
   ends: Accessor<WordTimingsMap>
   setElapsed: (t: number) => void
+  /** Every `seekToWithWindow` the session asked for, oldest first. */
+  seeks: () => number[]
   dispose: () => void
 }
 
@@ -33,6 +35,12 @@ export interface LrcGenHarnessOptions {
    * the song has line starts only — the plain-LRC case.
    */
   wordTimes?: Record<number, number[]>
+  /**
+   * Make it a plain-text song: no LRC lines, no canonical entries, just the
+   * words. The mapping session then has no times to fall back on but the ones
+   * it maps itself.
+   */
+  withoutCanonical?: boolean
   sessionId?: string
 }
 
@@ -60,8 +68,12 @@ export function makeLrcGenHarness(
   const [wordSweepTimings, setWordSweepTimings] =
     createSignal<WordSweepTimingsMap>({})
   const [lyricsLines, setLyricsLines] = createSignal<string[]>(lines)
+  // Plain text is both halves: no LRC lines and no canonical entries. The
+  // session then falls back to `lyricsLines` and has no times but its own.
   const [lrcLines, setLrcLines] = createSignal<LrcLine[]>(
-    lines.map((text, i) => ({ time: lineTimes[i], text })),
+    options.withoutCanonical === true
+      ? []
+      : lines.map((text, i) => ({ time: lineTimes[i], text })),
   )
   const [rawLyricsText, setRawLyricsText] = createSignal(lines.join('\n'))
   const [lyricsSource, setLyricsSource] = createSignal<'api'>('api')
@@ -69,13 +81,17 @@ export function makeLrcGenHarness(
   const [blocks] = createSignal([])
   const [blockInstances] = createSignal<BlockInstancesMap>({})
   const [genViewData] = createSignal<GenViewLine[]>([])
-  const [canonicalLrcLines] = createSignal(entries)
+  const [canonicalLrcLines] = createSignal(
+    options.withoutCanonical === true ? [] : entries,
+  )
+
+  const seeks: number[] = []
 
   const deps = {
     sessionId: options.sessionId ?? 'lrc-gen-harness',
     elapsed,
     playing: () => true,
-    seekToWithWindow: () => {},
+    seekToWithWindow: (t: number) => void seeks.push(t),
     duration: () => 120,
     lyricsLines,
     setLyricsLines,
@@ -114,6 +130,7 @@ export function makeLrcGenHarness(
     starts: () => gen.lrcGenWordTimings(),
     ends: () => gen.lrcGenWordEndTimings(),
     setElapsed,
+    seeks: () => [...seeks],
     dispose,
   }
 }

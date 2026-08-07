@@ -11,6 +11,7 @@
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import { SpeedGauge } from '@/components/icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { LrcGenPass } from '@/features/stem-mixer/lrc-gen-passes'
 import { TapCalibrationPanel } from '@/features/stem-mixer/TapCalibrationPanel'
@@ -53,6 +54,12 @@ export interface LrcMapperToolbarProps {
   handleNextLine: () => void
   handleNextWord: () => void
   handleRedoCurrentLine: () => void
+  /**
+   * The line redo would clear, for the button's own title. Optional so a
+   * surface that has not wired it through still renders a working button,
+   * just a less specific one.
+   */
+  redoTargetLine?: () => number | null
   handleLrcGenFinish: () => void
   handleLrcGenReset: () => void
 
@@ -88,6 +95,15 @@ export const LrcMapperToolbar: Component<LrcMapperToolbarProps> = (props) => {
   const showTransport = () => variant() === 'panel'
   const loopPreview = () => props.loopPreview()
   const setLoopPreview = (on: boolean) => props.setLoopPreview(on)
+
+  const redoTitle = () => {
+    const target = props.redoTargetLine?.()
+    if (target === null) return 'Nothing mapped yet to redo'
+    if (target === undefined) return 'Clear and replay the current line'
+    const text = props.getGenLines()[target] ?? ''
+    const shown = text.length > 40 ? `${text.slice(0, 39)}…` : text
+    return `Clear and replay line ${target + 1}: "${shown}"`
+  }
 
   return (
     <>
@@ -212,8 +228,13 @@ export const LrcMapperToolbar: Component<LrcMapperToolbarProps> = (props) => {
             </Show>
             <button
               class="sm-lyrics-gen-redo-btn"
+              disabled={props.redoTargetLine?.() === null}
               onClick={() => props.handleRedoCurrentLine()}
-              title="Clear and replay the current line"
+              // Naming the line matters: redo acts on the line BEHIND the
+              // cursor whenever the cursor has just moved onto an empty one,
+              // and a silent edit a row above where you are looking is
+              // indistinguishable from the button doing nothing.
+              title={redoTitle()}
             >
               Redo line
             </button>
@@ -367,8 +388,10 @@ export const LrcMapperToolbar: Component<LrcMapperToolbarProps> = (props) => {
               />
               <span>Repeat line</span>
             </label>
-            <label class="sm-lyrics-gen-speed">
-              <span>Speed</span>
+            <label class="sm-lyrics-gen-speed" title="Playback speed">
+              <span class="sm-lyrics-gen-speed-icon">
+                <SpeedGauge size={13} />
+              </span>
               <SafeSelect
                 class="sm-lyrics-gen-speed-select"
                 value={String(props.playbackSpeed())}

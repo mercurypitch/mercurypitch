@@ -445,6 +445,55 @@ from inside a redraw.
 **See:** `src/features/stem-mixer/useStemMixerCanvasController.ts`,
 `src/tests/stem-mixer-canvas-redraw.test.ts`
 
+### "First and last" is not the same test as "the edges"
+
+**Symptom:** in the letter editor, right-click and long-press could not clear
+a boundary. Both gestures fired; the split stayed.
+**Cause:** `removeSplitPoint` protected the word's onset and end by refusing
+`at === 0 || at === points.length - 1`. That holds only for a curve that
+already carries both edges. A curve authored purely by clicking inside the
+word carries neither — so the only split in it was simultaneously index 0 and
+index length-1, and the guard refused every clear.
+**Rule:** when a position in an array carries meaning (an edge, a sentinel,
+an anchor), test the meaning, not the index. Here that is `progress <= 0 ||
+progress >= 1`. And when writing the tests, build at least one fixture the
+lazy way the product does — every existing case handed in a tidy three-point
+curve, which is exactly why this shipped.
+**See:** `src/lib/lyric-sweep.ts`, `src/tests/word-letters.test.ts`
+
+### A control that refuses silently looks broken, not inapplicable
+
+**Symptom:** three reports of the same shape in one session — the syllable
+suggestion "doesn't seem to do anything on most words", and "Redo line, not
+sure what that does, it doesn't seem to do anything".
+**Cause:** both returned early on a condition the user could not see. The
+suggestion demanded an explicit word end, which the word pass never writes,
+so it refused on nearly every word. Redo acts on the line BEHIND the cursor
+whenever the cursor sits at word 0, so it edited a row above where the user
+was looking.
+**Rule:** an early return in a handler needs a matching signal in the UI.
+Disable the control and say why in its title when the refusal is a state
+(`disabled` + "One syllable — nothing to split"), or name the target when the
+action is not where the user is looking ("Clear and replay line 2: ..."). If
+neither fits, the early return is probably too strict — check what the
+surrounding data actually contains before requiring a field.
+**See:** `src/components/lrc-mapper/LrcWordLetters.tsx`,
+`src/components/lrc-mapper/LrcMapperToolbar.tsx`,
+`src/tests/lrc-gen-redo-line.test.ts`
+
+### A bubbling click on the container makes the whole thing a dismiss target
+
+**Symptom:** the letter editor closed whenever anything inside it was clicked
+except the hairline boundaries themselves.
+**Cause:** click-to-collapse lived on the word `<span>`, and every glyph
+inside the expanded word bubbles to it. The affordance was fine when the word
+was one span; opening it into twenty children turned the row into a dismiss
+zone with a few safe pixels in it.
+**Rule:** when a container gains interactive children, its own click handler
+becomes a hazard. Move dismissal to an explicit control, or scope the handler
+to `e.target === e.currentTarget`.
+**See:** `src/components/lrc-mapper/LrcMapperLineList.tsx`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked
