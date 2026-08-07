@@ -95,6 +95,8 @@ export interface StemMixerLyricsPanelBodyProps {
   previewLineIdx: Accessor<number | null>
   liveHighlight: Accessor<boolean>
   setLiveHighlight: (on: boolean) => void
+  showWordMarkers: Accessor<boolean>
+  setShowWordMarkers: Setter<boolean>
   highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -406,6 +408,8 @@ export const StemMixerLyricsPanelBody: Component<
             handlePlay={props.handlePlay}
             handleRedoCurrentLine={props.handleRedoCurrentLine}
             liveHighlight={props.liveHighlight}
+            setShowWordMarkers={props.setShowWordMarkers}
+            showWordMarkers={props.showWordMarkers}
             loopPreview={loopPreview}
             lrcGenInputMode={props.lrcGenInputMode}
             lrcGenLineIdx={props.lrcGenLineIdx}
@@ -452,6 +456,8 @@ export const StemMixerLyricsPanelBody: Component<
             handleSeekToTime={props.handleSeekToTime}
             highlightWord={props.highlightWord}
             liveHighlight={props.liveHighlight}
+            setShowWordMarkers={props.setShowWordMarkers}
+            showWordMarkers={props.showWordMarkers}
             loopPreview={loopPreview}
             lrcGenInputMode={props.lrcGenInputMode}
             lrcGenLineIdx={props.lrcGenLineIdx}

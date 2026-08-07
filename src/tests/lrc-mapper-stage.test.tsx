@@ -83,6 +83,8 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
       setLyricsFontSize={() => 1}
       setPlaybackSpeed={() => {}}
       setPreviewLoop={() => {}}
+      setShowWordMarkers={() => true}
+      showWordMarkers={() => true}
       shiftGenTimings={() => 0}
       songTitle="Josephine"
       toggleLinePreview={() => true}

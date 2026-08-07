@@ -56,6 +56,8 @@ export interface LrcMapperStageProps {
   setLoopPreview: Setter<boolean>
   liveHighlight: Accessor<boolean>
   setLiveHighlight: (on: boolean) => void
+  showWordMarkers: Accessor<boolean>
+  setShowWordMarkers: Setter<boolean>
   handleLyricLineClick: (idx: number) => void
 
   lrcGenPass: Accessor<LrcGenPass>
@@ -197,6 +199,8 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
                 handlePlay={props.handlePlay}
                 handleRedoCurrentLine={props.handleRedoCurrentLine}
                 liveHighlight={props.liveHighlight}
+                setShowWordMarkers={props.setShowWordMarkers}
+                showWordMarkers={props.showWordMarkers}
                 loopPreview={props.loopPreview}
                 lrcGenInputMode={props.lrcGenInputMode}
                 lrcGenLineIdx={props.lrcGenLineIdx}
@@ -242,6 +246,8 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
                     handlePlay={props.handlePlay}
                     handleRedoCurrentLine={props.handleRedoCurrentLine}
                     liveHighlight={props.liveHighlight}
+                    setShowWordMarkers={props.setShowWordMarkers}
+                    showWordMarkers={props.showWordMarkers}
                     loopPreview={props.loopPreview}
                     lrcGenInputMode={props.lrcGenInputMode}
                     lrcGenLineIdx={props.lrcGenLineIdx}

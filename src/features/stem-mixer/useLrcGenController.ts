@@ -30,6 +30,8 @@ import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePart
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
 import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, normalizePass, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
 import { shiftTimings } from './lrc-offset'
+import type { WordMarker } from './overview-mapping'
+import { wordMarkersFrom } from './overview-mapping'
 import type { BlockInfo, BlockInstancesMap, CanonicalLrcEntry, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 /**
@@ -148,6 +150,17 @@ export interface LrcGenController {
   /** Move the whole mapping; returns the shift actually applied, in seconds. */
   shiftGenTimings: (deltaMs: number) => number
 
+  /** Every mapped word start, for the overview's ticks. */
+  wordMarkers: Accessor<readonly WordMarker[]>
+  /** The tick the mapping cursor is on. */
+  activeWordMarker: Accessor<{ lineIdx: number; wordIdx: number }>
+  showWordMarkers: Accessor<boolean>
+  setShowWordMarkers: Setter<boolean>
+  /** Put the cursor on an exact word — a tick was clicked. */
+  focusGenWord: (lineIdx: number, wordIdx: number) => void
+  /** Retime one word — a tick was dragged. */
+  moveWordStart: (lineIdx: number, wordIdx: number, time: number) => void
+
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
   /** Clear the whole session — used when the lyrics underneath change. */
@@ -207,6 +220,11 @@ export function useLrcGenController(
     createSignal<WordTimingsMap>({})
   const [lrcGenWordSweepTimings, setLrcGenWordSweepTimings] =
     createSignal<WordSweepTimingsMap>({})
+  // Word ticks on the vocal overview. On by default: the mapper's whole
+  // point is seeing where the words landed, and a dense song can be thinned
+  // (see visibleMarkers) rather than hidden.
+  const [showWordMarkers, setShowWordMarkers] = createSignal(true)
+
   // How far this session has moved the whole mapping, for the readout. Not
   // persisted: it describes the session's edits, and the edits themselves are
   // already in the timings.
@@ -1514,6 +1532,33 @@ export function useLrcGenController(
     saveLrcGenProgress()
   }
 
+  /**
+   * Every mapped word start, for the overview's ticks. Keyed by canonical
+   * line index, like the rest of the session's state.
+   */
+  const wordMarkers = createMemo(() => wordMarkersFrom(lrcGenWordTimings()))
+
+  /** The tick the mapping cursor is on, so it can be drawn lit. */
+  const activeWordMarker = createMemo(() => ({
+    lineIdx: lrcGenLineIdx(),
+    wordIdx: lrcGenWordIdx(),
+  }))
+
+  /** Put the cursor on an exact word — a tick was clicked on the overview. */
+  const focusGenWord = (lineIdx: number, wordIdx: number) => {
+    const genLines = getGenLines()
+    if (lineIdx < 0 || lineIdx >= genLines.length) return
+    setLrcGenLineIdx(lineIdx)
+    setLrcGenWordIdx(wordIdx)
+    saveLrcGenProgress()
+  }
+
+  /** Retime one word — a tick was dragged on the overview. */
+  const moveWordStart = (lineIdx: number, wordIdx: number, time: number) => {
+    setMarkerWordStart(lineIdx, wordIdx, Math.max(0, time))
+    saveLrcGenProgress()
+  }
+
   /** Drop the whole session. The lyrics underneath it have changed. */
   const resetGenState = () => {
     setLrcGenMode(false)
@@ -1574,6 +1619,12 @@ export function useLrcGenController(
     isLineTouched,
     genShiftMs,
     shiftGenTimings,
+    wordMarkers,
+    activeWordMarker,
+    showWordMarkers,
+    setShowWordMarkers,
+    focusGenWord,
+    moveWordStart,
     focusGenLine,
     resetGenState,
 
