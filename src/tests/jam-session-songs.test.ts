@@ -15,8 +15,13 @@ vi.mock('@/db/services/lyrics-db-service', () => ({
   loadLyricsFromDb: (id: string) => loadLyricsFromDb(id),
 }))
 
-const { jammableSessions, sessionSong, sessionSongLines, sessionSongs } =
-  await import('@/lib/jam/jam-session-songs')
+const {
+  jammableSessions,
+  ownSongRows,
+  sessionSong,
+  sessionSongLines,
+  sessionSongs,
+} = await import('@/lib/jam/jam-session-songs')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const session = (over: any = {}) =>
   ({
@@ -39,6 +44,47 @@ describe('jammableSessions', () => {
       session({ sessionId: 'busy', status: 'processing' }),
     ]
     expect(jammableSessions(all).map((s) => s.sessionId)).toEqual(['done'])
+  })
+})
+
+describe('ownSongRows', () => {
+  // The Examples library seeds a session row for every published demo, so
+  // the demo the Songs shelf serves from the manifest is now always in the
+  // session list too. Listed under both, it looks like a duplicate.
+  const all = [
+    session({ sessionId: 'karaoke-night-demo' }),
+    session({ sessionId: 'karaoke-night-demo:josephine' }),
+    session({ sessionId: 'my-own-song' }),
+  ]
+
+  it('drops the song the shelf above already shows', () => {
+    expect(
+      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
+    ).not.toContain('karaoke-night-demo')
+  })
+
+  it('keeps every other example, which has no other shelf to appear on', () => {
+    // The Songs shelf serves one manifest entry. Filtering all demos here
+    // would make the rest of the corpus unjammable.
+    expect(
+      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
+    ).toEqual(['karaoke-night-demo:josephine', 'my-own-song'])
+  })
+
+  it('leaves the visitor own sessions alone', () => {
+    expect(
+      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
+    ).toContain('my-own-song')
+  })
+
+  it('still refuses a session that is not finished', () => {
+    const pending = [session({ sessionId: 'writing', status: 'finalizing' })]
+    expect(ownSongRows(pending, 'karaoke-night-demo')).toEqual([])
+  })
+
+  it('drops nothing when the shelf above is empty', () => {
+    // loadDemoSong can fail; the session rows must not vanish with it.
+    expect(ownSongRows(all, '')).toHaveLength(3)
   })
 })
 
