@@ -11,6 +11,7 @@ import { GuitarSignalFlow } from '@/components/guitar/GuitarSignalFlow'
 import { GuitarTuner } from '@/components/guitar/GuitarTuner'
 import { InteractiveGuitarFretboardCanvas } from '@/components/guitar/InteractiveGuitarFretboardCanvas'
 import { KeyScaleSelector } from '@/components/guitar/KeyScaleSelector'
+import { Guitar } from '@/components/icons'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { ControlOverlay } from '@/components/shared/control-bar/ControlOverlay'
@@ -377,6 +378,16 @@ export function GuitarPage(props: GuitarPageProps) {
               value={guitarView}
               onChange={setGuitarView}
             />
+            <a
+              class={barStyles.chipBtn}
+              href="/guitar-night"
+              title="Open Guitar Night — the Velvet Rehearsal play-along room"
+            >
+              <span class={barStyles.chipIcon} aria-hidden="true">
+                <Guitar />
+              </span>
+              <span class={barStyles.chipLabel}>Guitar Night</span>
+            </a>
             <button
               class={barStyles.chipBtn}
               onClick={() => gpFileInput?.click()}
@@ -437,6 +448,11 @@ export function GuitarPage(props: GuitarPageProps) {
             />
           </OptionSection>
           <OptionSection label="More">
+            <OptionRow label="Guitar Night">
+              <a class={barStyles.chipBtn} href="/guitar-night">
+                Open
+              </a>
+            </OptionRow>
             <OptionRow label="Guitar Pro tab">
               <button
                 class={barStyles.chipBtn}
