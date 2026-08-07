@@ -1,0 +1,8 @@
+# Windows batch files are CRLF by nature, and git's whitespace check reads
+# every CR as trailing whitespace. PR Gate runs `git diff --check` under
+# `set -e`, and the pull_request payload's base.sha can be stale (the base
+# tip at PR creation), so the checked range often includes files from main
+# the PR never touched — the vendored Gradle wrapper batch script failed
+# every PR opened before it landed. Opt vendored .bat files out of
+# whitespace policing entirely; we do not own their style.
+*.bat -whitespace
