@@ -1443,6 +1443,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     formatTime: canvas.formatTime,
     // eslint-disable-next-line solid/reactivity
     songTitle: props.songTitle,
+    // eslint-disable-next-line solid/reactivity
+    sessionId: props.sessionId,
     lrclibSearchUrl,
     triggerChangeFile: () => lyricsFileInputRef?.click(),
     handleRemoveLyrics: () => {

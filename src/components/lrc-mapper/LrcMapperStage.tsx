@@ -16,6 +16,7 @@ import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { LrcGenPass, PreviewWordHighlight, } from '@/features/stem-mixer/lrc-gen-passes'
 import type { BlockInfo, BlockInstancesMap, GenViewLine, LrcGenInputMode, LyricsBlock, } from '@/features/stem-mixer/types'
+import { ExampleCredit } from '../ExampleCredit'
 import { PitchStageShell } from '../pitch-stage/PitchStageShell'
 import { LrcMapperLineList } from './LrcMapperLineList'
 import styles from './LrcMapperStage.module.css'
@@ -27,6 +28,8 @@ const MAPPER_USER_COLOR = '#3fb950'
 
 export interface LrcMapperStageProps {
   songTitle: string
+  /** Surfaces the licence credit when the song is an example. */
+  sessionId?: string
   /** Leave the full-screen surface. The session itself keeps running. */
   onClose: () => void
 
@@ -148,36 +151,39 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
       <PitchStageShell
         ariaLabel={`Lyric mapper — ${props.songTitle}`}
         canvas={
-          <LrcMapperLineList
-            blockInstances={props.blockInstances}
-            class={styles.lines}
-            elapsed={props.elapsed}
-            formatTimeMs={props.formatTimeMs}
-            genViewData={props.genViewData}
-            getBlockById={props.getBlockById}
-            getBlockColor={props.getBlockColor}
-            handleLyricLineClick={props.handleLyricLineClick}
-            handleMarkerSample={props.handleMarkerSample}
-            handlePlay={props.handlePlay}
-            handleSeekToTime={props.handleSeekToTime}
-            highlightWord={props.highlightWord}
-            loopPreview={props.loopPreview}
-            lrcGenInputMode={props.lrcGenInputMode}
-            lrcGenLineIdx={props.lrcGenLineIdx}
-            lrcGenWordIdx={props.lrcGenWordIdx}
-            clearLetterSplit={props.clearLetterSplit}
-            closeLetterTarget={props.closeLetterTarget}
-            letterMode={props.letterMode}
-            letterSplits={props.letterSplits}
-            letterTarget={props.letterTarget}
-            openLetterTarget={props.openLetterTarget}
-            setLetterSplit={props.setLetterSplit}
-            lyricsFontSize={props.lyricsFontSize}
-            playing={props.playing}
-            previewLineIdx={props.previewLineIdx}
-            setLyricsFontSize={props.setLyricsFontSize}
-            toggleLinePreview={props.toggleLinePreview}
-          />
+          <>
+            <ExampleCredit class={styles.credit} sessionId={props.sessionId} />
+            <LrcMapperLineList
+              blockInstances={props.blockInstances}
+              class={styles.lines}
+              elapsed={props.elapsed}
+              formatTimeMs={props.formatTimeMs}
+              genViewData={props.genViewData}
+              getBlockById={props.getBlockById}
+              getBlockColor={props.getBlockColor}
+              handleLyricLineClick={props.handleLyricLineClick}
+              handleMarkerSample={props.handleMarkerSample}
+              handlePlay={props.handlePlay}
+              handleSeekToTime={props.handleSeekToTime}
+              highlightWord={props.highlightWord}
+              loopPreview={props.loopPreview}
+              lrcGenInputMode={props.lrcGenInputMode}
+              lrcGenLineIdx={props.lrcGenLineIdx}
+              lrcGenWordIdx={props.lrcGenWordIdx}
+              clearLetterSplit={props.clearLetterSplit}
+              closeLetterTarget={props.closeLetterTarget}
+              letterMode={props.letterMode}
+              letterSplits={props.letterSplits}
+              letterTarget={props.letterTarget}
+              openLetterTarget={props.openLetterTarget}
+              setLetterSplit={props.setLetterSplit}
+              lyricsFontSize={props.lyricsFontSize}
+              playing={props.playing}
+              previewLineIdx={props.previewLineIdx}
+              setLyricsFontSize={props.setLyricsFontSize}
+              toggleLinePreview={props.toggleLinePreview}
+            />
+          </>
         }
         eyebrow="Lyric mapper"
         footer={

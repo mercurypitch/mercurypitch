@@ -2929,6 +2929,26 @@
   word-break: break-word;
 }
 
+/* Creative Commons credit for an example song. The corpus is licensed, so
+   this travels with the song wherever it is named — see ExampleCredit.tsx.
+   Renders nothing for a session that is not an example. */
+.example-credit {
+  margin: 0.15rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: var(--fg-tertiary);
+}
+
+.example-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.example-credit a:hover {
+  color: var(--accent);
+}
+
 .session-id-pill {
   display: inline-block;
   margin: 0.1rem 0 0;

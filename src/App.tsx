@@ -204,6 +204,7 @@ import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import type { LabTab } from '@/features/lab/LabSurface'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
@@ -2186,6 +2187,14 @@ const AppShell: Component<AppProps> = (props) => {
     void initSessionStore()
     void initGroupStore()
     void initKaraokePlaylistStore()
+
+    // The demo corpus, as ordinary session rows. Metadata only: the stems are
+    // R2 URLs, so nothing transfers until somebody opens one. Sequenced after
+    // the stores so it decides against a populated cache rather than seeding
+    // duplicates of rows that were already on disk.
+    void Promise.all([initSessionStore(), initGroupStore()]).then(() =>
+      seedExamplesLibrary(),
+    )
 
     // Recover server (RunPod) separations orphaned by a reload or a full-page
     // nav to /karaoke — re-attach and re-fetch the finished stems for free.

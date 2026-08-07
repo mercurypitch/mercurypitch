@@ -13,6 +13,7 @@ import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '
 import { addSessionToGroup, createGroup, deleteUvrSession, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
+import { ExampleCredit } from './ExampleCredit'
 import { Box, Calendar, CheckCircle, ChevronDown, Cpu, Headphones, Loader2, Midi, Music, Play, Plus, Repeat, RotateCcw, Server, Share, SlidersHorizontal, Trash2, Voice, X, XCircle, Zap, } from './icons'
 import { PlayAlongSelect } from './PlayAlongSelect'
 import { UvrSessionActions } from './UvrSessionActions'
@@ -346,6 +347,7 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         >
           {session()?.originalFile?.name ?? 'Unknown'}
         </p>
+        <ExampleCredit sessionId={props.sessionId} />
         <p
           class="session-id-pill"
           title={
