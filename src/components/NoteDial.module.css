@@ -38,15 +38,30 @@
 
 /* Sized in one place. The exercise panels vary in width, so the dial
    tracks the space it is given rather than fixing a pixel size — and it
-   can afford to be larger now that it is not sharing the row. */
+   can afford to be larger now that it is not sharing the row.
+ *
+ * It tracks HEIGHT as well as width. The dial is square, so a width-only
+ * rule spent 300px of vertical space on a viewport that had 400px of it,
+ * and pushed Start out of reach. Taking the smaller of the two axes costs
+ * nothing on a desktop — 46vh there is well past the 300px cap — and only
+ * bites when the window is genuinely short. */
 .face {
-  width: clamp(232px, 68vw, 300px);
+  width: clamp(200px, min(68vw, 46vh), 300px);
   height: auto;
   flex: none;
   display: block;
   border-radius: 50%;
   /* A drag across the face must scrub the dial, not pan the page. */
   touch-action: none;
+}
+
+/* `vh` on a phone measures the viewport as if the browser chrome were not
+   there, which is the case that reported this. `dvh` measures what is
+   actually visible, so the dial keeps shrinking as the address bar grows. */
+@supports (height: 100dvh) {
+  .face {
+    width: clamp(200px, min(68vw, 46dvh), 300px);
+  }
 }
 
 .face:focus-visible {
