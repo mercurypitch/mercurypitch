@@ -6,7 +6,7 @@
 // no type check can: that letter mode really does suspend marking, and that
 // only the word the user opened expands.
 
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import { LrcMapperLineList } from '@/components/lrc-mapper/LrcMapperLineList'
@@ -22,23 +22,32 @@ describe('LrcWordLetters', () => {
   ) {
     const onSet = vi.fn()
     const onClear = vi.fn()
+    const onClose = vi.fn()
+    const onSuggestSyllables = vi.fn()
     render(() => (
       <LrcWordLetters
         formatTimeMs={fmt}
         onClear={onClear}
+        onClose={onClose}
         onSet={onSet}
+        onSuggestSyllables={onSuggestSyllables}
+        progress={() => 0}
         splits={() => splits}
         word="soul"
         {...over}
       />
     ))
-    return { onSet, onClear }
+    return { onSet, onClear, onClose, onSuggestSyllables }
   }
+
+  /** The join targets alone — not the close and syllable controls beside them. */
+  const boundaries = () =>
+    document.querySelectorAll('.sm-lyrics-letter-boundary')
 
   it('offers one target per join, including the word edges', () => {
     renderWord()
     // "soul" has four letters, so five joins.
-    expect(screen.getAllByRole('button')).toHaveLength(5)
+    expect(boundaries()).toHaveLength(5)
     expect(screen.getByLabelText('Time the start of the word')).toBeVisible()
     expect(screen.getByLabelText('Time the end of the word')).toBeVisible()
     expect(screen.getByLabelText('Time the start of "oul"')).toBeVisible()
@@ -86,7 +95,104 @@ describe('LrcWordLetters', () => {
   it('counts graphemes, not code units', () => {
     renderWord({}, { word: 'café' })
     // Four letters over five code points: a .length split would offer six.
-    expect(screen.getAllByRole('button')).toHaveLength(5)
+    expect(boundaries()).toHaveLength(5)
+  })
+
+  // ── Getting back out, and undoing ──────────────────────────────
+  //
+  // The expanded row is almost entirely boundary buttons, each of which stops
+  // the click from reaching the word. Without a control of its own the only
+  // way out is hitting a glyph, which nothing tells you.
+
+  it('offers a way out that is not a guess', () => {
+    const { onClose } = renderWord()
+    fireEvent.click(screen.getByLabelText('Close the letter editor'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('clears a boundary on right-click, for people without a shift key', () => {
+    const { onClear, onSet } = renderWord({ 2: 10.5 })
+    fireEvent.contextMenu(screen.getByLabelText('Time the start of "ul"'))
+    expect(onClear).toHaveBeenCalledWith(2)
+    expect(onSet).not.toHaveBeenCalled()
+  })
+
+  it('will not let a right-click remove the word itself', () => {
+    const { onClear } = renderWord({ 0: 10, 4: 11 })
+    fireEvent.contextMenu(screen.getByLabelText('Time the start of the word'))
+    expect(onClear).not.toHaveBeenCalled()
+  })
+
+  it('says how to clear, on the boundaries that can be', () => {
+    // The gesture has no visible control, so the title is the only place it
+    // can be discovered. An unset boundary must not advertise it.
+    renderWord({ 2: 10.5 })
+    expect(screen.getByLabelText('Time the start of "ul"')).toHaveAttribute(
+      'title',
+      expect.stringContaining('clear'),
+    )
+    expect(screen.getByLabelText('Time the start of "oul"')).toHaveAttribute(
+      'title',
+      'Time the start of "oul"',
+    )
+  })
+
+  it('offers the syllable pre-fill only when a caller can handle it', () => {
+    renderWord()
+    expect(
+      screen.getByLabelText('Split this word at its syllables'),
+    ).toBeVisible()
+
+    cleanup()
+    render(() => (
+      <LrcWordLetters
+        formatTimeMs={fmt}
+        onClear={() => {}}
+        onClose={() => {}}
+        onSet={() => {}}
+        progress={() => 0}
+        splits={() => ({})}
+        word="soul"
+      />
+    ))
+    expect(
+      screen.queryByLabelText('Split this word at its syllables'),
+    ).toBeNull()
+  })
+
+  // ── The live highlight ─────────────────────────────────────────
+
+  it('fills each glyph in turn as the highlighter crosses it', () => {
+    // The word-level fill paints .sm-lyrics-gen-word-text, which does not
+    // exist once the word is expanded — so without a per-glyph fill the one
+    // thing letter mode is for is the one thing you cannot watch.
+    renderWord({}, { progress: () => 0.5 })
+    const glyphs = document.querySelectorAll<HTMLElement>(
+      '.sm-lyrics-letter-glyph',
+    )
+    // "soul" at halfway: s and o full, u and l empty.
+    expect(glyphs[0].style.getPropertyValue('--glyph-fill')).toBe('100.0%')
+    expect(glyphs[1].style.getPropertyValue('--glyph-fill')).toBe('100.0%')
+    expect(glyphs[2].style.getPropertyValue('--glyph-fill')).toBe('0.0%')
+    expect(glyphs[3].style.getPropertyValue('--glyph-fill')).toBe('0.0%')
+  })
+
+  it('fills a glyph part-way through, rather than snapping', () => {
+    renderWord({}, { progress: () => 0.375 })
+    const glyphs = document.querySelectorAll<HTMLElement>(
+      '.sm-lyrics-letter-glyph',
+    )
+    // 0.375 * 4 = 1.5 — the second glyph is half covered.
+    expect(glyphs[1].style.getPropertyValue('--glyph-fill')).toBe('50.0%')
+  })
+
+  it('leaves every glyph empty before the word starts', () => {
+    renderWord({}, { progress: () => 0 })
+    for (const glyph of document.querySelectorAll<HTMLElement>(
+      '.sm-lyrics-letter-glyph',
+    )) {
+      expect(glyph.style.getPropertyValue('--glyph-fill')).toBe('0.0%')
+    }
   })
 })
 
@@ -129,6 +235,7 @@ function renderList(
     <LrcMapperLineList
       blockInstances={() => ({})}
       clearLetterSplit={() => {}}
+      suggestSyllableSplits={() => 0}
       closeLetterTarget={closeLetterTarget}
       elapsed={() => 12.25}
       formatTimeMs={fmt}

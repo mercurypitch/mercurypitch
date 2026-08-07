@@ -739,6 +739,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     letterSplits,
     setLetterSplit,
     clearLetterSplit,
+    suggestSyllableSplits,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -1380,6 +1381,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     letterSplits,
     setLetterSplit,
     clearLetterSplit,
+    suggestSyllableSplits,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -5972,6 +5974,68 @@ export const StemMixerStyles: string = `
   pointer-events: none;
 }
 
+/* The highlighter, swept per glyph.
+
+   The word-level rule paints .sm-lyrics-gen-word-text, which does not exist
+   once a word is expanded — so without this the whole point of opening a word
+   (watching the fill cross the letter you are timing) is the one thing you
+   cannot see. Per glyph rather than one gradient across the row because
+   progress is measured in grapheme space: a single sweep would drift from the
+   letter it claims to be on, and drift is exactly what this editor is for. */
+.sm-lyrics-gen-word-lit .sm-lyrics-letter-glyph,
+.sm-lyrics-gen-word-current .sm-lyrics-letter-glyph {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--accent-lighter, #79c0ff) 0 var(--glyph-fill, 0%),
+    var(--fg-secondary, #8b949e) var(--glyph-fill, 0%) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+/* Close, and the syllable pre-fill. Sat at the end of the row rather than in
+   the toolbar because the row is what you are looking at, and hunting for the
+   way out of a mode is the fastest way to make it feel like a trap. */
+.sm-lyrics-letter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: 0.35rem;
+}
+
+.sm-lyrics-letter-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 24px, so it clears the touch-target minimum even at 0.45rem text. */
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 4px;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sm-lyrics-letter-action:hover {
+  border-color: var(--accent, #58a6ff);
+  color: var(--fg-primary, #e6edf3);
+}
+
+.sm-lyrics-letter-action svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.sm-lyrics-letter-action-glyph {
+  font-family: monospace;
+  letter-spacing: -0.03em;
+}
+
 /* A boundary is a join, not a glyph, so it is drawn as a rule between two
    letters rather than as a box around one. The button is deliberately wider
    than the rule it shows — at 0.45rem text the rule alone is unhittable. */
@@ -6007,6 +6071,13 @@ export const StemMixerStyles: string = `
   width: 2px;
   opacity: 1;
   background: var(--ok-green, #3fb950);
+}
+
+/* A set interior boundary can be dropped again — right-click, or hold. The
+   context-menu cursor is the only hint CSS can give for a gesture that has no
+   visible control, and the hold has none at all, so the title carries it. */
+.sm-lyrics-letter-boundary--clearable {
+  cursor: context-menu;
 }
 
 /* The word's own two edges. Timed like any other boundary, but they are the

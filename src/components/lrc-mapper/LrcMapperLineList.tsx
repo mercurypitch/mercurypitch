@@ -76,6 +76,8 @@ export interface LrcMapperLineListProps {
     wordIdx: number,
     letterIdx: number,
   ) => void
+  /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
+  suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
 
   /** Extra classes on the scroll container, for the full-screen surface. */
   class?: string
@@ -448,6 +450,7 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                             <LrcWordLetters
                               word={word}
                               splits={() => props.letterSplits(item.index, wi)}
+                              progress={progress}
                               formatTimeMs={props.formatTimeMs}
                               onSet={(letterIdx) =>
                                 props.setLetterSplit(
@@ -463,6 +466,10 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                                   wi,
                                   letterIdx,
                                 )
+                              }
+                              onClose={props.closeLetterTarget}
+                              onSuggestSyllables={() =>
+                                props.suggestSyllableSplits(item.index, wi)
                               }
                             />
                           </Show>

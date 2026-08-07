@@ -120,6 +120,8 @@ export interface StemMixerLyricsController {
     wordIdx: number,
     letterIdx: number,
   ) => void
+  /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
+  suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
   previewLineIdx: () => number | null
   previewLoop: () => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -1757,6 +1759,7 @@ export function useStemMixerLyricsController(
     letterSplits: gen.letterSplits,
     setLetterSplit: gen.setLetterSplit,
     clearLetterSplit: gen.clearLetterSplit,
+    suggestSyllableSplits: gen.suggestSyllableSplits,
     previewLineIdx,
     previewLoop,
     setPreviewLoop,

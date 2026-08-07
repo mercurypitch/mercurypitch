@@ -140,6 +140,16 @@
   white-space: nowrap;
 }
 
+/* A numeric header has to follow its own column.
+
+   `.table th` is (0,1,1) and `.num` is (0,1,0), so the blanket left-align on
+   headers beat the right-align here no matter which came first — leaving every
+   number under the *next* column's heading. Source order cannot fix this; the
+   selector has to out-specify `.table th`. */
+.table th.num {
+  text-align: right;
+}
+
 .lineText {
   max-width: 34ch;
   overflow: hidden;
