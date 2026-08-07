@@ -10,6 +10,9 @@ import '@/styles/vocal-analysis.css'
 import '@/styles/uvr.css'
 import '@/styles/exercises.css'
 import '@/styles/mobile-polish.css'
+// After mobile-polish: the short-viewport rules are the same fixes keyed on
+// height, and where both apply they should win the tie.
+import '@/styles/short-viewport.css'
 import { App } from './App'
 
 import { setupConsent } from '@/components/ConsentBanner'
