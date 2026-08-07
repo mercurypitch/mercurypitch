@@ -279,7 +279,34 @@ serialised.
 
 ---
 
-## Phase 2 — the full-screen mapper
+## Phase 2 — the full-screen mapper (DONE)
+
+`LrcMapperStage` — and the shell decision went the other way from the
+recommendation below. `PitchStageShell` took a fifth mode (`'lrc-mapper'`)
+rather than getting a sibling, because with **no sidecar** the shell is
+already the shape the mapper needs: the lyric list is the canvas and the
+transport is the footer. A sibling would have been a second copy of the
+header, footer and escape handling to keep in step.
+
+What the extraction bought: `LrcMapperLineList`, `LrcMapperToolbar` and
+`useLrcMarkerInput` are shared with the in-panel mapper, so the two surfaces
+cannot drift. The toolbar takes a `variant` — the panel stacks both rows, the
+stage puts the mapping actions on the surface (they are pressed in time with
+the music) and everything else behind a Settings popover.
+
+Two things worth knowing:
+
+- Escape closes the Settings menu before it closes the stage. Losing a mapping
+  session to a keystroke aimed at a popover is the kind of thing nobody
+  reports, they just stop using the feature.
+- The toolbar's own transport only renders in the panel variant. The stage has
+  a footer transport, and both rendering gave two Play buttons.
+
+Not verified in a browser.
+
+---
+
+## Phase 2 (original) — the full-screen mapper
 
 **Route:** a hash route in the same family as the existing full-screen surfaces.
 
@@ -506,7 +533,29 @@ this.
 
 ---
 
-## Phase 6 — start cue for sub-rest gaps
+## Phase 6 — start cue for sub-rest gaps (DONE)
+
+`leadInProgress` in `canonical-lrc.ts`, rendered by `LeadInCue` as a bar that
+fills across the run-in and is gone the instant the line starts.
+
+The thresholds, which the plan said would have to come from singing to it:
+a gap earns a cue from **2.5 s** up to `REST_THRESHOLD_SEC` (above that the
+rest row with its countdown dots already covers it), and the run-in itself is
+capped at **6 s** — a 19 s cue is its own ordeal.
+
+Two details that matter more than they look:
+
+- The gap is measured from where singing actually **stopped** — the previous
+  line's last word end — not from where its line began. On word-level LRC
+  those are seconds apart.
+- `leadInProgress` returns **null** outside its window, never 0. Returning 0
+  would render a permanently empty cue on every line in the song.
+
+Not verified in a browser.
+
+---
+
+## Phase 6 (original) — start cue for sub-rest gaps
 
 Carried over from the 2026-08-06 backlog note; it belongs to this surface.
 
@@ -744,15 +793,17 @@ stop shipping a `lyrics` URL once `lyricsText` is set, so there is one answer to
 ## 10. Sequence
 
 ```
-Phase A  fix mapper resume state       (live bug -- do this first)
-Phase 0  split the controller          (no behaviour change)
-Phase 1  lyricsfile native + offset_ms (unblocks precision storage)
-Phase 2  full-screen mapper shell      (the space everything else needs)
-Phase 3  waveform word markers         (pure mapping layer first)
-Phase 4  sub-word split points         (DONE)
-Phase 5  A/B differ, lab + mapper      (the measuring instrument)
-Phase 6  start cue for sub-rest gaps   (tune against a real song)
-Phase 7  Examples library              (DONE)
+Phase A  fix mapper resume state       DONE
+Phase 0  split the controller          DONE
+Phase 1  lyricsfile native + offset_ms PART DONE -- offset and export shipped,
+                                       parseLyricsfile awaits a YAML-dependency
+                                       decision
+Phase 2  full-screen mapper shell      DONE
+Phase 3  waveform word markers         DONE
+Phase 4  sub-word split points         DONE
+Phase 5  A/B differ, lab + mapper      DONE
+Phase 6  start cue for sub-rest gaps   DONE
+Phase 7  Examples library              DONE
 ```
 
 Phases 1 and 2 are independent of each other and can swap. Everything else in
