@@ -173,20 +173,25 @@
   line-height: 1.55;
 }
 
-/* Footer: progress dots (left) + icon actions (right). */
+/* Footer: progress on one line, icon actions on the next. Both used to
+   share a row, which made progress the leftover — and the controls are not
+   a fixed width (the last step of a section adds a labelled button), so no
+   step count reliably fit and the dots wrapped into a block. */
 .walkthroughActions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
 }
 
+/* One dot per step, up to MAX_DOTS in Walkthrough.tsx — eight of these are
+   127px against a 268px line even on the narrowest phone, so this row is
+   single by construction. Longer tours render the meter below instead.
+   Do not put flex-wrap back: wrapping is the bug, not the safety net. */
 .walkthroughDots {
   display: flex;
   align-items: center;
   gap: 3px;
-  flex-wrap: wrap;
-  row-gap: 2px;
   min-width: 0;
 }
 
@@ -221,10 +226,65 @@
   background-color: var(--accent);
 }
 
+/* Long tours: the same step buttons, flexed to fill one line whatever the
+   count. Fifteen segments fit where fifteen dots could not, and the count
+   is spelled out beside them because slivers cannot be counted by eye. */
+.walkthroughMeter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.walkthroughMeterTrack {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Same content-box trick as the dots: vertical padding is the tap strip,
+   the visible bar is the 4px content. */
+.walkthroughSeg {
+  box-sizing: content-box;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 4px;
+  padding: 7px 0;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--border);
+  background-clip: content-box;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.walkthroughSeg:hover {
+  background-color: var(--text-secondary);
+}
+
+.walkthroughSegDone {
+  background-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.walkthroughSegActive {
+  background-color: var(--accent);
+}
+
+.walkthroughMeterCount {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
 .walkthroughActionsCenter {
   display: flex;
   gap: 6px;
   align-items: center;
+  justify-content: flex-end;
   flex-shrink: 0;
 }
 
@@ -338,8 +398,9 @@
     padding: 12px 14px;
   }
 
-  /* The icon controls stay fixed-size (tap targets); the dots absorb the slack
-     and wrap if a very long section needs it. */
+  /* The icon controls stay fixed-size (tap targets) and now have the line to
+     themselves; tightening the gap keeps a labelled "Continue to …" button
+     from pushing the row past the card. */
   .walkthroughActionsCenter {
     gap: 4px;
   }
