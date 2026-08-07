@@ -7,7 +7,7 @@
 // original timings when the user only mapped a subset of lines.
 
 import { describe, expect, it } from 'vitest'
-import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from '@/features/stem-mixer/lrc-gen-engine'
+import { buildFinalPartialTimes, enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreGenLineTimes, restoreGenMap, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from '@/features/stem-mixer/lrc-gen-engine'
 import type { CanonicalLrcEntry } from '@/features/stem-mixer/types'
 import type { WordTimingsMap } from '@/features/stem-mixer/types'
 
@@ -552,5 +552,61 @@ describe('isSessionFullyMapped (the remap-last-lines zeroing guard)', () => {
     }
     expect(result[8]).toBe(1020)
     expect(result[9]).toBe(1050)
+  })
+})
+
+describe('restoring an interrupted session onto the current song', () => {
+  // The reported bug: map a few lines, leave without finishing, come back —
+  // and every line the session never reached had lost its timings, so the
+  // live highlighter had nothing to light on the rest of the song.
+
+  it('keeps timings for lines the abandoned session never touched', () => {
+    const seed = { 0: [1], 1: [2], 2: [3], 3: [4] }
+    // The session only got as far as line 1, so its blob is all it holds.
+    const saved = { 0: [1.5], 1: [2.5] }
+    const merged = restoreGenMap(seed, saved, new Set([0, 1]))
+
+    expect(merged).toEqual({ 0: [1.5], 1: [2.5], 2: [3], 3: [4] })
+  })
+
+  it('lets the session win only on the lines it actually mapped', () => {
+    // A line can appear in the blob merely because the session was seeded
+    // with it. Untouched means untouched, whichever side holds a value.
+    const merged = restoreGenMap({ 0: [9] }, { 0: [1] }, new Set())
+    expect(merged).toEqual({ 0: [9] })
+  })
+
+  it('does not let a stale blob overrule timings written since', () => {
+    // Auto word-sync (and an imported LRC, and a version switch) write the
+    // song's timings without clearing the mapper's progress blob. Before the
+    // seed always ran, reopening the mapper silently reverted them.
+    const autoSynced = { 0: [10], 1: [20], 2: [30] }
+    const stale = { 0: [0.1] }
+    expect(restoreGenMap(autoSynced, stale, new Set())).toEqual(autoSynced)
+  })
+
+  it('merges the sparse line-start array on the same rule', () => {
+    const seed = [1, 2, 3, undefined]
+    const saved = [1.5, undefined, undefined, undefined]
+    expect(restoreGenLineTimes(seed, saved, new Set([0]), 4)).toEqual([
+      1.5,
+      2,
+      3,
+      undefined,
+    ])
+  })
+
+  it('falls back to the seed when a touched line has no saved time', () => {
+    // Touched-but-timeless happens in the word pass: the line was entered and
+    // its start frozen, but no word landed before the session was abandoned.
+    expect(restoreGenLineTimes([7], [undefined], new Set([0]), 1)).toEqual([7])
+  })
+
+  it('sizes the result to the song, not to whichever side is longer', () => {
+    // A blob written against different lyrics can be longer; trusting its
+    // length would index rows the mapper is not rendering.
+    expect(
+      restoreGenLineTimes([1], [1, 2, 3, 4], new Set([0, 1, 2, 3]), 2),
+    ).toEqual([1, 2])
   })
 })
