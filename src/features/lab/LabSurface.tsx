@@ -25,13 +25,17 @@ const PitchAlgorithmTester = lazy(async () =>
     default: m.PitchAlgorithmTester,
   })),
 )
+const LrcDiffTool = lazy(async () =>
+  import('./LrcDiffTool').then((m) => ({ default: m.LrcDiffTool })),
+)
 
-export type LabTab = 'workbench' | 'detection' | 'algorithms'
+export type LabTab = 'workbench' | 'detection' | 'algorithms' | 'lrc-diff'
 
 const TABS: Array<{ id: LabTab; label: string }> = [
   { id: 'workbench', label: 'Spectral workbench' },
   { id: 'detection', label: 'Pitch detection' },
   { id: 'algorithms', label: 'Pitch algorithms' },
+  { id: 'lrc-diff', label: 'Mapping differ' },
 ]
 
 export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
@@ -90,6 +94,11 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
         <Show when={tab() === 'algorithms'}>
           <Suspense fallback={<SkeletonTabContent />}>
             <PitchAlgorithmTester onClose={backToAnalysis} />
+          </Suspense>
+        </Show>
+        <Show when={tab() === 'lrc-diff'}>
+          <Suspense fallback={<SkeletonTabContent />}>
+            <LrcDiffTool />
           </Suspense>
         </Show>
       </div>
