@@ -8,110 +8,13 @@
 // sweep curve alone — while every boundary between them stays in the curve, and
 // only for the words somebody actually split.
 
-import { createRoot, createSignal } from 'solid-js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { BlockInstancesMap, CanonicalLrcEntry, GenViewLine, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
-import type { LrcGenController, LrcGenControllerDeps, } from '@/features/stem-mixer/useLrcGenController'
-import { useLrcGenController } from '@/features/stem-mixer/useLrcGenController'
-import type { LrcLine } from '@/lib/lyrics-service'
+import { makeLrcGenHarness } from './helpers/lrc-gen-harness'
 
 const LINES = ['hold on', 'soul mate']
 
-function canonical(
-  text: string,
-  index: number,
-  time: number,
-): CanonicalLrcEntry {
-  return {
-    type: 'line',
-    lrcIndex: index,
-    canonicalIndex: index,
-    time,
-    text,
-    words: text.split(' '),
-  }
-}
-
-/**
- * A controller over two known lines, with only the deps these edits touch.
- * The rest are inert stubs — wiring a real session in would test the session,
- * not the splitting.
- */
-function makeController(): {
-  gen: LrcGenController
-  sweeps: () => WordSweepTimingsMap
-  starts: () => WordTimingsMap
-  ends: () => WordTimingsMap
-  setElapsed: (t: number) => void
-  dispose: () => void
-} {
-  let dispose = () => {}
-  let gen!: LrcGenController
-  const [elapsed, setElapsed] = createSignal(0)
-  const [wordTimings, setWordTimings] = createSignal<WordTimingsMap>({})
-  const [wordEndTimings, setWordEndTimings] = createSignal<WordTimingsMap>({})
-  const [wordSweepTimings, setWordSweepTimings] =
-    createSignal<WordSweepTimingsMap>({})
-  const [lyricsLines, setLyricsLines] = createSignal<string[]>(LINES)
-  const [lrcLines, setLrcLines] = createSignal<LrcLine[]>(
-    LINES.map((text, i) => ({ time: i * 10, text })),
-  )
-  const [rawLyricsText, setRawLyricsText] = createSignal(LINES.join('\n'))
-  const [lyricsSource, setLyricsSource] = createSignal<'api'>('api')
-  const [editBuffer] = createSignal<WordTimingsMap>({})
-  const [blocks] = createSignal([])
-  const [blockInstances] = createSignal<BlockInstancesMap>({})
-  const [genViewData] = createSignal<GenViewLine[]>([])
-  const [canonicalLrcLines] = createSignal(
-    LINES.map((text, i) => canonical(text, i, i * 10)),
-  )
-
-  const deps = {
-    sessionId: 'letters-test',
-    elapsed,
-    playing: () => true,
-    seekToWithWindow: () => {},
-    duration: () => 120,
-    lyricsLines,
-    setLyricsLines,
-    lrcLines,
-    setLrcLines,
-    rawLyricsText,
-    setRawLyricsText,
-    lyricsSource,
-    setLyricsSource,
-    canonicalLrcLines,
-    wordTimings,
-    setWordTimings,
-    wordEndTimings,
-    setWordEndTimings,
-    wordSweepTimings,
-    setWordSweepTimings,
-    editBuffer,
-    setEditMode: () => {},
-    blocks,
-    blockInstances,
-    getBlockById: () => undefined,
-    getBlockForLine: () => null,
-    genViewData,
-    loadPersistedLyrics: () => null,
-    persistLyrics: () => {},
-  } as unknown as LrcGenControllerDeps
-
-  createRoot((disposer) => {
-    dispose = disposer
-    gen = useLrcGenController(deps)
-  })
-
-  return {
-    gen,
-    sweeps: () => gen.lrcGenWordSweepTimings(),
-    starts: () => gen.lrcGenWordTimings(),
-    ends: () => gen.lrcGenWordEndTimings(),
-    setElapsed,
-    dispose,
-  }
-}
+const makeController = () =>
+  makeLrcGenHarness({ lines: LINES, sessionId: 'letters-test' })
 
 describe('setLetterSplit', () => {
   let harness: ReturnType<typeof makeController>
