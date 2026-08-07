@@ -600,6 +600,26 @@ export function useLrcGenController(
       wordTimings[canonIdx] = [...starts[+lrcIdx]]
     }
 
+    // An LRC that already carries per-word stamps keeps them on the canonical
+    // entries, not in the session's timings map — upload and fetch both clear
+    // that map on purpose. Without this fallback the mapper opens a fully
+    // timed song and reports every line as unmapped: no timestamps in the
+    // rows, no ticks on the overview, and pass 2 with nothing to refine.
+    const canonical = deps.canonicalLrcLines()
+    for (let i = 0; i < canonical.length && i < lines.length; i++) {
+      const entry = canonical[i]
+      if (entry.type !== 'line') continue
+      const times = entry.wordTimes
+      if (
+        wordTimings[i] === undefined &&
+        times !== undefined &&
+        times.length > 0
+      ) {
+        wordTimings[i] = [...times]
+      }
+      lineTimes[i] ??= entry.time
+    }
+
     const wordEndTimings: WordTimingsMap = {}
     for (const [lrcIdx, ends] of Object.entries(deps.wordEndTimings())) {
       const canonIdx = lrcToCanonical.get(+lrcIdx)

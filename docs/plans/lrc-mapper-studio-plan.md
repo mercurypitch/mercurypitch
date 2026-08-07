@@ -320,10 +320,20 @@ Two things worth knowing:
 - The dragged position is held locally and committed once on release, so a
   drag does not write and persist a few hundred timings.
 
-**Outstanding: the real-mouse Playwright spec.** The decision logic is unit
-tested; what the spec adds is that pointer events reach the canvas and the
-DPR/layout coordinate maths survives. Per repo memory this is required
-before merge, and it is not done.
+**The real-mouse Playwright spec is done** —
+`src/e2e/lrc-word-markers.spec.ts`. It finds the tick by hovering for the
+`ew-resize` cursor rather than recomputing the canvas layout, because a second
+copy of that maths in the test would agree with a broken implementation.
+
+Writing it turned up a bug that had nothing to do with markers: **an LRC
+carrying per-word stamps opened in the mapper as completely unmapped.** Upload
+and fetch both clear the session's `wordTimings` map on purpose, so the stamps
+survive only on the canonical entries — and `seedGenTimings` read the map
+alone. Every line showed `--:--`, the overview had no ticks to draw, and pass 2
+had nothing to refine. `seedGenTimings` now falls back to
+`canonicalLrcLines()[i].wordTimes`, with `lrc-gen-seed.test.ts` pinning it
+(including that inherited timings are *not* marked as this sitting's work, so
+finishing cannot rewrite lines nobody looked at).
 
 ---
 
