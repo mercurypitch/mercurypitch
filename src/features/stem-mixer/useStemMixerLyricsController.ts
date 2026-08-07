@@ -1261,6 +1261,7 @@ export function useStemMixerLyricsController(
     handleLrcGenReset,
     applyAutoWordSync,
     wordPassProgress,
+    isLineTouched,
     getGenLines,
     getGenWords,
     isTemplateMappedInGen,
@@ -1557,6 +1558,11 @@ export function useStemMixerLyricsController(
         isCurrent: i === curLine,
         isDone: i < curLine,
         isFuture: i > curLine,
+        // Cursor position is not mapped-ness. A resumed session carries the
+        // song's existing timings, so plenty of lines ahead of the cursor are
+        // already mapped and dimming them like blanks said otherwise.
+        isMapped: lineTimes[i] !== undefined,
+        isSessionMapped: isLineTouched(i),
         lineTime: lineTimes[i],
         wordTimes: wordTimes[i],
         wordEndTimes: wordEnds[i],

@@ -5648,6 +5648,29 @@ export const StemMixerStyles: string = `
   color: var(--fg-tertiary, #484f58);
 }
 
+/* A line ahead of the cursor that already carries timings is not the same
+   thing as an unmapped one, and dimming both to tertiary claimed it was.
+   Ordered after -future so it wins on the lines they share; :not() keeps it
+   off the current line, whose brighter colour is set at equal specificity
+   further up and would otherwise lose to source order. */
+.sm-lyrics-gen-line-mapped:not(.sm-lyrics-gen-line-current) {
+  color: var(--fg-secondary, #8b949e);
+}
+
+.sm-lyrics-gen-line-mapped:not(.sm-lyrics-gen-line-current)
+  .sm-lyrics-gen-line-time {
+  color: var(--fg-secondary, #8b949e);
+}
+
+/* Mapped in this sitting, as opposed to inherited from the song. After a
+   resume most of the times on screen are not yours, and only this says
+   which are. */
+.sm-lyrics-gen-line-session:not(.sm-lyrics-gen-line-current)
+  .sm-lyrics-gen-line-time {
+  color: var(--accent-lighter, #79c0ff);
+  background: rgba(56, 139, 253, 0.12);
+}
+
 .sm-lyrics-gen-line-time {
   display: inline-block;
   font-size: 0.5rem;

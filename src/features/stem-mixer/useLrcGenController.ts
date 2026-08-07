@@ -140,6 +140,8 @@ export interface LrcGenController {
   handleLrcGenReset: () => void
   applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
   wordPassProgress: () => { done: number; total: number }
+  /** Whether `idx` was mapped in this sitting rather than inherited. */
+  isLineTouched: (idx: number) => boolean
 
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
@@ -212,8 +214,37 @@ export function useLrcGenController(
     lyricsSource: LyricsSource
   } | null = null
 
-  // Track which lines were explicitly mapped during this gen session
+  // Track which lines were explicitly mapped during this gen session.
+  //
+  // A plain Set rather than a signal: it is written on every word transition,
+  // and reallocating it there to satisfy Solid's equality check would put an
+  // allocation on the hottest path in the mapper. The counter beside it is
+  // what the view subscribes to — bumped by markTouched/unmarkTouched, which
+  // are the only writers.
   let touchedLines = new Set<number>()
+  const [touchedVersion, setTouchedVersion] = createSignal(0)
+  const bumpTouched = () => setTouchedVersion((v) => v + 1)
+
+  const markTouched = (idx: number) => {
+    if (touchedLines.has(idx)) return
+    touchedLines.add(idx)
+    bumpTouched()
+  }
+
+  const unmarkTouched = (idx: number) => {
+    if (!touchedLines.delete(idx)) return
+    bumpTouched()
+  }
+
+  /**
+   * Whether `idx` was mapped in this sitting, as opposed to inherited from
+   * whatever the song already held. Reactive — the mapper distinguishes the
+   * two, because after a resume most of the timings on screen are not yours.
+   */
+  const isLineTouched = (idx: number): boolean => {
+    touchedVersion()
+    return touchedLines.has(idx)
+  }
 
   // ── LRC gen helpers ───────────────────────────────────────────────
 
@@ -278,7 +309,7 @@ export function useLrcGenController(
     const templateWordEnds = lrcGenWordEndTimings()
     const templateWordSweeps = lrcGenWordSweepTimings()
 
-    for (let j = 0; j < tplLineCount; j++) touchedLines.add(instStart + j)
+    for (let j = 0; j < tplLineCount; j++) markTouched(instStart + j)
     setLrcGenLineTimes((prev) => {
       const next = [...prev]
       for (let j = 0; j < tplLineCount; j++) {
@@ -551,6 +582,7 @@ export function useLrcGenController(
     const seed = seedGenTimings(lines)
     const saved = readSavedGenProgress(lines)
     touchedLines = saved?.touchedLines ?? new Set()
+    bumpTouched()
 
     if (saved === null) {
       setLrcGenLineTimes(seed.lineTimes)
@@ -783,7 +815,7 @@ export function useLrcGenController(
       return
     }
 
-    touchedLines.add(idx)
+    markTouched(idx)
     setLrcGenLineTimes((prev) => {
       const next = [...prev]
       next[idx] = t
@@ -861,7 +893,7 @@ export function useLrcGenController(
     const wordIdx = lrcGenWordIdx()
 
     if (wordIdx === 0) {
-      touchedLines.add(lineIdx)
+      markTouched(lineIdx)
       setLrcGenLineTimes((prev) => {
         const next = [...prev]
         next[lineIdx] = t
@@ -911,7 +943,7 @@ export function useLrcGenController(
     wordIdx: number,
     time: number,
   ) => {
-    touchedLines.add(lineIdx)
+    markTouched(lineIdx)
     if (wordIdx === 0) {
       setLrcGenLineTimes((prev) => {
         const next = [...prev]
@@ -1054,7 +1086,7 @@ export function useLrcGenController(
     // line".
     const wordPass = lrcGenPass() === 'words'
     if (!wordPass) {
-      touchedLines.delete(lineIdx)
+      unmarkTouched(lineIdx)
       setLrcGenLineTimes((prev) => {
         const next = [...prev]
         delete next[lineIdx]
@@ -1321,6 +1353,7 @@ export function useLrcGenController(
     setLrcGenWordEndTimings({})
     setLrcGenWordSweepTimings({})
     touchedLines = new Set()
+    bumpTouched()
     clearLrcGenProgress()
     preGenSnapshot = null
   }
@@ -1396,6 +1429,7 @@ export function useLrcGenController(
     setPreviewLineIdx(null)
     setPreviewLoop(false)
     touchedLines = new Set()
+    bumpTouched()
     clearLrcGenProgress()
   }
 
@@ -1439,6 +1473,7 @@ export function useLrcGenController(
     setLrcGenWordEndTimings({})
     setLrcGenWordSweepTimings({})
     touchedLines = new Set()
+    bumpTouched()
     preGenSnapshot = null
   }
 
@@ -1481,6 +1516,7 @@ export function useLrcGenController(
     handleLrcGenReset,
     applyAutoWordSync,
     wordPassProgress,
+    isLineTouched,
     focusGenLine,
     resetGenState,
 

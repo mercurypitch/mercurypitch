@@ -1001,7 +1001,7 @@ export const StemMixerLyricsPanelBody: Component<
                 const isPreviewing = () => props.previewLineIdx() === item.index
                 return (
                   <div
-                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}${highlightHit() !== null ? ' sm-lyrics-gen-line-lit' : ''}`}
+                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.isMapped ? ' sm-lyrics-gen-line-mapped' : ''}${item.isSessionMapped ? ' sm-lyrics-gen-line-session' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}${highlightHit() !== null ? ' sm-lyrics-gen-line-lit' : ''}`}
                     data-lyrics-index={item.index}
                     style={
                       item.blockInfo?.isTemplate === true
