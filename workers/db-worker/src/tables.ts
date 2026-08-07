@@ -177,8 +177,17 @@ export const TABLES: Record<string, TableDef> = {
   // leaderboardEntries is intentionally NOT exposed: the leaderboard is now
   // server-derived from sessionRecords (see handleLeaderboard), so the table
   // is no longer client-readable or client-writable.
-  sharedMelodies: { access: 'shared', boolCols: ['isPublic'], jsonCols: ['tags'], requiresAccount: true, },
-  sharedSessions: { access: 'shared', boolCols: ['isPublic'], requiresAccount: true, },
+  sharedMelodies: {
+    access: 'shared',
+    boolCols: ['isPublic'],
+    jsonCols: ['tags'],
+    requiresAccount: true,
+  },
+  sharedSessions: {
+    access: 'shared',
+    boolCols: ['isPublic'],
+    requiresAccount: true,
+  },
   featureFlags: { access: 'admin', boolCols: ['value'] },
   userSettings: { access: 'user' },
   follows: { access: 'user' },

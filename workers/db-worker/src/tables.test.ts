@@ -21,7 +21,9 @@ describe('blockedForAnonymous', () => {
 
   it('lets a real account post', () => {
     expect(blockedForAnonymous(TABLES.sharedMelodies, account)).toBe(false)
-    expect(blockedForAnonymous(TABLES.sharedSessions, { provider: 'google' })).toBe(false)
+    expect(
+      blockedForAnonymous(TABLES.sharedSessions, { provider: 'google' }),
+    ).toBe(false)
   })
 
   it('leaves private tables alone for everyone', () => {
