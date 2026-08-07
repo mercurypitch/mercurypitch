@@ -18,7 +18,7 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createMemo, createSignal, untrack } from 'solid-js'
 import { buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
-import { buildLrcTextFromCanonical, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
+import { buildLrcTextFromCanonical } from '@/lib/lrc-generator'
 import type { SungNote } from '@/lib/lyric-sung-end'
 import { appendWordSweepSample, beginWordSweep, removeSplitPoint, retimeWordEnd, retimeWordStart, setSplitPoint, } from '@/lib/lyric-sweep'
 import type { LrcLine } from '@/lib/lyrics-service'
@@ -26,10 +26,13 @@ import { parseLrcFile } from '@/lib/lyrics-service'
 import type { LyricsVersionKind } from '@/lib/lyrics-versions'
 import { createPersistedSignal } from '@/lib/storage'
 import { letterBoundaryCount, letterSplitTimes, progressForLetter, } from '@/lib/word-letters'
-import { autoTimeLineWords } from '@/lib/word-sync'
-import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreGenLineTimes, restoreGenMap, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
+import { autoSyncWordTimings } from './auto-word-sync'
+import { fillBlockInstance } from './block-fill'
+import { composeGenResult, restoreGenLineTimes, restoreGenMap, } from './lrc-gen-engine'
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
-import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, normalizePass, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
+import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
+import type { SavedGenProgress } from './lrc-gen-progress'
+import { createGenProgressStore, parseSavedGenProgress, } from './lrc-gen-progress'
 import { shiftTimings } from './lrc-offset'
 import type { WordMarker } from './overview-mapping'
 import { wordMarkersFrom } from './overview-mapping'
@@ -355,72 +358,27 @@ export function useLrcGenController(
     const tplBlockStart = lrcGenLineTimes()[tplStart]
     if (tplBlockStart === undefined) return
 
-    const tplLineCount = tplEnd - tplStart
-    const templateWordTimes = lrcGenWordTimings()
-    const templateWordEnds = lrcGenWordEndTimings()
-    const templateWordSweeps = lrcGenWordSweepTimings()
+    const lineCount = tplEnd - tplStart
+    const filled = fillBlockInstance(
+      {
+        lineTimes: lrcGenLineTimes(),
+        wordTimings: lrcGenWordTimings(),
+        wordEndTimings: lrcGenWordEndTimings(),
+        wordSweepTimings: lrcGenWordSweepTimings(),
+      },
+      {
+        templateStart: tplStart,
+        instanceStart: instStart,
+        lineCount,
+        delta: instanceStartTime - tplBlockStart,
+      },
+    )
 
-    for (let j = 0; j < tplLineCount; j++) markTouched(instStart + j)
-    setLrcGenLineTimes((prev) => {
-      const next = [...prev]
-      for (let j = 0; j < tplLineCount; j++) {
-        const tplTime = prev[tplStart + j]
-        if (tplTime !== undefined) {
-          next[instStart + j] =
-            Math.round((instanceStartTime + tplTime - tplBlockStart) * 1000) /
-            1000
-        }
-      }
-      return next
-    })
-
-    setLrcGenWordTimings((prev) => {
-      const next: WordTimingsMap = {}
-      for (const k of Object.keys(prev)) next[+k] = [...prev[+k]]
-      for (let j = 0; j < tplLineCount; j++) {
-        const tplWordTimes = templateWordTimes[tplStart + j]
-        if (tplWordTimes !== undefined && tplWordTimes.length > 0) {
-          next[instStart + j] = tplWordTimes.map(
-            (tt) =>
-              Math.round((instanceStartTime + tt - tplBlockStart) * 1000) /
-              1000,
-          )
-        }
-      }
-      return next
-    })
-    setLrcGenWordEndTimings((prev) => {
-      const next = structuredClone(prev)
-      for (let j = 0; j < tplLineCount; j++) {
-        const ends = templateWordEnds[tplStart + j]
-        if (ends?.length) {
-          next[instStart + j] = ends.map(
-            (time) =>
-              Math.round((instanceStartTime + time - tplBlockStart) * 1000) /
-              1000,
-          )
-        }
-      }
-      return next
-    })
-    setLrcGenWordSweepTimings((prev) => {
-      const next = structuredClone(prev)
-      for (let j = 0; j < tplLineCount; j++) {
-        if (!(tplStart + j in templateWordSweeps)) continue
-        const sweeps = templateWordSweeps[tplStart + j]
-        next[instStart + j] = {}
-        for (const [wordIdx, points] of Object.entries(sweeps)) {
-          next[instStart + j][+wordIdx] = points.map((point) => ({
-            ...point,
-            time:
-              Math.round(
-                (instanceStartTime + point.time - tplBlockStart) * 1000,
-              ) / 1000,
-          }))
-        }
-      }
-      return next
-    })
+    for (let j = 0; j < lineCount; j++) markTouched(instStart + j)
+    setLrcGenLineTimes(filled.lineTimes)
+    setLrcGenWordTimings(filled.wordTimings)
+    setLrcGenWordEndTimings(filled.wordEndTimings)
+    setLrcGenWordSweepTimings(filled.wordSweepTimings)
   }
 
   const expandAllBlockInstances = () => {
@@ -441,41 +399,15 @@ export function useLrcGenController(
 
   // ── LRC gen persistence ───────────────────────────────────────────
 
-  interface LrcGenProgressPayload {
-    lineTimes: (number | undefined)[]
-    wordTimings: WordTimingsMap
-    wordEndTimings: WordTimingsMap
-    wordSweepTimings: WordSweepTimingsMap
-    lineIdx: number
-    wordIdx: number
-    inputMode: LrcGenInputMode
-    /** Absent in sessions saved before the pass split — see `normalizePass`. */
-    pass?: LrcGenPass
-    touchedLines: number[]
-    lyricsIdentity: string
-    timestamp: number
-  }
-
-  let pendingGenProgress: LrcGenProgressPayload | null = null
-  let genProgressTimer: ReturnType<typeof setTimeout> | undefined
-
-  const flushLrcGenProgress = () => {
-    const payload = pendingGenProgress
-    pendingGenProgress = null
-    genProgressTimer = undefined
-    if (payload === null) return
-    try {
-      localStorage.setItem(genKey(), JSON.stringify(payload))
-    } catch {
-      /* storage full */
-    }
-  }
+  const progressStore = createGenProgressStore(genKey)
+  const flushLrcGenProgress = progressStore.flush
+  const clearLrcGenProgress = progressStore.clear
 
   const saveLrcGenProgress = () => {
     // Signal values are immutable references. Capturing them here is O(1);
     // serialization and the synchronous localStorage write happen at most once
     // per short burst instead of blocking every fast word transition.
-    pendingGenProgress = {
+    progressStore.save({
       lineTimes: lrcGenLineTimes(),
       wordTimings: lrcGenWordTimings(),
       wordEndTimings: lrcGenWordEndTimings(),
@@ -487,94 +419,17 @@ export function useLrcGenController(
       touchedLines: [...touchedLines].sort((a, b) => a - b),
       lyricsIdentity: getGenProgressIdentity(),
       timestamp: Date.now(),
-    }
-    if (genProgressTimer !== undefined) return
-    genProgressTimer = setTimeout(flushLrcGenProgress, 1500)
-  }
-
-  const clearLrcGenProgress = () => {
-    pendingGenProgress = null
-    if (genProgressTimer !== undefined) {
-      clearTimeout(genProgressTimer)
-      genProgressTimer = undefined
-    }
-    try {
-      localStorage.removeItem(genKey())
-    } catch {
-      /* ignore */
-    }
+    })
   }
 
   // ── LRC gen actions ──────────────────────────────────────────────
 
-  /** What an interrupted session left behind, once validated. */
-  interface SavedGenProgress {
-    lineTimes: (number | undefined)[]
-    wordTimings: WordTimingsMap
-    wordEndTimings: WordTimingsMap
-    wordSweepTimings: WordSweepTimingsMap
-    touchedLines: Set<number>
-    lineIdx: number
-    wordIdx: number
-    pass: LrcGenPass
-    /** null when the blob predates the setting or holds something unknown. */
-    inputMode: LrcGenInputMode | null
-  }
-
-  const readSavedGenProgress = (lines: string[]): SavedGenProgress | null => {
-    try {
-      const saved = localStorage.getItem(genKey())
-      if (saved === null) return null
-      const data: Record<string, unknown> = JSON.parse(saved)
-      const belongsToCurrentLyrics =
-        data.lyricsIdentity === undefined ||
-        data.lyricsIdentity === getGenProgressIdentity()
-      if (
-        !belongsToCurrentLyrics ||
-        !Array.isArray(data.lineTimes) ||
-        data.lineTimes.length === 0
-      ) {
-        return null
-      }
-      const lineIdx =
-        typeof data.lineIdx === 'number' && Number.isInteger(data.lineIdx)
-          ? Math.max(0, Math.min(data.lineIdx, lines.length))
-          : 0
-      const wordIdx =
-        typeof data.wordIdx === 'number' &&
-        Number.isInteger(data.wordIdx) &&
-        data.wordIdx >= 0
-          ? data.wordIdx
-          : 0
-      return {
-        lineTimes: restoreLineTimes(data.lineTimes, lines.length),
-        wordTimings: restoreWordTimingsMap(data.wordTimings, lines.length),
-        wordEndTimings: restoreWordTimingsMap(
-          data.wordEndTimings,
-          lines.length,
-        ),
-        wordSweepTimings: restoreWordSweepTimingsMap(
-          data.wordSweepTimings,
-          lines.length,
-        ),
-        touchedLines: restoreTouchedLines({
-          savedTouchedLines: data.touchedLines,
-          lines,
-          lineIdx,
-          wordIdx,
-        }),
-        lineIdx,
-        wordIdx,
-        pass: normalizePass(data.pass),
-        inputMode:
-          data.inputMode === 'marker' || data.inputMode === 'tap'
-            ? data.inputMode
-            : null,
-      }
-    } catch {
-      return null
-    }
-  }
+  const readSavedGenProgress = (lines: string[]): SavedGenProgress | null =>
+    parseSavedGenProgress({
+      raw: progressStore.read(),
+      lines,
+      identity: getGenProgressIdentity(),
+    })
 
   /**
    * The state a session starts from: whatever the song already holds, re-keyed
@@ -1214,106 +1069,17 @@ export function useLrcGenController(
       return
     }
 
-    // Build canonical<->LRC index maps for correct output
-    const lrcToCanon = buildLrcToCanonicalMap(canonical)
-
-    // Convert preGenSnapshot deps.wordTimings from LRC->canonical indices
-    const origWtLrc = preGenSnapshot?.wordTimings
-    const origWtCanon: WordTimingsMap | undefined = origWtLrc
-      ? (() => {
-          const m: WordTimingsMap = {}
-          for (const k of Object.keys(origWtLrc)) {
-            const ci = lrcToCanon.get(+k)
-            if (ci !== undefined) m[ci] = [...origWtLrc[+k]]
-          }
-          return m
-        })()
-      : undefined
-    const origEndsCanon: WordTimingsMap = {}
-    for (const [lrcIdx, ends] of Object.entries(
-      preGenSnapshot?.wordEndTimings ?? {},
-    )) {
-      const canonicalIdx = lrcToCanon.get(+lrcIdx)
-      if (canonicalIdx !== undefined) {
-        origEndsCanon[canonicalIdx] = [...ends]
-      }
-    }
-    const origSweepsCanon: WordSweepTimingsMap = {}
-    for (const [lrcIdx, sweeps] of Object.entries(
-      preGenSnapshot?.wordSweepTimings ?? {},
-    )) {
-      const canonicalIdx = lrcToCanon.get(+lrcIdx)
-      if (canonicalIdx !== undefined) {
-        origSweepsCanon[canonicalIdx] = structuredClone(sweeps)
-      }
-    }
-
-    // Honest "all mapped": every line explicitly touched — the cursor
-    // reaching the end only means the user finished at the end, not that
-    // they started there (see isSessionFullyMapped).
-    const allMapped = isSessionFullyMapped(lines.length, touchedLines)
-
-    let finalTimes: (number | undefined)[]
-    let mergedWordTimesCanon: WordTimingsMap
-    let mergedWordEndsCanon: WordTimingsMap
-    let mergedWordSweepsCanon: WordSweepTimingsMap
-
-    if (allMapped) {
-      finalTimes = lineTimes.slice()
-      mergedWordTimesCanon = wordTimes
-      mergedWordEndsCanon = wordEnds
-      mergedWordSweepsCanon = wordSweeps
-    } else {
-      // Partial merge: only update explicitly touched lines, preserve
-      // original timings for untouched lines (from word timings or canonical
-      // entries).  The canonical fallback is critical for line-level LRC that
-      // has no word timings -- without it those lines become undefined and get
-      // re-estimated, destroying the user's original timestamps.
-      finalTimes = mergePartialLineTimes(
-        lines,
-        lineTimes,
-        touchedLines,
-        origWtCanon,
-        canonical,
-      )
-
-      // Merge word timings: touched lines get new, rest keep original
-      mergedWordTimesCanon = mergePartialWordTimings(
-        touchedLines,
-        origWtCanon,
-        wordTimes,
-      )
-      mergedWordEndsCanon = mergePartialWordTimings(
-        touchedLines,
-        origEndsCanon,
-        wordEnds,
-      )
-      mergedWordSweepsCanon = {}
-      for (const [lineIdx, sweeps] of Object.entries(origSweepsCanon)) {
-        if (!touchedLines.has(+lineIdx)) {
-          mergedWordSweepsCanon[+lineIdx] = structuredClone(sweeps)
-        }
-      }
-      for (const [lineIdx, sweeps] of Object.entries(wordSweeps)) {
-        if (touchedLines.has(+lineIdx)) {
-          mergedWordSweepsCanon[+lineIdx] = structuredClone(sweeps)
-        }
-      }
-
-      // Fill gaps: interpolate between touched lines
-      finalTimes = interpolateGaps(finalTimes, touchedLines, deps.duration())
-    }
-
-    // Estimate times for completely unmapped lines beyond the last touched line
-    // so they get distributed across the remaining song duration instead of
-    // collapsing to 0.
-    const dur = deps.duration()
-    if (dur > 0) {
-      finalTimes = estimateUnmappedTimes(finalTimes, lines, dur)
-    }
-
-    // Enforce monotonic non-decreasing time order.
-    finalTimes = enforceMonotonicTimes(finalTimes)
+    const composed = composeGenResult({
+      canonical,
+      lines,
+      lineTimes,
+      wordTimes,
+      wordEnds,
+      wordSweeps,
+      touchedLines,
+      snapshot: preGenSnapshot,
+      duration: deps.duration(),
+    })
 
     // Determine original text to preserve for future re-gen.
     // Use the pre-gen snapshot's raw text if available, otherwise fall back
@@ -1327,61 +1093,12 @@ export function useLrcGenController(
       return deps.rawLyricsText()
     })()
 
-    let lrcText: string
-    let mergedWordTimes: WordTimingsMap
-    const mergedWordEnds: WordTimingsMap = {}
-    const mergedWordSweeps: WordSweepTimingsMap = {}
-
-    if (canonical.length > 0) {
-      // LRC source: build from canonical entries with correct indices
-      mergedWordTimes = {}
-      for (const entry of canonical) {
-        if (entry.lrcIndex < 0) continue // skip synthetic ~Rest~
-        const ci = entry.canonicalIndex
-        const wts = mergedWordTimesCanon[ci]
-        if (wts !== undefined) mergedWordTimes[entry.lrcIndex] = wts
-        const ends = mergedWordEndsCanon[ci]
-        if (ends !== undefined) mergedWordEnds[entry.lrcIndex] = ends
-        const sweeps = mergedWordSweepsCanon[ci]
-        if (sweeps !== undefined) {
-          mergedWordSweeps[entry.lrcIndex] = sweeps
-        }
-      }
-
-      const rawLinesForText = finalTimes.map((t) => t ?? 0)
-      lrcText = buildLrcTextFromCanonical(
-        canonical,
-        rawLinesForText,
-        mergedWordTimes,
-      )
-    } else {
-      // Plain text source: canonical is empty, build LRC directly from lines.
-      // Use word-level output for lines with word timings, line-level for the rest.
-      mergedWordTimes = { ...mergedWordTimesCanon }
-      Object.assign(mergedWordEnds, mergedWordEndsCanon)
-      Object.assign(mergedWordSweeps, mergedWordSweepsCanon)
-
-      lrcText = lines
-        .map((line, i) => {
-          if (!line.trim()) return ''
-          const lineWt = mergedWordTimes[i]
-          const words = line.split(/\s+/).filter((w) => w.length > 0)
-          if (lineWt !== undefined && lineWt.length > 0 && words.length > 0) {
-            // Word-level output
-            return words
-              .map((w, wi) => {
-                const t = lineWt[wi]
-                return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
-              })
-              .join(' ')
-          }
-          // Line-level output with estimated/interpolated time
-          const t = finalTimes[i] ?? 0
-          return `[${formatTimeLrc(t)}] ${line}`
-        })
-        .filter((l) => l !== '')
-        .join('\n')
-    }
+    const {
+      lrcText,
+      wordTimings: mergedWordTimes,
+      wordEndTimings: mergedWordEnds,
+      wordSweepTimings: mergedWordSweeps,
+    } = composed
 
     // Safeguard: if the generated LRC is empty, do NOT overwrite the
     // persisted lyrics — treat this as a failed gen and restore snapshot.
@@ -1442,24 +1159,11 @@ export function useLrcGenController(
    */
   const applyAutoWordSync = (onsets: number[]): { linesSynced: number } => {
     const canonical = deps.canonicalLrcLines()
-    const dur = deps.duration()
-    if (canonical.length === 0 || dur <= 0) return { linesSynced: 0 }
-
-    const lineEntries = canonical.filter((e) => e.type === 'line')
-    const auto: WordTimingsMap = {} // keyed by lrcIndex, like deps.wordTimings()
-    let synced = 0
-    for (let i = 0; i < lineEntries.length; i++) {
-      const entry = lineEntries[i]
-      if (entry.lrcIndex < 0 || entry.words.length === 0) continue
-      const lineStart = entry.time
-      const lineEnd = Math.min(dur, lineEntries[i + 1]?.time ?? dur)
-      if (lineEnd - lineStart < 0.1) continue
-      const wt = autoTimeLineWords(entry.words, lineStart, lineEnd, onsets)
-      if (wt.length === entry.words.length) {
-        auto[entry.lrcIndex] = wt
-        synced++
-      }
-    }
+    const { wordTimings: auto, linesSynced: synced } = autoSyncWordTimings({
+      canonical,
+      duration: deps.duration(),
+      onsets,
+    })
     if (synced === 0) return { linesSynced: 0 }
 
     const lrcText = buildLrcTextFromCanonical(canonical, undefined, auto)
