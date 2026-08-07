@@ -59,9 +59,12 @@ is the difference between each later phase costing one file read or four.
 
 ---
 
-## Phase A — fix mapper resume state (do this first)
+## Phase A — fix mapper resume state (DONE)
 
-**This is a live bug in shipped code**, found while auditing the behaviour
+Shipped in `2cda2615` (the merge) and `fcbd9300` (mapped-vs-yours in the view).
+The analysis below is kept because it explains why the code is shaped this way.
+
+**This was a live bug in shipped code**, found while auditing the behaviour
 reported on 2026-08-06: "I mapped a few lines, closed it, and now the mapper
 only shows those few — I can't preview the rest even though the song is fully
 mapped."
@@ -106,17 +109,32 @@ partial progress blob on top, then apply the cursor. `touchedLines` already
 distinguishes "mapped in this session" from "already known", so the two are
 separable and the UI can still show which is which.
 
-### Also in scope for this audit
+### Also in scope for this audit — outcomes
 
-- **Where the mapper opens from.** Today it is reachable only from the session
-  edit list. Decide whether that is the intended single door — the full-screen
-  surface (Phase 2) changes this question, so answer it before building that.
-- **Show mapped vs unmapped honestly.** Once resume merges correctly, the view
-  should distinguish already-mapped, mapped-this-session, and unmapped lines,
-  rather than implying "not in my blob" means "not mapped".
-- **Stale progress lifetime.** A blob keyed to a session survives indefinitely.
-  Decide when it is discarded (on finish it is cleared; on abandon it is not)
-  and whether resuming should ever be offered explicitly rather than silently.
+- **Show mapped vs unmapped honestly.** *Done.* `GenViewLine` gained `isMapped`
+  (carries a line start) and `isSessionMapped` (you placed it in this sitting),
+  and the row styles use them. Cursor position no longer stands in for
+  mapped-ness. `touchedLines` stayed a plain `Set` with a version counter
+  beside it, because it is written on every word transition.
+
+- **Stale progress lifetime.** *Decided: no TTL.* The tempting fix is to expire
+  blobs after N days. Do not. Until a session is finished, its blob is the
+  **only** copy of that mapping work — nothing is written to `wordTimings`
+  until finish. A TTL would delete the user's work on a schedule, which is
+  strictly worse than the problem it solves. After the merge fix a stale blob
+  can no longer overrule the song's timings either; all it still carries
+  silently is a cursor and a pass.
+
+  What is left is that resuming happens with no announcement. That is a UI
+  affordance ("continue where you left off" vs "start fresh"), and it belongs
+  in Phase 2 where the entry surface is being rebuilt — bolting a prompt onto
+  the current entry point now would be built twice.
+
+- **Where the mapper opens from.** *Decided: the session edit list stays the
+  door for the inline mapper; Phase 2's full-screen stage gets a second one in
+  the lyrics panel header (an expand control), not a replacement.* Two doors to
+  the same session state, same controller, so neither is a mode the other
+  cannot reach.
 
 ### Regression test
 
@@ -128,7 +146,36 @@ same gap that let the single-word-line regression through in #415.
 
 ---
 
-## Phase 0 — split the lyrics controller
+## Phase 0 — split the lyrics controller (DONE)
+
+Three of the four proposed seams were taken; the parent went 3,200 → 1,748
+lines with **zero test edits**, which was the condition set below.
+
+| Commit | Extracted | Parent after |
+|---|---|---|
+| `0d92d630` | `useLrcGenController.ts` — the whole mapping session | 2,045 |
+| `891b20eb` | `useLyricsScrollController.ts` + pure `lyrics-scroll.ts` | 1,902 |
+| `948f86a5` | `useLyricsBlocksController.ts` | 1,748 |
+
+**`useLyricsDataController.ts` was deliberately not extracted.** Unlike the
+three above it does not own its state: load/search/persist write into
+`lyricsLines`, `lrcLines`, `rawLyricsText`, `wordTimings` and friends — the
+shared model every other concern reads. Extracting it produces a ~15-setter
+dep interface, which moves code without moving a boundary, on the riskiest
+logic in the feature (what lyrics you see). The parent is now well under the
+2,600 lines REFACTOR-PLAN flags, so the cost was real and the benefit was not.
+Revisit only if that file grows again.
+
+Two gotchas worth keeping:
+
+- Passing a parent memo back into a child hook as a dep makes the child's
+  *inferred* return type circular; TypeScript silently widens it to `unknown`
+  rather than erroring. Both new controllers therefore declare an explicit
+  return interface. Symptom if you skip it: `untrack(...)` results lose their
+  types for no visible reason.
+- Move constants verbatim. Rewriting `BLOCK_COLORS` from memory during the
+  blocks extraction would have silently recoloured every existing block; only
+  the unused-variable error on the parent's original array caught it.
 
 **Why first:** every later phase edits this file.
 
