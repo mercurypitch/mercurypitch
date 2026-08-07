@@ -216,11 +216,27 @@ Two decisions worth keeping:
 Also now honours the LRC `[offset:]` ID tag on import, which was being
 ignored outright, rewriting the inline word stamps by the same amount.
 
-**Still to do:** `parseLyricsfile` / `serialiseLyricsfile`. It needs a YAML
-parser, which is a new client dependency — hand-rolling one for lyrics (full
-of apostrophes, quotes and colons) is the classic version of this mistake.
-Decide between a dynamically imported `yaml` package and dropping the import
-half, before starting.
+**Also done: `serialiseLyricsfile`** — `src/lib/lyricsfile.ts`, with a
+`.lyricsfile` download beside the LRC one in both workspaces. Writing needs no
+dependency: every scalar is double-quoted and JSON-escaped, which is exactly
+the subset YAML and JSON agree on, so lyrics containing `no`, a leading `- `
+or a `: ` cannot be misread. Sub-word splits go under
+`x_mercurypitch_sweeps` — namespaced and lossy-optional, since the 1.0 spec
+defines no extension mechanism and a bare top-level field would be a fork.
+
+The spec's one real trap is handled: **concatenating a line's word texts
+reconstructs the line exactly.** `splitWithSpacing` puts back the spacing the
+app's `split(/\s+/)` model throws away, keeping the word count equal to the
+one every timing map is keyed by. Tested against the gold corpus — 38 lines,
+322 words.
+
+**Still to do: `parseLyricsfile`.** Reading needs a YAML parser, which is a new
+client dependency — hand-rolling one for lyrics (full of apostrophes, quotes
+and colons) is the classic version of this mistake. Decide between a
+dynamically imported `yaml` package and leaving the format export-only. Until
+then an export nothing here can read is still worth having, because the
+readers that matter (LRCLib already returns a `lyricsfile` field) are
+elsewhere.
 
 ---
 

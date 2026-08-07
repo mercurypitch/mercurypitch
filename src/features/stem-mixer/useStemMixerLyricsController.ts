@@ -19,6 +19,7 @@ import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyri
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
+import { serialiseLyricsfile } from '@/lib/lyricsfile'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
@@ -248,6 +249,8 @@ export interface StemMixerLyricsController {
   applyAutoWordSync: (onsets: number[]) => { linesSynced: number }
   handleLrcGenReset: () => void
   handleDownloadLrc: () => void
+  /** Export as lyricsfile 1.0 — see src/lib/lyricsfile.ts. */
+  handleDownloadLyricsfile: () => void
   getGenLines: () => string[]
 
   // Actions — block management
@@ -1327,6 +1330,53 @@ export function useStemMixerLyricsController(
     URL.revokeObjectURL(url)
   }
 
+  /**
+   * Download the mapping as a lyricsfile 1.0 document.
+   *
+   * Enhanced LRC stays the default export because it is what every other
+   * player reads. This one carries what LRC cannot: per-word end times, the
+   * duration, and the global offset — plus the sub-word splits, namespaced so
+   * a reader that drops them still has a valid word-synced file.
+   */
+  const handleDownloadLyricsfile = () => {
+    const canonical = canonicalLrcLines()
+    const lines =
+      canonical.length > 0
+        ? canonical
+            .filter((entry) => entry.type === 'line')
+            .map((entry) => ({ time: entry.time, text: entry.text }))
+        : (rawLyricsText() !== ''
+            ? rawLyricsText().split('\n')
+            : lyricsLines()
+          ).map((text) => ({ time: 0, text }))
+    if (lines.length === 0) return
+
+    const text = serialiseLyricsfile({
+      lines,
+      metadata: {
+        title: deps.songTitle === '' ? undefined : deps.songTitle,
+        durationMs: deps.duration() > 0 ? deps.duration() * 1000 : undefined,
+      },
+      wordTimings: wordTimings(),
+      wordEndTimings: wordEndTimings(),
+      wordSweepTimings: wordSweepTimings(),
+    })
+
+    const base = (loadPersistedLyrics()?.filename ?? 'lyrics').replace(
+      /\.[^.]+$/,
+      '',
+    )
+    const blob = new Blob([text], { type: 'text/yaml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${base}.lyricsfile`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const scroll = useLyricsScrollController({
     playing: deps.playing,
     currentLineIdx: () => currentLineIdx(),
@@ -1767,6 +1817,7 @@ export function useStemMixerLyricsController(
     applyAutoWordSync,
     handleLrcGenReset,
     handleDownloadLrc,
+    handleDownloadLyricsfile,
     getGenLines,
 
     // Actions — block management

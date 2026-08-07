@@ -65,6 +65,7 @@ interface StemMixerGridWorkspaceProps {
   generatingFromVocal: Accessor<boolean>
   generatingLabel: Accessor<string>
   handleDownloadLrc: () => void
+  handleDownloadLyricsfile: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
   triggerChangeFile: () => void
@@ -616,6 +617,23 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
                     <path
                       fill="currentColor"
                       d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                    />
+                  </svg>
+                </button>
+              </Show>
+              <Show when={lp().lyricsSource() !== 'none' && !lp().editMode()}>
+                <button
+                  class="sm-lyrics-download-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    props.handleDownloadLyricsfile()
+                  }}
+                  title="Download .lyricsfile — carries word end times, the duration and any sub-word splits, which LRC has no room for"
+                >
+                  <svg viewBox="0 0 24 24" width="11" height="11">
+                    <path
+                      fill="currentColor"
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8v1.5H8V13zm0 3h8v1.5H8V16z"
                     />
                   </svg>
                 </button>
