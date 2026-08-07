@@ -182,6 +182,8 @@ export interface StemMixerLyricsPanelBodyProps {
 
   // Canvas
   formatTime: (t: number) => string
+  /** Passed straight through to the full-screen stage for its own waveform. */
+  setCanvasRef: (id: string) => (el: HTMLCanvasElement | null) => void
 
   // Misc
   songTitle: string
@@ -502,6 +504,7 @@ export const StemMixerLyricsPanelBody: Component<
             playbackSpeed={props.playbackSpeed}
             playing={props.playing}
             previewLineIdx={props.previewLineIdx}
+            setCanvasRef={props.setCanvasRef}
             setLiveHighlight={props.setLiveHighlight}
             setLoopPreview={setLoopPreview}
             setLrcGenInputMode={props.setLrcGenInputMode}

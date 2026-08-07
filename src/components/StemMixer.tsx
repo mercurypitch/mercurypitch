@@ -1444,6 +1444,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handlePlay: audio.handlePlay,
     handlePause: audio.handlePause,
     formatTime: canvas.formatTime,
+    setCanvasRef: canvas.setCanvasRef,
     // eslint-disable-next-line solid/reactivity
     songTitle: props.songTitle,
     // eslint-disable-next-line solid/reactivity
@@ -5742,6 +5743,14 @@ export const StemMixerStyles: string = `
   padding: 0.15rem 0.3rem;
   border-bottom: 1px solid transparent;
   transition: background 0.2s;
+  /* A row in a scrolling list never gives up height. .sm-lyrics-gen-lines is
+     a column flex container, so its children default to flex-shrink:1 — and
+     the marker-mode variant below sets an explicit min-height, which REPLACES
+     the automatic min-content floor a flex item would otherwise have. That
+     combination let a zoomed-in line that wrapped to two rows be squashed
+     back to one row's worth of box, with its text painting over the lines
+     above and below it. */
+  flex-shrink: 0;
 }
 
 .sm-lyrics-gen-line-done {

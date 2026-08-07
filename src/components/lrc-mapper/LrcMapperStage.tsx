@@ -51,6 +51,14 @@ export interface LrcMapperStageProps {
   playbackSpeed: Accessor<number>
   setPlaybackSpeed: (speed: number) => void
 
+  /**
+   * Registers the stage's own waveform strip with the canvas controller,
+   * under the `mapperOverview` id. Absent on surfaces with no canvas
+   * controller at all (the stage renders without the strip rather than
+   * refusing to open).
+   */
+  setCanvasRef?: (id: string) => (el: HTMLCanvasElement | null) => void
+
   highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   previewLineIdx: Accessor<number | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
@@ -131,6 +139,20 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
     }
   }
 
+  /**
+   * Hands the strip to the canvas controller, and hands it back on close.
+   *
+   * The explicit release matters: Solid does not call a ref with `null` when
+   * the element goes away, so without this the controller would keep drawing
+   * into a detached canvas — and keep the wheel and touch listeners it
+   * attached to it — for every open-and-close of the stage.
+   */
+  const registerWaveform = (el: HTMLCanvasElement) => {
+    const register = props.setCanvasRef?.('mapperOverview')
+    register?.(el)
+    onCleanup(() => register?.(null))
+  }
+
   const onPointerDown = (e: PointerEvent) => {
     if (!settingsOpen()) return
     if (settingsRef?.contains(e.target as Node) === true) return
@@ -160,6 +182,19 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
         ariaLabel={`Lyric mapper — ${props.songTitle}`}
         canvas={
           <>
+            {/* The vocal you are mapping against, above the rows and outside
+                their scroller so it never leaves the screen. Vocals only —
+                the other stems are noise when the job is placing a syllable
+                on a breath. */}
+            <Show when={props.setCanvasRef !== undefined}>
+              <div class={styles.waveform}>
+                <canvas
+                  ref={(el) => registerWaveform(el)}
+                  class="sm-canvas sm-canvas-overview"
+                  aria-label="Vocal waveform, with the mapped word ticks"
+                />
+              </div>
+            </Show>
             <ExampleCredit class={styles.credit} sessionId={props.sessionId} />
             <LrcMapperLineList
               blockInstances={props.blockInstances}
