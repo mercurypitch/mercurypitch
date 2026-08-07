@@ -1,12 +1,13 @@
 import { createRoot } from 'solid-js'
 import { describe, expect, it } from 'vitest'
+import { genProgressKey } from '@/features/stem-mixer/lrc-gen-progress'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 
 describe('lyric marker controller', () => {
   it('clears stale recovery data when replacement lyrics are imported', () =>
     createRoot((dispose) => {
       const sessionId = 'marker-replacement-test'
-      const key = `lyrics_gen_v1_${sessionId}`
+      const key = genProgressKey(sessionId)
       localStorage.setItem(key, '{"lineTimes":[99],"lineIdx":1}')
       const controller = useStemMixerLyricsController({
         sessionId,
@@ -47,7 +48,7 @@ describe('lyric marker controller', () => {
         filename: 'resume-test.lrc',
       })
       localStorage.setItem(
-        `lyrics_gen_v1_${sessionId}`,
+        genProgressKey(sessionId),
         JSON.stringify({
           lineTimes: [2],
           wordTimings: { 0: [2] },
@@ -75,7 +76,7 @@ describe('lyric marker controller', () => {
       expect(controller.wordTimings()[0]).toEqual([2])
       expect(controller.wordTimings()[1]).toEqual([6])
 
-      localStorage.removeItem(`lyrics_gen_v1_${sessionId}`)
+      localStorage.removeItem(genProgressKey(sessionId))
       dispose()
     }))
 

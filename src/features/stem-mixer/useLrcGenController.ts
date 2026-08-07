@@ -32,7 +32,7 @@ import { composeGenResult, restoreGenLineTimes, restoreGenMap, } from './lrc-gen
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
 import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCursorAfterLine, nextWordPassLine, preRollTarget, PREVIEW_TAIL_SEC, previewWordAt, seedWordPassTimings, wordPassCursorFrom, wordPassLinesBefore, } from './lrc-gen-passes'
 import type { SavedGenProgress } from './lrc-gen-progress'
-import { createGenProgressStore, parseSavedGenProgress, } from './lrc-gen-progress'
+import { createGenProgressStore, genProgressKey, parseSavedGenProgress, } from './lrc-gen-progress'
 import { shiftTimings } from './lrc-offset'
 import type { WordMarker } from './overview-mapping'
 import { wordMarkersFrom } from './overview-mapping'
@@ -205,7 +205,7 @@ export interface LrcGenController {
 export function useLrcGenController(
   deps: LrcGenControllerDeps,
 ): LrcGenController {
-  const genKey = () => `lyrics_gen_v1_${deps.sessionId}`
+  const genKey = () => genProgressKey(deps.sessionId)
 
   const [lrcGenMode, setLrcGenMode] = createSignal(false)
   const [lrcGenInputMode, setLrcGenInputMode] =
