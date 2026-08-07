@@ -169,6 +169,10 @@ function isStrongPassword(password: string): { ok: boolean; reason?: string } {
 
 const encoder = new TextEncoder()
 
+/** A JWT segment is base64url and nothing else. Same shape check the
+ *  background-capability verifier already applies before decoding. */
+const SEGMENT_RE = /^[A-Za-z0-9_-]+$/
+
 // ── base64url helpers ────────────────────────────────────────────────
 
 function b64urlEncode(data: ArrayBuffer | Uint8Array): string {
@@ -225,12 +229,33 @@ async function verifyJwt(
   const parts = token.split('.')
   if (parts.length !== 3) return null
   const [header, body, sig] = parts
-  const valid = await crypto.subtle.verify(
-    'HMAC',
-    await hmacKey(secret),
-    b64urlDecode(sig),
-    encoder.encode(`${header}.${body}`),
+  // Every segment must decode before anything is verified. `b64urlDecode`
+  // wraps `atob`, which THROWS on a segment that is not base64url or whose
+  // length % 4 === 1 — and this call used to sit outside the try below, so a
+  // malformed signature escaped as a DOMException instead of returning null.
+  // `getAuth` runs on the common path for every request, so that exception
+  // unwound to the top-level handler and answered 500 on EVERY endpoint,
+  // including `/api/auth/me`. A client that stored such a token could never
+  // recover on its own: 5xx is treated as a server hiccup and the token is
+  // kept, so no 401 ever arrived to clear it. A malformed credential must be
+  // indistinguishable from a wrong one — both are 401.
+  if (
+    !SEGMENT_RE.test(header) ||
+    !SEGMENT_RE.test(body) ||
+    !SEGMENT_RE.test(sig)
   )
+    return null
+  let valid: boolean
+  try {
+    valid = await crypto.subtle.verify(
+      'HMAC',
+      await hmacKey(secret),
+      b64urlDecode(sig),
+      encoder.encode(`${header}.${body}`),
+    )
+  } catch {
+    return null
+  }
   if (!valid) return null
   try {
     const payload = JSON.parse(

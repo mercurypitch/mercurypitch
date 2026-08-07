@@ -482,6 +482,34 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('malformed bearer tokens', () => {
+  // This used to throw a DOMException out of getAuth, which runs on the
+  // common path for every request — so one bad token turned EVERY endpoint
+  // into a 500, /api/auth/me included. A client that had stored such a token
+  // could never recover: the app treats 5xx as a server hiccup and keeps the
+  // token, so the 401 that would clear it never arrived.
+  it.each([
+    ['non-base64 signature', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.!'],
+    [
+      'length %% 4 === 1 signature',
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.abcde',
+    ],
+    ['non-base64 payload', 'eyJhbGciOiJIUzI1NiJ9.!!!.YWJj'],
+    ['empty signature', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.'],
+    ['two segments', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0'],
+  ])('resolves null rather than throwing for a %s', async (_label, token) => {
+    const env = makeEnv(new AuthDatabase())
+    await expect(
+      getAuth(
+        new Request('https://api.test/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        env,
+      ),
+    ).resolves.toBeNull()
+  })
+})
+
 describe('suspended account authentication', () => {
   it('rejects a previously issued bearer with a structured suspension error', async () => {
     const db = new AuthDatabase()
@@ -660,9 +688,9 @@ describe('suspended account authentication', () => {
       respond,
     )
     expect(start?.status).toBe(302)
-    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
-      'state',
-    )
+    const state = new URL(
+      start!.headers.get('Location') as string,
+    ).searchParams.get('state')
     expect(state).not.toBeNull()
 
     vi.stubGlobal(
@@ -717,9 +745,9 @@ describe('suspended account authentication', () => {
       '/api/auth/google/start',
       respond,
     )
-    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
-      'state',
-    ) as string
+    const state = new URL(
+      start!.headers.get('Location') as string,
+    ).searchParams.get('state') as string
     vi.stubGlobal(
       'fetch',
       vi
@@ -772,9 +800,9 @@ describe('suspended account authentication', () => {
       '/api/auth/google/start',
       respond,
     )
-    const state = new URL(start!.headers.get('Location') as string).searchParams.get(
-      'state',
-    ) as string
+    const state = new URL(
+      start!.headers.get('Location') as string,
+    ).searchParams.get('state') as string
     db.failProviderLookup = true
     vi.stubGlobal(
       'fetch',
