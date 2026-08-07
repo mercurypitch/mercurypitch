@@ -14,7 +14,8 @@ import { freqToMidi, midiToNote } from '@/lib/scale-data'
 import type { WaveformPeakCache } from '@/lib/waveform-peak-cache'
 import { buildWaveformPeakCache, queryWaveformPeakRange, } from '@/lib/waveform-peak-cache'
 import { liveWaveformDisplayGain, liveWaveformLaneLayout, liveWaveformPeak, liveWaveformSample, } from './live-waveform-visuals'
-import { clampOverviewWindow, columnSampleRange, timeToX, } from './overview-mapping'
+import type { WordMarker } from './overview-mapping'
+import { clampOverviewWindow, columnSampleRange, nearestMarker, timeToX, visibleMarkers, } from './overview-mapping'
 import type { PitchCanvasScale } from './pitch-canvas-visuals'
 import { createPitchCanvasScale, midiToPitchCanvasRow, PITCH_VISUAL_COLORS, pitchCanvasRowToMidi, } from './pitch-canvas-visuals'
 import type { EditableNote } from './pitch-edit-model'
@@ -75,6 +76,15 @@ export interface StemMixerCanvasDeps {
     patch: Partial<Pick<EditableNote, 'startBeat' | 'endBeat' | 'midi'>>,
   ) => void
   onEndEdit?: () => void
+  // Mapped word starts, drawn as ticks on the overview.
+  wordMarkers?: Accessor<readonly WordMarker[]>
+  showWordMarkers?: Accessor<boolean>
+  /** The word the mapping cursor is on, drawn lit. */
+  activeWordMarker?: Accessor<{ lineIdx: number; wordIdx: number } | null>
+  /** A tick was clicked — seek there and move the cursor onto that word. */
+  onWordMarkerPick?: (lineIdx: number, wordIdx: number, time: number) => void
+  /** A tick was dragged to `time`. Called on release, not per frame. */
+  onWordMarkerMove?: (lineIdx: number, wordIdx: number, time: number) => void
 }
 
 export interface StemMixerCanvasController {
@@ -175,6 +185,20 @@ export const useStemMixerCanvasController = (
     peakCache.set(buffer, peaks)
     return peaks
   }
+
+  /** Inner-word ticks are stubs off the top; line starts run full height. */
+  const MARKER_STUB_PX = 9
+  /** Pixel tolerance for grabbing a word tick. */
+  const MARKER_HIT_PX = 6
+  /**
+   * The tick being dragged and where it currently sits. Held here rather
+   * than pushed into the mapping on every pointer move: a drag would
+   * otherwise write a few hundred timings, each one persisted.
+   */
+  let markerDrag: { lineIdx: number; wordIdx: number; time: number } | null =
+    null
+  /** Whether the pointer actually moved — a still press is a click. */
+  let markerDragMoved = false
 
   const drawWaveformOverview = () => {
     const canvas = canvasRefs.overview
@@ -347,6 +371,52 @@ export const useStemMixerCanvasController = (
             'B',
           )
         }
+      }
+
+      // Mapped word starts. On the first track only: they describe the
+      // mapping, not this stem, and one row of them reads as a ruler while
+      // four rows read as noise.
+      if (ti === 0 && deps.showWordMarkers?.() === true) {
+        const all = deps.wordMarkers?.() ?? []
+        const active = deps.activeWordMarker?.() ?? null
+        const dragged = markerDrag
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(waveformStartX, 0, waveformWidth, h)
+        ctx.clip()
+        for (const m of visibleMarkers(all, win, waveformWidth)) {
+          const time =
+            dragged !== null &&
+            dragged.lineIdx === m.lineIdx &&
+            dragged.wordIdx === m.wordIdx
+              ? dragged.time
+              : m.time
+          const x = waveformStartX + timeToX(time, win, waveformWidth)
+          const isActive =
+            active !== null &&
+            active.lineIdx === m.lineIdx &&
+            active.wordIdx === m.wordIdx
+          const isDragging =
+            dragged !== null &&
+            dragged.lineIdx === m.lineIdx &&
+            dragged.wordIdx === m.wordIdx
+          // Line starts run the full height so the song's shape survives
+          // thinning; inner words are stubs off the top.
+          const tickHeight = m.isLineStart ? h : Math.min(h, MARKER_STUB_PX)
+          ctx.strokeStyle = isDragging
+            ? 'rgba(240, 246, 252, 0.95)'
+            : isActive
+              ? 'rgba(63, 185, 80, 0.95)'
+              : m.isLineStart
+                ? 'rgba(121, 192, 255, 0.5)'
+                : 'rgba(121, 192, 255, 0.28)'
+          ctx.lineWidth = isActive || isDragging ? 2 : 1
+          ctx.beginPath()
+          ctx.moveTo(x + 0.5, 0)
+          ctx.lineTo(x + 0.5, tickHeight)
+          ctx.stroke()
+        }
+        ctx.restore()
       }
 
       // Dedicated label rail: names stay readable while dense signals move.
@@ -1145,6 +1215,29 @@ export const useStemMixerCanvasController = (
     return deps.windowStart() + ratio * deps.windowDuration()
   }
 
+  /** Hit-test: the mapped word tick under clientX, or null. */
+  const getWordMarkerAtX = (
+    clientX: number,
+    canvas: HTMLCanvasElement,
+  ): WordMarker | null => {
+    if (deps.showWordMarkers?.() !== true) return null
+    const markers = deps.wordMarkers?.() ?? []
+    if (markers.length === 0) return null
+    const rect = canvas.getBoundingClientRect()
+    const { waveformStartX, waveformWidth } = liveWaveformLaneLayout(rect.width)
+    const win = { start: deps.windowStart(), duration: deps.windowDuration() }
+    const x = clientX - rect.left - waveformStartX
+    // Only the ticks actually drawn are grabbable — a thinned-away word has
+    // no pixel to aim at, and hitting it would feel like a misfire.
+    return nearestMarker(
+      visibleMarkers(markers, win, waveformWidth),
+      x,
+      win,
+      waveformWidth,
+      MARKER_HIT_PX,
+    )
+  }
+
   /** Hit-test: is clientX within LOOP_HIT_PX of the A or B marker? */
   const getLoopMarkerAtX = (
     clientX: number,
@@ -1261,6 +1354,24 @@ export const useStemMixerCanvasController = (
       return
     }
 
+    // A word tick beats a pan. It is a small target that someone aimed at,
+    // and panning is available everywhere else on the lane.
+    if (isOverview) {
+      const marker = getWordMarkerAtX(e.clientX, canvas)
+      if (marker !== null) {
+        e.preventDefault()
+        e.stopPropagation()
+        markerDrag = {
+          lineIdx: marker.lineIdx,
+          wordIdx: marker.wordIdx,
+          time: marker.time,
+        }
+        markerDragMoved = false
+        canvas.setPointerCapture(e.pointerId)
+        return
+      }
+    }
+
     // Initiate mouse pan
     mousePanActive = true
     mouseDidPan = false
@@ -1305,6 +1416,18 @@ export const useStemMixerCanvasController = (
           midi: note.midi + (nextMidi - startMidi),
         })
       }
+      return
+    }
+
+    if (markerDrag !== null && canvas === canvasRefs.overview) {
+      e.preventDefault()
+      const time = Math.max(
+        0,
+        Math.min(deps.duration(), clientXToTime(e.clientX, canvas)),
+      )
+      if (Math.abs(time - markerDrag.time) > 1e-6) markerDragMoved = true
+      markerDrag = { ...markerDrag, time }
+      queueCanvasRedraw()
       return
     }
 
@@ -1361,7 +1484,9 @@ export const useStemMixerCanvasController = (
     } else {
       // Hover — update cursor
       const isOverview = canvas === canvasRefs.overview
-      if (isOverview && deps.loopEnabled() && deps.loopEnd() > 0) {
+      if (isOverview && getWordMarkerAtX(e.clientX, canvas) !== null) {
+        canvas.style.cursor = 'ew-resize'
+      } else if (isOverview && deps.loopEnabled() && deps.loopEnd() > 0) {
         const hit = getLoopMarkerAtX(e.clientX, canvas)
         canvas.style.cursor = hit ? 'ew-resize' : 'pointer'
       } else {
@@ -1382,6 +1507,27 @@ export const useStemMixerCanvasController = (
       } catch {
         // pointer may already be released
       }
+      e.preventDefault()
+      return
+    }
+
+    if (markerDrag !== null && canvas === canvasRefs.overview) {
+      const { lineIdx, wordIdx, time } = markerDrag
+      markerDrag = null
+      try {
+        canvas.releasePointerCapture(e.pointerId)
+      } catch {
+        // pointer may already be released
+      }
+      // A press that never moved is someone asking to go there, not to
+      // retime the word they pressed.
+      if (markerDragMoved) {
+        deps.onWordMarkerMove?.(lineIdx, wordIdx, time)
+      } else {
+        deps.onWordMarkerPick?.(lineIdx, wordIdx, time)
+      }
+      markerDragMoved = false
+      queueCanvasRedraw()
       e.preventDefault()
       return
     }

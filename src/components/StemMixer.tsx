@@ -725,6 +725,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     wordPassProgress,
     genShiftMs,
     shiftGenTimings,
+    wordMarkers,
+    activeWordMarker,
+    showWordMarkers,
+    setShowWordMarkers,
+    focusGenWord,
+    moveWordStart,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -1169,6 +1175,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onBeginEdit: pitchAnalysis.beginEdit,
     onPreviewEdit: pitchAnalysis.previewEdit,
     onEndEdit: pitchAnalysis.endEdit,
+    // Mapped word ticks on the overview — only while the mapper is open.
+    wordMarkers,
+    showWordMarkers: () => lrcGenMode() && showWordMarkers(),
+    activeWordMarker: () => (lrcGenMode() ? activeWordMarker() : null),
+    onWordMarkerPick: (lineIdx, wordIdx, time) => {
+      audio.seekTo(time)
+      focusGenWord(lineIdx, wordIdx)
+    },
+    onWordMarkerMove: (lineIdx, wordIdx, time) => {
+      moveWordStart(lineIdx, wordIdx, time)
+    },
   })
 
   // Backfill mutable holders so audio controller can reach canvas + lyrics
@@ -1344,6 +1361,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     wordPassProgress,
     genShiftMs,
     shiftGenTimings,
+    showWordMarkers,
+    setShowWordMarkers,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,

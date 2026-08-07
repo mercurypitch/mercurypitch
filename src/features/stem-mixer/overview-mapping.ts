@@ -44,6 +44,93 @@ export function timeToX(t: number, win: OverviewWindow, width: number): number {
   return ((t - win.start) / Math.max(1e-9, win.duration)) * width
 }
 
+/** x -> time. The inverse of {@link timeToX}, for hit-testing a pointer. */
+export function xToTime(x: number, win: OverviewWindow, width: number): number {
+  if (!(width > 0)) return win.start
+  return win.start + (x / width) * win.duration
+}
+
+/** A mapped word start, as the overview needs to know it. */
+export interface WordMarker {
+  time: number
+  lineIdx: number
+  wordIdx: number
+  /** Word 0 of a line — drawn taller, and kept when ticks are thinned. */
+  isLineStart: boolean
+}
+
+/**
+ * The marker nearest `x`, or null when nothing is close enough.
+ *
+ * Ties go to the earlier marker so a click between two words picks the one
+ * that has already started, which is the one being sung.
+ */
+export function nearestMarker(
+  markers: readonly WordMarker[],
+  x: number,
+  win: OverviewWindow,
+  width: number,
+  tolerancePx = 8,
+): WordMarker | null {
+  let best: WordMarker | null = null
+  let bestDistance = Infinity
+  for (const marker of markers) {
+    const distance = Math.abs(timeToX(marker.time, win, width) - x)
+    if (distance > tolerancePx || distance >= bestDistance) continue
+    best = marker
+    bestDistance = distance
+  }
+  return best
+}
+
+/**
+ * Markers inside the window, thinned so ticks never overplot.
+ *
+ * Zoomed out, a three-minute song puts ~400 words across ~1200 px — roughly a
+ * tick every 3 px, which reads as a picket fence rather than as structure.
+ * Thinning drops inner words that land within `minGapPx` of the last tick
+ * kept, and **never drops a line start**: the shape of the song survives at
+ * any zoom, and the words fill in as you zoom into them.
+ *
+ * Assumes `markers` is sorted by time, which is how the mapper stores them.
+ */
+export function visibleMarkers(
+  markers: readonly WordMarker[],
+  win: OverviewWindow,
+  width: number,
+  minGapPx = 4,
+): WordMarker[] {
+  const visible: WordMarker[] = []
+  let lastX = -Infinity
+  for (const marker of markers) {
+    const x = timeToX(marker.time, win, width)
+    // A tick just off-screen still owns its pixel gap, or the first visible
+    // inner word would jump in and out as the window scrolls past it.
+    if (x < -minGapPx || x > width + minGapPx) continue
+    if (!marker.isLineStart && x - lastX < minGapPx) continue
+    visible.push(marker)
+    lastX = x
+  }
+  return visible
+}
+
+/** Flatten the mapper's per-line word times into sorted markers. */
+export function wordMarkersFrom(
+  wordTimings: Readonly<Record<number, readonly number[]>>,
+): WordMarker[] {
+  const markers: WordMarker[] = []
+  for (const key of Object.keys(wordTimings)) {
+    const lineIdx = Number(key)
+    const times = wordTimings[lineIdx]
+    for (let wordIdx = 0; wordIdx < times.length; wordIdx++) {
+      const time = times[wordIdx]
+      if (typeof time !== 'number' || !Number.isFinite(time)) continue
+      markers.push({ time, lineIdx, wordIdx, isLineStart: wordIdx === 0 })
+    }
+  }
+  return markers.sort((a, b) => a.time - b.time)
+}
+
 /**
  * The sample range column `x` must draw, mapped through the BUFFER's own
  * duration (stem buffers can differ slightly from the transport

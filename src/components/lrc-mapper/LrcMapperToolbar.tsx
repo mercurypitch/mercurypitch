@@ -34,6 +34,8 @@ export interface LrcMapperToolbarProps {
 
   liveHighlight: Accessor<boolean>
   setLiveHighlight: (on: boolean) => void
+  showWordMarkers: Accessor<boolean>
+  setShowWordMarkers: Setter<boolean>
   /** Shared with the row list, which reads it when a preview button is hit. */
   loopPreview: Accessor<boolean>
   setLoopPreview: Setter<boolean>
@@ -320,6 +322,19 @@ export const LrcMapperToolbar: Component<LrcMapperToolbarProps> = (props) => {
                 }
               />
               <span>Live highlight</span>
+            </label>
+            <label
+              class="sm-lyrics-gen-toggle"
+              title="Show a tick on the vocal overview for every word you have placed. Click one to jump the cursor there, drag it to move that word's start."
+            >
+              <input
+                checked={props.showWordMarkers()}
+                onChange={(e) =>
+                  props.setShowWordMarkers(e.currentTarget.checked)
+                }
+                type="checkbox"
+              />
+              <span>Word ticks</span>
             </label>
             <label
               class="sm-lyrics-gen-toggle"

@@ -23,6 +23,7 @@ import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
+import type { WordMarker } from './overview-mapping'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 import { useLrcGenController } from './useLrcGenController'
 import { useLyricsBlocksController } from './useLyricsBlocksController'
@@ -94,6 +95,12 @@ export interface StemMixerLyricsController {
   wordPassProgress: () => { done: number; total: number }
   genShiftMs: () => number
   shiftGenTimings: (deltaMs: number) => number
+  wordMarkers: () => readonly WordMarker[]
+  activeWordMarker: () => { lineIdx: number; wordIdx: number }
+  showWordMarkers: () => boolean
+  setShowWordMarkers: Setter<boolean>
+  focusGenWord: (lineIdx: number, wordIdx: number) => void
+  moveWordStart: (lineIdx: number, wordIdx: number, time: number) => void
   previewLineIdx: () => number | null
   previewLoop: () => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -1630,6 +1637,12 @@ export function useStemMixerLyricsController(
     wordPassProgress,
     genShiftMs: gen.genShiftMs,
     shiftGenTimings: gen.shiftGenTimings,
+    wordMarkers: gen.wordMarkers,
+    activeWordMarker: gen.activeWordMarker,
+    showWordMarkers: gen.showWordMarkers,
+    setShowWordMarkers: gen.setShowWordMarkers,
+    focusGenWord: gen.focusGenWord,
+    moveWordStart: gen.moveWordStart,
     previewLineIdx,
     previewLoop,
     setPreviewLoop,
