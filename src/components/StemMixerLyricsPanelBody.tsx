@@ -12,11 +12,11 @@ import type { BlockInfo, BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, 
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { noteForWord } from '@/features/stem-mixer/zen-note-glyphs'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
-import { buildForwardMarkerPath } from '@/lib/marker-path'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { insertedLineTime, stripInlineWordStamps } from '@/lib/whisper-lyrics'
+import { LrcMapperLineList } from './lrc-mapper/LrcMapperLineList'
 import { LyricsSongPicker } from './LyricsSongPicker'
 import type { LyricsUploadResult } from './LyricsUploader'
 import { LyricsUploader } from './LyricsUploader'
@@ -185,168 +185,8 @@ export const StemMixerLyricsPanelBody: Component<
 > = (props) => {
   const sfx = () => props.idSuffix ?? ''
 
-  interface MarkerTarget {
-    lineIdx: number
-    wordIdx: number
-    progress: number
-  }
-
   const [showCalibration, setShowCalibration] = createSignal(false)
   const [loopPreview, setLoopPreview] = createSignal(false)
-  const [markerVisual, setMarkerVisual] = createSignal<MarkerTarget | null>(
-    null,
-  )
-  let markerPointerId: number | null = null
-  let latestMarkerTarget: MarkerTarget | null = null
-  let latestMarkerElapsed: number | null = null
-  let latestElapsed = 0
-
-  // Pointer callbacks read a plain clock snapshot so reactive values never
-  // escape the component's tracked root.
-  createEffect(() => {
-    latestElapsed = props.elapsed()
-  })
-
-  const markerTargetAt = (
-    clientX: number,
-    clientY: number,
-  ): MarkerTarget | null => {
-    let wordEl = document
-      .elementFromPoint(clientX, clientY)
-      ?.closest<HTMLElement>('[data-marker-word]')
-    if (!wordEl) {
-      const candidates = [
-        ...document.querySelectorAll<HTMLElement>(
-          '.sm-lyrics-gen-line-current [data-marker-word]',
-        ),
-      ]
-      wordEl =
-        candidates
-          .filter((candidate) => {
-            const rect = candidate.getBoundingClientRect()
-            return clientY >= rect.top - 24 && clientY <= rect.bottom + 24
-          })
-          .sort((a, b) => {
-            const distance = (candidate: HTMLElement) => {
-              const rect = candidate.getBoundingClientRect()
-              if (clientX < rect.left) return rect.left - clientX
-              if (clientX > rect.right) return clientX - rect.right
-              return 0
-            }
-            return distance(a) - distance(b)
-          })[0] ?? undefined
-    }
-    if (wordEl === undefined) return null
-    const lineIdx = Number(wordEl.dataset.markerLine)
-    const wordIdx = Number(wordEl.dataset.markerWord)
-    if (!Number.isInteger(lineIdx) || !Number.isInteger(wordIdx)) return null
-    const rect =
-      wordEl
-        .querySelector<HTMLElement>('.sm-lyrics-gen-word-text')
-        ?.getBoundingClientRect() ?? wordEl.getBoundingClientRect()
-    const progress =
-      rect.width > 0
-        ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-        : 0
-    return { lineIdx, wordIdx, progress }
-  }
-
-  const updateMarkerVisual = (target: MarkerTarget | null) => {
-    latestMarkerTarget = target
-    setMarkerVisual(target)
-  }
-
-  const sendMarkerPath = (target: MarkerTarget, phase: 'move' | 'end') => {
-    const previous = latestMarkerTarget
-    if (
-      previous !== null &&
-      previous.lineIdx === target.lineIdx &&
-      target.wordIdx < previous.wordIdx
-    ) {
-      return
-    }
-
-    if (previous !== null && latestMarkerElapsed !== null) {
-      const samples = buildForwardMarkerPath(
-        previous,
-        target,
-        latestMarkerElapsed,
-        latestElapsed,
-      )
-      for (const [index, sample] of samples.entries()) {
-        props.handleMarkerSample(
-          sample.target.lineIdx,
-          sample.target.wordIdx,
-          sample.target.progress,
-          sample.elapsed,
-          index === samples.length - 1 ? phase : 'move',
-        )
-      }
-      latestMarkerElapsed = samples.at(-1)?.elapsed ?? latestElapsed
-    } else {
-      props.handleMarkerSample(
-        target.lineIdx,
-        target.wordIdx,
-        target.progress,
-        latestElapsed,
-        phase,
-      )
-      latestMarkerElapsed = latestElapsed
-    }
-
-    updateMarkerVisual(target)
-  }
-
-  const startMarkerGesture = (e: PointerEvent) => {
-    if (props.lrcGenInputMode() !== 'marker') return
-    const target = markerTargetAt(e.clientX, e.clientY)
-    if (!target || target.lineIdx !== props.lrcGenLineIdx()) return
-    if (target.wordIdx !== props.lrcGenWordIdx()) return
-
-    e.preventDefault()
-    e.stopPropagation()
-    markerPointerId = e.pointerId
-    updateMarkerVisual(target)
-    latestMarkerElapsed = latestElapsed
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    if (!props.playing()) props.handlePlay()
-    props.handleMarkerSample(
-      target.lineIdx,
-      target.wordIdx,
-      target.progress,
-      latestElapsed,
-      'start',
-    )
-  }
-
-  const moveMarkerGesture = (e: PointerEvent) => {
-    if (markerPointerId !== e.pointerId) return
-    e.preventDefault()
-    const samples =
-      typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e]
-    const sample = samples.at(-1) ?? e
-    const target = markerTargetAt(sample.clientX, sample.clientY)
-    if (!target || target.lineIdx !== props.lrcGenLineIdx()) return
-    sendMarkerPath(target, 'move')
-  }
-
-  const endMarkerGesture = (e: PointerEvent) => {
-    if (markerPointerId !== e.pointerId) return
-    e.preventDefault()
-    e.stopPropagation()
-    const target =
-      markerTargetAt(e.clientX, e.clientY) ?? latestMarkerTarget ?? undefined
-    if (target) {
-      sendMarkerPath(target, 'move')
-      sendMarkerPath(target, 'end')
-    }
-    if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    }
-    markerPointerId = null
-    updateMarkerVisual(null)
-    latestMarkerElapsed = null
-  }
 
   // Pinch-to-zoom font size state
   let lyricsLinesRef: HTMLDivElement | undefined
@@ -401,22 +241,11 @@ export const StemMixerLyricsPanelBody: Component<
     el.removeEventListener('touchend', handleLyricsTouchEnd)
   })
 
-  // Auto-scroll LRC generator view to the currently active line
-  createEffect(
-    on(
-      () => props.lrcGenLineIdx(),
-      () => {
-        if (props.lrcGenMode() && props.playing()) {
-          requestAnimationFrame(() => {
-            const el = document.querySelector('.sm-lyrics-gen-line-current')
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }
-          })
-        }
-      },
-    ),
-  )
+  // The mapper list is followed by useLyricsScrollController, which parks the
+  // active line at the shared anchor and knows when the user has scrolled away
+  // themselves. A second effect here used to scrollIntoView({block:'center'})
+  // on the same element for the same reason, so during mapper playback two
+  // smooth scrolls raced to different resting positions on every line change.
 
   // Look up the mapped note for a word by temporal overlap with alignment data
   // The one word-to-note lookup, shared with the zen stage
@@ -933,274 +762,28 @@ export const StemMixerLyricsPanelBody: Component<
 
         {/* ── LRC Generator view ────────────────────────── */}
         <Show when={props.lrcGenMode()}>
-          <div
-            class="sm-lyrics-lines sm-lyrics-gen-lines"
-            style={{ 'font-size': `${props.lyricsFontSize()}rem` }}
-            onWheel={(e) => {
-              e.stopPropagation()
-              if (e.ctrlKey || e.metaKey) {
-                e.preventDefault()
-                props.setLyricsFontSize((prev) =>
-                  Math.min(
-                    3,
-                    Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
-                  ),
-                )
-              }
-            }}
-          >
-            <For
-              each={(() => {
-                const items = props.genViewData()
-                const out: {
-                  type: 'line' | 'placeholder'
-                  item: GenViewLine
-                  bi?: BlockInfo
-                  block?: LyricsBlock
-                  total?: number
-                }[] = []
-                let skipUntil = -1
-                for (let i = 0; i < items.length; i++) {
-                  if (i < skipUntil) continue
-                  const item = items[i]
-                  if (item.isPlaceholder) {
-                    if (item.isPlaceholderStart) {
-                      const bi = item.blockInfo!
-                      const block = props.getBlockById(bi.blockId)
-                      const total =
-                        props.blockInstances()[bi.blockId]?.length ?? 1
-                      const instance =
-                        props.blockInstances()[bi.blockId]?.[bi.instanceIdx]
-                      skipUntil = instance?.[1] ?? i + 1
-                      out.push({ type: 'placeholder', item, bi, block, total })
-                    }
-                  } else {
-                    out.push({ type: 'line', item })
-                  }
-                }
-                return out
-              })()}
-            >
-              {(row) => {
-                if (row.type === 'placeholder') {
-                  const { item, bi, block, total } = row
-                  const instance =
-                    props.blockInstances()[bi!.blockId]?.[bi!.instanceIdx]
-                  return (
-                    <div
-                      class="sm-lyrics-gen-line sm-lyrics-gen-line-placeholder"
-                      data-lyrics-index={item.index}
-                      data-lyrics-end-index={
-                        (instance?.[1] ?? item.index + 1) - 1
-                      }
-                      style={{
-                        '--block-color': props.getBlockColor(bi!.blockId),
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => props.handleLyricLineClick(item.index)}
-                    >
-                      <span class="sm-lyrics-gen-line-time">
-                        {item.lineTime !== undefined
-                          ? props.formatTimeMs(item.lineTime)
-                          : '--:--'}
-                      </span>
-                      <span class="sm-lyrics-gen-placeholder-text">
-                        {block?.label ?? 'Block'} (repeat {bi!.instanceIdx + 1}/
-                        {total}) — timings copied from template
-                      </span>
-                    </div>
-                  )
-                }
-
-                const item = row.item
-                if (item.isRest) {
-                  const gapStart = item.restGapStart ?? 0
-                  const gapEnd = item.restGapEnd ?? gapStart
-                  const dotCount = item.restDotCount ?? 0
-                  if (dotCount <= 0 || gapEnd <= gapStart) return null
-                  return (
-                    <div
-                      class="sm-lyrics-gen-line sm-lyrics-gen-line-rest"
-                      data-lyrics-index={item.index}
-                    >
-                      <span class="sm-lyrics-gen-line-time">
-                        {props.formatTimeMs(gapStart)}
-                      </span>
-                      <span class="sm-lyrics-gen-line-text">
-                        <RestCountdownDots
-                          dotCount={dotCount}
-                          elapsed={props.elapsed}
-                          gapEnd={gapEnd}
-                          gapStart={gapStart}
-                          onSeek={props.handleSeekToTime}
-                        />
-                      </span>
-                    </div>
-                  )
-                }
-                // While previewing a line — or with Live highlight on — the
-                // highlight follows the audio against the timings being
-                // edited, not the mapping cursor, so the line renders exactly
-                // as it will at runtime.
-                const highlightHit = () => {
-                  const hit = props.highlightWord()
-                  return hit !== null && hit.lineIdx === item.index ? hit : null
-                }
-                const activeWordIdx = () =>
-                  highlightHit()?.wordIdx ?? item.activeWordIdx
-                const isPreviewing = () => props.previewLineIdx() === item.index
-                return (
-                  <div
-                    class={`sm-lyrics-gen-line${item.isCurrent ? ' sm-lyrics-gen-line-current' : ''}${item.isDone ? ' sm-lyrics-gen-line-done' : ''}${item.isFuture ? ' sm-lyrics-gen-line-future' : ''}${item.isMapped ? ' sm-lyrics-gen-line-mapped' : ''}${item.isSessionMapped ? ' sm-lyrics-gen-line-session' : ''}${item.blockInfo?.isTemplate === true ? ' sm-lyrics-gen-line-template' : ''}${item.isCurrent && props.lrcGenInputMode() === 'marker' ? ' sm-lyrics-gen-line-marker-mode' : ''}${highlightHit() !== null ? ' sm-lyrics-gen-line-lit' : ''}`}
-                    data-lyrics-index={item.index}
-                    style={
-                      item.blockInfo?.isTemplate === true
-                        ? {
-                            '--block-color': props.getBlockColor(
-                              item.blockInfo.blockId,
-                            ),
-                            cursor: 'pointer',
-                          }
-                        : { cursor: 'pointer' }
-                    }
-                    onPointerDown={(e) => {
-                      if (item.isCurrent) startMarkerGesture(e)
-                    }}
-                    onPointerMove={(e) => {
-                      if (item.isCurrent) moveMarkerGesture(e)
-                    }}
-                    onPointerUp={(e) => {
-                      if (item.isCurrent) endMarkerGesture(e)
-                    }}
-                    onPointerCancel={(e) => {
-                      if (item.isCurrent) endMarkerGesture(e)
-                    }}
-                    onClick={() => {
-                      if (
-                        !item.isCurrent ||
-                        props.lrcGenInputMode() !== 'marker'
-                      ) {
-                        props.handleLyricLineClick(item.index)
-                      }
-                    }}
-                  >
-                    <button
-                      classList={{
-                        'sm-lyrics-gen-preview-btn': true,
-                        'sm-lyrics-gen-preview-btn--on': isPreviewing(),
-                      }}
-                      disabled={item.lineTime === undefined}
-                      aria-pressed={isPreviewing()}
-                      title={
-                        loopPreview()
-                          ? 'Play this line on repeat with live highlighting'
-                          : 'Play this line with live highlighting'
-                      }
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        // The controller can seek but owns no transport, so
-                        // starting playback is the caller's job — without this
-                        // a preview from a paused song silently does nothing.
-                        if (
-                          props.toggleLinePreview(item.index, loopPreview())
-                        ) {
-                          if (!props.playing()) props.handlePlay()
-                        }
-                      }}
-                    >
-                      <svg viewBox="0 0 24 24" width="10" height="10">
-                        <Show
-                          when={isPreviewing()}
-                          fallback={
-                            <path fill="currentColor" d="M8 5v14l11-7z" />
-                          }
-                        >
-                          <path
-                            fill="currentColor"
-                            d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"
-                          />
-                        </Show>
-                      </svg>
-                    </button>
-                    <span class="sm-lyrics-gen-line-time">
-                      {item.lineTime !== undefined
-                        ? props.formatTimeMs(item.lineTime)
-                        : '--:--'}
-                    </span>
-                    <span class="sm-lyrics-gen-line-text">
-                      {item.words.length === 0
-                        ? item.line
-                        : item.words.map((word: string, wi: number) => {
-                            const progress = () => {
-                              const lit = highlightHit()
-                              if (lit !== null) {
-                                return lit.wordIdx === wi
-                                  ? lit.progress
-                                  : lit.wordIdx > wi
-                                    ? 1
-                                    : 0
-                              }
-                              if (item.activeWordIdx === wi) {
-                                const live = markerVisual()
-                                if (
-                                  live?.lineIdx === item.index &&
-                                  live.wordIdx === wi
-                                ) {
-                                  return live.progress
-                                }
-                              }
-                              const points = item.wordSweeps?.[wi]
-                              return points?.[points.length - 1]?.progress ?? 0
-                            }
-                            return (
-                              <span
-                                class={`sm-lyrics-gen-word${
-                                  activeWordIdx() === wi
-                                    ? ' sm-lyrics-gen-word-current'
-                                    : ''
-                                }${
-                                  activeWordIdx() >= 0 && wi < activeWordIdx()
-                                    ? ' sm-lyrics-gen-word-done'
-                                    : ''
-                                }${
-                                  highlightHit() !== null
-                                    ? ' sm-lyrics-gen-word-lit'
-                                    : ''
-                                }${
-                                  item.isCurrent &&
-                                  highlightHit() === null &&
-                                  props.lrcGenInputMode() === 'marker'
-                                    ? ' sm-lyrics-gen-word-marker'
-                                    : ''
-                                }`}
-                                data-marker-line={item.index}
-                                data-marker-word={wi}
-                                aria-current={
-                                  activeWordIdx() === wi ? 'true' : undefined
-                                }
-                                style={{
-                                  '--marker-progress': `${(
-                                    progress() * 100
-                                  ).toFixed(1)}%`,
-                                }}
-                              >
-                                <span class="sm-lyrics-gen-word-time">
-                                  {item.wordTimes?.[wi] !== undefined
-                                    ? props.formatTimeMs(item.wordTimes[wi])
-                                    : ''}
-                                </span>
-                                <span class="sm-lyrics-gen-word-text">
-                                  {word}
-                                </span>
-                              </span>
-                            )
-                          })}
-                    </span>
-                  </div>
-                )
-              }}
-            </For>
-          </div>
+          <LrcMapperLineList
+            blockInstances={props.blockInstances}
+            elapsed={props.elapsed}
+            formatTimeMs={props.formatTimeMs}
+            genViewData={props.genViewData}
+            getBlockById={props.getBlockById}
+            getBlockColor={props.getBlockColor}
+            handleLyricLineClick={props.handleLyricLineClick}
+            handleMarkerSample={props.handleMarkerSample}
+            handlePlay={props.handlePlay}
+            handleSeekToTime={props.handleSeekToTime}
+            highlightWord={props.highlightWord}
+            loopPreview={loopPreview}
+            lrcGenInputMode={props.lrcGenInputMode}
+            lrcGenLineIdx={props.lrcGenLineIdx}
+            lrcGenWordIdx={props.lrcGenWordIdx}
+            lyricsFontSize={props.lyricsFontSize}
+            playing={props.playing}
+            previewLineIdx={props.previewLineIdx}
+            setLyricsFontSize={props.setLyricsFontSize}
+            toggleLinePreview={props.toggleLinePreview}
+          />
         </Show>
 
         {/* ── Edit mode toolbar ────────────────────────── */}
