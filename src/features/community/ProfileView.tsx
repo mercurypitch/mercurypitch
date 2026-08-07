@@ -69,13 +69,26 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
   const movement = () => trend(scores())
 
   /**
-   * The twin portrait, at the one tier that stays sharp in a 72px box.
+   * The twin portrait. `mid` (360x447) is the source, and the 90px box it
+   * renders into was chosen to suit it rather than the other way round.
    *
-   * `mid` is 360x447 — a 5x downscale here, and still 2.5x at 200% zoom.
-   * The 120px `thumb` is only 1.67x, so it goes soft at 150% and is
-   * genuinely upscaled past 166%; `full` (928x1152) is a 12.9x downscale,
-   * which the sharpness playbook warns mushes in its own way and costs
-   * twelve times the bytes for a portrait the size of a stamp.
+   * Chrome downscales a large image through a chain of halvings — 360, 180,
+   * 90, 45 — and then does one bilinear reduce from the smallest level that
+   * is still at least as big as the target. So the box is crisp exactly when
+   * its device size lands *on* a level, and soft in proportion to how far
+   * below one it falls. At 90 CSS px that is both of the sizes almost
+   * everyone sees: 90 device px on an ordinary screen, 180 on a retina one.
+   * Pixel-exact on both, from an asset already in the bundle.
+   *
+   * This is why the box is not larger. A 120px box would show more of the
+   * portrait but read *worse*, because 120 sits between the 180 and 90
+   * levels and takes a 1.5x reduce — the same middling blur that made the
+   * old 72px box mushy at 100% zoom and crisp at 110%. Going bigger than 90
+   * needs a new 240px tier to land on, not just a bigger number here.
+   *
+   * The other tiers do not fit: the 120px `thumb` is upscaled on any retina
+   * screen, and `full` (928x1152) would land 116 and 232 exactly but costs
+   * twelve times the bytes for an avatar in a list row.
    */
   const portrait = (): string | undefined => {
     const twin = props.twinName
@@ -123,8 +136,8 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
             <img
               class={styles.avatar}
               src={art()}
-              width="72"
-              height="89"
+              width="90"
+              height="112"
               alt={`${props.twinName ?? ''} — your voice twin`}
               decoding="async"
             />
