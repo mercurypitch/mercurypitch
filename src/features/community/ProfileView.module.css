@@ -16,17 +16,20 @@
   gap: 18px;
 }
 
+/* 90x112, not a rounder number: 90 is a step on the halving chain the 360px
+   source is reduced through, so it is pixel-exact at 90 device px and at 180
+   on a retina screen. See the note in ProfileView.tsx. */
 .avatar {
-  width: 72px;
-  height: 89px;
+  width: 90px;
+  height: 112px;
   object-fit: cover;
   border-radius: 12px;
   flex: none;
 }
 
 .avatarFallback {
-  width: 72px;
-  height: 89px;
+  width: 90px;
+  height: 112px;
   border-radius: 12px;
   flex: none;
   display: flex;
@@ -34,7 +37,8 @@
   justify-content: center;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
-  font-size: 1.75rem;
+  /* Scaled with the box, so the monogram keeps the weight it had at 72px. */
+  font-size: 2.125rem;
   font-weight: 600;
   color: color-mix(in srgb, var(--accent) 70%, var(--text-muted));
   letter-spacing: 0.01em;
