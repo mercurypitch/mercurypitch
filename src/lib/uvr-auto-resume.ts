@@ -82,7 +82,7 @@ export async function autoResumeServerSessions(
       backgroundCallbacks(session.sessionId, hooks),
     ).catch((err) => {
       // pollForCompletion already routed the failure through onError, which
-      // persisted `error`. But onError cannot tell a dead job from a dropped
+      // parked it as `error`. But onError cannot tell a dead job from a dropped
       // packet — only the pipeline can, and it says so by clearing the
       // apiSessionId on a TerminalPollError and keeping it otherwise. That
       // catch has run by the time we get here, so the surviving id is the
