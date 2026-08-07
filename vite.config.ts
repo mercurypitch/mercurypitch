@@ -267,6 +267,11 @@ export default defineConfig(({ mode }) => {
               // Keep its engraving/font payload out of the initial app vendor
               // chunk so adding sheet music does not tax every first visit.
               if (id.includes('vexflow')) return 'vendor-vexflow'
+              // The YAML parser, reached only when somebody opens a
+              // .lyricsfile. `parseLyricsfile` imports it dynamically for
+              // exactly that reason, and the generic vendor chunk IS first
+              // paint — landing there would undo the split entirely.
+              if (id.includes('node_modules/yaml')) return 'vendor-yaml'
               // solid-js gets its own chunk so the standalone mirror entry
               // (which uses nothing else from node_modules) doesn't drag the
               // whole app vendor bundle onto mobile 4G.

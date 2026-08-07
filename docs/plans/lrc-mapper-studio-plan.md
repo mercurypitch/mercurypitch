@@ -1,8 +1,11 @@
 # LRC Mapper Studio — full-screen mapper, waveform markers, sub-word precision, A/B differ
 
-**Status:** planned, nothing implemented. Branch `feat/lrc-mapper-studio`, cut
-from `main` after [#415](https://github.com/mercurypitch/mercurypitch/pull/415)
-(`dab58b64`). 2026-08-06.
+**Status:** all eight phases built on branch `feat/lrc-mapper-studio`
+([#442](https://github.com/mercurypitch/mercurypitch/pull/442), still a draft),
+cut from `main` after
+[#415](https://github.com/mercurypitch/mercurypitch/pull/415) (`dab58b64`).
+Planned 2026-08-06, finished 2026-08-07. The per-phase sections below record
+what shipped and what was decided against; §10 is the one-glance state.
 
 Follow-up to [lrc-per-word-mapping-research.md](lrc-per-word-mapping-research.md),
 which answered the format and algorithm questions this plan now acts on.
@@ -198,7 +201,7 @@ Ship as its own PR. Do not combine with Phase 1.
 
 ---
 
-## Phase 1 — `lyricsfile` as the native format (PART DONE)
+## Phase 1 — `lyricsfile` as the native format (DONE)
 
 **Done:** the global offset, which this phase called the highest
 value-per-line change in the plan. `src/features/stem-mixer/lrc-offset.ts`
@@ -230,13 +233,31 @@ app's `split(/\s+/)` model throws away, keeping the word count equal to the
 one every timing map is keyed by. Tested against the gold corpus — 38 lines,
 322 words.
 
-**Still to do: `parseLyricsfile`.** Reading needs a YAML parser, which is a new
-client dependency — hand-rolling one for lyrics (full of apostrophes, quotes
-and colons) is the classic version of this mistake. Decide between a
-dynamically imported `yaml` package and leaving the format export-only. Until
-then an export nothing here can read is still worth having, because the
-readers that matter (LRCLib already returns a `lyricsfile` field) are
-elsewhere.
+A word block is **all-or-nothing**: a line ships `words[]` only when every
+word in it has a start. The round-trip test caught why. `start_ms` is required
+on a word, so a half-mapped line could only be written by skipping the untimed
+words — and skipping shifts every later word up an index, so a line timed at
+words 0 and 2 came back with word 2's time sitting on word 1. The alternatives
+were to fabricate a time or to drop the block; dropping is the honest one, and
+the line keeps its own timing either way.
+
+**Also done: `parseLyricsfile`.** Reading needs a YAML parser, and
+hand-rolling one for lyrics — full of apostrophes, quotes and colons — is the
+classic version of this mistake, so the `yaml` package is now a dependency. It
+is `await import('yaml')` inside the parse function, reached only when
+somebody actually opens a `.lyricsfile`. That needs a matching
+`manualChunks` rule in `vite.config.ts`: without it the package lands in the
+generic `vendor` chunk, which *is* first paint, undoing the split entirely.
+It has its own `vendor-yaml` chunk now (32.5 kB gzipped), referenced from the
+stem-mixer chunk and absent from `index.html`.
+
+The parser returns `null` rather than throwing on anything non-conforming —
+every field is validated — so an unrecognised file is a notification, not a
+broken workspace. `lyricsfileToLrc` then converts to enhanced LRC and feeds
+the existing upload path, so import reuses the whole LRC pipeline instead of
+growing a second one. `offset_ms` becomes an `[offset:]` ID tag rather than
+being applied here, because the import path already applies that tag; doing
+both would shift the song twice.
 
 ---
 
@@ -780,6 +801,7 @@ stop shipping a `lyrics` URL once `lyricsText` is set, so there is one answer to
 | Phase 0 silently changes behaviour | Zero test edits allowed; any needed edit means back it out |
 | `lyricsfile` sub-word extension is formally undefined | Namespaced key, lossy-optional, propose upstream |
 | Word-string spacing lost by `split(/\s+/)` | Round-trip tests over the gold corpus before anything depends on it |
+| A dynamic import that is not actually deferred | `yaml` needs its own `manualChunks` rule; the generic `vendor` chunk is first paint. Check `dist/index.html` after adding one |
 | Marker clutter makes the waveform useless | Pixel-gap thinning + zoom threshold + taller line-start ticks |
 | Drag interactions silently broken | Real-mouse Playwright spec, per repo convention |
 | Examples auto-download burns mobile data | Auto-create rows (metadata only); fetch stems on first play or explicit pull |
@@ -795,9 +817,7 @@ stop shipping a `lyrics` URL once `lyricsText` is set, so there is one answer to
 ```
 Phase A  fix mapper resume state       DONE
 Phase 0  split the controller          DONE
-Phase 1  lyricsfile native + offset_ms PART DONE -- offset and export shipped,
-                                       parseLyricsfile awaits a YAML-dependency
-                                       decision
+Phase 1  lyricsfile native + offset_ms DONE
 Phase 2  full-screen mapper shell      DONE
 Phase 3  waveform word markers         DONE
 Phase 4  sub-word split points         DONE

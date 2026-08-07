@@ -314,7 +314,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
-| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.8k |
+| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.8k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.8k |

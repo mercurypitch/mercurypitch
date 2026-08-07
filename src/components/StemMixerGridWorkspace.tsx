@@ -706,7 +706,7 @@ export const StemMixerGridWorkspace: Component<StemMixerGridWorkspaceProps> = (
               </Show>
               <input
                 type="file"
-                accept=".txt,.lrc"
+                accept=".txt,.lrc,.lyricsfile"
                 ref={props.lyricsFileInputRef}
                 hidden
                 onChange={(e) => props.handleLyricsChange(e)}
