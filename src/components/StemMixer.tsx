@@ -731,6 +731,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setShowWordMarkers,
     focusGenWord,
     moveWordStart,
+    letterMode,
+    setLetterMode,
+    letterTarget,
+    openLetterTarget,
+    closeLetterTarget,
+    letterSplits,
+    setLetterSplit,
+    clearLetterSplit,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -1363,6 +1371,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     shiftGenTimings,
     showWordMarkers,
     setShowWordMarkers,
+    letterMode,
+    setLetterMode,
+    letterTarget,
+    openLetterTarget,
+    closeLetterTarget,
+    letterSplits,
+    setLetterSplit,
+    clearLetterSplit,
     previewLineIdx,
     liveHighlight,
     setLiveHighlight,
@@ -5915,6 +5931,102 @@ export const StemMixerStyles: string = `
   background-clip: text;
   -webkit-background-clip: text;
   text-decoration: none;
+}
+
+/* ── Letter mode: sub-word split points ─────────────────────────
+   Only the word the user opened renders as glyphs; every other word keeps
+   its single span. See src/components/lrc-mapper/LrcWordLetters.tsx. */
+
+/* Words read as targets while letter mode is on, because the click means
+   something different from the click that selects a line. */
+.sm-lyrics-gen-word-splittable {
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-word-splittable .sm-lyrics-gen-word-text {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--fg-tertiary, #484f58);
+  text-underline-offset: 3px;
+}
+
+.sm-lyrics-gen-word-split {
+  border-radius: 4px;
+  outline: 1px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.sm-lyrics-letters {
+  display: inline-flex;
+  align-items: center;
+  /* Room for the split times, which hang below their boundary. */
+  padding-bottom: 0.7rem;
+}
+
+.sm-lyrics-letter-glyph {
+  font-size: inherit;
+  pointer-events: none;
+}
+
+/* A boundary is a join, not a glyph, so it is drawn as a rule between two
+   letters rather than as a box around one. The button is deliberately wider
+   than the rule it shows — at 0.45rem text the rule alone is unhittable. */
+.sm-lyrics-letter-boundary {
+  position: relative;
+  width: 0.85rem;
+  align-self: stretch;
+  min-height: 1.2em;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sm-lyrics-letter-boundary::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0.1em;
+  bottom: 0.1em;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--fg-tertiary, #484f58);
+  opacity: 0.4;
+}
+
+.sm-lyrics-letter-boundary:hover::before {
+  opacity: 1;
+  background: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-letter-boundary--set::before {
+  width: 2px;
+  opacity: 1;
+  background: var(--ok-green, #3fb950);
+}
+
+/* The word's own two edges. Timed like any other boundary, but they are the
+   word's bounds rather than splits inside it, so they read as brackets. */
+.sm-lyrics-letter-boundary--edge::before {
+  top: 0;
+  bottom: 0;
+  opacity: 0.7;
+  background: var(--accent, #58a6ff);
+}
+
+.sm-lyrics-letter-time {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.38rem;
+  font-family: monospace;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--ok-green, #3fb950);
+}
+
+.sm-lyrics-letter-boundary--edge .sm-lyrics-letter-time {
+  color: var(--accent, #58a6ff);
 }
 
 /* Block placeholders in gen view */

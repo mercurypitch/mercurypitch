@@ -16,6 +16,7 @@ import { For, onCleanup, onMount, Show } from 'solid-js'
 import type { PreviewWordHighlight } from '@/features/stem-mixer/lrc-gen-passes'
 import type { BlockInfo, BlockInstancesMap, GenViewLine, LrcGenInputMode, LyricsBlock, } from '@/features/stem-mixer/types'
 import { RestCountdownDots } from '../RestCountdownDots'
+import { LrcWordLetters } from './LrcWordLetters'
 import { useLrcMarkerInput } from './useLrcMarkerInput'
 
 /** Zoom bounds for the list's own font-size gestures. */
@@ -57,6 +58,24 @@ export interface LrcMapperLineListProps {
 
   lyricsFontSize: Accessor<number>
   setLyricsFontSize: Setter<number>
+
+  /** Letter mode: clicking a word opens its glyph boundaries for timing. */
+  letterMode: Accessor<boolean>
+  letterTarget: Accessor<{ lineIdx: number; wordIdx: number } | null>
+  openLetterTarget: (lineIdx: number, wordIdx: number) => void
+  closeLetterTarget: () => void
+  letterSplits: (lineIdx: number, wordIdx: number) => Record<number, number>
+  setLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+    time: number,
+  ) => void
+  clearLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+  ) => void
 
   /** Extra classes on the scroll container, for the full-screen surface. */
   class?: string
@@ -271,18 +290,21 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                   : { cursor: 'pointer' }
               }
               onPointerDown={(e) => {
-                if (item.isCurrent) marker.onPointerDown(e)
+                if (item.isCurrent && !props.letterMode())
+                  marker.onPointerDown(e)
               }}
               onPointerMove={(e) => {
-                if (item.isCurrent) marker.onPointerMove(e)
+                if (item.isCurrent && !props.letterMode())
+                  marker.onPointerMove(e)
               }}
               onPointerUp={(e) => {
-                if (item.isCurrent) marker.onPointerUp(e)
+                if (item.isCurrent && !props.letterMode()) marker.onPointerUp(e)
               }}
               onPointerCancel={(e) => {
-                if (item.isCurrent) marker.onPointerUp(e)
+                if (item.isCurrent && !props.letterMode()) marker.onPointerUp(e)
               }}
               onClick={() => {
+                if (props.letterMode()) return
                 if (!item.isCurrent || props.lrcGenInputMode() !== 'marker') {
                   props.handleLyricLineClick(item.index)
                 }
@@ -354,6 +376,15 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                         const points = item.wordSweeps?.[wi]
                         return points?.[points.length - 1]?.progress ?? 0
                       }
+                      const isLetterTarget = () => {
+                        const open = props.letterTarget()
+                        return (
+                          props.letterMode() &&
+                          open !== null &&
+                          open.lineIdx === item.index &&
+                          open.wordIdx === wi
+                        )
+                      }
                       return (
                         <span
                           class={`sm-lyrics-gen-word${
@@ -374,6 +405,12 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                             props.lrcGenInputMode() === 'marker'
                               ? ' sm-lyrics-gen-word-marker'
                               : ''
+                          }${
+                            props.letterMode()
+                              ? ' sm-lyrics-gen-word-splittable'
+                              : ''
+                          }${
+                            isLetterTarget() ? ' sm-lyrics-gen-word-split' : ''
                           }`}
                           data-marker-line={item.index}
                           data-marker-word={wi}
@@ -385,13 +422,50 @@ export const LrcMapperLineList: Component<LrcMapperLineListProps> = (props) => {
                               1,
                             )}%`,
                           }}
+                          onClick={(e) => {
+                            if (!props.letterMode()) return
+                            e.stopPropagation()
+                            // Click the open word again to collapse it: the
+                            // expanded row is wide, and there is nowhere else
+                            // obvious to click to be rid of it.
+                            if (isLetterTarget()) props.closeLetterTarget()
+                            else props.openLetterTarget(item.index, wi)
+                          }}
                         >
                           <span class="sm-lyrics-gen-word-time">
                             {item.wordTimes?.[wi] !== undefined
                               ? props.formatTimeMs(item.wordTimes[wi])
                               : ''}
                           </span>
-                          <span class="sm-lyrics-gen-word-text">{word}</span>
+                          <Show
+                            when={isLetterTarget()}
+                            fallback={
+                              <span class="sm-lyrics-gen-word-text">
+                                {word}
+                              </span>
+                            }
+                          >
+                            <LrcWordLetters
+                              word={word}
+                              splits={() => props.letterSplits(item.index, wi)}
+                              formatTimeMs={props.formatTimeMs}
+                              onSet={(letterIdx) =>
+                                props.setLetterSplit(
+                                  item.index,
+                                  wi,
+                                  letterIdx,
+                                  props.elapsed(),
+                                )
+                              }
+                              onClear={(letterIdx) =>
+                                props.clearLetterSplit(
+                                  item.index,
+                                  wi,
+                                  letterIdx,
+                                )
+                              }
+                            />
+                          </Show>
                         </span>
                       )
                     })}

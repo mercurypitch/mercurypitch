@@ -98,6 +98,23 @@ export interface StemMixerLyricsPanelBodyProps {
   setLiveHighlight: (on: boolean) => void
   showWordMarkers: Accessor<boolean>
   setShowWordMarkers: Setter<boolean>
+  letterMode: Accessor<boolean>
+  setLetterMode: (on: boolean) => void
+  letterTarget: Accessor<{ lineIdx: number; wordIdx: number } | null>
+  openLetterTarget: (lineIdx: number, wordIdx: number) => void
+  closeLetterTarget: () => void
+  letterSplits: (lineIdx: number, wordIdx: number) => Record<number, number>
+  setLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+    time: number,
+  ) => void
+  clearLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+  ) => void
   highlightWord: Accessor<(PreviewWordHighlight & { lineIdx: number }) | null>
   toggleLinePreview: (idx: number, loop: boolean) => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -408,7 +425,9 @@ export const StemMixerLyricsPanelBody: Component<
             handlePause={props.handlePause}
             handlePlay={props.handlePlay}
             handleRedoCurrentLine={props.handleRedoCurrentLine}
+            letterMode={props.letterMode}
             liveHighlight={props.liveHighlight}
+            setLetterMode={props.setLetterMode}
             setShowWordMarkers={props.setShowWordMarkers}
             showWordMarkers={props.showWordMarkers}
             loopPreview={loopPreview}
@@ -456,7 +475,9 @@ export const StemMixerLyricsPanelBody: Component<
             handleRedoCurrentLine={props.handleRedoCurrentLine}
             handleSeekToTime={props.handleSeekToTime}
             highlightWord={props.highlightWord}
+            letterMode={props.letterMode}
             liveHighlight={props.liveHighlight}
+            setLetterMode={props.setLetterMode}
             setShowWordMarkers={props.setShowWordMarkers}
             showWordMarkers={props.showWordMarkers}
             loopPreview={loopPreview}
@@ -466,6 +487,12 @@ export const StemMixerLyricsPanelBody: Component<
             lrcGenWordIdx={props.lrcGenWordIdx}
             lrcTimingOffsetMs={props.lrcTimingOffsetMs}
             lyricsFontSize={props.lyricsFontSize}
+            clearLetterSplit={props.clearLetterSplit}
+            closeLetterTarget={props.closeLetterTarget}
+            letterSplits={props.letterSplits}
+            letterTarget={props.letterTarget}
+            openLetterTarget={props.openLetterTarget}
+            setLetterSplit={props.setLetterSplit}
             onClose={() => setMapperStageOpen(false)}
             playbackSpeed={props.playbackSpeed}
             playing={props.playing}
@@ -503,6 +530,13 @@ export const StemMixerLyricsPanelBody: Component<
             lrcGenInputMode={props.lrcGenInputMode}
             lrcGenLineIdx={props.lrcGenLineIdx}
             lrcGenWordIdx={props.lrcGenWordIdx}
+            clearLetterSplit={props.clearLetterSplit}
+            closeLetterTarget={props.closeLetterTarget}
+            letterMode={props.letterMode}
+            letterSplits={props.letterSplits}
+            letterTarget={props.letterTarget}
+            openLetterTarget={props.openLetterTarget}
+            setLetterSplit={props.setLetterSplit}
             lyricsFontSize={props.lyricsFontSize}
             playing={props.playing}
             previewLineIdx={props.previewLineIdx}

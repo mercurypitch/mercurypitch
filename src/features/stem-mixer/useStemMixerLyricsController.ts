@@ -101,6 +101,23 @@ export interface StemMixerLyricsController {
   setShowWordMarkers: Setter<boolean>
   focusGenWord: (lineIdx: number, wordIdx: number) => void
   moveWordStart: (lineIdx: number, wordIdx: number, time: number) => void
+  letterMode: () => boolean
+  setLetterMode: Setter<boolean>
+  letterTarget: () => { lineIdx: number; wordIdx: number } | null
+  openLetterTarget: (lineIdx: number, wordIdx: number) => void
+  closeLetterTarget: () => void
+  letterSplits: (lineIdx: number, wordIdx: number) => Record<number, number>
+  setLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+    time: number,
+  ) => void
+  clearLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+  ) => void
   previewLineIdx: () => number | null
   previewLoop: () => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -1644,6 +1661,14 @@ export function useStemMixerLyricsController(
     setShowWordMarkers: gen.setShowWordMarkers,
     focusGenWord: gen.focusGenWord,
     moveWordStart: gen.moveWordStart,
+    letterMode: gen.letterMode,
+    setLetterMode: gen.setLetterMode,
+    letterTarget: gen.letterTarget,
+    openLetterTarget: gen.openLetterTarget,
+    closeLetterTarget: gen.closeLetterTarget,
+    letterSplits: gen.letterSplits,
+    setLetterSplit: gen.setLetterSplit,
+    clearLetterSplit: gen.clearLetterSplit,
     previewLineIdx,
     previewLoop,
     setPreviewLoop,

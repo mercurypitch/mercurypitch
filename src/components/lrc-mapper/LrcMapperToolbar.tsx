@@ -36,6 +36,9 @@ export interface LrcMapperToolbarProps {
   setLiveHighlight: (on: boolean) => void
   showWordMarkers: Accessor<boolean>
   setShowWordMarkers: Setter<boolean>
+  /** Sub-word splitting. Suspends marking while it is on. */
+  letterMode: Accessor<boolean>
+  setLetterMode: (on: boolean) => void
   /** Shared with the row list, which reads it when a preview button is hit. */
   loopPreview: Accessor<boolean>
   setLoopPreview: Setter<boolean>
@@ -335,6 +338,17 @@ export const LrcMapperToolbar: Component<LrcMapperToolbarProps> = (props) => {
                 type="checkbox"
               />
               <span>Word ticks</span>
+            </label>
+            <label
+              class="sm-lyrics-gen-toggle"
+              title="Open a word into its letters so a held vowel can be split. Marking is suspended while this is on — click a word, then click a letter as you hear it."
+            >
+              <input
+                checked={props.letterMode()}
+                onChange={(e) => props.setLetterMode(e.currentTarget.checked)}
+                type="checkbox"
+              />
+              <span>Letters</span>
             </label>
             <label
               class="sm-lyrics-gen-toggle"

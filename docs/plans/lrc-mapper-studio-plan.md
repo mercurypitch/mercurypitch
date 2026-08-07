@@ -368,7 +368,44 @@ value-binding pitfalls in Solid make hand-verification unreliable here.
 
 ---
 
-## Phase 4 — sub-word (letter-level) precision
+## Phase 4 — sub-word (letter-level) precision (DONE)
+
+`progressForLetter`, `letterForProgress`, `splitGraphemes` and
+`letterSplitTimes` landed in `src/lib/word-letters.ts`; the split-editing
+primitives (`setSplitPoint`, `removeSplitPoint`, `retimeWordStart`,
+`retimeWordEnd`) sit beside the recorder in `src/lib/lyric-sweep.ts`. The
+editor is `LrcWordLetters`, opened from a **Letters** toggle in the mapper
+toolbar; the controller carries `letterMode` / `letterTarget` /
+`setLetterSplit` / `clearLetterSplit` / `letterSplits`.
+
+Four decisions worth knowing:
+
+- **Boundaries run 0..n, not 0..n-1.** Index 0 is the word's onset and index
+  n its end, so the two word edges are addressable in the same coordinates as
+  any interior split — which is what makes "setting a syllable's start is the
+  previous syllable's end" literally true everywhere, with no second gesture.
+  The controller routes those two indices to `wordTimings` /
+  `wordEndTimings`; everything between stays in the sweep curve.
+- **No new storage.** A split is a `WordSweepPoint`, so every codec, version
+  record and archive already carries it, and the runtime renderer already
+  interpolates through it (`computeActiveWord` → `interpolateSweepProgress`).
+  Sparseness comes free: a tap-mapped song with no splits has an empty sweep
+  map, and there is a test pinning that.
+- **Progress is grapheme space, not pixel space.** `progressForLetter`
+  divides a word evenly by grapheme count, so a boundary is exact in the data
+  and approximate on screen — an `i` and an `m` get the same share of the
+  fill. Measuring glyphs would be neither pure nor storable, and the time is
+  what a singer needs; the fill is decoration.
+- **Letter mode suspends marking.** Both gestures start with a press on the
+  current line, so they cannot coexist. Splitting is a refinement pass over
+  already-mapped words, and it works on any word in any line rather than only
+  at the cursor.
+
+Not verified in a browser — per repo convention the owner tests UI.
+
+---
+
+## Phase 4 (original) — sub-word (letter-level) precision
 
 The data model largely exists. What is missing is the **editor** and a defined
 `progress → letter index` mapping.
@@ -646,7 +683,7 @@ Phase 0  split the controller          (no behaviour change)
 Phase 1  lyricsfile native + offset_ms (unblocks precision storage)
 Phase 2  full-screen mapper shell      (the space everything else needs)
 Phase 3  waveform word markers         (pure mapping layer first)
-Phase 4  sub-word split points         (editor over existing model)
+Phase 4  sub-word split points         (DONE)
 Phase 5  A/B differ, lab + mapper      (the measuring instrument)
 Phase 6  start cue for sub-rest gaps   (tune against a real song)
 Phase 7  Examples library              (independent — see below)
