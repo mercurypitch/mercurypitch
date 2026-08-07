@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Setter } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, untrack, } from 'solid-js'
+import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type LyricsAlign = 'left' | 'center' | 'right'
@@ -15,7 +15,6 @@ import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
 import type { SungNote } from '@/lib/lyric-sung-end'
 import { clampLineEndToVocal, synthesizeLastWordEnd, } from '@/lib/lyric-sung-end'
-import { findLyricsRow } from '@/lib/lyrics-row'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
@@ -26,6 +25,7 @@ import type { WhisperSegment } from '@/lib/whisper-service'
 import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 import { useLrcGenController } from './useLrcGenController'
+import { useLyricsScrollController } from './useLyricsScrollController'
 
 // ── Deps ──────────────────────────────────────────────────────────
 
@@ -308,12 +308,6 @@ const formatTimeLrcWord = formatTimeLrc
 export function useStemMixerLyricsController(
   deps: StemMixerLyricsDeps,
 ): StemMixerLyricsController {
-  const LYRICS_CONTAINER_SELECTOR =
-    '.sm-lyrics-lines:not(.sm-lyrics-gen-lines):not(.sm-lyrics-lines-edit)'
-
-  let lyricsScrollContainer: HTMLElement | null = null
-  let isAutoScrolling = false
-  let lyricsScrollTimeout: ReturnType<typeof setTimeout> | null = null
   let abortRef: AbortController | null = null
 
   // ── Signals ────────────────────────────────────────────────────
@@ -361,7 +355,6 @@ export function useStemMixerLyricsController(
   const [blockEditTarget, setBlockEditTarget] = createSignal<string | null>(
     null,
   )
-  const [userScrolled, setUserScrolled] = createSignal(false)
   const [loopStartLyricIdx, setLoopStartLyricIdx] = createSignal<number | null>(
     null,
   )
@@ -932,29 +925,7 @@ export function useStemMixerLyricsController(
       gen.focusGenLine(idx)
     }
 
-    const container = document.querySelector(
-      LYRICS_CONTAINER_SELECTOR,
-    ) as HTMLElement | null
-    if (!container) return
-    const line = findLyricsRow(container, idx)
-    if (line !== null) {
-      const containerRect = container.getBoundingClientRect()
-      const lineRect = line.getBoundingClientRect()
-      const scrollTarget =
-        container.scrollTop +
-        (lineRect.top - containerRect.top) -
-        containerRect.height * 0.35
-      isAutoScrolling = true
-      container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
-      const resetAutoScroll = () => {
-        isAutoScrolling = false
-      }
-      container.addEventListener('scrollend', resetAutoScroll, { once: true })
-      setTimeout(() => {
-        container.removeEventListener('scrollend', resetAutoScroll)
-        isAutoScrolling = false
-      }, 500)
-    }
+    scroll.scrollToLine(idx)
   }
 
   // ── Edit mode helpers ─────────────────────────────────────────────
@@ -1481,6 +1452,16 @@ export function useStemMixerLyricsController(
     URL.revokeObjectURL(url)
   }
 
+  const scroll = useLyricsScrollController({
+    playing: deps.playing,
+    currentLineIdx: () => currentLineIdx(),
+    lyricsSource,
+    editMode,
+    lrcGenMode,
+    lrcGenLineIdx,
+  })
+  const { userScrolled, setUserScrolled } = scroll
+
   // ── Memos ────────────────────────────────────────────────────────
 
   const canonicalLrcLines = createMemo<CanonicalLrcEntry[]>(() => {
@@ -1746,136 +1727,10 @@ export function useStemMixerLyricsController(
     })
   })
 
-  // ── Lyric scroll: user-scroll detection ────────────────────────
-
-  const onLyricsScroll = () => {
-    if (isAutoScrolling) return
-    setUserScrolled(true)
-    if (lyricsScrollTimeout) {
-      clearTimeout(lyricsScrollTimeout)
-      lyricsScrollTimeout = null
-    }
-    lyricsScrollTimeout = setTimeout(() => {
-      const container = document.querySelector(
-        LYRICS_CONTAINER_SELECTOR,
-      ) as HTMLElement | null
-      if (!container) return
-      const idx = currentLineIdx()
-      if (idx < 0) return
-      const activeLine = findLyricsRow(container, idx)
-      if (activeLine !== null) {
-        const containerRect = container.getBoundingClientRect()
-        const lineRect = activeLine.getBoundingClientRect()
-        if (lineRect.top - containerRect.top < containerRect.height * 0.6) {
-          setUserScrolled(false)
-        }
-      }
-      lyricsScrollTimeout = null
-    }, 800)
-  }
-
-  const attachScrollListener = () => {
-    const container = document.querySelector(
-      LYRICS_CONTAINER_SELECTOR,
-    ) as HTMLElement | null
-    if (container !== lyricsScrollContainer) {
-      if (lyricsScrollContainer) {
-        lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
-      }
-      lyricsScrollContainer = container
-      if (container) {
-        container.addEventListener('scroll', onLyricsScroll, { passive: true })
-      }
-    }
-  }
-
-  createEffect(() => {
-    const _lyrics = lyricsSource()
-    const _edit = editMode()
-    const _lrcGen = lrcGenMode()
-    void _lyrics
-    void _edit
-    void _lrcGen
-    setTimeout(() => attachScrollListener(), 0)
-  })
-
-  // ── Auto-scroll effect ────────────────────────────────────────────
-
-  createEffect(() => {
-    const idx = currentLineIdx()
-    if (!deps.playing() || idx < 0) return
-    if (userScrolled()) return
-    const container = document.querySelector(
-      LYRICS_CONTAINER_SELECTOR,
-    ) as HTMLElement | null
-    if (!container) return
-    const activeLine = findLyricsRow(container, idx)
-    if (activeLine !== null) {
-      const containerRect = container.getBoundingClientRect()
-      const lineRect = activeLine.getBoundingClientRect()
-      const thresholdBottom = containerRect.top + containerRect.height * 0.57
-      const thresholdTop = containerRect.top + containerRect.height * 0.15
-      const needsScrollDown = lineRect.bottom > thresholdBottom
-      const needsScrollUp = lineRect.top < thresholdTop
-      if (needsScrollDown || needsScrollUp) {
-        const scrollTarget =
-          container.scrollTop +
-          (lineRect.top - containerRect.top) -
-          containerRect.height * 0.35
-        isAutoScrolling = true
-        container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
-        const resetAutoScroll = () => {
-          isAutoScrolling = false
-        }
-        container.addEventListener('scrollend', resetAutoScroll, { once: true })
-        setTimeout(() => {
-          container.removeEventListener('scrollend', resetAutoScroll)
-          isAutoScrolling = false
-        }, 500)
-      }
-    }
-  })
-
-  // ── Auto-scroll effect for LRC gen mode ──────────────────────────
-
-  createEffect(() => {
-    const idx = lrcGenLineIdx()
-    if (!lrcGenMode()) return
-    const container = document.querySelector(
-      '.sm-lyrics-gen-lines',
-    ) as HTMLElement | null
-    if (!container) return
-    const activeLine = findLyricsRow(container, idx)
-    if (activeLine !== null) {
-      const containerRect = container.getBoundingClientRect()
-      const lineRect = activeLine.getBoundingClientRect()
-      const thresholdBottom = containerRect.top + containerRect.height * 0.6
-      const thresholdTop = containerRect.top + containerRect.height * 0.15
-      const needsScrollDown = lineRect.bottom > thresholdBottom
-      const needsScrollUp = lineRect.top < thresholdTop
-      if (needsScrollDown || needsScrollUp) {
-        const scrollTarget =
-          container.scrollTop +
-          (lineRect.top - containerRect.top) -
-          containerRect.height * 0.35
-        container.scrollTo({ top: scrollTarget, behavior: 'smooth' })
-      }
-    }
-  })
-
-  // ── Cleanup ───────────────────────────────────────────────────────
+  // ── Cleanup ──────────────────────────────────────────────────────
 
   onCleanup(() => {
     flushLrcGenProgress()
-    if (lyricsScrollContainer) {
-      lyricsScrollContainer.removeEventListener('scroll', onLyricsScroll)
-      lyricsScrollContainer = null
-    }
-    if (lyricsScrollTimeout) {
-      clearTimeout(lyricsScrollTimeout)
-      lyricsScrollTimeout = null
-    }
-    isAutoScrolling = false
   })
 
   // ── Return ────────────────────────────────────────────────────────
