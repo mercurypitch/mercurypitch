@@ -284,6 +284,7 @@
   font-size: 0.74rem;
   font-weight: 600;
   white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
   transition:
     background 0.15s ease,
