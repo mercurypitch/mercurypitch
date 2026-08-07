@@ -17,7 +17,7 @@ import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEn
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
-import { jammableSessionRows, sessionSong, sessionSongNotes, } from '@/lib/jam/jam-session-songs'
+import { ownSongRows, sessionSong, sessionSongNotes, } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
@@ -245,10 +245,12 @@ export const JamPanel: Component = () => {
    * again whenever the session list changes, because a separation that
    * finishes while you are sitting in a room should appear without
    * making you leave and come back.
+   *
+   * The demo the Songs shelf already lists is dropped — see `ownSongRows`.
    */
   const mySongRows = createMemo(() =>
     jamState() === 'active'
-      ? jammableSessionRows(getAllUvrSessionsReactive())
+      ? ownSongRows(getAllUvrSessionsReactive(), DEMO_SESSION_ID)
       : [],
   )
 

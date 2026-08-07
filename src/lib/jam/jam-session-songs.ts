@@ -201,6 +201,29 @@ export function jammableSessionRows(
 }
 
 /**
+ * The rows the picker's "Your songs" shelf should show, given whatever the
+ * Songs shelf above it is already listing.
+ *
+ * That shelf serves one demo straight from the manifest, and the same demo
+ * also has a local session row — the Examples library seeds one for every
+ * published demo, and opening one in Karaoke Night always did. Listed in
+ * both places it reads as a duplicate rather than as two routes to the same
+ * song, and a picker that shows a title twice is a picker nobody trusts.
+ *
+ * Only the shelved id is dropped. Any other example still needs this shelf
+ * to be reachable at all, so it stays — under a slightly wrong heading,
+ * which beats being unjammable.
+ */
+export function ownSongRows(
+  sessions: readonly UvrSession[],
+  shelvedSessionId: string,
+): JamSessionRow[] {
+  return jammableSessionRows(sessions).filter(
+    (row) => row.session.sessionId !== shelvedSessionId,
+  )
+}
+
+/**
  * Every session this device can sing, newest first.
  *
  * Resolved in parallel: each is a couple of IndexedDB reads, and doing
