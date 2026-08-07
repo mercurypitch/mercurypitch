@@ -308,6 +308,23 @@ people can finish; go outside it deliberately.
 **See:** `src/features/challenges/weekly-service.ts` (the `targetItems` doc
 comment), `scripts/seed-weekly-rotation.mjs` (the TESSITURA note).
 
+### Seeding a row into the session list changes every surface that lists sessions
+
+**Symptom:** three Jam smoke specs failed with "resolved to 2 elements" for a
+song nobody had touched, after a change to the Karaoke Night examples.
+**Cause:** the Jam picker builds one shelf from the demo manifest and another
+from `getAllUvrSessions()`. Those were disjoint only by accident — nothing
+said the demo could not also be a session row. Seeding one put the same song
+on both shelves. Eight surfaces read that store; the seeder knew about none
+of them, and the unit suite tests each in isolation so it saw nothing.
+**Rule:** before seeding anything into `uvr-store`, grep
+`getAllUvrSessions|getAllUvrSessionsReactive` and check each consumer for a
+second, independent route to the same content. A surface that lists sessions
+_and_ a catalogue needs an explicit dedupe (`ownSongRows`), not an assumption
+that the two sets are disjoint.
+**See:** `src/lib/jam/jam-session-songs.ts` (`ownSongRows`),
+`src/features/karaoke-night/seed-examples.ts`
+
 ## Tooling and environment
 
 ### `rg -r` means `--replace`, not recursive
