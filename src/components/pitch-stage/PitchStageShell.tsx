@@ -7,6 +7,7 @@ export type PitchStageMode =
   | 'zen-monitor'
   | 'zen-exercise'
   | 'challenge'
+  | 'lrc-mapper'
 
 export interface PitchStageLegendItem {
   label: string

@@ -15,6 +15,7 @@ import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { insertedLineTime, stripInlineWordStamps } from '@/lib/whisper-lyrics'
 import { LrcMapperLineList } from './lrc-mapper/LrcMapperLineList'
+import { LrcMapperStage } from './lrc-mapper/LrcMapperStage'
 import { LrcMapperToolbar } from './lrc-mapper/LrcMapperToolbar'
 import { LyricsSongPicker } from './LyricsSongPicker'
 import type { LyricsUploadResult } from './LyricsUploader'
@@ -151,6 +152,7 @@ export interface StemMixerLyricsPanelBodyProps {
   // Audio
   playing: Accessor<boolean>
   elapsed: Accessor<number>
+  duration: Accessor<number>
   playbackSpeed: Accessor<number>
   setPlaybackSpeed: (speed: number) => void
   handlePlay: () => void
@@ -185,6 +187,8 @@ export const StemMixerLyricsPanelBody: Component<
   const sfx = () => props.idSuffix ?? ''
 
   const [loopPreview, setLoopPreview] = createSignal(false)
+  // The full-screen mapper is the same session, given the whole viewport.
+  const [mapperStageOpen, setMapperStageOpen] = createSignal(false)
 
   // Pinch-to-zoom font size state
   let lyricsLinesRef: HTMLDivElement | undefined
@@ -388,6 +392,7 @@ export const StemMixerLyricsPanelBody: Component<
         {/* ── LRC Generator toolbar ─────────────────────── */}
         <Show when={props.lrcGenMode()}>
           <LrcMapperToolbar
+            onExpand={() => setMapperStageOpen(true)}
             blockInstances={props.blockInstances}
             genShiftMs={props.genShiftMs}
             getBlockById={props.getBlockById}
@@ -417,6 +422,58 @@ export const StemMixerLyricsPanelBody: Component<
             setPlaybackSpeed={props.setPlaybackSpeed}
             setPreviewLoop={props.setPreviewLoop}
             shiftGenTimings={props.shiftGenTimings}
+            wordPassProgress={props.wordPassProgress}
+          />
+        </Show>
+
+        {/* ── Full-screen mapper ───────────────────────── */}
+        <Show when={props.lrcGenMode() && mapperStageOpen()}>
+          <LrcMapperStage
+            blockInstances={props.blockInstances}
+            duration={props.duration}
+            elapsed={props.elapsed}
+            formatTime={props.formatTime}
+            formatTimeMs={props.formatTimeMs}
+            genShiftMs={props.genShiftMs}
+            genViewData={props.genViewData}
+            getBlockById={props.getBlockById}
+            getBlockColor={props.getBlockColor}
+            getBlockForLine={props.getBlockForLine}
+            getGenLines={props.getGenLines}
+            handleLrcGenFinish={props.handleLrcGenFinish}
+            handleLrcGenReset={props.handleLrcGenReset}
+            handleLyricLineClick={props.handleLyricLineClick}
+            handleMarkerSample={props.handleMarkerSample}
+            handleNextLine={props.handleNextLine}
+            handleNextWord={props.handleNextWord}
+            handlePause={props.handlePause}
+            handlePlay={props.handlePlay}
+            handleRedoCurrentLine={props.handleRedoCurrentLine}
+            handleSeekToTime={props.handleSeekToTime}
+            highlightWord={props.highlightWord}
+            liveHighlight={props.liveHighlight}
+            loopPreview={loopPreview}
+            lrcGenInputMode={props.lrcGenInputMode}
+            lrcGenLineIdx={props.lrcGenLineIdx}
+            lrcGenPass={props.lrcGenPass}
+            lrcGenWordIdx={props.lrcGenWordIdx}
+            lrcTimingOffsetMs={props.lrcTimingOffsetMs}
+            lyricsFontSize={props.lyricsFontSize}
+            onClose={() => setMapperStageOpen(false)}
+            playbackSpeed={props.playbackSpeed}
+            playing={props.playing}
+            previewLineIdx={props.previewLineIdx}
+            setLiveHighlight={props.setLiveHighlight}
+            setLoopPreview={setLoopPreview}
+            setLrcGenInputMode={props.setLrcGenInputMode}
+            setLrcGenPass={props.setLrcGenPass}
+            setLrcTimingOffsetMs={props.setLrcTimingOffsetMs}
+            setLyricsFontSize={props.setLyricsFontSize}
+            setPlaybackSpeed={props.setPlaybackSpeed}
+            setPreviewLoop={props.setPreviewLoop}
+            shiftGenTimings={props.shiftGenTimings}
+            songTitle={props.songTitle}
+            toggleLinePreview={props.toggleLinePreview}
             wordPassProgress={props.wordPassProgress}
           />
         </Show>

@@ -1399,6 +1399,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     handleSongPickerRefine,
     playing: audio.playing,
     elapsed: audio.audibleElapsed,
+    duration: audio.duration,
     handleSeekToTime: (t: number) => audio.seekTo(t),
     playbackSpeed: audio.speed,
     setPlaybackSpeed: audio.setSpeed,
@@ -5600,6 +5601,25 @@ export const StemMixerStyles: string = `
 .sm-lyrics-gen-redo-btn:hover {
   color: var(--fg-primary, #c9d1d9);
   border-color: var(--fg-tertiary, #484f58);
+}
+
+.sm-lyrics-gen-expand-btn {
+  display: inline-flex;
+  height: 1.8rem;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.25rem;
+  color: var(--fg-secondary, #8b949e);
+  background: transparent;
+  font: 600 0.65rem/1 inherit;
+  cursor: pointer;
+}
+
+.sm-lyrics-gen-expand-btn:hover {
+  color: var(--fg-primary, #c9d1d9);
+  border-color: var(--accent-lighter, #79c0ff);
 }
 
 .sm-lyrics-gen-finish-btn {
