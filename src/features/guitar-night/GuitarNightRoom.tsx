@@ -195,6 +195,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               type="button"
               classList={{ [styles.listeningActive]: isListening() }}
               aria-pressed={isListening()}
+              disabled={props.transport.status() === 'loading'}
               onClick={toggleListening}
             >
               <span aria-hidden="true">

@@ -4,6 +4,7 @@
 import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { micManager } from '@/lib/mic-manager'
+import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { PitchDetector } from '@/lib/pitch-detector'
 
 const CONSUMER_ID = 'guitar-night-listening'
@@ -136,6 +137,21 @@ export function useGuitarListeningController(
     setDetectedMidi(null)
     setClarity(0)
   }
+
+  // Watchdog registration (repo rule: every mic surface registers): the
+  // room's Listening chip reads this status — a confirmed icon-on with no
+  // live track heals through the surface's own stop path.
+  onCleanup(
+    registerMicIndicator(
+      CONSUMER_ID,
+      // Deliberately non-reactive: the sentinel polls these accessors on
+      // its own low-frequency interval — no tracked scope involved.
+      // eslint-disable-next-line solid/reactivity
+      () => status() === 'listening' || status() === 'requesting',
+
+      () => stop(),
+    ),
+  )
 
   const start = async (): Promise<boolean> => {
     if (status() === 'requesting' || status() === 'listening') return true

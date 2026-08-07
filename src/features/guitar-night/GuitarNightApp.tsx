@@ -172,7 +172,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       }
       setVisitedRoomSessionId(null)
       playbackController.configure(null)
-      await songController.stageSession(sessionId, 'replace')
+      // The same session id is already staged as the two-stem mix; force
+      // past the no-op guard so the upgraded parts actually replace it.
+      await songController.stageSession(sessionId, 'replace', { force: true })
     },
   })
   const activeBacking = createMemo(() => {
@@ -870,6 +872,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                               }
                               disabled={
                                 preparationController.isPreparing() ||
+                                bandPreparationController.isPreparing() ||
                                 songController.selectionState().kind ===
                                   'loading'
                               }

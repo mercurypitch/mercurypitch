@@ -136,12 +136,18 @@ export function useGuitarNightSongController(
   const stageSession = async (
     sessionId: string,
     historyMode: HistoryMode = 'push',
+    stageOptions: { force?: boolean } = {},
   ): Promise<void> => {
     const normalizedSessionId = sessionId.trim()
     if (normalizedSessionId === '') return
+    const alreadyRouted = routeSessionId() === normalizedSessionId
     const currentSelection = selectionState()
+    // force bypasses the same-session no-op guard for callers that changed
+    // what the session contains (the full-band upgrade restages the same id
+    // to swap the two-stem lease for the freshly saved parts).
     if (
-      routeSessionId() === normalizedSessionId &&
+      stageOptions.force !== true &&
+      alreadyRouted &&
       (currentSelection.kind === 'loading' || currentSelection.kind === 'ready')
     ) {
       return
@@ -154,7 +160,12 @@ export function useGuitarNightSongController(
     setRouteSessionId(normalizedSessionId)
     setSelectionState({ kind: 'loading', sessionId: normalizedSessionId })
     if (historyMode !== 'none') {
-      writeSessionToHistory(normalizedSessionId, historyMode)
+      // Re-staging the already routed session must not grow history — Back
+      // should still leave the song in one press.
+      writeSessionToHistory(
+        normalizedSessionId,
+        historyMode === 'push' && alreadyRouted ? 'replace' : historyMode,
+      )
     }
 
     const loadedPort = await ensurePort()
@@ -220,8 +231,12 @@ export function useGuitarNightSongController(
 
   const retry = (): void => {
     const currentSessionId = routeSessionId()
-    if (currentSessionId === null) initialize()
-    else void stageSession(currentSessionId, 'none')
+    // A loaded port can still sit in a failed library state (a transient
+    // refresh failure) — initialize() would short-circuit on the loaded
+    // port, so recover the list with a real refresh instead.
+    if (port() !== null) void refreshLibrary()
+    else if (currentSessionId === null) initialize()
+    if (currentSessionId !== null) void stageSession(currentSessionId, 'none')
   }
 
   onMount(() => {
