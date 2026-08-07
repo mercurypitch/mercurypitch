@@ -4,8 +4,11 @@ Working plan for breaking up the files that dominate context cost and change
 risk. Written so an agent picking up any single slice has everything it needs
 without re-deriving the analysis.
 
-**Status: proposed.** Nothing here has been executed. Sequence and scope are
-open to change; ordering rationale is in §5.
+**Status: proposed, one slice done.** The lyrics controller was split on
+`feat/lrc-mapper-studio` (see
+[docs/plans/lrc-mapper-studio-plan.md](../plans/lrc-mapper-studio-plan.md)
+Phase 0) — the only row in §1 that has moved. Everything else stands.
+Sequence and scope are open to change; ordering rationale is in §5.
 
 ---
 
@@ -14,14 +17,14 @@ open to change; ordering rationale is in §5.
 Six files carry disproportionate cost. They are simultaneously the largest and
 among the most-changed, so every session that touches them pays to re-read them.
 
-| File | LOC | ~tokens to read | Commits (last 400) |
-|---|---|---|---|
-| `src/components/StemMixer.tsx` | 6,268 | ~46,200 | 48 |
-| `src/lib/piano-roll.ts` | 5,086 | ~44,000 | — |
-| `src/App.tsx` | 3,286 | ~35,400 | 34 |
-| `src/components/VocalAnalysis.tsx` | 3,102 | ~28,000 | — |
-| `src/features/stem-mixer/useStemMixerLyricsController.ts` | 2,967 | ~25,000 | 11 |
-| `src/components/UvrPanel.tsx` | 2,641 | ~26,000 | 30 |
+| File                                                      | LOC             | ~tokens to read | Commits (last 400) |
+| --------------------------------------------------------- | --------------- | --------------- | ------------------ |
+| `src/components/StemMixer.tsx`                            | 6,268           | ~46,200         | 48                 |
+| `src/lib/piano-roll.ts`                                   | 5,086           | ~44,000         | —                  |
+| `src/App.tsx`                                             | 3,286           | ~35,400         | 34                 |
+| `src/components/VocalAnalysis.tsx`                        | 3,102           | ~28,000         | —                  |
+| `src/features/stem-mixer/useStemMixerLyricsController.ts` | ~~2,967~~ 1,886 | ~25,000         | 11                 |
+| `src/components/UvrPanel.tsx`                             | 2,641           | ~26,000         | 30                 |
 
 `StemMixer.tsx` and `App.tsx` together are ~82k tokens and account for 82 of
 the last 400 commits. That is the whole problem in one line.
@@ -59,14 +62,14 @@ numbers are from the section banners at time of writing — re-grep
 Already extracted: mic, audio, lyrics, pitch-analysis, canvas, layout.
 Remaining seams, roughly in dependency order:
 
-| Slice | Sections | Target |
-|---|---|---|
-| A | Karaoke playlist integration (344), Zen transport (461) | `useStemMixerTransportController.ts` |
-| B | Volume/Mute/Solo (1354), Stem controls props bundle (1426) | `useStemMixerStemControls.ts` |
-| C | Pitch-word alignment memo (917), Auto word-sync (1312), Loop lyric↔audio sync (739) | fold into the existing lyrics controller, or `stem-mixer/word-sync.ts` if it stays pure |
-| D | Melody audition synth (1123) | `melody-synth.ts` already exists — move the remainder there |
-| E | Circular Progress (111), Karaoke Focus Mode (160) | plain components in `src/features/stem-mixer/` |
-| F | "From vocal" lyrics generation (1627) | `lrc-gen-engine.ts` already exists — move the orchestration there |
+| Slice | Sections                                                                            | Target                                                                                  |
+| ----- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| A     | Karaoke playlist integration (344), Zen transport (461)                             | `useStemMixerTransportController.ts`                                                    |
+| B     | Volume/Mute/Solo (1354), Stem controls props bundle (1426)                          | `useStemMixerStemControls.ts`                                                           |
+| C     | Pitch-word alignment memo (917), Auto word-sync (1312), Loop lyric↔audio sync (739) | fold into the existing lyrics controller, or `stem-mixer/word-sync.ts` if it stays pure |
+| D     | Melody audition synth (1123)                                                        | `melody-synth.ts` already exists — move the remainder there                             |
+| E     | Circular Progress (111), Karaoke Focus Mode (160)                                   | plain components in `src/features/stem-mixer/`                                          |
+| F     | "From vocal" lyrics generation (1627)                                               | `lrc-gen-engine.ts` already exists — move the orchestration there                       |
 
 Slices C, D and F move code into files that **already exist**; those are the
 cheapest and should go first.
@@ -76,14 +79,14 @@ cheapest and should go first.
 27 section banners, most already mirroring a `src/features/` module that exists
 but is only partially used. Highest value first:
 
-| Slice | Sections | Target |
-|---|---|---|
-| G | A-B Loop state (1334) — 257 lines, self-contained | `src/features/playback/useAbLoop.ts` (`@/lib/ab-loop.ts` exists) |
-| H | Share handlers (555), Singing song picker (1327) | `src/features/session/` |
-| I | Take review (902), Compose live recording preview (877) | `src/features/recording/` |
-| J | Octave shift (1651), Target note (1681), Accuracy heatmap (1695) | `src/features/practice/` |
-| K | Swipe to change tabs (503), Tab-change cleanup (1203) | `src/features/routing/` |
-| L | Guide Selection dialog (464), header practice-context pill (1069) | components |
+| Slice | Sections                                                          | Target                                                           |
+| ----- | ----------------------------------------------------------------- | ---------------------------------------------------------------- |
+| G     | A-B Loop state (1334) — 257 lines, self-contained                 | `src/features/playback/useAbLoop.ts` (`@/lib/ab-loop.ts` exists) |
+| H     | Share handlers (555), Singing song picker (1327)                  | `src/features/session/`                                          |
+| I     | Take review (902), Compose live recording preview (877)           | `src/features/recording/`                                        |
+| J     | Octave shift (1651), Target note (1681), Accuracy heatmap (1695)  | `src/features/practice/`                                         |
+| K     | Swipe to change tabs (503), Tab-change cleanup (1203)             | `src/features/routing/`                                          |
+| L     | Guide Selection dialog (464), header practice-context pill (1069) | components                                                       |
 
 App.tsx's job afterwards is composition: mount controllers, wire them, render
 the shell. It should hold close to zero business logic.

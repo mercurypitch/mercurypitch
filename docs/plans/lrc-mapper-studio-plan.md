@@ -17,12 +17,12 @@ standard, then make it cheap to prove any other mapping is worse.**
 
 ## 0. Decisions already taken
 
-| Question | Answer |
-|---|---|
+| Question     | Answer                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------- |
 | Marker types | Per-word mapped-position ticks; A-vs-B overlay ticks in the differ. **No** loop A/B handles, **no** ABX blind test. |
-| Build order | Full-screen shell first, then markers, then sub-word, then differ. |
-| Differ home | Both — a `/lab` subtab *and* inside the mapper. |
-| Save format | Adopt `lyricsfile` as the native format now; export enhanced LRC for compatibility. |
+| Build order  | Full-screen shell first, then markers, then sub-word, then differ.                                                  |
+| Differ home  | Both — a `/lab` subtab _and_ inside the mapper.                                                                     |
+| Save format  | Adopt `lyricsfile` as the native format now; export enhanced LRC for compatibility.                                 |
 
 ---
 
@@ -46,7 +46,7 @@ Four things make this much smaller than it looks:
 - **`overview-mapping.ts`** (76 lines) already owns the single time↔pixel
   mapping for the waveform overview, with `clampOverviewWindow`, `timeToX`,
   `columnSampleRange`, and tests pinning them.
-- **`demo-song.ts`** (276 lines) already fetches a *list* of Cloudflare-served
+- **`demo-song.ts`** (276 lines) already fetches a _list_ of Cloudflare-served
   songs — stems, lyrics, attribution — and seeds them into the local db as
   normal sessions without ever clobbering a user's edits. Phase 7 is wiring,
   not invention.
@@ -114,13 +114,13 @@ separable and the UI can still show which is which.
 
 ### Also in scope for this audit — outcomes
 
-- **Show mapped vs unmapped honestly.** *Done.* `GenViewLine` gained `isMapped`
+- **Show mapped vs unmapped honestly.** _Done._ `GenViewLine` gained `isMapped`
   (carries a line start) and `isSessionMapped` (you placed it in this sitting),
   and the row styles use them. Cursor position no longer stands in for
   mapped-ness. `touchedLines` stayed a plain `Set` with a version counter
   beside it, because it is written on every word transition.
 
-- **Stale progress lifetime.** *Decided: no TTL.* The tempting fix is to expire
+- **Stale progress lifetime.** _Decided: no TTL._ The tempting fix is to expire
   blobs after N days. Do not. Until a session is finished, its blob is the
   **only** copy of that mapping work — nothing is written to `wordTimings`
   until finish. A TTL would delete the user's work on a schedule, which is
@@ -133,9 +133,9 @@ separable and the UI can still show which is which.
   in Phase 2 where the entry surface is being rebuilt — bolting a prompt onto
   the current entry point now would be built twice.
 
-- **Where the mapper opens from.** *Decided: the session edit list stays the
+- **Where the mapper opens from.** _Decided: the session edit list stays the
   door for the inline mapper; Phase 2's full-screen stage gets a second one in
-  the lyrics panel header (an expand control), not a replacement.* Two doors to
+  the lyrics panel header (an expand control), not a replacement._ Two doors to
   the same session state, same controller, so neither is a mode the other
   cannot reach.
 
@@ -154,11 +154,11 @@ same gap that let the single-word-line regression through in #415.
 Three of the four proposed seams were taken; the parent went 3,200 → 1,748
 lines with **zero test edits**, which was the condition set below.
 
-| Commit | Extracted | Parent after |
-|---|---|---|
-| `0d92d630` | `useLrcGenController.ts` — the whole mapping session | 2,045 |
-| `891b20eb` | `useLyricsScrollController.ts` + pure `lyrics-scroll.ts` | 1,902 |
-| `948f86a5` | `useLyricsBlocksController.ts` | 1,748 |
+| Commit     | Extracted                                                | Parent after |
+| ---------- | -------------------------------------------------------- | ------------ |
+| `0d92d630` | `useLrcGenController.ts` — the whole mapping session     | 2,045        |
+| `891b20eb` | `useLyricsScrollController.ts` + pure `lyrics-scroll.ts` | 1,902        |
+| `948f86a5` | `useLyricsBlocksController.ts`                           | 1,748        |
 
 **`useLyricsDataController.ts` was deliberately not extracted.** Unlike the
 three above it does not own its state: load/search/persist write into
@@ -169,10 +169,31 @@ logic in the feature (what lyrics you see). The parent is now well under the
 2,600 lines REFACTOR-PLAN flags, so the cost was real and the benefit was not.
 Revisit only if that file grows again.
 
+**A second pass, after the feature phases landed.** `useLrcGenController.ts`
+came out of the split at 1,827 lines — over the ~1,500 REFACTOR-PLAN §6 calls
+done. The reason to finish it was not the number: the four biggest blocks in
+it were the ones that _overwrite the singer's saved work_, and none could be
+reached from a test without driving a whole controller. They were the least
+covered code in the feature and the most expensive to get wrong.
+
+| New module                                  | Owns                                                | Tests                      |
+| ------------------------------------------- | --------------------------------------------------- | -------------------------- |
+| `composeGenResult` (in `lrc-gen-engine.ts`) | what a finished session saves                       | `lrc-gen-compose.test.ts`  |
+| `lrc-gen-progress.ts`                       | the debounced autosave, and the reader that refuses | `lrc-gen-progress.test.ts` |
+| `auto-word-sync.ts`                         | which lines auto-sync may touch                     | `auto-word-sync.test.ts`   |
+| `block-fill.ts`                             | copying a mapped chorus onto its repeats            | `block-fill.test.ts`       |
+
+That found something. `buildFinalPartialTimes` already sat in
+`lrc-gen-engine.ts` with five tests, and **nothing called it** —
+`handleLrcGenFinish` inlined the same four steps by hand, so the tests were
+vouching for a pipeline that never ran. `composeGenResult` calls it, so they
+now do. Controller after: 1,531 lines. The remainder is the input handlers,
+which are genuinely stateful and do not want to be pure.
+
 Two gotchas worth keeping:
 
 - Passing a parent memo back into a child hook as a dep makes the child's
-  *inferred* return type circular; TypeScript silently widens it to `unknown`
+  _inferred_ return type circular; TypeScript silently widens it to `unknown`
   rather than erroring. Both new controllers therefore declare an explicit
   return interface. Symptom if you skip it: `untrack(...)` results lose their
   types for no visible reason.
@@ -186,12 +207,12 @@ Apply the pattern REFACTOR-PLAN §2 documents and `src/features/stem-mixer/`
 already uses (one `deps` object in, one object of accessors and actions out,
 owns its own signals and `onCleanup`). Proposed seams, by concern:
 
-| New module | Owns | Rough LOC |
-|---|---|---|
-| `useLrcGenController.ts` | passes, cursor, tap/marker input, redo, finish/reset, progress persistence | ~1,200 |
-| `useLyricsDataController.ts` | load, search, upload, canonical LRC, versions, persistence | ~900 |
-| `useLyricsBlocksController.ts` | blocks, instances, template auto-fill | ~400 |
-| `useStemMixerLyricsController.ts` (remaining) | composition + display/edit state | ~700 |
+| New module                                    | Owns                                                                       | Rough LOC |
+| --------------------------------------------- | -------------------------------------------------------------------------- | --------- |
+| `useLrcGenController.ts`                      | passes, cursor, tap/marker input, redo, finish/reset, progress persistence | ~1,200    |
+| `useLyricsDataController.ts`                  | load, search, upload, canonical LRC, versions, persistence                 | ~900      |
+| `useLyricsBlocksController.ts`                | blocks, instances, template auto-fill                                      | ~400      |
+| `useStemMixerLyricsController.ts` (remaining) | composition + display/edit state                                           | ~700      |
 
 Non-negotiable: **no behaviour change in this phase.** The full suite (4,693
 tests) must stay green with zero test edits. If a test needs changing, the
@@ -247,7 +268,7 @@ classic version of this mistake, so the `yaml` package is now a dependency. It
 is `await import('yaml')` inside the parse function, reached only when
 somebody actually opens a `.lyricsfile`. That needs a matching
 `manualChunks` rule in `vite.config.ts`: without it the package lands in the
-generic `vendor` chunk, which *is* first paint, undoing the split entirely.
+generic `vendor` chunk, which _is_ first paint, undoing the split entirely.
 It has its own `vendor-yaml` chunk now (32.5 kB gzipped), referenced from the
 stem-mixer chunk and absent from `index.html`.
 
@@ -283,7 +304,7 @@ Model additions that are cheap and independently useful:
 - `duration_ms`, `language` → carried through, currently absent.
 
 **The sub-word problem.** `wordSweepTimings` has no home in the spec, and the
-spec defines *no extension mechanism* and no rule for unknown fields. Plan:
+spec defines _no extension mechanism_ and no rule for unknown fields. Plan:
 
 1. Serialise sweeps under a namespaced key (`x_mercurypitch_sweeps`) inside the
    lyricsfile, and
@@ -332,8 +353,8 @@ Not verified in a browser.
 **Route:** a hash route in the same family as the existing full-screen surfaces.
 
 **Shell decision to make at implementation time.** `PitchStageShell` fits
-pitch work: one canvas, one sidecar. The mapper's primary content is a *lyric
-list* with a waveform beneath it — two co-equal regions, not canvas + sidecar.
+pitch work: one canvas, one sidecar. The mapper's primary content is a _lyric
+list_ with a waveform beneath it — two co-equal regions, not canvas + sidecar.
 Recommendation: **a sibling `LrcMapperStage` that shares
 `PitchStageShell.module.css` tokens and header/footer markup**, rather than
 bending `PitchStageShell` into a fifth mode it does not structurally fit.
@@ -396,7 +417,7 @@ survive only on the canonical entries — and `seedGenTimings` read the map
 alone. Every line showed `--:--`, the overview had no ticks to draw, and pass 2
 had nothing to refine. `seedGenTimings` now falls back to
 `canonicalLrcLines()[i].wordTimes`, with `lrc-gen-seed.test.ts` pinning it
-(including that inherited timings are *not* marked as this sitting's work, so
+(including that inherited timings are _not_ marked as this sitting's work, so
 finishing cannot rewrite lines nobody looked at).
 
 ---
@@ -412,12 +433,18 @@ export function xToTime(x: number, win: OverviewWindow, width: number): number
 /** Nearest marker to x within a pixel tolerance, or null. */
 export function nearestMarker(
   markers: readonly { time: number; lineIdx: number; wordIdx: number }[],
-  x: number, win: OverviewWindow, width: number, tolerancePx?: number,
+  x: number,
+  win: OverviewWindow,
+  width: number,
+  tolerancePx?: number,
 ): { lineIdx: number; wordIdx: number } | null
 
 /** Markers inside the window, thinned so ticks never overplot. */
 export function visibleMarkers(
-  markers: readonly Marker[], win: OverviewWindow, width: number, minGapPx?: number,
+  markers: readonly Marker[],
+  win: OverviewWindow,
+  width: number,
+  minGapPx?: number,
 ): readonly Marker[]
 ```
 
@@ -425,6 +452,7 @@ All three are pure and unit-testable without a canvas — the same seam that mad
 `lrc-gen-passes.ts` testable in #415.
 
 **Behaviour:**
+
 - A tick per mapped word start on the vocal-stem waveform.
 - Show/hide toggle (required — a dense song is a picket fence).
 - Click a tick → seek there and move the mapping cursor to that word.
@@ -495,7 +523,7 @@ Both pure, both trivially testable, both must agree on grapheme handling —
 with a code-point fallback.
 
 **Interaction:** in the full-screen mapper, clicking a letter inside a word
-sets that letter's time. Setting a syllable's start *is* the previous
+sets that letter's time. Setting a syllable's start _is_ the previous
 syllable's end, so one gesture fixes both sides — no separate "end" gesture.
 
 **Storage stays sparse.** Only words the user actually split get an entry.
@@ -536,7 +564,7 @@ plus per-line breakdown, which the CLI does not currently expose.
 **Step 2 — the view**, in both homes as chosen:
 
 - `/lab` → a new `LabTab` (`'lrc-diff'`) alongside `workbench | detection |
-  algorithms`. Load two files, compare arbitrary mappings. Follows the existing
+algorithms`. Load two files, compare arbitrary mappings. Follows the existing
   lazy-loaded `TABS` array pattern in `LabSurface.tsx`.
 - In the mapper → a `Compare ▾` menu diffing current work against a saved
   version.
@@ -623,7 +651,7 @@ Three things that had to be got right:
 
 A deleted example comes back on the next visit. That is deliberate: the
 alternative is remembering every deletion forever, and re-adding is the
-cheaper mistake than a library that cannot be repaired. The visitor's *lyrics*
+cheaper mistake than a library that cannot be repaired. The visitor's _lyrics_
 are safe either way — `shouldSeedLyrics` protects an edited copy regardless of
 what happens to the row.
 
@@ -644,7 +672,7 @@ Night.
 
 - **`GET /api/demo-songs`** already returns a **list** of manifests. Each
   carries `slug`, `title`, `artist`, `attribution {text, url, license,
-  licenseUrl}`, `stems {vocal, instrumental}` (R2 URLs), `lyrics` (or inline
+licenseUrl}`, `stems {vocal, instrumental}` (R2 URLs), `lyrics` (or inline
   `lyricsText`), `lyricsRevision`, `durationSec`. Live on dev at
   `https://api-dev.mercurypitch.com/api/demo-songs`, authored through
   `https://dev.mercurypitch.com/#/admin/demo-song`, and already serving **two**
@@ -677,7 +705,7 @@ And grouping exists: `SessionGroupRecord { name, sessionIds[] }` in
 
 ### The auto-add question — recommendation: half-yes
 
-Auto-adding *audio* is the wrong default. The stems are large (the local WAVs
+Auto-adding _audio_ is the wrong default. The stems are large (the local WAVs
 are 24 MB each; even the m4a renders are ~4 MB), and seeding them unasked
 spends a stranger's mobile data on content they never requested.
 
@@ -720,10 +748,10 @@ folder of audio. That turns "trust my numbers" into "run it yourself".
 Committed at [`fixtures/lrc/`](../../fixtures/lrc/) — see its README for the
 versioning rule and licence terms.
 
-| File | Song | Lines | Words |
-|---|---|---|---|
-| `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring | 25 | 288 |
-| `josephine.v2.lrc` | Josh Woodward — I'll Be Right Behind You, Josephine | 38 | 322 |
+| File                       | Song                                                | Lines | Words |
+| -------------------------- | --------------------------------------------------- | ----- | ----- |
+| `goodbye-to-spring.v2.lrc` | Josh Woodward — Goodbye to Spring                   | 25    | 288   |
+| `josephine.v2.lrc`         | Josh Woodward — I'll Be Right Behind You, Josephine | 38    | 322   |
 
 Both are **byte-identical** to the `lyricsText` served by
 `GET https://api-dev.mercurypitch.com/api/demo-songs` at `lyricsRevision: 2`
@@ -735,7 +763,7 @@ copy, not a second source of truth.
 deliberately not kept: comparing the two showed near-identical timings (median
 absolute error 0.000 s over 304 words) but **two mismatched lines** — v1
 contained words absent from the lyric text, a duplicated `seen` and a stray
-`you`. A baseline with wrong *text* cannot measure timing, so it is
+`you`. A baseline with wrong _text_ cannot measure timing, so it is
 disqualified as a reference rather than useful as an A/B side.
 
 That comparison is also the first real proof the differ's metrics work: a
@@ -756,13 +784,13 @@ Automatic mappings take the **next free version number** (`v3`, `v4`, …) and a
 scored against `v2`. They are not committed unless a specific result is worth
 pinning — this directory holds references, not every experiment.
 
-So the differ's first real job is *auto-mapped vN* vs *hand-mapped v2*, on two
+So the differ's first real job is _auto-mapped vN_ vs _hand-mapped v2_, on two
 songs, which is exactly the benchmark that motivated this plan.
 
 ### There is already one usable A/B pair
 
 The R2 `lyrics.lrc` URLs still serve **pre-v2 revisions** (see the trap below),
-and for Goodbye to Spring that older revision has *identical text* with
+and for Goodbye to Spring that older revision has _identical text_ with
 different timings — which makes it a genuine A/B pair, unlike Josephine's v1:
 
 ```
@@ -796,21 +824,21 @@ stop shipping a `lyrics` URL once `lyricsText` is set, so there is one answer to
 
 ## 9. Risks
 
-| Risk | Mitigation |
-|---|---|
-| Phase 0 silently changes behaviour | Zero test edits allowed; any needed edit means back it out |
-| `lyricsfile` sub-word extension is formally undefined | Namespaced key, lossy-optional, propose upstream |
-| Word-string spacing lost by `split(/\s+/)` | Round-trip tests over the gold corpus before anything depends on it |
-| A dynamic import that is not actually deferred | `yaml` needs its own `manualChunks` rule; the generic `vendor` chunk is first paint. Check `dist/index.html` after adding one |
-| Marker clutter makes the waveform useless | Pixel-gap thinning + zoom threshold + taller line-start ticks |
-| Drag interactions silently broken | Real-mouse Playwright spec, per repo convention |
-| Examples auto-download burns mobile data | Auto-create rows (metadata only); fetch stems on first play or explicit pull |
-| Re-pulling an example clobbers a user's lyric edits | Route re-pull through the existing `shouldSeedLyrics` stamp — never bypass it |
-| CC attribution lost outside Karaoke Night | Attribution travels in the manifest; session list and mapper must both render it |
-| R2 `lyrics` URL and inline `lyricsText` disagree | Re-sync the bucket on publish, or stop emitting the URL once `lyricsText` is set |
-| Deriving demo slug from asset path (or vice versa) | They differ for the legacy entry; always route local ids through `demoSessionId()` |
-| Resume-merge fix silently changes what a session holds | Pure restore function in `lrc-gen-engine.ts` with tests; `touchedLines` keeps session-vs-existing separable |
-| Scope: eight phases is a lot | Each phase is its own PR and independently useful; stop anywhere |
+| Risk                                                   | Mitigation                                                                                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 silently changes behaviour                     | Zero test edits allowed; any needed edit means back it out                                                                    |
+| `lyricsfile` sub-word extension is formally undefined  | Namespaced key, lossy-optional, propose upstream                                                                              |
+| Word-string spacing lost by `split(/\s+/)`             | Round-trip tests over the gold corpus before anything depends on it                                                           |
+| A dynamic import that is not actually deferred         | `yaml` needs its own `manualChunks` rule; the generic `vendor` chunk is first paint. Check `dist/index.html` after adding one |
+| Marker clutter makes the waveform useless              | Pixel-gap thinning + zoom threshold + taller line-start ticks                                                                 |
+| Drag interactions silently broken                      | Real-mouse Playwright spec, per repo convention                                                                               |
+| Examples auto-download burns mobile data               | Auto-create rows (metadata only); fetch stems on first play or explicit pull                                                  |
+| Re-pulling an example clobbers a user's lyric edits    | Route re-pull through the existing `shouldSeedLyrics` stamp — never bypass it                                                 |
+| CC attribution lost outside Karaoke Night              | Attribution travels in the manifest; session list and mapper must both render it                                              |
+| R2 `lyrics` URL and inline `lyricsText` disagree       | Re-sync the bucket on publish, or stop emitting the URL once `lyricsText` is set                                              |
+| Deriving demo slug from asset path (or vice versa)     | They differ for the legacy entry; always route local ids through `demoSessionId()`                                            |
+| Resume-merge fix silently changes what a session holds | Pure restore function in `lrc-gen-engine.ts` with tests; `touchedLines` keeps session-vs-existing separable                   |
+| Scope: eight phases is a lot                           | Each phase is its own PR and independently useful; stop anywhere                                                              |
 
 ## 10. Sequence
 
@@ -835,7 +863,7 @@ leave the mapper broken for however long that takes.
 
 **Phase 7 is independent** and can land any time after Phase 1 (so the shipped
 mappings are already in the native format). There is a case for pulling it
-*early*: it is mostly wiring over mechanisms that already exist, and it is what
+_early_: it is mostly wiring over mechanisms that already exist, and it is what
 lets anyone else reproduce a mapping claim. Doing it before Phase 5 means the
 differ ships with real data on every device instead of a folder of audio only
 one person has.
