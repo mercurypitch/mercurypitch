@@ -600,6 +600,22 @@ Two details that matter more than they look:
 - `leadInProgress` returns **null** outside its window, never 0. Returning 0
   would render a permanently empty cue on every line in the song.
 
+**Zen karaoke gets the same cue, drawn differently.** A bar on its own row is
+fine in the studio and wrong in zen, where the whole surface is four lines of
+type over a photograph and a new object would be the loudest thing on it. So
+there the cue _is_ the first word of the line waking up: it warms out of the
+future dim while a hairline draws itself along its underline, both on the same
+0-to-1 value, so the light reaching the end of the word is the moment to sing.
+The fill is linear on purpose — it is a clock, and easing it would lie about
+when the line starts.
+
+The plumbing worth knowing: zen renders from `stableParsedLyrics` and never
+sees a canonical entry, so `leadInFrom` is carried through that map rather
+than re-derived (`src/tests/lyrics-lead-in.test.ts` pins the hop — if the
+field stops making it, the cue silently stops existing and nothing else
+breaks). A line also splits into word spans when it has a cue, not only when
+it is current or carries note glyphs.
+
 Not verified in a browser.
 
 ---

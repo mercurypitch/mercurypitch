@@ -316,6 +316,73 @@
   text-shadow: none;
 }
 
+/* ── Run-in cue ────────────────────────────────────────────────
+   The countdown into a line after a silence too short for a rest row.
+
+   Everywhere else this is a bar on its own row. Zen has no room for a new
+   object — the whole surface is four lines of type on a photograph — so the
+   cue is the first word of the line waking up: it warms out of the future
+   dim, and a hairline draws itself along its underline. Both run on the same
+   0-to-1 value, so the moment the light reaches the end of the word is the
+   moment to sing. Nothing is added to the layout and nothing is left behind:
+   `leadInProgress` returns null outside the window, so at the downbeat the
+   cue is simply gone. */
+.wordLeadIn {
+  position: relative;
+  /* Warms toward the current line's brightness rather than to full white —
+     arriving at "current" is the point, and overshooting it would make the
+     downbeat look like a step backwards. */
+  color: color-mix(
+    in srgb,
+    rgba(255, 255, 255, 0.62) calc(var(--lead-in, 0) * 100%),
+    rgba(244, 236, 255, 0.34)
+  );
+  text-shadow: 0 0 calc(var(--lead-in, 0) * 20px)
+    rgba(255, 154, 213, calc(var(--lead-in, 0) * 0.32));
+}
+
+.leadInRule {
+  position: absolute;
+  right: 0;
+  bottom: -0.14em;
+  left: 0;
+  height: 0.055em;
+  min-height: 2px;
+  border-radius: 999px;
+  /* The unlit track is only just visible: it says how far there is to go
+     without becoming a second thing on screen. */
+  background: rgba(255, 255, 255, 0.13);
+  pointer-events: none;
+}
+
+.leadInRule::after {
+  position: absolute;
+  content: '';
+  inset: 0 auto 0 0;
+  /* Linear, deliberately. This is a clock — easing it would lie about when
+     the line starts, which is the only thing the cue is for. */
+  width: calc(var(--lead-in, 0) * 100%);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 154, 213, 0.45),
+    rgba(255, 255, 255, 0.95)
+  );
+  box-shadow: 0 0 0.5em rgba(255, 200, 235, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The hairline still fills — it is information, not decoration — but the
+     bloom that grows with it does not. */
+  .wordLeadIn {
+    text-shadow: none;
+  }
+
+  .leadInRule::after {
+    box-shadow: none;
+  }
+}
+
 .noLyrics {
   height: 100%;
   display: flex;
