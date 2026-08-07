@@ -20,7 +20,7 @@ import { For, Show } from 'solid-js'
 import { badgeArtSrc } from '@/features/challenges/badge-art'
 import type { ProfileSession } from '@/features/community/profile-model'
 import { accuracySeries, profileStats, scoreSeries, sparklinePoints, trend, } from '@/features/community/profile-model'
-import { legendArt, legendThumbSrc } from '@/features/mirror/LegendCaricature'
+import { legendTierSrc } from '@/features/mirror/LegendCaricature'
 import styles from './ProfileView.module.css'
 
 export interface ProfileViewProps {
@@ -68,16 +68,20 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
   const accuracy = () => accuracySeries(props.sessions)
   const movement = () => trend(scores())
 
-  /** Thumb plus full portrait for the twin, when it has raster art. */
-  const portrait = (): { thumb: string; full: string } | undefined => {
+  /**
+   * The twin portrait, at the one tier that stays sharp in a 72px box.
+   *
+   * `mid` is 360x447 — a 5x downscale here, and still 2.5x at 200% zoom.
+   * The 120px `thumb` is only 1.67x, so it goes soft at 150% and is
+   * genuinely upscaled past 166%; `full` (928x1152) is a 12.9x downscale,
+   * which the sharpness playbook warns mushes in its own way and costs
+   * twelve times the bytes for a portrait the size of a stamp.
+   */
+  const portrait = (): string | undefined => {
     const twin = props.twinName
     if (twin === undefined || twin === '') return undefined
-    const thumb = legendThumbSrc(twin)
-    const full = legendArt(twin).imageSrc
-    if (thumb === undefined || full === undefined || full === '') {
-      return undefined
-    }
-    return { thumb, full }
+    const src = legendTierSrc(twin, 'mid')
+    return src === undefined || src === '' ? undefined : src
   }
 
   const since = () => {
@@ -105,14 +109,20 @@ export const ProfileView: Component<ProfileViewProps> = (props) => {
           }
         >
           {(art) => (
-            /* The 120px thumb covers a 72px box at 1x; a hi-DPI screen or
-               a zoomed page gets the full portrait instead, because
-               upscaling the thumb is the one thing that would look worse
-               than either. See the image-sharpness playbook. */
+            /* One source, no density negotiation. `srcset` with `x`
+               descriptors was the bug: the browser resolves them once, at
+               the DPR in effect when the image loads, and does not re-run
+               the choice when the page is zoomed. Zooming in after load
+               therefore kept the 120px thumb and stretched it — which is
+               why this went mushy at some zoom levels and not others, and
+               why hovering a neighbour appeared to "fix" it (that only
+               forced a repaint from whichever source had already been
+               fetched). Every other voiceprint surface in the app draws a
+               single sized tier and lets the browser downscale; this one
+               was the odd one out. See the image-sharpness playbook. */
             <img
               class={styles.avatar}
-              src={art().thumb}
-              srcset={`${art().thumb} 1x, ${art().full} 2x`}
+              src={art()}
               width="72"
               height="89"
               alt={`${props.twinName ?? ''} — your voice twin`}
