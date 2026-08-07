@@ -160,18 +160,38 @@ describe('LrcWordLetters', () => {
     ).toBeNull()
   })
 
-  // Most words in a lyric are one syllable, so this button spends most of its
-  // life with nothing to do. It looked broken rather than inapplicable.
-  it('disables the pre-fill on a word with one syllable', () => {
-    renderWord()
-    const button = screen.getByLabelText('One syllable — nothing to split')
+  // This button spends most of its life unable to act, and the three reasons
+  // ask for three different things. A button that is merely dim is a button
+  // that looks broken — which is exactly how it was reported.
+  it.each([
+    ['no-syllables', 'One syllable — nothing to split'],
+    [
+      'unmapped',
+      'Time this word first — a suggestion needs somewhere to start',
+    ],
+    [
+      'no-span',
+      'Time the end of this word first — there is nothing to spread the syllables across',
+    ],
+  ] as const)('disables the pre-fill and says why: %s', (state, reason) => {
+    const { onSuggestSyllables } = renderWord({}, { suggestState: () => state })
+    const button = screen.getByLabelText(reason)
     expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('title', reason)
+
+    fireEvent.click(button)
+    expect(onSuggestSyllables).not.toHaveBeenCalled()
   })
 
-  it('does not call out to the suggestion when it is disabled', () => {
-    const { onSuggestSyllables } = renderWord()
-    fireEvent.click(screen.getByLabelText('One syllable — nothing to split'))
-    expect(onSuggestSyllables).not.toHaveBeenCalled()
+  it('enables the pre-fill when the word has both syllables and a span', () => {
+    const { onSuggestSyllables } = renderWord(
+      {},
+      { word: 'Josephine', suggestState: () => 'ready' },
+    )
+    const button = screen.getByLabelText('Split this word at its syllables')
+    expect(button).not.toBeDisabled()
+    fireEvent.click(button)
+    expect(onSuggestSyllables).toHaveBeenCalled()
   })
 
   // ── The live highlight ─────────────────────────────────────────
@@ -250,6 +270,7 @@ function renderList(
       blockInstances={() => ({})}
       clearLetterSplit={() => {}}
       suggestSyllableSplits={() => 0}
+      syllableSuggestState={() => 'ready'}
       closeLetterTarget={closeLetterTarget}
       elapsed={() => 12.25}
       formatTimeMs={fmt}

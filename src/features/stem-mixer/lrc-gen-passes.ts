@@ -242,6 +242,22 @@ export interface PreviewWordHighlight {
   progress: number
 }
 
+/**
+ * Whether a syllable suggestion can act on a word, and if not, why.
+ *
+ * A reason rather than a boolean because the three refusals want three
+ * different things from the operator, and a button that is merely dim is a
+ * button that looks broken.
+ */
+export type SyllableSuggestState =
+  | 'ready'
+  /** One syllable. Most words in a lyric — nothing to place. */
+  | 'no-syllables'
+  /** No start time yet: the word has not been mapped at all. */
+  | 'unmapped'
+  /** Mapped, but with no end to spread across, or too little of one. */
+  | 'no-span'
+
 export interface WordSpan {
   start: number
   end: number

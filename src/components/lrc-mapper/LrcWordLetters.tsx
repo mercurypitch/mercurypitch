@@ -27,7 +27,7 @@
 import type { Accessor, Component } from 'solid-js'
 import { For, onCleanup, Show } from 'solid-js'
 import { X } from '@/components/icons'
-import { syllableBoundaries } from '@/lib/syllable-split'
+import type { SyllableSuggestState } from '@/features/stem-mixer/lrc-gen-passes'
 import { splitGraphemes } from '@/lib/word-letters'
 
 /** How long a press has to hold before it counts as the alt action. */
@@ -50,6 +50,23 @@ export interface LrcWordLettersProps {
   onClose: () => void
   /** Pre-fill the boundaries where the word's syllables begin. */
   onSuggestSyllables?: () => void
+  /**
+   * Whether that suggestion could do anything, and if not, why — so the
+   * button can be disabled with a reason instead of looking live and inert.
+   * Defaults to ready for a caller that has not wired it through.
+   */
+  suggestState?: Accessor<SyllableSuggestState>
+}
+
+/** Why the suggestion cannot act, in the words the operator needs. */
+const SUGGEST_BLOCKED: Record<
+  Exclude<SyllableSuggestState, 'ready'>,
+  string
+> = {
+  'no-syllables': 'One syllable — nothing to split',
+  unmapped: 'Time this word first — a suggestion needs somewhere to start',
+  'no-span':
+    'Time the end of this word first — there is nothing to spread the syllables across',
 }
 
 export const LrcWordLetters: Component<LrcWordLettersProps> = (props) => {
@@ -60,8 +77,11 @@ export const LrcWordLetters: Component<LrcWordLettersProps> = (props) => {
 
   const isEdge = (i: number) => i === 0 || i === graphemes().length
 
-  /** Where the suggestion would put boundaries — empty on a monosyllable. */
-  const syllableCuts = () => syllableBoundaries(props.word)
+  /** Why the suggestion cannot act right now, or null when it can. */
+  const suggestBlocked = () => {
+    const state = props.suggestState?.() ?? 'ready'
+    return state === 'ready' ? null : SUGGEST_BLOCKED[state]
+  }
 
   /**
    * How much of glyph i the highlighter has covered, 0 to 1.
@@ -185,19 +205,15 @@ export const LrcWordLetters: Component<LrcWordLettersProps> = (props) => {
           <button
             type="button"
             class="sm-lyrics-letter-action"
-            // Most words in a lyric are one syllable, so this button spends
-            // most of its life with nothing to do. Disabled and saying so
+            // This button spends most of its life unable to act — most words
+            // in a lyric are one syllable, and an unmapped word has nothing
+            // to spread across. Disabled, with the reason in the tooltip,
             // beats live-looking and inert.
-            disabled={syllableCuts().length === 0}
-            aria-label={
-              syllableCuts().length === 0
-                ? 'One syllable — nothing to split'
-                : 'Split this word at its syllables'
-            }
+            disabled={suggestBlocked() !== null}
+            aria-label={suggestBlocked() ?? 'Split this word at its syllables'}
             title={
-              syllableCuts().length === 0
-                ? 'One syllable — nothing to split'
-                : 'Split at syllables — a starting guess you can then adjust'
+              suggestBlocked() ??
+              'Split at syllables — a starting guess you can then adjust'
             }
             onClick={(e) => {
               e.stopPropagation()

@@ -24,7 +24,7 @@ import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
 import { showNotification } from '@/stores/notifications-store'
-import type { LrcGenPass, PreviewWordHighlight } from './lrc-gen-passes'
+import type { LrcGenPass, PreviewWordHighlight, SyllableSuggestState, } from './lrc-gen-passes'
 import type { WordMarker } from './overview-mapping'
 import type { BlockInstancesMap, BlockStartsInfo, CanonicalLrcEntry, DisplayLine, EditPopover, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 import { useLrcGenController } from './useLrcGenController'
@@ -122,6 +122,11 @@ export interface StemMixerLyricsController {
   ) => void
   /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
   suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
+  /** Why a suggestion cannot act on a word, so the button can say so. */
+  syllableSuggestState: (
+    lineIdx: number,
+    wordIdx: number,
+  ) => SyllableSuggestState
   previewLineIdx: () => number | null
   previewLoop: () => boolean
   setPreviewLoop: (loop: boolean) => void
@@ -1769,6 +1774,7 @@ export function useStemMixerLyricsController(
     setLetterSplit: gen.setLetterSplit,
     clearLetterSplit: gen.clearLetterSplit,
     suggestSyllableSplits: gen.suggestSyllableSplits,
+    syllableSuggestState: gen.syllableSuggestState,
     previewLineIdx,
     previewLoop,
     setPreviewLoop,

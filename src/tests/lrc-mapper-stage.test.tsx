@@ -45,6 +45,7 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
       blockInstances={() => ({})}
       clearLetterSplit={() => {}}
       suggestSyllableSplits={() => 0}
+      syllableSuggestState={() => 'ready'}
       closeLetterTarget={() => {}}
       duration={() => 200}
       elapsed={() => 12}

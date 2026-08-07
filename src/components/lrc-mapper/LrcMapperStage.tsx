@@ -14,7 +14,7 @@
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
-import type { LrcGenPass, PreviewWordHighlight, } from '@/features/stem-mixer/lrc-gen-passes'
+import type { LrcGenPass, PreviewWordHighlight, SyllableSuggestState, } from '@/features/stem-mixer/lrc-gen-passes'
 import type { BlockInfo, BlockInstancesMap, GenViewLine, LrcGenInputMode, LyricsBlock, } from '@/features/stem-mixer/types'
 import { ExampleCredit } from '../ExampleCredit'
 import { PitchStageShell } from '../pitch-stage/PitchStageShell'
@@ -88,6 +88,11 @@ export interface LrcMapperStageProps {
   ) => void
   /** Pre-fill this word's syllable boundaries. Returns how many it placed. */
   suggestSyllableSplits: (lineIdx: number, wordIdx: number) => number
+  /** Why a suggestion cannot act on a word, so the button can say so. */
+  syllableSuggestState: (
+    lineIdx: number,
+    wordIdx: number,
+  ) => SyllableSuggestState
   handleLyricLineClick: (idx: number) => void
 
   lrcGenPass: Accessor<LrcGenPass>
@@ -220,6 +225,7 @@ export const LrcMapperStage: Component<LrcMapperStageProps> = (props) => {
               lrcGenWordIdx={props.lrcGenWordIdx}
               clearLetterSplit={props.clearLetterSplit}
               suggestSyllableSplits={props.suggestSyllableSplits}
+              syllableSuggestState={props.syllableSuggestState}
               closeLetterTarget={props.closeLetterTarget}
               letterMode={props.letterMode}
               letterSplits={props.letterSplits}
