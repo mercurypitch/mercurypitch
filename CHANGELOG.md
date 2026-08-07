@@ -107,6 +107,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **No more flash before the welcome.** On a first visit the whole app used to
+  paint for an instant and then get covered by the intro. The screen now holds
+  the intro's night ground from the very first moment and opens straight into
+  it, with a quiet "preparing" note only if the wait is long enough to notice.
 - **Guided tours say where you are.** The step markers used to stack into a
   block of specks on any tour longer than about eight steps — which is most of
   them. A step is now a dash and where you are is a circle, on one line
