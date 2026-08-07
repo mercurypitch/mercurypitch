@@ -641,7 +641,14 @@ export function createJamService(callbacks: JamCallbacks) {
             })
             break
           case 'pitch':
-            callbacks.onPitchMessage?.(data)
+            // Stamp the transport peer, exactly as `chat` above does. The
+            // payload's own `peerId` is whatever the sender typed: the store
+            // keys pitch history by it, and that history is the same array
+            // the local microphone writes to, so an attacker-chosen id let
+            // one peer file their samples as somebody else's — and that
+            // singer's run is then scored and persisted from them. It also
+            // let an id nobody owns open an unbounded scoreboard row.
+            callbacks.onPitchMessage?.({ ...data, peerId })
             break
           case 'melody':
             callbacks.onMelodyMessage?.(data)
