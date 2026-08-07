@@ -6,7 +6,9 @@
 // there was nothing at all, so a four-second silence left the singer knowing
 // the line but not the moment. These pin the band and the ramp.
 
+import { createRoot } from 'solid-js'
 import { describe, expect, it } from 'vitest'
+import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { buildCanonicalEntries, LEAD_IN_MAX_SEC, LEAD_IN_MIN_GAP_SEC, leadInProgress, REST_THRESHOLD_SEC, } from '@/lib/canonical-lrc'
 import type { LrcLine } from '@/lib/lyrics-service'
 
@@ -79,5 +81,35 @@ describe('leadInProgress', () => {
   it('is null rather than dividing by zero on a degenerate window', () => {
     expect(leadInProgress(14, 14, 14)).toBeNull()
     expect(leadInProgress(15, 14, 14.5)).toBeNull()
+  })
+})
+
+// Zen karaoke renders from `stableParsedLyrics` and nothing else — it never
+// sees a canonical entry. If the field stops making that hop the cue silently
+// stops existing there, with nothing else breaking to give it away.
+describe('the cue reaching the surfaces that draw it', () => {
+  it('carries leadInFrom into the map zen renders from', () => {
+    createRoot((dispose) => {
+      const controller = useStemMixerLyricsController({
+        sessionId: 'lead-in-hop',
+        songTitle: 'Silence',
+        duration: () => 200,
+        playing: () => false,
+        elapsed: () => 0,
+        seekToWithWindow: () => {},
+      })
+      controller.handleLyricsUpload({
+        filename: 'silence.lrc',
+        format: 'lrc',
+        // 4 s of silence before the second line: a cue, not a rest row.
+        text: '[00:01.00]first\n[00:05.00]second\n',
+      })
+
+      const parsed = controller.stableParsedLyrics()
+      expect(parsed.get(1)?.leadInFrom).toBe(1)
+      // And the line with nothing before it to wait through carries none.
+      expect(parsed.get(0)?.leadInFrom).toBeUndefined()
+      dispose()
+    })
   })
 })

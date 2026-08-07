@@ -176,6 +176,8 @@ export interface StemMixerLyricsController {
       wordTimes?: number[]
       wordEndTimes?: number[]
       wordSweeps?: Record<number, WordSweepPoint[]>
+      /** Start of this line's run-in cue, when it has one. */
+      leadInFrom?: number
     }
   >
   blockStarts: () => Map<number, BlockStartsInfo>
@@ -1468,6 +1470,7 @@ export function useStemMixerLyricsController(
         wordTimes?: number[]
         wordEndTimes?: number[]
         wordSweeps?: Record<number, WordSweepPoint[]>
+        leadInFrom?: number
       }
     >()
 
@@ -1524,6 +1527,10 @@ export function useStemMixerLyricsController(
             entry.lrcIndex >= 0
               ? wordSweepTimings()[entry.lrcIndex]
               : undefined,
+          // Carried through so surfaces that render from this map alone —
+          // zen karaoke — can show the run-in cue without re-deriving it and
+          // drifting from the canonical rule.
+          leadInFrom: entry.leadInFrom,
         })
       })
       return map

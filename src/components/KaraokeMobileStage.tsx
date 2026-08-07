@@ -37,7 +37,7 @@ import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsS
 import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { getRestDotCount } from '@/lib/canonical-lrc'
+import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
@@ -69,6 +69,8 @@ interface ParsedLine {
   wordTimes?: number[]
   wordEndTimes?: number[]
   wordSweeps?: Record<number, WordSweepPoint[]>
+  /** Start of this line's run-in cue, when the gap before it earns one. */
+  leadInFrom?: number
 }
 
 export interface KaraokeMobileStageProps {
@@ -661,6 +663,12 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             {([idx, entry]) => {
               const isCurrent = () => idx === props.currentLineIdx()
               const isRest = entry.words.length === 0
+              // The run-in: how far through the silence before this line the
+              // playback has come, or null outside that window. Read per line
+              // rather than off the current one — during a run-in the line
+              // about to start is by definition not the current line yet.
+              const leadIn = () =>
+                leadInProgress(entry.leadInFrom, entry.time, props.elapsed())
               return (
                 <p
                   ref={(el) => lineEls.set(idx, el)}
@@ -688,57 +696,79 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                       />
                     }
                   >
+                    {/* A line only splits into word spans when something
+                        needs to address a word: the sweep, the note glyphs,
+                        or — the reason a line that is not current yet can
+                        need them — the run-in cue on its first word. */}
                     <Show
-                      when={isCurrent() || glyphsForLine(idx)}
+                      when={
+                        isCurrent() || leadIn() !== null || glyphsForLine(idx)
+                      }
                       fallback={entry.words.join(' ')}
                     >
                       <For each={entry.words}>
-                        {(word, i) => (
-                          <span
-                            classList={{
-                              [styles.word]: true,
-                              [styles.wordSung]:
-                                isCurrent() && i() <= activeWord().activeUpTo,
-                              [styles.wordActive]:
-                                isCurrent() &&
-                                i() === activeWord().activeUpTo + 1 &&
-                                activeWord().fraction > 0,
-                            }}
-                            style={
-                              isCurrent() && i() === activeWord().activeUpTo + 1
-                                ? {
-                                    '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
-                                  }
-                                : undefined
-                            }
-                          >
-                            <Show when={glyphsForLine(idx)}>
-                              {(() => {
-                                // Overlap against the word's window, not a
-                                // start-time match: an uploaded sheet has no
-                                // per-word times at all, and the earlier
-                                // start-keyed lookups therefore drew nothing
-                                // on every line-timed song.
-                                const note = noteForWord(
-                                  props.alignedWords?.() ?? [],
-                                  entry,
-                                  i(),
-                                )
-                                const glyph = note?.noteName ?? null
-                                return glyph === null ? null : (
-                                  <i
-                                    class={styles.noteGlyph}
-                                    aria-hidden="true"
-                                  >
-                                    {glyph}
-                                  </i>
-                                )
-                              })()}
-                            </Show>
-                            {word}
-                            {i() < entry.words.length - 1 ? ' ' : ''}
-                          </span>
-                        )}
+                        {(word, i) => {
+                          /** The cue rides the first word, and only it. */
+                          const wordLeadIn = () => (i() === 0 ? leadIn() : null)
+                          return (
+                            <span
+                              classList={{
+                                [styles.word]: true,
+                                [styles.wordLeadIn]: wordLeadIn() !== null,
+                                [styles.wordSung]:
+                                  isCurrent() && i() <= activeWord().activeUpTo,
+                                [styles.wordActive]:
+                                  isCurrent() &&
+                                  i() === activeWord().activeUpTo + 1 &&
+                                  activeWord().fraction > 0,
+                              }}
+                              style={{
+                                ...(isCurrent() &&
+                                i() === activeWord().activeUpTo + 1
+                                  ? {
+                                      '--sweep': `${(activeWord().fraction * 100).toFixed(1)}%`,
+                                    }
+                                  : {}),
+                                ...(wordLeadIn() !== null
+                                  ? { '--lead-in': wordLeadIn()!.toFixed(3) }
+                                  : {}),
+                              }}
+                            >
+                              <Show when={glyphsForLine(idx)}>
+                                {(() => {
+                                  // Overlap against the word's window, not a
+                                  // start-time match: an uploaded sheet has no
+                                  // per-word times at all, and the earlier
+                                  // start-keyed lookups therefore drew nothing
+                                  // on every line-timed song.
+                                  const note = noteForWord(
+                                    props.alignedWords?.() ?? [],
+                                    entry,
+                                    i(),
+                                  )
+                                  const glyph = note?.noteName ?? null
+                                  return glyph === null ? null : (
+                                    <i
+                                      class={styles.noteGlyph}
+                                      aria-hidden="true"
+                                    >
+                                      {glyph}
+                                    </i>
+                                  )
+                                })()}
+                              </Show>
+                              {word}
+                              {i() < entry.words.length - 1 ? ' ' : ''}
+                              <Show when={wordLeadIn() !== null}>
+                                <span
+                                  aria-hidden="true"
+                                  class={styles.leadInRule}
+                                  data-lead-in-cue="true"
+                                />
+                              </Show>
+                            </span>
+                          )
+                        }}
                       </For>
                     </Show>
                   </Show>
