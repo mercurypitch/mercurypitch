@@ -49,6 +49,12 @@ export interface CanonicalLrcEntry {
   gapEnd?: number
   /** Rest entries only: number of countdown dots (~5s each, min 1). */
   dotCount?: number
+  /**
+   * Line entries only: when the run-in to this line begins, for gaps too
+   * short to earn a rest row but long enough to lose the beat. See
+   * LEAD_IN_MIN_GAP_SEC.
+   */
+  leadInFrom?: number
 }
 
 export interface DisplayLine {
@@ -60,6 +66,8 @@ export interface DisplayLine {
   restGapStart?: number
   restGapEnd?: number
   restDotCount?: number
+  /** Line rows only: when the run-in to this line starts. See leadInProgress. */
+  leadInFrom?: number
 }
 
 export interface BlockInfo {

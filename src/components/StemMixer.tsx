@@ -4040,6 +4040,28 @@ export const StemMixerStyles: string = `
   gap: 0.4em;
 }
 
+/* Lead-in cue: the run-in to a line after a silence too short for a rest
+   row. Sized in em so it tracks the lyric font, and inline so it reads as
+   part of the line it belongs to rather than as a row of its own. */
+.sm-lyrics-lead-in {
+  display: inline-block;
+  width: 2.4em;
+  height: 0.28em;
+  flex: 0 0 auto;
+  margin-right: 0.45em;
+  border-radius: 999px;
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.15));
+  vertical-align: middle;
+}
+
+.sm-lyrics-lead-in-fill {
+  display: block;
+  width: var(--lead-in-progress, 0%);
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent, #58a6ff);
+}
+
 .sm-lyrics-rest-dot {
   display: inline-block;
   flex: 0 0 auto;
