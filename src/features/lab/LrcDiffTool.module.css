@@ -1,0 +1,184 @@
+.inputs {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: 18px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 10px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.slotHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.slotLabel {
+  color: var(--fg-primary, #c9d1d9);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.slotHint {
+  color: var(--fg-tertiary, #484f58);
+  font-size: 0.68rem;
+}
+
+.paste {
+  min-height: 108px;
+  padding: 8px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 6px;
+  color: var(--fg-primary, #c9d1d9);
+  background: var(--bg-primary, #0d1117);
+  font:
+    0.68rem/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  resize: vertical;
+}
+
+.file {
+  color: var(--fg-secondary, #8b949e);
+  font-size: 0.68rem;
+}
+
+.summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  margin-bottom: 18px;
+}
+
+.stat {
+  padding: 10px 12px;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.statLabel {
+  display: block;
+  color: var(--fg-tertiary, #8b949e);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  display: block;
+  margin-top: 4px;
+  color: var(--fg-primary, #c9d1d9);
+  font:
+    700 1.05rem/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.warn {
+  padding: 10px 12px;
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: #d29922;
+  font-size: 0.72rem;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border, #30363d);
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-tertiary, #8b949e);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+  color: var(--fg-secondary, #8b949e);
+  vertical-align: top;
+}
+
+.table tbody tr:hover td {
+  background: rgba(110, 118, 129, 0.08);
+}
+
+.num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lineText {
+  max-width: 34ch;
+  overflow: hidden;
+  color: var(--fg-primary, #c9d1d9);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mismatch td {
+  color: #d29922;
+}
+
+/* The bar reads left-early / right-late from a centre line, so a mapping
+   that drifts one way is visible without reading a single number. */
+.biasBar {
+  position: relative;
+  width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(110, 118, 129, 0.18);
+}
+
+.biasBar::before {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 50%;
+  border-left: 1px solid var(--fg-tertiary, #484f58);
+  content: '';
+}
+
+.biasFill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--accent-lighter, #79c0ff);
+}
+
+.biasFillLate {
+  background: #d29922;
+}
