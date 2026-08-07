@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { computeBackingSize } from '@/lib/canvas-size-sync'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
@@ -376,15 +377,31 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
 
   const resizeCanvas = () => {
     if (!canvasRef || !ctx) return
+    const parent = canvasRef.parentElement
+    if (!parent) return
+    // computeBackingSize returns null for a zero-area container, which is
+    // the one case that must not reach the backing store: writing 0 here
+    // makes every later draw unpaintable. The rule lives in that helper so
+    // the app has one answer to "is this canvas measurable yet", not two.
+    const size = computeBackingSize(
+      parent.clientWidth,
+      parent.clientHeight,
+      window.devicePixelRatio,
+    )
+    if (!size) return
     forceRedraw = true
-    const dpr = window.devicePixelRatio || 1
-    const w = canvasRef.parentElement!.clientWidth
-    const h = canvasRef.parentElement!.clientHeight
-    canvasRef.width = w * dpr
-    canvasRef.height = h * dpr
-    canvasRef.style.width = `${w}px`
-    canvasRef.style.height = `${h}px`
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    canvasRef.width = size.deviceW
+    canvasRef.height = size.deviceH
+    canvasRef.style.width = `${size.cssW}px`
+    canvasRef.style.height = `${size.cssH}px`
+    ctx.setTransform(
+      size.deviceW / size.cssW,
+      0,
+      0,
+      size.deviceH / size.cssH,
+      0,
+      0,
+    )
     draw() // Trigger immediate redraw
   }
 
@@ -406,6 +423,16 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     if (!ctx || !canvasRef) return
     const w = canvasRef.clientWidth
     const h = canvasRef.clientHeight
+    // The draw loop runs every frame and the reactive effects call in too, so
+    // this guard has to sit here and not only in resizeCanvas. A collapsed
+    // container -- the Lab pane hidden, or the viewport snapped to a
+    // devtools-width column -- measures 0, and every path below ends at
+    // `drawImage(bgCanvas)`. A canvas with a zero dimension is not a valid
+    // image source: it throws InvalidStateError, which escaped to the error
+    // boundary and took the whole app down rather than skipping a frame.
+    // forceRedraw is untouched above, so the first frame with real
+    // dimensions still repaints in full.
+    if (w <= 0 || h <= 0) return
 
     const vw = w * zoom()
     let sx = scrollX()
