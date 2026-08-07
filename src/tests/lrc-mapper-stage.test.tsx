@@ -43,6 +43,8 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
   render(() => (
     <LrcMapperStage
       blockInstances={() => ({})}
+      clearLetterSplit={() => {}}
+      closeLetterTarget={() => {}}
       duration={() => 200}
       elapsed={() => 12}
       formatTime={(t) => `0:${String(Math.floor(t)).padStart(2, '0')}`}
@@ -63,6 +65,9 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
       handlePlay={() => setPlaying(true)}
       handleRedoCurrentLine={() => {}}
       highlightWord={() => null}
+      letterMode={() => false}
+      letterSplits={() => ({})}
+      letterTarget={() => null}
       liveHighlight={() => false}
       loopPreview={() => false}
       lrcGenInputMode={() => 'marker'}
@@ -72,9 +77,12 @@ function renderStage(over: Partial<Parameters<typeof LrcMapperStage>[0]> = {}) {
       lrcTimingOffsetMs={() => 180}
       lyricsFontSize={() => 1}
       onClose={onClose}
+      openLetterTarget={() => {}}
       playbackSpeed={() => 1}
       playing={playing}
       previewLineIdx={() => null}
+      setLetterMode={() => {}}
+      setLetterSplit={() => {}}
       setLiveHighlight={() => {}}
       setLoopPreview={() => false}
       setLrcGenInputMode={() => 'marker'}

@@ -20,11 +20,12 @@ import { createEffect, createMemo, createSignal, untrack } from 'solid-js'
 import { buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
 import type { SungNote } from '@/lib/lyric-sung-end'
-import { appendWordSweepSample, beginWordSweep } from '@/lib/lyric-sweep'
+import { appendWordSweepSample, beginWordSweep, removeSplitPoint, retimeWordEnd, retimeWordStart, setSplitPoint, } from '@/lib/lyric-sweep'
 import type { LrcLine } from '@/lib/lyrics-service'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import type { LyricsVersionKind } from '@/lib/lyrics-versions'
 import { createPersistedSignal } from '@/lib/storage'
+import { letterBoundaryCount, letterSplitTimes, progressForLetter, } from '@/lib/word-letters'
 import { autoTimeLineWords } from '@/lib/word-sync'
 import { enforceMonotonicTimes, interpolateGaps, isSessionFullyMapped, mergePartialLineTimes, mergePartialWordTimings, restoreGenLineTimes, restoreGenMap, restoreLineTimes, restoreTouchedLines, restoreWordSweepTimingsMap, restoreWordTimingsMap, } from './lrc-gen-engine'
 import type { GenCursor, LrcGenPass, PreviewWordHighlight, } from './lrc-gen-passes'
@@ -32,7 +33,7 @@ import { activeLineAt, countWordPassLines, isMappableLine, lineEndTime, nextCurs
 import { shiftTimings } from './lrc-offset'
 import type { WordMarker } from './overview-mapping'
 import { wordMarkersFrom } from './overview-mapping'
-import type { BlockInfo, BlockInstancesMap, CanonicalLrcEntry, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepTimingsMap, WordTimingsMap, } from './types'
+import type { BlockInfo, BlockInstancesMap, CanonicalLrcEntry, GenViewLine, LrcGenInputMode, LyricsBlock, LyricsSource, LyricsTimingExtension, LyricsUploadResult, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from './types'
 
 /**
  * What the mapping session needs from the lyrics controller around it.
@@ -160,6 +161,29 @@ export interface LrcGenController {
   focusGenWord: (lineIdx: number, wordIdx: number) => void
   /** Retime one word — a tick was dragged. */
   moveWordStart: (lineIdx: number, wordIdx: number, time: number) => void
+
+  /** Letter mode: words open for sub-word splitting instead of marking. */
+  letterMode: Accessor<boolean>
+  setLetterMode: Setter<boolean>
+  /** The word currently open for splitting, if any. */
+  letterTarget: Accessor<{ lineIdx: number; wordIdx: number } | null>
+  openLetterTarget: (lineIdx: number, wordIdx: number) => void
+  closeLetterTarget: () => void
+  /** Boundary index -> time for the open word. Boundary 0 is its onset. */
+  letterSplits: (lineIdx: number, wordIdx: number) => Record<number, number>
+  /** Time a glyph boundary. Setting a syllable's start is the previous one's end. */
+  setLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+    time: number,
+  ) => void
+  /** Untime an interior boundary. The word's own edges cannot be removed. */
+  clearLetterSplit: (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+  ) => void
 
   /** Move the mapping cursor onto `idx`, skipping blanks and rests. */
   focusGenLine: (idx: number) => void
@@ -1374,6 +1398,8 @@ export function useLrcGenController(
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setLetterMode(false)
+    setLetterTarget(null)
     setGenShiftMs(0)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
@@ -1499,6 +1525,8 @@ export function useLrcGenController(
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setLetterMode(false)
+    setLetterTarget(null)
     setGenShiftMs(0)
     touchedLines = new Set()
     bumpTouched()
@@ -1559,12 +1587,143 @@ export function useLrcGenController(
     saveLrcGenProgress()
   }
 
+  // ── Sub-word splitting ───────────────────────────────────────────
+  //
+  // A held vowel is one timestamp and several seconds of sound. Letter mode
+  // suspends marking so a word's glyph boundaries can be timed individually:
+  // a boundary's time is the start of the syllable after it and the end of
+  // the one before, so there is one gesture, not two.
+  //
+  // Storage is the sweep curve the marker gesture already writes and every
+  // codec already carries, so nothing new has to be persisted — and a word
+  // nobody splits keeps no entry at all.
+
+  const [letterMode, setLetterMode] = createSignal(false)
+  const [letterTarget, setLetterTarget] = createSignal<{
+    lineIdx: number
+    wordIdx: number
+  } | null>(null)
+
+  const genWordAt = (lineIdx: number, wordIdx: number): string | undefined =>
+    getGenWords(getGenLines()[lineIdx] ?? '')[wordIdx]
+
+  const openLetterTarget = (lineIdx: number, wordIdx: number) => {
+    if (genWordAt(lineIdx, wordIdx) === undefined) return
+    setLetterTarget({ lineIdx, wordIdx })
+  }
+
+  const closeLetterTarget = () => setLetterTarget(null)
+
+  const letterSplits = (
+    lineIdx: number,
+    wordIdx: number,
+  ): Record<number, number> => {
+    const word = genWordAt(lineIdx, wordIdx)
+    if (word === undefined) return {}
+    const splits = letterSplitTimes(
+      word,
+      lrcGenWordSweepTimings()[lineIdx]?.[wordIdx],
+    )
+    // Tap mode writes starts and ends but never a curve, so the word's own
+    // edges have to be read from where they actually live.
+    const start = lrcGenWordTimings()[lineIdx]?.[wordIdx]
+    if (splits[0] === undefined && start !== undefined) splits[0] = start
+    const end = lrcGenWordEndTimings()[lineIdx]?.[wordIdx]
+    const boundary = letterBoundaryCount(word)
+    if (splits[boundary] === undefined && end !== undefined) {
+      splits[boundary] = end
+    }
+    return splits
+  }
+
+  const updateSweep = (
+    lineIdx: number,
+    wordIdx: number,
+    edit: (points: readonly WordSweepPoint[]) => WordSweepPoint[],
+  ): WordSweepPoint[] => {
+    let next: WordSweepPoint[] = []
+    setLrcGenWordSweepTimings((prev) => {
+      const line = prev[lineIdx] ?? {}
+      next = edit(line[wordIdx] ?? [])
+      return { ...prev, [lineIdx]: { ...line, [wordIdx]: next } }
+    })
+    return next
+  }
+
+  const setLetterSplit = (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+    time: number,
+  ) => {
+    const word = genWordAt(lineIdx, wordIdx)
+    if (word === undefined) return
+    // Clicked when the sound was heard, like every other input here, so it
+    // carries the same reaction correction.
+    const t = Math.max(0, correctedTime(time))
+    markTouched(lineIdx)
+
+    if (letterIdx <= 0) {
+      // The curve does the clamping, so reading the onset back out of it is
+      // what keeps the stored word start and the curve from disagreeing.
+      const points = updateSweep(lineIdx, wordIdx, (prev) =>
+        retimeWordStart(prev, t),
+      )
+      const start = points[0]?.time ?? t
+      if (wordIdx === 0) {
+        setLrcGenLineTimes((prev) => {
+          const nextTimes = [...prev]
+          nextTimes[lineIdx] = start
+          return nextTimes
+        })
+      }
+      setLrcGenWordTimings((prev) => {
+        const line = [...(prev[lineIdx] ?? [])]
+        line[wordIdx] = start
+        return { ...prev, [lineIdx]: line }
+      })
+    } else if (letterIdx >= letterBoundaryCount(word)) {
+      const points = updateSweep(lineIdx, wordIdx, (prev) =>
+        retimeWordEnd(prev, t),
+      )
+      const end = points.at(-1)?.time ?? t
+      setLrcGenWordEndTimings((prev) => {
+        const line = [...(prev[lineIdx] ?? [])]
+        line[wordIdx] = end
+        return { ...prev, [lineIdx]: line }
+      })
+    } else {
+      updateSweep(lineIdx, wordIdx, (prev) =>
+        setSplitPoint(prev, t, progressForLetter(word, letterIdx)),
+      )
+    }
+
+    saveLrcGenProgress()
+  }
+
+  const clearLetterSplit = (
+    lineIdx: number,
+    wordIdx: number,
+    letterIdx: number,
+  ) => {
+    const word = genWordAt(lineIdx, wordIdx)
+    if (word === undefined) return
+    if (letterIdx <= 0 || letterIdx >= letterBoundaryCount(word)) return
+    markTouched(lineIdx)
+    updateSweep(lineIdx, wordIdx, (prev) =>
+      removeSplitPoint(prev, progressForLetter(word, letterIdx)),
+    )
+    saveLrcGenProgress()
+  }
+
   /** Drop the whole session. The lyrics underneath it have changed. */
   const resetGenState = () => {
     setLrcGenMode(false)
     setLrcGenPassSignal('all')
     setPreviewLineIdx(null)
     setPreviewLoop(false)
+    setLetterMode(false)
+    setLetterTarget(null)
     setGenShiftMs(0)
     setLrcGenLineIdx(0)
     setLrcGenWordIdx(0)
@@ -1625,6 +1784,14 @@ export function useLrcGenController(
     setShowWordMarkers,
     focusGenWord,
     moveWordStart,
+    letterMode,
+    setLetterMode,
+    letterTarget,
+    openLetterTarget,
+    closeLetterTarget,
+    letterSplits,
+    setLetterSplit,
+    clearLetterSplit,
     focusGenLine,
     resetGenState,
 

@@ -1,0 +1,235 @@
+// ============================================================
+// Letter mode — opening a word and timing its glyph boundaries
+// ============================================================
+//
+// The gesture layer over `word-letters`. Two things it has to get right and
+// no type check can: that letter mode really does suspend marking, and that
+// only the word the user opened expands.
+
+import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
+import { describe, expect, it, vi } from 'vitest'
+import { LrcMapperLineList } from '@/components/lrc-mapper/LrcMapperLineList'
+import { LrcWordLetters } from '@/components/lrc-mapper/LrcWordLetters'
+import type { GenViewLine } from '@/features/stem-mixer/types'
+
+const fmt = (t: number) => t.toFixed(2)
+
+describe('LrcWordLetters', () => {
+  function renderWord(
+    splits: Record<number, number> = {},
+    over: Partial<Parameters<typeof LrcWordLetters>[0]> = {},
+  ) {
+    const onSet = vi.fn()
+    const onClear = vi.fn()
+    render(() => (
+      <LrcWordLetters
+        formatTimeMs={fmt}
+        onClear={onClear}
+        onSet={onSet}
+        splits={() => splits}
+        word="soul"
+        {...over}
+      />
+    ))
+    return { onSet, onClear }
+  }
+
+  it('offers one target per join, including the word edges', () => {
+    renderWord()
+    // "soul" has four letters, so five joins.
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+    expect(screen.getByLabelText('Time the start of the word')).toBeVisible()
+    expect(screen.getByLabelText('Time the end of the word')).toBeVisible()
+    expect(screen.getByLabelText('Time the start of "oul"')).toBeVisible()
+  })
+
+  it('stamps the boundary that was clicked', () => {
+    const { onSet } = renderWord()
+    fireEvent.click(screen.getByLabelText('Time the start of "ul"'))
+    expect(onSet).toHaveBeenCalledWith(2)
+  })
+
+  it('clears an interior boundary on shift-click', () => {
+    const { onSet, onClear } = renderWord({ 2: 10.5 })
+    fireEvent.click(screen.getByLabelText('Time the start of "ul"'), {
+      shiftKey: true,
+    })
+    expect(onClear).toHaveBeenCalledWith(2)
+    expect(onSet).not.toHaveBeenCalled()
+  })
+
+  it('will not let a shift-click remove the word itself', () => {
+    // The edges are the word's bounds, not splits inside it. Removing one
+    // would leave a word with no interval at all.
+    const { onSet, onClear } = renderWord({ 0: 10, 4: 11 })
+    fireEvent.click(screen.getByLabelText('Time the start of the word'), {
+      shiftKey: true,
+    })
+    expect(onClear).not.toHaveBeenCalled()
+    expect(onSet).toHaveBeenCalledWith(0)
+  })
+
+  it('shows the time on boundaries that carry one', () => {
+    renderWord({ 0: 10, 2: 10.5 })
+    expect(screen.getByText('10.00')).toBeVisible()
+    expect(screen.getByText('10.50')).toBeVisible()
+  })
+
+  it('shows a word that starts at 0:00', () => {
+    // A truthiness check would hide the first line of a song that opens
+    // immediately, which is exactly the case nobody tests by hand.
+    renderWord({ 0: 0 })
+    expect(screen.getByText('0.00')).toBeVisible()
+  })
+
+  it('counts graphemes, not code units', () => {
+    renderWord({}, { word: 'café' })
+    // Four letters over five code points: a .length split would offer six.
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+  })
+})
+
+// ── Letter mode inside the row list ──────────────────────────────
+
+function makeLine(index: number, over: Partial<GenViewLine> = {}): GenViewLine {
+  return {
+    index,
+    line: 'hold on',
+    words: ['hold', 'on'],
+    isRest: false,
+    isCurrent: index === 0,
+    isDone: false,
+    isFuture: index > 0,
+    isMapped: true,
+    isSessionMapped: false,
+    lineTime: 1,
+    wordTimes: [1, 1.5],
+    wordEndTimes: [],
+    wordSweeps: {},
+    activeWordIdx: 0,
+    blockInfo: null,
+    blockLabel: undefined,
+    isPlaceholder: false,
+    isPlaceholderStart: false,
+    ...over,
+  }
+}
+
+function renderList(
+  over: Partial<Parameters<typeof LrcMapperLineList>[0]> = {},
+) {
+  const handleMarkerSample = vi.fn()
+  const handleLyricLineClick = vi.fn()
+  const openLetterTarget = vi.fn()
+  const closeLetterTarget = vi.fn()
+  const setLetterSplit = vi.fn()
+  const [lines] = createSignal([makeLine(0), makeLine(1)])
+  render(() => (
+    <LrcMapperLineList
+      blockInstances={() => ({})}
+      clearLetterSplit={() => {}}
+      closeLetterTarget={closeLetterTarget}
+      elapsed={() => 12.25}
+      formatTimeMs={fmt}
+      genViewData={lines}
+      getBlockById={() => undefined}
+      getBlockColor={() => '#f0a060'}
+      handleLyricLineClick={handleLyricLineClick}
+      handleMarkerSample={handleMarkerSample}
+      handlePlay={() => {}}
+      highlightWord={() => null}
+      letterMode={() => true}
+      letterSplits={() => ({})}
+      letterTarget={() => null}
+      loopPreview={() => false}
+      lrcGenInputMode={() => 'marker'}
+      lrcGenLineIdx={() => 0}
+      lrcGenWordIdx={() => 0}
+      lyricsFontSize={() => 1}
+      openLetterTarget={openLetterTarget}
+      playing={() => true}
+      previewLineIdx={() => null}
+      setLetterSplit={setLetterSplit}
+      setLyricsFontSize={() => 1}
+      toggleLinePreview={() => true}
+      {...over}
+    />
+  ))
+  return {
+    handleMarkerSample,
+    handleLyricLineClick,
+    openLetterTarget,
+    closeLetterTarget,
+    setLetterSplit,
+  }
+}
+
+describe('letter mode in the row list', () => {
+  it('opens the word that was clicked', () => {
+    const { openLetterTarget } = renderList()
+    fireEvent.click(screen.getAllByText('on')[0])
+    expect(openLetterTarget).toHaveBeenCalledWith(0, 1)
+  })
+
+  it('expands only the open word', () => {
+    renderList({ letterTarget: () => ({ lineIdx: 0, wordIdx: 0 }) })
+    // "hold" became four glyphs and five joins; "on" is still one span.
+    expect(screen.getAllByRole('button', { name: /Time the/ })).toHaveLength(5)
+    expect(screen.getAllByText('on').length).toBeGreaterThan(0)
+  })
+
+  it('collapses the open word when it is clicked again', () => {
+    const { closeLetterTarget, openLetterTarget } = renderList({
+      letterTarget: () => ({ lineIdx: 0, wordIdx: 1 }),
+    })
+    fireEvent.click(screen.getByLabelText('Time the start of the word'))
+    // The boundary itself stamps a time; the surrounding word closes.
+    fireEvent.click(screen.getAllByText('o')[0])
+    expect(closeLetterTarget).toHaveBeenCalled()
+    expect(openLetterTarget).not.toHaveBeenCalled()
+  })
+
+  it('stamps the playhead at the boundary that was clicked', () => {
+    const { setLetterSplit } = renderList({
+      letterTarget: () => ({ lineIdx: 0, wordIdx: 0 }),
+    })
+    fireEvent.click(screen.getByLabelText('Time the start of "ld"'))
+    expect(setLetterSplit).toHaveBeenCalledWith(0, 0, 2, 12.25)
+  })
+
+  it('suspends marking while letters are being split', () => {
+    // Both gestures start with a press on the current line. Without this the
+    // click that opens a word would also stamp its onset at the wrong time.
+    const { handleMarkerSample } = renderList()
+    const word = screen.getAllByText('hold')[0]
+    fireEvent.pointerDown(word, { clientX: 10, clientY: 10, pointerId: 1 })
+    fireEvent.pointerUp(word, { clientX: 10, clientY: 10, pointerId: 1 })
+    expect(handleMarkerSample).not.toHaveBeenCalled()
+  })
+
+  it('does not move the mapping cursor when a word is clicked', () => {
+    // Outside letter mode a click on a line selects it. In here that would
+    // fight the click that opens a word.
+    const { handleLyricLineClick } = renderList()
+    fireEvent.click(screen.getAllByText('hold')[0])
+    expect(handleLyricLineClick).not.toHaveBeenCalled()
+  })
+
+  it('hands clicks back to line selection once letter mode is off', () => {
+    // The second row is not the mapping cursor's line, so a click on it means
+    // "go there" — the behaviour letter mode has to give back when it exits.
+    const { handleLyricLineClick } = renderList({ letterMode: () => false })
+    fireEvent.click(screen.getAllByText('hold')[1])
+    expect(handleLyricLineClick).toHaveBeenCalledWith(1)
+    expect(screen.queryByLabelText('Time the start of the word')).toBeNull()
+  })
+
+  it('leaves other lines selectable while letter mode is on', () => {
+    // Letter mode must not strand the cursor: you still need to walk the song.
+    const { handleLyricLineClick, openLetterTarget } = renderList()
+    fireEvent.click(screen.getAllByText('hold')[1])
+    expect(handleLyricLineClick).not.toHaveBeenCalled()
+    expect(openLetterTarget).toHaveBeenCalledWith(1, 0)
+  })
+})
