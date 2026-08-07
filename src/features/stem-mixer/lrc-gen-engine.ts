@@ -216,6 +216,52 @@ export function mergePartialWordTimings(
 }
 
 /**
+ * Fold an interrupted session's saved progress back onto the timings the song
+ * actually has now.
+ *
+ * Restoring used to be all-or-nothing: if a saved cursor existed the mapper
+ * loaded the blob and skipped seeding from the stored timings entirely. That
+ * loses every line the blob does not mention — so a session abandoned after a
+ * handful of lines reopened holding only those lines, with nothing for the
+ * highlighter to light on the rest of the song. It also let a stale blob
+ * silently overrule timings written since by another route (auto word-sync,
+ * an imported LRC, a version switch).
+ *
+ * The rule is the same one `mergePartialWordTimings` applies when a partial
+ * session finishes, and for the same reason: a line the user actually mapped
+ * is theirs, everything else belongs to whatever the song holds now.
+ *
+ * Entries are carried by reference. Both sides are freshly built per restore —
+ * one from `structuredClone`d signal state, one straight out of JSON — so
+ * there is nothing here for a caller to alias into.
+ */
+export function restoreGenMap<T>(
+  seed: Readonly<Record<number, T>>,
+  saved: Readonly<Record<number, T>>,
+  touchedLines: ReadonlySet<number>,
+): Record<number, T> {
+  const merged: Record<number, T> = { ...seed }
+  for (const key of Object.keys(saved)) {
+    if (touchedLines.has(+key)) merged[+key] = saved[+key]
+  }
+  return merged
+}
+
+/** {@link restoreGenMap} for the sparse line-start array. */
+export function restoreGenLineTimes(
+  seed: readonly (number | undefined)[],
+  saved: readonly (number | undefined)[],
+  touchedLines: ReadonlySet<number>,
+  lineCount: number,
+): (number | undefined)[] {
+  const merged = new Array<number | undefined>(lineCount)
+  for (let i = 0; i < lineCount; i++) {
+    merged[i] = touchedLines.has(i) ? (saved[i] ?? seed[i]) : seed[i]
+  }
+  return merged
+}
+
+/**
  * Interpolate timestamps for unmapped lines between touched lines.
  *
  * Only fills gaps within the range [0, lastTouched].
