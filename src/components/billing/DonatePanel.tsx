@@ -87,6 +87,8 @@ export const DonatePanel: Component = () => {
     const provider = account()?.user.authProvider
     return provider === 'password' || provider === 'google'
   }
+  const isManagedTestAccount = (): boolean =>
+    account()?.user.isTestAccount === true
   const supporter = () => supporterEntitlement(me() ?? null)
 
   async function donate(plan: PricingPlan): Promise<void> {
@@ -195,11 +197,15 @@ export const DonatePanel: Component = () => {
                 >
                   <button
                     class={styles.donateBtn}
-                    disabled={!plan.purchasable}
+                    disabled={!plan.purchasable || isManagedTestAccount()}
                     onClick={() => void donate(plan)}
                     data-testid="donate-button"
                   >
-                    {plan.purchasable ? 'Donate' : 'Soon'}
+                    {!plan.purchasable
+                      ? 'Soon'
+                      : isManagedTestAccount()
+                        ? 'Managed account'
+                        : 'Donate'}
                   </button>
                 </Show>
               </div>

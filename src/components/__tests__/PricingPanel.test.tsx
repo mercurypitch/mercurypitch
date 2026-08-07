@@ -92,7 +92,7 @@ const PRICING: Pricing = {
 }
 
 afterEach(() => {
-  vi.restoreAllMocks()
+  vi.resetAllMocks()
   // The picker writes through to the persisted app-store signal — reset so
   // test order can't leak selection state.
   setUvrProcessingMode('local')
@@ -121,6 +121,19 @@ describe('PricingPanel', () => {
       expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
     )
     expect(screen.queryByTestId('credit-balance')).not.toBeInTheDocument()
+  })
+
+  it('does not offer checkout when billing is unavailable for the account', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    vi.mocked(fetchBillingMe).mockResolvedValue({
+      creditBalance: 30,
+      entitlements: [],
+      stripeConfigured: false,
+    })
+    render(() => <PricingPanel />)
+
+    const button = await screen.findByRole('button', { name: 'Unavailable' })
+    expect(button).toBeDisabled()
   })
 
   it('prices the GPU card at the tier base; CPU stays "Soon"', async () => {
