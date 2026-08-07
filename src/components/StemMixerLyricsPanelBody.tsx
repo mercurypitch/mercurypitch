@@ -14,6 +14,7 @@ import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { insertedLineTime, stripInlineWordStamps } from '@/lib/whisper-lyrics'
+import { LeadInCue } from './LeadInCue'
 import { LrcMapperLineList } from './lrc-mapper/LrcMapperLineList'
 import { LrcMapperStage } from './lrc-mapper/LrcMapperStage'
 import { LrcMapperToolbar } from './lrc-mapper/LrcMapperToolbar'
@@ -1099,6 +1100,11 @@ export const StemMixerLyricsPanelBody: Component<
                         }
                       }}
                     >
+                      <LeadInCue
+                        elapsed={props.elapsed}
+                        leadInFrom={dl.leadInFrom}
+                        lineTime={parsedLyric.time}
+                      />
                       {isLoopA() && (
                         <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--a">
                           A

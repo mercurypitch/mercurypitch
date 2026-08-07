@@ -17,6 +17,22 @@ export const SECONDS_PER_REST_DOT = 5
  *  matters most at the very start, and >5s instrumental intros are common. */
 export const INTRO_REST_THRESHOLD_SEC = 5
 
+/**
+ * Shortest silence before a line that still earns a "come back in here" cue.
+ *
+ * Below REST_THRESHOLD_SEC there is no rest row, so a gap of a few seconds
+ * leaves the singer with nothing to count against — they know the line but
+ * not the moment. Above this, they do.
+ *
+ * Tuning note: this number wants singing to, not reasoning about. 2.5 s is a
+ * starting point from the 2026-08-06 report ("a gap of 4 seconds is still not
+ * known to user when to start singing next line"), not a measured answer.
+ */
+export const LEAD_IN_MIN_GAP_SEC = 2.5
+
+/** A lead-in never runs longer than this, however large the gap. */
+export const LEAD_IN_MAX_SEC = 6
+
 export function getRestDotCount(gapStart: number, gapEnd: number): number {
   if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd)) return 0
   if (gapEnd <= gapStart) return 0
@@ -140,6 +156,16 @@ export function buildCanonicalEntries(
     // as text so embedded [mm:ss.xx] timestamps don't appear as literal text.
     const cleanText = parsedWt ? parsedWt.words.join(' ') : line.text
 
+    // Lead-in cue: a silence too short for a rest row but long enough to
+    // lose the beat. Attached to the line it precedes rather than pushed as
+    // its own entry — a new entry would shift every canonical index after it,
+    // and the cue belongs to the line you are about to sing.
+    const leadInGap = hasPrev ? line.time - prevEnd : line.time
+    const leadInFrom =
+      leadInGap >= LEAD_IN_MIN_GAP_SEC && leadInGap <= REST_THRESHOLD_SEC
+        ? Math.max(0, line.time - Math.min(leadInGap, LEAD_IN_MAX_SEC))
+        : undefined
+
     result.push({
       type: 'line',
       lrcIndex: i,
@@ -148,6 +174,7 @@ export function buildCanonicalEntries(
       text: cleanText,
       words,
       wordTimes: parsedWt?.wordTimes,
+      leadInFrom,
     })
 
     prevTime = line.time
@@ -160,6 +187,24 @@ export function buildCanonicalEntries(
   }
 
   return result
+}
+
+/**
+ * How far through a line's lead-in the playback is: 0 when it starts, 1 at
+ * the line itself, null when there is no cue to show or it is not running.
+ *
+ * Null rather than 0 outside the window, so a caller cannot render a cue that
+ * is simply always at zero for every line in the song.
+ */
+export function leadInProgress(
+  leadInFrom: number | undefined,
+  lineTime: number,
+  elapsed: number,
+): number | null {
+  if (leadInFrom === undefined) return null
+  if (!(lineTime > leadInFrom)) return null
+  if (elapsed < leadInFrom || elapsed >= lineTime) return null
+  return (elapsed - leadInFrom) / (lineTime - leadInFrom)
 }
 
 export interface RestProgress {

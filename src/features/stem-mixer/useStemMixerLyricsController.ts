@@ -1492,6 +1492,7 @@ export function useStemMixerLyricsController(
             restGapStart: entry.gapStart,
             restGapEnd: entry.gapEnd,
             restDotCount: entry.dotCount,
+            leadInFrom: entry.leadInFrom,
           },
         ]
       })
