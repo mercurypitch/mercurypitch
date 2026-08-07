@@ -1802,6 +1802,13 @@ export function initJam() {
       )
     },
     onPitchMessage: (msg: JamPitchMessage) => {
+      // Belt to the transport's braces. service.ts now stamps the real
+      // sender, so this only fires on a peer that has already left, but the
+      // invariant is worth stating where the damage would be done: these
+      // samples feed scoreOwnJamRun, and a row keyed by an id we do not know
+      // is both an unownable scoreboard entry and an unbounded key set —
+      // onPeerLeft can only delete ids that were ever real.
+      if (!jamPeers().some((p) => p.id === msg.peerId)) return
       setJamPitchHistory((prev) => {
         const next = { ...prev }
         const arr = next[msg.peerId] ?? []
