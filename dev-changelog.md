@@ -6,91 +6,6 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-
-- **Default sensitivity preset: `quiet`, not `home`.** `DEFAULT_SETTINGS` and
-  the `pitchperfect_sensitivity_preset` signal both move (they are two halves
-  of one choice — a mismatch labels the panel with a preset the numbers do not
-  reflect). The failure modes are asymmetric: too strict reads as a dead mic
-  with no feedback explaining why — which is what the original `noisy` default
-  did — while too forgiving lets a little room noise through, which is visible
-  and fixable. Auto-calibrate and the sidebar presets are unchanged, and both
-  halves are pinned by `app-store.test.ts`.
-
-### Fixed
-
-- **Background picker: a real drawer below the mobile breakpoint.** Three
-  parts. (1) `handleScroll` no longer closes the popover when `isNarrow()` —
-  the close-on-scroll rule exists so the desktop popover cannot drift from the
-  trigger it is anchored to, but the phone panel is viewport-pinned, and a
-  one-item gallery has nothing of its own to scroll, so a drag inside it
-  chained to the page and dismissed itself. (2) A `.scrim` renders behind the
-  panel on narrow viewports with `touch-action: none`, so nothing behind it
-  pans, whichever element is the scroller. (3) `DrawerScrollLock` (a
-  render-nothing component under the same `<Show>`) holds the counted
-  `useScrollLock` for the drawer's lifetime — `useScrollLock` locks for a
-  component's lifetime, so a conditional lock has to be a conditional mount.
-  The CSS breakpoint also moves 620px → 768px to match `isNarrow()`; the
-  window between them got the anchored-popover JS with the drawer's CSS.
-
-- **Analysis take picker: a column on phones, a wrapping rail above 720px.**
-  `.takeRail` was a horizontal snap rail at every width, so a second take —
-  the first separated song — ran off the right edge. Now `flex-direction:
-column` with full-width cards, capped at `46vh` with contained overscroll so
-  a large library cannot push the analysis itself off screen; the ≥720px block
-  restores `row` + `flex-wrap` + fixed-width cards and drops the cap.
-
-- **Exercise result trace stayed inside the card.** A `<canvas>` carries a
-  300px intrinsic width until its draw sizes it, and `.exercise-result-main`
-  is a flex item beside the grade badge with the default `min-width: auto` —
-  so that 300px became the floor and the plot rendered past the card's right
-  padding on a phone. `min-width: 0` on the result column and on
-  `RunTraceCanvas`'s wrap/plot, plus `max-width: 100%` on the canvas itself.
-  (The live tracker's canvas already had `width: 100%`, which is why only the
-  result card was affected.)
-
-- **Map cards auto-reveal on touch.** `BeatMap` now runs one
-  `IntersectionObserver` (gated on `matchMedia('(hover: none)')`, threshold
-  0.45, one-way — a revealed card unobserves) that stamps `.roomInView` per
-  card; `onboarding.module.css` plays the full hover reveal for that class
-  inside the existing `(hover: none)` block. Viewport-root intersection
-  honours ancestor clipping, so the same code works inside the scrollable
-  onboarding modal and on the standalone `#/map`. Reduced-motion keeps its
-  instant transition.
-
-- **Voice constellation: vertical grid on small screens.**
-  `VoiceConstellationSurface.module.css` ≤820px: the per-band horizontal
-  snap-rows (`display: flex` + `overflow-x` + `scroll-snap`) are replaced by
-  `repeat(auto-fill, minmax(140px, 1fr))` — two columns on phones, one
-  vertical scroll for the whole surface. The ≤430px width overrides went
-  with them. The desktop base grid is untouched, and no JS depended on the
-  horizontal scroller.
-
-- **Zen vocal pill: drag-to-unmute + legible track.** New pure decision
-  `vocalDragUnmutes(muted, level)` in `zen-navigation.ts` (unit-tested):
-  a level drag `> 0` on a muted pill toggles the mute off first, so the
-  fill and the audio track the finger instead of writing to a bypassed
-  gain. `KaraokeMobileStage` routes `PillControl.onLevel` through it. The
-  sing pill also pins `--pill-bg` to a near-solid stage plum — the default
-  glass let the lyric column shine through the expanded track — and
-  `PillControl` now sets `user-select: none` + `-webkit-touch-callout:
-none` so iOS never answers the hold with the selection magnifier.
-
-- **Karaoke Night topbar fits an iPhone.** The stage background picker gets
-  `iconOnly={isNarrow()}` (its existing visually-hidden-label mode), and
-  the brand renders logo + wordmark: `karaoke-night.css` hides the logo on
-  desks and swaps the tracked-out wordmark for it under 560px, with an
-  `aria-label` keeping the link named.
-
-- **Community page: no sideways pan on phones.** The mobile
-  `.community-panel` rule adds `overflow-x: hidden` (its `overflow-y: auto`
-  computed the x-axis to auto as well), and the backdrop art's `inset`
-  bleed shrinks from the desktop 24px to the phone padding (14/16px) — the
-  right-hand overhang past the content edge is what minted the horizontal
-  scroll range.
-
 ## [0.8.1] - 2026-08-08
 
 ### Added
@@ -192,6 +107,15 @@ single-page-application` means a deleted chunk answers with index.html and a
   0.3-0.9% RMSE, and the screenshot generator runs it over everything it
   writes. `warm()` no longer forces a revalidation round-trip for immutable
   hashed assets during priming.
+
+- **Default sensitivity preset: `quiet`, not `home`.** `DEFAULT_SETTINGS` and
+  the `pitchperfect_sensitivity_preset` signal both move (they are two halves
+  of one choice — a mismatch labels the panel with a preset the numbers do not
+  reflect). The failure modes are asymmetric: too strict reads as a dead mic
+  with no feedback explaining why — which is what the original `noisy` default
+  did — while too forgiving lets a little room noise through, which is visible
+  and fixable. Auto-calibrate and the sidebar presets are unchanged, and both
+  halves are pinned by `app-store.test.ts`.
 
 ### Fixed
 
@@ -403,6 +327,76 @@ single-page-application` means a deleted chunk answers with index.html and a
   it is rebuilt when the user changes mode and the handlers were left on a
   discarded element. Pinch-zoom stopped working after the first trip through
   edit mode.
+
+- **Background picker: a real drawer below the mobile breakpoint.** Three
+  parts. (1) `handleScroll` no longer closes the popover when `isNarrow()` —
+  the close-on-scroll rule exists so the desktop popover cannot drift from the
+  trigger it is anchored to, but the phone panel is viewport-pinned, and a
+  one-item gallery has nothing of its own to scroll, so a drag inside it
+  chained to the page and dismissed itself. (2) A `.scrim` renders behind the
+  panel on narrow viewports with `touch-action: none`, so nothing behind it
+  pans, whichever element is the scroller. (3) `DrawerScrollLock` (a
+  render-nothing component under the same `<Show>`) holds the counted
+  `useScrollLock` for the drawer's lifetime — `useScrollLock` locks for a
+  component's lifetime, so a conditional lock has to be a conditional mount.
+  The CSS breakpoint also moves 620px → 768px to match `isNarrow()`; the
+  window between them got the anchored-popover JS with the drawer's CSS.
+
+- **Analysis take picker: a column on phones, a wrapping rail above 720px.**
+  `.takeRail` was a horizontal snap rail at every width, so a second take —
+  the first separated song — ran off the right edge. Now `flex-direction:
+column` with full-width cards, capped at `46vh` with contained overscroll so
+  a large library cannot push the analysis itself off screen; the ≥720px block
+  restores `row` + `flex-wrap` + fixed-width cards and drops the cap.
+
+- **Exercise result trace stayed inside the card.** A `<canvas>` carries a
+  300px intrinsic width until its draw sizes it, and `.exercise-result-main`
+  is a flex item beside the grade badge with the default `min-width: auto` —
+  so that 300px became the floor and the plot rendered past the card's right
+  padding on a phone. `min-width: 0` on the result column and on
+  `RunTraceCanvas`'s wrap/plot, plus `max-width: 100%` on the canvas itself.
+  (The live tracker's canvas already had `width: 100%`, which is why only the
+  result card was affected.)
+
+- **Map cards auto-reveal on touch.** `BeatMap` now runs one
+  `IntersectionObserver` (gated on `matchMedia('(hover: none)')`, threshold
+  0.45, one-way — a revealed card unobserves) that stamps `.roomInView` per
+  card; `onboarding.module.css` plays the full hover reveal for that class
+  inside the existing `(hover: none)` block. Viewport-root intersection
+  honours ancestor clipping, so the same code works inside the scrollable
+  onboarding modal and on the standalone `#/map`. Reduced-motion keeps its
+  instant transition.
+
+- **Voice constellation: vertical grid on small screens.**
+  `VoiceConstellationSurface.module.css` ≤820px: the per-band horizontal
+  snap-rows (`display: flex` + `overflow-x` + `scroll-snap`) are replaced by
+  `repeat(auto-fill, minmax(140px, 1fr))` — two columns on phones, one
+  vertical scroll for the whole surface. The ≤430px width overrides went
+  with them. The desktop base grid is untouched, and no JS depended on the
+  horizontal scroller.
+
+- **Zen vocal pill: drag-to-unmute + legible track.** New pure decision
+  `vocalDragUnmutes(muted, level)` in `zen-navigation.ts` (unit-tested):
+  a level drag `> 0` on a muted pill toggles the mute off first, so the
+  fill and the audio track the finger instead of writing to a bypassed
+  gain. `KaraokeMobileStage` routes `PillControl.onLevel` through it. The
+  sing pill also pins `--pill-bg` to a near-solid stage plum — the default
+  glass let the lyric column shine through the expanded track — and
+  `PillControl` now sets `user-select: none` + `-webkit-touch-callout:
+none` so iOS never answers the hold with the selection magnifier.
+
+- **Karaoke Night topbar fits an iPhone.** The stage background picker gets
+  `iconOnly={isNarrow()}` (its existing visually-hidden-label mode), and
+  the brand renders logo + wordmark: `karaoke-night.css` hides the logo on
+  desks and swaps the tracked-out wordmark for it under 560px, with an
+  `aria-label` keeping the link named.
+
+- **Community page: no sideways pan on phones.** The mobile
+  `.community-panel` rule adds `overflow-x: hidden` (its `overflow-y: auto`
+  computed the x-axis to auto as well), and the backdrop art's `inset`
+  bleed shrinks from the desktop 24px to the phone padding (14/16px) — the
+  right-hand overhang past the content edge is what minted the horizontal
+  scroll range.
 
 ## [0.8.0] - 2026-08-06
 
