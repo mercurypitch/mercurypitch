@@ -8,6 +8,7 @@
 // via switchSettingsTab (keyed on the tab's data-testid) before asserting.
 // ============================================================
 
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, switchSettingsTab, switchTab } from './helpers/ui'
 
@@ -183,7 +184,27 @@ test.describe('Settings Panel', () => {
       await switchSettingsTab(page, 'account')
     })
 
+    // The section ships collapsed — every test that reaches for a danger
+    // button opens it first, the same click a user makes.
+    const openDangerZone = async (page: Page): Promise<void> => {
+      const toggle = page.locator('[data-testid="danger-zone-toggle"]')
+      await toggle.scrollIntoViewIfNeeded()
+      await toggle.click()
+    }
+
+    test('Danger Zone is collapsed until its header is clicked', async ({
+      page,
+    }) => {
+      const resetBtn = page.locator('[data-testid="danger-reset-btn"]')
+      await expect(resetBtn).not.toBeVisible()
+      await openDangerZone(page)
+      await expect(resetBtn).toBeVisible()
+      await openDangerZone(page)
+      await expect(resetBtn).not.toBeVisible()
+    })
+
     test('Reset button is visible in Danger Zone', async ({ page }) => {
+      await openDangerZone(page)
       const resetBtn = page.locator('[data-testid="danger-reset-btn"]')
       await resetBtn.scrollIntoViewIfNeeded()
       await expect(resetBtn).toBeVisible()
@@ -191,6 +212,7 @@ test.describe('Settings Panel', () => {
     })
 
     test('Clicking Reset opens confirmation modal', async ({ page }) => {
+      await openDangerZone(page)
       const resetBtn = page.locator('[data-testid="danger-reset-btn"]')
       await resetBtn.click()
       await page.waitForTimeout(200)
@@ -201,6 +223,7 @@ test.describe('Settings Panel', () => {
     test('Confirmation modal has Cancel and Confirm buttons', async ({
       page,
     }) => {
+      await openDangerZone(page)
       await page.locator('[data-testid="danger-reset-btn"]').click()
       await page.waitForTimeout(200)
       const cancelBtn = page.locator('[data-testid="danger-cancel-btn"]')
@@ -213,6 +236,7 @@ test.describe('Settings Panel', () => {
     test('Cancelling reset closes modal without resetting', async ({
       page,
     }) => {
+      await openDangerZone(page)
       await page.locator('[data-testid="danger-reset-btn"]').click()
       await page.waitForTimeout(200)
       await page.locator('[data-testid="danger-cancel-btn"]').click()

@@ -823,3 +823,41 @@ input:checked + .settingsSlider:before {
 .settingsActionBtn:hover {
   background: var(--bg-secondary);
 }
+
+/* Danger Zone disclosure — the section ships collapsed; the whole title row
+   is the toggle, with the chevron turning down when open. */
+.dangerZoneToggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dangerZoneToggle svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.dangerZoneToggle[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+.dangerZoneToggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dangerZoneToggle svg {
+    transition: none;
+  }
+}
