@@ -58,6 +58,20 @@
   outline-offset: 3px;
 }
 
+/* Drawer scrim (phones only — rendered by the component under isNarrow).
+   `touch-action: none` is the part that matters: it stops a drag that lands
+   beside the drawer from panning whatever is scrolling behind it, whether
+   that is the document or an inner pane. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9399;
+  background: rgba(6, 2, 12, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  touch-action: none;
+}
+
 .panel {
   position: fixed;
   z-index: 9400;
@@ -352,7 +366,10 @@
   text-underline-offset: 3px;
 }
 
-@media (max-width: 620px) {
+/* 768px, the app-wide mobile breakpoint, NOT the 620px this used to be: the
+   component decides drawer behaviour from `isNarrow()` (<=768), and a window
+   between the two got the anchored-popover JS with the drawer's CSS. */
+@media (max-width: 768px) {
   .trigger {
     min-height: 44px;
   }
@@ -362,6 +379,9 @@
     height: 44px;
   }
 
+  /* A bottom drawer: pinned to the bottom edge, full width, scrolling inside
+     itself. The inline anchor coordinates are overridden — on a phone there
+     is no room to hang a panel off a 44px trigger. */
   .panel {
     top: auto !important;
     right: 8px;

@@ -6,12 +6,14 @@
 // the protected image endpoint for bytes. Unlocked previews are decoded into
 // short-lived object URLs and revoked with the popover lifecycle.
 
-import type { Accessor } from 'solid-js'
+import type { Accessor, Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { CheckSmall, Lock, StageCurtains, X } from '@/components/icons'
 import { BackgroundRequestError, loadProtectedBackgroundObjectUrl, } from '@/lib/backgrounds/background-runtime'
 import type { BackgroundSurfaceController, RuntimeBackgroundOption, } from '@/lib/backgrounds/background-surface'
+import { useScrollLock } from '@/lib/use-scroll-lock'
+import { isNarrow } from '@/lib/use-viewport'
 import { invalidatePremiumBackgroundAccess } from '@/stores/background-store'
 import styles from './PremiumBackgroundPicker.module.css'
 
@@ -29,6 +31,14 @@ interface PremiumBackgroundPickerProps {
 interface BackgroundArtworkProps {
   option: RuntimeBackgroundOption
   controller: BackgroundSurfaceController
+}
+
+/** Holds the counted body-scroll lock for exactly as long as it is mounted —
+ *  `useScrollLock` locks for a component's lifetime, so the conditional lock
+ *  the phone drawer needs is expressed by mounting this under a <Show>. */
+const DrawerScrollLock: Component = () => {
+  useScrollLock()
+  return null
 }
 
 function invalidatesAccess(error: unknown): error is BackgroundRequestError {
@@ -170,6 +180,13 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
       close(true)
     }
     const handleScroll = (event: Event) => {
+      // Closing on page scroll keeps the desktop popover from drifting away
+      // from the trigger it is anchored to. Below the mobile breakpoint the
+      // panel is a viewport-pinned drawer, so nothing can drift — and this
+      // rule was dismissing the drawer on any stray drag inside it, since a
+      // one-item gallery has nothing of its own to scroll and the gesture
+      // chained to the page.
+      if (isNarrow()) return
       const target = event.target
       if (target instanceof Node && panel?.contains(target) === true) return
       close()
@@ -244,6 +261,14 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
 
       <Show when={open()}>
         <Portal>
+          {/* Phones get a real drawer: a scrim behind it so the page cannot
+              scroll (or be tapped) underneath, which is what turned an
+              accidental drag into a dismissal. The existing outside-
+              pointerdown handler closes it. */}
+          <Show when={isNarrow()}>
+            <div class={styles.scrim} aria-hidden="true" />
+            <DrawerScrollLock />
+          </Show>
           <div
             ref={panel}
             class={styles.panel}
