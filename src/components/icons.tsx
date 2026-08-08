@@ -1204,8 +1204,19 @@ export const Merge: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
-// StageCurtains — the Karaoke Night theatre stage (links from the studio's
-// karaoke tab to the standalone /karaoke-night page)
+// StageCurtains — the Karaoke Night theatre stage, and the stage/background
+// picker in Jam and Karaoke.
+//
+// Four strokes, and that is a budget rather than a style: this icon is drawn
+// at 13px in the playlist rows and 16px in the background picker, and the
+// previous version put FIVE near-parallel curves plus a dot inside that box
+// at stroke-width 2. Below about 20px they merged into a blob. Anything added
+// here has to survive 13px — check it there before deciding it looks better.
+//
+// The scalloped valance is doing the identifying work: an arch reads as a
+// door, a framed panel reads as the generic image icon, but a pelmet is a
+// theatre and nothing else. The short line between the legs is the stage
+// floor, which is what keeps it from reading as a shop awning.
 export const StageCurtains: Component<{ size?: number }> = (p) => (
   <svg
     width={p.size ?? 16}
@@ -1217,13 +1228,11 @@ export const StageCurtains: Component<{ size?: number }> = (p) => (
     stroke-linecap="round"
     stroke-linejoin="round"
   >
-    <path d="M3 3h18" />
-    <path d="M4 3c0 7 2 10 2 18" />
-    <path d="M20 3c0 7-2 10-2 18" />
-    <path d="M4 3c4 3 4 9 2 18" />
-    <path d="M20 3c-4 3-4 9-2 18" />
-    <circle cx="12" cy="10" r="1.6" />
-    <path d="M12 11.6V15" />
+    <path d="M3 5h18" />
+    <path d="M3 5v3a2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0 2.6 2.6 0 0 0 4.5 0V5" />
+    <path d="M5 9v12" />
+    <path d="M19 9v12" />
+    <path d="M9 17h6" />
   </svg>
 )
 
