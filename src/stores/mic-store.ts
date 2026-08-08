@@ -10,6 +10,7 @@ import { createSignal } from 'solid-js'
 import type { MicLockRecord } from '@/lib/mic-lock'
 import { onMicLockChange } from '@/lib/mic-lock'
 import { micManager } from '@/lib/mic-manager'
+import { createPersistedSignal } from '@/lib/storage'
 
 // `micActive`/`micError` reflect the SHARED practice/analysis engine mic
 // (singing, guitar, piano, exercises) and are driven by those controllers'
@@ -19,7 +20,11 @@ import { micManager } from '@/lib/mic-manager'
 // flip this page-facing indicator (doing so corrupted the Singing mic toggle
 // after using the Karaoke stem mixer).
 export const [micActive, setMicActive] = createSignal<boolean>(false)
-export const [micWaveVisible, setMicWaveVisible] = createSignal<boolean>(true)
+// Off until the singer asks for it: the waveform overlay is a mic-health
+// check, not something every run needs drawn over it. Persisted, so asking
+// once is enough.
+export const [micWaveVisible, setMicWaveVisible] =
+  createPersistedSignal<boolean>('pitchperfect_mic_wave_visible', false)
 export const [micError, setMicError] = createSignal<string | null>(null)
 
 export function toggleMicWaveVisible(): void {
