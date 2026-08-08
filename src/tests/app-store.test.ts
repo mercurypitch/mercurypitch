@@ -5,27 +5,39 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { appStore, getBandRating, setBand, setDetectionThreshold, setMinAmplitude, setMinConfidence, setSensitivity, setSettings, } from '@/stores'
 import { deleteAllUvrSessions, getUvrSession, importUvrSession, updateUvrSessionOutputs, } from '@/stores/app-store'
-import { SENSITIVITY_PRESETS } from '@/stores/settings-store'
+import { SENSITIVITY_PRESETS, sensitivityPreset } from '@/stores/settings-store'
 
 describe('Settings — init and defaults', () => {
   beforeEach(() => {
     localStorage.removeItem('pitchperfect_settings')
   })
 
-  it('starts a fresh browser on the home profile, not the noisy one', () => {
-    // The default used to be 'noisy' — the strictest row in the table, a
-    // 0.7 confidence floor and 4x the amplitude gate — which reads as a
-    // dead mic in an ordinary room. Asserted against the preset rather
-    // than by repeating its numbers, so the label and the thresholds
-    // cannot drift apart.
+  it('starts a fresh browser on the most forgiving profile', () => {
+    // Nothing has measured the room yet, and the two ways of being wrong are
+    // not equivalent: too strict reads as a dead mic with no explanation
+    // ('noisy' was the original default and did exactly that), too forgiving
+    // lets a little room noise through, which is visible and fixable.
+    // Asserted against the preset rather than by repeating its numbers, so
+    // the label and the thresholds cannot drift apart.
     const s = appStore.settings()
     expect(s.detectionThreshold).toBe(
-      SENSITIVITY_PRESETS.home.detectionThreshold,
+      SENSITIVITY_PRESETS.quiet.detectionThreshold,
     )
-    expect(s.sensitivity).toBe(SENSITIVITY_PRESETS.home.sensitivity)
-    expect(s.minConfidence).toBe(SENSITIVITY_PRESETS.home.minConfidence)
-    expect(s.minAmplitude).toBe(SENSITIVITY_PRESETS.home.minAmplitude)
+    expect(s.sensitivity).toBe(SENSITIVITY_PRESETS.quiet.sensitivity)
+    expect(s.minConfidence).toBe(SENSITIVITY_PRESETS.quiet.minConfidence)
+    expect(s.minAmplitude).toBe(SENSITIVITY_PRESETS.quiet.minAmplitude)
     expect(s.bands).toHaveLength(5)
+  })
+
+  it('labels that starting profile as the preset it actually is', () => {
+    // The sidebar/settings label and the thresholds are two halves of one
+    // choice: a mismatch shows a preset the numbers do not reflect. (The
+    // signal resolves its stored value at module init, so this reads the
+    // fresh-browser default.)
+    expect(sensitivityPreset()).toBe('quiet')
+    expect(SENSITIVITY_PRESETS.quiet.minConfidence).toBeLessThan(
+      SENSITIVITY_PRESETS.home.minConfidence,
+    )
   })
 
   it('loads from localStorage if present', () => {
