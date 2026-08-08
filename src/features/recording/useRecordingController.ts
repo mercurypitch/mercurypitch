@@ -11,6 +11,7 @@ import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { sungBeat } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import type { RawPitchFrame } from '@/lib/pitch-pipeline'
 import { createLivePitchPipeline } from '@/lib/pitch-pipeline'
@@ -18,6 +19,7 @@ import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNote } from '@/lib/scale-data'
 import { melodyStore } from '@/stores/melody-store'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import * as uiStore from '@/stores/ui-store'
 import type { MelodyItem, MelodyNote, NoteName, PitchResult } from '@/types'
 
@@ -66,6 +68,23 @@ interface Deps {
    * plain store write when no editor is mounted.
    */
   applyTake: (merged: MelodyItem[]) => void
+}
+
+/**
+ * The take's contour moved by a hand-picked amount of time, for the review
+ * panel's Timing slider. Negative ms pulls the take earlier. The automatic
+ * round-trip compensation happens at capture (see `processPitchFrame`); this
+ * is the escape hatch on top of it — a measured offset can still be a few
+ * frames off, and a singer may simply have come in late.
+ */
+export function shiftTakeFrames(
+  frames: RawPitchFrame[],
+  nudgeMs: number,
+  bpm: number,
+): RawPitchFrame[] {
+  if (nudgeMs === 0 || bpm <= 0) return frames
+  const deltaBeats = (nudgeMs / 1000) * (bpm / 60)
+  return frames.map((f) => ({ ...f, beat: f.beat + deltaBeats }))
 }
 
 export function useRecordingController(deps: Deps): RecordingController {
@@ -187,12 +206,21 @@ export function useRecordingController(deps: Deps): RecordingController {
   ): void => {
     if (!isRecording() || !isEditorPlaying) return
 
+    // Stamp the frame with the beat it was SUNG on, not the beat it arrived:
+    // a frame reaching us now left the singer one measured round trip ago, so
+    // without this every recorded note lands late by exactly that offset (a
+    // fifth of a beat at 120 bpm and 95 ms — enough to quantize to the wrong
+    // slot at strong cleanup). Safe to shift alone: the pipeline reads
+    // `timeSec` only for durations (filter dt, hold and gap timers) and
+    // `beat` only for positions. A no-op on an unmeasured device, like every
+    // other consumer of the offset.
+    const sung = sungBeat(beat, micLatencyMs(), audioEngine.getBpm?.() ?? 120)
     const timeSec = performance.now() / 1000
     const freq = pitch !== null && pitch.frequency > 0 ? pitch.frequency : null
     const clarity = pitch?.clarity ?? 0
-    rawFrames.push({ beat, timeSec, freq, clarity })
+    rawFrames.push({ beat: sung, timeSec, freq, clarity })
 
-    const res = pipeline.push(freq, clarity, timeSec, beat)
+    const res = pipeline.push(freq, clarity, timeSec, sung)
 
     if (res.completed.length > 0) {
       setRecordedMelody((prev) => [

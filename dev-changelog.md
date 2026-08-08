@@ -154,8 +154,19 @@ single-page-application` means a deleted chunk answers with index.html and a
   an unmeasured 0 ms. Recording (`processPitchFrame`) still stores arrival
   beats: its pipeline reads `timeSec` only
   for durations (OneEuro dt, hold and gap timers) and `beat` only for
-  positions, so shifting the beat alone is internally safe — analysed in
-  full, decision on when to ship it is the owner's; see PR #462.
+  positions, so shifting the beat alone is internally safe. Now shipped:
+  `processPitchFrame` stamps `sungBeat(beat, micLatencyMs(), bpm)` into the
+  raw frames and the live pipeline, so takes land where they were sung (a
+  no-op at 0 ms). Negative beats near the start are the physical truth —
+  frames sung on the count-in — and were already possible before the shift.
+  On top of the automatic part, the take review panel gained a Timing slider
+  (`shiftTakeFrames`, -200..+200 ms, reset per take, double-click to zero)
+  that re-segments the contour through the same `segmentContourToMelody`
+  call, plus a note naming the compensation already removed. Nine tests
+  drive the real controller end to end (record -> frames -> pending take);
+  the three latency tests were verified to fail with the stamping pinned
+  off. The stem mixer's own use of `segmentContourToMelody` is untouched —
+  the shift happens in the recording controller, not the shared function.
 
 - **Audited the mic-latency measurement itself and found it sound.** The wizard
   times clicks and their return on one `AudioContext` clock and uses the
