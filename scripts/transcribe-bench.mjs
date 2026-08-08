@@ -19,6 +19,10 @@
 //                             Default: the first whose name or instrument
 //                             looks like a bass.
 //   --out <dir>               Where to write. Default ~/agent-out/mercurypitch/<date>.
+//   --source <yin|swift>      Which detector produces the frames. Default yin.
+//                             `swift` runs the SwiftF0 ONNX model at 16 kHz;
+//                             everything after the frames is identical, so the
+//                             two are directly comparable.
 //   --profile key=value,...   Override transcription profile fields.
 //   --seconds <n>             Analyse only the first n seconds. Much faster
 //                             while iterating on the algorithm.
@@ -31,6 +35,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, basename, extname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+// The scoring arithmetic is src/, shared with the Lab's transcription bench so
+// a number here and a number on screen cannot disagree.
+import { pickReferenceTrack, pitchHistogram, scoreAgainstTruth, WINDOW_SECONDS, } from '../src/lib/transcription/transcription-score.ts'
 import { readMidiTruth } from './midi-truth.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -46,6 +53,7 @@ function parseArgs(argv) {
     truth: null,
     truthTrack: null,
     out: null,
+    source: 'yin',
     profile: {},
     seconds: null,
     label: null,
@@ -60,10 +68,19 @@ function parseArgs(argv) {
     else if (arg === '--seconds') options.seconds = Number(next())
     else if (arg === '--label') options.label = next()
     else if (arg === '--keep-open') options.keepOpen = true
-    else if (arg === '--profile') {
+    else if (arg === '--source') {
+      options.source = next()
+      if (options.source !== 'yin' && options.source !== 'swift') {
+        throw new Error(`--source takes yin or swift, not ${options.source}`)
+      }
+    } else if (arg === '--profile') {
       for (const pair of next().split(',')) {
         const [key, value] = pair.split('=')
-        options.profile[key.trim()] = Number(value)
+        // Numeric when it reads as a number, text otherwise: the profile holds
+        // both, and coercing everything to Number turned every name into NaN.
+        const numeric = Number(value)
+        options.profile[key.trim()] =
+          value.trim() !== '' && Number.isFinite(numeric) ? numeric : value
       }
     } else if (arg.startsWith('--')) {
       throw new Error(`Unknown option ${arg}`)
@@ -177,194 +194,15 @@ function notesToMidi(notes) {
 // Scoring against a tab
 // ------------------------------------------------------------------
 
-const BASS_HINTS = /bass|b\.|bajo|basse/i
-
+/** `pickReferenceTrack` returns null on a miss; a CLI should say what it had. */
 function pickTruthTrack(song, wanted) {
-  if (wanted !== null) {
-    const found = song.tracks.find((track) =>
-      `${track.name} ${track.instrumentName}`
-        .toLowerCase()
-        .includes(wanted.toLowerCase()),
-    )
-    if (found !== undefined) return found
-    throw new Error(
-      `No track matching "${wanted}". Tracks: ${song.tracks
-        .map((track) => `${track.name} (${track.instrumentName})`)
-        .join(', ')}`,
-    )
-  }
-  const byName = song.tracks.find((track) =>
-    BASS_HINTS.test(`${track.name} ${track.instrumentName}`),
+  const found = pickReferenceTrack(song.tracks, wanted)
+  if (found !== null) return found
+  throw new Error(
+    `No track matching "${wanted}". Tracks: ${song.tracks
+      .map((track) => `${track.name} (${track.instrumentName})`)
+      .join(', ')}`,
   )
-  return byName ?? song.tracks[0]
-}
-
-function median(values) {
-  if (values.length === 0) return null
-  const sorted = [...values].sort((left, right) => left - right)
-  const middle = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle]
-}
-
-/**
- * Align in windows, not once for the whole song.
- *
- * A tab and a recording of it do not share a clock. Dance of Death's own MIDI
- * export runs 528 s against a 517 s recording — about two percent long, which
- * is eleven seconds of drift by the end. One constant offset cannot fit that,
- * and forcing one does not degrade gracefully: it lands on whatever offset
- * happens to match most, which can be tens of seconds from the truth and makes
- * every number downstream fiction. Windows sidestep the whole question, and a
- * bench does not need a global fit to answer "how did we do around here".
- *
- * Candidate offsets are scored on pitch-class agreement rather than exact
- * pitch, so that an octave error — the thing being measured — cannot drag the
- * alignment off and hide itself.
- */
-const WINDOW_SECONDS = 6
-const MAX_LOCAL_DRIFT_SECONDS = 6
-
-function bestWindowOffset(heard, truth, toleranceSeconds) {
-  const candidates = new Set([0])
-  for (const heardNote of heard) {
-    for (const truthNote of truth) {
-      const delta = truthNote.startSeconds - heardNote.startSeconds
-      if (Math.abs(delta) <= MAX_LOCAL_DRIFT_SECONDS) {
-        candidates.add(Math.round(delta * 200) / 200)
-      }
-    }
-  }
-  let best = { offset: 0, score: -1 }
-  for (const offset of candidates) {
-    let score = 0
-    for (const heardNote of heard) {
-      const at = heardNote.startSeconds + offset
-      for (const truthNote of truth) {
-        if (Math.abs(truthNote.startSeconds - at) > toleranceSeconds) continue
-        if ((truthNote.midi - heardNote.midi) % 12 === 0) {
-          score += 1
-          break
-        }
-      }
-    }
-    if (score > best.score) best = { offset, score }
-  }
-  return best.offset
-}
-
-/**
- * Greedy nearest-in-time match inside each window, each truth note used once.
- * Pitch counts as correct only at the exact MIDI number; an octave error gets
- * its own column rather than being folded into "correct", because on a bass
- * line the octave is the part a player notices first.
- */
-function scoreAgainstTruth(heardNotes, truthNotes, toleranceSeconds) {
-  const onsetErrors = []
-  const offsets = []
-  const pitchErrors = new Map()
-  let exact = 0
-  let octaveOff = 0
-  let wrongPitch = 0
-  let unmatched = 0
-  let matchedTruth = 0
-
-  const lastSecond = Math.max(
-    heardNotes.at(-1)?.startSeconds ?? 0,
-    truthNotes.at(-1)?.startSeconds ?? 0,
-  )
-
-  for (let start = 0; start <= lastSecond; start += WINDOW_SECONDS) {
-    const end = start + WINDOW_SECONDS
-    const heardWindow = heardNotes.filter(
-      (note) => note.startSeconds >= start && note.startSeconds < end,
-    )
-    if (heardWindow.length === 0) continue
-    const truthWindow = truthNotes.filter(
-      (note) =>
-        note.startSeconds >= start - MAX_LOCAL_DRIFT_SECONDS &&
-        note.startSeconds < end + MAX_LOCAL_DRIFT_SECONDS,
-    )
-    if (truthWindow.length === 0) {
-      unmatched += heardWindow.length
-      continue
-    }
-
-    const offset = bestWindowOffset(heardWindow, truthWindow, toleranceSeconds)
-    offsets.push(offset)
-    const used = new Set()
-
-    for (const heard of heardWindow) {
-      const at = heard.startSeconds + offset
-      let bestIndex = -1
-      let bestGap = Infinity
-      for (let index = 0; index < truthWindow.length; index += 1) {
-        if (used.has(index)) continue
-        const gap = Math.abs(truthWindow[index].startSeconds - at)
-        if (gap > toleranceSeconds) continue
-        if (gap < bestGap) {
-          bestGap = gap
-          bestIndex = index
-        }
-      }
-      if (bestIndex === -1) {
-        unmatched += 1
-        continue
-      }
-      used.add(bestIndex)
-      const truth = truthWindow[bestIndex]
-      onsetErrors.push((truth.startSeconds - at) * 1000)
-      if (truth.midi === heard.midi) exact += 1
-      else if (Math.abs(truth.midi - heard.midi) % 12 === 0) octaveOff += 1
-      else {
-        wrongPitch += 1
-        // What KIND of wrong matters. Errors clustered at a few semitones are
-        // the detector hearing a harmonic or a neighbour; errors spread evenly
-        // are the matcher pairing notes that have nothing to do with each
-        // other, which is a fault in this bench and not in the transcription.
-        const delta = truth.midi - heard.midi
-        pitchErrors.set(delta, (pitchErrors.get(delta) ?? 0) + 1)
-      }
-    }
-    matchedTruth += used.size
-  }
-
-  const absErrors = onsetErrors.map(Math.abs).sort((a, b) => a - b)
-  return {
-    pitchErrors: [...pitchErrors.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 10),
-    windowOffsetSpread:
-      offsets.length > 1
-        ? Math.max(...offsets) - Math.min(...offsets)
-        : 0,
-    heardCount: heardNotes.length,
-    truthCount: truthNotes.length,
-    exact,
-    octaveOff,
-    wrongPitch,
-    unmatched,
-    missed: truthNotes.length - matchedTruth,
-    precision: heardNotes.length > 0 ? exact / heardNotes.length : 0,
-    recall: truthNotes.length > 0 ? exact / truthNotes.length : 0,
-    octaveTolerantPrecision:
-      heardNotes.length > 0 ? (exact + octaveOff) / heardNotes.length : 0,
-    onsetMedianMs: median(onsetErrors),
-    onsetP50Ms: median(absErrors),
-    onsetP95Ms:
-      absErrors.length > 0
-        ? absErrors[Math.min(absErrors.length - 1, Math.floor(absErrors.length * 0.95))]
-        : null,
-  }
-}
-
-function histogram(notes) {
-  const counts = new Map()
-  for (const note of notes) counts.set(note.midi, (counts.get(note.midi) ?? 0) + 1)
-  return [...counts.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 12)
 }
 
 function pct(value) {
@@ -388,7 +226,7 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
     '',
     `- Notes: **${result.notes.length}**`,
     `- Frame coverage: **${pct(result.coverage)}** of analysed frames gave a confident pitch`,
-    `- Most common pitches: ${histogram(result.notes)
+    `- Most common pitches: ${pitchHistogram(result.notes)
       .map(([midi, count]) => `${midi}×${count}`)
       .join(', ')}`,
   ]
@@ -421,9 +259,9 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
       '',
       '### Pitch histograms',
       '',
-      `Heard: ${histogram(heard).map(([m, c]) => `${m}×${c}`).join(', ')}`,
+      `Heard: ${pitchHistogram(heard).map(([m, c]) => `${m}×${c}`).join(', ')}`,
       '',
-      `Tab:   ${histogram(truth).map(([m, c]) => `${m}×${c}`).join(', ')}`,
+      `Tab:   ${pitchHistogram(truth).map(([m, c]) => `${m}×${c}`).join(', ')}`,
     )
   }
   return `${lines.join('\n')}\n`
@@ -497,11 +335,13 @@ async function main() {
     for (const audioPath of options.audio) {
       const label =
         options.label ?? basename(audioPath, extname(audioPath))
-      console.log(`\nTranscribing ${basename(audioPath)}…`)
+      console.log(
+        `\nTranscribing ${basename(audioPath)} with ${options.source}…`,
+      )
       const result = await page.evaluate(
-        ([fsUrl, profileOverrides]) =>
-          window.transcribeBench.transcribe(fsUrl, profileOverrides),
-        [`${url}/@fs${audioPath}`, options.profile],
+        ([fsUrl, source, profileOverrides]) =>
+          window.transcribeBench.transcribe(fsUrl, source, profileOverrides),
+        [`${url}/@fs${audioPath}`, options.source, options.profile],
       )
 
       const notes =
@@ -523,7 +363,10 @@ async function main() {
         scored = scoreAgainstTruth(notes, truthNotes, 0.12)
       }
 
-      const profile = { ...options.profile }
+      // The profile the harness actually ran, not the overrides asked for: a
+      // report that lists only the flags hides every default the run depended
+      // on, and the defaults are what changes between sources.
+      const profile = result.profile
       await writeFile(
         resolve(outDir, `${label}.notes.json`),
         JSON.stringify(

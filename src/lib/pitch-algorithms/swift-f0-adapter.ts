@@ -6,9 +6,7 @@
 import type { DetectorMetrics, DetectorSettings, IPitchDetector, PitchAlgorithm, PitchDetectionResult, } from '@/types/pitch-algorithms'
 import { freqToNote } from '../scale-data'
 import type { SwiftPitchResult } from '../swift-f0-detector'
-import { SwiftF0Detector } from '../swift-f0-detector'
-
-const SWIFTF0_SAMPLE_RATE = 16000
+import { resampleLinear, SWIFTF0_SAMPLE_RATE, SwiftF0Detector, } from '../swift-f0-detector'
 
 function hashBuffer(buf: Float32Array): string {
   let h = 0
@@ -17,26 +15,6 @@ function hashBuffer(buf: Float32Array): string {
     h = (((h << 5) - h + buf[i]! * 1000) | 0) >>> 0
   }
   return String(h)
-}
-
-/** Linear resample to 16kHz for SwiftF0 model compatibility */
-function resampleTo16k(
-  data: Float32Array,
-  inputSampleRate: number,
-): Float32Array {
-  if (inputSampleRate === SWIFTF0_SAMPLE_RATE) return data
-  const ratio = inputSampleRate / SWIFTF0_SAMPLE_RATE
-  const outLen = Math.floor(data.length / ratio)
-  const out = new Float32Array(outLen)
-  for (let i = 0; i < outLen; i++) {
-    const srcIdx = i * ratio
-    const srcFloor = Math.floor(srcIdx)
-    const frac = srcIdx - srcFloor
-    const a = data[srcFloor] ?? 0
-    const b = data[srcFloor + 1] ?? a
-    out[i] = a + (b - a) * frac
-  }
-  return out
 }
 
 export class SwiftF0Adapter implements IPitchDetector {
@@ -75,7 +53,7 @@ export class SwiftF0Adapter implements IPitchDetector {
   }
 
   private prepareInput(timeData: Float32Array): Float32Array {
-    return resampleTo16k(timeData, this.inputSampleRate)
+    return resampleLinear(timeData, this.inputSampleRate, SWIFTF0_SAMPLE_RATE)
   }
 
   /** Synchronous detect — returns last known result (or null if none yet). Fires async detection in background. */

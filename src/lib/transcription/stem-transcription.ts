@@ -16,7 +16,20 @@ import { createAttackDetector } from '@/lib/guitar/attack-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToNote } from '@/lib/scale-data'
 
+/**
+ * Where the per-frame pitches come from.
+ *
+ * `yin` is the signal-processing path: a window, an autocorrelation, one
+ * answer. `swift` is the SwiftF0 CNN, which reads the whole buffer and returns
+ * its own frame track. Everything after the frames — onsets, merging, octave
+ * repair — is shared, so switching this changes the pitch estimate and nothing
+ * else, which is the only way the two can be compared honestly.
+ */
+export type TranscriptionPitchSource = 'yin' | 'swift'
+
 export interface TranscriptionProfile {
+  /** Which detector produces the frame stream. */
+  pitchSource: TranscriptionPitchSource
   /** Analysis window in seconds, so the sample rate can change under it. */
   windowSeconds: number
   /**
@@ -80,6 +93,7 @@ export interface TranscriptionProfile {
  * pretending one profile covers both is how the contradiction got here.
  */
 export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
+  pitchSource: 'yin',
   windowSeconds: 0.06,
   // Off, measured rather than assumed. A second shorter window is the textbook
   // answer to fast notes, and against Dance of Death it was neutral-to-worse:
@@ -104,6 +118,55 @@ export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
   maxGapSeconds: 0.04,
   octaveEvidenceRatio: 0.5,
   onsetSplitFloor: 0.02,
+}
+
+/**
+ * The same bass line read by SwiftF0 instead of YIN.
+ *
+ * Available, and measured worse than YIN on the one bass line it has been
+ * tried against. Against Dance of Death's full bass stem, scored on the tab's
+ * 2720 Steve Harris notes, YIN found 668 notes at exactly the right pitch and
+ * SwiftF0's best threshold found 552 — behind at every threshold from 0.2 to
+ * 0.9, and behind on recall (24.6% against 20.3%). It is roughly twice as fast
+ * and produces fewer phantom notes, which is not the trade this needs.
+ *
+ * Two things explain it, and both are the model being good at its actual job.
+ * It never reports below MIDI 31 (49 Hz), so low E is outside its range — that
+ * costs about eleven notes here and would cost far more on a five-string. The
+ * larger one is that its contour is smooth, the way a sung line is: it holds a
+ * pitch through a restrike where YIN wavers, so repeated notes on one fret
+ * merge into one long note. Higher frame coverage, fewer note events.
+ *
+ * Kept because the comparison should stay runnable and because material where
+ * a smooth contour is the right prior — a fretless line, a bowed instrument, a
+ * vocal — is exactly where this would win. Not because it is close on bass.
+ *
+ * Two settings here are not free choices. `analysisSampleRate` is 16 kHz
+ * because that is the rate the model's STFT is defined at. `windowSeconds` and
+ * `stepSeconds` no longer drive the pitch estimate at all — the model has its
+ * own frame rate and reports it, and the segmenter is told the measured hop
+ * rather than these. They stay because the onset detector and the octave check
+ * still read the profile.
+ */
+export const BASS_SWIFT_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
+  ...BASS_TRANSCRIPTION_PROFILE,
+  pitchSource: 'swift',
+  analysisSampleRate: 16000,
+  /**
+   * Low, and lower than it looks: the number does not mean what YIN's does.
+   * YIN reports how well a window agreed with itself; the model reports how
+   * sure it is, and it is sure far more often, so 0.2 here is not permissive.
+   *
+   * Swept over the full stem, where recall falls monotonically as this rises
+   * (20.3% at 0.2 down to 17.8% at 0.8) and precision climbs (30.5% to 34.6%).
+   * Recall is the scarce thing on bass, so the bottom of the range wins.
+   *
+   * A sweep over the first 60 seconds said the opposite — flat recall to 0.96
+   * and much better precision, which pointed at 0.9. The intro is sparse and
+   * clean and nothing like the rest of the song. Tuning on a clip is how you
+   * get a number that is confidently wrong; this one is from the whole track.
+   */
+  minConfidence: 0.2,
 }
 
 /**
@@ -455,17 +518,28 @@ export function transcribeFrames(
   return { notes, coverage, analysedSeconds }
 }
 
-/** Analyse one mono stem into measured notes. Yields so a long song cannot freeze the room. */
-export async function transcribeStemSamples(
+/**
+ * A pitch source's answer for a whole stem, plus how many chances it had.
+ * Coverage divides one by the other, so "looked and found nothing" has to stay
+ * distinguishable from "never looked".
+ */
+interface FrameStream {
+  frames: TranscriptionFrame[]
+  analysedFrameCount: number
+  /** The source's own frame spacing, which the segmenter measures gaps in. */
+  stepSeconds: number
+}
+
+/** Frames from windowed YIN: one window, one autocorrelation, one answer. */
+async function yinFrameStream(
   samples: Float32Array,
   sampleRate: number,
+  profile: TranscriptionProfile,
   options: {
-    profile?: TranscriptionProfile
     signal?: AbortSignal
     onProgress?: (fraction: number) => void
-  } = {},
-): Promise<StemTranscription> {
-  const profile = options.profile ?? BASS_TRANSCRIPTION_PROFILE
+  },
+): Promise<FrameStream> {
   const windowSamples = profileWindowSamples(profile, sampleRate)
 
   /**
@@ -531,9 +605,12 @@ export async function transcribeStemSamples(
   const stepSamples = Math.max(1, Math.floor(profile.stepSeconds * sampleRate))
   const frameCount =
     Math.floor((samples.length - windowSamples) / stepSamples) + 1
-  const analysedSeconds = samples.length / sampleRate
   if (frameCount <= 0) {
-    return { notes: [], coverage: 0, analysedSeconds }
+    return {
+      frames: [],
+      analysedFrameCount: 0,
+      stepSeconds: profile.stepSeconds,
+    }
   }
 
   const frames: TranscriptionFrame[] = []
@@ -573,13 +650,113 @@ export async function transcribeStemSamples(
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
+
+  return {
+    frames,
+    analysedFrameCount: frameCount,
+    stepSeconds: profile.stepSeconds,
+  }
+}
+
+/**
+ * Frames from SwiftF0. The model reads the whole buffer and returns its own
+ * track, so there is no window to choose here — the profile's window and step
+ * describe an analysis this path never performs.
+ *
+ * Imported dynamically: the ONNX runtime plus a 389 KB model is a large thing
+ * to pull into the transcription chunk for a path most callers never take.
+ */
+async function swiftFrameStream(
+  samples: Float32Array,
+  sampleRate: number,
+  profile: TranscriptionProfile,
+  options: {
+    signal?: AbortSignal
+    onProgress?: (fraction: number) => void
+  },
+): Promise<FrameStream> {
+  const { SwiftF0Detector } = await import('@/lib/swift-f0-detector')
+  const detector = new SwiftF0Detector()
+  if (!(await detector.init())) {
+    throw new Error('The SwiftF0 model could not be loaded on this device.')
+  }
+  const track = await detector.detectTrack(samples, sampleRate, {
+    signal: options.signal,
+    onProgress: options.onProgress,
+  })
+
+  // The model answers every frame it is given, including the silent ones, and
+  // reports respectable confidence while doing it. YIN refuses a window whose
+  // RMS is below `minAmplitude`; without the same gate here the two paths are
+  // not comparable, and the silence gets segmented into notes. Measured over
+  // the profile's own window so the gate weighs the same evidence on both.
+  const gateSamples = Math.max(
+    1,
+    Math.round(profile.windowSeconds * sampleRate),
+  )
+  const loudEnough = (centreSeconds: number): boolean => {
+    const centre = Math.round(centreSeconds * sampleRate)
+    const from = Math.max(0, centre - gateSamples / 2)
+    const to = Math.min(samples.length, from + gateSamples)
+    if (to <= from) return false
+    let sum = 0
+    for (let index = from; index < to; index += 1) {
+      const sample = samples[index] ?? 0
+      sum += sample * sample
+    }
+    return Math.sqrt(sum / (to - from)) >= profile.minAmplitude
+  }
+
+  const frames: TranscriptionFrame[] = []
+  for (let index = 0; index < track.pitchHz.length; index += 1) {
+    const frequency = track.pitchHz[index] ?? 0
+    if (frequency <= 0) continue
+    const timeSeconds = track.timeSeconds[index] ?? 0
+    if (!loudEnough(timeSeconds)) continue
+    frames.push({
+      timeSeconds,
+      midi: Math.round(69 + 12 * Math.log2(frequency / 440)),
+      clarity: track.confidence[index] ?? 0,
+    })
+  }
+
+  return {
+    frames,
+    analysedFrameCount: track.pitchHz.length,
+    stepSeconds: track.hopSeconds > 0 ? track.hopSeconds : profile.stepSeconds,
+  }
+}
+
+/** Analyse one mono stem into measured notes. Yields so a long song cannot freeze the room. */
+export async function transcribeStemSamples(
+  samples: Float32Array,
+  sampleRate: number,
+  options: {
+    profile?: TranscriptionProfile
+    signal?: AbortSignal
+    onProgress?: (fraction: number) => void
+  } = {},
+): Promise<StemTranscription> {
+  const profile = options.profile ?? BASS_TRANSCRIPTION_PROFILE
+  const analysedSeconds = samples.length / sampleRate
+
+  const stream =
+    profile.pitchSource === 'swift'
+      ? await swiftFrameStream(samples, sampleRate, profile, options)
+      : await yinFrameStream(samples, sampleRate, profile, options)
   options.onProgress?.(1)
+  if (stream.analysedFrameCount <= 0) {
+    return { notes: [], coverage: 0, analysedSeconds }
+  }
 
   const onsets = detectStemOnsets(samples, sampleRate, profile)
+  // The segmenter measures note ends and gaps in steps, so it is told the
+  // source's real frame spacing rather than the profile's: SwiftF0 runs at its
+  // own hop, and using the profile's step there would stretch every note.
   const transcription = transcribeFrames(
-    frames,
-    profile,
-    frameCount,
+    stream.frames,
+    { ...profile, stepSeconds: stream.stepSeconds },
+    stream.analysedFrameCount,
     analysedSeconds,
     onsets,
   )
