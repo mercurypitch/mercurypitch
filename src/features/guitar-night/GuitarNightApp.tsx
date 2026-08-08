@@ -38,6 +38,16 @@ type GuitarNightAppProps = {
   createBackingTransport?: () => GuitarBackingTransport
 }
 
+/** The library opens on the newest few songs; the rest arrive on request. */
+const INITIAL_LIBRARY_PAGE = 5
+const LIBRARY_PAGE_STEP = 10
+/**
+ * A first open after a schema change re-indexes every stem this device has
+ * saved, which is slow on a large library. Say so rather than letting the
+ * room look stuck.
+ */
+const LIBRARY_SLOW_OPEN_MS = 4000
+
 function formatPreparedDate(timestamp: number): string {
   const date = new Date(timestamp)
   if (!Number.isFinite(date.getTime())) return 'Date unavailable'
@@ -184,6 +194,52 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const unavailableSelection = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
+  })
+
+  const [visibleSongLimit, setVisibleSongLimit] =
+    createSignal(INITIAL_LIBRARY_PAGE)
+  const songsWithinLimit = (limit: number) => {
+    const all = songController.songs()
+    if (all.length <= limit) return all
+    const head = all.slice(0, limit)
+    // The routed song stays reachable even when it sits below the fold —
+    // otherwise its Resume affordance hides behind the Show more button.
+    const routedSessionId =
+      activeBacking()?.sessionId ?? songController.routeSessionId()
+    if (
+      routedSessionId === null ||
+      head.some((song) => song.sessionId === routedSessionId)
+    ) {
+      return head
+    }
+    const routed = all.find((song) => song.sessionId === routedSessionId)
+    return routed === undefined ? head : [...head, routed]
+  }
+  const visibleSongs = createMemo(() => songsWithinLimit(visibleSongLimit()))
+  const hiddenSongCount = createMemo(() =>
+    Math.max(0, songController.songs().length - visibleSongs().length),
+  )
+  // Count what the next press actually reveals: a pinned routed song is
+  // already on screen, so a plain page step would overstate the reveal.
+  const nextRevealCount = createMemo(() =>
+    Math.max(
+      0,
+      songsWithinLimit(visibleSongLimit() + LIBRARY_PAGE_STEP).length -
+        visibleSongs().length,
+    ),
+  )
+
+  const [libraryOpenIsSlow, setLibraryOpenIsSlow] = createSignal(false)
+  createEffect(() => {
+    if (songController.libraryState() !== 'loading') {
+      setLibraryOpenIsSlow(false)
+      return
+    }
+    const timer = window.setTimeout(
+      () => setLibraryOpenIsSlow(true),
+      LIBRARY_SLOW_OPEN_MS,
+    )
+    onCleanup(() => window.clearTimeout(timer))
   })
   const preparingSong = createMemo(() => {
     const state = preparationController.state()
@@ -821,7 +877,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 <div class={styles.songLibraryHeader}>
                   <h2 id="guitar-night-library-title">Prepared songs</h2>
                   <Show when={songController.libraryState() === 'ready'}>
-                    <span>{songController.songs().length} on this device</span>
+                    <span>
+                      {hiddenSongCount() > 0
+                        ? `${visibleSongs().length} of ${songController.songs().length} on this device`
+                        : `${songController.songs().length} on this device`}
+                    </span>
                   </Show>
                 </div>
 
@@ -834,6 +894,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   >
                     <p class={styles.songMessage}>
                       Opening your local library…
+                      <Show when={libraryOpenIsSlow()}>
+                        <small>
+                          The first open after an update re-checks the audio
+                          already saved on this device. A large library can take
+                          a minute, and nothing is lost while it works.
+                        </small>
+                      </Show>
                     </p>
                   </Match>
                   <Match when={songController.libraryState() === 'error'}>
@@ -856,7 +923,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </Match>
                   <Match when={songController.songs().length > 0}>
                     <ul class={styles.songList}>
-                      <For each={songController.songs()}>
+                      <For each={visibleSongs()}>
                         {(song) => (
                           <li>
                             <button
@@ -896,6 +963,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         )}
                       </For>
                     </ul>
+                    <Show when={hiddenSongCount() > 0}>
+                      <button
+                        type="button"
+                        class={styles.songListMore}
+                        onClick={() =>
+                          setVisibleSongLimit(
+                            (limit) => limit + LIBRARY_PAGE_STEP,
+                          )
+                        }
+                      >
+                        Show {nextRevealCount()} more
+                      </button>
+                    </Show>
                   </Match>
                 </Switch>
               </section>

@@ -80,7 +80,7 @@ These are the rules that break things when ignored.
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.5k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.8k | Glass — the shattering voice mirror (P2: self-voice loop). |
-| `guitar-night` | [useGuitarNightPreparationController.ts](../../src/features/guitar-night/useGuitarNightPreparationController.ts) | 4.1k | Guitar Night preparation controller owns one cancellable, stale-safe local song run |
+| `guitar-night` | [useGuitarNightPreparationController.ts](../../src/features/guitar-night/useGuitarNightPreparationController.ts) | 4.2k | Guitar Night preparation controller owns one cancellable, stale-safe local song run |
 | `onboarding` | [BeatFirstLight.tsx](../../src/features/onboarding/beats/BeatFirstLight.tsx) | 3.4k | Beat 2 — First light The mic is asked HERE, one tap after the visitor said "sing one note" — at the moment of intent, with the reason on... |
 | `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 3.2k | ChallengeStage — the weekly Legend performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's me... |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |

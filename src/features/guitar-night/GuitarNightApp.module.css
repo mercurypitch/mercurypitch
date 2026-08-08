@@ -704,12 +704,39 @@
   font-weight: 700;
 }
 
+.songListMore {
+  width: 100%;
+  min-height: var(--touch-target);
+  margin-top: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed rgba(244, 234, 219, 0.18);
+  border-radius: 0.48rem;
+  color: rgba(244, 234, 219, 0.76);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.songListMore:hover {
+  border-color: rgba(224, 164, 93, 0.45);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.06);
+}
+
 .songMessage,
 .songMessageRow p {
   margin: 0;
   color: rgba(244, 234, 219, 0.56);
   font-size: 0.76rem;
   line-height: 1.45;
+}
+
+.songMessage small {
+  display: block;
+  margin-top: 0.3rem;
+  color: rgba(244, 234, 219, 0.42);
+  font-size: 0.7rem;
 }
 
 .songMessageRow {
