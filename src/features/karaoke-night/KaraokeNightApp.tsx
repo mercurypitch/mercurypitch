@@ -13,9 +13,12 @@
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
+import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
 import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
@@ -54,6 +57,13 @@ const KaraokeAccount = lazy(async () => {
   return { default: m.KaraokeAccount }
 })
 
+// The Mercury Sing stage drags in the whole pitch/matcher stack — lazy, it
+// costs nothing until someone actually says "mercury sing".
+const MercurySingStage = lazy(async () => {
+  const m = await import('@/features/mercury-sing/MercurySingStage')
+  return { default: m.MercurySingStage }
+})
+
 const RAIL_KEY = 'pitchperfect_kn_rail_collapsed'
 
 function loadRailCollapsed(): boolean {
@@ -71,6 +81,8 @@ export function KaraokeNightApp() {
   markStandaloneKaraokeSurface()
   const voiceControl = useVoiceControlController()
   useVoiceToggleKey(voiceControl.toggle)
+  const mercurySingCommands = createMercurySingVoiceCommands()
+  onCleanup(registerVoiceCommands(() => mercurySingCommands))
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
@@ -697,6 +709,11 @@ export function KaraokeNightApp() {
           nowhere on the standalone page. */}
       <Notifications />
       <VoiceControlHud controller={voiceControl} />
+      <Show when={mercurySingOpen()}>
+        <Suspense>
+          <MercurySingStage />
+        </Suspense>
+      </Show>
       <Suspense>
         <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
       </Suspense>

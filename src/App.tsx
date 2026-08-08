@@ -209,6 +209,9 @@ import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import type { LabTab } from '@/features/lab/LabSurface'
+import { createMercurySingVoiceCommands } from '@/features/mercury-sing/mercury-sing-commands'
+import { mercurySingOpen } from '@/features/mercury-sing/mercury-sing-store'
+import { MercurySingStage } from '@/features/mercury-sing/MercurySingStage'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
@@ -1895,6 +1898,8 @@ const AppShell: Component<AppProps> = (props) => {
     openVoiceHelp: () => setShowVoiceHelp(true),
   })
   onCleanup(registerVoiceCommands(() => navigationVoiceCommands))
+  const mercurySingCommands = createMercurySingVoiceCommands()
+  onCleanup(registerVoiceCommands(() => mercurySingCommands))
   const voiceControl = useVoiceControlController({
     // Gates the optional wake-word-required mode: "music is audibly rolling"
     // means the shared runtime or the piano game, the two transports voice
@@ -4053,6 +4058,11 @@ const AppShell: Component<AppProps> = (props) => {
         <VoiceControlHud controller={voiceControl} />
         <Show when={showVoiceHelp()}>
           <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+        </Show>
+        {/* Mounting IS opening: the stage's engine spins up with the
+            component and releases the mic on unmount. */}
+        <Show when={mercurySingOpen()}>
+          <MercurySingStage />
         </Show>
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />

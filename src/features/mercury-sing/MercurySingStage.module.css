@@ -1,0 +1,230 @@
+/* ============================================================
+   MercurySingStage — the listening stage
+   ============================================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 62%);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(30rem, 100%);
+  max-height: min(80vh, 38rem);
+  padding-bottom: 0.9rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 45%);
+  color: var(--text);
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: var(--text);
+}
+
+.statusLine {
+  margin: 0;
+  padding: 0.4rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.listenRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 1.25rem 0;
+  font-size: 0.85rem;
+}
+
+.listenDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: mercury-sing-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mercury-sing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+.librarySpan {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.trail {
+  width: calc(100% - 2.5rem);
+  height: 3.2rem;
+  margin: 0.15rem 1.25rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 18%);
+}
+
+.trailBar {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+
+.fingerprintLine {
+  margin: 0;
+  padding: 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.waitingLine {
+  margin: 0;
+  padding: 0.3rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.candidates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.2rem 1.25rem 0;
+  list-style: none;
+}
+
+.candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.candidateButton {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.candidateButton:hover {
+  border-color: var(--accent);
+}
+
+.candidateIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.candidateName {
+  overflow: hidden;
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidateConfidence {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.candidateMeta {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0 0.6rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.armTrack {
+  height: 0.28rem;
+  margin: 0 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(127 127 127 / 25%);
+}
+
+.armFill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 220ms linear;
+}
+
+.hint {
+  margin: 0.2rem 0 0;
+  padding: 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
