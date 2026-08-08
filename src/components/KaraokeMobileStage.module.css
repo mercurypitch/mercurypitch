@@ -343,9 +343,15 @@
 
 .leadInRule {
   position: absolute;
-  right: 0;
   bottom: -0.14em;
   left: 0;
+  /* Fixed width, anchored to the line's start. Sized to the word it rides,
+     the bar told a different story per line — a run-in over "I" was a
+     sliver, over "remember" a runway. It marks WHEN the line starts, not
+     what to sing, so one calm size wins even when it underlines one and a
+     half short words. */
+  width: 2.6em;
+  max-width: 100%;
   height: 0.055em;
   min-height: 2px;
   border-radius: 999px;
