@@ -12,6 +12,7 @@
 // weak fundamental makes detectors report the octave above on attacks and
 // decays, so octave slips are repaired against the line's own register.
 
+import { createAttackDetector } from '@/lib/guitar/attack-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToNote } from '@/lib/scale-data'
 
@@ -33,23 +34,70 @@ export interface TranscriptionProfile {
   maxMidi: number
   minDurationSeconds: number
   maxGapSeconds: number
+  /**
+   * A note whose fundamental carries less than this share of the energy at
+   * twice its frequency is not a fundamental at all — it is the octave below
+   * the real note. Raise it to correct harder, lower it to trust the detector.
+   */
+  octaveEvidenceRatio: number
+  /**
+   * Split a held pitch into separate notes when the string is struck again.
+   * Off (null) keeps the old behaviour of merging repeats into one long note.
+   */
+  onsetSplitFloor: number | null
 }
 
-/** Four- and five-string bass, from low B0 to the top of the neck. */
+/**
+ * Four-string bass, from low E to the top of the neck.
+ *
+ * `windowSeconds` and `minFrequency` are not independent, and an earlier
+ * version of this profile had them contradict each other: it asked for notes
+ * down to 28 Hz through a window that holds barely one cycle at that
+ * frequency, which YIN cannot resolve. The window has to hold about four
+ * cycles of the lowest note asked for — see `resolvableMinFrequency`, which a
+ * test pins — so the two move together or not at all.
+ *
+ * The shape of the trade: a longer window reaches lower and blurs fast notes,
+ * because it straddles two of them and resolves neither. Measured against
+ * Dance of Death's bass stem, shortening the window from 93 ms to 60 ms and
+ * halving the step found 55% more notes. Low B lives below what this can
+ * resolve; a five-string profile needs its own longer window, and pretending
+ * one profile covers both is how the contradiction got here.
+ */
 export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
-  windowSeconds: 0.093,
-  stepSeconds: 0.04,
+  windowSeconds: 0.06,
+  stepSeconds: 0.02,
   // 8 kHz leaves a 4 kHz ceiling, ten times the highest note this profile
   // looks for, and cuts the work per frame by roughly thirty.
   analysisSampleRate: 8000,
-  minFrequency: 28,
+  // Just under low E at 41.2 Hz: room for a flat tuning, and no room for the
+  // sub-octave the detector would otherwise be free to report.
+  minFrequency: 38,
   maxFrequency: 400,
   minConfidence: 0.5,
   minAmplitude: 0.01,
   minMidi: 24,
   maxMidi: 60,
-  minDurationSeconds: 0.09,
-  maxGapSeconds: 0.06,
+  minDurationSeconds: 0.05,
+  maxGapSeconds: 0.04,
+  octaveEvidenceRatio: 0.5,
+  onsetSplitFloor: 0.02,
+}
+
+/**
+ * The lowest frequency a window of this length can express at all. YIN shifts
+ * the buffer against itself by up to half its length, so a period longer than
+ * half the window has nothing left to compare against and simply cannot be
+ * measured.
+ *
+ * This is a hard floor, not a quality bar. An estimate near it rests on barely
+ * one cycle of overlap and is correspondingly shaky; comfort starts around
+ * three or four cycles, which is `4 / windowSeconds`. The bass profile sits
+ * between the two at its very bottom, deliberately: reaching low E matters
+ * more than a pristine estimate on the one note nobody plays fast.
+ */
+export function resolvableMinFrequency(windowSeconds: number): number {
+  return windowSeconds > 0 ? 2 / windowSeconds : Infinity
 }
 
 /** Analysis window in samples at whatever rate the audio actually arrived at. */
@@ -138,14 +186,135 @@ export function repairOctaveSlips(
 }
 
 /**
+ * Energy at one frequency over a span of samples, by Goertzel.
+ *
+ * Cheaper than an FFT and the only question being asked is a yes/no about two
+ * specific frequencies, so a whole spectrum would be waste.
+ */
+export function toneMagnitude(
+  samples: Float32Array,
+  sampleRate: number,
+  frequency: number,
+  fromSample: number,
+  toSample: number,
+): number {
+  const from = Math.max(0, Math.floor(fromSample))
+  const to = Math.min(samples.length, Math.ceil(toSample))
+  const count = to - from
+  if (count < 8 || frequency <= 0 || frequency >= sampleRate / 2) return 0
+
+  const coefficient = 2 * Math.cos((2 * Math.PI * frequency) / sampleRate)
+  let previous = 0
+  let beforePrevious = 0
+  for (let index = 0; index < count; index += 1) {
+    // Hann window: without it a partial period at each end leaks across bins
+    // and the comparison between f and 2f stops meaning anything.
+    const windowed =
+      (samples[from + index] ?? 0) *
+      (0.5 - 0.5 * Math.cos((2 * Math.PI * index) / count))
+    const current = windowed + coefficient * previous - beforePrevious
+    beforePrevious = previous
+    previous = current
+  }
+  return (
+    Math.sqrt(
+      Math.max(
+        0,
+        previous * previous +
+          beforePrevious * beforePrevious -
+          coefficient * previous * beforePrevious,
+      ),
+    ) / count
+  )
+}
+
+/**
+ * Ask the audio which octave a note is really in.
+ *
+ * A detector that locks onto twice the true period reports the octave below,
+ * and on a plucked string it does that often: the difference function dips
+ * nearly as deep at 2T as at T. Statistics cannot settle it — when half a
+ * line is reported an octave down, the median sits between the two and every
+ * note looks equally plausible. The audio can settle it. A real fundamental
+ * has energy at its own frequency; an invented sub-octave has almost none,
+ * and all the energy sits an octave above.
+ *
+ * Deliberately one-directional. Shifting up repairs the error the detector
+ * actually makes; shifting down on the same evidence would just as happily
+ * "repair" a real note whose fundamental is weak, which is most notes near the
+ * bottom of a bass.
+ */
+export function octaveCorrectedMidi(
+  samples: Float32Array,
+  sampleRate: number,
+  midi: number,
+  fromSample: number,
+  toSample: number,
+  profile: TranscriptionProfile,
+): number {
+  if (midi + 12 > profile.maxMidi) return midi
+  const frequency = 440 * Math.pow(2, (midi - 69) / 12)
+
+  // Widen a short note's span to a few periods before asking. A sixteenth at
+  // the bottom of a bass is barely two cycles long, and two cycles cannot tell
+  // two frequencies apart — the test would answer from noise. Reaching past
+  // the note borrows its own ringing, which is the same string either way.
+  const minimumSpan = (4 * sampleRate) / frequency
+  const centre = (fromSample + toSample) / 2
+  const half = Math.max(minimumSpan, toSample - fromSample) / 2
+  const from = Math.max(0, centre - half)
+  const to = Math.min(samples.length, centre + half)
+
+  const fundamental = toneMagnitude(samples, sampleRate, frequency, from, to)
+  const octaveUp = toneMagnitude(samples, sampleRate, frequency * 2, from, to)
+  if (octaveUp <= 0) return midi
+  return fundamental < octaveUp * profile.octaveEvidenceRatio ? midi + 12 : midi
+}
+
+/** Times, in seconds, at which the stem was struck. */
+export function detectStemOnsets(
+  samples: Float32Array,
+  sampleRate: number,
+  profile: TranscriptionProfile,
+): number[] {
+  if (profile.onsetSplitFloor === null) return []
+  const detector = createAttackDetector({
+    sampleRate,
+    floorLevel: profile.onsetSplitFloor,
+    // A repeated sixteenth at 200 BPM is 75 ms apart, and a bass line lives
+    // there. The live-input default is slower because a room has more to
+    // mistake for a strike than a separated stem does.
+    refractoryMs: 55,
+  })
+  const onsets: number[] = []
+  const block = 512
+  for (let start = 0; start < samples.length; start += block) {
+    const chunk = samples.subarray(
+      start,
+      Math.min(start + block, samples.length),
+    )
+    for (const attack of detector.process(chunk)) {
+      onsets.push((start + attack.offsetSamples) / sampleRate)
+    }
+  }
+  return onsets
+}
+
+/**
  * Segment confident frames into sustained notes. Kept pure and separate from
  * audio decoding so the segmentation rules can be tested exactly.
+ *
+ * `onsetSeconds` is what makes a repeated note two notes. Pitch alone cannot:
+ * a string struck four times on the same fret is one unbroken pitch contour,
+ * and without onsets it transcribes as a single long note — which is most of
+ * what a bass line does.
  */
 export function transcribeFrames(
   frames: readonly TranscriptionFrame[],
   profile: TranscriptionProfile,
   analysedFrameCount = frames.length,
   analysedSeconds = frames.length * profile.stepSeconds,
+  onsetSeconds: readonly number[] = [],
 ): StemTranscription {
   const confident = frames.filter(
     (frame) =>
@@ -175,11 +344,28 @@ export function transcribeFrames(
     clarities: [confident[0].clarity],
   }
 
+  // Onsets are consumed in order alongside the frames, so the check below is a
+  // pointer bump rather than a scan per frame.
+  const onsets = [...onsetSeconds].sort((left, right) => left - right)
+  let nextOnset = 0
+  const struckBetween = (fromSeconds: number, toSeconds: number): boolean => {
+    while (nextOnset < onsets.length && onsets[nextOnset] <= fromSeconds) {
+      nextOnset += 1
+    }
+    return nextOnset < onsets.length && onsets[nextOnset] < toSeconds
+  }
+
   for (let index = 1; index < confident.length; index += 1) {
     const frame = confident[index]
-    const gap = frame.timeSeconds - confident[index - 1].timeSeconds
+    const previous = confident[index - 1]
+    const gap = frame.timeSeconds - previous.timeSeconds
     const center = Math.round(median(open.midiValues))
-    if (Math.abs(frame.midi - center) <= 1 && gap <= profile.maxGapSeconds) {
+    const restruck = struckBetween(previous.timeSeconds, frame.timeSeconds)
+    if (
+      !restruck &&
+      Math.abs(frame.midi - center) <= 1 &&
+      gap <= profile.maxGapSeconds
+    ) {
       open.midiValues.push(frame.midi)
       open.clarities.push(frame.clarity)
       open.endSeconds = frame.timeSeconds + profile.stepSeconds
@@ -239,6 +425,12 @@ export async function transcribeStemSamples(
     maxFrequency: profile.maxFrequency,
     minConfidence: profile.minConfidence,
     minAmplitude: profile.minAmplitude,
+    // The detector's smoother replaces any reading more than a couple of
+    // semitones from its recent median, and needs two consecutive agreeing
+    // frames before it accepts a note change. That is right for a sung line
+    // watched live and wrong here: a bass line's next note IS a jump, and at
+    // this step size a short one is gone before the filter believes in it.
+    stabilize: false,
   })
 
   const stepSamples = Math.max(1, Math.floor(profile.stepSeconds * sampleRate))
@@ -276,7 +468,33 @@ export async function transcribeStemSamples(
   }
   options.onProgress?.(1)
 
-  return transcribeFrames(frames, profile, frameCount, analysedSeconds)
+  const onsets = detectStemOnsets(samples, sampleRate, profile)
+  const transcription = transcribeFrames(
+    frames,
+    profile,
+    frameCount,
+    analysedSeconds,
+    onsets,
+  )
+
+  // Octave verification runs on the finished notes rather than per frame: a
+  // note spans enough samples for the two magnitudes to mean something, where
+  // a single 93 ms frame of a decaying low string often does not.
+  const notes = transcription.notes.map((note) => {
+    const midi = octaveCorrectedMidi(
+      samples,
+      sampleRate,
+      note.midi,
+      note.startSeconds * sampleRate,
+      (note.startSeconds + note.durationSeconds) * sampleRate,
+      profile,
+    )
+    if (midi === note.midi) return note
+    const { name, octave } = midiToNote(midi)
+    return { ...note, midi, noteName: `${name}${octave}` }
+  })
+
+  return { ...transcription, notes }
 }
 
 /**
