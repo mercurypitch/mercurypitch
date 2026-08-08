@@ -25,7 +25,7 @@
 
 import type { UvrSession } from '@/stores/uvr-store'
 import type { DemoSongManifest } from './demo-song'
-import { demoIsPlayable, demoSessionId } from './demo-song'
+import { demoIsPlayable, demoSessionId, isDemoSessionId } from './demo-song'
 
 /** The group every example lands in. Matched by name — ids are db-generated. */
 export const EXAMPLES_GROUP_NAME = 'Examples'
@@ -48,11 +48,21 @@ export const EXAMPLE_PROVIDER = 'examples'
  * their own song" — it is Campaign E's bid target, and an event a visitor
  * can fire by tapping a built-in track would optimise the campaign toward
  * exactly the behaviour it is supposed to measure the absence of.
+ *
+ * Two independent signals, either sufficient. `provider` is what the
+ * current seeder stamps; the session-id format covers rows a device
+ * seeded under an older build that may predate the stamp. Every example
+ * id comes from `demoSessionId()` by construction, and a visitor's own
+ * separation can never be given one — so the id check adds legacy safety
+ * without any way to misclassify a real upload.
  */
 export function isExampleSession(
-  session: Pick<UvrSession, 'provider'> | undefined,
+  session: Pick<UvrSession, 'provider' | 'sessionId'> | undefined,
 ): boolean {
-  return session?.provider === EXAMPLE_PROVIDER
+  if (session === undefined) return false
+  return (
+    session.provider === EXAMPLE_PROVIDER || isDemoSessionId(session.sessionId)
+  )
 }
 
 /**

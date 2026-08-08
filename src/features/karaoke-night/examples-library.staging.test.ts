@@ -39,15 +39,46 @@ describe('isExampleSession', () => {
   it('does not claim a visitor upload', () => {
     // Server and local separations both stamp a different provider, and an
     // older row may carry none at all.
-    expect(isExampleSession({ provider: 'server' })).toBe(false)
-    expect(isExampleSession({ provider: 'webgpu' })).toBe(false)
-    expect(isExampleSession({ provider: undefined })).toBe(false)
+    const uploadId = 'a2c4e6f8-1234-4abc-9def-000000000001'
+    expect(isExampleSession({ provider: 'server', sessionId: uploadId })).toBe(
+      false,
+    )
+    expect(isExampleSession({ provider: 'webgpu', sessionId: uploadId })).toBe(
+      false,
+    )
+    expect(isExampleSession({ provider: undefined, sessionId: uploadId })).toBe(
+      false,
+    )
     expect(isExampleSession(undefined)).toBe(false)
   })
 
   it('is not fooled by a lookalike provider', () => {
-    expect(isExampleSession({ provider: 'Examples' })).toBe(false)
-    expect(isExampleSession({ provider: 'example' })).toBe(false)
+    const uploadId = 'a2c4e6f8-1234-4abc-9def-000000000002'
+    expect(
+      isExampleSession({ provider: 'Examples', sessionId: uploadId }),
+    ).toBe(false)
+    expect(isExampleSession({ provider: 'example', sessionId: uploadId })).toBe(
+      false,
+    )
+  })
+
+  it('recognises a legacy example row by id when the provider stamp is missing', () => {
+    // A device that seeded examples under an older build may hold rows
+    // without provider='examples' in Dexie forever. Their id format cannot
+    // lie: every example id comes from demoSessionId(), and no visitor
+    // upload is ever given one.
+    expect(
+      isExampleSession({
+        provider: undefined,
+        sessionId: demoSessionId('some-old-example'),
+      }),
+    ).toBe(true)
+    expect(
+      isExampleSession({
+        provider: undefined,
+        sessionId: 'karaoke-night-demo',
+      }),
+    ).toBe(true)
   })
 })
 
