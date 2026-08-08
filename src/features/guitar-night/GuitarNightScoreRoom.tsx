@@ -12,6 +12,7 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
@@ -174,6 +175,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         heardNote={listening.currentNote}
         heardClarity={listening.clarity}
       />
+
+      <Show when={listening.status() !== 'off'}>
+        <GuitarNightInputHealth
+          listening={isListening}
+          calibrating={() => listening.status() === 'calibrating'}
+          health={listening.health}
+          timingSource={listening.timingSource}
+          latency={listening.latency}
+          onCalibrate={() => void listening.calibrate()}
+        />
+      </Show>
 
       <Show when={listening.error()}>
         {(message) => (
