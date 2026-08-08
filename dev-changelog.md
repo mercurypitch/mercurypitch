@@ -104,6 +104,31 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Fixed
 
+- **Merged from main into this release** (reviewed and landed separately):
+  funnel acquisition capture — where a funnel visitor came from, carried on
+  every transport (#463); the karaoke staging event split — staging an example
+  is no longer the same event as staging your own song, with an id-fallback
+  pinned by unit and e2e tests (#465); an internal-traffic flag so GA4 can
+  filter our own visits (#466); immutable caching for hashed assets and
+  dynamic-only vendors off the first-paint graph (perf pair).
+
+- **Score window modes.** `src/lib/score-window.ts` (new, dependency-free on
+  purpose — both `practice-engine` and `settings-store` import it, and a
+  definition in either would put a cycle through the stores barrel):
+  `scoreWindow(samples, mode)` with `'full' | 'settled' | 'core'`,
+  `SCORE_TRIM_FRACTION = 0.15`, floor-based so notes under 7 frames are never
+  trimmed and 'core' always keeps at least 70%. `PracticeEngine` applies it in
+  `finalizeNoteResult` (default `'settled'`, synced from the new persisted
+  `scoreMode` setting through `EngineContext`). Each accuracy tier now implies
+  a mode — learning/core, singer/settled, professional/full — applied by
+  `applyAccuracyTier`, manual picks override until the next tier change.
+  Blast radius audited: the window changes Singing-tab note scores only (live
+  score, canvas chips, saved PracticeResults — forward-only). Falling-notes,
+  the exercises, zen/challenges and the stem mixer score through their own
+  paths (`centsToRating` there is called on already-final cents, no window)
+  and are byte-identical. 20 new tests across three files; the four
+  engine-mode tests were verified to fail with the windowing pinned off.
+
 - **A rest left the note before it still being scored.** `PracticeEngine`
   closed a note's sample window only when the _next_ note started, and
   `PlaybackRuntime` filters rests out of `noteStart` and `noteEnd` alike — so a
@@ -127,8 +152,10 @@ single-page-application` means a deleted chunk answers with index.html and a
   in `@/lib/mic-latency` is now the single definition of that shift, and
   `usePracticeController` puts every trace sample through it. It is a no-op at
   an unmeasured 0 ms. Recording (`processPitchFrame`) still stores arrival
-  beats: its pipeline keys off `performance.now()` as well as the beat, so
-  shifting one without the other would desync it — left as a follow-up.
+  beats: its pipeline reads `timeSec` only
+  for durations (OneEuro dt, hold and gap timers) and `beat` only for
+  positions, so shifting the beat alone is internally safe — analysed in
+  full, decision on when to ship it is the owner's; see PR #462.
 
 - **Audited the mic-latency measurement itself and found it sound.** The wizard
   times clicks and their return on one `AudioContext` clock and uses the

@@ -13,6 +13,8 @@
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { IS_DEV } from '@/lib/defaults'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
+import type { ScoreMode } from '@/lib/score-window'
+import { isScoreMode } from '@/lib/score-window'
 import { createPersistedSignal } from '@/lib/storage'
 
 export type { PitchAlgorithm }
@@ -597,6 +599,17 @@ export const [showPlayhead, setShowPlayhead] = createPersistedSignal<boolean>(
   false,
 )
 
+// ── Score mode ─────────────────────────────────────────────────────────
+// Which part of a sung note counts toward its score; the window itself is
+// defined in @/lib/score-window. Default 'settled' (skip the slide-in) —
+// the engine's own default must match.
+
+export const [scoreMode, setScoreMode] = createPersistedSignal<ScoreMode>(
+  'pitchperfect_score_mode',
+  'settled',
+  { validator: isScoreMode },
+)
+
 // ── Accuracy Presets ───────────────────────────────────────────────────
 
 export const [accuracyTier, _setAccuracyTier] =
@@ -613,6 +626,16 @@ const TIER_SENSITIVITY: Record<AccuracyTier, SensitivityPreset> = {
   professional: 'noisy',
 }
 
+// Each tier also implies how much of a note is scored, one rung apart:
+// a learner is still finding notes (trim the slide in and the release out),
+// a singer is judged once the note has settled, a professional on all of it.
+// Picking a mode by hand in Settings afterwards still overrides this.
+const TIER_SCORE_MODE: Record<AccuracyTier, ScoreMode> = {
+  learning: 'core',
+  singer: 'settled',
+  professional: 'full',
+}
+
 /** Apply accuracy tier preset to current settings */
 export function applyAccuracyTier(tier: AccuracyTier): void {
   const bands = ACCURACY_PRESETS[tier]
@@ -623,6 +646,7 @@ export function applyAccuracyTier(tier: AccuracyTier): void {
     tonicAnchor: s.tonicAnchor,
   }))
   _setSensitivityPreset(TIER_SENSITIVITY[tier])
+  setScoreMode(TIER_SCORE_MODE[tier])
   _setAccuracyTier(tier)
 }
 

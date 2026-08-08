@@ -487,6 +487,152 @@ describe('PracticeEngine scoring across a rest', () => {
   })
 })
 
+describe('PracticeEngine score modes', () => {
+  const C4 = 261.63
+  const D4 = 293.66
+
+  const pitchedNote = (name: string, midi: number, freq: number): MelodyNote =>
+    ({ name, octave: 4, midi, freq, duration: 1 }) as MelodyNote
+
+  let clock = 0
+
+  beforeEach(() => {
+    clock = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => clock)
+    setMicLatencyByDevice({})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    setMicLatencyByDevice({})
+  })
+
+  const frames = (engine: PracticeEngine, count: number): void => {
+    for (let i = 0; i < count; i++) {
+      clock += 16
+      engine.update()
+    }
+  }
+
+  /**
+   * One note, sung as a real singer does: the first `slideFrames` frames a
+   * whole tone away (the approach), the remaining frames dead on. Returns the
+   * note's |avgCents|.
+   */
+  const singWithSlideIn = async (
+    mode: 'full' | 'settled' | 'core',
+    slideFrames: number,
+    totalFrames: number,
+  ): Promise<number> => {
+    const { audio, sing } = singingAudioEngine()
+    const engine = new PracticeEngine(audio)
+    engine.syncSettings({ scoreMode: mode })
+    const done: number[] = []
+    engine.addCallbacks({
+      onNoteComplete: (r) => done.push(Math.abs(r.avgCents)),
+    })
+    await engine.startMic()
+    engine.startSession()
+
+    engine.onNoteStart(pitchedNote('C', 60, C4), 0)
+    sing(D4) // the approach, ~200 cents out
+    frames(engine, slideFrames)
+    sing(C4) // settled on the note
+    frames(engine, totalFrames - slideFrames)
+    engine.onPlaybackComplete()
+
+    expect(done).toHaveLength(1)
+    return done[0]
+  }
+
+  it('settled mode forgives a slide-in that full mode still counts', async () => {
+    // 3 of 20 frames are the approach — exactly the 15% the trim removes.
+    const settled = await singWithSlideIn('settled', 3, 20)
+    const full = await singWithSlideIn('full', 3, 20)
+
+    expect(settled).toBeLessThan(10) // perfect once the slide is dropped
+    expect(full).toBeGreaterThan(25) // the same take, dragged past 'good'
+  })
+
+  it('core mode also forgives a fall-off at the end of the note', async () => {
+    const singWithTailOff = async (
+      mode: 'settled' | 'core',
+    ): Promise<number> => {
+      const { audio, sing } = singingAudioEngine()
+      const engine = new PracticeEngine(audio)
+      engine.syncSettings({ scoreMode: mode })
+      const done: number[] = []
+      engine.addCallbacks({
+        onNoteComplete: (r) => done.push(Math.abs(r.avgCents)),
+      })
+      await engine.startMic()
+      engine.startSession()
+
+      engine.onNoteStart(pitchedNote('C', 60, C4), 0)
+      sing(C4)
+      frames(engine, 17)
+      sing(D4) // breath falls off the note for the last 3 of 20 frames
+      frames(engine, 3)
+      engine.onPlaybackComplete()
+      return done[0]
+    }
+
+    expect(await singWithTailOff('core')).toBeLessThan(10)
+    expect(await singWithTailOff('settled')).toBeGreaterThan(25)
+  })
+
+  it('defaults to settled, matching the settings-store default', async () => {
+    // No syncSettings call at all: a fresh engine must already forgive the
+    // slide-in, or an engine created before the first settings sync scores
+    // differently from one created after.
+    const { audio, sing } = singingAudioEngine()
+    const engine = new PracticeEngine(audio)
+    const done: number[] = []
+    engine.addCallbacks({
+      onNoteComplete: (r) => done.push(Math.abs(r.avgCents)),
+    })
+    await engine.startMic()
+    engine.startSession()
+    engine.onNoteStart(pitchedNote('C', 60, C4), 0)
+    sing(D4)
+    frames(engine, 3)
+    sing(C4)
+    frames(engine, 17)
+    engine.onPlaybackComplete()
+
+    expect(done[0]).toBeLessThan(10)
+  })
+
+  it('windows each note of a run independently', async () => {
+    const { audio, sing } = singingAudioEngine()
+    const engine = new PracticeEngine(audio)
+    engine.syncSettings({ scoreMode: 'settled' })
+    const done: number[] = []
+    engine.addCallbacks({
+      onNoteComplete: (r) => done.push(Math.abs(r.avgCents)),
+    })
+    await engine.startMic()
+    engine.startSession()
+
+    // First note approached from a tone away, second sung clean throughout —
+    // both must come out clean, each trimmed against its own frame count.
+    engine.onNoteStart(pitchedNote('C', 60, C4), 0)
+    sing(D4)
+    frames(engine, 3)
+    sing(C4)
+    frames(engine, 17)
+    engine.onNoteEnd()
+    engine.onNoteStart(pitchedNote('D', 62, D4), 1)
+    sing(D4)
+    frames(engine, 20)
+    engine.onPlaybackComplete()
+
+    expect(done).toHaveLength(2)
+    expect(done[0]).toBeLessThan(10)
+    expect(done[1]).toBeLessThan(10)
+  })
+})
+
 describe('PracticeEngine callback subscriptions', () => {
   it('notifies every subscriber of mic state changes', async () => {
     const engine = new PracticeEngine(stubAudioEngine())

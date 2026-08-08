@@ -25,6 +25,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Choose how lyrics sit in their panel** — left, middle or right — from any
   of the studio layouts. It used to be available on the karaoke stage only.
 
+- **Choose how much of a note counts toward its score.** Real singing slides
+  into a note, and scoring that slide as part of the note made clean takes
+  read wide. By default the first 15% of each note — the approach — is no
+  longer scored. A Scoring picker in Settings offers Strict (the whole note),
+  Standard (skip the slide in) and Relaxed (skip the slide in and the release
+  out), and each accuracy tier picks its own: Learning is Relaxed,
+  Professional is Strict.
+
 - **Themes can switch themselves.** System follows your device's light and dark
   mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each
   one uses. Picking a theme by hand always wins.
@@ -37,6 +45,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   for it, then scores your singing against when you actually sang rather than
   when the note was drawn. Devices that have not been measured behave exactly
   as before.
+
+### Changed
+
+- **The app starts faster.** Fingerprinted files are now cached by the browser
+  for a year instead of being re-checked on every visit, and code that only
+  runs behind a click no longer loads with the first screen.
 
 ### Fixed
 
@@ -52,8 +66,8 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **The prepare bar before a lyric line** is now the same in the lyrics panel
   as in zen mode: one fixed width, under the start of the line rather than
-  shoved in front of the first word. It says _when_ to come in, not what to
-  sing, so it no longer changes size with the length of a word.
+  shoved in front of the first word — including on centred and right-aligned
+  lyrics, where it used to sit at the far left, pointing at empty space.
 
 - **Lyrics search in the studio had nowhere to show its results.** Looking up
   a song returned matches that were never displayed.
@@ -75,9 +89,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   delay had been measured, the trace was left where the sound arrived while
   the score used where you actually sang, so a run could look right and read
   wrong by exactly the measured delay.
-
-- **The prepare bar sat at the far left of centred lyrics,** pointing at empty
-  space instead of the line it was counting you into.
 
 - **A collapsed pane in the Lab** could take the whole app down with it.
 

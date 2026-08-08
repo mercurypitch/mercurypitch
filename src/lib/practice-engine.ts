@@ -10,6 +10,8 @@ import type { AudioEngine } from './audio-engine'
 import { micManager } from './mic-manager'
 import type { PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
+import type { ScoreMode } from './score-window'
+import { scoreWindow } from './score-window'
 
 // Accuracy constants (cents deviation thresholds)
 const CENTS_PERFECT = 10
@@ -49,6 +51,8 @@ export class PracticeEngine {
   private sampleRate = 44100
   private bufferSize = 2048
   private bands: { threshold: number; band: number }[] = [...DEFAULT_BANDS]
+  /** Which part of a note is scored. Must match the settings-store default. */
+  private scoreMode: ScoreMode = 'settled'
 
   // Playback state (shared with melody engine)
   private isPlaying = false
@@ -136,6 +140,7 @@ export class PracticeEngine {
     bands?: { threshold: number; band: number }[]
     algorithm?: PitchAlgorithm
     bufferSize?: number
+    scoreMode?: ScoreMode
   }): void {
     // Buffer size requires recreating the detector (it's a construction param)
     if (
@@ -165,6 +170,9 @@ export class PracticeEngine {
     }
     if (config.algorithm !== undefined) {
       this.detector.setAlgorithm(config.algorithm)
+    }
+    if (config.scoreMode !== undefined) {
+      this.scoreMode = config.scoreMode
     }
   }
 
@@ -493,9 +501,15 @@ export class PracticeEngine {
     let pitchFreq = 0
 
     if (this.currentSamples.length > 0) {
+      // Score only the window the mode keeps — 'settled' drops the slide into
+      // the note, 'core' the release out of it too. The trim is over ALL of
+      // the note's frames so it stays proportional to the note's length;
+      // pitchFreq stays the first detection, windowed or not, because it
+      // reports what was heard, not what was scored.
+      const scored = scoreWindow(this.currentSamples, this.scoreMode)
       let sumCents = 0
       let validCount = 0
-      for (const s of this.currentSamples) {
+      for (const s of scored) {
         if (s.freq != null) {
           sumCents += Math.abs(s.cents)
           validCount++
