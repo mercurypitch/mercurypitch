@@ -7,7 +7,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
-import { Ear, Mic, Pause, Play } from '@/components/icons'
+import { Ear, Mic, Pause, Play, Volume2 } from '@/components/icons'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
@@ -59,6 +59,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const room = useGuitarNightScoreRoomController({
     reference: () => props.reference(),
     loop: loop.span,
+    instrument: () => props.tuning?.().instrument ?? 'guitar',
   })
   // A loop is scheduled into the click at start, so marks moved mid-take take
   // effect on the next one. Say so rather than looking ignored.
@@ -287,6 +288,18 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               </For>
             </select>
           </label>
+          <button
+            type="button"
+            class={styles.hearScoreToggle}
+            aria-pressed={room.hearScore()}
+            classList={{ [styles.hearScoreActive]: room.hearScore() }}
+            onClick={() => room.setHearScore((hearing) => !hearing)}
+          >
+            <span aria-hidden="true">
+              <Volume2 />
+            </span>
+            <strong>{room.hearScore() ? 'Tab sounds' : 'Tab silent'}</strong>
+          </button>
         </div>
       </div>
 

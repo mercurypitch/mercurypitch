@@ -10,9 +10,10 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup } from 'solid-js'
-import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBand, GuitarRoomBandNote, } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { secondsToBeat } from '@/features/guitar/runtime/guitar-performance-contract'
+import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { GuitarNightReference } from './reference-port'
@@ -37,9 +38,26 @@ interface GuitarNightScoreRoomControllerOptions {
    * folded out of the elapsed clock for display.
    */
   loop?: Accessor<LoopSpan | null>
+  /** Which instrument the stage is showing, so the score sounds like it. */
+  instrument?: Accessor<StringedInstrument>
   createBand?: () => GuitarRoomBand
   requestFrame?: (callback: () => void) => number
   cancelFrame?: (handle: number) => void
+}
+
+/**
+ * The score as the band can schedule it: MIDI pitch and position in beats.
+ * The stage's own notes carry string and fret too, which the ear does not need.
+ */
+export function scoreToBandMelody(
+  reference: GuitarNightReference | null,
+): GuitarRoomBandNote[] {
+  if (reference === null) return []
+  return reference.notes.map((note) => ({
+    midi: note.midi,
+    startBeat: note.startBeat,
+    durationBeats: note.duration,
+  }))
 }
 
 /** Beats the score occupies, from its first note to the end of its last. */
@@ -71,6 +89,16 @@ export function useGuitarNightScoreRoomController(
     options.cancelFrame ?? ((handle: number) => cancelAnimationFrame(handle))
 
   const band = options.createBand?.() ?? createGuitarRoomBand()
+  const [hearScore, setHearScore] = createSignal(true)
+  const scoreMelody = createMemo(() => scoreToBandMelody(options.reference()))
+  // A bass part played through a guitar voice reads as the wrong instrument
+  // even when every note is right, so the tuning the room is already showing
+  // decides the voice.
+  const melodyVariant = createMemo(() =>
+    options.instrument?.() === 'bass'
+      ? ('bass' as const)
+      : ('electric' as const),
+  )
   let startGeneration = 0
   let frame = 0
   let originSeconds: number | null = null
@@ -150,6 +178,11 @@ export function useGuitarNightScoreRoomController(
         countInBeats: countInBeats(),
         exerciseBeats: Math.max(1, Math.ceil(durationBeats())),
         loop: loopForRun,
+        // A tab room rehearses a written part, so it ticks rather than
+        // grooving, and it sounds the part rather than something under it.
+        feel: 'click',
+        melody: hearScore() ? scoreMelody() : [],
+        melodyVariant: melodyVariant(),
         onBeat: (beatIndex, phase) => {
           if (generation !== startGeneration) return
           if (phase === 'count-in') {
@@ -242,5 +275,8 @@ export function useGuitarNightScoreRoomController(
     setTempoBpm,
     resetTempo,
     setCountInBeats,
+    /** Whether the room sounds the score. Takes effect on the next take. */
+    hearScore,
+    setHearScore,
   }
 }
