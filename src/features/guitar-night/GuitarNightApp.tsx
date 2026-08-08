@@ -21,17 +21,22 @@ import styles from './GuitarNightApp.module.css'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightPreparationPort } from './preparation-port'
+import type { GuitarNightReferencePort } from './reference-port'
+import { REFERENCE_FILE_ACCEPT } from './reference-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
 import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
+import type { GuitarNightReferenceState } from './useGuitarNightReferenceController'
+import { loadDefaultGuitarNightReferencePort, useGuitarNightReferenceController, } from './useGuitarNightReferenceController'
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
 type EntryView = 'choices' | 'first-win' | 'song' | 'room'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
+  loadReferencePort?: () => Promise<GuitarNightReferencePort>
   loadSongPort?: () => Promise<GuitarNightSongPort>
   loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
   loadBandPreparationPort?: () => Promise<GuitarNightBandPreparationPort>
@@ -55,6 +60,18 @@ function formatPreparedDate(timestamp: number): string {
     month: 'short',
     day: 'numeric',
   }).format(date)
+}
+
+function unavailableReferenceCopy(
+  state: Extract<GuitarNightReferenceState, { kind: 'unavailable' }>,
+): string {
+  if (state.reason === 'not-found') {
+    return 'That tab is not on this device. Open its file again to follow it.'
+  }
+  if (state.reason === 'no-playable-notes') {
+    return 'That file has no playable notes, so the stage stays in free play.'
+  }
+  return 'Your tab library could not be opened. Try again.'
 }
 
 function unavailableSongCopy(
@@ -111,6 +128,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   >(null)
   let detailHeading: HTMLHeadingElement | undefined
   let songInput: HTMLInputElement | undefined
+  let referenceInput: HTMLInputElement | undefined
 
   const createConfiguredBackingTransport = (): GuitarBackingTransport => {
     const configuredFactory = props.createBackingTransport
@@ -142,6 +160,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       setVisitedRoomSessionId(null)
     },
   })
+  const referenceController = useGuitarNightReferenceController({
+    loadReferencePort: () => {
+      const configuredLoader = props.loadReferencePort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightReferencePort()
+        : configuredLoader()
+    },
+  })
+  const attachedReference = referenceController.reference
+  const unavailableReference = createMemo(() => {
+    const current = referenceController.state()
+    return current.kind === 'unavailable' ? current : null
+  })
+
   const preparationController = useGuitarNightPreparationController({
     loadPreparationPort: () => {
       const configuredLoader = props.loadPreparationPort
@@ -274,7 +306,16 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const openSongLibrary = () => {
     setView('song')
     songController.initialize()
+    referenceController.initialize()
     focusDetail()
+  }
+
+  const chooseReferenceFile = (event: Event): void => {
+    const input = event.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (file === undefined) return
+    void referenceController.importFile(file)
   }
 
   const openCurrentGuitar = () => {
@@ -980,6 +1021,129 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 </Switch>
               </section>
 
+              <section
+                class={styles.songLibrary}
+                aria-labelledby="guitar-night-reference-title"
+              >
+                <div class={styles.songLibraryHeader}>
+                  <h2 id="guitar-night-reference-title">Tab to follow</h2>
+                  <Show when={attachedReference() !== null}>
+                    <button
+                      type="button"
+                      class={styles.referenceDetach}
+                      onClick={() => referenceController.detach()}
+                    >
+                      Remove
+                    </button>
+                  </Show>
+                </div>
+
+                <Switch>
+                  <Match when={attachedReference()}>
+                    {(attached) => (
+                      <div class={styles.referenceAttached}>
+                        <strong>{attached().title}</strong>
+                        <small>
+                          {attached().notes.length} authored notes at{' '}
+                          {attached().tempoBpm} BPM
+                        </small>
+                        <Show when={attached().tracks.length > 1}>
+                          <div
+                            class={styles.referenceTracks}
+                            role="group"
+                            aria-label="Visible part"
+                          >
+                            <For each={attached().tracks}>
+                              {(track) => (
+                                <button
+                                  type="button"
+                                  classList={{
+                                    [styles.referenceTrackActive]:
+                                      track.id === attached().trackId,
+                                  }}
+                                  aria-pressed={track.id === attached().trackId}
+                                  onClick={() =>
+                                    void referenceController.selectTrack(
+                                      track.id,
+                                    )
+                                  }
+                                >
+                                  {track.name}
+                                </button>
+                              )}
+                            </For>
+                          </div>
+                        </Show>
+                      </div>
+                    )}
+                  </Match>
+                  <Match when={unavailableReference()}>
+                    {(unavailable) => (
+                      <p class={styles.songMessage}>
+                        {unavailableReferenceCopy(unavailable())}
+                      </p>
+                    )}
+                  </Match>
+                  <Match
+                    when={
+                      referenceController.libraryState() === 'idle' ||
+                      referenceController.libraryState() === 'loading'
+                    }
+                  >
+                    <p class={styles.songMessage}>Opening your tab library…</p>
+                  </Match>
+                  <Match when={referenceController.references().length > 0}>
+                    <ul class={styles.songList}>
+                      <For each={referenceController.references()}>
+                        {(summary) => (
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void referenceController.attach(summary.songId)
+                              }
+                            >
+                              <span>
+                                <strong>{summary.title}</strong>
+                                <small>
+                                  {summary.trackCount}{' '}
+                                  {summary.trackCount === 1 ? 'part' : 'parts'}{' '}
+                                  · {formatPreparedDate(summary.importedAt)}
+                                </small>
+                              </span>
+                              <i aria-hidden="true">Attach</i>
+                            </button>
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </Match>
+                  <Match when={true}>
+                    <p class={styles.songMessage}>
+                      No tabs on this device yet. Open a Guitar Pro or MIDI file
+                      to follow real notes — without one the stage stays in
+                      honest free play.
+                    </p>
+                  </Match>
+                </Switch>
+
+                <Show when={referenceController.importStatus()}>
+                  {(status) => (
+                    <p class={styles.referenceError} role="alert">
+                      {status()}
+                    </p>
+                  )}
+                </Show>
+
+                <button
+                  type="button"
+                  class={styles.songListMore}
+                  onClick={() => referenceInput?.click()}
+                >
+                  Open a tab file
+                </button>
+              </section>
+
               <div class={styles.detailActions}>
                 <button type="button" onClick={returnToChoices}>
                   Back
@@ -1101,6 +1265,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               <GuitarNightRoom
                 backing={activeBacking()!}
                 transport={playbackController}
+                reference={attachedReference}
                 onSongs={returnToSongs}
                 onSeparateGuitar={prepareGuitarFreeBand}
               />
@@ -1119,6 +1284,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           <small>{roomStatus().detail}</small>
         </div>
       </Show>
+
+      <input
+        ref={referenceInput}
+        class={styles.fileInput}
+        data-testid="guitar-night-reference-input"
+        type="file"
+        accept={REFERENCE_FILE_ACCEPT}
+        onChange={chooseReferenceFile}
+      />
 
       <input
         ref={songInput}

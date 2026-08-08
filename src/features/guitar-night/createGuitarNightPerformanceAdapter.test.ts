@@ -37,4 +37,61 @@ describe('createGuitarNightPerformanceAdapter', () => {
     expect(play).toHaveBeenCalledOnce()
     expect(seek).toHaveBeenCalledWith(9)
   })
+
+  it('derives score beats from the audio clock once a reference supplies tempo', () => {
+    let position = 0
+    const controller = {
+      status: () => 'playing',
+      positionSeconds: () => position,
+      durationSeconds: () => 180,
+      playbackRate: () => 0.5,
+      play: vi.fn(async () => true),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      seek: vi.fn(),
+      setPlaybackRate: vi.fn(async () => true),
+    } as unknown as GuitarBackingTransportController
+
+    const performance = createGuitarNightPerformanceAdapter(
+      () => controller,
+      () => 'Room song',
+      () => [],
+      () => 120,
+    )
+
+    expect(performance.transport.timeline.tempoBpm()).toBe(120)
+    expect(performance.transport.timeline.playheadBeat()).toBe(0)
+
+    // Two beats per second at 120 BPM: the beat follows real media time, so a
+    // half-speed take advances the score at half speed too.
+    position = 4
+    expect(performance.transport.timeline.playheadBeat()).toBe(8)
+
+    // Seeking backwards moves the score with the audio rather than drifting.
+    position = 1.5
+    expect(performance.transport.timeline.playheadBeat()).toBe(3)
+  })
+
+  it('refuses to invent beats from an unusable tempo', () => {
+    const controller = {
+      status: () => 'playing',
+      positionSeconds: () => 10,
+      durationSeconds: () => 180,
+      playbackRate: () => 1,
+      play: vi.fn(async () => true),
+      pause: vi.fn(),
+      stop: vi.fn(),
+      seek: vi.fn(),
+      setPlaybackRate: vi.fn(async () => true),
+    } as unknown as GuitarBackingTransportController
+
+    const performance = createGuitarNightPerformanceAdapter(
+      () => controller,
+      () => 'Room song',
+      () => [],
+      () => 0,
+    )
+
+    expect(performance.transport.timeline.playheadBeat()).toBeNull()
+  })
 })
