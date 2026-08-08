@@ -148,6 +148,23 @@ describe('Theme Store', () => {
       expect(appStore.theme()).toBe('dark')
     })
 
+    it('sets data-theme on an auto source even when nothing changed', () => {
+      // The ordinary reload for an auto user: the resolved preset already
+      // equals the stored one, so syncAutoTheme has nothing to write. The
+      // attribute still has to be there, or :root's dark defaults win and a
+      // light auto preset loads dark. jsdom has no matchMedia, so 'system'
+      // resolves to the day preset.
+      setAutoTheme('day', 'light')
+      setThemeSource('system')
+      expect(appStore.theme()).toBe('light')
+
+      document.documentElement.removeAttribute('data-theme')
+      initTheme()
+
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+      stopThemeAutoWatch()
+    })
+
     it('should apply data-theme attribute on init', () => {
       setTheme('light')
       initTheme()
