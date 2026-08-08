@@ -19,6 +19,7 @@
 
 import { createSignal } from 'solid-js'
 import { GA4_MEASUREMENT_ID, GOOGLE_ADS_TAG_ID, IS_TEST } from '@/lib/defaults'
+import { ga4TrafficParams } from '@/lib/internal-traffic'
 
 export type ConsentStatus = 'granted' | 'denied'
 
@@ -284,7 +285,11 @@ function loadTag(): void {
     GOOGLE_ADS_TAG_ID !== '' ? GOOGLE_ADS_TAG_ID : GA4_MEASUREMENT_ID
   if (primary === '') return
   if (GOOGLE_ADS_TAG_ID !== '') pushGtag('config', GOOGLE_ADS_TAG_ID)
-  if (GA4_MEASUREMENT_ID !== '') pushGtag('config', GA4_MEASUREMENT_ID)
+  // traffic_type is GA4's, not Ads' — only the analytics config carries it,
+  // and only on a browser we marked as ours.
+  if (GA4_MEASUREMENT_ID !== '') {
+    pushGtag('config', GA4_MEASUREMENT_ID, ga4TrafficParams())
+  }
   const script = document.createElement('script')
   script.async = true
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
