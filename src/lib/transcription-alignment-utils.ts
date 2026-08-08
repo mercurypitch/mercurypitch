@@ -284,6 +284,27 @@ export function computeAlignment(
 // ── Debug Logging ──────────────────────────────────────────────
 
 /**
+ * Opt-in verbose alignment logging.
+ *
+ * The per-word table and the JSON dump below are one line per word plus a
+ * single-line blob of the whole mapping — several hundred lines every time a
+ * song is staged. On a library with a few songs that buried every other
+ * message in the console, which is exactly when you need the console. The
+ * one-line summaries stay unconditional; turn the dumps on for a debugging
+ * session with:
+ *
+ *     localStorage.setItem('pitchperfect_debug_alignment', '1')
+ */
+function alignmentDebugEnabled(): boolean {
+  try {
+    return localStorage.getItem('pitchperfect_debug_alignment') === '1'
+  } catch {
+    // Storage can throw outright under some privacy settings.
+    return false
+  }
+}
+
+/**
  * Formats and logs alignment debug entries to the console.
  * Used by both StemMixer and PitchTestingTab after transcription.
  */
@@ -295,7 +316,7 @@ export function formatAlignmentDebugLog(
     `[${tag}] Word-to-note alignment: ${result.mappedWords}/${result.totalWords} mapped (${(result.accuracy * 100).toFixed(0)}%), ${result.unmappedWords} unmapped`,
   )
 
-  if (result.debugEntries.length === 0) return
+  if (result.debugEntries.length === 0 || !alignmentDebugEnabled()) return
 
   const lines = result.debugEntries.map((e) => {
     const timeRange = `${e.wordStart.toFixed(2)}-${e.wordEnd.toFixed(2)}s`
@@ -320,6 +341,11 @@ export function formatAlignmentDebugLog(
 /**
  * Runs alignment for both raw and denoised note sources and logs the comparison.
  * Allows easy A/B comparison of alignment quality between note sources.
+ *
+ * Behind the debug flag because it is not free: the comparison exists only to
+ * be printed, and producing it runs alignPitchToWords TWICE over every note
+ * and word in the song. That was happening on every staged song to write two
+ * lines nobody was reading. See alignmentDebugEnabled.
  */
 export function logAlignmentComparison(
   tag: string,
@@ -327,6 +353,8 @@ export function logAlignmentComparison(
   denoisedNotes: MergedNote[],
   wordSegments: WhisperSegment[],
 ): void {
+  if (!alignmentDebugEnabled()) return
+
   const filtered = filterWordSegments(wordSegments)
   const split = splitMultiWordSegments(filtered)
 
