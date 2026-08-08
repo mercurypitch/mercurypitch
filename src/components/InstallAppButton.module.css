@@ -1,0 +1,79 @@
+/* Install App Button — header pill + Settings panel control */
+
+.installBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.installBtn:hover:not(:disabled),
+.installBtn:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.installBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.installBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Header: matches the SupportBadge pill next to it. */
+.header {
+  padding: 0.32rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Settings: a normal, readable control rather than a chrome affordance. */
+.panel {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.iosHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.iosHint svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+/* The mobile header already reserves its right edge for the account chip and
+   the support badge (see AppHeader.css). Drop the word and keep the glyph, the
+   same trade SupportBadge makes with the version number. */
+@media (max-width: 768px) {
+  .header .label {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .installBtn {
+    transition: none;
+  }
+}

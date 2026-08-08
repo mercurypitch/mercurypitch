@@ -195,6 +195,47 @@ export const Download: Component = () => (
   </svg>
 )
 
+// Install App Icon — a handset taking an arrow, for "add this to your device".
+// Distinct from Download on purpose: Download means a file lands in your
+// downloads folder, this means the app lands on your home screen.
+export const InstallApp: Component<{ size?: number }> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="5" y="2" width="14" height="20" rx="2.5" />
+    <line x1="12" y1="7" x2="12" y2="14" />
+    <polyline points="9 11 12 14 15 11" />
+  </svg>
+)
+
+// iOS Share Icon — the glyph in Safari's toolbar, so the Add to Home Screen
+// hint can point at something the user can actually recognise.
+export const IosShare: Component<{ size?: number }> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    aria-hidden="true"
+  >
+    <path d="M8 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2" />
+    <line x1="12" y1="14" x2="12" y2="3" />
+    <polyline points="8 7 12 3 16 7" />
+  </svg>
+)
+
 // File Text Icon
 export const FileText: Component<{ size?: number }> = (p) => (
   <svg

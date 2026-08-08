@@ -186,6 +186,7 @@ import { HeaderAccount } from '@/components/account/HeaderAccount'
 import { LocalProgressNotice } from '@/components/account/LocalProgressNotice'
 import { ComposeControlBar } from '@/components/compose/ComposeControlBar'
 import { ComposeTakeReview } from '@/components/compose/ComposeTakeReview'
+import { InstallAppButton } from '@/components/InstallAppButton'
 import { SessionCelebration } from '@/components/SessionCelebration'
 import { SessionLibraryModal } from '@/components/SessionLibraryModal'
 import { SkeletonTabContent } from '@/components/Skeleton'
@@ -2667,6 +2668,10 @@ const AppShell: Component<AppProps> = (props) => {
             {/* Version + support (Ko-fi) double-pill, pinned to the far
                 right of the header row (after the nav tabs) */}
             <div class="header-support">
+              {/* Renders nothing unless the browser can actually install the
+                  app and has not already, so it only ever crowds this row in
+                  the one case where it is worth the space. */}
+              <InstallAppButton />
               <HeaderAccount />
               <SupportBadge />
             </div>
