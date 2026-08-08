@@ -14,6 +14,7 @@
 
 import type { Accessor } from 'solid-js'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
+import { tryDismissModal } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import * as transportStore from '@/stores/transport-store'
 import type { VoiceCommand, VoiceCommandResult } from './types'
@@ -776,6 +777,18 @@ export function createTransportVoiceCommands(
         deps.loop.clear()
         return 'Loop cleared'
       },
+    },
+    {
+      id: 'ui.closeThis',
+      label: 'Close',
+      // The Escape key's modal-dismiss chain, spoken. Available on every
+      // tab (modals float above them all), suspension aside.
+      phrases: ['close this', 'close that', 'close it', 'close', 'dismiss'],
+      available: () => !suspended(),
+      run: () =>
+        tryDismissModal(deps.handlers)
+          ? 'Closed'
+          : voiceFailure('Nothing to close'),
     },
     {
       id: 'mic.toggle',

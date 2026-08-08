@@ -125,7 +125,7 @@ The mixer transport runs on seconds (audio time), not beats.
 - [x] **(requested)** `open karaoke night` / `karaoke night` — leaves for the standalone stage in the same tab (owner's call); `go to karaoke` keeps meaning the in-app tab
 - [x] **(requested)** Global `play random song from my list` / `play a song` / `surprise me` — from anywhere: opens a random SONG from the library (completed separations — no playlist required) straight in its mixer, announcing its name; falls back to a random playlist song for playlist-organized libraries, and stands down while a playlist is running (the in-mixer version owns that case)
 - [ ] `start my routine` / `today's session` (daily routine launcher — needs a clean launch seam out of HomePage)
-- [ ] `close this` for whichever modal is topmost (reuse the Escape dismiss chain)
+- [x] `close this` / `close` / `dismiss` — whichever modal is topmost, through the Escape key's own dismiss chain
 
 ### Piano adapter
 

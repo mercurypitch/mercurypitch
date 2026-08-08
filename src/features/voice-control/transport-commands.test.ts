@@ -315,6 +315,34 @@ describe('transport voice commands — singing tab', () => {
     expect(countIn()).toBe(4)
   })
 
+  it('closes the topmost modal or reports nothing to close', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    // A fresh environment legitimately holds first-run overlays (the
+    // welcome); drain them through the same chain voice uses.
+    let drainGuard = 0
+    while (fire(fixture, 'close this') === 'Closed' && drainGuard < 10) {
+      drainGuard++
+    }
+    expect(fire(fixture, 'close this')).toBe('Nothing to close')
+
+    let open: unknown = { some: 'result' }
+    fixture.deps.handlers.modals = {
+      practiceResult: () => open,
+      closePracticeResult: () => {
+        fixture.calls.push('closeModal')
+        open = null
+      },
+      sessionSummary: () => null,
+      closeSessionSummary: () => undefined,
+      showScaleBuilder: () => false,
+      closeScaleBuilder: () => undefined,
+      showGuideSelection: () => false,
+      closeGuideSelection: () => undefined,
+    }
+    expect(fire(fixture, 'close this')).toBe('Closed')
+    expect(fixture.calls).toContain('closeModal')
+  })
+
   it('switches play modes', () => {
     const fixture = makeFixture(TAB_SINGING)
     expect(fire(fixture, 'repeat mode')).toBe('Repeat mode')

@@ -292,8 +292,9 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
  * Attempt to close the topmost open modal/overlay.
  * Returns true if a modal was dismissed, false if nothing was open.
  * Order: specific overlays first, then library modals, then walkthrough.
+ * Exported for voice control's "close this" — one dismiss chain, two inputs.
  */
-function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
+export function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
   // App-level modals passed via the handlers
   const m = handlers.modals
   if (m) {
