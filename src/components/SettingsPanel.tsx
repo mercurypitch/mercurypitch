@@ -27,6 +27,7 @@ import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from 
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
+import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceIntervalMin, practiceTimerEnabled, setBreakIntervalMin, setPracticeIntervalMin, setPracticeTimerEnabled, } from '@/stores/practice-timer-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
@@ -640,6 +641,64 @@ export const SettingsPanel: Component = () => {
                 to the key
               </small>
             </div>
+
+            <div class={styles.settingsRow}>
+              <label for="set-practice-timer">Break Reminders</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="set-practice-timer"
+                  checked={practiceTimerEnabled()}
+                  onChange={(e) => {
+                    setPracticeTimerEnabled(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Count how long you have been singing and prompt you to rest your
+                voice. Only mic-on time counts, and the break only counts down
+                while the mic is off.
+              </small>
+            </div>
+
+            <Show when={practiceTimerEnabled()}>
+              <div class={styles.settingsRow}>
+                <label for="set-practice-interval">Sing For (minutes)</label>
+                <input
+                  type="number"
+                  id="set-practice-interval"
+                  min={PRACTICE_MIN_RANGE.min}
+                  max={PRACTICE_MIN_RANGE.max}
+                  value={practiceIntervalMin()}
+                  onChange={(e) => {
+                    setPracticeIntervalMin(Number(e.currentTarget.value))
+                  }}
+                />
+                <small>
+                  How much singing before a rest is suggested (
+                  {PRACTICE_MIN_RANGE.min}-{PRACTICE_MIN_RANGE.max})
+                </small>
+              </div>
+
+              <div class={styles.settingsRow}>
+                <label for="set-break-interval">Rest For (minutes)</label>
+                <input
+                  type="number"
+                  id="set-break-interval"
+                  min={BREAK_MIN_RANGE.min}
+                  max={BREAK_MIN_RANGE.max}
+                  value={breakIntervalMin()}
+                  onChange={(e) => {
+                    setBreakIntervalMin(Number(e.currentTarget.value))
+                  }}
+                />
+                <small>
+                  How long the break runs once it starts ({BREAK_MIN_RANGE.min}-
+                  {BREAK_MIN_RANGE.max})
+                </small>
+              </div>
+            </Show>
           </div>
 
           {/* Accuracy Bands Section */}
