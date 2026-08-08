@@ -13,8 +13,10 @@
 //   `at`          when the player's hand actually moved
 //
 // They differ by the route's latency, and `at` is the only one that can be
-// compared against a beat. See input-latency.ts for where that number comes
-// from and why it is a single round-trip figure rather than a split one.
+// compared against a beat. That number is the app-wide measured round trip
+// (@/stores/mic-latency-store), which is zero until somebody measures it — and
+// zero must stay a no-op, because a correction nobody measured is a claim
+// about the player's timing that nothing supports.
 
 export type GuitarInputSource = 'microphone' | 'midi' | 'interface'
 
@@ -71,6 +73,15 @@ export type GuitarInputWorkletMessage =
 export function frameToSeconds(frame: number, sampleRate: number): number {
   if (!(sampleRate > 0)) return 0
   return frame / sampleRate
+}
+
+/**
+ * When the player actually struck the string, given when the sample carrying
+ * it arrived and the measured round trip of the route it came through.
+ */
+export function playedAt(capturedAt: number, latencySeconds: number): number {
+  if (!Number.isFinite(latencySeconds)) return capturedAt
+  return capturedAt - latencySeconds
 }
 
 /**

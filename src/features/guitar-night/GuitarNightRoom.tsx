@@ -320,7 +320,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             calibrating={() => listening.status() === 'calibrating'}
             health={listening.health}
             timingSource={listening.timingSource}
-            latency={listening.latency}
+            latencyMs={listening.latencyMs}
             onCalibrate={() => void listening.calibrate()}
           />
         </aside>

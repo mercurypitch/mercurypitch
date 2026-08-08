@@ -120,9 +120,9 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
-| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 2.2k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 2.1k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.1k | Voice Mirror — pure metrics over F0 frame streams. |
+| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 2.0k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
