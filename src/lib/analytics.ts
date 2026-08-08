@@ -11,18 +11,9 @@
 
 import { API_BASE_URL } from '@/lib/defaults'
 import { getFunnelClientId } from '@/lib/funnel'
+import type { AppFunnelEventName } from '@/lib/funnel-event-catalog'
 
-export type AppFunnelEvent =
-  | 'app_open'
-  | 'signup'
-  | 'session_complete'
-  | 'challenge_attempt'
-  | 'pricing_view'
-  | 'checkout_start'
-  | 'donate_view'
-  | 'donate_start'
-  | 'weekly_join'
-  | 'weekly_attempt'
+export type AppFunnelEvent = AppFunnelEventName
 
 const APP_OPEN_SENT_KEY = 'mp.analytics.appOpenSent.v1'
 

@@ -14,6 +14,7 @@
 // Entities are validated against the TABLES allowlist; per-table access
 // rules force userId scoping from the JWT, never from the request body.
 
+import { FUNNEL_EVENT_NAMES } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, } from './auth'
@@ -1008,90 +1009,13 @@ async function handleLeaderboard(
 // Anonymous, rate-limited event sink shared by the Voice Mirror funnel
 // and the app's product funnel. The mirrorEvents table is deliberately
 // NOT in the TABLES allowlist — this endpoint is its only writer, and
-// there is no public reader. Keep the event list in sync with
-// src/features/mirror/funnel.ts and src/lib/analytics.ts.
-
-export const FUNNEL_EVENTS = new Set([
-  // Voice Mirror funnel (src/features/mirror/funnel.ts)
-  'mirror_view',
-  'howto_view',
-  'howto_done',
-  'mic_granted',
-  'mic_denied',
-  'task_intro_done',
-  'task_glide_done',
-  'task_hold_done',
-  'task_match_done',
-  'results_view',
-  'card_generated',
-  'card_shared',
-  'cta_app_click',
-  'free_sing_done',
-  'cosmic_done',
-  'twin_revealed',
-  'cta_glass_click',
-  // App funnel (src/lib/analytics.ts)
-  'app_open',
-  'signup',
-  'session_complete',
-  'challenge_attempt',
-  'pricing_view',
-  'checkout_start',
-  // Karaoke Night funnel (src/features/karaoke-night/funnel.ts)
-  'karaoke_view',
-  'karaoke_demo_start',
-  'karaoke_demo_complete',
-  'karaoke_upload_start',
-  'karaoke_upload_done',
-  'karaoke_upload_error',
-  'karaoke_song_staged',
-  'karaoke_playlist_deeplink',
-  'karaoke_playlist_start',
-  'karaoke_mic_granted',
-  'karaoke_first_pitch',
-  'karaoke_first_score',
-  'karaoke_scorecard_view',
-  'karaoke_cta_studio',
-  // Glass funnel (src/features/glass/funnel.ts)
-  'glass_view',
-  'glass_mic_granted',
-  'glass_mic_denied',
-  'glass_calibrate_done',
-  'glass_rep_done',
-  'glass_playback_done',
-  'glass_shatter',
-  'glass_results_view',
-  'glass_fx_change',
-  'glass_monitor_on',
-  'glass_monitor_off',
-  'glass_card_generated',
-  'glass_card_shared',
-  'glass_cta_app_click',
-  // First Light onboarding funnel (src/features/onboarding/funnel.ts).
-  // Registered ahead of the client rollout so later phases need no worker
-  // redeploy — same reason as the reserved names below.
-  'onboarding_sky',
-  'onboarding_first_light',
-  'onboarding_fork',
-  'onboarding_voiceprint',
-  'onboarding_twin',
-  'onboarding_map',
-  'onboarding_keep',
-  'onboarding_track_short',
-  'onboarding_track_full',
-  'onboarding_mic_granted',
-  'onboarding_mic_denied',
-  'onboarding_map_room',
-  'onboarding_skipped',
-  'onboarding_done',
-  'onboarding_account_created',
-  'onboarding_account_dismissed',
-  // Reserved for the weekly-challenge/email releases, so those client
-  // rollouts need no worker redeploy.
-  'weekly_join',
-  'weekly_attempt',
-  'email_click',
-])
+// there is no public reader.
+//
+// The names come from src/lib/funnel-event-catalog.ts, which every client
+// surface also derives its event union from. It used to be a Set here and a
+// TypeScript union there, "kept in sync" by a comment — they drifted, and five
+// events the client emitted were answered 400 and dropped in silence.
+export const FUNNEL_EVENTS: ReadonlySet<string> = new Set(FUNNEL_EVENT_NAMES)
 
 // Derived numbers only (range/accuracy/steadiness) — never audio.
 const MIRROR_METRIC_KEYS = new Set([

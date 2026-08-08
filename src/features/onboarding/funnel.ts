@@ -11,33 +11,13 @@
 // beacon — lives in src/lib/funnel.ts and is shared with the Mirror,
 // Karaoke Night and Glass. This file is only the vocabulary.
 //
-// Event names must stay in sync with FUNNEL_EVENTS in
-// workers/db-worker/src/index.ts, which allowlists them.
+// Event names live in src/lib/funnel-event-catalog.ts, which the db-worker
+// builds its ingest allowlist from — so a name cannot exist on one side only.
 
 import { createFunnel } from '@/lib/funnel'
+import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 
-export type OnboardingEvent =
-  // One per beat entered.
-  | 'onboarding_sky'
-  | 'onboarding_first_light'
-  | 'onboarding_fork'
-  | 'onboarding_voiceprint'
-  | 'onboarding_twin'
-  | 'onboarding_map'
-  | 'onboarding_keep'
-  | 'onboarding_prints'
-  // Choices and outcomes.
-  | 'onboarding_track_short'
-  | 'onboarding_track_full'
-  | 'onboarding_track_gallery'
-  | 'onboarding_another_voiceprint'
-  | 'onboarding_mic_granted'
-  | 'onboarding_mic_denied'
-  | 'onboarding_map_room'
-  | 'onboarding_skipped'
-  | 'onboarding_done'
-  | 'onboarding_account_created'
-  | 'onboarding_account_dismissed'
+export type OnboardingEvent = OnboardingFunnelEvent
 
 export const trackOnboarding = createFunnel<OnboardingEvent>({
   storageKey: 'onboarding.funnel.v1',

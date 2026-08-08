@@ -14,25 +14,9 @@
 
 import { AD_CONVERSIONS } from '@/lib/consent'
 import { createFunnel } from '@/lib/funnel'
+import type { MirrorFunnelEvent } from '@/lib/funnel-event-catalog'
 
-export type FunnelEvent =
-  | 'mirror_view'
-  | 'howto_view'
-  | 'howto_done'
-  | 'mic_granted'
-  | 'mic_denied'
-  | 'task_intro_done'
-  | 'task_glide_done'
-  | 'task_hold_done'
-  | 'task_match_done'
-  | 'results_view'
-  | 'card_generated'
-  | 'card_shared'
-  | 'cta_app_click'
-  | 'free_sing_done'
-  | 'cosmic_done'
-  | 'twin_revealed'
-  | 'cta_glass_click'
+export type FunnelEvent = MirrorFunnelEvent
 
 export const trackFunnel = createFunnel<FunnelEvent>({
   storageKey: 'mirror.funnel.v1',
