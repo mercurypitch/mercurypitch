@@ -10,8 +10,6 @@
 import type { Accessor } from 'solid-js'
 import { Show } from 'solid-js'
 import type { GuitarInputHealthReading } from '@/lib/guitar/input-events'
-import type { InputLatencyProfile } from '@/lib/guitar/input-latency'
-import { describeLatencyProfile } from '@/lib/guitar/input-latency'
 import styles from './GuitarNightApp.module.css'
 import type { GuitarTimingSource } from './useGuitarListeningController'
 
@@ -20,7 +18,8 @@ interface GuitarNightInputHealthProps {
   calibrating: Accessor<boolean>
   health: Accessor<GuitarInputHealthReading | null>
   timingSource: Accessor<GuitarTimingSource>
-  latency: Accessor<InputLatencyProfile | null>
+  /** Measured round trip in ms. Zero means nobody has measured this input. */
+  latencyMs: Accessor<number>
   onCalibrate(): void
 }
 
@@ -54,9 +53,11 @@ export function GuitarNightInputHealth(props: GuitarNightInputHealthProps) {
       </p>
 
       <div class={styles.inputHealthLatency}>
-        <Show when={props.latency()}>
-          {(profile) => <small>{describeLatencyProfile(profile())}</small>}
-        </Show>
+        <small>
+          {props.latencyMs() > 0
+            ? `Measured on this input: ${props.latencyMs()} ms, and taken off every strike.`
+            : 'Nothing has measured this input, so strike times are uncorrected.'}
+        </small>
         <button
           type="button"
           disabled={
