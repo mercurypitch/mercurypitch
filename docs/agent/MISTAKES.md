@@ -513,6 +513,21 @@ becomes a hazard. Move dismissal to an explicit control, or scope the handler
 to `e.target === e.currentTarget`.
 **See:** `src/components/lrc-mapper/LrcMapperLineList.tsx`
 
+### `beforeinstallprompt` needs headed, real Chrome, in a persistent profile
+
+**Symptom:** the PWA install button never appeared in any Playwright run, in
+either headless Chromium or headed real Chrome, so the install path looked
+broken.
+**Cause:** three separate gates. Headless Chrome does not run the installability
+pipeline at all, and `browser.newContext()` is an incognito-style profile where
+Chrome never offers install — only `chromium.launchPersistentContext(dir, {
+headless: false, channel: 'chrome' })` fires the event.
+**Rule:** do not conclude "the install prompt does not fire" from a normal
+Playwright run. The e2e suite can assert the manifest and
+`serviceWorker.controller`; the prompt itself has to be checked out-of-band with
+a persistent, headed, real-Chrome profile.
+**See:** `src/e2e/pwa.spec.ts`, `src/lib/pwa-install.ts`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked
