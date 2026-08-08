@@ -1,7 +1,7 @@
 // Score-room tests keep musical time on the audio clock, never on a frame loop.
 // ============================================================
 
-import { createRoot } from 'solid-js'
+import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
@@ -200,6 +200,86 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(room.countInBeats()).toBe(0)
       room.setCountInBeats(99)
       expect(room.countInBeats()).toBe(8)
+      dispose()
+    })
+  })
+
+  it('schedules a loop into the click and folds the playhead the same way', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        // 90 BPM: one beat is 2/3 of a second.
+        reference: () => reference(),
+        loop: () => ({ start: 1, end: 3 }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+
+      // Whole beats, so the pulse's downbeat cannot drift pass to pass.
+      expect(getOptions()?.loop).toEqual({ start: 1, end: 3 })
+      expect(room.runningLoop()).toEqual({ start: 1, end: 3 })
+
+      getOptions()?.onBeat?.(0, 'exercise')
+      // Three beats of elapsed clock is one beat past B, so the playhead reads
+      // beat 1 again — the same fold the scheduler applied.
+      clock.currentTime = 10 + 3 * (60 / 90)
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1, 5)
+
+      clock.currentTime = 10 + 4 * (60 / 90)
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(2, 5)
+      dispose()
+    })
+  })
+
+  it('pins the loop for the take, so moving a mark cannot desync the click', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const [span, setSpan] = createSignal<{
+        start: number
+        end: number
+      } | null>({ start: 0, end: 2 })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        loop: span,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+      expect(getOptions()?.loop).toEqual({ start: 0, end: 2 })
+
+      setSpan({ start: 2, end: 4 })
+
+      // The pulse already scheduled is the one being heard.
+      expect(room.runningLoop()).toEqual({ start: 0, end: 2 })
+      dispose()
+    })
+  })
+
+  it('stopping forgets the loop the take was running', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        loop: () => ({ start: 1, end: 3 }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+      expect(room.runningLoop()).not.toBeNull()
+
+      room.stop()
+
+      expect(room.runningLoop()).toBeNull()
       dispose()
     })
   })
