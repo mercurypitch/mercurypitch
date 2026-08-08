@@ -29,6 +29,7 @@
     "marketing:capture": "node scripts/capture-marketing.mjs",
     "test:tours": "node scripts/walk-tours.mjs",
     "audit:mobile": "node scripts/audit-exercises-mobile.mjs",
+    "verify:opening": "node scripts/verify-opening.mjs",
     "beside-cue:dev": "pnpm --filter @irchiinnuss/beside-cue-app dev",
     "beside-cue:build": "pnpm --filter @irchiinnuss/beside-cue-app build",
     "beside-cue:check": "pnpm --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app check",

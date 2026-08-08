@@ -396,6 +396,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm marketing:capture` | `node scripts/capture-marketing.mjs` |
 | `pnpm test:tours` | `node scripts/walk-tours.mjs` |
 | `pnpm audit:mobile` | `node scripts/audit-exercises-mobile.mjs` |
+| `pnpm verify:opening` | `node scripts/verify-opening.mjs` |
 | `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
 | `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/beside-cue-app check` |
