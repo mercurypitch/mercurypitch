@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { SUPPORTER_FEATURE_PERK_IDS } from '../../../src/lib/supporter-feature-catalog'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
 import { PERK_IDS } from '../src/perks'
@@ -225,7 +226,9 @@ describe('managed testing accounts', () => {
       testerId: TESTER_ID,
       grants: {
         credits: 25,
-        features: ['lab-access'],
+        // A supporter test account holds every catalog feature — pin the
+        // catalog, not a copy that breaks on the next perk.
+        features: [...SUPPORTER_FEATURE_PERK_IDS],
         perks: [PERK_IDS[0]],
         supporter: true,
       },
