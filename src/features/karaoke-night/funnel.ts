@@ -13,22 +13,9 @@
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
 import { getFunnelClientId } from '@/lib/funnel'
+import type { KaraokeFunnelEventName } from '@/lib/funnel-event-catalog'
 
-export type KaraokeFunnelEvent =
-  | 'karaoke_view'
-  | 'karaoke_demo_start'
-  | 'karaoke_demo_complete'
-  | 'karaoke_upload_start'
-  | 'karaoke_upload_done'
-  | 'karaoke_upload_error'
-  | 'karaoke_song_staged'
-  | 'karaoke_playlist_deeplink'
-  | 'karaoke_playlist_start'
-  | 'karaoke_mic_granted'
-  | 'karaoke_first_pitch'
-  | 'karaoke_first_score'
-  | 'karaoke_scorecard_view'
-  | 'karaoke_cta_studio'
+export type KaraokeFunnelEvent = KaraokeFunnelEventName
 
 const VIEW_SENT_KEY = 'kn.funnel.viewSent.v1'
 const ONCE_SENT_PREFIX = 'kn.funnel.once.'

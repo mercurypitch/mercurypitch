@@ -6,28 +6,16 @@
 // db-worker (POST /api/mirror/event → mirrorEvents table). Counts
 // plus derived NUMBERS only (results metrics) — never audio, never
 // PII. Degrades silently when no API is configured (pure-local
-// dev, tour/e2e builds). Keep the event list in sync with the
-// db-worker FUNNEL_EVENTS allowlist.
+// dev, tour/e2e builds). The names come from
+// src/lib/funnel-event-catalog.ts, which the worker's ingest allowlist is
+// also built from, so the two cannot drift.
 // ============================================================
 
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
+import type { GlassFunnelEventName } from '@/lib/funnel-event-catalog'
 
-export type GlassFunnelEvent =
-  | 'glass_view'
-  | 'glass_mic_granted'
-  | 'glass_mic_denied'
-  | 'glass_calibrate_done'
-  | 'glass_rep_done'
-  | 'glass_playback_done'
-  | 'glass_shatter'
-  | 'glass_results_view'
-  | 'glass_fx_change'
-  | 'glass_monitor_on'
-  | 'glass_monitor_off'
-  | 'glass_card_generated'
-  | 'glass_card_shared'
-  | 'glass_cta_app_click'
+export type GlassFunnelEvent = GlassFunnelEventName
 
 const CLIENT_ID_KEY = 'mirror.clientId.v1' // one anonymous id per device, shared across funnels
 const VIEW_SENT_KEY = 'glass.funnel.viewSent.v1'
