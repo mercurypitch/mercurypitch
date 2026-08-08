@@ -113,7 +113,9 @@ const CONTENT_TYPE_BY_EXTENSION = new Map<string, RegExp>([
  * never stored.
  */
 const ALLOWED_PATHS = new Set(
-  self.__WB_MANIFEST.map((entry) => new URL(entry.url, self.location.href).pathname),
+  self.__WB_MANIFEST.map(
+    (entry) => new URL(entry.url, self.location.href).pathname,
+  ),
 )
 
 function extensionOf(pathname: string): string {
@@ -200,9 +202,7 @@ async function primeCache(): Promise<void> {
     if (isHtmlDocument(shell)) {
       const html = await shell.clone().text()
       await cache.put(SHELL_KEY, shell)
-      await Promise.all(
-        firstPaintAssets(html).map((url) => warm(cache, url)),
-      )
+      await Promise.all(firstPaintAssets(html).map((url) => warm(cache, url)))
     }
   } catch {
     // Offline at install time. The worker still activates and starts caching

@@ -122,11 +122,15 @@ export function installPwaInstallListeners(
     setPendingPrompt(null)
   })
 
-  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+  ) {
     const mql = window.matchMedia(STANDALONE_QUERY)
     const sync = (): void => {
       setStandalone(matchesStandalone())
     }
-    if (typeof mql.addEventListener === 'function') mql.addEventListener('change', sync)
+    if (typeof mql.addEventListener === 'function')
+      mql.addEventListener('change', sync)
   }
 }

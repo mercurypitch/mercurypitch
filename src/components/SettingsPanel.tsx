@@ -1497,7 +1497,10 @@ export const SettingsPanel: Component = () => {
               nothing to offer (already installed, or a browser with no install
               path), so it never advertises something that cannot happen. */}
           <Show when={canOfferInstall()}>
-            <div class={styles.settingsSection} data-testid="install-app-section">
+            <div
+              class={styles.settingsSection}
+              data-testid="install-app-section"
+            >
               <h3 class={styles.settingsSectionTitle}>Install as an app</h3>
               <div class={styles.settingsDivider} />
               <p class={styles.settingsDesc}>

@@ -12,7 +12,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { InstallApp, IosShare } from '@/components/icons'
-import { canInstall, needsIosInstallHint, promptInstall } from '@/lib/pwa-install'
+import { canInstall, needsIosInstallHint, promptInstall, } from '@/lib/pwa-install'
 import styles from './InstallAppButton.module.css'
 
 export interface InstallAppButtonProps {
@@ -61,7 +61,11 @@ export const InstallAppButton: Component<InstallAppButtonProps> = (props) => {
 
       {/* iOS only, and only in the panel: a hint has nowhere useful to go in a
           header pill, and it must never be mistaken for a button. */}
-      <Show when={props.variant === 'panel' && !canInstall() && needsIosInstallHint()}>
+      <Show
+        when={
+          props.variant === 'panel' && !canInstall() && needsIosInstallHint()
+        }
+      >
         <p class={styles.iosHint} data-testid="install-app-ios-hint">
           <IosShare size={16} />
           <span>

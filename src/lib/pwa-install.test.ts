@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as PwaInstall from './pwa-install'
 
 // The install state is a module-level singleton (it has to outlive any
 // component, since `beforeinstallprompt` fires before the app renders), so each
 // case takes a fresh copy of the module rather than trying to reset it.
-async function freshModule(): Promise<typeof import('./pwa-install')> {
+async function freshModule(): Promise<typeof PwaInstall> {
   vi.resetModules()
   return import('./pwa-install')
 }

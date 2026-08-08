@@ -27,7 +27,8 @@ async function bootWithWorkerInControl(page: Page): Promise<void> {
   await page.goto('/')
   // Registration is deferred to `load` (src/lib/pwa-service-worker.ts).
   await page.waitForFunction(
-    async () => (await navigator.serviceWorker.getRegistration('/')) !== undefined,
+    async () =>
+      (await navigator.serviceWorker.getRegistration('/')) !== undefined,
     undefined,
     { timeout: CONTROLLER_TIMEOUT },
   )
