@@ -143,7 +143,7 @@ These are the rules that break things when ignored.
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 668 | Shared Whisper transcription controller hook. |
-| [practice-engine.ts](../../src/lib/practice-engine.ts) | 646 | Practice Engine — Mic, pitch detection, accuracy scoring |
+| [practice-engine.ts](../../src/lib/practice-engine.ts) | 660 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [runpod.ts](../../src/lib/runpod.ts) | 534 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
@@ -164,7 +164,7 @@ These are the rules that break things when ignored.
 | [app-store.ts](../../src/stores/app-store.ts) | 2.0k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
-| [settings-store.ts](../../src/stores/settings-store.ts) | 657 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [settings-store.ts](../../src/stores/settings-store.ts) | 681 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 502 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 457 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
@@ -322,8 +322,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.0k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
-| [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.9k |
+| [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |

@@ -22,6 +22,7 @@ import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
@@ -30,7 +31,7 @@ import { micLatencyMs } from '@/stores/mic-latency-store'
 import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceIntervalMin, practiceTimerEnabled, setBreakIntervalMin, setPracticeIntervalMin, setPracticeTimerEnabled, } from '@/stores/practice-timer-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
-import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, scoreMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setScoreMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
@@ -432,6 +433,38 @@ export const SettingsPanel: Component = () => {
             </p>
 
             <TierSelector class={styles.settingsTierSelector} />
+          </div>
+
+          {/* Score Window Section */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Scoring</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              How much of each note counts toward its score. Skipping the start
+              forgives the slide into a note. Picking an accuracy tier above
+              resets this to the tier's own mode.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="score-mode-select">Score window</label>
+              <SafeSelect
+                id="score-mode-select"
+                value={scoreMode()}
+                onChange={(e) => {
+                  const v = e.currentTarget.value
+                  if (isScoreMode(v)) setScoreMode(v)
+                }}
+              >
+                <For each={SCORE_MODES}>
+                  {(mode) => (
+                    <option value={mode}>{SCORE_MODE_INFO[mode].label}</option>
+                  )}
+                </For>
+              </SafeSelect>
+            </div>
+            <p class={styles.settingsDesc}>
+              {SCORE_MODE_INFO[scoreMode()].description}
+            </p>
           </div>
 
           {/* Pitch Algorithm Section */}
