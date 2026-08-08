@@ -49,10 +49,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 ### Changed
 
 - **The account settings tab reads top-down by risk.** Install as an app now
-  sits above the Danger Zone, and the Danger Zone ships collapsed — its two
-  destructive buttons open on a click of the heading, last before About. The
-  font-change reload prompt also actually appears now; it used to render on a
-  different settings tab than the font picker that triggered it.
+  sits above the Danger Zone, and the Danger Zone ships collapsed — its
+  destructive buttons open on a click of the heading, last before About.
+  Delete account moved in there too, beside the other irreversible actions.
+  The font-change reload prompt also actually appears now; it used to render
+  on a different settings tab than the font picker that triggered it.
 
 - **Octave up and down now moves the song.** On the singing sidebar the
   buttons used to move only an invisible reference grid; they now transpose
@@ -68,6 +69,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   runs behind a click no longer loads with the first screen.
 
 ### Fixed
+
+- **Autofill works again after a wrong password.** A failed sign-in now
+  clears the password box and hides the reveal — password managers refuse to
+  fill a field that still holds the wrong attempt, which made retries look
+  like autofill was broken.
 
 - **The singing stage no longer runs out of note lines.** Loading a melody
   now brings its own key, scale and octave to the stage grid, and the grid

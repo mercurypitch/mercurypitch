@@ -13,12 +13,11 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { SupporterBadge } from '@/components/billing/SupporterBadge'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Pencil } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { deleteAccount, fetchMe, googleSignInUrl, logout, restoreAuth, } from '@/db/services/auth-service'
+import { fetchMe, googleSignInUrl, logout, restoreAuth, } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
@@ -41,7 +40,6 @@ export const AccountSection: Component = () => {
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [nameDraft, setNameDraft] = createSignal('')
-  const [confirmDelete, setConfirmDelete] = createSignal(false)
   // Supporter status rides along with the account fetch — it is the same
   // round trip the header already makes, and drives the badge below.
   const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
@@ -159,33 +157,6 @@ export const AccountSection: Component = () => {
     setMe(null)
     setSupporter(null)
     showNotification('Signed out', 'info')
-  }
-
-  async function handleDeleteAccount(): Promise<void> {
-    setBusy(true)
-    setError('')
-    try {
-      await deleteAccount()
-      setMe(null)
-      setConfirmDelete(false)
-      showNotification('Account deleted', 'info')
-      // Reload rather than carry on in a page still holding the deleted
-      // account's state: stores keep its streak/profile in memory, and a
-      // debounced settings push landing after the delete would provision a
-      // fresh account seconds later. Same full reset as "clear storage".
-      // The delay lets the confirmation land before the page goes.
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 900)
-    } catch (err) {
-      // Close the dialog but surface the failure loudly in the section —
-      // silently "succeeding" would tell someone their data is gone when it
-      // is still there.
-      setError(err instanceof Error ? err.message : 'Could not delete account')
-      setConfirmDelete(false)
-    } finally {
-      setBusy(false)
-    }
   }
 
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
@@ -414,26 +385,8 @@ export const AccountSection: Component = () => {
           </div>
         </Show>
 
-        {/* Erasure is offered whenever a server identity exists — anonymous
-            accounts hold streaks, scores and settings too, and GDPR doesn't
-            care whether you ever typed an email. */}
-        <Show when={me() != null}>
-          <div class={styles.dangerZone}>
-            <button
-              class={styles.dangerButton}
-              onClick={() => setConfirmDelete(true)}
-              disabled={busy()}
-              data-testid="delete-account"
-            >
-              Delete account
-            </button>
-            <p class={styles.mutedNote}>
-              Permanently erases your profile, scores, streaks, badges and
-              settings from our servers. Unspent credits are lost. Files on this
-              device are not affected.
-            </p>
-          </div>
-        </Show>
+        {/* Account erasure lives in the Danger Zone card below (see
+            DeleteAccountRow) with the other destructive actions. */}
       </Show>
 
       {/* The other half of onboarding's promise: what an account keeps. */}
@@ -505,22 +458,6 @@ export const AccountSection: Component = () => {
           </a>
         </div>
       </div>
-      <ConfirmDialog
-        open={confirmDelete()}
-        title="Delete account"
-        message={
-          <>
-            This permanently erases your profile, scores, streaks, badges,
-            settings and any unspent credits from our servers.{' '}
-            <strong>It cannot be undone.</strong>
-          </>
-        }
-        confirmLabel="Delete forever"
-        confirmPhrase="delete"
-        busy={busy()}
-        onConfirm={() => void handleDeleteAccount()}
-        onCancel={() => setConfirmDelete(false)}
-      />
     </div>
   )
 }
