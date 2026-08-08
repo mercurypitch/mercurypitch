@@ -227,6 +227,21 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
   })
+  // Only the bass stem is offered: it is effectively monophonic, which is the
+  // case pitch detection actually handles. The guitar stem holds however many
+  // guitars the mix had and is often chordal, so it is not claimed here.
+  const transcribableStem = createMemo(() => {
+    const backing = activeBacking()
+    if (backing === null) return null
+    const bass = backing.stems.find((stem) => stem.kind === 'bass')
+    if (bass === undefined) return null
+    return {
+      sessionId: backing.sessionId,
+      kind: bass.kind,
+      label: 'Bass',
+      url: bass.url,
+    }
+  })
 
   const [visibleSongLimit, setVisibleSongLimit] =
     createSignal(INITIAL_LIBRARY_PAGE)
@@ -1044,9 +1059,16 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       <div class={styles.referenceAttached}>
                         <strong>{attached().title}</strong>
                         <small>
-                          {attached().notes.length} authored notes at{' '}
-                          {attached().tempoBpm} BPM
+                          {attached().kind === 'measured'
+                            ? `${attached().notes.length} notes heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
+                            : `${attached().notes.length} authored notes at ${attached().tempoBpm} BPM`}
                         </small>
+                        <Show when={attached().liftedOctaves === true}>
+                          <small>
+                            Raised into guitar range to fit the six-string
+                            stage.
+                          </small>
+                        </Show>
                         <Show when={attached().tracks.length > 1}>
                           <div
                             class={styles.referenceTracks}
@@ -1135,13 +1157,66 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   )}
                 </Show>
 
-                <button
-                  type="button"
-                  class={styles.songListMore}
-                  onClick={() => referenceInput?.click()}
+                <Show
+                  when={transcribableStem()}
+                  fallback={
+                    <button
+                      type="button"
+                      class={styles.songListMore}
+                      onClick={() => referenceInput?.click()}
+                    >
+                      Open a tab file
+                    </button>
+                  }
                 >
-                  Open a tab file
-                </button>
+                  {(stem) => (
+                    <div class={styles.referenceActions}>
+                      <button
+                        type="button"
+                        class={styles.songListMore}
+                        onClick={() => referenceInput?.click()}
+                      >
+                        Open a tab file
+                      </button>
+                      <Switch>
+                        <Match
+                          when={
+                            referenceController.transcribeProgress() !== null
+                          }
+                        >
+                          <button
+                            type="button"
+                            class={styles.songListMore}
+                            onClick={referenceController.cancelFollowStem}
+                          >
+                            Listening to the {stem().label.toLowerCase()}…{' '}
+                            {Math.round(
+                              (referenceController.transcribeProgress() ?? 0) *
+                                100,
+                            )}
+                            % · Stop
+                          </button>
+                        </Match>
+                        <Match when={true}>
+                          <button
+                            type="button"
+                            class={styles.songListMore}
+                            onClick={() =>
+                              void referenceController.followStem({
+                                sessionId: stem().sessionId,
+                                stemKind: stem().kind,
+                                stemLabel: stem().label,
+                                stemUrl: stem().url,
+                              })
+                            }
+                          >
+                            Hear the {stem().label.toLowerCase()} line
+                          </button>
+                        </Match>
+                      </Switch>
+                    </div>
+                  )}
+                </Show>
               </section>
 
               <div class={styles.detailActions}>

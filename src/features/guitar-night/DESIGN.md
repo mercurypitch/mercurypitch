@@ -88,6 +88,19 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   frames, and only while a reference supplies a usable tempo — otherwise the
   stage reports free play. A slowed take slows the score with it, and seeking
   moves both together.
+- A reference is either authored or measured. Authored notes come from a file
+  and carry a real musical tempo. Measured notes are heard in one separated
+  stem: they are evidence about this recording, already on its timeline, so they
+  need no alignment step and are never presented as a tab or given a BPM
+  readout. A measured reference states which stem it came from and how much of
+  that stem produced confident notes.
+- Only the bass stem is offered for measurement. It is effectively monophonic,
+  which is the case pitch detection handles. The guitar stem holds however many
+  guitars the mix contained and is often chordal, so it is not claimed.
+- Measured notes below the guitar's low E are raised by whole octaves into the
+  six-string range, preserving pitch class, and the surface says that it did so
+  rather than dropping them silently. Measurement runs only on an explicit
+  gesture and can be stopped.
 - A staged song exposes one explicit `Enter room` handoff. Entering remains
   silent and cuts over from the setup faceplate to a bounded `100dvh`
   workspace. The song identity becomes a compact signal bar, the photographic

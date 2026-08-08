@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GuitarNightReferenceSource } from './reference-port'
-import { isGuitarProReferenceFile, isMidiReferenceFile, openGuitarNightReference, resolveReferenceTrack, } from './reference-port'
+import { isGuitarProReferenceFile, isMidiReferenceFile, liftIntoGuitarRange, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, } from './reference-port'
 
 function source(
   overrides: Partial<GuitarNightReferenceSource> = {},
@@ -132,6 +132,83 @@ describe('openGuitarNightReference', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.reference.tempoBpm).toBe(120)
+  })
+})
+
+describe('measuredReferenceFromTranscription', () => {
+  const transcription = {
+    coverage: 0.82,
+    analysedSeconds: 120,
+    notes: [
+      {
+        midi: 28,
+        noteName: 'E1',
+        startSeconds: 0.5,
+        durationSeconds: 0.4,
+        confidence: 0.8,
+      },
+      {
+        midi: 45,
+        noteName: 'A2',
+        startSeconds: 1.2,
+        durationSeconds: 0.3,
+        confidence: 0.7,
+      },
+    ],
+  }
+
+  it('marks the reference as measured and keeps the recording timeline', () => {
+    const reference = measuredReferenceFromTranscription({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      transcription,
+    })
+
+    expect(reference.kind).toBe('measured')
+    expect(reference.coverage).toBe(0.82)
+    // One beat per second, so measured seconds reach the stage unscaled.
+    expect(reference.tempoBpm).toBe(60)
+    expect(reference.notes.map((note) => note.startBeat)).toEqual([0.5, 1.2])
+    expect(reference.notes.map((note) => note.duration)).toEqual([0.4, 0.3])
+  })
+
+  it('raises sub-guitar notes into range and says that it did', () => {
+    const reference = measuredReferenceFromTranscription({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      transcription,
+    })
+
+    expect(reference.liftedOctaves).toBe(true)
+    // E1 becomes E2 — same pitch class, now placeable on six strings.
+    expect(reference.notes[0].midi).toBe(40)
+    expect(reference.notes[1].midi).toBe(45)
+  })
+
+  it('leaves a line already in guitar range untouched', () => {
+    const reference = measuredReferenceFromTranscription({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      transcription: {
+        ...transcription,
+        notes: [transcription.notes[1]],
+      },
+    })
+
+    expect(reference.liftedOctaves).toBe(false)
+    expect(reference.notes[0].midi).toBe(45)
+  })
+})
+
+describe('liftIntoGuitarRange', () => {
+  it('raises by whole octaves only', () => {
+    expect(liftIntoGuitarRange(28)).toBe(40)
+    expect(liftIntoGuitarRange(31)).toBe(43)
+    expect(liftIntoGuitarRange(40)).toBe(40)
+    expect(liftIntoGuitarRange(64)).toBe(64)
   })
 })
 
