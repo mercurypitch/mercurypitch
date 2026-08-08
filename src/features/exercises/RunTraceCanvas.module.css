@@ -6,11 +6,17 @@
   gap: 6px;
   margin: 10px 0 0;
   width: 100%;
+  /* A <canvas> carries a 300px intrinsic width until the draw sizes it, and
+     an unfloored flex item is never allowed to shrink below that. On a phone
+     that width propagated out through the result card and the plot rendered
+     past its right edge. */
+  min-width: 0;
 }
 
 .plot {
   position: relative;
   width: 100%;
+  min-width: 0;
   height: 92px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -20,6 +26,9 @@
 
 .plot canvas {
   display: block;
+  /* Belt to the min-width braces: whatever the draw measured, the bitmap
+     stays inside its box. */
+  max-width: 100%;
 }
 
 .caption {
