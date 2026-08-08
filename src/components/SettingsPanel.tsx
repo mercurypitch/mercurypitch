@@ -15,6 +15,7 @@ import { TierSelector } from '@/components/TierSelector'
 import { VocalRangeSelector } from '@/components/VocalRangeSelector'
 import { VoiceRangeTestModal } from '@/components/VoiceRangeTestModal'
 import { VoiceTypeDetectorModal } from '@/components/VoiceTypeDetectorModal'
+import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { hasAnyTag, openConsentSettings } from '@/lib/consent'
@@ -25,6 +26,7 @@ import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbCo
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
@@ -43,6 +45,7 @@ export const SettingsPanel: Component = () => {
   const [showChangelog, setShowChangelog] = createSignal(false)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
   const [showRangeTest, setShowRangeTest] = createSignal(false)
+  const [latencyWizardOpen, setLatencyWizardOpen] = createSignal(false)
   const bandValues = createMemo(() => {
     const bands = s().bands
     return {
@@ -487,6 +490,48 @@ export const SettingsPanel: Component = () => {
                 {PITCH_BUFFER_DESCRIPTIONS[pitchBufferSize()]}
               </p>
             </Show>
+          </div>
+
+          {/* Microphone Latency Section */}
+          <div class={styles.settingsSection} data-tour="settings.mic-latency">
+            <h3 class={styles.settingsSectionTitle}>Microphone Latency</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              How long your device takes to play a sound and capture one. Once
+              measured, scoring lines your voice up with the reference instead
+              of blaming you for the delay.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label>Round-trip offset</label>
+              <Show
+                when={latencyWizardOpen()}
+                fallback={
+                  <>
+                    <button
+                      type="button"
+                      class={styles.settingsBtn}
+                      onClick={() => {
+                        setLatencyWizardOpen(true)
+                      }}
+                    >
+                      {micLatencyMs() > 0 ? 'Measure again' : 'Measure'}
+                    </button>
+                    <small>
+                      {micLatencyMs() > 0
+                        ? `Set to ${micLatencyMs()} ms for the current input.`
+                        : 'Not measured — scoring is uncompensated.'}
+                    </small>
+                  </>
+                }
+              >
+                <MicLatencyWizard
+                  onClose={() => {
+                    setLatencyWizardOpen(false)
+                  }}
+                />
+              </Show>
+            </div>
           </div>
 
           {/* Pitch Detection Section */}

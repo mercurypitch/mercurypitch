@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildClickSchedule, CALIBRATION_CLICK_COUNT, MAX_OFFSET_MS, median, medianOffsetMs, nearestClickDelta, spreadMs, } from '@/lib/tap-calibration'
+import { median, spreadMs } from '@/lib/calibration-stats'
+import { buildClickSchedule, CALIBRATION_CLICK_COUNT, MAX_OFFSET_MS, medianOffsetMs, nearestClickDelta, } from '@/lib/tap-calibration'
 
 describe('buildClickSchedule', () => {
   it('lays clicks out at a fixed interval from the start time', () => {

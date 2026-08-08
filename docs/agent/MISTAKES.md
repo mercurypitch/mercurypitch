@@ -528,6 +528,25 @@ Playwright run. The e2e suite can assert the manifest and
 a persistent, headed, real-Chrome profile.
 **See:** `src/e2e/pwa.spec.ts`, `src/lib/pwa-install.ts`
 
+### Regenerate the agent index last, after formatting and after a rebase
+
+**Symptom:** `pnpm pr:prepare` reports a clean run, and PR Gate then fails on
+"docs/agent/INDEX.md is stale" before it has installed a single dependency.
+
+**Cause:** two ways in, both of which make the file stale _after_ it was
+checked. `pr:prepare` regenerates the index and only _then_ runs Prettier, so
+reformatting any file it just indexed changes that file's line count — and the
+index records line counts. Separately, the index covers the whole tree, so a
+rebase that pulls in someone else's new module invalidates it even though your
+own diff never touched it.
+
+**Rule:** run `node scripts/gen-agent-index.mjs` as the last step before
+committing — after `pr:prepare`, and again after any rebase. It is a fast
+local command and cheaper than a CI round trip. This bites hardest on a PR that
+adds modules, which is exactly when the index matters.
+
+**See:** `scripts/pr-prepare.mjs`, `scripts/gen-agent-index.mjs`
+
 ## Process
 
 ### Do not commit, push, or open a PR unless asked

@@ -778,6 +778,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     navigate: ['[data-testid="settings-tab-singing"]'],
   },
   {
+    title: 'Microphone latency',
+    targetSelector: '[data-tour="settings.mic-latency"]',
+    description:
+      'Every device takes a moment to play a sound and another to capture one, and over that gap your voice lands late against the reference. Measure it once — clicks out through the speakers, listened for coming back — and scoring lines the two up instead of blaming you for the delay. Each input keeps its own number.',
+    placement: 'left',
+    section: 'settings-practice',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-singing"]'],
+  },
+  {
     title: 'Pitch detection',
     targetSelector: '#set-sensitivity',
     description:

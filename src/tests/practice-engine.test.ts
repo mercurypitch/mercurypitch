@@ -2,10 +2,11 @@
 // Practice Engine Tests
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { centsToBand, centsToRating, PracticeEngine, ratingToScore, scoreGrade, } from '@/lib/practice-engine'
-import type { AccuracyRating } from '@/types'
+import { setMicLatencyByDevice } from '@/stores/mic-latency-store'
+import type { AccuracyRating, MelodyNote } from '@/types'
 
 // Default bands used in tests (matching DEFAULT_BANDS in practice-engine.ts)
 // Note: first band has threshold=0, meaning cents==0 is the only value that gets band 100.
@@ -179,19 +180,123 @@ describe('Rating consistency', () => {
   })
 })
 
-describe('PracticeEngine callback subscriptions', () => {
-  const stubAudioEngine = () =>
-    ({
-      init: () => Promise.resolve(),
-      resume: () => Promise.resolve(),
-      getSampleRate: () => 44100,
-      getBufferSize: () => 2048,
-      startMic: () => Promise.resolve(true),
-      stopMic: () => {},
-      isMicActive: () => true,
-      onMicLost: () => () => {},
-    }) as unknown as AudioEngine
+const stubAudioEngine = () =>
+  ({
+    init: () => Promise.resolve(),
+    resume: () => Promise.resolve(),
+    getSampleRate: () => 44100,
+    getBufferSize: () => 2048,
+    startMic: () => Promise.resolve(true),
+    stopMic: () => {},
+    isMicActive: () => true,
+    onMicLost: () => () => {},
+    getTimeData: () => new Float32Array(2048),
+  }) as unknown as AudioEngine
 
+describe('PracticeEngine note attribution under mic latency', () => {
+  const note = (name: string, midi: number): MelodyNote =>
+    ({
+      name,
+      octave: 4,
+      midi,
+      freq: 440,
+      duration: 1,
+    }) as MelodyNote
+
+  let clock = 0
+
+  beforeEach(() => {
+    clock = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => clock)
+    setMicLatencyByDevice({})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    setMicLatencyByDevice({})
+  })
+
+  const completedNotes = (engine: PracticeEngine): string[] => {
+    const names: string[] = []
+    engine.addCallbacks({
+      onNoteComplete: (result) => names.push(result.item?.note?.name ?? '?'),
+    })
+    return names
+  }
+
+  it('switches note immediately when no latency has been measured', () => {
+    const engine = new PracticeEngine(stubAudioEngine())
+    const done = completedNotes(engine)
+    engine.startSession()
+
+    engine.onNoteStart(note('C', 60), 0)
+    engine.onNoteStart(note('D', 62), 1)
+
+    // The first note is finalised the moment the second starts — the
+    // behaviour before latency compensation existed, and the behaviour an
+    // unmeasured device must keep.
+    expect(done).toEqual(['C'])
+  })
+
+  it('holds the next note back by the measured round trip', async () => {
+    setMicLatencyByDevice({ default: 120 })
+    const engine = new PracticeEngine(stubAudioEngine())
+    const done = completedNotes(engine)
+    // update() only attributes frames while the mic is live, which is the
+    // only time there are frames to attribute.
+    await engine.startMic()
+    engine.startSession()
+
+    engine.onNoteStart(note('C', 60), 0)
+    clock += 500
+    engine.onNoteStart(note('D', 62), 1)
+
+    // Frames arriving now were sung 120 ms ago, while C was still the target,
+    // so D must not take over yet.
+    expect(done).toEqual([])
+
+    clock += 119
+    engine.update()
+    expect(done).toEqual([])
+
+    clock += 2
+    engine.update()
+    expect(done).toEqual(['C'])
+  })
+
+  it('still owes a result for a note the run ended on', () => {
+    setMicLatencyByDevice({ default: 120 })
+    const engine = new PracticeEngine(stubAudioEngine())
+    const done = completedNotes(engine)
+    engine.startSession()
+
+    engine.onNoteStart(note('C', 60), 0)
+    clock += 10
+    engine.onNoteStart(note('D', 62), 1)
+    // Ends while D is still queued: both notes must still report.
+    engine.endSession()
+
+    expect(done).toEqual(['C', 'D'])
+  })
+
+  it('drops queued starts when a new session begins', async () => {
+    setMicLatencyByDevice({ default: 120 })
+    const engine = new PracticeEngine(stubAudioEngine())
+    await engine.startMic()
+    engine.startSession()
+    engine.onNoteStart(note('C', 60), 0)
+    engine.onNoteStart(note('D', 62), 1)
+
+    engine.startSession()
+    const done = completedNotes(engine)
+    clock += 1000
+    engine.update()
+
+    expect(done).toEqual([])
+  })
+})
+
+describe('PracticeEngine callback subscriptions', () => {
   it('notifies every subscriber of mic state changes', async () => {
     const engine = new PracticeEngine(stubAudioEngine())
     const first: boolean[] = []

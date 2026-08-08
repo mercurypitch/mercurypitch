@@ -637,6 +637,36 @@ input:checked + .settingsSlider:before {
   }
 }
 
+/* Action button inside a settings row (measure, test, launch a wizard). */
+.settingsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.settingsBtn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.settingsBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
 /* Compact settings selects */
 .settingsSelect {
   min-height: 34px;
