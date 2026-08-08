@@ -541,7 +541,18 @@ export function KaraokeNightApp() {
               </Show>
             </Show>
 
-            <Suspense>
+            {/* A bare <Suspense> renders NOTHING while it waits, so the rail
+                was simply blank on first load — no list, no sign it was
+                coming. It only fires once now: the panels keep their counts
+                on screen across song changes rather than re-suspending. */}
+            <Suspense
+              fallback={
+                <section class="kn-card kn-rail-loading">
+                  <span class="kn-song-spinner" aria-hidden="true" />
+                  <p>Loading your songs…</p>
+                </section>
+              }
+            >
               <KaraokeRailPanels
                 onSing={(s) => setSongWithUrl(s, true)}
                 stageBusy={() => activeSong() !== null}
