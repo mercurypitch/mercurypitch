@@ -191,10 +191,11 @@ already rolling. Full design: [plans/mercury-sing.md](plans/mercury-sing.md)
 — most of the hard parts (melody DTW, stem fingerprints, lyric matcher,
 per-session seek search, offset launch) already ship in Shazam Sing.
 
-- [ ] M1 — trigger (`mercury sing` via a raw-token fallback pass, plus `find my song`) and the listening stage (headless controller lifted from ShazamListen)
-- [ ] M2 — melody+lyrics fused scoring and the sustained-confidence auto-open policy (threshold + margin + hold window; never a one-shot trigger)
-- [ ] M3 — the handoff: Karaoke Night `?session=&t=` launch contract with autoplay, offset compensated so the band meets the singer
-- [ ] M4 — polish: confidence sparklines, "not that one" rejection, recent-practice bias
+- [x] M1 — trigger (`mercury sing` via the grammar's brand-phrase retry, plus `shazam sing` / `find my song` / `name this song` / `what am i singing`) and the listening stage: pitch trail, top-3 with confidence breakdown, cancel by `cancel` / `stop listening` / Escape / click, manual pick by tap or `sing number one`
+- [x] M2a — sustained-confidence auto-open policy (threshold + margin over the runner-up + hold window + minimum sung material + one-open latch; never a one-shot trigger), fed by live melody matching every 1.5s; the stage also fingerprints not-yet-indexed library songs in the background
+- [ ] M2b — lyrics fused into the score once live words land (whisper/webspeech assist; melody-only today)
+- [x] M3 — the handoff: Karaoke Night `?session=&t=&autoplay=` launch contract, offset = match start + sung duration − pre-roll so the band meets the singer; wake-word mode forced on inside the stage so singing can't fire transport commands
+- [ ] M4 — polish: confidence sparklines, "not that one" rejection, recent-practice bias, in-app variant (Karaoke tab instead of the Night page, behind a setting)
 
 ## Later / ambitious
 

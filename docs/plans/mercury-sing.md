@@ -37,50 +37,57 @@ auto-open decision policy, and the offset-carrying Karaoke Night launch.
 
 ### M1 — trigger and stage
 
-- [ ] Voice command **"mercury sing"**. The grammar strips the wake word, so
+- [x] Voice command **"mercury sing"**. The grammar strips the wake word, so
       this needs a small, general addition: when the filler-stripped tokens
       match nothing, retry with the RAW tokens — then `mercury sing` is an
       ordinary two-token phrase and the brand phrase works verbatim.
-      Aliases: `find my song`, `name this song`, `what am i singing`.
-      Deliberately NOT bare `sing` (it is a lyric word).
-- [ ] A minimal listening stage (feature module `mercury-sing/`): dimmed
+      Aliases: `shazam sing`, `find my song`, `name this song`,
+      `what am i singing`. Deliberately NOT bare `sing` (it is a lyric
+      word). Shipped as the grammar's brand-phrase retry.
+- [x] A minimal listening stage (feature module `mercury-sing/`): dimmed
       overlay, live "hearing you" pitch trail, top-3 candidates with the
       existing confidence breakdown, cancel by voice (`stop listening`,
-      `cancel`) / Escape / click. Reuses ShazamListen's machinery lifted
-      into a headless controller so both surfaces share one engine — the
+      `cancel`) / Escape / click. Headless engine
+      (`mercury-sing-engine.ts`) over ShazamListen's machinery — the
       component itself stays a thin skin.
-- [ ] Mic through MicManager (indicator + release on close), voice listener
-      keeps running (it must hear "cancel"); the wake-word-required mode is
-      forced ON inside the stage so singing cannot trigger transport
-      commands.
+- [x] Mic through the AudioEngine/MicManager path (indicator + release on
+      close), voice listener keeps running (it must hear "cancel"); the
+      wake-word-required mode is forced ON inside the stage
+      (`acquireWakeWordHold`) so singing cannot trigger transport
+      commands, while the stage's own words are `ignoresWakeWord`.
 
 ### M2 — matching fusion and the auto-open policy
 
-- [ ] Fingerprint the karaoke library on stage open (stem-fingerprinter over
+- [x] Fingerprint the karaoke library on stage open (stem-fingerprinter over
       completed sessions, cached; incremental for new sessions). Sessions
       without a cached vocal transcription still match on melody alone.
+      Shipped as the engine's background fingerprinting queue — the first
+      session teaches the library while the user sings.
 - [ ] Fused score per candidate: melody DTW score blended with the lyric
       match when live lyrics are available (weighting configurable;
       lyrics dominate once enough words land — words are near-unique,
-      melody disambiguates covers of the same words).
-- [ ] Auto-open policy — NOT a raw one-shot threshold: open when the top
+      melody disambiguates covers of the same words). Melody-only today.
+- [x] Auto-open policy — NOT a raw one-shot threshold: open when the top
       candidate holds `score >= threshold` (default 0.95) with a clear
       margin over #2 for a sustained window (~2 s), after a minimum of
       sung material (~6 s). Hysteresis prevents the "picked 3 times"
-      failure class by construction. Manual pick from the top-3 stays
-      available the whole time (tap or `sing number one`).
-- [ ] Offset estimate: DTW alignment end-point gives where in the song the
-      singer currently is; when lyrics matched, the matched transcript
-      segment's timestamp refines it. Launch offset = estimated position
-      plus the open/handoff latency, minus a one-beat pre-roll so the
-      backing meets the singer, not chases them.
+      failure class by construction — plus a short dip-grace window and a
+      one-open latch (`auto-open-policy.ts`, pure and heavily tested).
+      Manual pick from the top-3 stays available the whole time (tap or
+      `sing number one`).
+- [x] Offset estimate: DTW alignment gives where the singer's captured
+      chunk starts in the song; launch offset = that start plus the sung
+      duration, minus a pre-roll (`PRE_ROLL_SEC`) so the backing meets
+      the singer, not chases them. Lyric-timestamp refinement lands with
+      the fusion pass above.
 
 ### M3 — the handoff
 
-- [ ] Karaoke Night deep link grows `&t=<seconds>` (consumed into the
-      mixer's `initialSeekSec`) alongside the existing autoplay intent —
-      one launch contract shared by Mercury Sing, Shazam and any future
-      launcher.
+- [x] Karaoke Night deep link grows `&t=<seconds>` (consumed into the
+      mixer's `initialSeekSec`) alongside `&autoplay=` — one launch
+      contract shared by Mercury Sing, Shazam and any future launcher,
+      built and parsed in `karaoke-night-link.ts`, consumed once at boot
+      and stripped from the URL.
 - [ ] In-app variant: same contract through the `uvr-session-mixer` route
       for users already inside the app (setting: open in Karaoke Night vs
       Karaoke tab; default Night, per the owner).
@@ -99,10 +106,11 @@ auto-open decision policy, and the offset-carrying Karaoke Night launch.
 
 ## Risks
 
-| Risk                                    | Answer                                                                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| False open mid-verse                    | sustained-window + margin policy; manual pick always visible; `not that one` undo                    |
-| Big library = slow matching             | fingerprints cached and incremental; matching already runs live in ShazamListen at interactive rates |
-| No transcription cached for a session   | melody-only matching still works; lyric weight kicks in per-session opportunistically                |
-| Own singing triggers transport commands | wake-word-required forced on inside the stage                                                        |
-| Offset lands late                       | pre-roll compensation measured against the real open latency, tuned on device                        |
+| Risk                                    | Answer                                                                                                                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| False open mid-verse                    | sustained-window + margin policy; manual pick always visible; `not that one` undo                                                                                                                                  |
+| Big library = slow matching             | fingerprints cached and incremental; matching already runs live in ShazamListen at interactive rates                                                                                                               |
+| No transcription cached for a session   | melody-only matching still works; lyric weight kicks in per-session opportunistically                                                                                                                              |
+| Own singing triggers transport commands | wake-word-required forced on inside the stage                                                                                                                                                                      |
+| Offset lands late                       | pre-roll compensation measured against the real open latency, tuned on device                                                                                                                                      |
+| Browser blocks the cross-page autoplay  | a voice launch carries no user activation, so the fresh page's autoplay may be refused: the song still lands staged and seeked, one tap from rolling — measure in the field before adding a "tap to join" fallback |
