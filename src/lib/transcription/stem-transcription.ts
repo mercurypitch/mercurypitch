@@ -16,8 +16,15 @@ import { PitchDetector } from '@/lib/pitch-detector'
 import { midiToNote } from '@/lib/scale-data'
 
 export interface TranscriptionProfile {
-  bufferSize: number
+  /** Analysis window in seconds, so the sample rate can change under it. */
+  windowSeconds: number
   stepSeconds: number
+  /**
+   * Rate the audio is decoded at for analysis. YIN costs roughly
+   * window × (rate / minFrequency) per frame, so both terms shrink with the
+   * rate — and bass carries nothing above `maxFrequency` anyway.
+   */
+  analysisSampleRate: number
   minFrequency: number
   maxFrequency: number
   minConfidence: number
@@ -30,8 +37,11 @@ export interface TranscriptionProfile {
 
 /** Four- and five-string bass, from low B0 to the top of the neck. */
 export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
-  bufferSize: 4096,
+  windowSeconds: 0.093,
   stepSeconds: 0.04,
+  // 8 kHz leaves a 4 kHz ceiling, ten times the highest note this profile
+  // looks for, and cuts the work per frame by roughly thirty.
+  analysisSampleRate: 8000,
   minFrequency: 28,
   maxFrequency: 400,
   minConfidence: 0.5,
@@ -40,6 +50,14 @@ export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
   maxMidi: 60,
   minDurationSeconds: 0.09,
   maxGapSeconds: 0.06,
+}
+
+/** Analysis window in samples at whatever rate the audio actually arrived at. */
+export function profileWindowSamples(
+  profile: TranscriptionProfile,
+  sampleRate: number,
+): number {
+  return Math.max(256, Math.round(profile.windowSeconds * sampleRate))
 }
 
 export interface TranscriptionFrame {
@@ -212,10 +230,11 @@ export async function transcribeStemSamples(
   } = {},
 ): Promise<StemTranscription> {
   const profile = options.profile ?? BASS_TRANSCRIPTION_PROFILE
+  const windowSamples = profileWindowSamples(profile, sampleRate)
   const detector = new PitchDetector({
     sampleRate,
     algorithm: 'yin',
-    bufferSize: profile.bufferSize,
+    bufferSize: windowSamples,
     minFrequency: profile.minFrequency,
     maxFrequency: profile.maxFrequency,
     minConfidence: profile.minConfidence,
@@ -224,7 +243,7 @@ export async function transcribeStemSamples(
 
   const stepSamples = Math.max(1, Math.floor(profile.stepSeconds * sampleRate))
   const frameCount =
-    Math.floor((samples.length - profile.bufferSize) / stepSamples) + 1
+    Math.floor((samples.length - windowSamples) / stepSamples) + 1
   const analysedSeconds = samples.length / sampleRate
   if (frameCount <= 0) {
     return { notes: [], coverage: 0, analysedSeconds }
@@ -237,18 +256,20 @@ export async function transcribeStemSamples(
     }
     const offset = index * stepSamples
     const detected = detector.detect(
-      samples.slice(offset, offset + profile.bufferSize),
+      samples.subarray(offset, offset + windowSamples),
     )
     if (detected.frequency > 0) {
       frames.push({
         // Stamp the window's centre, not its edge, so onsets are not late.
-        timeSeconds: (offset + profile.bufferSize / 2) / sampleRate,
+        timeSeconds: (offset + windowSamples / 2) / sampleRate,
         midi: Math.round(69 + 12 * Math.log2(detected.frequency / 440)),
         clarity: detected.clarity,
       })
     }
 
-    if (index % 64 === 0 && index > 0) {
+    // Yield often. On the main-thread fallback this is the only thing keeping
+    // the room responsive; in the worker it is nearly free.
+    if (index % 16 === 0 && index > 0) {
       options.onProgress?.(index / frameCount)
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
@@ -258,7 +279,37 @@ export async function transcribeStemSamples(
   return transcribeFrames(frames, profile, frameCount, analysedSeconds)
 }
 
-/** Decode one stem URL to mono and transcribe it. */
+/**
+ * Decode one stem to mono at the profile's analysis rate. `decodeAudioData`
+ * resamples to the context's rate with the browser's own filters, so asking for
+ * 8 kHz here is both the anti-aliasing step and the reason analysis is cheap.
+ */
+export async function decodeStemForAnalysis(
+  stemUrl: string,
+  profile: TranscriptionProfile = BASS_TRANSCRIPTION_PROFILE,
+  signal?: AbortSignal,
+): Promise<{ samples: Float32Array; sampleRate: number }> {
+  const response = await fetch(stemUrl, { signal })
+  if (!response.ok) {
+    throw new Error('That stem could not be read from this device.')
+  }
+  const encoded = await response.arrayBuffer()
+  const context = new OfflineAudioContext(1, 2, profile.analysisSampleRate)
+  const decoded = await context.decodeAudioData(encoded)
+
+  const left = decoded.getChannelData(0)
+  if (decoded.numberOfChannels === 1) {
+    return { samples: left, sampleRate: decoded.sampleRate }
+  }
+  const right = decoded.getChannelData(1)
+  const mono = new Float32Array(left.length)
+  for (let index = 0; index < left.length; index += 1) {
+    mono[index] = (left[index] + right[index]) / 2
+  }
+  return { samples: mono, sampleRate: decoded.sampleRate }
+}
+
+/** Decode one stem URL to mono and transcribe it on this thread. */
 export async function transcribeStemUrl(
   stemUrl: string,
   options: {
@@ -267,23 +318,11 @@ export async function transcribeStemUrl(
     onProgress?: (fraction: number) => void
   } = {},
 ): Promise<StemTranscription> {
-  const response = await fetch(stemUrl, { signal: options.signal })
-  if (!response.ok) {
-    throw new Error('That stem could not be read from this device.')
-  }
-  const encoded = await response.arrayBuffer()
-  const context = new OfflineAudioContext(1, 2, 44100)
-  const decoded = await context.decodeAudioData(encoded)
-
-  const left = decoded.getChannelData(0)
-  let mono = left
-  if (decoded.numberOfChannels > 1) {
-    const right = decoded.getChannelData(1)
-    mono = new Float32Array(left.length)
-    for (let index = 0; index < left.length; index += 1) {
-      mono[index] = (left[index] + right[index]) / 2
-    }
-  }
-
-  return transcribeStemSamples(mono, decoded.sampleRate, options)
+  const profile = options.profile ?? BASS_TRANSCRIPTION_PROFILE
+  const { samples, sampleRate } = await decodeStemForAnalysis(
+    stemUrl,
+    profile,
+    options.signal,
+  )
+  return transcribeStemSamples(samples, sampleRate, { ...options, profile })
 }

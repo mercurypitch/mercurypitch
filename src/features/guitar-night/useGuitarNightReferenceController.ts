@@ -29,10 +29,10 @@ interface GuitarNightReferenceControllerOptions {
 }
 
 export async function loadDefaultGuitarNightTranscriptionPort(): Promise<GuitarNightTranscriptionPort> {
-  const module = await import('@/lib/transcription/stem-transcription')
+  const module = await import('@/lib/transcription/stem-transcription-client')
   return {
     transcribeStem: (stemUrl, options) =>
-      module.transcribeStemUrl(stemUrl, {
+      module.transcribeStem(stemUrl, {
         signal: options.signal,
         onProgress: options.onProgress,
       }),
@@ -240,7 +240,7 @@ export function useGuitarNightReferenceController(
       }
       if (transcription.notes.length === 0) {
         setImportStatus(
-          `No clear notes were heard in the ${input.stemLabel.toLowerCase()} stem, so the stage stays in free play.`,
+          `No clear notes could be read from the ${input.stemLabel.toLowerCase()} stem, so the stage stays in free play.`,
         )
         return
       }

@@ -1189,7 +1189,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                             class={styles.songListMore}
                             onClick={referenceController.cancelFollowStem}
                           >
-                            Listening to the {stem().label.toLowerCase()}…{' '}
+                            Reading the {stem().label.toLowerCase()} notes…{' '}
                             {Math.round(
                               (referenceController.transcribeProgress() ?? 0) *
                                 100,
@@ -1210,7 +1210,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                               })
                             }
                           >
-                            Hear the {stem().label.toLowerCase()} line
+                            Transcribe the {stem().label.toLowerCase()} line
                           </button>
                         </Match>
                       </Switch>
