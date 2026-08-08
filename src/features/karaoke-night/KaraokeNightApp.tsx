@@ -18,7 +18,8 @@ import { useVoiceControlController } from '@/features/voice-control/useVoiceCont
 import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { studioSessionUrl } from '@/lib/karaoke-night-link'
+import type { KaraokeNightLaunchParams } from '@/lib/karaoke-night-link'
+import { parseKaraokeNightLaunch, studioSessionUrl, } from '@/lib/karaoke-night-link'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
@@ -133,6 +134,9 @@ export function KaraokeNightApp() {
   const restoreFromUrl = async (
     sessionId: string | null,
     demoList?: DemoSongManifest[],
+    // The one-shot launch half of the deep link (`t=`, `autoplay=`) — only
+    // the initial boot passes it; popstate restores stage silently.
+    launch?: KaraokeNightLaunchParams,
   ) => {
     if (sessionId === null || sessionId === '') {
       setActiveSong(null)
@@ -156,7 +160,8 @@ export function KaraokeNightApp() {
         sessionId,
         title: `${demoSong.title} — ${demoSong.artist}`,
         stems: demoSong.stems,
-        autoPlay: false,
+        autoPlay: launch?.autoplay === true,
+        initialSeekSec: launch?.startAtSec ?? undefined,
       })
       return
     }
@@ -185,7 +190,8 @@ export function KaraokeNightApp() {
             vocal: outputs?.vocal,
             instrumental: outputs?.instrumental,
           },
-          autoPlay: false,
+          autoPlay: launch?.autoplay === true,
+          initialSeekSec: launch?.startAtSec ?? undefined,
         })
       } else {
         updateSessionUrl(null, false)
@@ -197,12 +203,30 @@ export function KaraokeNightApp() {
 
   onMount(() => {
     const searchParams = new URLSearchParams(window.location.search)
-    const initialSession = searchParams.get('session')
+    const launch = parseKaraokeNightLaunch(searchParams)
+    const initialSession = launch.sessionId
+
+    // `t` and `autoplay` are consumed by THIS boot — strip them so a
+    // refresh or a share of the resulting page does not replay the launch.
+    if (searchParams.has('t') || searchParams.has('autoplay')) {
+      try {
+        searchParams.delete('t')
+        searchParams.delete('autoplay')
+        const searchStr = searchParams.toString()
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${window.location.pathname}${searchStr !== '' ? `?${searchStr}` : ''}${window.location.hash}`,
+        )
+      } catch {
+        /* history state unavailable */
+      }
+    }
 
     void loadDemoSongs().then((list) => {
       setDemos(list)
       if (initialSession !== null && isDemoSessionId(initialSession)) {
-        void restoreFromUrl(initialSession, list)
+        void restoreFromUrl(initialSession, list, launch)
       }
     })
 
@@ -211,7 +235,7 @@ export function KaraokeNightApp() {
       initialSession !== '' &&
       !isDemoSessionId(initialSession)
     ) {
-      void restoreFromUrl(initialSession)
+      void restoreFromUrl(initialSession, undefined, launch)
     }
 
     const handlePopState = () => {
