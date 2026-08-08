@@ -968,9 +968,10 @@
 }
 
 /* Touch has no hover to wait for, and a tap-to-reveal would make
-   entering a room cost two taps. So the resting state IS the reveal
-   here — most of the way up, with the scrim already carrying the copy
-   rather than arriving with it. */
+   entering a room cost two taps. So the resting state stays readable —
+   most of the way up, with the scrim already carrying the copy — and
+   scrolling a card into view (BeatMap's observer sets .roomInView) plays
+   the full reveal a pointer would have earned by hovering. */
 @media (hover: none) {
   .roomArt {
     opacity: 0.52;
@@ -980,6 +981,12 @@
 
   .roomScrim {
     opacity: 1;
+  }
+
+  .roomCard.roomInView .roomArt {
+    opacity: 0.92;
+    transform: scale(1);
+    filter: blur(0) saturate(1.04);
   }
 }
 
