@@ -169,7 +169,7 @@ These are the rules that break things when ignored.
 | [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 457 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [background-store.ts](../../src/stores/background-store.ts) | 326 | Premium background store — account-safe shipped catalog and access evidence Access is memory-only and server-evidenced. |
-| [theme-store.ts](../../src/stores/theme-store.ts) | 270 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
+| [theme-store.ts](../../src/stores/theme-store.ts) | 273 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 222 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
