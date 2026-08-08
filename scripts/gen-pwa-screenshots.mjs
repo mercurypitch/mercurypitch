@@ -20,24 +20,61 @@ const OUT = resolve('public/screenshots')
 const PORT = Number(process.env.PWA_SHOT_PORT ?? 0)
 
 /**
- * The tabs worth showing a first-time installer: the daily hub, the guided
- * path, and one wide shot so desktop install sheets have something to use.
- * Canvas-heavy surfaces are deliberately absent — requestAnimationFrame is
- * throttled to a stop in headless Chromium, so they photograph blank.
+ * The surfaces worth showing a first-time installer, in install-sheet order:
+ * the daily hub, the two rooms that look like a night out (Karaoke Night and
+ * the Jam room), the guided path, and one wide shot so desktop install sheets
+ * have something to use. Truly canvas-driven surfaces stay absent —
+ * requestAnimationFrame is throttled to a stop in headless Chromium, so they
+ * photograph blank.
+ *
+ * The Karaoke rail and the room backgrounds come from the API, so build
+ * against dev, with analytics inert:
+ *
+ *   cross-env VITE_API_BASE_URL=https://api-dev.mercurypitch.com \
+ *     VITE_GOOGLE_ADS_TAG_ID= VITE_GA4_MEASUREMENT_ID= \
+ *     VITE_JAM_MOCK_SIGNALING=1 pnpm run build
  */
+const NARROW = { width: 540, height: 1170 }
 const SHOTS = [
   {
     file: 'home-narrow.png',
     tab: 'home',
     formFactor: 'narrow',
-    viewport: { width: 540, height: 1170 },
+    viewport: NARROW,
+    scale: 1,
+  },
+  {
+    file: 'karaoke-narrow.png',
+    // The Karaoke Night surface, not the in-app upload panel — and not its
+    // landing either: the picture is the stage itself, so walk into the
+    // bundled demo song and wait for the lyric sheet.
+    path: '/karaoke-night',
+    readySelector: '.kn-app',
+    steps: [
+      { click: 'button:has-text("Sing this song")' },
+      { waitFor: '[class*="lyrics"]' },
+      { settle: 2500 },
+    ],
+    mic: true,
+    formFactor: 'narrow',
+    viewport: NARROW,
+    scale: 1,
+  },
+  {
+    file: 'jam-narrow.png',
+    tab: 'jam',
+    formFactor: 'narrow',
+    viewport: NARROW,
+    // The room asks for a mic the moment it exists; a denied prompt would be
+    // the screenshot.
+    mic: true,
     scale: 1,
   },
   {
     file: 'path-narrow.png',
     tab: 'path',
     formFactor: 'narrow',
-    viewport: { width: 540, height: 1170 },
+    viewport: NARROW,
     scale: 1,
   },
   {
@@ -47,6 +84,29 @@ const SHOTS = [
     viewport: { width: 1280, height: 800 },
     scale: 1,
   },
+]
+
+/**
+ * Every tab that owns a spotlight tour offers it in a toast on first visit
+ * (usePageTourOffer). Product screenshots are always a first visit, so the
+ * offer key is pre-set for every tab — otherwise the shot ships with a
+ * "Take a quick tour" card on top, which is exactly what happened to v1 of
+ * these. Keep this list a superset of hash-router's VALID_TABS.
+ */
+const TOUR_OFFER_TABS = [
+  'home',
+  'path',
+  'singing',
+  'piano',
+  'guitar',
+  'karaoke',
+  'jam',
+  'exercises',
+  'community',
+  'challenges',
+  'leaderboard',
+  'analysis',
+  'lab',
 ]
 
 const MIME = new Map([
@@ -76,7 +136,12 @@ if (!existsSync(join(DIST, 'index.html'))) {
  * for a real visitor.
  */
 const server = createServer((req, res) => {
-  const requested = decodeURIComponent((req.url ?? '/').split('?')[0])
+  let requested = decodeURIComponent((req.url ?? '/').split('?')[0])
+  // Mirror production's path routing (vite.config KARAOKE_PATHS): the
+  // Karaoke Night surface is its own HTML entry, not the SPA fallback.
+  if (requested === '/karaoke-night' || requested === '/karaoke') {
+    requested = '/karaoke-night.html'
+  }
   const candidate = join(
     DIST,
     normalize(requested).replace(/^(\.\.[/\\])+/, ''),
@@ -98,7 +163,15 @@ const base = `http://127.0.0.1:${server.address().port}`
 const appVersion = JSON.parse(readFileSync('package.json', 'utf8')).version
 
 mkdirSync(OUT, { recursive: true })
-const browser = await chromium.launch()
+// Fake media devices: a mic-holding surface (the karaoke stage, a jam room)
+// must get a silent fake stream, never a permission prompt.
+const browser = await chromium.launch({
+  args: [
+    '--use-fake-ui-for-media-stream',
+    '--use-fake-device-for-media-stream',
+    '--autoplay-policy=no-user-gesture-required',
+  ],
+})
 let failed = 0
 
 for (const shot of SHOTS) {
@@ -109,24 +182,35 @@ for (const shot of SHOTS) {
     hasTouch: shot.formFactor === 'narrow',
     // Screenshots are marketing surfaces: no half-played transitions.
     reducedMotion: 'reduce',
+    ...(shot.mic ? { permissions: ['microphone'] } : {}),
   })
-  // First-run chrome (welcome, onboarding, the survey) would be the whole
-  // picture otherwise.
-  await context.addInitScript((version) => {
-    localStorage.setItem('pitchperfect_welcome_version', version)
-    localStorage.setItem('pitchperfect_onboarding_done', '1')
-    localStorage.setItem('pitchperfect_focus_mode', 'false')
-    localStorage.setItem('pitchperfect_survey_dismissed', '1')
-  }, appVersion)
+  // First-run chrome (welcome, onboarding, the survey, every per-tab tour
+  // offer) would be the whole picture otherwise.
+  await context.addInitScript(
+    ({ version, tourTabs }) => {
+      localStorage.setItem('pitchperfect_welcome_version', version)
+      localStorage.setItem('pitchperfect_onboarding_done', '1')
+      localStorage.setItem('pitchperfect_focus_mode', 'false')
+      localStorage.setItem('pitchperfect_survey_dismissed', '1')
+      for (const tab of tourTabs) {
+        localStorage.setItem(`pitchperfect_page_tour_offered_${tab}`, 'true')
+      }
+    },
+    { version: appVersion, tourTabs: TOUR_OFFER_TABS },
+  )
 
   const page = await context.newPage()
   try {
     // The tab is chosen by hash route (src/lib/hash-router.ts), not by
     // clicking: on a narrow viewport the top tab bar unmounts in favour of
-    // BottomTabBar, whose overflow tabs sit behind a sheet.
-    await page.goto(`${base}/#/${shot.tab}`, { waitUntil: 'load' })
+    // BottomTabBar, whose overflow tabs sit behind a sheet. Shots with a
+    // `path` are standalone HTML entries with their own ready signal.
+    const target = shot.path ?? `/#/${shot.tab}`
+    await page.goto(`${base}${target}`, { waitUntil: 'load' })
     // `#root.loaded` is set by src/index.tsx once App has mounted.
-    await page.waitForSelector('#root.loaded', { timeout: 20_000 })
+    await page.waitForSelector(shot.readySelector ?? '#root.loaded', {
+      timeout: 20_000,
+    })
     await page.waitForTimeout(1800)
     // A screenshot of the error boundary would ship to the install sheet and
     // nobody would notice until it was live.
@@ -137,10 +221,33 @@ for (const shot of SHOTS) {
       throw new Error('the app rendered its error boundary')
     }
     // Any tab button will do: the top bar and BottomTabBar share the `tab-*`
-    // ids, and which one is mounted depends on the viewport.
-    if ((await page.locator('[id^="tab-"]').count()) === 0) {
+    // ids, and which one is mounted depends on the viewport. Standalone
+    // entries have no app navigation — their readySelector already vouched.
+    if (
+      shot.path === undefined &&
+      (await page.locator('[id^="tab-"]').count()) === 0
+    ) {
       throw new Error('no navigation rendered — the app did not finish booting')
     }
+    // Optional staging: walk the page into the state worth photographing.
+    for (const step of shot.steps ?? []) {
+      if (step.click !== undefined) {
+        await page.click(step.click, { timeout: 15_000 })
+      }
+      if (step.waitFor !== undefined) {
+        await page.waitForSelector(step.waitFor, { timeout: 30_000 })
+      }
+      if (step.settle !== undefined) {
+        await page.waitForTimeout(step.settle)
+      }
+    }
+    // Belt for whatever toast the init keys did not predict (an update
+    // notice, a future tour channel): no transient card belongs in a
+    // product screenshot.
+    await page.addStyleTag({
+      content:
+        '[class*="notificationContainer"] { display: none !important; }',
+    })
     const path = join(OUT, shot.file)
     await page.screenshot({ path })
     const { size } = statSync(path)

@@ -29,6 +29,20 @@
       "label": "Your daily Home: streak, today's session and this week's Legend"
     },
     {
+      "src": "/screenshots/karaoke-narrow.png",
+      "sizes": "540x1170",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Karaoke Night: split any song into stems and sing the lead"
+    },
+    {
+      "src": "/screenshots/jam-narrow.png",
+      "sizes": "540x1170",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Jam rooms: sing together live, on a stage you pick"
+    },
+    {
       "src": "/screenshots/path-narrow.png",
       "sizes": "540x1170",
       "type": "image/png",
