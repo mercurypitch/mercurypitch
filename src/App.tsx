@@ -678,8 +678,6 @@ const AppShell: Component<AppProps> = (props) => {
     window.clearTimeout(openingHoldTimer)
     window.clearTimeout(openingFailsafe)
     setOpening('fading')
-    // One-shot fade-end timer, untracked on purpose — not a computation.
-
     openingFadeTimer = window.setTimeout(
       () => setOpening('gone'),
       OPENING_FADE_MS,
@@ -696,26 +694,30 @@ const AppShell: Component<AppProps> = (props) => {
     } else {
       window.clearTimeout(openingHoldTimer)
       // One-shot hold timer, untracked on purpose — not a computation.
-
       openingHoldTimer = window.setTimeout(dropOpening, left)
     }
   }
-  if (openingDue) {
+  if (openingDue && firstRunBoot) {
+    // First Light is what comes up next: fetch it from here, in
+    // parallel with app boot. The rejection (if any) surfaces through
+    // the lazy component and its ErrorBoundary below; this copy of
+    // the promise just must not spam the console as unhandled.
+    void FirstLight.preload().catch(() => {})
+  }
+  // The timers arm at mount rather than during setup — both holds are
+  // measured from openedAtMs, so the wall-clock deadline is the same
+  // either way, and onMount is the untracked scope these one-shots
+  // belong in.
+  onMount(() => {
+    if (!openingDue) return
     if (firstRunBoot) {
-      // First Light is what comes up next: fetch it from here, in
-      // parallel with app boot. The rejection (if any) surfaces through
-      // the lazy component and its ErrorBoundary below; this copy of
-      // the promise just must not spam the console as unhandled.
-      void FirstLight.preload().catch(() => {})
       // A hung chunk fetch must never strand the backdrop over a
       // usable app: worst case the old flicker comes back, once.
-      // One-shot failsafe timer, untracked on purpose — not a computation.
-      // eslint-disable-next-line solid/reactivity
       openingFailsafe = window.setTimeout(dropOpening, 8000)
     } else {
       dropOpeningAfterHold()
     }
-  }
+  })
   onCleanup(() => {
     window.clearTimeout(openingHoldTimer)
     window.clearTimeout(openingFadeTimer)
