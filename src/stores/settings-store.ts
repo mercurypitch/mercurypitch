@@ -138,14 +138,16 @@ const ACCURACY_PRESETS: Record<
 }
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
-  // 'home', not 'noisy'. Nothing measures the room on first run — this
-  // literal IS the starting profile, so every fresh browser (and every
-  // preview origin, which is why it kept turning up there) began with the
-  // strictest thresholds in the table: a 0.7 confidence floor and 4x the
-  // amplitude gate. That reads as a dead mic in an ordinary room. Anyone
-  // who really is in a noisy one can pick it, or run auto-calibrate,
+  // 'quiet' — the most forgiving row in the table, and the right first guess
+  // for a profile nothing has measured yet. This literal IS the starting
+  // point for every fresh browser, and the failure modes are not symmetric:
+  // thresholds set too high read as a dead mic (nothing registers, and there
+  // is no feedback to tell you why), while thresholds set too low let a
+  // little room noise through — visible, self-explanatory, and fixable.
+  // 'noisy' was the original default and produced exactly the first failure.
+  // Anyone in a loud room can pick their own row, or run auto-calibrate,
   // which measures and chooses properly.
-  ...SENSITIVITY_PRESETS.home,
+  ...SENSITIVITY_PRESETS.quiet,
   bands: ACCURACY_PRESETS.learning,
   tonicAnchor: false,
 }
@@ -173,7 +175,7 @@ export const [sensitivityPreset, _setSensitivityPreset] =
     // Must match DEFAULT_SETTINGS above — the label and the thresholds
     // are two halves of one choice, and disagreeing means the panel
     // shows a preset the numbers do not reflect.
-    'home',
+    'quiet',
   )
 
 export const [settings, setSettings] = createPersistedSignal<SettingsConfig>(
