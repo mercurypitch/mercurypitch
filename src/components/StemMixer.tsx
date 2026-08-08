@@ -1630,6 +1630,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setEnd: audio.setLoopEnd,
         clear: audio.clearLoop,
       },
+      songsSidebar: {
+        isOpen: playlistSidebarOpen,
+        // Mirrors the Songs button: mount on first open, pitch tools yield.
+        open: () => {
+          closePitchTools()
+          setPlaylistSidebarMounted(true)
+          setPlaylistSidebarOpen(true)
+        },
+        close: () => setPlaylistSidebarOpen(false),
+      },
       playlist: {
         active: playlist.isPlaylistActive,
         next: handlePlaylistNext,

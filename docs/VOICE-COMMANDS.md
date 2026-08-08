@@ -123,6 +123,7 @@ The mixer transport runs on seconds (audio time), not beats.
 - [x] **(requested)** Role presets: `i sing` (vocals muted, rest on), `i play guitar` / `bass` / `piano` / `drums`, `full mix` / `everything on`; solos cleared, the MIDI guide untouched, missing stems reported
 - [x] **(requested)** `play random song from my list` / `random song` / `surprise me` — random jump within the running playlist queue (new `jumpTo` in the playlist store)
 - [x] `next song` / `previous song` — playlist transport, `No playlist running` otherwise
+- [x] **(requested)** `open songs` / `open playlist` / `show playlists` and `close songs` — the mixer's songs-and-playlists rail (the "Songs" button); `open library` keeps meaning the app's melody library
 - [x] `sing that again` / `sing it again` — restart the current song
 - [x] Mixer A-B loop and speed by voice: `set a` / `set b` at the playhead, `loop on/off`, `clear loop`, `loop from N to M seconds`, `faster` / `slower` / presets / `N percent` / `N x` — all in the mixer's own seconds-domain loop and rate (clamped 0.25-2x)
 - [x] `microphone on/off` / `toggle mic` — the M key's action, in the global set

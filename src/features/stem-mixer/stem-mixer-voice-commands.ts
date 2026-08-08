@@ -59,6 +59,12 @@ export interface StemMixerVoiceDeps {
     /** Jump to a random queue entry; false when there is nothing to jump to. */
     random: () => boolean
   }
+  /** The "Songs" rail — the songs-and-playlists sidebar. */
+  songsSidebar: {
+    isOpen: Accessor<boolean>
+    open: () => void
+    close: () => void
+  }
 }
 
 // ── Stem naming ────────────────────────────────────────────────
@@ -492,6 +498,48 @@ export function createStemMixerVoiceCommands(
       label: 'Solo off',
       phrases: ['solo off', 'clear solo', 'no solo', 'unsolo everything'],
       run: () => clearSolos(),
+    },
+    {
+      id: 'karaoke.songsOpen',
+      label: 'Songs open',
+      // "Library" stays the app's melody library; this is the karaoke rail.
+      phrases: [
+        'open songs',
+        'show songs',
+        'open the songs',
+        'songs',
+        'open playlist',
+        'open playlists',
+        'open the playlist',
+        'show playlists',
+        'open songs and playlists',
+      ],
+      run: () => {
+        if (deps.songsSidebar.isOpen()) {
+          return voiceFailure('Songs already open')
+        }
+        deps.songsSidebar.open()
+        return 'Songs open'
+      },
+    },
+    {
+      id: 'karaoke.songsClose',
+      label: 'Songs closed',
+      phrases: [
+        'close songs',
+        'hide songs',
+        'close the songs',
+        'close playlist',
+        'close playlists',
+        'hide playlists',
+      ],
+      run: () => {
+        if (!deps.songsSidebar.isOpen()) {
+          return voiceFailure('Songs are not open')
+        }
+        deps.songsSidebar.close()
+        return 'Songs closed'
+      },
     },
     {
       id: 'karaoke.loopSetA',

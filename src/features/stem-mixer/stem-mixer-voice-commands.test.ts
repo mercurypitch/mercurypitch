@@ -21,6 +21,7 @@ function makeFixture(): Fixture {
   let loopEnabled = false
   let loopStart = 0
   let loopEnd = 0
+  let songsOpen = false
   const tracks: StemMixerVoiceTrack[] = [
     { label: 'Vocal', muted: false, soloed: false, volume: 0.8 },
     { label: 'Instrumental', muted: true, soloed: false, volume: 0.8 },
@@ -99,6 +100,17 @@ function makeFixture(): Fixture {
         if (!playlistActive) return false
         calls.push('playlist:random')
         return true
+      },
+    },
+    songsSidebar: {
+      isOpen: () => songsOpen,
+      open: () => {
+        calls.push('songs:open')
+        songsOpen = true
+      },
+      close: () => {
+        calls.push('songs:close')
+        songsOpen = false
       },
     },
   }
@@ -248,6 +260,16 @@ describe('stem mixer voice commands — roles and playlist', () => {
     expect(fire(fixture, 'full mix')).toBe('Full mix')
     expect(fixture.track('Guitar').muted).toBe(false)
     expect(fixture.track('Instrumental').muted).toBe(false)
+  })
+
+  it('opens and closes the songs sidebar', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'close songs')).toBe('Songs are not open')
+    expect(fire(fixture, 'open playlist')).toBe('Songs open')
+    expect(fixture.calls).toContain('songs:open')
+    expect(fire(fixture, 'open songs')).toBe('Songs already open')
+    expect(fire(fixture, 'close playlists')).toBe('Songs closed')
+    expect(fixture.calls).toContain('songs:close')
   })
 
   it('gates playlist commands on an active playlist', () => {
