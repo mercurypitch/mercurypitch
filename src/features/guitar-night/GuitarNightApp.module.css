@@ -800,6 +800,11 @@
   background: rgba(224, 164, 93, 0.12);
 }
 
+.referenceActions {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .referenceError {
   margin: 0.45rem 0 0;
   color: rgba(233, 150, 122, 0.92);

@@ -11,6 +11,8 @@
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
 import type { MidiSongNote } from '@/lib/midi-song'
+import type { StemTranscription } from '@/lib/transcription/stem-transcription'
+import type { GuitarNightStemKind } from './song-port'
 
 /** The minimal saved-song shape a reference is read from. */
 export interface GuitarNightReferenceSourceTrack {
@@ -42,7 +44,15 @@ export interface GuitarNightReferenceSummary {
   importedAt: number
 }
 
+/**
+ * `authored` notes were written in a file and carry a real musical tempo.
+ * `measured` notes were heard in a separated stem: they are evidence about the
+ * recording, already on its timeline, and are never presented as a tab.
+ */
+export type GuitarNightReferenceKind = 'authored' | 'measured'
+
 export interface GuitarNightReference {
+  kind: GuitarNightReferenceKind
   songId: string
   title: string
   trackId: string
@@ -50,6 +60,10 @@ export interface GuitarNightReference {
   tempoBpm: number
   notes: readonly GuitarNote[]
   tracks: readonly GuitarNightReferenceTrack[]
+  /** Measured only: share of the stem that produced confident notes, 0–1. */
+  coverage?: number
+  /** Measured only: true when notes were raised into the six-string range. */
+  liftedOctaves?: boolean
 }
 
 export type GuitarNightOpenReferenceResult =
@@ -127,6 +141,7 @@ export function openGuitarNightReference(
   return {
     ok: true,
     reference: {
+      kind: 'authored',
       songId: source.id,
       title: source.name,
       trackId: track.id,
@@ -146,4 +161,78 @@ export function openGuitarNightReference(
       tracks: referenceTrackSummaries(source),
     },
   }
+}
+
+// ── Measured references ─────────────────────────────────────
+
+/**
+ * Measured notes are timed in seconds. The shared stage counts beats, so a
+ * measured reference declares one beat per second and the room's existing
+ * `secondsToBeat(position, tempo)` maps the audio clock straight onto it. This
+ * is a display scale, not a musical claim — no tempo is ever shown for it.
+ */
+export const MEASURED_REFERENCE_TEMPO = 60
+
+/** Lowest note the six-string stage can show: the guitar's open low E. */
+export const GUITAR_LOW_E_MIDI = 40
+
+/** Raise a note by whole octaves until the stage can place it, keeping pitch class. */
+export function liftIntoGuitarRange(midi: number): number {
+  let lifted = midi
+  while (lifted < GUITAR_LOW_E_MIDI) lifted += 12
+  return lifted
+}
+
+export interface MeasuredReferenceInput {
+  sessionId: string
+  stemKind: GuitarNightStemKind
+  stemLabel: string
+  transcription: StemTranscription
+}
+
+/**
+ * Adapt one stem transcription into a stage reference. Bass sits an octave
+ * below the six-string stage, so notes below its low E are raised into range
+ * and the surface says so rather than dropping them silently.
+ */
+export function measuredReferenceFromTranscription(
+  input: MeasuredReferenceInput,
+): GuitarNightReference {
+  const liftedOctaves = input.transcription.notes.some(
+    (note) => note.midi < GUITAR_LOW_E_MIDI,
+  )
+
+  return {
+    kind: 'measured',
+    songId: `${input.sessionId}:${input.stemKind}`,
+    title: `${input.stemLabel} heard in this recording`,
+    trackId: input.stemKind,
+    trackName: input.stemLabel,
+    tempoBpm: MEASURED_REFERENCE_TEMPO,
+    coverage: input.transcription.coverage,
+    liftedOctaves,
+    notes: melodyToGuitarNotes(
+      input.transcription.notes.map((note, index) => ({
+        id: `measured-${index}-${note.startSeconds.toFixed(3)}`,
+        midi: liftIntoGuitarRange(note.midi),
+        // One beat per second: the measured time base, unchanged.
+        startBeat: note.startSeconds,
+        duration: note.durationSeconds,
+      })),
+    ),
+    tracks: [
+      {
+        id: input.stemKind,
+        name: input.stemLabel,
+        noteCount: input.transcription.notes.length,
+      },
+    ],
+  }
+}
+
+export interface GuitarNightTranscriptionPort {
+  transcribeStem(
+    stemUrl: string,
+    options: { signal: AbortSignal; onProgress(fraction: number): void },
+  ): Promise<StemTranscription>
 }

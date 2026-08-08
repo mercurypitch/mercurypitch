@@ -4,7 +4,7 @@
 import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { GuitarNightReferencePort } from './reference-port'
+import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { openGuitarNightReference } from './reference-port'
 import { useGuitarNightReferenceController } from './useGuitarNightReferenceController'
 
@@ -65,6 +65,22 @@ function mount(port: GuitarNightReferencePort) {
   const Harness: Component = () => {
     controller = useGuitarNightReferenceController({
       loadReferencePort: async () => port,
+    })
+    return null
+  }
+  render(() => <Harness />)
+  return controller
+}
+
+function mountWithTranscription(
+  port: GuitarNightReferencePort,
+  transcribeStem: GuitarNightTranscriptionPort['transcribeStem'],
+) {
+  let controller!: ReturnType<typeof useGuitarNightReferenceController>
+  const Harness: Component = () => {
+    controller = useGuitarNightReferenceController({
+      loadReferencePort: async () => port,
+      loadTranscriptionPort: async () => ({ transcribeStem }),
     })
     return null
   }
@@ -172,5 +188,81 @@ describe('useGuitarNightReferenceController', () => {
 
     expect(controller.importStatus()).toBeNull()
     expect(controller.reference()?.songId).toBe('gsong-velvet')
+  })
+
+  it('follows a measured stem without claiming the score axis', async () => {
+    window.history.replaceState(null, '', '/guitar-night?session=session-room')
+    const { port } = fakePort()
+    const controller = mountWithTranscription(port, async () => ({
+      coverage: 0.74,
+      analysedSeconds: 90,
+      notes: [
+        {
+          midi: 28,
+          noteName: 'E1',
+          startSeconds: 0.25,
+          durationSeconds: 0.5,
+          confidence: 0.8,
+        },
+      ],
+    }))
+
+    await controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+
+    expect(controller.reference()?.kind).toBe('measured')
+    expect(controller.reference()?.coverage).toBe(0.74)
+    expect(controller.transcribeProgress()).toBeNull()
+    // A measured reference is derived from this recording, so it owns no
+    // saved id and must not appear on the score axis.
+    expect(window.location.search).toBe('?session=session-room')
+  })
+
+  it('says a silent stem produced nothing instead of showing an empty guide', async () => {
+    const { port } = fakePort()
+    const controller = mountWithTranscription(port, async () => ({
+      coverage: 0,
+      analysedSeconds: 90,
+      notes: [],
+    }))
+
+    await controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+
+    expect(controller.reference()).toBeNull()
+    expect(controller.importStatus()).toBe(
+      'No clear notes were heard in the bass stem, so the stage stays in free play.',
+    )
+  })
+
+  it('attaching an authored score stops an in-flight measurement', async () => {
+    const { port } = fakePort()
+    const observed: { signal?: AbortSignal } = {}
+    const controller = mountWithTranscription(port, async (_url, options) => {
+      observed.signal = options.signal
+      await new Promise((resolve) => setTimeout(resolve, 30))
+      return { coverage: 1, analysedSeconds: 1, notes: [] }
+    })
+
+    const pending = controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+    await Promise.resolve()
+    await controller.attach(VELVET_RIFF.id)
+    await pending
+
+    expect(observed.signal?.aborted).toBe(true)
+    expect(controller.reference()?.kind).toBe('authored')
   })
 })
