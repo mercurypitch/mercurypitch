@@ -12,7 +12,7 @@
 
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
-import { funnelEventBody } from '@/lib/funnel'
+import { funnelEventBody, trackFunnelTags } from '@/lib/funnel'
 import type { KaraokeFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type KaraokeFunnelEvent = KaraokeFunnelEventName
@@ -78,6 +78,12 @@ export function trackKaraoke(event: KaraokeFunnelEvent): void {
   if (event === 'karaoke_view' && viewAlreadySentThisSession()) return
   console.info('[kn-funnel]', event)
   beacon(event)
+  // GA4 mirrors every occurrence — it is an event stream, and its
+  // audiences want the repeat stagers too. The Ads conversion below is
+  // deliberately not routed through trackFunnelTags' sendTo: this funnel
+  // fires it at most once per device (see below), which the shared helper
+  // does not do.
+  trackFunnelTags(event)
   // Consent Mode decides whether the Ads conversion sets cookies; a no-op
   // unless the build ships an ad tag.
   const sendTo = AD_CONVERSION_BY_EVENT.get(event)

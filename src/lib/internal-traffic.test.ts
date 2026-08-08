@@ -79,3 +79,62 @@ describe('ga4TrafficParams', () => {
     expect(ga4TrafficParams()).toEqual({ traffic_type: 'internal' })
   })
 })
+
+// ── the GA4 funnel mirror carries the same marking ─────────────
+
+describe('trackGa4Event', () => {
+  it('addresses GA4 explicitly and repeats the internal marking', async () => {
+    // The dataLayer is shared with the Google Ads tag: an event with no
+    // send_to is delivered to every configured product, so a funnel
+    // milestone would also reach Ads as an unnamed event.
+    vi.resetModules()
+    vi.doMock('@/lib/defaults', () => ({
+      GA4_MEASUREMENT_ID: 'G-TEST123',
+      GOOGLE_ADS_TAG_ID: '',
+      IS_TEST: false,
+      API_BASE_URL: '',
+    }))
+    const consent = await import('@/lib/consent')
+
+    localStorage.setItem('mp.internal.v1', '1')
+    const pushed: unknown[][] = []
+    ;(window as unknown as { dataLayer: unknown[] }).dataLayer = {
+      push: (args: unknown) =>
+        pushed.push(Array.from(args as ArrayLike<unknown>)),
+    } as unknown as unknown[]
+
+    consent.trackGa4Event('karaoke_song_staged')
+
+    const event = pushed.find((c) => c[0] === 'event')
+    expect(event?.[1]).toBe('karaoke_song_staged')
+    expect(event?.[2]).toMatchObject({
+      send_to: 'G-TEST123',
+      traffic_type: 'internal',
+    })
+    vi.doUnmock('@/lib/defaults')
+    vi.resetModules()
+  })
+
+  it('is a no-op when the build ships no GA4 tag', async () => {
+    vi.resetModules()
+    vi.doMock('@/lib/defaults', () => ({
+      GA4_MEASUREMENT_ID: '',
+      GOOGLE_ADS_TAG_ID: 'AW-1',
+      IS_TEST: false,
+      API_BASE_URL: '',
+    }))
+    const consent = await import('@/lib/consent')
+
+    const pushed: unknown[][] = []
+    ;(window as unknown as { dataLayer: unknown[] }).dataLayer = {
+      push: (args: unknown) =>
+        pushed.push(Array.from(args as ArrayLike<unknown>)),
+    } as unknown as unknown[]
+
+    consent.trackGa4Event('mirror_view')
+
+    expect(pushed).toHaveLength(0)
+    vi.doUnmock('@/lib/defaults')
+    vi.resetModules()
+  })
+})

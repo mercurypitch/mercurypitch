@@ -16,6 +16,9 @@ async function loadFunnel(): Promise<KaraokeFunnelModule> {
       karaoke_song_staged: 'AW-X/staged',
     },
     trackAdConversion: vi.fn(),
+    // The funnel also mirrors every event into GA4; this suite is about
+    // the beacon and the dedup rules, so it only has to exist.
+    trackGa4Event: vi.fn(),
   }))
   return await import('./funnel')
 }

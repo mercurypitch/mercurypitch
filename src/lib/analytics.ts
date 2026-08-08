@@ -10,7 +10,7 @@
 // ============================================================
 
 import { API_BASE_URL } from '@/lib/defaults'
-import { funnelEventBody } from '@/lib/funnel'
+import { funnelEventBody, trackFunnelTags } from '@/lib/funnel'
 import type { AppFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type AppFunnelEvent = AppFunnelEventName
@@ -57,4 +57,8 @@ export function trackEvent(event: AppFunnelEvent): void {
   if (event === 'app_open' && alreadySentThisSession()) return
   console.info('[funnel]', event)
   beacon(event)
+  // No Ads conversion for app events (app_open's action is fired by the
+  // Mirror's cta_app_click, where the click is attributable) — but GA4
+  // still gets the event, which is what in-app audiences are built from.
+  trackFunnelTags(event)
 }

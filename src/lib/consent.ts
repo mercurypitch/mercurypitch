@@ -340,6 +340,35 @@ export function trackAdConversion(
   pushGtag('event', 'conversion', payload)
 }
 
+/**
+ * Mirror one product funnel event into GA4.
+ *
+ * Until this existed GA4 saw only its automatic events (page_view,
+ * session_start, scroll, …): the funnel's milestones went to our own
+ * database and to Google Ads as conversions, and neither writes a GA4
+ * event. Ads bidding never needed GA4 — but GA4 audiences do, and a
+ * future video campaign (Demand Gen / PMax) can only target people who
+ * reached a milestone if GA4 has ever seen that milestone.
+ *
+ * `send_to` is explicit: this dataLayer is shared with the Ads tag, and
+ * an unaddressed event would be delivered to both.
+ *
+ * No metrics ride along. GA4 only reports custom parameters that were
+ * registered as custom dimensions in the property first, so sending them
+ * blind would be bytes nobody can read; our own database already stores
+ * the metrics that matter.
+ */
+export function trackGa4Event(event: string): void {
+  if (!hasGa4() || IS_TEST) return
+  pushGtag('event', event, {
+    send_to: GA4_MEASUREMENT_ID,
+    // The GA4 config already carries traffic_type for a marked browser;
+    // repeating it per event keeps our own testing excluded even if the
+    // event races the config (first paint) or a later config resets it.
+    ...ga4TrafficParams(),
+  })
+}
+
 // ── credits_purchase (survives the Stripe round-trip) ─────────
 
 const PENDING_PURCHASE_KEY = 'mp.pendingPurchase.v1'

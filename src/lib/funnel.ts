@@ -18,7 +18,7 @@
 // dev), because telemetry must never break the product.
 
 import { getFunnelAcquisition } from '@/lib/acquisition'
-import { trackAdConversion } from '@/lib/consent'
+import { trackAdConversion, trackGa4Event } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
 
 /**
@@ -123,6 +123,24 @@ export function funnelEventBody(
   })
 }
 
+/**
+ * The Google side of one funnel event — THE place both tags are fired.
+ *
+ * Four transports exist (this file's, karaoke's, glass's and the app's)
+ * because their dedup rules differ, and the acquisition bug taught us
+ * what happens when a cross-cutting concern is added to one of them:
+ * the page Campaign E pays for silently missed it. Ads conversions and
+ * the GA4 mirror travel together here so the next transport cannot get
+ * one without the other.
+ *
+ * `sendTo` is undefined for the many events that are not Ads
+ * conversions; the GA4 mirror fires for all of them either way.
+ */
+export function trackFunnelTags(event: string, sendTo?: string): void {
+  if (sendTo !== undefined) trackAdConversion(sendTo)
+  trackGa4Event(event)
+}
+
 function beacon(event: string, metrics?: FunnelMetrics): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   try {
@@ -173,7 +191,6 @@ export function createFunnel<E extends string>(
 
     beacon(event, metricEvents.has(event) ? metrics : undefined)
 
-    const sendTo = options.adConversions?.[event]
-    if (sendTo !== undefined) trackAdConversion(sendTo)
+    trackFunnelTags(event, options.adConversions?.[event])
   }
 }
