@@ -15,6 +15,7 @@ import { Notifications } from '@/components/Notifications'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
+import { isNarrow } from '@/lib/use-viewport'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId, loadDemoSongs, seedDemoLyrics, } from './demo-song'
@@ -267,8 +268,20 @@ export function KaraokeNightApp() {
       }}
     >
       <header class="kn-topbar">
-        <a class="kn-brand" href="/">
-          MercuryPitch
+        {/* On a phone the wordmark yields to the logo: the topbar has to
+            seat the stage picker, the app link and the account chip on one
+            line, and eleven tracked-out capitals were the widest thing in
+            it. The aria-label keeps the link named when only the mark
+            shows. */}
+        <a class="kn-brand" href="/" aria-label="MercuryPitch">
+          <img
+            class="kn-brand-logo"
+            src="/favicon.svg"
+            alt=""
+            width="22"
+            height="22"
+          />
+          <span class="kn-brand-name">MercuryPitch</span>
         </a>
         <span class="kn-topbar-title">Karaoke Night</span>
         <nav class="kn-topbar-links">
@@ -316,7 +329,14 @@ export function KaraokeNightApp() {
               </svg>
             </button>
           </Show>
-          <PremiumBackgroundPicker controller={background} label="Stage" />
+          {/* Icon-only on a phone: the aria-label carries the name and the
+              topbar keeps its one line (the "Stage" text was the second
+              widest thing in it after the wordmark). */}
+          <PremiumBackgroundPicker
+            controller={background}
+            label="Stage"
+            iconOnly={isNarrow()}
+          />
           {/* Named for where it goes, not for what it is: this page is a
               door into MercuryPitch and a first-time visitor has no reason
               to know that "the studio" means the rest of the app. The
