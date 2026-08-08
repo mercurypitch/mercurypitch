@@ -13,6 +13,7 @@ import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, } from
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { chromium } from '@playwright/test'
+import { optimizePngs } from './optimize-pwa-images.mjs'
 
 const DIST = resolve('dist')
 const OUT = resolve('public/screenshots')
@@ -270,6 +271,10 @@ if (failed > 0) {
   console.error(`gen-pwa-screenshots: ${failed} shot(s) failed`)
   process.exit(1)
 }
+// The install sheet downloads every screenshot before it can render; keep
+// them light. Quantization never changes dimensions, so the manifest's
+// `sizes` stay valid.
+await optimizePngs(SHOTS.map((shot) => join(OUT, shot.file)))
 console.log(
   'gen-pwa-screenshots: done. Update `screenshots` in public/site.webmanifest if sizes changed.',
 )
