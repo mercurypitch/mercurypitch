@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addSupporterGroupMember, assignFeatureToGroup, loadBackgroundVariantPreview, loadPremiumPerks, normalizeSupporterEmail, revokePremiumBackgroundCapability, uploadBackgroundVariant, } from '@/features/admin/premium-perks-admin-service'
+import { SUPPORTER_FEATURE_PERKS } from '@/lib/supporter-feature-catalog'
 
 vi.mock('@/lib/defaults', () => ({
   API_BASE_URL: 'https://api-dev.example.test',
@@ -146,14 +147,9 @@ describe('premium perks admin service', () => {
           kind: 'development',
           label: 'Development · api-dev.example.test',
         },
-        featurePerks: [
-          {
-            id: 'lab-access',
-            label: 'MercuryPitch Lab',
-            description:
-              'Early access to experimental audio tools and development previews.',
-          },
-        ],
+        // The service hands the catalog through verbatim — pin the source,
+        // not a copy that silently goes stale when a perk is added.
+        featurePerks: SUPPORTER_FEATURE_PERKS,
       },
     })
     expect(fetchMock).toHaveBeenNthCalledWith(
