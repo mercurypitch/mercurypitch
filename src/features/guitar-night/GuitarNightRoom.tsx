@@ -12,6 +12,7 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightInputHealth } from './GuitarNightInputHealth'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
@@ -314,6 +315,14 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               Measured from this take on this device. Audio is not saved.
             </p>
           </Show>
+          <GuitarNightInputHealth
+            listening={isListening}
+            calibrating={() => listening.status() === 'calibrating'}
+            health={listening.health}
+            timingSource={listening.timingSource}
+            latency={listening.latency}
+            onCalibrate={() => void listening.calibrate()}
+          />
         </aside>
       </Show>
 

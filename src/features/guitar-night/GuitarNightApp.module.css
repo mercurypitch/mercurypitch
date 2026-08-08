@@ -1208,6 +1208,99 @@
   font-size: 0.57rem;
 }
 
+/* Input health — what the room can honestly claim about what it is hearing. */
+.inputHealth {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.12);
+}
+
+.inputHealthHint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: rgba(244, 234, 219, 0.82);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.inputHealthDot {
+  flex: none;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  /* Teal is the room's signal-is-good light; the warmer states borrow the amp
+     pilot colours rather than introducing a new palette. */
+  background: #63c9bd;
+  box-shadow: 0 0 0.35rem rgba(99, 201, 189, 0.6);
+}
+
+.inputHealthHint[data-state='silent'] .inputHealthDot,
+.inputHealthHint[data-state='quiet'] .inputHealthDot {
+  background: rgba(244, 234, 219, 0.4);
+  box-shadow: none;
+}
+
+.inputHealthHint[data-state='hot'] .inputHealthDot,
+.inputHealthHint[data-state='noisy'] .inputHealthDot {
+  background: #e8a75c;
+  box-shadow: 0 0 0.35rem rgba(232, 167, 92, 0.6);
+}
+
+.inputHealthHint[data-state='clipping'] .inputHealthDot {
+  background: #f3835b;
+  box-shadow: 0 0 0.4rem rgba(243, 131, 91, 0.7);
+}
+
+.inputHealthTiming {
+  margin: 0;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.57rem;
+  line-height: 1.4;
+}
+
+.inputHealthLatency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.inputHealthLatency small {
+  flex: 1 1 9rem;
+  min-width: 0;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.57rem;
+  line-height: 1.4;
+}
+
+.inputHealthLatency button {
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.2);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.86);
+  background: rgba(28, 21, 17, 0.7);
+  font: inherit;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
+.inputHealthLatency button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inputHealthNote {
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.54rem;
+  line-height: 1.4;
+}
+
 .listeningError {
   position: absolute;
   z-index: 9;
@@ -2435,6 +2528,11 @@
 
   .doctorObservations {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inputHealthLatency button {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
   }
 
   .stageHeader {
