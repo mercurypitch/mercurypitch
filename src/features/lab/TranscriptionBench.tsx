@@ -22,6 +22,7 @@ import type { MidiSong, MidiSongTrack } from '@/lib/midi-song'
 import { createBeatClock, parseMidiSong } from '@/lib/midi-song'
 import { downloadMIDI } from '@/lib/piano-roll'
 import { midiToNote } from '@/lib/scale-data'
+import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
 import type { StemTranscription, TranscriptionPitchSource, TranscriptionProfile, } from '@/lib/transcription/stem-transcription'
 import { BASS_SWIFT_TRANSCRIPTION_PROFILE, BASS_TRANSCRIPTION_PROFILE, transcribeStemUrl, } from '@/lib/transcription/stem-transcription'
@@ -58,6 +59,9 @@ const VERDICT_COLORS: Record<NoteVerdict, string> = {
   exact: '#3fb950',
   octave: '#d29922',
   'wrong-pitch': '#f85149',
+  // A shadow is probably a RIGHT note whose neighbour went unheard, so it
+  // must not read as red — the note is not the defect, the gap next to it is.
+  shadow: '#a371f7',
   spurious: '#6e7681',
 }
 
@@ -96,6 +100,12 @@ export const TranscriptionBench: Component = () => {
   const [selected, setSelected] = createSignal<string | null>(null)
 
   const [viewport, setViewport] = createSignal<RollViewport | null>(null)
+  // When the tab is aligned, its outlines are drawn on the recording's clock
+  // using the scorer's own per-window offsets. Raw stays available because
+  // the drift itself is sometimes the thing being inspected.
+  const [alignTab, setAlignTab] = createSignal(true)
+  const [playing, setPlaying] = createSignal<'heard' | 'tab' | null>(null)
+  const [playhead, setPlayhead] = createSignal(0)
   let canvas!: HTMLCanvasElement
   let abort: AbortController | null = null
 
@@ -190,10 +200,145 @@ export const TranscriptionBench: Component = () => {
     return map
   })
 
+  /** Tab outlines moved onto the recording's clock, window by window. */
+  const alignedReferenceNotes = createMemo<RollNote[]>(() => {
+    const refs = referenceNotes()
+    const scored = score()
+    if (!alignTab() || scored === null || scored.windowOffsets.length === 0) {
+      return refs
+    }
+    const offsets = scored.windowOffsets
+    const offsetAt = (seconds: number): number => {
+      let inForce = offsets[0]?.offsetSeconds ?? 0
+      for (const entry of offsets) {
+        if (entry.startSeconds <= seconds) inForce = entry.offsetSeconds
+        else break
+      }
+      return inForce
+    }
+    return refs.map((note) => {
+      // Offsets are keyed by heard-window start, so look up where the note
+      // LANDS: shift once to get near the audio clock, then read the offset
+      // that actually governs that neighbourhood.
+      const rough = note.startSeconds - offsetAt(note.startSeconds)
+      const offset = offsetAt(Math.max(0, rough))
+      return {
+        ...note,
+        startSeconds: note.startSeconds - offset,
+        endSeconds: note.endSeconds - offset,
+      }
+    })
+  })
+
   const totalSeconds = createMemo(() => {
     const analysed = result()?.analysedSeconds ?? 0
-    const lastReference = referenceNotes().at(-1)?.endSeconds ?? 0
+    const lastReference = alignedReferenceNotes().at(-1)?.endSeconds ?? 0
     return Math.max(1, analysed, lastReference)
+  })
+
+  // ── Playback ─────────────────────────────────────────────────
+
+  let audio: AudioContext | null = null
+  let scheduleTimer: number | undefined
+  let playheadFrame = 0
+
+  const stopPlayback = (): void => {
+    if (scheduleTimer !== undefined) window.clearInterval(scheduleTimer)
+    scheduleTimer = undefined
+    cancelAnimationFrame(playheadFrame)
+    setPlaying(null)
+    const context = audio
+    audio = null
+    void context?.close()
+  }
+
+  /**
+   * Audition a note list from the playhead. Plain oscillators on purpose:
+   * the question this answers is "what pitches, when", and a synth patch
+   * flattering the notes would get in the way of hearing a wrong one.
+   */
+  const startPlayback = (source: 'heard' | 'tab'): void => {
+    stopPlayback()
+    const list = (source === 'heard' ? rollNotes() : alignedReferenceNotes())
+      .filter((note) => note.endSeconds > playhead())
+      .sort((left, right) => left.startSeconds - right.startSeconds)
+    if (list.length === 0) return
+
+    const context = new AudioContext()
+    audio = context
+    const master = context.createGain()
+    master.gain.value = 0.5
+    master.connect(context.destination)
+    const origin = context.currentTime + 0.08
+    const from = playhead()
+    let next = 0
+
+    // Chunked lookahead: scheduling seventeen hundred oscillators up front
+    // would stall the thread; a second's worth at a time never does.
+    const scheduleAhead = (): void => {
+      if (audio !== context) return
+      const horizon = from + (context.currentTime - origin) + 1.2
+      while (next < list.length) {
+        const note = list[next]
+        if (note === undefined || note.startSeconds > horizon) break
+        next += 1
+        const at = origin + (note.startSeconds - from)
+        if (at < context.currentTime) continue
+        const duration = Math.max(0.06, note.endSeconds - note.startSeconds)
+        const osc = context.createOscillator()
+        const gain = context.createGain()
+        // Two sources, two timbres, so switching between them is audible
+        // even before the pitches differ.
+        osc.type = source === 'heard' ? 'sawtooth' : 'triangle'
+        osc.frequency.value = 440 * Math.pow(2, (note.midi - 69) / 12)
+        gain.gain.setValueAtTime(0, at)
+        gain.gain.linearRampToValueAtTime(0.22, at + 0.008)
+        gain.gain.setTargetAtTime(0, at + duration - 0.03, 0.02)
+        osc.connect(gain)
+        gain.connect(master)
+        osc.start(at)
+        osc.stop(at + duration + 0.2)
+      }
+    }
+    scheduleAhead()
+    scheduleTimer = window.setInterval(scheduleAhead, 250)
+
+    const end = list.at(-1)?.endSeconds ?? from
+    const tick = (): void => {
+      if (audio !== context) return
+      const at = from + Math.max(0, context.currentTime - origin)
+      setPlayhead(at)
+      if (at >= end + 0.2) {
+        stopPlayback()
+        return
+      }
+      playheadFrame = requestAnimationFrame(tick)
+    }
+    setPlaying(source)
+    playheadFrame = requestAnimationFrame(tick)
+  }
+
+  const togglePlayback = (source: 'heard' | 'tab'): void => {
+    if (playing() === source) stopPlayback()
+    else startPlayback(source)
+  }
+
+  onCleanup(stopPlayback)
+
+  onMount(() => {
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: () => {
+          if (playing() !== null) {
+            stopPlayback()
+            return
+          }
+          if (notes().length > 0) startPlayback('heard')
+          else if (alignedReferenceNotes().length > 0) startPlayback('tab')
+        },
+        enabled: () => notes().length > 0 || alignedReferenceNotes().length > 0,
+      }),
+    )
   })
 
   // ── Running ──────────────────────────────────────────────────
@@ -320,6 +465,12 @@ export const TranscriptionBench: Component = () => {
     const hit = hitTest(rollNotes(), view, x, y)
     if (hit === null) {
       setSelected(null)
+      // Empty space is the scrub surface: the click moves the playhead, and
+      // a running audition keeps playing from the new place.
+      const wasPlaying = playing()
+      if (wasPlaying !== null) stopPlayback()
+      setPlayhead(Math.max(0, xToSeconds(x, view)))
+      if (wasPlaying !== null) startPlayback(wasPlaying)
       return
     }
     setSelected(hit.note.id)
@@ -440,7 +591,7 @@ export const TranscriptionBench: Component = () => {
   // reference load, or a resize, rather than fighting the user's own zoom.
   createEffect(() => {
     const heard = rollNotes()
-    const truth = referenceNotes()
+    const truth = alignedReferenceNotes()
     if (viewport() !== null || heard.length + truth.length === 0) return
     const box = canvas.getBoundingClientRect()
     setViewport(fitViewport([...heard, ...truth], box.width, box.height))
@@ -491,7 +642,7 @@ export const TranscriptionBench: Component = () => {
     // a result, and a filled block would read as another transcription.
     context.strokeStyle = 'rgba(88, 166, 255, 0.85)'
     context.lineWidth = 1
-    for (const note of visibleNotes(referenceNotes(), view)) {
+    for (const note of visibleNotes(alignedReferenceNotes(), view)) {
       const rect = noteRect(note, view)
       context.strokeRect(
         rect.x + 0.5,
@@ -515,6 +666,13 @@ export const TranscriptionBench: Component = () => {
         context.strokeRect(rect.x - 1, rect.y, rect.width + 2, rect.height)
       }
       context.globalAlpha = 1
+    }
+
+    // The playhead, over everything: it is where the ear currently is.
+    const headX = secondsToX(playhead(), view)
+    if (headX >= 0 && headX <= view.width) {
+      context.fillStyle = '#58a6ff'
+      context.fillRect(headX - 1, 0, 2, view.height)
     }
   })
 
@@ -673,7 +831,12 @@ export const TranscriptionBench: Component = () => {
       </div>
 
       <Show when={status() === 'running'}>
-        <progress class={styles.progress} max="1" value={progress()} />
+        <div class={styles.progressRow}>
+          <progress class={styles.progress} max="1" value={progress()} />
+          <span class={styles.progressLabel}>
+            {Math.round(progress() * 100)}%
+          </span>
+        </div>
       </Show>
 
       <Show when={message()}>
@@ -723,6 +886,10 @@ export const TranscriptionBench: Component = () => {
                     <div>
                       <dt>Wrong pitch</dt>
                       <dd>{scored().wrongPitch}</dd>
+                    </div>
+                    <div>
+                      <dt>Shadow of a miss</dt>
+                      <dd>{scored().shadowed}</dd>
                     </div>
                     <div>
                       <dt>No tab note near</dt>
@@ -798,6 +965,33 @@ export const TranscriptionBench: Component = () => {
         >
           Fit
         </button>
+        <button
+          type="button"
+          disabled={notes().length === 0}
+          aria-pressed={playing() === 'heard'}
+          classList={{ [styles.toolActive]: playing() === 'heard' }}
+          onClick={() => togglePlayback('heard')}
+        >
+          {playing() === 'heard' ? 'Stop' : 'Play heard'}
+        </button>
+        <button
+          type="button"
+          disabled={alignedReferenceNotes().length === 0}
+          aria-pressed={playing() === 'tab'}
+          classList={{ [styles.toolActive]: playing() === 'tab' }}
+          onClick={() => togglePlayback('tab')}
+        >
+          {playing() === 'tab' ? 'Stop' : 'Play tab'}
+        </button>
+        <button
+          type="button"
+          disabled={score() === null}
+          aria-pressed={alignTab()}
+          classList={{ [styles.toolActive]: alignTab() }}
+          onClick={() => setAlignTab((on) => !on)}
+        >
+          {alignTab() ? 'Tab aligned' : 'Tab raw'}
+        </button>
         <span class={styles.spacer} />
         <button type="button" disabled={result() === null} onClick={exportMidi}>
           Export MIDI
@@ -846,6 +1040,13 @@ export const TranscriptionBench: Component = () => {
         <span>
           <i
             class={styles.swatch}
+            style={{ background: VERDICT_COLORS.shadow }}
+          />
+          Shadow of a miss
+        </span>
+        <span>
+          <i
+            class={styles.swatch}
             style={{ background: VERDICT_COLORS.spurious }}
           />
           No tab note near
@@ -870,9 +1071,12 @@ export const TranscriptionBench: Component = () => {
       </Show>
 
       <p class={labStyles.hint}>
-        Scroll to pan, ctrl or shift and scroll to zoom. Edits are pinned and
-        survive a re-run at different settings, so a manual pass is not lost
-        every time the profile moves.
+        Scroll to pan, ctrl or shift and scroll to zoom. Click empty space to
+        move the playhead; Space plays and stops. A shadow note is probably
+        RIGHT — the tab holds its pitch just next door, and the real defect is
+        the neighbour that went unheard. Edits are pinned and survive a re-run
+        at different settings, so a manual pass is not lost every time the
+        profile moves.
       </p>
     </div>
   )
