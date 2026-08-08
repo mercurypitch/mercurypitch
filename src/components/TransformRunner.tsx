@@ -1,11 +1,17 @@
 // ============================================================
-// TransformRunner — Analysis transform launcher UI
+// TransformRunner — analysis transform catalogue and launcher
+//
+// Lab-exclusive: the only mount point is the Spectral workbench tab. All
+// styling lives in the sibling module — the panel used to carry ~36 literal
+// rgba() values inline, which meant it only looked right in the dark theme.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { getTransforms, registerBuiltinTransforms, } from '@/lib/transform-registry'
 import type { TransformDescriptor } from '@/types'
+import { Box, Loader2, MagnifyingGlass, Play } from './icons'
+import styles from './TransformRunner.module.css'
 
 export const TransformRunner: Component = () => {
   // Ensure transforms are registered
@@ -44,249 +50,141 @@ export const TransformRunner: Component = () => {
   })
 
   return (
-    <div
-      class="transform-runner"
-      style={{
-        padding: '12px',
-        background: 'rgba(255,255,255,0.02)',
-        'border-radius': '8px',
-        border: '1px solid rgba(255,255,255,0.06)',
-        'margin-top': '12px',
-      }}
-    >
-      <h3
-        style={{
-          margin: '0 0 10px 0',
-          'font-size': '0.85rem',
-          color: 'rgba(255,255,255,0.6)',
-        }}
-      >
-        🔌 Transform Plug-ins
+    <div class={styles.panel}>
+      <h3 class={styles.title}>
+        <span aria-hidden="true">
+          <Box />
+        </span>
+        Transform plug-ins
       </h3>
 
-      {/* Search + Category filter */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          'margin-bottom': '10px',
-          'flex-wrap': 'wrap',
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Search transforms..."
-          value={search()}
-          onInput={(e) => setSearch(e.currentTarget.value)}
-          style={{
-            padding: '4px 8px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            'border-radius': '4px',
-            color: '#fff',
-            'font-size': '0.75rem',
-            'min-width': '160px',
-          }}
-        />
-        <For each={categories()}>
-          {(cat) => (
-            <button
-              onClick={() =>
-                setActiveCategory(activeCategory() === cat ? null : cat)
-              }
-              style={{
-                padding: '4px 8px',
-                'font-size': '0.65rem',
-                'border-radius': '4px',
-                cursor: 'pointer',
-                background:
-                  activeCategory() === cat
-                    ? 'rgba(88,166,255,0.15)'
-                    : 'rgba(255,255,255,0.05)',
-                border:
-                  activeCategory() === cat
-                    ? '1px solid rgba(88,166,255,0.3)'
-                    : '1px solid rgba(255,255,255,0.1)',
-                color:
-                  activeCategory() === cat
-                    ? '#58a6ff'
-                    : 'rgba(255,255,255,0.5)',
-              }}
-            >
-              {cat}
-            </button>
-          )}
-        </For>
+      {/* Search + category filter */}
+      <div class={styles.filters}>
+        <div class={styles.searchWrap}>
+          <span aria-hidden="true" class={styles.searchIcon}>
+            <MagnifyingGlass />
+          </span>
+          <input
+            aria-label="Filter transforms by name or description"
+            class={styles.search}
+            onInput={(e) => setSearch(e.currentTarget.value)}
+            placeholder="Name or description…"
+            type="text"
+            value={search()}
+          />
+        </div>
+        <div class={styles.chips}>
+          <For each={categories()}>
+            {(cat) => (
+              <button
+                aria-pressed={activeCategory() === cat}
+                class={styles.chip}
+                classList={{ [styles.chipActive]: activeCategory() === cat }}
+                onClick={() =>
+                  setActiveCategory(activeCategory() === cat ? null : cat)
+                }
+                type="button"
+              >
+                {cat}
+              </button>
+            )}
+          </For>
+        </div>
       </div>
 
       {/* Transform list */}
-      <div style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}>
-        <For each={filteredTransforms()}>
-          {(t) => (
-            <div
-              onClick={() => setSelectedId(selectedId() === t.id ? null : t.id)}
-              style={{
-                flex: '1',
-                'min-width': '180px',
-                padding: '8px 10px',
-                background:
-                  selectedId() === t.id
-                    ? 'rgba(88,166,255,0.1)'
-                    : 'rgba(255,255,255,0.03)',
-                border:
-                  selectedId() === t.id
-                    ? '1px solid rgba(88,166,255,0.25)'
-                    : '1px solid rgba(255,255,255,0.08)',
-                'border-radius': '6px',
-                cursor: 'pointer',
-              }}
-            >
-              <div
-                style={{
-                  'font-size': '0.78rem',
-                  color: 'rgba(255,255,255,0.7)',
-                  'font-weight': '500',
-                }}
+      <Show
+        fallback={
+          <div class={styles.empty}>
+            <span aria-hidden="true" class={styles.emptyGlyph}>
+              <MagnifyingGlass />
+            </span>
+            <h4 class={styles.emptyTitle}>No transforms match</h4>
+            <p class={styles.emptyBody}>
+              Nothing in the registry matches that filter. Clear the box above,
+              or switch the active category off, to see the whole catalogue
+              again.
+            </p>
+          </div>
+        }
+        when={filteredTransforms().length > 0}
+      >
+        <div class={styles.grid}>
+          <For each={filteredTransforms()}>
+            {(t) => (
+              // A button rather than a clickable <div>: the card is the only
+              // way to open a transform's details, so it has to be reachable
+              // by keyboard and has to be able to show a focus ring.
+              <button
+                aria-pressed={selectedId() === t.id}
+                class={styles.card}
+                classList={{ [styles.cardActive]: selectedId() === t.id }}
+                onClick={() =>
+                  setSelectedId(selectedId() === t.id ? null : t.id)
+                }
+                type="button"
               >
-                {t.name}
-              </div>
-              <div
-                style={{
-                  'font-size': '0.65rem',
-                  color: 'rgba(255,255,255,0.35)',
-                  'margin-top': '2px',
-                }}
-              >
-                {t.description.slice(0, 60)}
-                {t.description.length > 60 ? '…' : ''}
-              </div>
-              <div
-                style={{
-                  'margin-top': '4px',
-                  display: 'flex',
-                  gap: '4px',
-                  'flex-wrap': 'wrap',
-                }}
-              >
-                <span
-                  style={{
-                    'font-size': '0.6rem',
-                    padding: '1px 4px',
-                    'border-radius': '3px',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.35)',
-                  }}
-                >
-                  {t.category}
+                <span class={styles.cardName}>{t.name}</span>
+                <span class={styles.cardDesc}>
+                  {t.description.slice(0, 60)}
+                  {t.description.length > 60 ? '…' : ''}
                 </span>
-                <span
-                  style={{
-                    'font-size': '0.6rem',
-                    padding: '1px 4px',
-                    'border-radius': '3px',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'rgba(255,255,255,0.35)',
-                  }}
-                >
-                  v{t.version}
-                </span>
-                <Show when={t.minDuration !== undefined}>
-                  <span
-                    style={{
-                      'font-size': '0.6rem',
-                      padding: '1px 4px',
-                      'border-radius': '3px',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: 'rgba(255,255,255,0.35)',
-                    }}
-                  >
-                    min {t.minDuration}s
+                <span class={styles.tags}>
+                  <span class={styles.tag}>{t.category}</span>
+                  <span class={`${styles.tag} ${styles.tagNum}`}>
+                    v{t.version}
                   </span>
-                </Show>
-              </div>
-            </div>
-          )}
-        </For>
-      </div>
+                  <Show when={t.minDuration !== undefined}>
+                    <span class={`${styles.tag} ${styles.tagNum}`}>
+                      min {t.minDuration}s
+                    </span>
+                  </Show>
+                </span>
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
 
       {/* Selected transform details */}
       <Show when={selected()}>
         {(t: () => TransformDescriptor) => (
-          <div
-            style={{
-              'margin-top': '10px',
-              padding: '10px',
-              background: 'rgba(88,166,255,0.05)',
-              border: '1px solid rgba(88,166,255,0.15)',
-              'border-radius': '6px',
-            }}
-          >
-            <div
-              style={{
-                'font-size': '0.78rem',
-                color: '#58a6ff',
-                'font-weight': '500',
-                'margin-bottom': '4px',
-              }}
-            >
-              {t().name}
-            </div>
-            <div
-              style={{
-                'font-size': '0.7rem',
-                color: 'rgba(255,255,255,0.45)',
-                'margin-bottom': '6px',
-              }}
-            >
-              {t().description}
-            </div>
-            <div
-              style={{
-                'font-size': '0.65rem',
-                color: 'rgba(255,255,255,0.35)',
-              }}
-            >
-              Outputs:{' '}
-              {t()
-                .outputs.map((o) => `${o.name} (${o.annotationType})`)
-                .join(', ')}
+          <div class={styles.detail}>
+            <span class={styles.detailName}>{t().name}</span>
+            <p class={styles.detailDesc}>{t().description}</p>
+            <div class={styles.detailRow}>
+              <span class={styles.detailKey}>Outputs</span>
+              <span class={styles.detailVal}>
+                {t()
+                  .outputs.map((o) => `${o.name} (${o.annotationType})`)
+                  .join(', ')}
+              </span>
             </div>
             <Show when={(t().parameters?.length ?? 0) > 0}>
-              <div
-                style={{
-                  'margin-top': '4px',
-                  'font-size': '0.65rem',
-                  color: 'rgba(255,255,255,0.35)',
-                }}
-              >
-                Parameters:{' '}
-                {t()
-                  .parameters?.map((p) => `${p.label} (${p.type})`)
-                  .join(', ') ?? ''}
+              <div class={styles.detailRow}>
+                <span class={styles.detailKey}>Parameters</span>
+                <span class={styles.detailVal}>
+                  {t()
+                    .parameters?.map((p) => `${p.label} (${p.type})`)
+                    .join(', ') ?? ''}
+                </span>
               </div>
             </Show>
             <button
+              class={styles.runBtn}
+              disabled={isRunning()}
               onClick={() => {
                 setIsRunning(true)
                 setTimeout(() => setIsRunning(false), 1000)
               }}
-              disabled={isRunning()}
-              style={{
-                'margin-top': '8px',
-                padding: '4px 12px',
-                background: isRunning()
-                  ? 'rgba(255,255,255,0.05)'
-                  : 'rgba(88,166,255,0.15)',
-                border: isRunning()
-                  ? '1px solid rgba(255,255,255,0.1)'
-                  : '1px solid rgba(88,166,255,0.3)',
-                color: isRunning() ? 'rgba(255,255,255,0.3)' : '#58a6ff',
-                'font-size': '0.72rem',
-                'border-radius': '4px',
-                cursor: isRunning() ? 'not-allowed' : 'pointer',
-              }}
+              type="button"
             >
-              {isRunning() ? 'Running…' : `Run ${t().name}`}
+              <span aria-hidden="true">
+                {isRunning() ? <Loader2 /> : <Play />}
+              </span>
+              <span class={styles.runLabel}>
+                {isRunning() ? 'Running…' : `Run ${t().name}`}
+              </span>
             </button>
           </div>
         )}

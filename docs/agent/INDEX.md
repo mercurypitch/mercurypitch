@@ -93,8 +93,8 @@ These are the rules that break things when ignored.
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 936 | useFallingNotesController — Game logic for Synthesia-style piano practice |
+| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 870 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 779 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
-| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 779 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 768 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 594 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 518 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
@@ -200,7 +200,7 @@ These are the rules that break things when ignored.
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 407 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 339 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 223 | The app's single pitch-frame stream. |
-| [LabPage.tsx](../../src/pages/LabPage.tsx) | 101 | Supporter research surface. |
+| [LabPage.tsx](../../src/pages/LabPage.tsx) | 103 | Supporter research surface. |
 | [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
 | [JamPage.tsx](../../src/pages/JamPage.tsx) | 27 | Jam tab (TAB_JAM). |
 | [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
@@ -312,8 +312,8 @@ Grep for the symbol and read the surrounding range instead.
 | [src/App.tsx](../../src/App.tsx) | 4.1k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.2k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
-| [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
+| [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |

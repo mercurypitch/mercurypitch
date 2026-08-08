@@ -48,6 +48,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **The Lab looks like the rest of the app.** The supporter research surface —
+  spectral workbench, pitch detection, the algorithm bench and the mapping
+  differ — was still wearing the old utilitarian styling while the rest of the
+  app moved on. Every tab now shares one instrument-panel look: tools gathered
+  into groups instead of a long row of identical buttons, readouts whose digits
+  hold their place as the numbers change, and empty panels that say what to do
+  first rather than sitting blank. What the Lab does is unchanged.
+
 - **The account settings tab reads top-down by risk.** Install as an app now
   sits above the Danger Zone, and the Danger Zone ships collapsed — its
   destructive buttons open on a click of the heading, last before About.
