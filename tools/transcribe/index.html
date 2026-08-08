@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Transcription bench</title>
+  </head>
+  <body>
+    <!--
+      Dev-only page. Not in vite.config.ts's rollupOptions.input, so it is
+      served by `vite dev` and never enters a build. Its whole job is to give
+      scripts/transcribe-bench.mjs a real browser to run the shipping
+      transcription code in — same decodeAudioData, same PitchDetector, same
+      profiles. A Node reimplementation would be measuring a different program.
+    -->
+    <p>Transcription bench. Driven by scripts/transcribe-bench.mjs.</p>
+    <script type="module" src="./harness.ts"></script>
+  </body>
+</html>

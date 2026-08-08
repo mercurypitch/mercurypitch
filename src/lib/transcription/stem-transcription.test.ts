@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TranscriptionFrame } from './stem-transcription'
-import { BASS_TRANSCRIPTION_PROFILE, profileWindowSamples, repairOctaveSlips, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
+import { BASS_TRANSCRIPTION_PROFILE, octaveCorrectedMidi, profileWindowSamples, repairOctaveSlips, resolvableMinFrequency, toneMagnitude, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
 
 const PROFILE = BASS_TRANSCRIPTION_PROFILE
 
@@ -37,7 +37,10 @@ describe('transcribeFrames', () => {
     expect(result.notes).toHaveLength(1)
     expect(result.notes[0].midi).toBe(40)
     expect(result.notes[0].startSeconds).toBeCloseTo(0, 5)
-    expect(result.notes[0].durationSeconds).toBeCloseTo(10 * 0.04, 5)
+    expect(result.notes[0].durationSeconds).toBeCloseTo(
+      10 * PROFILE.stepSeconds,
+      5,
+    )
     expect(result.coverage).toBe(1)
   })
 
@@ -171,5 +174,147 @@ describe('transcribeStemSamples', () => {
 
     expect(result.notes).toEqual([])
     expect(result.coverage).toBe(0)
+  })
+})
+
+describe('resolvableMinFrequency', () => {
+  it('is a floor the shipped bass profile stays above', () => {
+    // Window length and minimum frequency are not independent. Whichever one
+    // moves, this fails until the other moves with it.
+    expect(BASS_TRANSCRIPTION_PROFILE.minFrequency).toBeGreaterThanOrEqual(
+      resolvableMinFrequency(BASS_TRANSCRIPTION_PROFILE.windowSeconds),
+    )
+  })
+
+  it('falls as the window lengthens', () => {
+    expect(resolvableMinFrequency(0.1)).toBeLessThan(
+      resolvableMinFrequency(0.05),
+    )
+  })
+})
+
+describe('toneMagnitude', () => {
+  const SAMPLE_RATE = 8000
+
+  function tone(frequency: number, seconds: number, amplitude = 0.5) {
+    const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE))
+    for (let index = 0; index < samples.length; index += 1) {
+      samples[index] =
+        amplitude * Math.sin((2 * Math.PI * frequency * index) / SAMPLE_RATE)
+    }
+    return samples
+  }
+
+  it('finds energy at the frequency that is there, and not at one that is not', () => {
+    const samples = tone(82.41, 0.5)
+    const atPitch = toneMagnitude(
+      samples,
+      SAMPLE_RATE,
+      82.41,
+      0,
+      samples.length,
+    )
+    const atOther = toneMagnitude(samples, SAMPLE_RATE, 123, 0, samples.length)
+    expect(atPitch).toBeGreaterThan(atOther * 5)
+  })
+
+  it('refuses spans too short to mean anything', () => {
+    expect(toneMagnitude(tone(82, 0.5), SAMPLE_RATE, 82, 0, 4)).toBe(0)
+  })
+})
+
+describe('octaveCorrectedMidi', () => {
+  const SAMPLE_RATE = 8000
+
+  /** A string whose fundamental is E2, with the harmonics a real one has. */
+  function pluckedE2(seconds = 0.4) {
+    const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE))
+    for (let index = 0; index < samples.length; index += 1) {
+      const time = index / SAMPLE_RATE
+      samples[index] =
+        0.5 * Math.sin(2 * Math.PI * 82.41 * time) +
+        0.3 * Math.sin(2 * Math.PI * 164.81 * time) +
+        0.15 * Math.sin(2 * Math.PI * 247.2 * time)
+    }
+    return samples
+  }
+
+  it('pulls a sub-octave reading back up to the note that is sounding', () => {
+    const samples = pluckedE2()
+    // 28 is E1 — the octave below, which is what YIN reports when it locks
+    // onto twice the true period.
+    expect(
+      octaveCorrectedMidi(
+        samples,
+        SAMPLE_RATE,
+        28,
+        0,
+        samples.length,
+        BASS_TRANSCRIPTION_PROFILE,
+      ),
+    ).toBe(40)
+  })
+
+  it('leaves a correct reading alone, harmonics and all', () => {
+    const samples = pluckedE2()
+    expect(
+      octaveCorrectedMidi(
+        samples,
+        SAMPLE_RATE,
+        40,
+        0,
+        samples.length,
+        BASS_TRANSCRIPTION_PROFILE,
+      ),
+    ).toBe(40)
+  })
+
+  it('never shifts a note out of the profile it belongs to', () => {
+    const samples = pluckedE2()
+    expect(
+      octaveCorrectedMidi(
+        samples,
+        SAMPLE_RATE,
+        BASS_TRANSCRIPTION_PROFILE.maxMidi,
+        0,
+        samples.length,
+        BASS_TRANSCRIPTION_PROFILE,
+      ),
+    ).toBe(BASS_TRANSCRIPTION_PROFILE.maxMidi)
+  })
+})
+
+describe('transcribeFrames with onsets', () => {
+  const profile = BASS_TRANSCRIPTION_PROFILE
+
+  /** Ten frames of an unwavering E2 — one pitch contour, no pitch change. */
+  const heldFrames = Array.from({ length: 10 }, (_, index) => ({
+    timeSeconds: index * profile.stepSeconds,
+    midi: 40,
+    clarity: 0.9,
+  }))
+
+  it('reads a repeated note as one note when nothing says it was struck', () => {
+    expect(transcribeFrames(heldFrames, profile).notes).toHaveLength(1)
+  })
+
+  it('splits it where the string was struck again', () => {
+    // Two strikes inside the contour: the classic repeated bass note that
+    // pitch alone has no way to count.
+    const notes = transcribeFrames(
+      heldFrames,
+      profile,
+      heldFrames.length,
+      heldFrames.length * profile.stepSeconds,
+      [profile.stepSeconds * 3.5, profile.stepSeconds * 6.5],
+    ).notes
+    expect(notes).toHaveLength(3)
+    expect(notes.every((note) => note.midi === 40)).toBe(true)
+  })
+
+  it('ignores an onset that lands outside the frames it has', () => {
+    expect(
+      transcribeFrames(heldFrames, profile, heldFrames.length, 1, [99]).notes,
+    ).toHaveLength(1)
   })
 })
