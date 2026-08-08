@@ -2,7 +2,7 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
@@ -12,10 +12,12 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
+import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease
@@ -123,6 +125,19 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const rateLabel = createMemo(
     () => `${performance.transport.playbackRate().toFixed(2)}×`,
   )
+
+  // The loop lives in seconds of the recording, so it survives a speed change:
+  // the same bars come round again whatever rate they are played at.
+  const loop = useGuitarNightLoopController({
+    limit: duration,
+    onWrap: (start) => performance.transport.seekSeconds(start),
+  })
+  // Position is polled by the transport already; following it here costs one
+  // comparison per update and keeps the wrap on the audio clock, not a frame.
+  createEffect(() => {
+    if (!isPlaying()) return
+    loop.follow(position())
+  })
 
   const nudgeRate = (delta: number): void => {
     const next = clampRate(
@@ -323,6 +338,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               Separate guitar
             </button>
           </Show>
+          <GuitarNightLoopControls
+            span={loop.span()}
+            pending={loop.isPending()}
+            hasStart={loop.markA() !== null}
+            hasEnd={loop.markB() !== null}
+            format={formatTime}
+            onMarkStart={() => loop.markStart(position())}
+            onMarkEnd={() => loop.markEnd(position())}
+            onClear={loop.clear}
+          />
         </div>
         <div class={styles.timeRail}>
           <span>{formatTime(position())}</span>

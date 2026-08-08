@@ -13,6 +13,8 @@ import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { createGuitarRoomBand } from '@/features/guitar/backing/guitar-room-band'
 import { secondsToBeat } from '@/features/guitar/runtime/guitar-performance-contract'
+import type { LoopSpan } from '@/lib/guitar/loop-span'
+import { foldIntoLoop, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import type { GuitarNightReference } from './reference-port'
 
 export type GuitarNightScoreRoomStatus =
@@ -29,6 +31,12 @@ export const SCORE_ROOM_MAX_COUNT_IN = 8
 
 interface GuitarNightScoreRoomControllerOptions {
   reference: Accessor<GuitarNightReference | null>
+  /**
+   * Beats to repeat, in the score's own beat time. The click cannot be rewound
+   * — it is a scheduled pulse — so a loop is scheduled into it at start and
+   * folded out of the elapsed clock for display.
+   */
+  loop?: Accessor<LoopSpan | null>
   createBand?: () => GuitarRoomBand
   requestFrame?: (callback: () => void) => number
   cancelFrame?: (handle: number) => void
@@ -54,6 +62,7 @@ export function useGuitarNightScoreRoomController(
   const [countInBeats, setCountInBeatsSignal] = createSignal(4)
   const [tempoOverride, setTempoOverride] = createSignal<number | null>(null)
   const [error, setError] = createSignal<string | null>(null)
+  const [runningLoop, setRunningLoop] = createSignal<LoopSpan | null>(null)
 
   const requestFrame =
     options.requestFrame ??
@@ -75,9 +84,18 @@ export function useGuitarNightScoreRoomController(
     const bpm = tempoBpm()
     return bpm > 0 ? (durationBeats() * 60) / bpm : 0
   })
-  const playheadBeat = createMemo(() =>
-    status() === 'quiet' ? null : secondsToBeat(positionSeconds(), tempoBpm()),
-  )
+  /** The loop as the click was actually scheduled with it: whole beats. */
+  const scheduledLoop = createMemo(() => {
+    const span = options.loop?.() ?? null
+    return span === null ? null : quantizeSpanToBeats(span)
+  })
+  const playheadBeat = createMemo(() => {
+    if (status() === 'quiet') return null
+    const elapsed = secondsToBeat(positionSeconds(), tempoBpm())
+    // The same fold the scheduler applies, so the playhead and the click can
+    // never disagree about which beat of the loop is sounding.
+    return foldIntoLoop(elapsed, runningLoop())
+  })
 
   const stopFrames = (): void => {
     if (frame !== 0) cancelFrame(frame)
@@ -102,6 +120,7 @@ export function useGuitarNightScoreRoomController(
     stopFrames()
     band.stop()
     originSeconds = null
+    setRunningLoop(null)
     setStatus('quiet')
     setCountInRemaining(0)
     setPositionSeconds(0)
@@ -122,10 +141,15 @@ export function useGuitarNightScoreRoomController(
     setStatus('starting')
 
     try {
+      // Pinned for this run: changing the marks mid-take must not desynchronise
+      // the playhead from a pulse already scheduled without them.
+      const loopForRun = scheduledLoop()
+      setRunningLoop(loopForRun)
       await band.start({
         tempoBpm: tempoBpm(),
         countInBeats: countInBeats(),
         exerciseBeats: Math.max(1, Math.ceil(durationBeats())),
+        loop: loopForRun,
         onBeat: (beatIndex, phase) => {
           if (generation !== startGeneration) return
           if (phase === 'count-in') {
@@ -196,6 +220,8 @@ export function useGuitarNightScoreRoomController(
   })
 
   return {
+    /** The loop this take is actually running, null until one is scheduled. */
+    runningLoop,
     /** Open the room's audio without scheduling a beat — for microphone input. */
     activateAudio: async (): Promise<boolean> =>
       (await band.activate()) !== null,
