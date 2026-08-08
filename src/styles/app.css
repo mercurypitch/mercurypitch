@@ -2237,7 +2237,11 @@ input[type='range'] {
     order: unset !important;
     margin-top: 0 !important;
     flex-grow: 1;
-    justify-content: flex-end;
+    /* `safe`: once the tabs outgrow the strip, plain flex-end pushes the
+       overflow past the START edge, where no scrollbar can reach it — the
+       first tabs end up rendered under .header-left and unclickable. Safe
+       falls back to flex-start so the strip scrolls instead. */
+    justify-content: safe flex-end;
   }
 }
 

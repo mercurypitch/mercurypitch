@@ -566,6 +566,11 @@
   width: 100%;
   min-height: 100%;
   padding: 20px;
+  /* As a flex item of the canvas area this must never shrink: shrinking
+     floors it at the card's height while its own children keep shrinking
+     below their text, and the description prints over the routine picker.
+     At content height the card scrolls it instead. */
+  flex-shrink: 0;
 }
 
 /* Inside the centred idle group the description shouldn't claim full height. */
