@@ -86,6 +86,19 @@ const STANDALONE_DOCUMENT_PATHS = new Set([
   '/break-glass-with-your-voice',
   '/high-note-test',
   '/shatter',
+  // Guitar Night is its own Rollup input and its own mini-app, so it belongs
+  // here for the same reason the others do — it was simply missed.
+  '/guitar-night',
+  '/guitar-night.html',
+  // Jam is the one entry that boots the SHARED studio rather than a mini-app,
+  // so the shell would at least be the right product. It still belongs here:
+  // the shell is cached under '/', which carries no '#/jam', so offline the
+  // visitor would land on whatever tab was last active instead of the room
+  // they opened.
+  '/jam',
+  '/jam.html',
+  '/jam-rooms',
+  '/jam-rooms.html',
 ])
 
 /**
