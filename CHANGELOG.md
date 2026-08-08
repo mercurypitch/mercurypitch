@@ -3,6 +3,34 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [Unreleased]
+
+### Fixed
+
+- **The map reveals itself on phones.** The room cards on your map used to
+  show their cover art only on hover — which a touch screen doesn't have, so
+  tapping just entered the room sight unseen. Now each card plays its reveal
+  as it scrolls into view.
+
+- **The voice constellation reads top to bottom on phones.** Each voice
+  band's portraits used to sit in a sideways strip you had to pan through,
+  band after band. On a small screen they now wrap into a grid, so one
+  scroll down shows everything. Desktop is unchanged.
+
+- **The karaoke vocal pill unmutes when you drag it.** Dragging the guide
+  vocals' level up while they were muted changed a volume you couldn't hear
+  — the pill looked stuck until you tapped it first. A drag up now brings
+  the vocals straight back at the level under your finger, and the slider
+  no longer lets the lyrics shine through it while open.
+
+- **Karaoke Night's top bar fits a phone again.** The stage picker keeps
+  just its icon and the wordmark yields to the logo on small screens, so
+  the way back to the app and your account chip stay on one line.
+
+- **The Community page no longer drifts sideways.** On phones the whole
+  page could be panned in any direction from empty space; it now scrolls
+  top to bottom only, like the leaderboard.
+
 ## [0.8.1] - 2026-08-08
 
 ### Added
