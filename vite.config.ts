@@ -2,6 +2,7 @@ import ssl from '@vitejs/plugin-basic-ssl'
 import { copyFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { visualizer } from 'rollup-plugin-visualizer'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -218,6 +219,27 @@ export default defineConfig(({ command, mode }) => {
           dontCacheBustURLsMatching: /-[A-Za-z0-9_-]{8}\.(?:js|css)$/,
         },
       }),
+      // Bundle attribution, opt-in: `ANALYZE=1 pnpm build`. Off by default so
+      // it never costs a normal build; `stats.html` + `stats.json` land in
+      // dist/ and are gitignored.
+      process.env.ANALYZE === '1'
+        ? [
+            visualizer({
+              filename: 'dist/stats.html',
+              template: 'treemap',
+              gzipSize: true,
+              brotliSize: true,
+              sourcemap: true,
+            }),
+            visualizer({
+              filename: 'dist/stats.json',
+              template: 'raw-data',
+              gzipSize: true,
+              brotliSize: true,
+              sourcemap: true,
+            }),
+          ]
+        : [],
     ],
     // Absolute base so asset URLs resolve from the site root. Required for
     // path-based deep-links (e.g. /exercises/<slug>): a relative './' base would
@@ -323,15 +345,43 @@ export default defineConfig(({ command, mode }) => {
               return 'audio-upload-contract'
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
+              // A dependency reached ONLY through `await import(...)` still
+              // ships on first paint if manualChunks files it under 'vendor':
+              // 'vendor' has static importers, so Rollup makes the whole chunk
+              // a static dependency of every entry and the dynamic boundary in
+              // the source is erased. These two were 2.16 MB of the 2.41 MB
+              // vendor chunk — on every entry, including the standalone ones
+              // that exist to stay small. Each needs its OWN chunk, not a
+              // shared one: co-locating them with a statically-imported
+              // package would re-create exactly the bug.
+              //
+              // alphaTab is the Guitar Pro parser + engraver, reached only
+              // from `gp-import.ts`'s dynamic import when a user opens a .gp
+              // file (`gp-to-midi-song.ts` takes it as `import type`, which
+              // erases).
+              if (/@coderline[+/]alphatab/.test(id)) return 'vendor-alphatab'
+              // The WASM AAC encoder is the fallback for browsers with no
+              // WebCodecs AAC — Firefox everywhere, every browser on desktop
+              // Linux. `jam/stem-encoder.ts` imports it dynamically for that
+              // reason and says so. It must not share a chunk with mediabunny
+              // core, which IS statically reachable (jam-store).
+              if (/@mediabunny[+/]aac-encoder/.test(id)) return 'vendor-aac'
+              if (id.includes('mediabunny')) return 'vendor-media'
               // IndexedDB is the only third-party runtime the standalone song
               // readers need. Isolate it from the generic app vendor payload.
               if (id.includes('/dexie/')) return 'vendor-db'
-              // GPU stack rides its own chunk: only the lazily-imported glass
+              // TypeGPU rides its own chunk: only the lazily-imported glass
               // TypeGPU backend (and, later, tab-3d's) pulls it — the generic
               // vendor chunk must never drag typegpu into first paints, and
               // vendor must never be dragged in BY the gpu backend.
-              if (id.includes('typegpu') || id.includes('wgpu-matrix'))
-                return 'vendor-gpu'
+              //
+              // wgpu-matrix deliberately does NOT ride with it. Its one
+              // importer is `Canvas2dTabRenderer`, the 2D FALLBACK renderer,
+              // which is statically reachable — so while the two shared a
+              // chunk, the fallback's `mat4` import made the whole TypeGPU
+              // stack a first-paint dependency, which is the exact outcome the
+              // paragraph above set out to prevent.
+              if (id.includes('typegpu')) return 'vendor-gpu'
               // VexFlow is only needed after a user opens a notation surface.
               // Keep its engraving/font payload out of the initial app vendor
               // chunk so adding sheet music does not tax every first visit.
