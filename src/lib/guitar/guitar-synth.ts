@@ -203,8 +203,12 @@ function createPluckVoice(
   ctx: BaseAudioContext,
   freq: number,
   variant: GuitarVariant,
+  startAt?: number,
 ): GuitarVoice {
+  // Filter settings are constants, so setting them at `now` is fine whenever
+  // the string is struck; only the source needs the scheduled time.
   const now = ctx.currentTime
+  const strikeAt = startAt !== undefined && startAt > now ? startAt : now
 
   const source = ctx.createBufferSource()
   source.buffer = getPluckBuffer(ctx, freq, variant)
@@ -267,7 +271,7 @@ function createPluckVoice(
   }
 
   chainHead.connect(outputGain)
-  source.start(now)
+  source.start(strikeAt)
 
   return {
     gain: outputGain,
@@ -308,8 +312,10 @@ export function createGuitarVoice(
   freq: number,
   _durationMs: number,
   variant: Exclude<GuitarVariant, 'bass'> = 'acoustic',
+  /** Audio-clock time to strike at. Defaults to now, as it always did. */
+  startAt?: number,
 ): GuitarVoice {
-  return createPluckVoice(ctx, freq, variant)
+  return createPluckVoice(ctx, freq, variant, startAt)
 }
 
 /**
@@ -320,8 +326,10 @@ export function createBassVoice(
   ctx: BaseAudioContext,
   freq: number,
   _durationMs: number,
+  /** Audio-clock time to strike at. Defaults to now, as it always did. */
+  startAt?: number,
 ): GuitarVoice {
-  return createPluckVoice(ctx, freq, 'bass')
+  return createPluckVoice(ctx, freq, 'bass', startAt)
 }
 
 /**

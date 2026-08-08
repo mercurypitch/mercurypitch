@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
-import { scoreDurationBeats, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 function reference(
   overrides: Partial<GuitarNightReference> = {},
@@ -348,6 +348,78 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(await room.start()).toBe(false)
       expect(room.status()).toBe('error')
       expect(room.error()).not.toBeNull()
+      dispose()
+    })
+  })
+})
+
+describe('scoreToBandMelody', () => {
+  it('hands the band pitch and position, dropping the fingering it cannot use', () => {
+    expect(scoreToBandMelody(reference())).toEqual([
+      { midi: 64, startBeat: 0, durationBeats: 1 },
+      { midi: 67, startBeat: 2, durationBeats: 2 },
+    ])
+  })
+
+  it('has nothing to sound without a score', () => {
+    expect(scoreToBandMelody(null)).toEqual([])
+  })
+})
+
+describe('the tab room sounds the tab', () => {
+  it('ticks rather than grooves, and plays the score', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+
+      // A kit implies an arrangement a written tab is no evidence of.
+      expect(getOptions()?.feel).toBe('click')
+      expect(getOptions()?.melody).toHaveLength(2)
+      expect(getOptions()?.melodyVariant).toBe('electric')
+      dispose()
+    })
+  })
+
+  it('sounds a bass part with a bass voice', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        instrument: () => 'bass',
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      await room.start()
+      expect(getOptions()?.melodyVariant).toBe('bass')
+      dispose()
+    })
+  })
+
+  it('stays silent about the notes when asked to', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      room.setHearScore(false)
+      await room.start()
+
+      // The click still keeps time; only the part goes quiet.
+      expect(getOptions()?.melody).toEqual([])
+      expect(getOptions()?.feel).toBe('click')
       dispose()
     })
   })

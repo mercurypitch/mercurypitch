@@ -1208,6 +1208,32 @@
   font-size: 0.57rem;
 }
 
+/* Hearing the tab itself, rather than only time passing under it. */
+.hearScoreToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.18);
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.7);
+  background: rgba(28, 21, 17, 0.66);
+  font: inherit;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
+.hearScoreToggle svg {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.hearScoreActive {
+  border-color: rgba(243, 195, 155, 0.4);
+  color: #f4eadb;
+  background: rgba(60, 40, 28, 0.8);
+}
+
 /* Input health — what the room can honestly claim about what it is hearing. */
 .inputHealth {
   display: flex;
@@ -2530,7 +2556,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .inputHealthLatency button {
+  .inputHealthLatency button,
+  .hearScoreToggle {
     min-width: var(--touch-target);
     min-height: var(--touch-target);
   }
