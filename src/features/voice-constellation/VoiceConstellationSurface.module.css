@@ -1215,22 +1215,15 @@
     display: none;
   }
 
+  /* One vertical scroll on a small screen: each band's personas wrap into
+     a two-up grid, so the page gesture (scroll down) reveals every card.
+     This replaces per-band horizontal snap-rows, which demanded a sideways
+     pan for anything past the second portrait. The 140px floor keeps two
+     columns alive down to the smallest phones; wider viewports get more
+     columns from the same auto-fill. Desktop keeps the base grid above. */
   .legendGrid {
-    display: flex;
-    width: calc(100vw - 14px);
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
-    margin-right: -14px;
-    overflow-x: auto;
-    padding: 0 14px 12px 0;
-    scroll-padding-inline: 0 14px;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-  }
-
-  .legendCard {
-    width: min(68vw, 220px);
-    flex: 0 0 auto;
-    scroll-snap-align: start;
   }
 
   .error,
@@ -1295,16 +1288,6 @@
   .legacySection h2,
   .publicCta h2 {
     font-size: 1.8rem;
-  }
-
-  .legendGrid {
-    width: calc(100vw - 12px);
-    margin-right: -12px;
-    padding-right: 12px;
-  }
-
-  .legendCard {
-    width: min(74vw, 210px);
   }
 
   .legacySection,
