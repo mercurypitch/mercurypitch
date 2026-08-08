@@ -486,6 +486,12 @@
   /* Just above the progress row of the bottom bar. */
   bottom: calc(128px + var(--safe-bottom));
   z-index: 3;
+  /* The expanded level track rises OVER the lyric column. On the default
+     glass skin the lyrics shone straight through it, which read as the
+     slider rendering behind the text. A near-solid stage plum keeps the
+     control legible wherever it opens. */
+  --pill-bg: rgba(24, 12, 40, 0.86);
+  --pill-border: rgba(238, 228, 255, 0.24);
 }
 
 /* The mic mirrors the sing pill on the left: guide vocals on the right

@@ -33,7 +33,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
-import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
+import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, vocalDragUnmutes, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -291,6 +291,14 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   }
 
   const pillLevel = (): number => (vocalsOff() ? 0 : props.vocal().volume)
+
+  // Dragging the level up while muted brings the vocals back first — the
+  // decision rule (and why) lives in zen-navigation with the other pure
+  // transport decisions.
+  const pillSetLevel = (v: number): void => {
+    if (vocalDragUnmutes(props.vocal().muted, v)) props.onToggleVocal()
+    props.onVocalVolume(v)
+  }
 
   // ── Progress / transport ──────────────────────────────────────
   // Mirrors the Scrubber's preview so the time readouts track the finger.
@@ -785,7 +793,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         level={pillLevel()}
         off={vocalsOff()}
         onTap={pillTapToggle}
-        onLevel={props.onVocalVolume}
+        onLevel={pillSetLevel}
         title={
           vocalsOff() ? 'Bring the vocals back' : 'Sing it — mute the vocals'
         }
