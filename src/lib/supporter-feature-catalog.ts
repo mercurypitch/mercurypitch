@@ -12,6 +12,12 @@ export const SUPPORTER_FEATURE_PERKS = [
     description:
       'Early access to experimental audio tools and development previews.',
   },
+  {
+    id: 'admin-console',
+    label: 'Admin console shortcut',
+    description:
+      'Shows a Settings link to the Content Studio. Opening it still requires the admin key.',
+  },
 ] as const
 
 export type SupporterFeaturePerk = (typeof SUPPORTER_FEATURE_PERKS)[number]

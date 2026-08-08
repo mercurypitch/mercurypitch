@@ -14,6 +14,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Pencil } from '@/components/icons'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
@@ -22,6 +23,7 @@ import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/ser
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
+import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
 import styles from './AccountSection.module.css'
@@ -43,6 +45,9 @@ export const AccountSection: Component = () => {
   // Supporter status rides along with the account fetch — it is the same
   // round trip the header already makes, and drives the badge below.
   const [supporter, setSupporter] = createSignal<SupporterGrant | null>(null)
+  // Server-held feature perks: the admin-console shortcut is assigned to the
+  // Founders supporter group, so everyone else never sees the link.
+  const features = useSupporterFeatures()
 
   const profileName = (): string =>
     String(me()?.profile?.displayName ?? '').trim()
@@ -313,6 +318,26 @@ export const AccountSection: Component = () => {
                   Shown on leaderboards and shared content.
                 </p>
               </div>
+
+              {/* Founders group perk: a shortcut into the Content Studio, so
+                  the console does not have to be reached by typed URL. The
+                  studio itself still asks for the admin key. */}
+              <Show when={features.hasFeature('admin-console')}>
+                <div class={styles.accountField}>
+                  <span class={styles.fieldLabel}>Founder tools</span>
+                  <a
+                    class={styles.adminConsoleLink}
+                    href="#/admin"
+                    data-testid="admin-console-link"
+                  >
+                    <Pencil size={15} />
+                    Open the admin console
+                  </a>
+                  <p class={styles.fieldHint}>
+                    The Content Studio unlocks with the admin key.
+                  </p>
+                </div>
+              </Show>
             </div>
             <p class={styles.mutedNote}>
               Challenges, scores and leaderboard entries sync with this account.

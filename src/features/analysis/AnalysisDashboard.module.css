@@ -22,11 +22,13 @@
    tertiary background, centred items, 10px 24px padding). A page-level
    <header> inherits all of it, so the properties we don't want have to be
    named explicitly — the element selector wins wherever this class is silent. */
+/* Title left, Lab pill right, subtitle spanning under both. Without the
+   pill the grid collapses to the old single column. */
 .header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 10px;
   background: transparent;
   padding: 0;
 }
@@ -39,9 +41,30 @@
 }
 
 .subtitle {
+  grid-column: 1 / -1;
   margin: 0;
   font-size: var(--text-md);
   color: var(--text-muted);
+}
+
+.labPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #eee);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.labPill:hover {
+  border-color: var(--accent, #7aa2f7);
+  color: var(--accent, #7aa2f7);
 }
 
 /* ── Take picker ──────────────────────────────────────────── */
