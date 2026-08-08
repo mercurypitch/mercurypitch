@@ -4978,6 +4978,11 @@
     min-height: 0;
     padding: 14px 16px 24px;
     overflow-y: auto;
+    /* `overflow-y: auto` alone computes overflow-x to auto as well, and the
+       backdrop art's side bleed (below) reached past the content edge — so
+       the whole panel panned sideways on a phone. This page is a vertical
+       feed; nothing in it may scroll left/right. */
+    overflow-x: hidden;
   }
 
   .community-share-tab {
@@ -4985,6 +4990,14 @@
     height: auto;
     padding: 0;
     overflow: visible;
+  }
+
+  /* The desktop art bleeds 24px past each side to fill the panel's 2rem
+     padding. The phone panel's padding is 14/16px, so the same bleed poked
+     past the panel's right content edge and minted the horizontal scroll
+     range the rule above now clips. Match the bleed to the padding. */
+  .community-share-tab::before {
+    inset: -14px -16px auto;
   }
 
   /* `flex: 1 1 320px` is a WIDTH basis, and it is correct while the header
