@@ -9,7 +9,7 @@
 // on demand by gp-import.ts when a file is opened.
 
 import type * as alphaTab from '@coderline/alphatab'
-import type { MidiSong, MidiSongNote, MidiSongTrack } from '@/lib/midi-song'
+import type { MidiSong, MidiSongNote, MidiSongTrack, MidiTempoChange, } from '@/lib/midi-song'
 import { gmInstrumentName } from '@/lib/midi-song'
 
 /** alphaTab playback ticks per quarter note. */
@@ -93,6 +93,32 @@ function applyLetRing(notes: MidiSongNote[]): void {
   }
 }
 
+/**
+ * Every tempo automation in the score, on the beat it takes effect.
+ *
+ * Without these a Guitar Pro import runs at the opening tempo for the whole
+ * song. Dance of Death changes tempo ten times and its score runs 528 seconds;
+ * held at the first tempo the last note lands nearly a minute early, which is
+ * exactly how far the Lab's tab overlay was drifting from the audio when the
+ * reference was the .gp5 rather than the MIDI export.
+ */
+function scoreTempoChanges(score: alphaTab.model.Score): MidiTempoChange[] {
+  const changes: MidiTempoChange[] = []
+  for (const masterBar of score.masterBars) {
+    for (const automation of masterBar.tempoAutomations) {
+      if (!(automation.value > 0)) continue
+      const tick =
+        masterBar.start +
+        automation.ratioPosition * masterBar.calculateDuration()
+      changes.push({
+        beat: tick / TICKS_PER_QUARTER,
+        usPerBeat: Math.round(60000000 / automation.value),
+      })
+    }
+  }
+  return changes.sort((left, right) => left.beat - right.beat)
+}
+
 /** Convert an alphaTab Score into a MidiSong (percussion tracks dropped). */
 export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
   const tracks: MidiSongTrack[] = []
@@ -101,7 +127,7 @@ export function scoreToMidiSong(score: alphaTab.model.Score): MidiSong {
     if (mapped !== null) tracks.push(mapped)
   })
   const bpm = score.tempo > 0 ? Math.round(score.tempo) : 120
-  return { bpm, tracks }
+  return { bpm, tempoChanges: scoreTempoChanges(score), tracks }
 }
 
 /** Human-readable song name from score metadata, falling back to file name. */

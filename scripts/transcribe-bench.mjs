@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 // The scoring arithmetic is src/, shared with the Lab's transcription bench so
 // a number here and a number on screen cannot disagree.
+import { createBeatClock } from '../src/lib/midi-song.ts'
 import { pickReferenceTrack, pitchHistogram, scoreAgainstTruth, WINDOW_SECONDS, } from '../src/lib/transcription/transcription-score.ts'
 import { readMidiTruth } from './midi-truth.mjs'
 
@@ -264,6 +265,7 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
       `| Right note, any octave | ${scored.exact + scored.octaveOff} (${pct(scored.octaveTolerantPrecision)} of heard) |`,
       `| Octave errors | ${scored.octaveOff} |`,
       `| Wrong pitch | ${scored.wrongPitch} |`,
+      `| Shadow of a missed neighbour | ${scored.shadowed} |`,
       `| Heard but no tab note near | ${scored.unmatched} |`,
       `| Tab notes never heard | ${scored.missed} |`,
       `| Recall | ${pct(scored.recall)} |`,
@@ -332,20 +334,25 @@ async function main() {
           ([fsUrl, name]) => window.transcribeBench.readTab(fsUrl, name),
           [`${url}/@fs${options.truth}`, basename(options.truth)],
         )
-        // Beats at one tempo. Fine for a constant-tempo tab and wrong the
-        // moment one changes, which is why a .mid truth is preferred.
-        const secondsPerBeat = 60 / truthSong.bpm
+        // Beats to seconds through the score's own tempo map — the same
+        // clock the Lab uses, so the two cannot disagree about where a
+        // reference note is in time.
+        const clock = createBeatClock(truthSong)
         for (const track of truthSong.tracks) {
           track.notes = track.notes
             .map((note) => ({
               midi: note.midi,
-              startSeconds: note.startBeat * secondsPerBeat,
-              durationSeconds: note.duration * secondsPerBeat,
+              startSeconds: clock(note.startBeat),
+              durationSeconds:
+                clock(note.startBeat + note.duration) - clock(note.startBeat),
             }))
             .sort((left, right) => left.startSeconds - right.startSeconds)
         }
+        const tempi = (truthSong.tempoChanges ?? [])
+          .map((change) => Math.round(60000000 / change.usPerBeat))
+          .join(' -> ')
         console.log(
-          `Tab: ${truthSong.tracks.length} tracks at a fixed ${truthSong.bpm} BPM — ` +
+          `Tab: ${truthSong.tracks.length} tracks, tempo ${tempi || truthSong.bpm} — ` +
             truthSong.tracks
               .map((track) => `${track.name} (${track.noteCount})`)
               .join(', '),
