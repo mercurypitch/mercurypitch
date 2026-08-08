@@ -48,6 +48,12 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Changed
 
+- **The account settings tab reads top-down by risk.** Install as an app now
+  sits above the Danger Zone, and the Danger Zone ships collapsed — its two
+  destructive buttons open on a click of the heading, last before About. The
+  font-change reload prompt also actually appears now; it used to render on a
+  different settings tab than the font picker that triggered it.
+
 - **The app starts faster.** Fingerprinted files are now cached by the browser
   for a year instead of being re-checked on every visit, and code that only
   runs behind a click no longer loads with the first screen.
