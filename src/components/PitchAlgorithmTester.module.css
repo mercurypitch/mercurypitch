@@ -286,14 +286,6 @@
   text-align: right;
 }
 
-.resultDevGood {
-  color: var(--green);
-}
-
-.resultDevPoor {
-  color: var(--red);
-}
-
 .resultClass {
   text-align: right;
   font-weight: 600;
@@ -353,13 +345,23 @@
   color: var(--green);
 }
 
+.perfBlue {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
 .perfYellow {
-  background: rgba(210, 153, 34, 0.15);
+  background: color-mix(in srgb, var(--yellow) 15%, transparent);
   color: var(--yellow);
 }
 
+.perfOrange {
+  background: color-mix(in srgb, var(--orange) 15%, transparent);
+  color: var(--orange);
+}
+
 .perfRed {
-  background: rgba(248, 81, 73, 0.15);
+  background: color-mix(in srgb, var(--red) 15%, transparent);
   color: var(--red);
 }
 
@@ -405,6 +407,34 @@
   flex-direction: column;
   overflow-x: auto;
   gap: 4px;
+}
+
+/* ── Score bands ────────────────────────────────────────────── */
+/* Applied to .resultScore and .resultDev, keyed by ACCURACY_BAND_NAMES. Declared
+   after both so they win over the base rules at equal specificity. */
+
+.band100 {
+  color: var(--green);
+}
+
+.band90 {
+  color: color-mix(in srgb, var(--green) 70%, var(--accent));
+}
+
+.band75 {
+  color: color-mix(in srgb, var(--green) 60%, var(--yellow));
+}
+
+.band50 {
+  color: var(--yellow);
+}
+
+.band0 {
+  color: var(--red);
+}
+
+.bandMuted {
+  color: var(--text-muted);
 }
 
 /* ── Legend ─────────────────────────────────────────────────── */
