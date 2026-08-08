@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { defaultScoreTrack, parseMidiSong } from '@/lib/midi-song'
+import { createBeatClock, defaultScoreTrack, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
 
@@ -207,5 +207,84 @@ describe('defaultScoreTrack', () => {
     )
     const song = parseMidiSong(data)!
     expect(defaultScoreTrack(song).id).toBe(song.tracks[1].id)
+  })
+})
+
+// ── Tempo map ──────────────────────────────────────────────────
+
+/** A set-tempo event at an arbitrary delta, so a map can have more than one. */
+function setTempoAt(delta: number, usPerBeat: number): number[] {
+  return [
+    ...varLen(delta),
+    0xff,
+    0x51,
+    0x03,
+    (usPerBeat >> 16) & 0xff,
+    (usPerBeat >> 8) & 0xff,
+    usPerBeat & 0xff,
+  ]
+}
+
+describe('tempo map', () => {
+  /** 120 bpm for four beats, then 240 bpm for four more. */
+  function twoTempoSong() {
+    const data = buildMidi([
+      ...setTempo(500000),
+      ...quarterNote(0, 60, 0),
+      ...quarterNote(0, 62, 0),
+      ...quarterNote(0, 64, 0),
+      ...quarterNote(0, 65, 0),
+      ...setTempoAt(0, 250000),
+      ...quarterNote(0, 67, 0),
+      ...quarterNote(0, 69, 0),
+    ])
+    return parseMidiSong(data)!
+  }
+
+  it('keeps every tempo change, not only the first', () => {
+    const song = twoTempoSong()
+    expect(song.bpm).toBe(120)
+    expect(song.tempoChanges).toEqual([
+      { beat: 0, usPerBeat: 500000 },
+      { beat: 4, usPerBeat: 250000 },
+    ])
+  })
+
+  it('converts beats through the whole map', () => {
+    const clock = createBeatClock(twoTempoSong())
+    expect(clock(0)).toBeCloseTo(0, 6)
+    expect(clock(2)).toBeCloseTo(1, 6)
+    // The change lands here: four beats at half a second each.
+    expect(clock(4)).toBeCloseTo(2, 6)
+    // Four more at a quarter second each — three seconds, not four.
+    expect(clock(8)).toBeCloseTo(3, 6)
+  })
+
+  it('runs at the song tempo when no map was recorded', () => {
+    // What a Guitar Pro import or a song saved before the field looks like.
+    const clock = createBeatClock({ bpm: 60, tracks: [] })
+    expect(clock(4)).toBeCloseTo(4, 6)
+  })
+
+  it('holds the opening tempo until the first change that is not at zero', () => {
+    const clock = createBeatClock({
+      bpm: 120,
+      tempoChanges: [{ beat: 4, usPerBeat: 250000 }],
+      tracks: [],
+    })
+    expect(clock(4)).toBeCloseTo(2, 6)
+    expect(clock(8)).toBeCloseTo(3, 6)
+  })
+
+  it('does not depend on the order the changes were found in', () => {
+    const clock = createBeatClock({
+      bpm: 120,
+      tempoChanges: [
+        { beat: 4, usPerBeat: 250000 },
+        { beat: 0, usPerBeat: 500000 },
+      ],
+      tracks: [],
+    })
+    expect(clock(8)).toBeCloseTo(3, 6)
   })
 })
