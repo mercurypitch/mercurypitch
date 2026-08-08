@@ -236,7 +236,7 @@ export function measuredReferenceFromTranscription(
   return {
     kind: 'measured',
     songId: `${input.sessionId}:${input.stemKind}`,
-    title: `${input.stemLabel} heard in this recording`,
+    title: `${input.stemLabel} line transcribed from this recording`,
     trackId: input.stemKind,
     trackName: input.stemLabel,
     tempoBpm: MEASURED_REFERENCE_TEMPO,
