@@ -89,9 +89,9 @@ change, only the ear.
 
 ### Seeking additions
 
-- [ ] **(requested)** Absolute seek / skip the intro: `go to N seconds`, `go to N minutes`, `start at N seconds`, `skip the first N seconds`
-- [ ] Minutes unit for relative seek: `back two minutes`, `forward one minute`
-- [ ] `go to the middle`, `go to the end`
+- [x] **(requested)** Absolute seek / skip the intro: `go to N seconds`, `go to N minutes`, `go to minute N`, `start at N seconds`, `jump to N seconds`, `skip the first N seconds/minutes`, bare `go to N` (seconds)
+- [x] Minutes unit for relative seek: `back two minutes`, `forward one minute`, `rewind N minutes`
+- [x] `go to the middle` / `halfway`, `go to the end` (lands 2 s short so track-end handling wins); both report `Nothing loaded` when no song is up
 
 ### Tempo and speed additions
 

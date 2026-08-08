@@ -203,6 +203,43 @@ export function createTransportVoiceCommands(
     return `${deltaBeats >= 0 ? 'Forward' : 'Back'} ${String(magnitude)} ${unit}`
   }
 
+  const seekMinutes = (deltaMinutes: number): string => {
+    seekRelativeBeats(deltaMinutes * deps.bpm())
+    const magnitude = Math.abs(deltaMinutes)
+    return `${deltaMinutes >= 0 ? 'Forward' : 'Back'} ${String(magnitude)} min`
+  }
+
+  const secondsToBeats = (seconds: number): number =>
+    (seconds * deps.bpm()) / 60
+
+  const seekAbsoluteSeconds = (seconds: number): VoiceCommandResult => {
+    const t = deps.transport()
+    const total = t.total()
+    if (total <= 0) return voiceFailure('Nothing loaded')
+    t.seekTo(Math.min(Math.max(secondsToBeats(seconds), 0), total))
+    const minutes = Math.floor(seconds / 60)
+    const rest = Math.round(seconds % 60)
+    const shown =
+      minutes > 0
+        ? `${String(minutes)}:${String(rest).padStart(2, '0')}`
+        : `${String(rest)}s`
+    return `Go to ${shown}`
+  }
+
+  const seekFraction = (
+    fraction: number,
+    label: string,
+  ): VoiceCommandResult => {
+    const t = deps.transport()
+    const total = t.total()
+    if (total <= 0) return voiceFailure('Nothing loaded')
+    // "The end" lands a couple of seconds short so the runtime's natural
+    // end-of-track handling is not raced by the seek itself.
+    const margin = fraction >= 1 ? secondsToBeats(2) : 0
+    t.seekTo(Math.min(Math.max(total * fraction - margin, 0), total))
+    return label
+  }
+
   // ── Speed ──────────────────────────────────────────────────
 
   const stepSpeed = (direction: 1 | -1): string => {
@@ -317,6 +354,49 @@ export function createTransportVoiceCommands(
       },
     },
     {
+      id: 'seek.absoluteSeconds',
+      label: 'Go to time',
+      phrases: [
+        'go to <n> seconds',
+        'go to <n> second',
+        'go to second <n>',
+        'start at <n> seconds',
+        'jump to <n> seconds',
+        'go to <n>',
+        'skip the first <n> seconds',
+        'skip first <n> seconds',
+      ],
+      available: seekableTab,
+      run: (args) => seekAbsoluteSeconds(args.n ?? 0),
+    },
+    {
+      id: 'seek.absoluteMinutes',
+      label: 'Go to time',
+      phrases: [
+        'go to <n> minutes',
+        'go to <n> minute',
+        'go to minute <n>',
+        'start at <n> minutes',
+        'skip the first <n> minutes',
+      ],
+      available: seekableTab,
+      run: (args) => seekAbsoluteSeconds((args.n ?? 0) * 60),
+    },
+    {
+      id: 'seek.middle',
+      label: 'Go to the middle',
+      phrases: ['go to the middle', 'go to middle', 'middle', 'halfway'],
+      available: seekableTab,
+      run: () => seekFraction(0.5, 'Go to the middle'),
+    },
+    {
+      id: 'seek.end',
+      label: 'Go to the end',
+      phrases: ['go to the end', 'go to end', 'the end'],
+      available: seekableTab,
+      run: () => seekFraction(1, 'Go to the end'),
+    },
+    {
       id: 'seek.forwardSeconds',
       label: 'Skip forward',
       phrases: [
@@ -348,6 +428,30 @@ export function createTransportVoiceCommands(
       ],
       available: seekableTab,
       run: (args) => seekSeconds(-(args.n ?? 10)),
+    },
+    {
+      id: 'seek.forwardMinutes',
+      label: 'Skip forward',
+      phrases: [
+        'forward <n> minutes',
+        'forward <n> minute',
+        'skip <n> minutes',
+        'ahead <n> minutes',
+      ],
+      available: seekableTab,
+      run: (args) => seekMinutes(args.n ?? 1),
+    },
+    {
+      id: 'seek.backMinutes',
+      label: 'Skip back',
+      phrases: [
+        'back <n> minutes',
+        'back <n> minute',
+        'go back <n> minutes',
+        'rewind <n> minutes',
+      ],
+      available: seekableTab,
+      run: (args) => seekMinutes(-(args.n ?? 1)),
     },
     {
       id: 'seek.forwardBeats',

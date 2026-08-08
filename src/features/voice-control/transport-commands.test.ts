@@ -168,6 +168,37 @@ describe('transport voice commands — singing tab', () => {
     expect(fixture.seekedTo()).toBe(0)
   })
 
+  it('seeks to absolute times, the middle and the end', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    expect(fire(fixture, 'go to thirty seconds')).toBe('Go to 30s')
+    expect(fixture.seekedTo()).toBe(60)
+    expect(fire(fixture, 'go to one minute')).toBe('Go to 1:00')
+    expect(fixture.seekedTo()).toBe(120)
+    expect(fire(fixture, 'skip the first ten seconds')).toBe('Go to 10s')
+    expect(fixture.seekedTo()).toBe(20)
+    expect(fire(fixture, 'go to the middle')).toBe('Go to the middle')
+    expect(fixture.seekedTo()).toBe(100)
+    // Lands 2 s (4 beats at 120 bpm) short so track-end handling wins.
+    expect(fire(fixture, 'go to the end')).toBe('Go to the end')
+    expect(fixture.seekedTo()).toBe(196)
+    expect(fire(fixture, 'forward one minute')).toBe('Forward 1 min')
+    expect(fixture.seekedTo()).toBe(160)
+  })
+
+  it('reports absolute seeks with nothing loaded as failures', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    fixture.deps.transport = () => ({
+      beat: () => 0,
+      total: () => 0,
+      seekTo: () => {
+        fixture.calls.push('seekTo')
+      },
+    })
+    expect(fire(fixture, 'go to the middle')).toBe('Nothing loaded')
+    expect(fire(fixture, 'go to thirty seconds')).toBe('Nothing loaded')
+    expect(fixture.calls).toEqual([])
+  })
+
   it('sets loop points and arms the loop through the shared handlers', () => {
     const fixture = makeFixture(TAB_SINGING)
     expect(fire(fixture, 'set a')).toBe('Loop A set')
