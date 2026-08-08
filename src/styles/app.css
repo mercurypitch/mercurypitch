@@ -2029,6 +2029,14 @@ button.header-melody-context:focus-visible {
   font-size: 12px;
 }
 
+/* Quiet variant (piano): score readout only — replay lives on the
+   transport play button, so the card carries no actions. */
+.fn-score-corner--quiet {
+  min-width: 0;
+  padding: 9px 14px;
+  gap: 2px;
+}
+
 /* ===== Changelog Modal ===== */
 .fancy-divider {
   border: none;
