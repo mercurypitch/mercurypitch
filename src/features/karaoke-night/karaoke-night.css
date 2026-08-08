@@ -69,12 +69,21 @@ body {
 }
 
 .kn-brand {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #b79ae0;
   text-decoration: none;
+}
+
+/* The logo stands in for the wordmark on phones (rule in the 560px block);
+   on a desk the text alone is the brand, as it always was. */
+.kn-brand-logo {
+  display: none;
+  flex: none;
 }
 
 .kn-topbar-title {
@@ -1301,6 +1310,17 @@ body {
 @media (max-width: 560px) {
   .kn-topbar-title {
     display: none;
+  }
+
+  /* Wordmark → logo. Measured on an iPhone 13 Pro (390px): the tracked-out
+     capitals plus the stage picker, app chip and account chip overran the
+     line; the mark alone buys ~110px and everything seats. */
+  .kn-brand-name {
+    display: none;
+  }
+
+  .kn-brand-logo {
+    display: block;
   }
 
   .kn-account-chip {
