@@ -31,6 +31,31 @@ import { demoIsPlayable, demoSessionId } from './demo-song'
 export const EXAMPLES_GROUP_NAME = 'Examples'
 
 /**
+ * The `provider` stamped on every seeded example, and the only reliable way
+ * to tell one from a visitor's own upload once both are ordinary rows in the
+ * session store.
+ *
+ * Group membership would be the intuitive test and is the wrong one: a
+ * visitor can drag an example out of the Examples group, and the row is
+ * still not their song.
+ */
+export const EXAMPLE_PROVIDER = 'examples'
+
+/**
+ * True for a seeded example rather than something the visitor brought.
+ *
+ * The funnel needs this to keep `karaoke_song_staged` meaning "brought
+ * their own song" — it is Campaign E's bid target, and an event a visitor
+ * can fire by tapping a built-in track would optimise the campaign toward
+ * exactly the behaviour it is supposed to measure the absence of.
+ */
+export function isExampleSession(
+  session: Pick<UvrSession, 'provider'> | undefined,
+): boolean {
+  return session?.provider === EXAMPLE_PROVIDER
+}
+
+/**
  * A stable creation timestamp per example, so the list orders them the way the
  * studio does rather than by whenever a given device first opened the app.
  *
@@ -69,7 +94,7 @@ export function exampleSessionFrom(
         ? undefined
         : { vocal: { duration }, instrumental: { duration } },
     processingMode: 'server',
-    provider: 'examples',
+    provider: EXAMPLE_PROVIDER,
     createdAt: EXAMPLES_EPOCH_MS + index * ONE_DAY_MS,
   }
 }
