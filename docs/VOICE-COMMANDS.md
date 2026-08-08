@@ -182,6 +182,20 @@ The mixer transport runs on seconds (audio time), not beats.
 - [ ] Careful number homophones inside `<n>` slots only (`for` as 4, `to` as 2) — opt-in per phrase, never global
 - [ ] Localized grammars (the listener already takes a lang; phrases need translation tables)
 
+## Mercury Sing **(requested — the flagship)**
+
+Say "Mercury Sing", then just sing: live melody + lyrics matching against
+the karaoke library, and when one song's confidence is high and STABLE,
+Karaoke Night opens on it, seeked to where you are in the song, backing
+already rolling. Full design: [plans/mercury-sing.md](plans/mercury-sing.md)
+— most of the hard parts (melody DTW, stem fingerprints, lyric matcher,
+per-session seek search, offset launch) already ship in Shazam Sing.
+
+- [ ] M1 — trigger (`mercury sing` via a raw-token fallback pass, plus `find my song`) and the listening stage (headless controller lifted from ShazamListen)
+- [ ] M2 — melody+lyrics fused scoring and the sustained-confidence auto-open policy (threshold + margin + hold window; never a one-shot trigger)
+- [ ] M3 — the handoff: Karaoke Night `?session=&t=` launch contract with autoplay, offset compensated so the band meets the singer
+- [ ] M4 — polish: confidence sparklines, "not that one" rejection, recent-practice bias
+
 ## Later / ambitious
 
 - [ ] Section navigation from synced lyrics: `go to the chorus`, `second verse`
