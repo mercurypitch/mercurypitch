@@ -1,22 +1,34 @@
 // Guitar Night Room turns a prepared backing into a deliberate, silent-until-play stage.
 // ============================================================
 
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightInputHealth } from './GuitarNightInputHealth'
+import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
+import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
+import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease
   transport: GuitarBackingTransportController
+  /** The attached score, when one is verified. Absent keeps the room in free play. */
+  reference?: Accessor<GuitarNightReference | null>
+  /** The instrument the stage rows describe. Absent means a standard six-string. */
+  tuning?: Accessor<InstrumentTuning>
+  onInstrument?(instrument: StringedInstrument): void
+  onStringCount?(count: number): void
   onSongs(): void
   onSeparateGuitar?(): void
 }
@@ -81,10 +93,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
   })
+  const reference = createMemo(() => props.reference?.() ?? null)
   const performance = createGuitarNightPerformanceAdapter(
     () => props.transport,
     () => props.backing.title,
-    () => EMPTY_STAGE_NOTES,
+    () => reference()?.notes ?? EMPTY_STAGE_NOTES,
+    () => reference()?.tempoBpm ?? null,
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isListening = createMemo(
@@ -112,6 +126,19 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const rateLabel = createMemo(
     () => `${performance.transport.playbackRate().toFixed(2)}×`,
   )
+
+  // The loop lives in seconds of the recording, so it survives a speed change:
+  // the same bars come round again whatever rate they are played at.
+  const loop = useGuitarNightLoopController({
+    limit: duration,
+    onWrap: (start) => performance.transport.seekSeconds(start),
+  })
+  // Position is polled by the transport already; following it here costs one
+  // comparison per update and keeps the wrap on the audio clock, not a frame.
+  createEffect(() => {
+    if (!isPlaying()) return
+    loop.follow(position())
+  })
 
   const nudgeRate = (delta: number): void => {
     const next = clampRate(
@@ -227,6 +254,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
       <GuitarNightStage
         source={performance.stage}
+        tuning={props.tuning}
+        onInstrument={props.onInstrument}
+        onStringCount={props.onStringCount}
+        guideLabel={() => {
+          const attached = reference()
+          if (attached === null) return null
+          return attached.tracks.length > 1
+            ? `${attached.title} · ${attached.trackName}`
+            : attached.title
+        }}
         active={() => true}
         listening={isListening}
         heardNote={listening.currentNote}
@@ -278,6 +315,14 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               Measured from this take on this device. Audio is not saved.
             </p>
           </Show>
+          <GuitarNightInputHealth
+            listening={isListening}
+            calibrating={() => listening.status() === 'calibrating'}
+            health={listening.health}
+            timingSource={listening.timingSource}
+            latencyMs={listening.latencyMs}
+            onCalibrate={() => void listening.calibrate()}
+          />
         </aside>
       </Show>
 
@@ -302,6 +347,16 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               Separate guitar
             </button>
           </Show>
+          <GuitarNightLoopControls
+            span={loop.span()}
+            pending={loop.isPending()}
+            hasStart={loop.markA() !== null}
+            hasEnd={loop.markB() !== null}
+            format={formatTime}
+            onMarkStart={() => loop.markStart(position())}
+            onMarkEnd={() => loop.markEnd(position())}
+            onClear={loop.clear}
+          />
         </div>
         <div class={styles.timeRail}>
           <span>{formatTime(position())}</span>

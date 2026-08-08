@@ -8,8 +8,8 @@ import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
 import { googleSignInUrl, loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { isPasswordValid } from '@/lib/password-policy'
+import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
 import { showNotification } from '@/stores/notifications-store'
-import { account, credits, knLogout, refreshAccount, signedIn, } from './karaoke-account'
 
 export function KaraokeAccount() {
   onMount(() => {
@@ -113,7 +113,7 @@ export function KaraokeAccount() {
               <a href="/#/settings/credits">Manage credits</a>
               <button
                 onClick={() => {
-                  knLogout()
+                  signOutStandalone()
                   setMenuOpen(false)
                 }}
               >

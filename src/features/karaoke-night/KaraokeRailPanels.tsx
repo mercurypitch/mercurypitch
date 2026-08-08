@@ -8,6 +8,7 @@ import { Trash2 } from '@/components/icons'
 import { listStemTypes } from '@/db/services/uvr-service'
 import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-runner'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
+import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
@@ -15,7 +16,6 @@ import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive,
 import { isDemoSessionId } from './demo-song'
 import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
-import { credits, refreshCredits, signedIn } from './karaoke-account'
 import { groupLibrarySongs } from './library-grouping'
 
 export interface KaraokeSong {

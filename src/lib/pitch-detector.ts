@@ -43,6 +43,16 @@ export interface PitchDetectorOptions {
   minAmplitude?: number
   /** Pitch detection algorithm (default: 'yin') */
   algorithm?: PitchAlgorithm
+  /**
+   * Smooth readings against recent history (default: true).
+   *
+   * The smoother exists for a sung line watched in real time, where one wild
+   * frame is noise and the note underneath is still there. Offline
+   * transcription of a fast instrumental line is the opposite case: a reading
+   * two semitones from the last one is usually the next note, and replacing it
+   * with the median deletes that note. Turn it off there.
+   */
+  stabilize?: boolean
 }
 
 const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
@@ -55,6 +65,7 @@ const DEFAULT_OPTIONS: Required<PitchDetectorOptions> = {
   minConfidence: 0.3,
   minAmplitude: 0.02,
   algorithm: 'yin',
+  stabilize: true,
 }
 
 export class PitchDetector {
@@ -67,6 +78,7 @@ export class PitchDetector {
   private minConfidence: number
   private minAmplitude: number
   private algorithm: PitchAlgorithm
+  private readonly stabilize: boolean
   private readonly yinBuffer: Float32Array
   private pitchHistory: number[] = []
   private readonly maxHistory = 5
@@ -85,6 +97,7 @@ export class PitchDetector {
     this.minConfidence = opts.minConfidence
     this.minAmplitude = opts.minAmplitude
     this.algorithm = opts.algorithm
+    this.stabilize = opts.stabilize
     this.yinBuffer = new Float32Array(Math.floor(this.bufferSize / 2))
   }
 
@@ -338,29 +351,42 @@ export class PitchDetector {
     }
 
     // Step 3: Absolute threshold — find first tau below threshold
+    //
+    // Bounded by the caller's frequency range, and that bound is load-bearing
+    // rather than tidy. A plucked string is rich in harmonics, so the
+    // difference function dips almost as deep at twice the true period as at
+    // the period itself; searching past the range lets YIN settle in that
+    // second dip and report an octave too low. Below the range the old code
+    // then threw the frame away at step 4 — so an unbounded search cost real
+    // notes as well as inventing wrong ones. Searching only where an answer is
+    // allowed makes the best in-range candidate win instead.
     const threshold = adjustedThreshold(this.sensitivity)
+    const minTau = Math.max(2, Math.floor(this.sampleRate / this.maxFrequency))
+    const maxTau = Math.min(
+      halfSize,
+      Math.ceil(this.sampleRate / this.minFrequency) + 1,
+    )
     let tauEstimate = -1
-    for (let tau = 2; tau < halfSize; tau++) {
+    for (let tau = minTau; tau < maxTau; tau++) {
       if (this.yinBuffer[tau] < threshold) {
         // Descend into the valley to find the local minimum
         while (
-          tau + 1 < halfSize &&
+          tau + 1 < maxTau &&
           this.yinBuffer[tau + 1] < this.yinBuffer[tau]
         ) {
           tau++
         }
         // Also skip past any flat bottom
         while (
-          tau + 1 < halfSize &&
+          tau + 1 < maxTau &&
           this.yinBuffer[tau + 1] === this.yinBuffer[tau]
         ) {
           tau++
         }
         // Verify local minimum: neighbors should be >= current value
         const isMinimum =
-          (tau <= 2 || this.yinBuffer[tau - 1] >= this.yinBuffer[tau]) &&
-          (tau + 1 >= halfSize ||
-            this.yinBuffer[tau + 1] >= this.yinBuffer[tau])
+          (tau <= minTau || this.yinBuffer[tau - 1] >= this.yinBuffer[tau]) &&
+          (tau + 1 >= maxTau || this.yinBuffer[tau + 1] >= this.yinBuffer[tau])
         if (isMinimum) {
           tauEstimate = tau
           break
@@ -373,13 +399,38 @@ export class PitchDetector {
       return { frequency: 0, confidence: 0 }
     }
 
+    // Bounding the search has one cost worth paying for: a tone ABOVE the
+    // range no longer has its own period in view, so the first dip that is in
+    // view belongs to a multiple of it, and the detector would answer with a
+    // sub-harmonic that sits comfortably inside the range. Answering with a
+    // note nobody played is worse than answering nothing, so if a shorter
+    // period explains the signal at least as well, the real pitch is out of
+    // range and this says so.
+    for (const divisor of [2, 3]) {
+      const shorterTau = Math.round(tauEstimate / divisor)
+      if (shorterTau < 2 || shorterTau >= minTau) continue
+      if (
+        this.yinBuffer[shorterTau] < threshold &&
+        this.yinBuffer[shorterTau] <= this.yinBuffer[tauEstimate] * 1.2
+      ) {
+        return { frequency: 0, confidence: 0 }
+      }
+    }
+
     // Octave error correction: check if tau/2 (one octave up) is also a
     // valid period candidate. If the higher-octave dip is below threshold
     // and comparable in depth, prefer it — this avoids sub-harmonic errors
     // where YIN locks onto 2× the actual period.
+    //
+    // The same promotion at tau·2/3 — the fifth-low flavour of this mistake,
+    // the largest error class against a real bass stem — was tried here and
+    // measured a no-op: the dip at the true period is SHALLOW (that is why
+    // the threshold search skipped it), so a gate that demands a deep dip
+    // there never fires. Fixing the fifth class needs evidence from the
+    // spectrum, not from this buffer.
     const octaveTau = Math.round(tauEstimate / 2)
     if (
-      octaveTau >= 2 &&
+      octaveTau >= minTau &&
       this.yinBuffer[octaveTau] < threshold * 1.5 &&
       this.yinBuffer[octaveTau] < this.yinBuffer[tauEstimate] * 1.8
     ) {
@@ -537,6 +588,8 @@ export class PitchDetector {
    *  readings at a new frequency — this avoids rejecting legitimate
    *  note transitions (e.g., P5 = 50% jump) as outliers. */
   private applyStabilityFilter(frequency: number): number {
+    if (!this.stabilize) return frequency
+
     this.pitchHistory.push(frequency)
     if (this.pitchHistory.length > this.maxHistory) {
       this.pitchHistory.shift()

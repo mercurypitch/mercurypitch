@@ -1,0 +1,249 @@
+/* ============================================================
+   Transcription bench — stem in, notes out, errors visible.
+
+   Dense and desktop-shaped like the rest of the Lab. The roll is the point;
+   everything above it is kept compact so the roll gets the height.
+   ============================================================ */
+
+.bench {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.sources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised, transparent);
+}
+
+.slotLabel {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.slotHint {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.slot input[type='file'],
+.slot select {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  max-width: 100%;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-lg);
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  min-width: 200px;
+}
+
+.control input[type='range'] {
+  width: 100%;
+}
+
+.run {
+  min-height: var(--touch-target, 44px);
+  padding: 0 var(--spacing-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--accent, #58a6ff);
+  color: var(--on-accent, #0d1117);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* The default progress element draws as a hairline in a dark theme — thin
+   enough to read as a ruler, with no visible fill. Explicit track and value
+   styling so the bar looks like a bar. */
+.progress {
+  flex: 1 1 auto;
+  height: 10px;
+  appearance: none;
+  border: none;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+}
+
+.progress::-webkit-progress-value {
+  background: var(--accent, #58a6ff);
+  border-radius: 5px;
+  transition: width 120ms linear;
+}
+
+.progress::-moz-progress-bar {
+  background: var(--accent, #58a6ff);
+  border-radius: 5px;
+}
+
+.progressLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5ch;
+  text-align: right;
+}
+
+.error {
+  margin: 0;
+  padding: var(--spacing-md);
+  border: 1px solid var(--danger, #f85149);
+  border-radius: var(--radius-md);
+  color: var(--danger, #f85149);
+  font-size: var(--text-sm);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-md);
+  margin: 0;
+}
+
+.summary div {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.summary dt {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.summary dd {
+  margin: 2px 0 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rollTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rollTools button {
+  min-height: var(--touch-target, 44px);
+  padding: 0 var(--spacing-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.rollTools button:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.rollTools button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolActive {
+  border-color: var(--accent, #58a6ff) !important;
+  color: var(--accent, #58a6ff) !important;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.rollFrame {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  /* The roll carries the detail, so it takes the height the page can spare
+     while still fitting a laptop screen with the controls above it. */
+  height: clamp(280px, 52vh, 620px);
+}
+
+.roll {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  background: var(--surface-sunken, rgba(0, 0, 0, 0.25));
+}
+
+.roll:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: -2px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-lg);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.swatchOutline {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(88, 166, 255, 0.85);
+}

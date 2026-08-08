@@ -49,6 +49,9 @@
   isolation: isolate;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  /* Without this the column takes its min-content width from the widest row,
+     and one long topbar would lay the whole page out wider than the phone. */
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
@@ -81,7 +84,8 @@
       transparent 34%,
       rgba(8, 6, 5, 0.74) 100%
     ),
-    url('/guitar-night/velvet-rehearsal.webp') center / cover no-repeat;
+    var(--room-backdrop, url('/guitar-night/velvet-rehearsal.webp')) center /
+      cover no-repeat;
   transform: scale(1.015);
   animation: roomSettle 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -126,6 +130,7 @@
 .topbar {
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   min-height: 4.5rem;
   padding: max(1rem, var(--safe-top)) max(1.5rem, var(--safe-right)) 0.8rem
@@ -166,12 +171,123 @@
 }
 
 .roomName {
-  margin-left: auto;
+  margin-left: 0.9rem;
   color: rgba(244, 234, 219, 0.66);
   font-size: 0.76rem;
   font-weight: 650;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+/* Room, exit, account — the three things that are about the venue, not the
+   music, kept together at the far end of the faceplate. */
+.topbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.roomSelect {
+  display: inline-flex;
+  align-items: center;
+}
+
+.roomSelect select,
+.studioLink,
+.accountChip {
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.78);
+  background: rgba(7, 6, 5, 0.5);
+  font: inherit;
+  font-size: 0.7rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.roomSelect select:hover,
+.studioLink:hover,
+.accountChip:hover {
+  border-color: rgba(224, 164, 93, 0.44);
+  color: #fdf3e4;
+}
+
+.studioLink,
+.accountChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.accountChipWrap {
+  position: relative;
+}
+
+.accountName {
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountChip small {
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.2);
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.accountMenu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 11rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 0.6rem;
+  background: rgba(14, 11, 9, 0.96);
+  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, 0.55);
+}
+
+.accountMenu > span {
+  padding: 0.3rem 0.5rem;
+  overflow: hidden;
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMenu a,
+.accountMenu button {
+  padding: 0.4rem 0.5rem;
+  border: 0;
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.82);
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.accountMenu a:hover,
+.accountMenu button:hover {
+  color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.14);
 }
 
 .main {
@@ -739,6 +855,79 @@
   font-size: 0.7rem;
 }
 
+/* Tab to follow: the score axis, quiet next to the backing it accompanies. */
+
+.referenceDetach {
+  min-height: var(--touch-target);
+  padding: 0 0.5rem;
+  border: 0;
+  color: rgba(244, 234, 219, 0.6);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.referenceDetach:hover {
+  color: var(--ivory);
+}
+
+.referenceAttached {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(106, 202, 189, 0.34);
+  border-radius: 0.48rem;
+  background: rgba(106, 202, 189, 0.07);
+}
+
+.referenceAttached strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referenceAttached small {
+  color: rgba(244, 234, 219, 0.55);
+  font-size: 0.68rem;
+}
+
+.referenceTracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.referenceTracks button {
+  min-height: var(--touch-target);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.78);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.referenceTracks .referenceTrackActive {
+  border-color: rgba(224, 164, 93, 0.5);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.12);
+}
+
+.referenceActions {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.referenceError {
+  margin: 0.45rem 0 0;
+  color: rgba(233, 150, 122, 0.92);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .songMessageRow {
   display: flex;
   align-items: center;
@@ -1019,6 +1208,125 @@
   font-size: 0.57rem;
 }
 
+/* Hearing the tab itself, rather than only time passing under it. */
+.hearScoreToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.18);
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.7);
+  background: rgba(28, 21, 17, 0.66);
+  font: inherit;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
+.hearScoreToggle svg {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.hearScoreActive {
+  border-color: rgba(243, 195, 155, 0.4);
+  color: #f4eadb;
+  background: rgba(60, 40, 28, 0.8);
+}
+
+/* Input health — what the room can honestly claim about what it is hearing. */
+.inputHealth {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.12);
+}
+
+.inputHealthHint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: rgba(244, 234, 219, 0.82);
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.inputHealthDot {
+  flex: none;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  /* Teal is the room's signal-is-good light; the warmer states borrow the amp
+     pilot colours rather than introducing a new palette. */
+  background: #63c9bd;
+  box-shadow: 0 0 0.35rem rgba(99, 201, 189, 0.6);
+}
+
+.inputHealthHint[data-state='silent'] .inputHealthDot,
+.inputHealthHint[data-state='quiet'] .inputHealthDot {
+  background: rgba(244, 234, 219, 0.4);
+  box-shadow: none;
+}
+
+.inputHealthHint[data-state='hot'] .inputHealthDot,
+.inputHealthHint[data-state='noisy'] .inputHealthDot {
+  background: #e8a75c;
+  box-shadow: 0 0 0.35rem rgba(232, 167, 92, 0.6);
+}
+
+.inputHealthHint[data-state='clipping'] .inputHealthDot {
+  background: #f3835b;
+  box-shadow: 0 0 0.4rem rgba(243, 131, 91, 0.7);
+}
+
+.inputHealthTiming {
+  margin: 0;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.57rem;
+  line-height: 1.4;
+}
+
+.inputHealthLatency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.inputHealthLatency small {
+  flex: 1 1 9rem;
+  min-width: 0;
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.57rem;
+  line-height: 1.4;
+}
+
+.inputHealthLatency button {
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.2);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.86);
+  background: rgba(28, 21, 17, 0.7);
+  font: inherit;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+
+.inputHealthLatency button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inputHealthNote {
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.54rem;
+  line-height: 1.4;
+}
+
 .listeningError {
   position: absolute;
   z-index: 9;
@@ -1129,6 +1437,10 @@
   height: auto;
   min-height: 0;
   overflow: hidden;
+  /* The stage is an instrument, not a document: string names and fret
+     numbers must never highlight under a drag. */
+  -webkit-user-select: none;
+  user-select: none;
   background:
     radial-gradient(
       circle at 52% 72%,
@@ -1187,6 +1499,108 @@
     );
 }
 
+.stageTabLanes {
+  position: relative;
+  display: grid;
+  gap: clamp(0.7rem, 2vh, 1.05rem);
+  width: 100%;
+  overflow: hidden;
+}
+
+/* The right-hand end of the stage faceplate: which instrument, which view. */
+.stageHeaderTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* One engraved plate, matching the view switch beside it. */
+.stageInstrument {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 0.4rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid rgba(244, 234, 219, 0.09);
+  border-radius: 0.5rem;
+  background: rgba(7, 6, 5, 0.72);
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+
+.stageInstrumentKind {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.stageInstrumentKind button {
+  min-height: 1.6rem;
+  padding: 0.18rem 0.62rem;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(244, 234, 219, 0.6);
+  background: transparent;
+  font: inherit;
+  font-size: 0.64rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.stageInstrumentKind .stageInstrumentActive {
+  color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(224, 164, 93, 0.4);
+}
+
+.stageInstrument select {
+  min-height: 1.6rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid rgba(216, 200, 175, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.78);
+  background: rgba(7, 6, 5, 0.5);
+  font: inherit;
+  font-size: 0.64rem;
+  cursor: pointer;
+}
+
+.stageInstrument small {
+  color: rgba(244, 234, 219, 0.42);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+/* On a phone the row names are the first thing to go: the picker itself still
+   says which instrument, and the tab rows carry the names anyway. */
+@media (width <= 30rem) {
+  .stageInstrument small {
+    display: none;
+  }
+}
+
+/* The now-line stays put; the music moves past it. */
+.stageTabPlayhead {
+  position: absolute;
+  top: -0.4rem;
+  bottom: -0.4rem;
+  z-index: 2;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(224, 164, 93, 0.72) 12%,
+    rgba(224, 164, 93, 0.72) 88%,
+    transparent
+  );
+}
+
 .stageTabString {
   display: grid;
   grid-template-columns: 1.2rem 1fr;
@@ -1208,14 +1622,16 @@
 }
 
 .stageTabString > div {
+  position: relative;
   z-index: 1;
   grid-column: 2;
   grid-row: 1;
-  display: flex;
-  justify-content: space-evenly;
+  height: 1.6rem;
 }
 
 .stageTabString b {
+  position: absolute;
+  top: 0;
   display: grid;
   place-items: center;
   min-width: 1.6rem;
@@ -1226,6 +1642,29 @@
   background: #142522;
   font-size: 0.68rem;
   box-shadow: 0 0 1.1rem rgba(106, 202, 189, 0.13);
+  transform: translateX(-50%);
+}
+
+.stageTabString .stageTabNoteActive {
+  border-color: rgba(224, 164, 93, 0.85);
+  color: #fdf3e4;
+  background: #2c1f10;
+  box-shadow: 0 0 1.4rem rgba(224, 164, 93, 0.4);
+}
+
+.stageTabString .stageTabNotePast {
+  border-color: rgba(244, 234, 219, 0.16);
+  color: rgba(244, 234, 219, 0.42);
+  background: rgba(20, 37, 34, 0.6);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stageTabString b {
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease;
+  }
 }
 
 .stageTab > p,
@@ -1390,6 +1829,13 @@
   text-align: right;
 }
 
+/* The tab room shows position without offering a scrub: seeking a live
+   count-in would desynchronise the beats it has already scheduled. */
+.timeRail .songProgress {
+  height: 3px;
+  margin-top: 0;
+}
+
 .timeRail input,
 .masterVolume input {
   -webkit-appearance: none;
@@ -1457,6 +1903,17 @@
   justify-content: center;
   gap: 0.55rem;
   margin: 0;
+}
+
+/* The score room reuses the controls class with a DIFFERENT child list —
+   play, tempo group, count-in, tab sounds — so the play-along column template
+   cannot fit it: the tempo group landed in the 3.4rem column and its BPM
+   readout and plus button disappeared under the count-in select. Flex lets
+   each control take its own width instead of inheriting another room's. */
+[data-room-kind='score'] .transportControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .transportControls button,
@@ -1578,6 +2035,85 @@
   gap: 0.6rem;
   justify-self: start;
   color: rgba(244, 234, 219, 0.6);
+}
+
+/* Two marks and what lies between them — the same control in both rooms. */
+.loopControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.loopIcon {
+  display: inline-flex;
+  color: rgba(244, 234, 219, 0.4);
+}
+
+.loopIcon svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.loopControls button {
+  min-width: 1.7rem;
+  min-height: 1.7rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.62);
+  background: rgba(7, 6, 5, 0.5);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.loopControls button:hover {
+  border-color: rgba(224, 164, 93, 0.44);
+  color: #fdf3e4;
+}
+
+.loopControls .loopMarkSet {
+  border-color: rgba(224, 164, 93, 0.5);
+  color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.18);
+}
+
+.loopControls output {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(244, 234, 219, 0.5);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loopControls .loopClear {
+  font-weight: 500;
+}
+
+/* The tab room's count-in sits where the play-along room's volume does. */
+.countInSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-self: start;
+  color: rgba(244, 234, 219, 0.6);
+}
+
+.countInSelect select {
+  min-height: 2.1rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(216, 200, 175, 0.18);
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.82);
+  background: rgba(7, 6, 5, 0.5);
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
 }
 
 .channelStrip {
@@ -1841,7 +2377,8 @@
         rgba(8, 6, 5, 0.9) 72%,
         rgba(8, 6, 5, 0.98) 100%
       ),
-      url('/guitar-night/velvet-rehearsal.webp') 58% center / cover no-repeat;
+      var(--room-backdrop, url('/guitar-night/velvet-rehearsal.webp')) 58%
+        center / cover no-repeat;
   }
 
   .topbar {
@@ -2030,6 +2567,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .inputHealthLatency button,
+  .hearScoreToggle {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
   .stageHeader {
     top: 0.42rem;
     right: max(0.45rem, var(--safe-right));
@@ -2168,6 +2711,41 @@
 
   .roomStatus {
     display: none;
+  }
+
+  /* Venue chrome takes the second topbar row: three chips will not share one
+     line with the brand on a phone, and squeezing them makes each untappable. */
+  .topbarActions {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.35rem;
+    margin-left: 0;
+  }
+
+  .roomSelect select,
+  .studioLink,
+  .accountChip {
+    min-height: var(--touch-target);
+    padding-inline: 0.85rem;
+  }
+
+  /* A rehearsal room is used with a guitar in hand: every control in it stays
+     a real target, whatever it looks like on a desktop. */
+  .stageInstrument {
+    gap: 0.3rem;
+    padding: 0.2rem 0.3rem;
+  }
+
+  .stageInstrumentKind button,
+  .stageInstrument select,
+  .loopControls button {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  .loopControls {
+    gap: 0.3rem;
   }
 }
 

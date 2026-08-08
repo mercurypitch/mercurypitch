@@ -44,6 +44,8 @@ export interface GuitarTab3DViewProps {
   fallbackText?: Accessor<string>
   /** Host-owned edge treatment; the legacy stage keeps its rounded default. */
   borderRadius?: Accessor<string>
+  /** The instrument the notes sit on. Absent leaves the neck inferred. */
+  tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
 }
 
 export function GuitarTab3DView(props: GuitarTab3DViewProps) {
@@ -167,6 +169,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
       display: props.display?.(),
+      tuning: props.tuning?.(),
       feedback:
         ctrls === undefined
           ? undefined

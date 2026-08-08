@@ -132,6 +132,8 @@ export class YINDetector implements IPitchDetector {
       minFrequency: options.minFrequency ?? 65,
       maxFrequency: options.maxFrequency ?? 2100,
       sensitivity: 7, // Default YIN sensitivity
+      // Real-time surface: smoothing is what it is for.
+      stabilize: true,
       minConfidence: options.minConfidence ?? 0.3,
       minAmplitude: options.minAmplitude ?? 0.02,
       algorithm: 'yin',
