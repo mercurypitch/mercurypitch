@@ -139,6 +139,53 @@ describe('AuthModal', () => {
     expect(screen.getByTestId('auth-modal-overlay')).toBeInTheDocument()
   })
 
+  it('clears the password after a failed sign-in so autofill can refill it', async () => {
+    mocks.loginWithPassword.mockRejectedValue(
+      new Error('Invalid email or password'),
+    )
+    render(() => <AuthModal />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    const password = screen.getByTestId('auth-password') as HTMLInputElement
+    fireEvent.input(password, { target: { value: 'wrong-pass1' } })
+    // Revealed as text — a manager would skip the field for this too.
+    fireEvent.click(screen.getByTestId('auth-password-toggle'))
+    expect(password.type).toBe('text')
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    await screen.findByTestId('auth-error')
+    // Password managers refuse to overwrite a non-empty (or revealed)
+    // password input, so a failed attempt must leave the field empty and
+    // hidden again; the email stays for the retry.
+    expect(password.value).toBe('')
+    expect(password.type).toBe('password')
+    expect((screen.getByTestId('auth-email') as HTMLInputElement).value).toBe(
+      'maff@example.com',
+    )
+  })
+
+  it('keeps the typed password when a register attempt is rejected', async () => {
+    mocks.registerWithPassword.mockRejectedValue(
+      new Error('Email already registered'),
+    )
+    render(() => <AuthModal />)
+
+    openAuthModal('register')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    const password = screen.getByTestId('auth-password') as HTMLInputElement
+    fireEvent.input(password, { target: { value: 'secret123' } })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    await screen.findByTestId('auth-error')
+    // A register fix-up wants the attempt kept — only sign-in clears.
+    expect(password.value).toBe('secret123')
+  })
+
   it('closes from the header button', async () => {
     render(() => <AuthModal />)
 
