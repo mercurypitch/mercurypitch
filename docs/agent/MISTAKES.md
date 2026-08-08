@@ -235,6 +235,22 @@ of millions of operations.
 time and draw from that. Also avoids the moiré banding that sample-skipping
 produces at some zoom levels.
 
+### A `manualChunks` group erases the `await import()` it contains
+
+**Symptom:** 2.16 MB of alphaTab + the WASM AAC encoder shipped on the first
+paint of every entry — including the standalone ones built to stay small —
+although both were reached only through `await import(...)`, and one said so in
+a comment.
+**Cause:** naming a chunk merges modules. If _any_ module in the group has a
+static importer, Rollup makes the whole chunk a static dependency of the entry
+and emits a `<link rel="modulepreload">` for it. The dynamic boundary in the
+source stops existing. Same bug hit `vendor-gpu`: `wgpu-matrix`, imported by
+the 2D _fallback_ renderer, dragged the whole TypeGPU stack in with it.
+**Rule:** a dependency you deliberately load dynamically gets its OWN chunk
+name, never a shared one. Verify with `ANALYZE=1 pnpm build` and then
+`grep <chunk> dist/*.html` — absent from every entry HTML is the only proof.
+**See:** `vite.config.ts` `manualChunks`; `src/lib/jam/stem-encoder.ts:36`.
+
 ## Data and billing
 
 ### Hydrate a durable job before trying to resume it
