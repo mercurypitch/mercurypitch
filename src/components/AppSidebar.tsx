@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import { For, Show } from 'solid-js'
 import { CharacterIcons } from '@/components/CharacterIcons'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { IconDiamond } from '@/components/exercise-icons'
@@ -60,24 +60,24 @@ interface AppSidebarProps {
 export const AppSidebar: Component<AppSidebarProps> = (props) => {
   // Local alias for reactive tracking
   const activeTab = () => appActiveTab()
-  const [viewOctave, setViewOctave] = createSignal(
-    melodyStore.getCurrentOctave(),
-  )
+  // The octave shown between the up/down buttons is the reference grid's
+  // root octave, read off the scale itself (built high→low, so the root is
+  // the last row). Derived rather than kept as local state so it stays
+  // right when a loaded melody re-anchors the grid underneath the sidebar.
+  const viewOctave = (): number => {
+    const scale = melodyStore.currentScale()
+    return scale.length > 0
+      ? scale[scale.length - 1].octave
+      : melodyStore.getCurrentOctave()
+  }
 
+  // Octave up/down transposes the melody and moves the grid with it on every
+  // surface, matching Compose and the mobile options sheet. The old
+  // practice-tab behavior moved only the reference grid — invisible since
+  // the singing stage started fitting its view to the melody, which read as
+  // the button doing nothing.
   const handleViewOctaveShift = (delta: number): void => {
-    if (activeTab() === TAB_COMPOSE) {
-      // Editor is allowed to mutate the actual melody (transpose notes).
-      props.onOctaveShift?.(delta)
-      setViewOctave(melodyStore.getCurrentOctave())
-      return
-    }
-
-    // Practice/sidebar playback setup is view-only: change the displayed
-    // scale/octave reference without modifying the user's saved melody.
-    const nextOctave = Math.max(1, Math.min(6, viewOctave() + delta))
-    setViewOctave(nextOctave)
-    melodyStore.setOctave(nextOctave)
-    melodyStore.refreshScale(keyName(), nextOctave, scaleType())
+    props.onOctaveShift?.(delta)
   }
   const isPracticeOrSettingsTab = () =>
     ([TAB_SINGING, TAB_SETTINGS] as string[]).includes(activeTab())

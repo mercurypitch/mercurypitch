@@ -5,11 +5,12 @@
 // ============================================================
 
 import type { Accessor, Component, Setter } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { karaokeFocus } from '@/stores/ui-store'
+import { LyricsAlignSelect } from './LyricsAlignSelect'
 import type { StemMixerLyricsPanelBodyProps } from './StemMixerLyricsPanelBody'
 import { StemMixerLyricsPanelBody } from './StemMixerLyricsPanelBody'
 import type { StemMixerMicMonitorProps } from './StemMixerMicMonitor'
@@ -48,43 +49,6 @@ interface StemMixerPerformanceWorkspaceProps {
 
   // Focus-mode panel visibility
   showWaveform: Accessor<boolean>
-}
-
-const ALIGNS: LyricsAlign[] = ['left', 'center', 'right']
-
-function alignIcon(a: LyricsAlign) {
-  // Three lines anchored to the chosen edge.
-  const widths = a === 'center' ? [14, 18, 12] : [18, 12, 16]
-  const xFor = (w: number) =>
-    a === 'left' ? 3 : a === 'right' ? 21 - w : 12 - w / 2
-  return (
-    <svg viewBox="0 0 24 24" width="11" height="11">
-      <rect
-        x={xFor(widths[0])}
-        y="3.5"
-        width={widths[0]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-      <rect
-        x={xFor(widths[1])}
-        y="10.5"
-        width={widths[1]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-      <rect
-        x={xFor(widths[2])}
-        y="17.5"
-        width={widths[2]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-    </svg>
-  )
 }
 
 export const StemMixerPerformanceWorkspace: Component<
@@ -136,19 +100,10 @@ export const StemMixerPerformanceWorkspace: Component<
                   A+
                 </button>
               </div>
-              <div class="sm-lyrics-align-toggle">
-                <For each={ALIGNS}>
-                  {(a) => (
-                    <button
-                      class={`sm-lyrics-align-btn${props.lyricsAlign() === a ? ' sm-lyrics-align-active' : ''}`}
-                      onClick={() => props.setLyricsAlign(a)}
-                      title={`Align ${a}`}
-                    >
-                      {alignIcon(a)}
-                    </button>
-                  )}
-                </For>
-              </div>
+              <LyricsAlignSelect
+                lyricsAlign={props.lyricsAlign}
+                setLyricsAlign={props.setLyricsAlign}
+              />
               <Show when={lp().lyricsSource() === 'none'}>
                 <button
                   class="sm-lyrics-edit-btn"

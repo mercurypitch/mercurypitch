@@ -572,6 +572,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       await cardToPngBlob(card),
       datedFilename('free-sing'),
     )
+    // Closing the sheet without sending is neither a share nor a save —
+    // don't count it (card_shared feeds a live Ads conversion) and don't
+    // claim anything in the status line.
+    if (outcome === 'dismissed') return
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
@@ -905,6 +909,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       await cardToPngBlob(card),
       cardFilename(withTwin),
     )
+    // Closing the sheet without sending is neither a share nor a save —
+    // don't count it (card_shared feeds a live Ads conversion) and don't
+    // claim anything in the status line.
+    if (outcome === 'dismissed') return
     trackFunnel('card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',

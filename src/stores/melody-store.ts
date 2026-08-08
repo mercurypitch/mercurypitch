@@ -607,6 +607,10 @@ function _restoreCurrentMelodyId(): void {
       const melody = melodyLibrarySignal().melodies[saved]
       if (melody != null) {
         _setCurrentMelodySignal(melody)
+        // The restored melody must bring its grid with it, same as loadMelody
+        // — otherwise the first paint after a reload shows the default C grid
+        // under whatever melody the user left open.
+        _alignScaleToMelody(melody)
       }
     }
   } catch {
@@ -928,10 +932,64 @@ export function loadMelody(key: string): MelodyData | null {
     }))
     _saveLibraryToStorage()
     setCurrentMelody(updatedMelody)
+    _alignScaleToMelody(updatedMelody)
 
     return updatedMelody
   }
   return null
+}
+
+/**
+ * Rebuild the reference scale grid from a melody's own key/scale/octave
+ * metadata. Loading a melody used to change only the notes: the grid kept
+ * whatever key and octave the sidebar was last set to, so a G4 scale melody
+ * loaded over a C3 grid left most of the singing stage without note rows.
+ * Octave falls back to the current grid octave — older saved melodies may
+ * not carry one.
+ */
+function _alignScaleToMelody(melody: MelodyData): void {
+  if (melody.key === '' || melody.scaleType === '') return
+  refreshScale(melody.key, melody.octave ?? _octave, melody.scaleType)
+}
+
+/** Octave window the octave up/down controls may move within. */
+export const MIN_MELODY_OCTAVE = 1
+export const MAX_MELODY_OCTAVE = 6
+
+/**
+ * Transpose the current melody by whole octaves and move the reference grid
+ * with it. This is the one octave-shift path for every surface (Compose,
+ * Singing desktop sidebar, Singing mobile sheet): melody and grid moving
+ * together is the only variant that stays visible now that the stage view
+ * fits itself to the melody. Rebuilds the grid from the store's tracked
+ * key/scale type, never from UI signals that may not have followed a loaded
+ * melody. Returns false when the shift would leave the allowed window.
+ */
+export function shiftMelodyOctave(delta: number): boolean {
+  const newOctave = _octave + delta
+  if (newOctave < MIN_MELODY_OCTAVE || newOctave > MAX_MELODY_OCTAVE) {
+    return false
+  }
+
+  const items = getCurrentItems()
+  if (items.length > 0) {
+    const transposed = items.map((item) => {
+      const midi = item.note.midi + delta * 12
+      return {
+        ...item,
+        note: {
+          ...item.note,
+          midi,
+          octave: item.note.octave + delta,
+          freq: 440 * Math.pow(2, (midi - 69) / 12),
+        },
+      }
+    })
+    setMelody(transposed)
+  }
+
+  setOctave(newOctave)
+  return true
 }
 
 export function getMelodyFromLibraryByName(name: string): MelodyData | null {
@@ -1614,6 +1672,7 @@ export const melodyStore = {
   setNumOctaves,
   getCurrentOctave,
   getNumOctaves,
+  shiftMelodyOctave,
 
   // Playlist operations
   createPlaylist,

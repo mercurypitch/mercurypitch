@@ -3,6 +3,140 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.8.1] - 2026-08-08
+
+### Added
+
+- **Guitar Night.** A rehearsal room for the guitar: prepare a song into its
+  parts, stage it, and play along with the band in a room of its own. The
+  Guitar tab links straight into it, and a prepared-song library that has
+  grown past a screenful now pages instead of running off the end.
+
+- **MercuryPitch installs as an app.** Android and desktop both offer to
+  install it now. It opens in its own window without browser chrome, still
+  opens once you are offline, and the install sheet shows real screens of the
+  app instead of a bare bookmark prompt.
+
+- **A shortcut to the Content Studio for founders,** in Settings beside your
+  account, and a Lab link at the top of Vocal Analysis for supporters. Opening
+  the studio still needs the admin key — the link only saves remembering the
+  address.
+
+- **Choose how lyrics sit in their panel** — left, middle or right — from any
+  of the studio layouts. It used to be available on the karaoke stage only.
+
+- **Choose how much of a note counts toward its score.** Real singing slides
+  into a note, and scoring that slide as part of the note made clean takes
+  read wide. By default the first 15% of each note — the approach — is no
+  longer scored. A Scoring picker in Settings offers Strict (the whole note),
+  Standard (skip the slide in) and Relaxed (skip the slide in and the release
+  out), and each accuracy tier picks its own: Learning is Relaxed,
+  Professional is Strict.
+
+- **Themes can switch themselves.** System follows your device's light and dark
+  mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each
+  one uses. Picking a theme by hand always wins.
+
+- **A voice-rest timer.** Set how long you sing and how long you rest, and it
+  counts singing rather than screen time — the clock only runs while the
+  microphone hears you.
+
+- **Measure your microphone's delay.** A short wizard plays a click and listens
+  for it, then scores your singing against when you actually sang rather than
+  when the note was drawn. Devices that have not been measured behave exactly
+  as before.
+
+### Changed
+
+- **The account settings tab reads top-down by risk.** Install as an app now
+  sits above the Danger Zone, and the Danger Zone ships collapsed — its
+  destructive buttons open on a click of the heading, last before About.
+  Delete account moved in there too, beside the other irreversible actions.
+  The font-change reload prompt also actually appears now; it used to render
+  on a different settings tab than the font picker that triggered it.
+
+- **Octave up and down now moves the song.** On the singing sidebar the
+  buttons used to move only an invisible reference grid; they now transpose
+  the melody itself, exactly like the Compose editor and the mobile options
+  sheet, within a sensible vocal window.
+
+- **The microphone waveform starts hidden.** It is a mic-health check, not
+  something every run needs drawn across it — toggle it on when you want it,
+  and the choice is remembered.
+
+- **The app starts faster.** Fingerprinted files are now cached by the browser
+  for a year instead of being re-checked on every visit, and code that only
+  runs behind a click no longer loads with the first screen.
+
+### Fixed
+
+- **Closing the share sheet no longer downloads the card anyway.** Backing
+  out of sharing a voiceprint or glass card used to force a download and
+  count as a share; now it simply does nothing, and only real shares and
+  saves are counted.
+
+- **Working icons and share previews.** The browser-tab icons that 404'd
+  are real files now, links shared to social media carry complete preview
+  cards, and the sitemap only lists pages that exist.
+
+- **Autofill works again after a wrong password.** A failed sign-in now
+  clears the password box and hides the reveal — password managers refuse to
+  fill a field that still holds the wrong attempt, which made retries look
+  like autofill was broken.
+
+- **The singing stage no longer runs out of note lines.** Loading a melody
+  now brings its own key, scale and octave to the stage grid, and the grid
+  rows extend across the whole visible range — a G4 scale over an old C3
+  grid used to leave the top half of the screen without lines or labels.
+
+- **Screens wider than they are tall.** On a tablet in landscape, and at heavy
+  browser zoom, pages that used to cut off their own content now scroll to it:
+  the Start button on an exercise is reachable, the tab strip no longer hides
+  its first tabs behind the header, and the text above a routine no longer
+  prints over the picker beneath it.
+
+- **Finishing a melody on the piano no longer opens a panel to dismiss.** The
+  score arrives as a small card in the corner, the way it already did for
+  singing, and pressing play runs the melody again.
+
+- **Recorded takes land where you sang them.** Once your microphone's delay
+  has been measured, recording a melody removes it too — before, every
+  recorded note landed late by that delay, which at strong cleanup could
+  even snap notes to the wrong beat. The review panel also gained a Timing
+  slider to nudge the whole take earlier or later by ear before keeping it,
+  and it says when a measured delay has already been removed.
+
+- **The prepare bar before a lyric line** is now the same in the lyrics panel
+  as in zen mode: one fixed width, under the start of the line rather than
+  shoved in front of the first word — including on centred and right-aligned
+  lyrics, where it used to sit at the far left, pointing at empty space.
+
+- **Lyrics search in the studio had nowhere to show its results.** Looking up
+  a song returned matches that were never displayed.
+
+- **Karaoke Night no longer reloads your songs every time you pick one.** The
+  list used to empty itself and come back a few seconds later — longer the more
+  songs you had. It stays put now, and the first load says it is loading
+  instead of showing nothing.
+
+- **Practising with rests between the notes no longer ruins your score.** A
+  note's accuracy was measured until the _next_ note began, so the silence
+  after it counted as part of it — and quietly finding the coming note during
+  the rest, which is what the rest is for, marked the note you had just sung
+  as off. A spaced run scored far worse than the very same singing with no
+  rests in it. Each note is now scored on its own length, and nothing sung
+  during a rest counts either way.
+
+- **The pitch line is drawn where the score counts it.** Once a microphone
+  delay had been measured, the trace was left where the sound arrived while
+  the score used where you actually sang, so a run could look right and read
+  wrong by exactly the measured delay.
+
+- **A collapsed pane in the Lab** could take the whole app down with it.
+
+- **The voice twin's artwork** now has a box it can land in instead of
+  overflowing its card.
+
 ## [0.8.0] - 2026-08-06
 
 ### Added
@@ -83,10 +217,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   remembered across devices.
 - **One tab holds the microphone,** and a live meter shows what it hears.
 - **Session exports carry every stem,** with a picker for which to include.
-- **Install MercuryPitch like an app.** Add it to your home screen from the
-  header or from Settings and it opens in its own window, without browser
-  chrome, and still opens when the connection drops. On iPhone and iPad, use
-  Safari's Share menu and Add to Home Screen.
 
 ### Changed
 

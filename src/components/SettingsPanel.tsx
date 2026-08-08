@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
+import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
@@ -22,6 +23,7 @@ import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, applySensitivityPreset, gridLinesVisible, playbackSpeed, reverbConfig, sensitivityPreset, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
@@ -31,7 +33,7 @@ import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceInterval
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
 import type { PitchBufferSize, VoiceControlEngine, } from '@/stores/settings-store'
 import { setVoiceControlEngine, setVoiceWakeWordWhilePlaying, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
-import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
+import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, scoreMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setScoreMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
 import { practiceScope, setPracticeScope, setSwipeNavEnabled, setUiMode, swipeNavEnabled, uiMode, } from '@/stores/settings-store'
@@ -43,6 +45,7 @@ export const SettingsPanel: Component = () => {
   const [showResetConfirm, setShowResetConfirm] = createSignal(false)
   const [showClearUvrConfirm, setShowClearUvrConfirm] = createSignal(false)
   const [showFontReloadConfirm, setShowFontReloadConfirm] = createSignal(false)
+  const [dangerOpen, setDangerOpen] = createSignal(false)
   const [pendingFont, setPendingFont] = createSignal<FontFamily | null>(null)
   const [showChangelog, setShowChangelog] = createSignal(false)
   const [showVoiceDetector, setShowVoiceDetector] = createSignal(false)
@@ -433,6 +436,38 @@ export const SettingsPanel: Component = () => {
             </p>
 
             <TierSelector class={styles.settingsTierSelector} />
+          </div>
+
+          {/* Score Window Section */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Scoring</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              How much of each note counts toward its score. Skipping the start
+              forgives the slide into a note. Picking an accuracy tier above
+              resets this to the tier's own mode.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="score-mode-select">Score window</label>
+              <SafeSelect
+                id="score-mode-select"
+                value={scoreMode()}
+                onChange={(e) => {
+                  const v = e.currentTarget.value
+                  if (isScoreMode(v)) setScoreMode(v)
+                }}
+              >
+                <For each={SCORE_MODES}>
+                  {(mode) => (
+                    <option value={mode}>{SCORE_MODE_INFO[mode].label}</option>
+                  )}
+                </For>
+              </SafeSelect>
+            </div>
+            <p class={styles.settingsDesc}>
+              {SCORE_MODE_INFO[scoreMode()].description}
+            </p>
           </div>
 
           {/* Pitch Algorithm Section */}
@@ -1419,61 +1454,117 @@ export const SettingsPanel: Component = () => {
         </Show>
 
         <Show when={activeTab() === 'account'}>
+          {/* Install as an app — the section disappears entirely when there is
+              nothing to offer (already installed, or a browser with no install
+              path), so it never advertises something that cannot happen. */}
+          <Show when={canOfferInstall()}>
+            <div
+              class={styles.settingsSection}
+              data-testid="install-app-section"
+            >
+              <h3 class={styles.settingsSectionTitle}>Install as an app</h3>
+              <div class={styles.settingsDivider} />
+              <p class={styles.settingsDesc}>
+                Add MercuryPitch to your home screen. It opens in its own
+                window, without browser chrome, and keeps working when the
+                connection drops.
+              </p>
+              <InstallAppButton variant="panel" />
+            </div>
+          </Show>
+
           {/* Danger Zone Section */}
           <div
             class={[styles.settingsSection, styles.settingsDangerZone].join(
               ' ',
             )}
           >
-            <h3 class={styles.settingsSectionTitle}>Danger Zone</h3>
-            <div
-              class={[styles.settingsDivider, styles.dangerDivider].join(' ')}
-            />
-            <p class={styles.settingsDesc}>
-              Irreversible actions that affect all your data.
-            </p>
-
-            {/* Clear only karaoke / vocal-separation data — keeps melodies,
-                practice history, and settings intact. */}
-            <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
-              <div class={styles.dangerContent}>
-                <label class={styles.dangerLabel}>
-                  Clear Karaoke &amp; Vocal Separation Data
-                </label>
-                <small class={styles.dangerDesc}>
-                  Delete all separated songs, stems, lyrics, and karaoke
-                  playlists. Your melodies, practice history, and settings are
-                  kept.
-                </small>
-              </div>
+            {/* Collapsed by default: these are the two buttons in the app
+                that can destroy data, and nobody needs them within reach on a
+                routine visit to Settings. */}
+            <h3 class={styles.settingsSectionTitle}>
               <button
-                class={styles.dangerBtn}
-                data-testid="danger-clear-uvr-btn"
-                onClick={() => setShowClearUvrConfirm(true)}
+                type="button"
+                class={styles.dangerZoneToggle}
+                data-testid="danger-zone-toggle"
+                aria-expanded={dangerOpen()}
+                onClick={() => setDangerOpen(!dangerOpen())}
               >
-                Clear
+                <span>Danger Zone</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 6l6 6-6 6"
+                  />
+                </svg>
               </button>
-            </div>
+            </h3>
+            <Show when={dangerOpen()}>
+              <div
+                class={[styles.settingsDivider, styles.dangerDivider].join(' ')}
+              />
+              <p class={styles.settingsDesc}>
+                Irreversible actions that affect all your data.
+              </p>
+            </Show>
 
-            <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
-              <div class={styles.dangerContent}>
-                <label class={styles.dangerLabel}>
-                  Reset to Factory Defaults
-                </label>
-                <small class={styles.dangerDesc}>
-                  Erase everything stored on this device — melodies, sessions,
-                  karaoke files, settings, and sign-in — and reload the app with
-                  factory defaults.
-                </small>
+            <Show when={dangerOpen()}>
+              {/* Clear only karaoke / vocal-separation data — keeps melodies,
+                  practice history, and settings intact. */}
+              <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
+                <div class={styles.dangerContent}>
+                  <label class={styles.dangerLabel}>
+                    Clear Karaoke &amp; Vocal Separation Data
+                  </label>
+                  <small class={styles.dangerDesc}>
+                    Delete all separated songs, stems, lyrics, and karaoke
+                    playlists. Your melodies, practice history, and settings are
+                    kept.
+                  </small>
+                </div>
+                <button
+                  class={styles.dangerBtn}
+                  data-testid="danger-clear-uvr-btn"
+                  onClick={() => setShowClearUvrConfirm(true)}
+                >
+                  Clear
+                </button>
               </div>
-              <button
-                class={styles.dangerBtn}
-                data-testid="danger-reset-btn"
-                onClick={() => setShowResetConfirm(true)}
-              >
-                Reset
-              </button>
-            </div>
+
+              <div class={[styles.settingsRow, styles.dangerRow].join(' ')}>
+                <div class={styles.dangerContent}>
+                  <label class={styles.dangerLabel}>
+                    Reset to Factory Defaults
+                  </label>
+                  <small class={styles.dangerDesc}>
+                    Erase everything stored on this device — melodies, sessions,
+                    karaoke files, settings, and sign-in — and reload the app
+                    with factory defaults.
+                  </small>
+                </div>
+                <button
+                  class={styles.dangerBtn}
+                  data-testid="danger-reset-btn"
+                  onClick={() => setShowResetConfirm(true)}
+                >
+                  Reset
+                </button>
+              </div>
+
+              {/* Server-side erasure last — the only row here that reaches
+                  beyond this device. Renders only when a server identity
+                  exists (the row gates itself). */}
+              <DeleteAccountRow />
+            </Show>
 
             {/* Clear Karaoke/UVR Confirmation Modal */}
             <Show when={showClearUvrConfirm()}>
@@ -1540,43 +1631,6 @@ export const SettingsPanel: Component = () => {
                       }}
                     >
                       Reset All Data
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </Show>
-
-            {/* Font Reload Confirmation Modal */}
-            <Show when={showFontReloadConfirm()}>
-              <div class={styles.dangerConfirmOverlay}>
-                <div
-                  class={styles.dangerConfirmBox}
-                  role="dialog"
-                  aria-modal="true"
-                >
-                  <h4 class={styles.dangerConfirmTitle}>Reload Required</h4>
-                  <p class={styles.dangerConfirmText}>
-                    Changing the font requires a page reload so the pitch
-                    canvases can redraw correctly. Do you want to reload now?
-                  </p>
-                  <div class={styles.dangerConfirmActions}>
-                    <button
-                      class={styles.dangerBtnSecondary}
-                      onClick={() => setShowFontReloadConfirm(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      class={styles.dangerBtnPrimary}
-                      onClick={() => {
-                        const pf = pendingFont()
-                        if (pf) {
-                          setFontFamily(pf)
-                          window.location.reload()
-                        }
-                      }}
-                    >
-                      Yes, Reload
                     </button>
                   </div>
                 </div>
@@ -1657,25 +1711,6 @@ export const SettingsPanel: Component = () => {
               <Show when={showConsoleLog()}>
                 <ConsoleLog />
               </Show>
-            </div>
-          </Show>
-
-          {/* Install as an app — the section disappears entirely when there is
-              nothing to offer (already installed, or a browser with no install
-              path), so it never advertises something that cannot happen. */}
-          <Show when={canOfferInstall()}>
-            <div
-              class={styles.settingsSection}
-              data-testid="install-app-section"
-            >
-              <h3 class={styles.settingsSectionTitle}>Install as an app</h3>
-              <div class={styles.settingsDivider} />
-              <p class={styles.settingsDesc}>
-                Add MercuryPitch to your home screen. It opens in its own
-                window, without browser chrome, and keeps working when the
-                connection drops.
-              </p>
-              <InstallAppButton variant="panel" />
             </div>
           </Show>
 
@@ -1904,6 +1939,40 @@ export const SettingsPanel: Component = () => {
       </Show>
       <Show when={showRangeTest()}>
         <VoiceRangeTestModal onClose={() => setShowRangeTest(false)} />
+      </Show>
+      {/* Font Reload Confirmation Modal — triggered from the font picker
+          on the Display tab, so it must render regardless of which subtab is
+          active. It used to live inside the account tab and never showed. */}
+      <Show when={showFontReloadConfirm()}>
+        <div class={styles.dangerConfirmOverlay}>
+          <div class={styles.dangerConfirmBox} role="dialog" aria-modal="true">
+            <h4 class={styles.dangerConfirmTitle}>Reload Required</h4>
+            <p class={styles.dangerConfirmText}>
+              Changing the font requires a page reload so the pitch canvases can
+              redraw correctly. Do you want to reload now?
+            </p>
+            <div class={styles.dangerConfirmActions}>
+              <button
+                class={styles.dangerBtnSecondary}
+                onClick={() => setShowFontReloadConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                class={styles.dangerBtnPrimary}
+                onClick={() => {
+                  const pf = pendingFont()
+                  if (pf) {
+                    setFontFamily(pf)
+                    window.location.reload()
+                  }
+                }}
+              >
+                Yes, Reload
+              </button>
+            </div>
+          </div>
+        </div>
       </Show>
     </div>
   )

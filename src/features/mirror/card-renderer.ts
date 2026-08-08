@@ -787,13 +787,16 @@ export function datedFilename(base: string): string {
 
 /**
  * Share the card via the Web Share API (Level 2, files) when available,
- * otherwise trigger a plain download. Returns how it was delivered.
+ * otherwise trigger a plain download. Returns how it was delivered —
+ * `'dismissed'` when the user closed the share sheet without sending, which
+ * callers must NOT count as a share (it used to both force a download the
+ * user never asked for and inflate the live `card_shared` Ads conversion).
  */
 export async function shareCard(
   blob: Blob,
   filename = 'voiceprint.png',
   meta?: { title?: string; text?: string },
-): Promise<'shared' | 'downloaded'> {
+): Promise<'shared' | 'downloaded' | 'dismissed'> {
   const file = new File([blob], filename, { type: 'image/png' })
   const shareData: ShareData = {
     files: [file],
@@ -808,8 +811,13 @@ export async function shareCard(
     try {
       await navigator.share(shareData)
       return 'shared'
-    } catch {
-      // User cancelled or share failed — fall through to download.
+    } catch (err) {
+      // Cancelling the sheet is a decision, not a failure: no download,
+      // no share. Anything else (data rejected, permission) falls through
+      // to the download path so the card still leaves the device.
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return 'dismissed'
+      }
     }
   }
   const url = URL.createObjectURL(blob)

@@ -10,6 +10,8 @@ import type { AudioEngine } from './audio-engine'
 import { micManager } from './mic-manager'
 import type { PitchAlgorithm } from './pitch-detector'
 import { PitchDetector } from './pitch-detector'
+import type { ScoreMode } from './score-window'
+import { scoreWindow } from './score-window'
 
 // Accuracy constants (cents deviation thresholds)
 const CENTS_PERFECT = 10
@@ -49,6 +51,8 @@ export class PracticeEngine {
   private sampleRate = 44100
   private bufferSize = 2048
   private bands: { threshold: number; band: number }[] = [...DEFAULT_BANDS]
+  /** Which part of a note is scored. Must match the settings-store default. */
+  private scoreMode: ScoreMode = 'settled'
 
   // Playback state (shared with melody engine)
   private isPlaying = false
@@ -66,9 +70,12 @@ export class PracticeEngine {
    * At the default offset of zero every start is due immediately and this
    * queue is drained on the same call that fills it, which is why an
    * unmeasured device behaves exactly as it did before.
+   *
+   * A `note` of null is a rest boundary: it closes the note before it and
+   * scores nothing until the next real note starts.
    */
   private pendingNoteStarts: {
-    note: MelodyNote
+    note: MelodyNote | null
     index: number
     announcedAt: number
   }[] = []
@@ -133,6 +140,7 @@ export class PracticeEngine {
     bands?: { threshold: number; band: number }[]
     algorithm?: PitchAlgorithm
     bufferSize?: number
+    scoreMode?: ScoreMode
   }): void {
     // Buffer size requires recreating the detector (it's a construction param)
     if (
@@ -162,6 +170,9 @@ export class PracticeEngine {
     }
     if (config.algorithm !== undefined) {
       this.detector.setAlgorithm(config.algorithm)
+    }
+    if (config.scoreMode !== undefined) {
+      this.scoreMode = config.scoreMode
     }
   }
 
@@ -419,6 +430,27 @@ export class PracticeEngine {
   }
 
   /**
+   * Called when a note's own duration is over. Until this existed a note was
+   * only closed by the *next* note starting, so anything sung in the silence
+   * between them was averaged into the note that had already finished —
+   * feeling out the coming pitch during a rest, a tone or a third away, was
+   * enough to score a well-sung note 'off'. A run with rests between the notes
+   * scored every note far worse than the identical run without them.
+   *
+   * Deferred by the measured round trip like a start is: frames arriving just
+   * after the note ended were sung while it was still sounding, and they are
+   * still that note's.
+   */
+  onNoteEnd(): void {
+    this.pendingNoteStarts.push({
+      note: null,
+      index: -1,
+      announcedAt: performance.now(),
+    })
+    this.applyDueNoteStarts(performance.now())
+  }
+
+  /**
    * Promote every announced note start whose audio has had time to come back.
    * Called once per frame before the pitch is attributed.
    */
@@ -433,15 +465,17 @@ export class PracticeEngine {
     }
   }
 
-  private activateNote(note: MelodyNote, noteIndex: number): void {
+  private activateNote(note: MelodyNote | null, noteIndex: number): void {
     // Finalize the previous note's result
     if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
 
-    this.currentNoteIndex = noteIndex
+    // A rest leaves no target, and `update` only collects samples while there
+    // is one — so the rest itself is silent as far as scoring is concerned.
+    this.currentNoteIndex = note === null ? -1 : noteIndex
     this.currentTargetNote = note
-    this.currentTargetFreq = note.freq
+    this.currentTargetFreq = note?.freq ?? 0
     this.currentSamples = []
   }
 
@@ -467,9 +501,15 @@ export class PracticeEngine {
     let pitchFreq = 0
 
     if (this.currentSamples.length > 0) {
+      // Score only the window the mode keeps — 'settled' drops the slide into
+      // the note, 'core' the release out of it too. The trim is over ALL of
+      // the note's frames so it stays proportional to the note's length;
+      // pitchFreq stays the first detection, windowed or not, because it
+      // reports what was heard, not what was scored.
+      const scored = scoreWindow(this.currentSamples, this.scoreMode)
       let sumCents = 0
       let validCount = 0
-      for (const s of this.currentSamples) {
+      for (const s of scored) {
         if (s.freq != null) {
           sumCents += Math.abs(s.cents)
           validCount++

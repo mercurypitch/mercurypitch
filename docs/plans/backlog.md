@@ -15,9 +15,6 @@ The practice timer shipped 2026-08-08 — see
 
 ## Theme auto-switch
 
-Follow `prefers-color-scheme` and switch between two chosen presets, rather
-than holding one fixed theme.
-
-`src/stores/theme-store.ts` has nine presets and persists one choice. This
-needs a second stored choice plus a media-query listener. Nothing in `src/`
-currently reads `prefers-color-scheme`.
+Shipped 2026-08-08 (#455, in 0.8.1): System follows `prefers-color-scheme`,
+Time of day swaps at 07:00/19:00, both with a chosen preset per side, and a
+manual pick always wins. Lives in `src/stores/theme-store.ts`.

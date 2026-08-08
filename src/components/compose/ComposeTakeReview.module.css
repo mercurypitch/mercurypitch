@@ -87,3 +87,14 @@
 .keep:hover {
   background: #2ea043;
 }
+
+.hintRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hint {
+  color: #8b949e;
+  font-size: 11px;
+}

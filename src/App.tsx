@@ -221,7 +221,7 @@ import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-int
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
-import { useRecordingController } from '@/features/recording/useRecordingController'
+import { shiftTakeFrames, useRecordingController, } from '@/features/recording/useRecordingController'
 import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
@@ -278,6 +278,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import { closeOnboarding, flowOpen, openBeat, startOnboarding, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -1240,15 +1241,31 @@ const AppShell: Component<AppProps> = (props) => {
   // amount (gentle: as-sung -> strong: key-snapped + quantized). This drives
   // both the on-roll preview and what Keep commits.
   const [reviewAmount, setReviewAmount] = createSignal(0.5)
+  // Hand-adjustable timing on top of the automatic round-trip compensation
+  // (applied at capture in useRecordingController): a measured offset can
+  // still be a few frames off, and a singer may simply have come in late.
+  // Reset per take — the last take's correction says nothing about this one.
+  const [reviewNudgeMs, setReviewNudgeMs] = createSignal(0)
+  createEffect(
+    on(
+      () => recording.pendingTake(),
+      (take) => {
+        if (take !== null) setReviewNudgeMs(0)
+      },
+    ),
+  )
   const reviewMelody = createMemo<MelodyItem[]>(() => {
     const take = recording.pendingTake()
     if (take === null) return []
-    return segmentContourToMelody(take.frames, {
-      bpm: bpm(),
-      key: keyNameSignal(),
-      scaleType: scaleTypeSignal(),
-      cleanupAmount: reviewAmount(),
-    })
+    return segmentContourToMelody(
+      shiftTakeFrames(take.frames, reviewNudgeMs(), bpm()),
+      {
+        bpm: bpm(),
+        key: keyNameSignal(),
+        scaleType: scaleTypeSignal(),
+        cleanupAmount: reviewAmount(),
+      },
+    )
   })
 
   // The piano roll's preview channel shows the live take while recording, then
@@ -2085,34 +2102,27 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // ── Octave shift ──────────────────────────────────────────
+  // One shared store operation: melody and reference grid move together,
+  // rebuilt from the store's own tracked key/scale (the app-store signals
+  // can lag behind a loaded melody).
   const handleOctaveShift = (delta: number) => {
-    const newOctave = melodyStore.getCurrentOctave() + delta
-    if (newOctave < 1) return
-
-    const keyName = keyNameSignal()
-    const scaleType = scaleTypeSignal()
-
-    // Check if we have notes that can be transposed
-    if (melodyStore.items().length > 0) {
-      // Transpose all notes by the octave delta
-      const MIDI_OCTAVE_SHIFT = 12
-      const transposed = melodyStore.items().map((item) => ({
-        ...item,
-        note: {
-          ...item.note,
-          midi: item.note.midi + delta * MIDI_OCTAVE_SHIFT,
-          octave: item.note.octave + delta,
-          freq:
-            440 *
-            Math.pow(2, (item.note.midi + delta * MIDI_OCTAVE_SHIFT - 69) / 12),
-        },
-      }))
-      melodyStore.setMelody(transposed)
-    }
-
-    // Rebuild scale with new octave
-    melodyStore.refreshScale(keyName, newOctave, scaleType)
+    melodyStore.shiftMelodyOctave(delta)
   }
+
+  // A loaded melody carries its own key and scale type; mirror them into the
+  // app-store signals so the sidebar pickers and share links describe the
+  // melody actually on the stage (the grid itself is aligned by loadMelody).
+  createEffect(
+    on(
+      () => melodyStore.currentMelody()?.id,
+      () => {
+        const m = melodyStore.currentMelody()
+        if (m == null) return
+        if (m.key !== '') setKeyName(m.key)
+        if (m.scaleType !== '') setScaleType(m.scaleType)
+      },
+    ),
+  )
 
   // ── Target note for pitch display ──────────────────────────
   const targetNote = createMemo(() => {
@@ -2194,13 +2204,13 @@ const AppShell: Component<AppProps> = (props) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
 
-      // Suppress audio for rest items. Session rests reuse the runtime
-      // (so the playhead can advance visibly across the rest bar),
-      // which means PlaybackRuntime emits noteStart for the synthetic
-      // rest MelodyItem. Without this guard the placeholder note would
-      // play at full volume during what's supposed to be silent.
-      // Spaced-rest items take the same path and benefit from the same
-      // guard. We also avoid passing rests to the practiceEngine.
+      // Suppress audio for rest items. Session and spaced rests reuse the
+      // runtime so the playhead advances visibly across the rest bar, and
+      // the placeholder note they carry must never sound. PlaybackRuntime
+      // already filters rests out of noteStart, so this is belt-and-braces
+      // against a rest reaching the audio path — and it is why the end of a
+      // note is announced through 'noteEnd' below rather than by the next
+      // start: a rest fires no start at all to close it.
       const isRestItem = item.isRest === true
 
       if (!isRestItem) {
@@ -2274,6 +2284,13 @@ const AppShell: Component<AppProps> = (props) => {
       if (noteId !== undefined) {
         audioEngine.stopNote(noteId)
         activeNoteIds.delete(index)
+      }
+      // Close the note's scoring window on its own duration. For notes that
+      // run back to back this changes nothing — the runtime emits the end and
+      // the next start on the same tick, in that order. It is what a rest or a
+      // gap needs: neither fires a start, so nothing else would ever close it.
+      if (activeTab() === TAB_SINGING) {
+        practiceEngine.onNoteEnd()
       }
       // If this was the last active note, clear target pitch
       if (activeNoteIndices().size === 0) {
@@ -3471,6 +3488,9 @@ const AppShell: Component<AppProps> = (props) => {
                         <ComposeTakeReview
                           amount={reviewAmount}
                           onAmount={setReviewAmount}
+                          nudgeMs={reviewNudgeMs}
+                          onNudgeMs={setReviewNudgeMs}
+                          compensatedMs={micLatencyMs}
                           noteCount={() => reviewMelody().length}
                           onCommit={commitTake}
                           onDiscard={recording.discardTake}

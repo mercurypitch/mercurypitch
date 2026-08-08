@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Accessor, Component, Setter } from 'solid-js'
-import { createEffect, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createSignal, For, on, onCleanup, Show } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { LrcGenPass, PreviewWordHighlight, SyllableSuggestState, } from '@/features/stem-mixer/lrc-gen-passes'
@@ -257,15 +257,36 @@ export const StemMixerLyricsPanelBody: Component<
     lyricsPinchDist = 0
   }
 
-  onMount(() => {
-    const el = lyricsLinesRef
-    if (!el) return
+  // Ctrl/Cmd + wheel zooms the lyric text. Registered here rather than as
+  // onWheel so `passive: false` is declared explicitly: this listener has to
+  // preventDefault to stop the browser's own page zoom, and a wheel listener
+  // added without stating its intent makes Chrome log a scroll-blocking
+  // violation on every mount — noise in a console that already has enough.
+  const handleLyricsWheel = (e: WheelEvent) => {
+    e.stopPropagation()
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    props.setLyricsFontSize((prev) =>
+      Math.min(4, Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2))),
+    )
+  }
+
+  // Bound from the ref callback, not onMount. The lyric list lives inside a
+  // <Show> keyed on edit / LRC-gen / text-edit mode, so it is destroyed and
+  // rebuilt as the user moves between them: an onMount binding attached once
+  // to an element that no longer exists, and pinch-zoom quietly stopped
+  // working after the first trip through edit mode. A ref callback runs for
+  // every element the Show creates. Listeners on a discarded element are
+  // collected with it, so re-binding leaks nothing.
+  const bindLyricsGestures = (el: HTMLDivElement) => {
+    lyricsLinesRef = el
     el.addEventListener('touchstart', handleLyricsTouchStart, {
       passive: false,
     })
     el.addEventListener('touchmove', handleLyricsTouchMove, { passive: false })
     el.addEventListener('touchend', handleLyricsTouchEnd)
-  })
+    el.addEventListener('wheel', handleLyricsWheel, { passive: false })
+  }
 
   onCleanup(() => {
     const el = lyricsLinesRef
@@ -273,6 +294,7 @@ export const StemMixerLyricsPanelBody: Component<
     el.removeEventListener('touchstart', handleLyricsTouchStart)
     el.removeEventListener('touchmove', handleLyricsTouchMove)
     el.removeEventListener('touchend', handleLyricsTouchEnd)
+    el.removeEventListener('wheel', handleLyricsWheel)
   })
 
   // The mapper list is followed by useLyricsScrollController, which parks the
@@ -950,19 +972,7 @@ export const StemMixerLyricsPanelBody: Component<
               'text-align': props.lyricsAlign(),
             }}
             onContextMenu={(e) => e.preventDefault()}
-            onWheel={(e) => {
-              e.stopPropagation()
-              if (e.ctrlKey || e.metaKey) {
-                e.preventDefault()
-                props.setLyricsFontSize((prev) =>
-                  Math.min(
-                    4,
-                    Math.max(0.45, +(prev - e.deltaY * 0.001).toFixed(2)),
-                  ),
-                )
-              }
-            }}
-            ref={lyricsLinesRef}
+            ref={bindLyricsGestures}
           >
             <For each={props.displayLines()}>
               {(dl: DisplayLine) => {
@@ -1154,97 +1164,104 @@ export const StemMixerLyricsPanelBody: Component<
                         }
                       }}
                     >
-                      <LeadInCue
-                        elapsed={props.elapsed}
-                        leadInFrom={dl.leadInFrom}
-                        lineTime={parsedLyric.time}
-                      />
-                      {isLoopA() && (
-                        <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--a">
-                          A
+                      {/* The row stays full width so the active highlight
+                          spans the panel; this wrapper hugs the text, so it
+                          is what `text-align` moves — and the lead-in cue,
+                          anchored to the wrapper rather than the row, lands
+                          under the first word at every alignment. */}
+                      <span class="sm-lyrics-line-body">
+                        <LeadInCue
+                          elapsed={props.elapsed}
+                          leadInFrom={dl.leadInFrom}
+                          lineTime={parsedLyric.time}
+                        />
+                        {isLoopA() && (
+                          <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--a">
+                            A
+                          </span>
+                        )}
+                        {isLoopB() && (
+                          <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--b">
+                            B
+                          </span>
+                        )}
+                        {blockForLine() && !blockForLine()!.isTemplate && (
+                          <span
+                            class="sm-lyrics-block-unlink"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              props.handleUnlinkInstance(
+                                blockForLine()!.blockId,
+                                blockForLine()!.instanceIdx,
+                              )
+                            }}
+                            title="Unlink this instance"
+                          >
+                            x
+                          </span>
+                        )}
+                        <span class="sm-lyrics-time">
+                          {props.formatTime(parsedLyric.time)}
                         </span>
-                      )}
-                      {isLoopB() && (
-                        <span class="sm-lyrics-loop-badge sm-lyrics-loop-badge--b">
-                          B
-                        </span>
-                      )}
-                      {blockForLine() && !blockForLine()!.isTemplate && (
-                        <span
-                          class="sm-lyrics-block-unlink"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            props.handleUnlinkInstance(
-                              blockForLine()!.blockId,
-                              blockForLine()!.instanceIdx,
-                            )
-                          }}
-                          title="Unlink this instance"
-                        >
-                          x
-                        </span>
-                      )}
-                      <span class="sm-lyrics-time">
-                        {props.formatTime(parsedLyric.time)}
+                        {parsedLyric.words.length === 0
+                          ? parsedLyric.key.startsWith('lrc-')
+                            ? props.lrcLines()[idx]?.text || ''
+                            : props.lyricsLines()[idx] || ''
+                          : parsedLyric.words.map((word, wi) => {
+                              const noteInfo = getWordNote(parsedLyric, wi)
+                              const noteLabel = noteInfo ? (
+                                <span class="sm-lyrics-word-note">
+                                  {noteInfo.noteName}
+                                </span>
+                              ) : (
+                                <span class="sm-lyrics-word-note sm-lyrics-word-note-spacer">
+                                  {'\u00A0'}
+                                </span>
+                              )
+                              if (wi <= activeWordInfo().activeUpTo) {
+                                return (
+                                  <>
+                                    <span class="sm-lyrics-word-with-note">
+                                      {noteLabel}
+                                      <span class="sm-lyrics-word sm-lyrics-word-done">
+                                        {word}
+                                      </span>
+                                    </span>{' '}
+                                  </>
+                                )
+                              }
+                              if (
+                                wi === activeWordInfo().activeUpTo + 1 &&
+                                activeWordInfo().fraction > 0
+                              ) {
+                                return (
+                                  <>
+                                    <span class="sm-lyrics-word-with-note">
+                                      {noteLabel}
+                                      <span
+                                        class="sm-lyrics-word sm-lyrics-word-current"
+                                        style={{
+                                          '--word-progress': `${(
+                                            activeWordInfo().fraction * 100
+                                          ).toFixed(1)}%`,
+                                        }}
+                                      >
+                                        {word}
+                                      </span>
+                                    </span>{' '}
+                                  </>
+                                )
+                              }
+                              return (
+                                <>
+                                  <span class="sm-lyrics-word-with-note">
+                                    {noteLabel}
+                                    <span class="sm-lyrics-word">{word}</span>
+                                  </span>{' '}
+                                </>
+                              )
+                            })}
                       </span>
-                      {parsedLyric.words.length === 0
-                        ? parsedLyric.key.startsWith('lrc-')
-                          ? props.lrcLines()[idx]?.text || ''
-                          : props.lyricsLines()[idx] || ''
-                        : parsedLyric.words.map((word, wi) => {
-                            const noteInfo = getWordNote(parsedLyric, wi)
-                            const noteLabel = noteInfo ? (
-                              <span class="sm-lyrics-word-note">
-                                {noteInfo.noteName}
-                              </span>
-                            ) : (
-                              <span class="sm-lyrics-word-note sm-lyrics-word-note-spacer">
-                                {'\u00A0'}
-                              </span>
-                            )
-                            if (wi <= activeWordInfo().activeUpTo) {
-                              return (
-                                <>
-                                  <span class="sm-lyrics-word-with-note">
-                                    {noteLabel}
-                                    <span class="sm-lyrics-word sm-lyrics-word-done">
-                                      {word}
-                                    </span>
-                                  </span>{' '}
-                                </>
-                              )
-                            }
-                            if (
-                              wi === activeWordInfo().activeUpTo + 1 &&
-                              activeWordInfo().fraction > 0
-                            ) {
-                              return (
-                                <>
-                                  <span class="sm-lyrics-word-with-note">
-                                    {noteLabel}
-                                    <span
-                                      class="sm-lyrics-word sm-lyrics-word-current"
-                                      style={{
-                                        '--word-progress': `${(
-                                          activeWordInfo().fraction * 100
-                                        ).toFixed(1)}%`,
-                                      }}
-                                    >
-                                      {word}
-                                    </span>
-                                  </span>{' '}
-                                </>
-                              )
-                            }
-                            return (
-                              <>
-                                <span class="sm-lyrics-word-with-note">
-                                  {noteLabel}
-                                  <span class="sm-lyrics-word">{word}</span>
-                                </span>{' '}
-                              </>
-                            )
-                          })}
                     </span>
                   </>
                 )

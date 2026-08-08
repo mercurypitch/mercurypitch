@@ -1217,6 +1217,10 @@ export const GlassApp: Component = () => {
           : 'The glass is still standing… for now — mercurypitch.com/glass',
       },
     )
+    // Closing the sheet without sending is neither a share nor a save —
+    // don't count it (card_shared feeds a live Ads conversion) and don't
+    // claim anything in the status line.
+    if (outcome === 'dismissed') return
     trackGlass('glass_card_shared')
     setShareStatus(
       outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',

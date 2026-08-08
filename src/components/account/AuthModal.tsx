@@ -33,6 +33,7 @@ const TITLES: Record<Pane, string> = {
 
 export const AuthModal: Component = () => {
   let dialogRef: HTMLDivElement | undefined
+  let passwordRef: HTMLInputElement | undefined
   const titleId = createUniqueId()
 
   const [pane, setPane] = createSignal<Pane>('login')
@@ -162,6 +163,17 @@ export const AuthModal: Component = () => {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
+        // A rejected sign-in clears the password and re-arms the field for
+        // the password manager: extensions refuse to overwrite a non-empty
+        // password input (and skip one revealed as type="text"), so leaving
+        // the wrong attempt in place is what made autofill look broken on
+        // retry. Guarded so a retype already in progress is not wiped, and
+        // login-only — a register fix-up wants the typed attempt kept.
+        if (current === 'login' && password() === credentials.password) {
+          setPassword('')
+          setShowPassword(false)
+          passwordRef?.focus({ preventScroll: true })
+        }
       } finally {
         setBusy(false)
       }
@@ -286,6 +298,7 @@ export const AuthModal: Component = () => {
                     <span class={styles.fieldLabel}>Password</span>
                     <div class={styles.passwordField}>
                       <input
+                        ref={passwordRef}
                         class={styles.input}
                         type={showPassword() ? 'text' : 'password'}
                         name="password"

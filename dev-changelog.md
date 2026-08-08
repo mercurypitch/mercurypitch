@@ -6,6 +6,319 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-08-08
+
+### Added
+
+- **Guitar Night — the full rehearsal room.** Song preparation runs behind a
+  port so the room and the practice host share one performance runtime rather
+  than each growing its own: `refactor(guitar): share the room performance
+runtime` moved the common half out, and the band-preparation controller owns
+  progress, cancellation and exact-session restaging (both pinned by tests).
+  Oversized room mixes stream instead of being buffered whole. The Guitar tab
+  links into the room, and the prepared-song library pages once it outgrows a
+  screenful. The room contract is recorded in
+  `src/features/guitar-night/DESIGN.md`.
+
+- **PWA install.** `src/sw.ts` is hand-written rather than generated because
+  the caching rules are the risky part: `assets.not_found_handling:
+single-page-application` means a deleted chunk answers with index.html and a
+  200, so `__WB_MANIFEST` is used as an _allowlist_ — only URLs this build
+  shipped may be read from or written to the cache, and nothing is stored
+  until its content type matches what its extension claims. Entry HTML is
+  network-first without exception, and `activate` prunes every entry the new
+  build does not list. Install priming is the shell plus the first-paint
+  assets parsed out of the shipped HTML; everything else caches lazily.
+  `scripts/gen-pwa-screenshots.mjs` shoots the install-sheet screenshots from
+  the real built app, with the per-tab tour offers pre-dismissed.
+
+- **`admin-console` feature perk** in the shared supporter catalog, plus
+  `useSupporterFeatures()` — an auth-keyed, stale-guarded, fail-closed wrapper
+  over `GET /api/perks/me` for perk-gated links.
+
+- Lyric alignment (left/middle/right) is a shared `LyricsAlignSelect` chip in
+  all three workspace layouts, replacing the performance layout's three-button
+  strip. Native `SafeSelect` on purpose: the panels are draggable, and a
+  hand-rolled popover here is the clipping/stacking mistake MISTAKES.md
+  records.
+
+- Theme auto-switch (#455): `themeSource` of `manual` | `system` | `time`, with
+  `autoDayTheme`/`autoNightTheme` so all nine presets stay reachable from an
+  auto source. `system` watches `prefers-color-scheme`, `time` polls the local
+  clock every 60s. Any manual pick drops the source back to `manual`.
+
+- Practice/voice-rest timer (#457): `practice-timer-store` accrues on mic-open
+  for the practice phase and on silence for the break phase, so the clock
+  measures singing rather than screen time. Off by default, and
+  `practiceTimerTick` returns immediately when disabled.
+
+- Mic latency calibration (#459): `mic-latency-store` plus a measuring wizard;
+  `PracticeEngine` queues announced note starts and promotes them one round
+  trip late, and the stem mixer judges a mic frame against the reference from
+  `micLatencySec()` ago. Both paths are inert at the default offset of zero —
+  the queue drains on the same call that fills it — so an unmeasured device
+  scores exactly as before.
+
+### Changed
+
+- **Mic waveform overlay defaults off.** `micWaveVisible` moved from a
+  session `createSignal(true)` to a persisted signal
+  (`pitchperfect_mic_wave_visible`, default `false`): the overlay is a
+  mic-health check, not something every run needs drawn over the stage, and
+  turning it on once now sticks across sessions.
+
+- **Rate limits closed on every gap the 106-route audit confirmed.**
+  `POST /api/billing/checkout` and `GET /api/billing/portal` had none at all,
+  and each mints a Stripe session object, so a loop was Stripe's bill as much
+  as our load; both now share a `billing-checkout` bucket at 10/5min per user.
+  Generic CRUD gained a 256 KiB body ceiling enforced from Content-Length
+  first and the real byte length second, since the request-count limiter said
+  nothing about size. `/api/auth/google/callback` (matched before the auth
+  limiter, and able to create a user) and `/api/leaderboard` (the most
+  expensive query an anonymous caller can reach) got buckets.
+  `resend-verification` gained a per-address tier on top of the per-IP one.
+  `friend-code` and `friend-redeem` moved from IP keys to `rateLimitSubject`,
+  because both require a token and an IP bucket made a choir or a school lab
+  share one budget. The audit's claim that the `logout` bucket was dead config
+  was wrong — `handleAuth` buckets by `route` before dispatch.
+
+- **One source for funnel event names.** The worker's ingest allowlist and each
+  client surface's union were maintained separately and drifted:
+  `donate_view`, `donate_start`, `onboarding_prints`,
+  `onboarding_track_gallery` and `onboarding_another_voiceprint` were answered
+  400 and dropped, and because `beacon()` never inspects the response the
+  donation funnel and the returning-visitor onboarding track recorded nothing
+  for as long as both features had shipped. `src/lib/funnel-event-catalog.ts`
+  is now the single source, shared across the worker boundary the way
+  `supporter-feature-catalog.ts` already was, so a one-sided name is a type
+  error. The suite asserts set equality both ways, per-surface coverage, and
+  no duplicate names.
+
+- **`POST /api/auth/anonymous` requires a real `deviceId`.** It used to invent
+  a UUID when the caller sent none, minting a row nothing could ever sign back
+  into — the junk-identity source. The deviceId _is_ the identity, so a
+  missing or malformed one is a 400; the bucket also gained a 100/day/IP tier,
+  since 30/min sustained is 43k rows a day from one address.
+
+- **Install surface 2.1 MB lighter.** The manifest icons and screenshots are
+  bytes Android fetches outside the service worker — the install sheet
+  downloads every screenshot, and WebAPK minting fetches the icons — so
+  `scripts/optimize-pwa-images.mjs` quantizes them via sharp/libimagequant at
+  0.3-0.9% RMSE, and the screenshot generator runs it over everything it
+  writes. `warm()` no longer forces a revalidation round-trip for immutable
+  hashed assets during priming.
+
+### Fixed
+
+- **A dismissed share sheet is not a delivery.** `shareCard`
+  (`card-renderer.ts`) returns a third outcome, `'dismissed'`, when
+  `navigator.share` rejects with `AbortError` — previously any rejection
+  fell through to the download branch, so backing out of the sheet forced a
+  file download AND fired `card_shared`/`glass_card_shared`, inflating a
+  live Ads conversion. All four share sites (MirrorApp x2, CosmicMode,
+  GlassApp) now return early on `'dismissed'`; genuine fallback downloads
+  still count. Outcome matrix pinned in `card-share-outcome.test.ts`
+  (including "no forced download on dismissal" via an anchor-click spy).
+
+- **Failed sign-in re-arms the password field for autofill.** Password
+  managers (Proton Pass and friends) refuse to overwrite a non-empty
+  password input, and skip one revealed as `type="text"` — so the AuthModal
+  keeping the wrong attempt in the field after a rejected login made every
+  retry look like autofill was broken. On a rejected `login` attempt the
+  modal now clears the password, resets the reveal toggle and refocuses the
+  field (guarded so a retype already in progress is not wiped; `register`
+  keeps the typed attempt for fix-ups). The form itself was already
+  manager-friendly — real `<form>`, `name` + `autocomplete="username"` /
+  `current-password` — and the focus trap only reacts to `focusin`, so it
+  was ruled out. Covered in `AuthModal.test.tsx`, probe-verified.
+
+- **Delete account joins the Danger Zone.** The erasure block moved out of
+  `AccountSection` into `DeleteAccountRow` (self-contained: restore-only
+  `fetchMe` on `authVersion`, failure surfaced via notification), rendered
+  as the last row of the Settings Danger Zone card — server-side and most
+  permanent, after the two local rows. It reuses `SettingsPanel.module.css`
+  row classes deliberately so it reads as one of them; the old
+  `dangerZone`/`dangerButton` classes were removed from
+  `AccountSection.module.css` (module-scoped, provably unreferenced).
+
+- **The singing-stage grid follows the melody.** Three coordinated changes,
+  one invariant: the stage must always label what it shows.
+  `gridRowsForBounds` (`src/lib/scale-data.ts`) extends the built scale's
+  pitch classes across the melody-fitted `verticalBounds`, and
+  `PitchCanvas.draw` now derives lanes, gridlines and right-edge labels from
+  those rows instead of iterating `props.scale()` — whose octave window a
+  loaded melody could sit entirely outside (the reported "top half of the
+  screen has no note lines" after loading the G4 scale over a C3 grid).
+  `loadMelody`/`_restoreCurrentMelodyId` align the grid from the melody's own
+  key/scaleType/octave metadata via `refreshScale`, and an App effect mirrors
+  key/scale type into the app-store signals so the sidebar pickers and share
+  links describe the melody actually on stage. Label density thins (every
+  2nd row) past 30 rows so huge imports stay readable. Covered by
+  `src/tests/playback-grid-sync.test.ts` and new `gridRowsForBounds` cases in
+  `src/tests/scale-data.test.ts`; both suites verified to fail with the fix
+  pinned off.
+
+- **One octave-shift path for every surface.** The desktop sidebar's octave
+  buttons on the singing tab moved only the reference grid ("view-only"), a
+  behavior that became invisible when the stage view started fitting itself
+  to the melody — the buttons read as dead, and their `refreshScale` rebuilt
+  the grid from app-store key/scale signals that a loaded melody never
+  updated (stale-C-major grid under a G-major song). New
+  `melodyStore.shiftMelodyOctave(delta)` transposes the melody and moves the
+  grid together, rebuilt from the store's tracked key/scale type, clamped to
+  octaves 1-6; Compose, the desktop sidebar and the mobile options sheet all
+  route through it, and the sidebar's displayed octave is now derived from
+  `currentScale()` (root row) instead of dead local state.
+
+- **Merged from main, later batch:** the funnel event-name catalog
+  (`198a9ed7`, one shared list so ingest cannot reject client events), the
+  SEO sweep (#470: real favicon files, complete social cards, honest
+  sitemap, extensionless entry rewrites + revert keeping full-quality OG
+  images), and the dev redeploy trigger for shared runtime catalogs (#468).
+
+- **Merged from main into this release** (reviewed and landed separately):
+  funnel acquisition capture — where a funnel visitor came from, carried on
+  every transport (#463); the karaoke staging event split — staging an example
+  is no longer the same event as staging your own song, with an id-fallback
+  pinned by unit and e2e tests (#465); an internal-traffic flag so GA4 can
+  filter our own visits (#466); immutable caching for hashed assets and
+  dynamic-only vendors off the first-paint graph (perf pair).
+
+- **Score window modes.** `src/lib/score-window.ts` (new, dependency-free on
+  purpose — both `practice-engine` and `settings-store` import it, and a
+  definition in either would put a cycle through the stores barrel):
+  `scoreWindow(samples, mode)` with `'full' | 'settled' | 'core'`,
+  `SCORE_TRIM_FRACTION = 0.15`, floor-based so notes under 7 frames are never
+  trimmed and 'core' always keeps at least 70%. `PracticeEngine` applies it in
+  `finalizeNoteResult` (default `'settled'`, synced from the new persisted
+  `scoreMode` setting through `EngineContext`). Each accuracy tier now implies
+  a mode — learning/core, singer/settled, professional/full — applied by
+  `applyAccuracyTier`, manual picks override until the next tier change.
+  Blast radius audited: the window changes Singing-tab note scores only (live
+  score, canvas chips, saved PracticeResults — forward-only). Falling-notes,
+  the exercises, zen/challenges and the stem mixer score through their own
+  paths (`centsToRating` there is called on already-final cents, no window)
+  and are byte-identical. 20 new tests across three files; the four
+  engine-mode tests were verified to fail with the windowing pinned off.
+
+- **A rest left the note before it still being scored.** `PracticeEngine`
+  closed a note's sample window only when the _next_ note started, and
+  `PlaybackRuntime` filters rests out of `noteStart` and `noteEnd` alike — so a
+  rest announced nothing and the finished note kept collecting through it. With
+  `applySpacedRests` inserting two beats of silence, roughly two thirds of a
+  note's samples came from the singer feeling out the coming pitch. Probed with
+  a 200-cent prep tone, a perfectly sung note's mean absolute error went from
+  ~0 to 133 cents — past `CENTS_GOOD` (50), so `centsToRating` returned `off`
+  and `PitchCanvas` forced its chip to 0%. That is the whole reported symptom:
+  every note 0% with rests, sane percentages without. New `onNoteEnd()` pushes
+  a null boundary through the same latency-deferred queue as a start (frames
+  arriving just after the note ended were still sung during it), and App
+  subscribes it to the runtime's `noteEnd`. Notes that run back to back are
+  untouched — the runtime emits end-then-start on one tick, in that order, so
+  the result count and order are exactly what they were. Four tests, each
+  failing on its own without the fix.
+
+- **The drawn trace ignored the measured mic delay while scoring applied it,**
+  so the picture and the score disagreed by exactly the offset — a trace on the
+  note bar that scored as if it were beside it. `sungBeat(beat, offsetMs, bpm)`
+  in `@/lib/mic-latency` is now the single definition of that shift, and
+  `usePracticeController` puts every trace sample through it. It is a no-op at
+  an unmeasured 0 ms. Recording (`processPitchFrame`) still stores arrival
+  beats: its pipeline reads `timeSec` only
+  for durations (OneEuro dt, hold and gap timers) and `beat` only for
+  positions, so shifting the beat alone is internally safe. Now shipped:
+  `processPitchFrame` stamps `sungBeat(beat, micLatencyMs(), bpm)` into the
+  raw frames and the live pipeline, so takes land where they were sung (a
+  no-op at 0 ms). Negative beats near the start are the physical truth —
+  frames sung on the count-in — and were already possible before the shift.
+  On top of the automatic part, the take review panel gained a Timing slider
+  (`shiftTakeFrames`, -200..+200 ms, reset per take, double-click to zero)
+  that re-segments the contour through the same `segmentContourToMelody`
+  call, plus a note naming the compensation already removed. Nine tests
+  drive the real controller end to end (record -> frames -> pending take);
+  the three latency tests were verified to fail with the stamping pinned
+  off. The stem mixer's own use of `segmentContourToMelody` is untouched —
+  the shift happens in the recording controller, not the shared function.
+
+- **Audited the mic-latency measurement itself and found it sound.** The wizard
+  times clicks and their return on one `AudioContext` clock and uses the
+  scheduled time as the reference, which is right for measuring the device's
+  own delay (the contrast with `tap-calibration`, which measures a human
+  reaction, is documented in both files). The median over eight clicks, the
+  half-interval match window, `MIN_LATENCY_HITS` and `MAX_LATENCY_MS` all hold.
+  One inherent limit worth knowing: the capture anchor is
+  `currentTime - block/sampleRate` taken inside a `ScriptProcessor` callback,
+  which fires on the main thread, so a reading is biased high by however late
+  that callback runs — about ±10 ms at the 512-sample block size.
+
+- **Short-viewport layout, two distinct bugs.** A shrinkable flex item floors
+  at its container's height while its children shrink below their text, so the
+  text _overlaps_ rather than clips — `.exercise-idle-center` needed
+  `flex-shrink: 0`. Separately, `justify-content: flex-end` on a scrollable
+  strip spills past the unreachable _start_ edge, which is why a tablet could
+  not reach the first tabs; `safe flex-end` fixes it. Both pinned by
+  `exercise-tablet-landscape.spec.ts` at 660, 560 and 420 CSS pixels.
+
+- **The piano's finished-run card** dropped its Play Again / Close row and, on
+  the mobile stage, its full-width bottom dock — which read as a blocking
+  modal. Replay needed no new wiring: the transport play button already
+  restarts a finished run on both stages. Guitar 3D keeps its buttons; the
+  change is an additive `--quiet` variant.
+
+- **The lead-in cue is one language across both surfaces:** a fixed `2.4em`
+  bar anchored to the start of the line, `position: absolute` inside a
+  `position: relative` line, instead of an inline-block that shoved the first
+  word sideways and changed width with it.
+
+- **Stripe price ids no longer ride along in the public pricing read.**
+
+- **A canvas in the Lab** stopped repainting when nothing on it was changing.
+- **Lyric lead-in cue ignored the panel's text alignment.**
+  `.sm-lyrics-lead-in` was absolute against `.sm-lyrics-line`, which is a
+  full-width flex item so the active-line highlight can span the panel. `left`
+  therefore resolved against the row edge, correct only for left-aligned
+  lyrics: measured offset from the first item in the line was -130px centred
+  and -260px right-aligned. Each line's content now sits in a shrink-to-fit
+  `.sm-lyrics-line-body` that `text-align` positions, with the cue anchored to
+  that — 0px at all three alignments.
+
+- **Karaoke Night rail reloaded the whole library on every song.** Two
+  independent causes in `KaraokeRailPanels`. (1) The `partCounts` resource took
+  the session-id array as its source; an array literal is a fresh reference per
+  source evaluation, so Solid's `!==` check refetched on every session-store
+  tick — and staging a song ticks the store (hydration, orphan pruning), so
+  each song load re-ran one `listStemTypes` IndexedDB query per library song.
+  The source is a joined string key now. (2) Counts were read via
+  `partCounts()`, and reading a loading resource inside `<Suspense>`
+  re-suspends the boundary, which is what blanked the rail rather than merely
+  staling it; now `.latest`, matching `AnalysisDashboard`'s existing note on
+  the same trap. The boundary also had no `fallback`, so the genuine first load
+  rendered nothing. Both halves are pinned by tests that fail independently.
+
+- **Alignment debug logging is opt-in.** `formatAlignmentDebugLog` printed a
+  per-word table plus a single-line JSON dump of every entry on each staged
+  song, and `logAlignmentComparison` ran `alignPitchToWords` twice over the
+  whole song purely to print two lines. Both now require
+  `localStorage.pitchperfect_debug_alignment === '1'`; the one-line summaries
+  are unchanged.
+
+- **An auto theme source did not put its preset on the DOM at boot.**
+  `initTheme` set `data-theme` only on the `manual` path and left the auto
+  sources to `startAutoWatch`; `syncAutoTheme` writes only when the resolved
+  preset differs from the stored one, which on a normal reload it does not. No
+  attribute was written at all, so `:root`'s dark tokens applied and an auto
+  user on a light preset loaded dark every time. Found reviewing #455 before
+  merging it; regression test in `theme-store.test.ts`.
+
+- **Lyric wheel-zoom listener declares `passive: false`.** Chrome logged a
+  scroll-blocking violation on every mount because the handler was a JSX
+  `onWheel` with no stated intent. Moved to the ref callback alongside the
+  touch handlers — which also fixes those: they were bound in `onMount`, but
+  the list lives inside a `<Show>` keyed on edit / LRC-gen / text-edit mode, so
+  it is rebuilt when the user changes mode and the handlers were left on a
+  discarded element. Pinch-zoom stopped working after the first trip through
+  edit mode.
+
 ## [0.8.0] - 2026-08-06
 
 ### Added

@@ -112,6 +112,7 @@ export function EngineProvider(props: { children: JSX.Element }) {
       bands: s.bands.map((b) => ({ threshold: b.threshold, band: b.band })),
       algorithm: algo,
       bufferSize: bufSize,
+      scoreMode: settingsStore.scoreMode(),
     })
   })
 
