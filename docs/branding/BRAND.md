@@ -9,23 +9,26 @@
 ## 1. Brand Strategy
 
 ### The idea: **Liquid Precision**
-"Mercury" is quicksilver — a liquid metal that is fluid, reflective, and *responds instantly*. That is
+
+"Mercury" is quicksilver — a liquid metal that is fluid, reflective, and _responds instantly_. That is
 exactly what the product does: it turns your voice into something you can see, in real time, with
 sub-cent accuracy. Mercury is also the fastest planet and the Roman messenger god — who, in myth,
 **invented the lyre**. Speed, communication, music, and liquid metal all live in one word. "Pitch" is
 the vertical axis of music — frequency, the sine wave, the tuning fork.
 
-**Brand promise:** *Your voice, made visible — fluid, immediate, precise.*
+**Brand promise:** _Your voice, made visible — fluid, immediate, precise._
 
 ### Personality
-| Trait | Means | Not |
-| --- | --- | --- |
-| Precise | Instrument-grade, trustworthy feedback | Clinical, cold |
-| Fluid | Real-time, responsive, effortless | Sluggish, rigid |
-| Premium | HDR, chrome, considered craft | Flashy, gaudy |
-| Encouraging | Helps you improve, never shames | Gamey, childish |
+
+| Trait       | Means                                  | Not             |
+| ----------- | -------------------------------------- | --------------- |
+| Precise     | Instrument-grade, trustworthy feedback | Clinical, cold  |
+| Fluid       | Real-time, responsive, effortless      | Sluggish, rigid |
+| Premium     | HDR, chrome, considered craft          | Flashy, gaudy   |
+| Encouraging | Helps you improve, never shames        | Gamey, childish |
 
 ### Voice & tone
+
 - Confident and clear, never jargon-heavy. Short sentences. Verbs over adjectives.
 - Encouraging coach, not a drill sergeant. "You're 8 cents sharp — ease off." not "WRONG."
 - Tagline options (pick one primary):
@@ -39,47 +42,68 @@ the vertical axis of music — frequency, the sine wave, the tuning fork.
 ## 2. Logo
 
 ### Concept
+
 The mark evolves the existing orb-and-wave favicon into a **quicksilver droplet** (an HDR chrome sphere)
 with a **pitch sine-wave** carved through it and a spectrum meniscus ring (blue→teal→violet). The app
 icon is a **liquid-metal "M"** built from a doubled pitch wave — two wave peaks form the M, and a
 mercury droplet dots the valley.
 
 ### Concept explorations (choose the final mark here)
+
 Six distinct concepts across the four personalities live in `logo/explorations/` (SVG + 512px PNG),
 compared visually in **`logo-explorations.html`**. Leads: **V1 Meniscus**, **V2 Mercury Glyph ☿**,
 **V6 Soundwell** — each has a drop-in favicon set in `favicon/{v1,v2,v6}/`.
 
-| Concept | Personality | Idea |
-| --- | --- | --- |
-| V1 Meniscus | Liquid-premium | Chrome sphere half-filled with liquid; the waterline is the pitch wave |
-| V2 Mercury Glyph ☿ | Sleek pro-tech | Alchemical Mercury symbol rebuilt with a pitch wave |
-| V3 Droplet-Note | Warm & musical | Mercury droplet as a note-head on a wave staff |
-| V4 Orbit Pitch | Cosmic premium | Mercury planet with an orbit that becomes a waveform |
-| V5 Monoline | Minimal Swiss | One rising pitch-stroke ending in a mercury bead |
-| V6 Soundwell | Liquid-premium | Mercury droplet with concentric sound ripples |
+| Concept            | Personality    | Idea                                                                   |
+| ------------------ | -------------- | ---------------------------------------------------------------------- |
+| V1 Meniscus        | Liquid-premium | Chrome sphere half-filled with liquid; the waterline is the pitch wave |
+| V2 Mercury Glyph ☿ | Sleek pro-tech | Alchemical Mercury symbol rebuilt with a pitch wave                    |
+| V3 Droplet-Note    | Warm & musical | Mercury droplet as a note-head on a wave staff                         |
+| V4 Orbit Pitch     | Cosmic premium | Mercury planet with an orbit that becomes a waveform                   |
+| V5 Monoline        | Minimal Swiss  | One rising pitch-stroke ending in a mercury bead                       |
+| V6 Soundwell       | Liquid-premium | Mercury droplet with concentric sound ripples                          |
 
-### First-pass assets in this folder (`logo/`)
-| File | Use |
-| --- | --- |
-| `mercurypitch-mark.svg` | Early primary mark — droplet + wave (superseded by the explorations above). |
-| `mercurypitch-icon-M.svg` | App/tile icon — rounded square, liquid-metal "M". PWA, home screen, store. |
-| `mercurypitch-lockup.svg` | Horizontal lockup — mark + wordmark. Header, docs, footer, email. |
+### The shipped mark lives in `logo/meniscus2/` — start there
 
-> These SVGs are **production-ready starting points**, authored by hand (original vector = copyrightable
-> and trademark-clean). Use MidJourney only for exploration/mood, then finalize in vector — see §7.
+V1 Meniscus won, and `logo/meniscus2/` is the only canonical source. Take the mark from
+`mark.svg`, the horizontal lockup from `lockup-horizontal.svg`, single-colour uses from
+`mark-mono-{dark,light}.svg`. The app ships copies of these in `public/`
+(`brand-mark.svg`, `favicon.svg`, the PNG tiers) — replacing the mark means replacing
+those files, never hand-copying the vector into a component.
+
+| File                                     | Use                                                           |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| `meniscus2/mark.svg`                     | Primary mark — quicksilver dome, pitch wave as the waterline. |
+| `meniscus2/lockup-horizontal.svg`        | Mark + wordmark. Header, docs, footer, email.                 |
+| `meniscus2/mark-mono-{dark,light}.svg`   | One-colour contexts (stamps, print, embroidery).              |
+| `meniscus2/og-image.png`, `mark-512.png` | Social card and raster master.                                |
+
+> The first-pass trio (`mercurypitch-mark.svg`, `-icon-M.svg`, `-lockup.svg`) was **deleted**
+> once it had cost real time: this table used to present the superseded lockup as the one for
+> "header, docs, footer, email", and the app's opening screen duly shipped carrying the wrong
+> mark. They remain in git history (`git show 45ab9775 -- docs/branding/logo/`) if a rejected
+> direction is ever wanted. The dotfiles `build_board.py` still names those three filenames and
+> would need repointing at `meniscus2/` before it runs again — it writes a `brand-board.html`
+> that this repo retired in `591bc095`.
+
+> Vectors are authored by hand (original vector = copyrightable and trademark-clean). Use
+> MidJourney only for exploration/mood, then finalize in vector — see §7.
 
 ### Wordmark
+
 - Type it **MercuryPitch** — one word, camel-case, no space.
 - Set in **Outfit SemiBold** (600), letter-spacing −1.5 to −2%.
 - "Mercury" in chrome-white (`--text-primary`), "Pitch" in the spectrum gradient (or solid Signal Blue
   on busy backgrounds).
 
 ### Clear space & minimum size
+
 - Clear space on all sides = the diameter of the droplet's specular highlight (≈ 0.25× mark height).
 - Minimum mark size: 24 px (screen), 8 mm (print). Below 32 px, drop the meniscus ring and the wave's
   inner gradient — keep the black wave only, for legibility.
 
 ### Don'ts
+
 - Don't recolor the chrome body to a flat brand color (kills the "mercury" read).
 - Don't stretch, add drop shadows beyond the spec in §4, rotate the wave, or place the gradient wordmark
   on a mid-tone background where it loses contrast.
@@ -93,28 +117,31 @@ existing values are the "Signal" and "Surface" families. The **Mercury (chrome)*
 brand-defining addition.
 
 ### Core palette (dark — primary)
-| Token | Hex | Role |
-| --- | --- | --- |
+
+| Token                     | Hex       | Role                        |
+| ------------------------- | --------- | --------------------------- |
 | `--bg-primary` (Obsidian) | `#0d1117` | App background, brand black |
-| `--bg-secondary` | `#161b22` | Panels |
-| `--bg-tertiary` | `#21262d` | Raised surfaces |
-| `--bg-card` | `#1c2128` | Cards |
-| `--border` | `#30363d` | Hairlines |
-| `--text-primary` | `#e6edf3` | Primary text / chrome-white |
-| `--text-secondary` | `#a8b3bf` | Secondary text |
-| `--text-muted` | `#6e7681` | Muted text |
+| `--bg-secondary`          | `#161b22` | Panels                      |
+| `--bg-tertiary`           | `#21262d` | Raised surfaces             |
+| `--bg-card`               | `#1c2128` | Cards                       |
+| `--border`                | `#30363d` | Hairlines                   |
+| `--text-primary`          | `#e6edf3` | Primary text / chrome-white |
+| `--text-secondary`        | `#a8b3bf` | Secondary text              |
+| `--text-muted`            | `#6e7681` | Muted text                  |
 
 ### Signal (accents — keep)
-| Token | Hex | Role |
-| --- | --- | --- |
+
+| Token                      | Hex       | Role                                      |
+| -------------------------- | --------- | ----------------------------------------- |
 | **Signal Blue** `--accent` | `#58a6ff` | Primary accent, active pitch, links, CTAs |
-| **Aqua** `--teal` | `#2dd4bf` | Secondary — success/in-tune, data |
-| **Violet** `--purple` | `#bc8cff` | Tertiary — highlights, premium, mascots |
-| Green `--green` | `#3fb950` | Perfect/in-tune |
-| Yellow `--yellow` | `#d29922` | Slightly off |
-| Red `--red` | `#f85149` | Off pitch / error |
+| **Aqua** `--teal`          | `#2dd4bf` | Secondary — success/in-tune, data         |
+| **Violet** `--purple`      | `#bc8cff` | Tertiary — highlights, premium, mascots   |
+| Green `--green`            | `#3fb950` | Perfect/in-tune                           |
+| Yellow `--yellow`          | `#d29922` | Slightly off                              |
+| Red `--red`                | `#f85149` | Off pitch / error                         |
 
 ### Mercury / Chrome (NEW — brand signature)
+
 Use for the HDR logo, hero surfaces, and premium accents. This is what makes the brand feel like
 "mercury" rather than generic dark-tech.
 | Token | Hex | Role |
@@ -126,20 +153,31 @@ Use for the HDR logo, hero surfaces, and premium accents. This is what makes the
 | `--chrome-900` | `#1b2430` | Chrome shadow / bevel |
 
 **Signature gradients**
+
 ```css
 /* Spectrum (brand rim / "Pitch" wordmark / active states) */
 --grad-spectrum: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
 /* Quicksilver (logo body, premium chrome surfaces) */
---grad-mercury: radial-gradient(120% 120% at 38% 30%, #f4f8fd 0%, #aeb9c6 28%, #5b6b7b 62%, #1b2430 100%);
+--grad-mercury: radial-gradient(
+  120% 120% at 38% 30%,
+  #f4f8fd 0%,
+  #aeb9c6 28%,
+  #5b6b7b 62%,
+  #1b2430 100%
+);
 /* Hero wash (landing background) */
---grad-hero: radial-gradient(80% 60% at 50% 0%, rgba(88,166,255,0.18), transparent 60%), #0d1117;
+--grad-hero:
+  radial-gradient(80% 60% at 50% 0%, rgba(88, 166, 255, 0.18), transparent 60%),
+  #0d1117;
 ```
 
 ### Light theme
+
 Already defined in `app.css` (`[data-theme='light']`): off-white `#f3f4f6`, Signal Blue `#0969da`.
 Keep it. The Mercury chrome family works unchanged in light mode (chrome reads against any ground).
 
 ### Accessibility
+
 - Body text on `--bg-primary`: `--text-primary` passes AA (≥ 7:1). `--text-secondary` passes AA for
   ≥ 16px. Never put `--text-muted` on `--bg-card` for body copy.
 - The spectrum gradient is decorative — never the only carrier of meaning. Pair with text/icon.
@@ -150,12 +188,12 @@ Keep it. The Mercury chrome family works unchanged in light mode (chrome reads a
 
 Fonts are already loaded in `index.html` (Inter, Outfit, Plus Jakarta Sans) — no new dependencies.
 
-| Role | Font | Weight | Notes |
-| --- | --- | --- | --- |
-| Display / headlines | **Outfit** | 600–700 | Tight tracking (−1 to −2%). Geometric, modern, matches the "precise" feel. |
-| Alt display | Plus Jakarta Sans | 600 | Warmer fallback for marketing when Outfit feels too rigid. |
-| UI / body | **Inter** | 400–600 | The workhorse — matches the app today. |
-| Data / numerics | Inter (tabular) or a mono | 500 | Cents, Hz, timers — enable `font-variant-numeric: tabular-nums`. |
+| Role                | Font                      | Weight  | Notes                                                                      |
+| ------------------- | ------------------------- | ------- | -------------------------------------------------------------------------- |
+| Display / headlines | **Outfit**                | 600–700 | Tight tracking (−1 to −2%). Geometric, modern, matches the "precise" feel. |
+| Alt display         | Plus Jakarta Sans         | 600     | Warmer fallback for marketing when Outfit feels too rigid.                 |
+| UI / body           | **Inter**                 | 400–600 | The workhorse — matches the app today.                                     |
+| Data / numerics     | Inter (tabular) or a mono | 500     | Cents, Hz, timers — enable `font-variant-numeric: tabular-nums`.           |
 
 **Type scale** (already in `app.css`): xs 10.5 → xl 20px for UI. For **marketing**, extend upward:
 Display XL 64/72, Display L 48/56, H1 36/44, H2 28/36, Lead 20/30.
@@ -182,6 +220,7 @@ Display XL 64/72, Display L 48/56, H1 36/44, H2 28/36, Lead 20/30.
 ## 6. MidJourney Prompt Pack
 
 **Read §7 before using these for a logo.** These prompts are tuned for **MidJourney v7**. Notes:
+
 - `--ar` aspect ratio · `--stylize` (`--s`) artistic liberty · `--chaos` (`--c`) variation ·
   `--style raw` for less "MJ house style" / more control · `--no` to exclude.
 - `--sref <url>` locks a **style** across images (generate the hero first, then feed its URL as `--sref`
@@ -191,6 +230,7 @@ Display XL 64/72, Display L 48/56, H1 36/44, H2 28/36, Lead 20/30.
 - Iterate: generate 4, upscale/vary the best, then use it as `--sref` for the rest.
 
 ### 6.1 Primary logo mark (droplet + wave)
+
 ```
 minimalist app logo, a single suspended droplet of liquid mercury / quicksilver,
 mirror-chrome HDR surface, a smooth sine soundwave rippling across its surface,
@@ -201,6 +241,7 @@ studio product render, octane, crisp vector-ready silhouette, negative space,
 ```
 
 ### 6.2 Liquid-metal "M" monogram (app icon)
+
 ```
 single letterform "M" sculpted from flowing liquid mercury, mirror chrome,
 the M formed by two soundwave peaks, glossy HDR reflections, one small mercury
@@ -211,6 +252,7 @@ subtle spectrum rim light blue-teal-violet, minimal, iconic, centered,
 ```
 
 ### 6.3 Landing hero — key visual (16:9)
+
 ```
 a ribbon of liquid mercury suspended in dark space, its surface rippling into a
 glowing pitch waveform, mirror-chrome reflections, HDR, cinematic studio lighting,
@@ -221,6 +263,7 @@ brand key visual, wide empty space on the left for headline text,
 ```
 
 ### 6.4 Social / OG image (1200×630 → use 1.91:1)
+
 ```
 premium tech brand banner, floating mercury droplet with a soundwave meniscus,
 mirror chrome, obsidian background with a soft radial blue glow at top,
@@ -229,6 +272,7 @@ clean, modern, HDR, --style raw --ar 1.91:1 --s 300 --no text, logo, faces
 ```
 
 ### 6.5 Abstract background textures (tileable-ish)
+
 ```
 abstract field of rippling liquid mercury, macro, mirror chrome micro-waves like an
 oscilloscope, obsidian base, faint blue-teal-violet iridescence, dark, minimal,
@@ -237,8 +281,10 @@ high detail, seamless texture, --style raw --ar 16:9 --s 150 --c 2 --tile
 ```
 
 ### 6.6 Mascot style — "voice specialist" (character continuity)
+
 Generate one hero mascot, then use `--cref <its url> --cw 60` to keep the character consistent across
 poses (idle / happy / focused / encouraging), matching the existing `public/characters` set.
+
 ```
 a friendly abstract mascot shaped like a soft cloud droplet of luminous liquid,
 smooth gradient body from violet #bc8cff to teal #2dd4bf, subtle chrome rim light,
@@ -248,6 +294,7 @@ clean vector-friendly, centered, --style raw --ar 1:1 --s 180 --c 3
 ```
 
 ### 6.7 3D product / device mock mood (marketing)
+
 ```
 sleek dark web app for vocal pitch training shown on a floating laptop,
 glowing piano-roll and pitch waveform UI in blue teal violet on obsidian,
@@ -256,6 +303,7 @@ backdrop, premium, minimal, --style raw --ar 3:2 --s 250 --no clutter, text, log
 ```
 
 ### Building a coherent set (workflow)
+
 1. Generate **6.3 (hero)** first. Upscale the best.
 2. Copy its image URL → append `--sref <url>` to 6.4, 6.5, 6.7 so the whole set shares one look.
 3. For mascots use `--cref` (character) not `--sref` (style).
@@ -270,24 +318,26 @@ clean vector. MidJourney is superb for _ideation and imagery_, but it is the wro
 registrable logo.** Here's why and what to do.
 
 ### What MidJourney gives you (as of 2026 — verify current terms)
-- **Ownership/commercial use:** Paid MidJourney plans grant you broad rights to *use* the images you
+
+- **Ownership/commercial use:** Paid MidJourney plans grant you broad rights to _use_ the images you
   generate commercially. Companies with **> USD 1M/yr revenue must be on the Pro or Mega plan** to use
   outputs commercially. Read the current [MidJourney Terms of Service](https://docs.midjourney.com/docs/terms-of-service) — terms change.
 - **Copyright caveat:** In the US (and similarly in many jurisdictions), a purely AI-generated image
   **cannot be registered for copyright** because it lacks human authorship (US Copyright Office
-  guidance, *Zarya of the Dawn* and subsequent). Practical effect: even though MidJourney lets you *use*
+  guidance, _Zarya of the Dawn_ and subsequent). Practical effect: even though MidJourney lets you _use_
   it, **you may not be able to stop others from copying** a raw AI logo, and you can't register the image
   itself.
 - **Similarity risk:** AI can output something close to existing art. Always reverse-image-search and
   trademark-search a candidate before committing.
 
 ### The recommended pipeline (copyright- and trademark-clean)
-1. **Ideate in MidJourney** — use §6.1/§6.2 to explore droplet/M directions. Treat outputs as *mood and
-   reference*, not final art.
+
+1. **Ideate in MidJourney** — use §6.1/§6.2 to explore droplet/M directions. Treat outputs as _mood and
+   reference_, not final art.
 2. **Rebuild the chosen mark as original vector** (Illustrator / Figma / Inkscape) — like the SVGs in
    `logo/`. Human-authored vector is **copyrightable** and gives you crisp scaling for favicons → billboards.
 3. **Register a trademark** on the **wordmark ("MercuryPitch")** and the **logo mark**. Trademark protects
-   your *brand use in commerce* regardless of the copyright status of the underlying image, and it's what
+   your _brand use in commerce_ regardless of the copyright status of the underlying image, and it's what
    actually stops competitors. (US: USPTO; EU: EUIPO; or use a service like a trademark attorney.)
    - Do a knockout search first (USPTO TESS / EUIPO eSearch) for "MercuryPitch" in music-software classes
      (Nice class 9 software, 41 education/entertainment).
@@ -298,19 +348,23 @@ registrable logo.** Here's why and what to do.
    copyright the raster" matters far less than for the logo, and speed matters more.
 
 ### If you would rather stay MidJourney-only for the logo
+
 Acceptable for an MVP/side-project, with these mitigations:
+
 - Be on the correct paid tier for your revenue.
 - Reverse-image + trademark search the result.
 - Recreate at least a clean 1-color version in vector for favicons/small sizes (MJ raster fails there).
 - Understand you likely **can't register copyright** on the image and enforcement is weaker.
 
 ### Fonts
+
 - Inter, Outfit, Plus Jakarta Sans are all **open-source (SIL Open Font License)** — free for commercial
   use, including in a logo wordmark and embedded in the app. Keep a copy of the license.
 
 ---
 
 ## 8. Quick-start checklist
+
 - [ ] Pick the tagline (§1) and confirm personality direction.
 - [ ] Approve the logo direction (droplet+wave / liquid-M) — SVGs in `logo/` are the v0.
 - [ ] Add the Mercury/Chrome tokens (§3) to `src/styles/app.css`.
