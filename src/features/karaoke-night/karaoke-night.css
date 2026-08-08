@@ -842,6 +842,20 @@ body {
   flex: none;
 }
 
+/* Rail panels' first paint only. Between songs the library stays put, so
+   this must never be what a returning visitor sees. */
+.kn-rail-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.kn-rail-loading p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cdbde6;
+}
+
 /* Library pick in flight — hydration can take a second or two. */
 .kn-song-spinner {
   flex: none;

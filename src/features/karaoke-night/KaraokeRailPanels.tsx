@@ -272,9 +272,19 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
   // read always said zero and the chip never appeared. Metadata-only
   // query — the blobs themselves are not loaded.
   const CORE_STEMS = new Set(['vocal', 'instrumental'])
+  // The source is a joined KEY, not the id array: an array literal is a fresh
+  // reference every time the source re-runs, so Solid's !== check saw a change
+  // on every session-store tick and refetched a result identical to the one it
+  // already had. Staging a song touches the store (hydration, orphan pruning),
+  // so every song load re-ran one IndexedDB query per library song. Session
+  // ids never contain a newline, so joining them round-trips safely.
   const [partCounts] = createResource(
-    () => librarySongs().map((s) => s.sessionId),
-    async (ids) => {
+    () =>
+      librarySongs()
+        .map((s) => s.sessionId)
+        .join('\n'),
+    async (key) => {
+      const ids = key === '' ? [] : key.split('\n')
       const entries = await Promise.all(
         ids.map(async (id) => {
           const types = await listStemTypes(id)
@@ -284,8 +294,15 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
       return new Map(entries)
     },
   )
+  // `.latest`, never partCounts(): this panel is lazy-loaded inside a
+  // <Suspense>, and reading a loading resource inside that boundary
+  // re-suspends the whole rail — the library and the upload card vanished
+  // together and came back seconds later, which is the "sidebar reloads on
+  // every song" the owner saw. `.latest` keeps the counts already on screen
+  // while a genuinely new id set is counted. Same trap, and same fix, as
+  // AnalysisDashboard's note resource.
   const partStemCount = (s: LibrarySong): number =>
-    partCounts()?.get(s.sessionId) ?? 0
+    partCounts.latest?.get(s.sessionId) ?? 0
 
   const songRow = (s: LibrarySong) => (
     <li>
