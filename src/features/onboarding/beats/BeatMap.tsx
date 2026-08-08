@@ -10,7 +10,7 @@
 // why it takes its content as props and owns no flow state.
 
 import type { Component } from 'solid-js'
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
@@ -55,6 +55,35 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
 
   const isFirst = (room: Room): boolean => room.id === stop().room
 
+  // Touch screens never fire the hover reveal, so scrolling a card into
+  // view plays it instead: the art starts at the dimmed resting state and
+  // settles forward once the card is actually on screen. One observer for
+  // the whole grid; a revealed card unobserves (the state is one-way).
+  // Viewport-root intersection honours ancestor clipping, so this works
+  // inside the scrollable onboarding modal and on the standalone #/map.
+  const [inView, setInView] = createSignal<ReadonlySet<string>>(new Set())
+  let observer: IntersectionObserver | undefined
+  const observeCard = (el: HTMLElement): void => {
+    if (typeof window.matchMedia !== 'function') return
+    if (!window.matchMedia('(hover: none)').matches) return
+    if (typeof IntersectionObserver === 'undefined') return
+    observer ??= new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const id = entry.target.getAttribute('data-room')
+          if (id !== null) {
+            setInView((prev) => new Set(prev).add(id))
+          }
+          observer?.unobserve(entry.target)
+        }
+      },
+      { threshold: 0.45 },
+    )
+    observer.observe(el)
+  }
+  onCleanup(() => observer?.disconnect())
+
   return (
     <div class={`${styles.beat} ${styles.beatWide}`} data-beat="map">
       <p class={styles.eyebrow}>Your map</p>
@@ -75,7 +104,9 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           {(room) => (
             <button
               type="button"
+              ref={observeCard}
               class={`${styles.roomCard} ${isFirst(room) ? styles.roomFirst : ''}`}
+              classList={{ [styles.roomInView]: inView().has(room.id) }}
               data-room={room.id}
               onClick={() => props.onEnter(room.target, room.id)}
             >
