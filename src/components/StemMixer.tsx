@@ -4007,6 +4007,8 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-line {
+  /* Anchors the absolute lead-in cue to this row. */
+  position: relative;
   color: var(--fg-tertiary, #484f58);
   padding: 0.12rem 0.3rem;
   border-radius: 0.2rem;
@@ -4076,17 +4078,21 @@ export const StemMixerStyles: string = `
 }
 
 /* Lead-in cue: the run-in to a line after a silence too short for a rest
-   row. Sized in em so it tracks the lyric font, and inline so it reads as
-   part of the line it belongs to rather than as a row of its own. */
+   row. Sized in em so it tracks the lyric font. It used to sit inline before
+   the first word, which shoved the line sideways for the run-in and read as
+   punctuation; now it underlines the line's start the way the karaoke stage
+   cue does — fixed width, absolute, zero layout shift when it appears. */
 .sm-lyrics-lead-in {
-  display: inline-block;
+  position: absolute;
+  left: 0.3rem;
+  bottom: 0;
   width: 2.4em;
-  height: 0.28em;
-  flex: 0 0 auto;
-  margin-right: 0.45em;
+  max-width: calc(100% - 0.6rem);
+  height: 0.22em;
+  min-height: 2px;
   border-radius: 999px;
   background: var(--bg-tertiary, rgba(255, 255, 255, 0.15));
-  vertical-align: middle;
+  pointer-events: none;
 }
 
 .sm-lyrics-lead-in-fill {
