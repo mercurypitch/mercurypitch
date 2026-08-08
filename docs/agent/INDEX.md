@@ -194,7 +194,7 @@ These are the rules that break things when ignored.
 |---|---|---|
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.2k | Original tab fingering (Guitar Pro imports) is preserved through load. |
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 594 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
-| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 449 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
+| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 407 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 339 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 223 | The app's single pitch-frame stream. |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 101 | Supporter research surface. |
@@ -327,10 +327,9 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
+| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
-| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
-| [src/components/icons.tsx](../../src/components/icons.tsx) | 1.4k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
