@@ -39,6 +39,7 @@ export { playback } from './playback-store'
 export { melodyStore } from './melody-store'
 export * from './jam-store'
 export * from './usage-store'
+export * from './practice-timer-store'
 
 // Session-mode state lives in practice-session-store.sessionMode().
 export const isInSessionMode = () => _sessionMode()

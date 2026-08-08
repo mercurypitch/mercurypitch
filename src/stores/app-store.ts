@@ -801,7 +801,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Practice aids',
     targetSelector: '[data-tour="settings.practice-aids"]',
     description:
-      'Tonic anchor plays a short reference tone before each run so you can lock into the key before you sing.',
+      'Tonic anchor plays a short reference tone before each run so you can lock into the key before you sing. Break reminders count your singing time — not your screen time — and prompt you to rest your voice after the interval you set here.',
     placement: 'left',
     section: 'settings-practice',
     requiredTab: TAB_SETTINGS,

@@ -219,6 +219,7 @@ import { SparklineChart } from '@/features/practice-intelligence/components/Spar
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
+import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
 import { useRecordingController } from '@/features/recording/useRecordingController'
 import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
@@ -271,6 +272,7 @@ import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
 import { closeOnboarding, flowOpen, openBeat, startOnboarding, } from '@/stores/onboarding-store'
+import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -2456,6 +2458,10 @@ const AppShell: Component<AppProps> = (props) => {
     // Accumulate foreground usage time (gates the onboarding survey).
     startUsageTracking()
 
+    // Voice-rest clock. Inert until the user turns it on in settings, but the
+    // ticker starts here so it does not need a mount point of its own.
+    startPracticeTimer()
+
     props.onMounted?.()
   })
 
@@ -3969,6 +3975,8 @@ const AppShell: Component<AppProps> = (props) => {
         <LocalProgressNotice />
 
         <Notifications />
+        {/* Follows the mic, not the tab, so it belongs to the shell too. */}
+        <PracticeTimerPill />
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />
         <VerifyEmailBanner />

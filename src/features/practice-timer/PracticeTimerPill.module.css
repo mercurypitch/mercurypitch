@@ -1,0 +1,93 @@
+/* ============================================================
+   PracticeTimerPill — ambient voice-rest readout
+   ============================================================
+   Bottom-left so it clears the top-right toast stack, the bottom-right
+   floating transport controls, and the mobile tab bar it sits above. */
+
+.pill {
+  position: fixed;
+  left: calc(var(--safe-left, 0px) + 0.75rem);
+  bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
+  z-index: var(--z-tabbar, 380);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  opacity: 0.82;
+  transition: opacity 0.2s ease;
+}
+
+.pill:hover,
+.pill:focus-within {
+  opacity: 1;
+}
+
+/* A break is the one state worth noticing, so it borrows the warning accent. */
+.pillBreak {
+  border-color: var(--warning, #d29922);
+  color: var(--warning, #d29922);
+  opacity: 1;
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pillBreak .time {
+  color: var(--warning, #d29922);
+}
+
+.action {
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.action:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-card),
+    0 0 0 4px var(--accent);
+}
+
+/* Clear the mobile tab bar rather than sitting on it. */
+@media (max-width: 768px) {
+  .pill {
+    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .action {
+    transition: none;
+  }
+}

@@ -10,13 +10,8 @@ proposal document does not have to be. The archived original is in
 The mic latency wizard shipped 2026-08-08 — see
 [mic-latency.ears.md](../specs/mic-latency.ears.md).
 
-## Practice timer with break reminders
-
-Elapsed-practice timer with a configurable prompt to rest. Vocal-health
-motivated — long unbroken singing is the failure mode.
-
-Practice minutes are already tracked (`src/db/services/practice-minutes.ts`),
-so the data exists; this is the surfacing plus a settings toggle.
+The practice timer shipped 2026-08-08 — see
+[practice-timer.ears.md](../specs/practice-timer.ears.md).
 
 ## Theme auto-switch
 

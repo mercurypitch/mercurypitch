@@ -109,6 +109,7 @@ These are the rules that break things when ignored.
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 192 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
+| `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 80 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
@@ -174,12 +175,13 @@ These are the rules that break things when ignored.
 | [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 184 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
+| [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 171 | Practice Timer Store — the voice-rest clock Off by default. |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 155 | Falling Notes Store — Game state for Synthesia-style piano practice |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 126 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 114 | Pane Layout Store — Multi-pane layout persistence |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 100 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [console-store.ts](../../src/stores/console-store.ts) | 96 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
-| [index.ts](../../src/stores/index.ts) | 94 | Stores barrel export |
+| [index.ts](../../src/stores/index.ts) | 95 | Stores barrel export |
 | [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 75 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 67 | Playback Store — Transport and playback state |
 | [usage-store.ts](../../src/stores/usage-store.ts) | 64 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
@@ -307,7 +309,7 @@ Grep for the symbol and read the surrounding range instead.
 |---|---|
 | [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 7.5k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
-| [src/App.tsx](../../src/App.tsx) | 4.0k |
+| [src/App.tsx](../../src/App.tsx) | 4.1k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.2k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
@@ -321,7 +323,7 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
-| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.8k |
+| [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.9k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
 | [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
