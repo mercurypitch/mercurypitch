@@ -102,18 +102,19 @@ change, only the ear.
 
 ### Karaoke / StemMixer adapter **(requested)**
 
-The StemMixer registers its own command set on mount (the registry seam is
-ready); global transport commands stop being "unavailable" there and become
-the mixer's own.
+The StemMixer registers its own command set for its mount lifetime, gated to
+the Karaoke tab; the phrases follow the stems actually loaded in the mix.
+The mixer transport runs on seconds (audio time), not beats.
 
-- [ ] Transport inside karaoke: `play`, `pause`, `stop`, `from the top`, seek
-- [ ] **(requested)** `mute <stem>` / `unmute <stem>` — drums, bass, vocals, guitar, piano, other (stem names resolved from the loaded session)
-- [ ] **(requested)** `solo <stem>` / `unsolo <stem>` / `everything on`
-- [ ] `<stem> up` / `<stem> down` / `<stem> volume N percent`
-- [ ] **(requested)** Role presets: `i play guitar` — guitar stem muted, everything else on; `i sing` — vocals muted, instrumental on; `i play piano`, `i play bass`, `full mix`. Reports when the session has no such stem
-- [ ] **(requested)** `play random song from my list` — random pick from the karaoke playlist / session library
-- [ ] `next song` / `previous song` (karaoke playlist transport)
+- [x] Transport inside karaoke: `play`, `pause`, `stop`, `from the top`, relative and absolute seek, `middle`, `the end`
+- [x] **(requested)** `mute <stem>` / `unmute <stem>` / `<stem> off` / `<stem> on` — vocals, instrumental/backing, drums, bass, guitar, piano/keys, other; a stem the mix lacks answers `No <stem> stem in this mix`
+- [x] **(requested)** `solo <stem>` / `only <stem>` / `unsolo <stem>` / `solo off`
+- [x] `<stem> up` / `<stem> down` (10% nudges) / `<stem> volume N percent`
+- [x] **(requested)** Role presets: `i sing` (vocals muted, rest on), `i play guitar` / `bass` / `piano` / `drums`, `full mix` / `everything on`; solos cleared, the MIDI guide untouched, missing stems reported
+- [x] **(requested)** `play random song from my list` / `random song` / `surprise me` — random jump within the running playlist queue (new `jumpTo` in the playlist store)
+- [x] `next song` / `previous song` — playlist transport, `No playlist running` otherwise
 - [ ] `sing that again` — restart current playlist entry
+- [ ] Mixer A-B loop and speed by voice (the audio controller already exposes both)
 
 ### Navigation **(requested)**
 

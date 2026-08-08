@@ -13,6 +13,7 @@ import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -20,6 +21,8 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
+import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -42,7 +45,7 @@ import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
+import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -1595,6 +1598,48 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const toggleSolo = (label: string) => {
     commitStemMix(toggleStemSolo(tracks(), label))
   }
+
+  // ── Voice commands (mixer-owned) ─────────────────────────────
+  // Rebuilt whenever the track list changes so the phrase lists follow the
+  // stems actually in the mix; registered for this mixer's lifetime and
+  // gated to the Karaoke tab so the phrases go quiet elsewhere. Handlers
+  // are the SAME functions the mixer's own buttons call.
+  const stemVoiceCommands = createMemo(() =>
+    createStemMixerVoiceCommands({
+      playing: audio.playing,
+      elapsed: audio.elapsed,
+      duration: audio.duration,
+      play: audio.handlePlay,
+      pause: audio.handlePause,
+      stop: audio.handleStop,
+      seekToTime: audio.seekTo,
+      tracks,
+      toggleMute,
+      toggleSolo,
+      setTrackVolume,
+      available: () => activeTab() === TAB_KARAOKE,
+      playlist: {
+        active: playlist.isPlaylistActive,
+        next: handlePlaylistNext,
+        prev: handlePlaylistPrev,
+        random: () => {
+          const entries = playlist.queue()
+          if (entries.length === 0) return false
+          audio.handlePause()
+          let index = Math.floor(Math.random() * entries.length)
+          if (entries.length > 1 && index === playlist.currentIndex()) {
+            index = (index + 1) % entries.length
+          }
+          playlist.jumpTo(index)
+          return true
+        },
+      },
+    }),
+  )
+  // Read lazily per utterance by the voice dispatcher, deliberately outside
+  // any tracked scope — commands are matched on demand, not re-rendered.
+  // eslint-disable-next-line solid/reactivity
+  onCleanup(registerVoiceCommands(() => stemVoiceCommands()))
 
   // ── Stem controls props bundle ─────────────────────────────────
   // ── Add-stem pills ───────────────────────────────────────────
