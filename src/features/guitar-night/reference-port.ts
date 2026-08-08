@@ -127,6 +127,29 @@ export function referenceTrackSummaries(
     }))
 }
 
+/** Standard six-string open pitches, high to low, matching the stage's rows. */
+const STANDARD_GUITAR_OPEN_MIDI = [64, 59, 55, 50, 45, 40] as const
+
+/**
+ * Authored fingering is an index into *that track's own* tuning, so a bass,
+ * seven-string or dropped-tuning track numbers its strings differently from the
+ * six-string stage. Trust the fingering only when it genuinely describes a
+ * standard-tuned guitar; otherwise the note is placed by pitch instead of drawn
+ * on the wrong string.
+ */
+export function describesStandardGuitarFingering(
+  midi: number,
+  stringIndex: number | undefined,
+  fret: number | undefined,
+): boolean {
+  if (stringIndex === undefined || fret === undefined) return false
+  if (stringIndex < 0 || stringIndex >= STANDARD_GUITAR_OPEN_MIDI.length) {
+    return false
+  }
+  if (fret < 0) return false
+  return STANDARD_GUITAR_OPEN_MIDI[stringIndex] + fret === midi
+}
+
 /** Adapt one saved score into stage notes. Beats stay in the source's terms. */
 export function openGuitarNightReference(
   source: GuitarNightReferenceSource,
@@ -147,16 +170,24 @@ export function openGuitarNightReference(
       trackId: track.id,
       trackName: track.name,
       tempoBpm,
-      // Guitar Pro imports carry authored string/fret; MIDI notes are placed
-      // by the shared helper instead of guessed here.
+      // Guitar Pro imports carry authored string/fret, but only for their own
+      // instrument's tuning. Keep it when it describes this stage's six
+      // strings; otherwise let the shared helper place the note by pitch.
       notes: melodyToGuitarNotes(
-        track.notes.map((note) => ({
-          midi: note.midi,
-          startBeat: note.startBeat,
-          duration: note.duration,
-          stringIndex: note.stringIndex,
-          fret: note.fret,
-        })),
+        track.notes.map((note) => {
+          const authored = describesStandardGuitarFingering(
+            note.midi,
+            note.stringIndex,
+            note.fret,
+          )
+          return {
+            midi: note.midi,
+            startBeat: note.startBeat,
+            duration: note.duration,
+            stringIndex: authored ? note.stringIndex : undefined,
+            fret: authored ? note.fret : undefined,
+          }
+        }),
       ),
       tracks: referenceTrackSummaries(source),
     },
