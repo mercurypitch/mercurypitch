@@ -70,6 +70,15 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Closing the share sheet no longer downloads the card anyway.** Backing
+  out of sharing a voiceprint or glass card used to force a download and
+  count as a share; now it simply does nothing, and only real shares and
+  saves are counted.
+
+- **Working icons and share previews.** The browser-tab icons that 404'd
+  are real files now, links shared to social media carry complete preview
+  cards, and the sitemap only lists pages that exist.
+
 - **Autofill works again after a wrong password.** A failed sign-in now
   clears the password box and hides the reveal — password managers refuse to
   fill a field that still holds the wrong attempt, which made retries look

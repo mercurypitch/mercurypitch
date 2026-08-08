@@ -82,7 +82,7 @@ export async function renderVoiceprintCard(
 export async function shareVoiceprintRecord(
   record: VoiceprintRecord,
   variant: 'face' | 'stats',
-): Promise<'shared' | 'downloaded' | 'unavailable'> {
+): Promise<'shared' | 'downloaded' | 'dismissed' | 'unavailable'> {
   const canvas = await renderVoiceprintCard(record, variant)
   if (canvas === null) return 'unavailable'
 

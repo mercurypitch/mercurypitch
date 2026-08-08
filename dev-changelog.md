@@ -110,6 +110,16 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Fixed
 
+- **A dismissed share sheet is not a delivery.** `shareCard`
+  (`card-renderer.ts`) returns a third outcome, `'dismissed'`, when
+  `navigator.share` rejects with `AbortError` — previously any rejection
+  fell through to the download branch, so backing out of the sheet forced a
+  file download AND fired `card_shared`/`glass_card_shared`, inflating a
+  live Ads conversion. All four share sites (MirrorApp x2, CosmicMode,
+  GlassApp) now return early on `'dismissed'`; genuine fallback downloads
+  still count. Outcome matrix pinned in `card-share-outcome.test.ts`
+  (including "no forced download on dismissal" via an anchor-click spy).
+
 - **Failed sign-in re-arms the password field for autofill.** Password
   managers (Proton Pass and friends) refuse to overwrite a non-empty
   password input, and skip one revealed as `type="text"` — so the AuthModal
@@ -159,6 +169,12 @@ single-page-application` means a deleted chunk answers with index.html and a
   octaves 1-6; Compose, the desktop sidebar and the mobile options sheet all
   route through it, and the sidebar's displayed octave is now derived from
   `currentScale()` (root row) instead of dead local state.
+
+- **Merged from main, later batch:** the funnel event-name catalog
+  (`198a9ed7`, one shared list so ingest cannot reject client events), the
+  SEO sweep (#470: real favicon files, complete social cards, honest
+  sitemap, extensionless entry rewrites + revert keeping full-quality OG
+  images), and the dev redeploy trigger for shared runtime catalogs (#468).
 
 - **Merged from main into this release** (reviewed and landed separately):
   funnel acquisition capture — where a funnel visitor came from, carried on
