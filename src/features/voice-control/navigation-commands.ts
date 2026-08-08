@@ -11,9 +11,11 @@
 import type { Accessor } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { navigateTo } from '@/lib/hash-router'
 import { getPlaylistsReactive, isPlaylistActive, jumpTo, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { hideLibrary, isLibraryModalOpen, setActiveTab, showLibrary, } from '@/stores/ui-store'
+import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import type { VoiceCommand } from './types'
 import { voiceFailure } from './types'
 
@@ -99,9 +101,27 @@ export function createNavigationVoiceCommands(
       ],
       available: () => notSuspended() && !isPlaylistActive(),
       run: () => {
+        // Songs first — most libraries have no playlists at all. A random
+        // separated song opens straight in its mixer.
+        const songs = getAllUvrSessionsReactive().filter(
+          (s) => s.status === 'completed',
+        )
+        if (songs.length > 0) {
+          const pick = songs[Math.floor(Math.random() * songs.length)]
+          setActiveTab(TAB_KARAOKE)
+          navigateTo({
+            type: 'uvr-session-mixer',
+            sessionId: pick.sessionId,
+          })
+          const name = pick.originalFile?.name.replace(/\.[a-z0-9]+$/i, '')
+          return name !== undefined && name !== ''
+            ? `Random song: ${name}`
+            : 'Random song'
+        }
+        // A library organized into playlists still works.
         const playlists = getPlaylistsReactive()
         if (playlists.length === 0) {
-          return voiceFailure('No playlists yet — build one in Karaoke')
+          return voiceFailure('No songs in your library yet')
         }
         const pick = playlists[Math.floor(Math.random() * playlists.length)]
         startPlaylist(pick.id)

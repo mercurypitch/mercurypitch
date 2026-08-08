@@ -778,6 +778,29 @@ export function createTransportVoiceCommands(
       },
     },
     {
+      id: 'mic.toggle',
+      label: 'Microphone',
+      // Only a toggle exists (the M key); on/off phrasings land on it too.
+      phrases: [
+        'toggle microphone',
+        'toggle mic',
+        'microphone on',
+        'microphone off',
+        'mic on',
+        'mic off',
+        'mute my mic',
+        'unmute my mic',
+      ],
+      available: transportTab,
+      run: () => {
+        if (deps.handlers.onMicToggle === undefined) {
+          return voiceFailure('No microphone control here')
+        }
+        deps.handlers.onMicToggle()
+        return 'Microphone toggled'
+      },
+    },
+    {
       id: 'mode.repeat',
       label: 'Repeat mode',
       phrases: ['repeat mode', 'repeat on', 'mode repeat'],

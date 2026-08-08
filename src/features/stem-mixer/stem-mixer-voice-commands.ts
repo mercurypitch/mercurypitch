@@ -255,6 +255,8 @@ export function createStemMixerVoiceCommands(
         'one more time',
         'once more',
         'take it from the top',
+        'sing that again',
+        'sing it again',
       ],
       run: () => {
         deps.seekToTime(0)
