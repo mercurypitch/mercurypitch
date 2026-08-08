@@ -17,6 +17,11 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   touch-action: none;
+  /* Press-and-hold is the control's main gesture — iOS must not answer it
+     with the text-selection magnifier or a callout. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   transition: height 0.2s ease;
 }
 

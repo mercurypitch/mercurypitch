@@ -179,3 +179,14 @@ export function cycleLyricsSize(size: ZenLyricsSize): ZenLyricsSize {
   const idx = ZEN_LYRICS_SIZES.indexOf(size)
   return ZEN_LYRICS_SIZES[(idx + 1) % ZEN_LYRICS_SIZES.length]
 }
+
+/**
+ * A level drag on the vocal pill while the track is muted must first bring
+ * the vocals back: the muted gain bypasses the volume AND the pill's fill
+ * reads 0, so a bare volume write would be inaudible and invisible — the
+ * control felt stuck until it collapsed and could be tapped. Dragging down
+ * to 0 while muted stays a no-op (nothing to hear either way).
+ */
+export function vocalDragUnmutes(muted: boolean, level: number): boolean {
+  return muted && level > 0
+}

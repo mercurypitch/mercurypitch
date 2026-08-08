@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LibrarySessionLike } from '@/features/stem-mixer/zen-navigation'
-import { autoAdvanceTarget, cycleLyricsSize, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, relativeSessionId, resolveBackIntent, SEEK_TO_START_THRESHOLD_SEC, stepLyricsSize, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
+import { autoAdvanceTarget, cycleLyricsSize, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, relativeSessionId, resolveBackIntent, SEEK_TO_START_THRESHOLD_SEC, stepLyricsSize, vocalDragUnmutes, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
 
 // ── resolveBackIntent (REQ-ZEN-001 / 002) ──────────────────────
 
@@ -198,5 +198,25 @@ describe('lyrics size presets', () => {
     expect(ZEN_LYRICS_SCALE.current).toBe(1)
     expect(ZEN_LYRICS_SCALE.bigger).toBeGreaterThan(1)
     expect(ZEN_LYRICS_SCALE.smaller).toBeLessThan(1)
+  })
+})
+
+// ── Vocal pill level drags ───────────────────────────────────────
+
+describe('vocalDragUnmutes', () => {
+  it('a drag up from a muted pill brings the vocals back', () => {
+    expect(vocalDragUnmutes(true, 0.1)).toBe(true)
+  })
+
+  it('a drag while muted that stays at zero does not unmute', () => {
+    // Dragging down (or not past the threshold) on a muted pill must not
+    // resurrect the vocals at volume 0 — that is a mute wearing a
+    // different flag.
+    expect(vocalDragUnmutes(true, 0)).toBe(false)
+  })
+
+  it('an unmuted pill never re-toggles, whatever the level', () => {
+    expect(vocalDragUnmutes(false, 0.5)).toBe(false)
+    expect(vocalDragUnmutes(false, 0)).toBe(false)
   })
 })
