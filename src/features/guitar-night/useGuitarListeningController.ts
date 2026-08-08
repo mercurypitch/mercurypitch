@@ -1,25 +1,59 @@
 // Guitar Night Listening captures explicit, local pitch evidence for truthful Jam Doctor readouts.
 // ============================================================
+//
+// Two paths, deliberately, because *when* and *what* are different questions:
+//
+//   attacks   Found on the audio thread, one render quantum at a time, and
+//             stamped with the audio clock's own frame counter. This is the
+//             only path whose timestamps are worth anything musically.
+//   pitch     Read from an analyser on the frame loop, because naming a note
+//             needs a window tens of milliseconds wide and a few milliseconds
+//             of lag in the answer costs nothing.
+//
+// A pitch reading is attached to the strike it belongs to, so an attack keeps
+// its exact time and still ends up knowing what note it was.
+//
+// If the worklet cannot load, the frame loop finds attacks too — coarsely, at
+// whatever rate the renderer happens to be running. That is a real difference
+// in evidence quality, so it is reported as `timingSource` rather than hidden;
+// nothing downstream should make fine timing claims on the coarse path.
 
 import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
+import type { GuitarInputTap } from '@/lib/guitar/guitar-input-node'
+import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
+import type { GuitarInputEvent, GuitarInputHealthReading, } from '@/lib/guitar/input-events'
+import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, } from '@/lib/guitar/input-events'
+import type { InputLatencyProfile } from '@/lib/guitar/input-latency'
+import { assumeLatencyProfile, loadInputLatencyProfile, measureRoundTrip, playedAt, saveInputLatencyProfile, } from '@/lib/guitar/input-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { PitchDetector } from '@/lib/pitch-detector'
 
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
+const ANALYSER_SIZE = 2048
 
-export type GuitarListeningStatus = 'off' | 'requesting' | 'listening' | 'error'
+/** Clicks played by one calibration run, and how far apart. */
+const CALIBRATION_CLICKS = 8
+const CALIBRATION_SPACING_SEC = 0.35
+const CALIBRATION_LEAD_IN_SEC = 0.4
 
-export interface GuitarListeningEvent {
-  atMs: number
-  midi: number
-  noteName: string
-  clarity: number
-  cents: number
-  rms: number
-}
+export type GuitarListeningStatus =
+  | 'off'
+  | 'requesting'
+  | 'listening'
+  | 'calibrating'
+  | 'error'
+
+/**
+ * Where an attack's timestamp came from. The audio clock is sample-exact; the
+ * frame loop is whatever the renderer managed, and can be tens of milliseconds
+ * out under load.
+ */
+export type GuitarTimingSource = 'audio-clock' | 'frame-loop'
+
+export type { GuitarInputEvent }
 
 export interface GuitarListeningObservation {
   label: string
@@ -42,30 +76,53 @@ function median(values: readonly number[]): number {
 }
 
 export function summarizeGuitarListeningEvidence(
-  events: readonly GuitarListeningEvent[],
+  events: readonly GuitarInputEvent[],
 ): readonly GuitarListeningObservation[] {
   if (events.length === 0) return []
+  const attacks = events.filter((event) => event.kind === 'attack')
+  const identified = events.filter((event) => event.pitch !== null)
   const observations: GuitarListeningObservation[] = [
     {
       label: 'Attacks heard',
-      value: String(events.length),
+      value: String(attacks.length),
       detail: 'Fresh note attacks captured in this take.',
     },
   ]
 
-  if (events.length >= 3) {
-    const clarity = median(events.map((event) => event.clarity))
+  // Legato moves are real playing and worth showing, but they are not picks
+  // and the spacing figures below must not be built from them.
+  const legato = events.length - attacks.length
+  if (legato > 0) {
     observations.push({
-      label: 'Median clarity',
-      value: `${Math.round(clarity * 100)}%`,
-      detail: 'Detector confidence across captured attacks.',
+      label: 'Notes without a pick',
+      value: String(legato),
+      detail: 'Hammer-ons, pull-offs or slides — heard as pitch changes.',
     })
   }
 
-  if (events.length >= 4) {
-    const intervals = events
+  if (identified.length < events.length) {
+    observations.push({
+      label: 'Notes identified',
+      value: `${identified.length} of ${events.length}`,
+      detail: 'The rest were heard but not clear enough to name.',
+    })
+  }
+
+  if (identified.length >= 3) {
+    const clarity = median(identified.map((event) => event.pitch?.clarity ?? 0))
+    observations.push({
+      label: 'Median clarity',
+      value: `${Math.round(clarity * 100)}%`,
+      detail: 'Detector confidence across identified notes.',
+    })
+  }
+
+  if (attacks.length >= 4) {
+    const intervals = attacks
       .slice(1)
-      .map((event, index) => event.atMs - (events[index]?.atMs ?? event.atMs))
+      .map(
+        (event, index) => (event.at - (attacks[index]?.at ?? event.at)) * 1000,
+      )
       .filter((interval) => interval > 45 && interval < 5000)
     if (intervals.length >= 3) {
       const center = median(intervals)
@@ -80,14 +137,16 @@ export function summarizeGuitarListeningEvidence(
     }
   }
 
-  const midiValues = events.map((event) => event.midi)
-  const range = Math.max(...midiValues) - Math.min(...midiValues)
-  if (range > 0) {
-    observations.push({
-      label: 'Range heard',
-      value: `${range} semitones`,
-      detail: 'Lowest-to-highest detected attack in this take.',
-    })
+  const midiValues = identified.map((event) => event.pitch?.midi ?? 0)
+  if (midiValues.length > 0) {
+    const range = Math.max(...midiValues) - Math.min(...midiValues)
+    if (range > 0) {
+      observations.push({
+        label: 'Range heard',
+        value: `${range} semitones`,
+        detail: 'Lowest-to-highest identified note in this take.',
+      })
+    }
   }
 
   return observations
@@ -101,6 +160,35 @@ function rms(samples: Float32Array): number {
   return Math.sqrt(sum / Math.max(1, samples.length))
 }
 
+/**
+ * Loudest sample in the window. Health is judged on peak, not on the RMS the
+ * onset heuristic uses: a signal clipping at ±1 has an RMS around 0.7, so an
+ * RMS-based check would never once report the one fault that matters most.
+ */
+function peakOf(samples: Float32Array): number {
+  let peak = 0
+  for (let index = 0; index < samples.length; index += 1) {
+    const magnitude = Math.abs(samples[index] ?? 0)
+    if (magnitude > peak) peak = magnitude
+  }
+  return peak
+}
+
+/** A short bright tick, loud enough for the room to hear itself play it. */
+function scheduleCalibrationClick(context: AudioContext, at: number): void {
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  oscillator.type = 'square'
+  oscillator.frequency.value = 1400
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.exponentialRampToValueAtTime(0.5, at + 0.001)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.012)
+  oscillator.connect(gain)
+  gain.connect(context.destination)
+  oscillator.start(at)
+  oscillator.stop(at + 0.03)
+}
+
 export function useGuitarListeningController(
   options: GuitarListeningControllerOptions,
 ) {
@@ -109,23 +197,42 @@ export function useGuitarListeningController(
   const [currentNote, setCurrentNote] = createSignal<string | null>(null)
   const [detectedMidi, setDetectedMidi] = createSignal<number | null>(null)
   const [clarity, setClarity] = createSignal(0)
-  const [events, setEvents] = createSignal<readonly GuitarListeningEvent[]>([])
+  const [events, setEvents] = createSignal<readonly GuitarInputEvent[]>([])
+  const [timingSource, setTimingSource] =
+    createSignal<GuitarTimingSource>('frame-loop')
+  const [latency, setLatency] = createSignal<InputLatencyProfile | null>(null)
+  const [health, setHealth] = createSignal<GuitarInputHealthReading | null>(
+    null,
+  )
   const observations = createMemo(() =>
     summarizeGuitarListeningEvidence(events()),
   )
 
   let source: MediaStreamAudioSourceNode | null = null
   let analyser: AnalyserNode | null = null
+  let tap: GuitarInputTap | null = null
   let frame = 0
   let generation = 0
+  let heldMidi: number | null = null
+  // While a calibration run is going, attacks are evidence about the route,
+  // not about the player, and must not land in the take.
+  let calibrationHits: number[] | null = null
+
+  const pushEvent = (event: GuitarInputEvent): void => {
+    setEvents((previous) => [...previous.slice(-(MAX_EVENTS - 1)), event])
+  }
 
   const stopNodes = (): void => {
     if (frame !== 0) cancelAnimationFrame(frame)
     frame = 0
+    tap?.dispose()
+    tap = null
     source?.disconnect()
     analyser?.disconnect()
     source = null
     analyser = null
+    heldMidi = null
+    calibrationHits = null
   }
 
   const stop = (): void => {
@@ -136,6 +243,8 @@ export function useGuitarListeningController(
     setCurrentNote(null)
     setDetectedMidi(null)
     setClarity(0)
+    setHealth(null)
+    setTimingSource('frame-loop')
   }
 
   // Watchdog registration (repo rule: every mic surface registers): the
@@ -147,14 +256,14 @@ export function useGuitarListeningController(
       // Deliberately non-reactive: the sentinel polls these accessors on
       // its own low-frequency interval — no tracked scope involved.
       // eslint-disable-next-line solid/reactivity
-      () => status() === 'listening' || status() === 'requesting',
+      () => status() !== 'off' && status() !== 'error',
 
       () => stop(),
     ),
   )
 
   const start = async (): Promise<boolean> => {
-    if (status() === 'requesting' || status() === 'listening') return true
+    if (status() !== 'off' && status() !== 'error') return true
     generation += 1
     const currentGeneration = generation
     stopNodes()
@@ -178,35 +287,93 @@ export function useGuitarListeningController(
         return false
       }
 
-      const nextSource = graph.context.createMediaStreamSource(stream)
-      const nextAnalyser = graph.context.createAnalyser()
-      nextAnalyser.fftSize = 2048
+      const context = graph.context
+      const deviceId =
+        stream.getAudioTracks()[0]?.getSettings().deviceId ?? 'default'
+      const profile =
+        loadInputLatencyProfile(deviceId) ??
+        assumeLatencyProfile(deviceId, context, new Date().toISOString())
+      setLatency(profile)
+
+      const nextSource = context.createMediaStreamSource(stream)
+      const nextAnalyser = context.createAnalyser()
+      nextAnalyser.fftSize = ANALYSER_SIZE
       nextAnalyser.smoothingTimeConstant = 0
       nextSource.connect(nextAnalyser)
       source = nextSource
       analyser = nextAnalyser
+
+      // Messages arrive from the audio thread, not from a tracked scope. The
+      // latency read inside wants whatever was calibrated at the moment the
+      // strike landed — subscribing to it would be meaningless here.
+      // eslint-disable-next-line solid/reactivity
+      tap = await connectGuitarInputWorklet(context, nextSource, (message) => {
+        if (currentGeneration !== generation) return
+        if (message.type === 'level') {
+          setHealth(describeInputHealth(message.peak, message.noiseFloor))
+          return
+        }
+        const capturedAt = frameToSeconds(message.atFrame, context.sampleRate)
+        if (calibrationHits !== null) {
+          calibrationHits.push(capturedAt)
+          return
+        }
+        pushEvent({
+          kind: 'attack',
+          source: 'microphone',
+          at: playedAt(capturedAt, latency()),
+          capturedAt,
+          level: message.level,
+          pitch: null,
+        })
+      })
+      if (currentGeneration !== generation) {
+        stopNodes()
+        micManager.release(CONSUMER_ID)
+        return false
+      }
+      setTimingSource(tap === null ? 'frame-loop' : 'audio-clock')
+
       const samples = new Float32Array(nextAnalyser.fftSize)
+      // How far back the analyser's window reaches. A note named from it began
+      // at least this long ago, which is what the strike it belongs to knows.
+      const windowSeconds = nextAnalyser.fftSize / context.sampleRate
       const detector = new PitchDetector({
         algorithm: 'mpm',
-        sampleRate: graph.context.sampleRate,
+        sampleRate: context.sampleRate,
         bufferSize: nextAnalyser.fftSize,
         minFrequency: 55,
         maxFrequency: 1600,
         minConfidence: 0.38,
         minAmplitude: 0.018,
       })
-      let heldMidi: number | null = null
-      let lastEventAtMs = Number.NEGATIVE_INFINITY
+      const fallbackNoiseFloor = createNoiseFloorFollower()
       let smoothedRms = 0.008
       let silentFrames = 0
+      let lastFrameAt = context.currentTime
       setStatus('listening')
 
       const tick = (): void => {
         if (currentGeneration !== generation || analyser === null) return
         analyser.getFloatTimeDomainData(samples)
         const amplitude = rms(samples)
+        const now = context.currentTime
+        const capturedAt = now - windowSeconds
         const onset = amplitude > smoothedRms * 1.75 && amplitude > 0.025
         smoothedRms = smoothedRms * 0.9 + amplitude * 0.1
+
+        // Only the coarse path needs its own level meter and its own attacks;
+        // with the worklet running, both come from the audio thread instead.
+        if (tap === null) {
+          const peak = peakOf(samples)
+          const floor = fallbackNoiseFloor.push(
+            peak,
+            Math.max(0.001, now - lastFrameAt),
+          )
+          setHealth(describeInputHealth(peak, floor))
+        }
+        lastFrameAt = now
+
         const detected = detector.detect(samples)
         if (detected.frequency > 0 && detected.clarity >= 0.38) {
           const midi = Math.round(69 + 12 * Math.log2(detected.frequency / 440))
@@ -215,22 +382,32 @@ export function useGuitarListeningController(
           setDetectedMidi(midi)
           setClarity(detected.clarity)
           silentFrames = 0
-          const eventAtMs = performance.now()
-          if (heldMidi !== midi || (onset && eventAtMs - lastEventAtMs >= 55)) {
-            heldMidi = midi
-            lastEventAtMs = eventAtMs
-            const event: GuitarListeningEvent = {
-              atMs: eventAtMs,
+
+          if (calibrationHits === null) {
+            const pitch = {
               midi,
               noteName: label,
-              clarity: detected.clarity,
               cents: detected.cents,
-              rms: amplitude,
+              clarity: detected.clarity,
             }
-            setEvents((previous) => [
-              ...previous.slice(-(MAX_EVENTS - 1)),
-              event,
-            ])
+            const at = playedAt(capturedAt, latency())
+            const attached = attachPitchToLatestAttack(events(), pitch, at)
+            if (attached !== events()) {
+              setEvents(attached)
+              heldMidi = midi
+            } else if (heldMidi !== midi) {
+              // A note the strike path never claimed: either a legato move, or
+              // a pick the coarse path has to stand in for.
+              heldMidi = midi
+              pushEvent({
+                kind: tap === null && onset ? 'attack' : 'pitch-change',
+                source: 'microphone',
+                at,
+                capturedAt,
+                level: amplitude,
+                pitch,
+              })
+            }
           }
         } else {
           silentFrames += 1
@@ -262,6 +439,59 @@ export function useGuitarListeningController(
     }
   }
 
+  /**
+   * Play a run of clicks out loud and time how long they take to come back.
+   * Only works over speakers — on headphones the microphone hears nothing and
+   * this says so rather than saving a made-up number.
+   */
+  const calibrate = async (): Promise<boolean> => {
+    if (status() !== 'listening' || tap === null) return false
+    const graph = options.getAudioGraph()
+    const profile = latency()
+    if (graph === null || profile === null) return false
+
+    const currentGeneration = generation
+    const context = graph.context
+    const hits: number[] = []
+    calibrationHits = hits
+    setStatus('calibrating')
+
+    const firstAt = context.currentTime + CALIBRATION_LEAD_IN_SEC
+    const clickTimes = Array.from(
+      { length: CALIBRATION_CLICKS },
+      (_, index) => firstAt + index * CALIBRATION_SPACING_SEC,
+    )
+    for (const at of clickTimes) scheduleCalibrationClick(context, at)
+
+    const runSeconds =
+      CALIBRATION_LEAD_IN_SEC + CALIBRATION_CLICKS * CALIBRATION_SPACING_SEC
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, Math.round(runSeconds * 1000) + 400)
+    })
+    if (currentGeneration !== generation) return false
+    calibrationHits = null
+    setStatus('listening')
+
+    const measured = measureRoundTrip(clickTimes, hits)
+    if (measured === null) {
+      setError(
+        'The clicks never came back — calibration needs speakers, not headphones.',
+      )
+      return false
+    }
+    const next: InputLatencyProfile = {
+      deviceId: profile.deviceId,
+      roundTripMs: measured.roundTripMs,
+      origin: 'measured',
+      spreadMs: measured.spreadMs,
+      updatedAt: new Date().toISOString(),
+    }
+    saveInputLatencyProfile(next)
+    setLatency(next)
+    setError(null)
+    return true
+  }
+
   const clearTake = (): void => {
     setEvents([])
   }
@@ -280,8 +510,12 @@ export function useGuitarListeningController(
     clarity,
     events,
     observations,
+    timingSource,
+    latency,
+    health,
     start,
     stop,
+    calibrate,
     clearTake,
   }
 }
