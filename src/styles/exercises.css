@@ -1989,6 +1989,12 @@
   flex-direction: column;
   gap: 4px;
   text-align: left;
+  /* The run's contour lives in here. As a flex item beside the grade badge it
+     defaults to min-width: auto, so the canvas's intrinsic width set the floor
+     and the card's content overflowed to the right of its own padding on a
+     phone. */
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .exercise-result-score {
