@@ -130,19 +130,27 @@
     },
     "preview": {
       "name": "mercurypitch-preview",
-      // A named environment inherits NOTHING from the top level, so every
-      // binding the Worker touches has to be repeated here. Both of these
-      // were missing, and the failures were invisible until someone
-      // exercised the feature on a preview URL:
-      //   SHARE_STORE — share-handler.ts calls it unguarded, so /api/share/*
-      //     threw a 500 on every preview deploy. Wrangler cannot warn about
-      //     this one (there is no top-level kv_namespaces to compare against).
-      //   UVR_INPUT_BUCKET — optional in the Env type and handled as null, so
-      //     this only 503s uploads over the 7 MB inline cap and every
-      //     instrumental split. That is the warning Wrangler does print.
-      // Previews point at the dev API, so they share dev's KV and dev's
-      // bucket: both are TTL'd (60-day share payloads, 1-day `input/`
-      // lifecycle) and never the prod ones.
+      // A named environment inherits NOTHING from the top level, so a binding
+      // the Worker reads has to be repeated here or it is simply absent at
+      // runtime. Both entries below REFERENCE dev's existing store — neither
+      // creates anything, so a preview deploy provisions no new Cloudflare
+      // resource of any kind. Never the prod stores.
+      //
+      // SHARE_STORE: share-handler.ts reads it unguarded, so /api/share/*
+      //   500s without it. The client swallows that (tryShortenUrl returns
+      //   null and the caller falls back to the long URL), so the symptom is
+      //   a share link that is never shortened rather than a broken share —
+      //   which is exactly why it went unnoticed. Wrangler cannot warn here:
+      //   there is no top-level kv_namespaces to compare an env against.
+      // UVR_INPUT_BUCKET: this is the binding Wrangler DOES warn about, and
+      //   the honest reason to declare it is the warning plus the day preview
+      //   gets RunPod secrets. Server separation cannot run on a preview
+      //   today — the mercurypitch-preview Worker holds only JWT_SECRET, no
+      //   RUNPOD_API_KEY or endpoint id — so nothing writes to this bucket.
+      //   `"r2_buckets": []` does NOT silence the warning; Wrangler compares
+      //   binding names, so it then complains the name is missing instead.
+      // RUNPOD_STEM_PREFIX is deliberately absent: it is read only on the
+      // RunPod path, which cannot run here.
       "kv_namespaces": [
         { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" },
       ],
@@ -155,9 +163,6 @@
       "vars": {
         "ENVIRONMENT": "preview",
         "DB_API_URL": "https://api-dev.mercurypitch.com",
-        // Must match the dev RunPod endpoint's S3_KEY_PREFIX, since that is
-        // the API a preview talks to — the code default is prod's `runpod`.
-        "RUNPOD_STEM_PREFIX": "runpod-dev",
       },
       "build": {
         "command": "pnpm run build:dev",

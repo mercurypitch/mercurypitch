@@ -23,16 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which from Settings → Credits reads as a click that did nothing and left the
   visitor to find the sign-in button themselves. It is a button now, opening
   the same shared `AuthModal` on its register pane.
-- **The PR-preview Worker environment was missing two bindings.** A named
-  Wrangler environment inherits nothing from the top level, and `env.preview`
-  declared neither: `SHARE_STORE` (used unguarded in `share-handler.ts`, so
-  `/api/share/*` threw a 500 on every preview deploy — and Wrangler cannot
-  warn about it, there being no top-level `kv_namespaces` to compare against)
-  and `UVR_INPUT_BUCKET` (optional in the `Env` type, so it only 503'd uploads
-  over the 7 MB inline cap and every instrumental split — that is the warning
-  Wrangler did print). Both now point at dev's KV and bucket, matching the dev
-  API a preview talks to, plus `RUNPOD_STEM_PREFIX=runpod-dev` so the R2-direct
-  stem fallback looks under the prefix that endpoint actually writes.
+- **The PR-preview Worker environment declared none of its bindings.** A named
+  Wrangler environment inherits nothing from the top level, so `env.preview`
+  had neither `SHARE_STORE` nor `UVR_INPUT_BUCKET` at runtime. Both now
+  reference dev's existing store; a preview deploy still provisions no new
+  Cloudflare resource. `SHARE_STORE` is the one with a real effect:
+  `share-handler.ts` reads it unguarded, so `/api/share/*` 500s without it,
+  and because `tryShortenUrl` returns null on any failure the caller quietly
+  fell back to the long URL — a share link that was never shortened rather
+  than a visible error, which is why nobody noticed. `UVR_INPUT_BUCKET` is the
+  one Wrangler warns about, and declaring it is for the warning plus
+  future-proofing: server separation cannot run on a preview at all, since the
+  `mercurypitch-preview` Worker holds only `JWT_SECRET` and no RunPod
+  credentials. `"r2_buckets": []` does not silence the warning — Wrangler
+  compares binding names — and `RUNPOD_STEM_PREFIX` is deliberately left out,
+  being read only on the RunPod path.
 
 ## [0.8.1] - 2026-08-08
 
