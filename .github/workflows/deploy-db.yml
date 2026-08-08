@@ -40,6 +40,16 @@ on:
       - main
     paths:
       - 'workers/db-worker/**'
+      # The worker compiles in three catalogs that live with the app, and a
+      # merge touching only one of them must still redeploy dev — otherwise
+      # the deployed allowlist drifts behind the client. This happened
+      # 2026-08-08: the karaoke_example_staged event merged in the funnel
+      # catalog, no deploy fired, and the dev worker answered the new event
+      # 400 until a manual dispatch. Release tags are immune (workflow_call
+      # deploys unconditionally); this filter only protects dev.
+      - 'src/lib/funnel-event-catalog.ts'
+      - 'src/lib/supporter-feature-catalog.ts'
+      - 'src/lib/backgrounds/background-catalog.ts'
   workflow_dispatch:
     inputs:
       environment:
