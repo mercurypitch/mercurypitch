@@ -178,14 +178,31 @@ function notesToMidi(notes) {
   track.push(0x00, 0xff, 0x2f, 0x00)
 
   const header = [
-    0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1,
-    (TICKS_PER_QUARTER >> 8) & 0xff, TICKS_PER_QUARTER & 0xff,
+    0x4d,
+    0x54,
+    0x68,
+    0x64,
+    0,
+    0,
+    0,
+    6,
+    0,
+    0,
+    0,
+    1,
+    (TICKS_PER_QUARTER >> 8) & 0xff,
+    TICKS_PER_QUARTER & 0xff,
   ]
   const length = track.length
   const trackHeader = [
-    0x4d, 0x54, 0x72, 0x6b,
-    (length >> 24) & 0xff, (length >> 16) & 0xff,
-    (length >> 8) & 0xff, length & 0xff,
+    0x4d,
+    0x54,
+    0x72,
+    0x6b,
+    (length >> 24) & 0xff,
+    (length >> 16) & 0xff,
+    (length >> 8) & 0xff,
+    length & 0xff,
   ]
   return Buffer.from([...header, ...trackHeader, ...track])
 }
@@ -259,9 +276,13 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
       '',
       '### Pitch histograms',
       '',
-      `Heard: ${pitchHistogram(heard).map(([m, c]) => `${m}×${c}`).join(', ')}`,
+      `Heard: ${pitchHistogram(heard)
+        .map(([m, c]) => `${m}×${c}`)
+        .join(', ')}`,
       '',
-      `Tab:   ${pitchHistogram(truth).map(([m, c]) => `${m}×${c}`).join(', ')}`,
+      `Tab:   ${pitchHistogram(truth)
+        .map(([m, c]) => `${m}×${c}`)
+        .join(', ')}`,
     )
   }
   return `${lines.join('\n')}\n`
@@ -333,8 +354,7 @@ async function main() {
     }
 
     for (const audioPath of options.audio) {
-      const label =
-        options.label ?? basename(audioPath, extname(audioPath))
+      const label = options.label ?? basename(audioPath, extname(audioPath))
       console.log(
         `\nTranscribing ${basename(audioPath)} with ${options.source}…`,
       )
@@ -369,11 +389,7 @@ async function main() {
       const profile = result.profile
       await writeFile(
         resolve(outDir, `${label}.notes.json`),
-        JSON.stringify(
-          { audio: audioPath, ...result, notes, scored },
-          null,
-          2,
-        ),
+        JSON.stringify({ audio: audioPath, ...result, notes, scored }, null, 2),
       )
       await writeFile(resolve(outDir, `${label}.mid`), notesToMidi(notes))
       const report = buildReport(

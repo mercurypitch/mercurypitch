@@ -25,7 +25,12 @@ class Reader {
     return (this.u8() << 8) | this.u8()
   }
   u32() {
-    return ((this.u8() << 24) >>> 0) + (this.u8() << 16) + (this.u8() << 8) + this.u8()
+    return (
+      ((this.u8() << 24) >>> 0) +
+      (this.u8() << 16) +
+      (this.u8() << 8) +
+      this.u8()
+    )
   }
   varint() {
     let value = 0
@@ -79,9 +84,14 @@ function readEvents(bytes) {
       } else {
         const kind = status & 0xf0
         const first = reader.u8()
-        const second =
-          kind === 0xc0 || kind === 0xd0 ? 0 : reader.u8()
-        events.push({ tick, status: kind, channel: status & 0x0f, first, second })
+        const second = kind === 0xc0 || kind === 0xd0 ? 0 : reader.u8()
+        events.push({
+          tick,
+          status: kind,
+          channel: status & 0x0f,
+          first,
+          second,
+        })
       }
     }
     reader.at = end
@@ -108,14 +118,21 @@ function buildTempoMap(tracks, division) {
   }
 
   // Seconds elapsed at each change, accumulated at the tempo in force before it.
-  const anchors = [{ tick: changes[0].tick, seconds: 0, usPerQuarter: changes[0].usPerQuarter }]
+  const anchors = [
+    {
+      tick: changes[0].tick,
+      seconds: 0,
+      usPerQuarter: changes[0].usPerQuarter,
+    },
+  ]
   for (let index = 1; index < changes.length; index += 1) {
     const previous = anchors[index - 1]
     const deltaTicks = changes[index].tick - previous.tick
     anchors.push({
       tick: changes[index].tick,
       seconds:
-        previous.seconds + (deltaTicks * previous.usPerQuarter) / division / 1e6,
+        previous.seconds +
+        (deltaTicks * previous.usPerQuarter) / division / 1e6,
       usPerQuarter: changes[index].usPerQuarter,
     })
   }
@@ -132,7 +149,8 @@ function buildTempoMap(tracks, division) {
         else break
       }
       return (
-        anchor.seconds + ((tick - anchor.tick) * anchor.usPerQuarter) / division / 1e6
+        anchor.seconds +
+        ((tick - anchor.tick) * anchor.usPerQuarter) / division / 1e6
       )
     },
   }
