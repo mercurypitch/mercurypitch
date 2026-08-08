@@ -104,6 +104,43 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Fixed
 
+- **A rest left the note before it still being scored.** `PracticeEngine`
+  closed a note's sample window only when the _next_ note started, and
+  `PlaybackRuntime` filters rests out of `noteStart` and `noteEnd` alike — so a
+  rest announced nothing and the finished note kept collecting through it. With
+  `applySpacedRests` inserting two beats of silence, roughly two thirds of a
+  note's samples came from the singer feeling out the coming pitch. Probed with
+  a 200-cent prep tone, a perfectly sung note's mean absolute error went from
+  ~0 to 133 cents — past `CENTS_GOOD` (50), so `centsToRating` returned `off`
+  and `PitchCanvas` forced its chip to 0%. That is the whole reported symptom:
+  every note 0% with rests, sane percentages without. New `onNoteEnd()` pushes
+  a null boundary through the same latency-deferred queue as a start (frames
+  arriving just after the note ended were still sung during it), and App
+  subscribes it to the runtime's `noteEnd`. Notes that run back to back are
+  untouched — the runtime emits end-then-start on one tick, in that order, so
+  the result count and order are exactly what they were. Four tests, each
+  failing on its own without the fix.
+
+- **The drawn trace ignored the measured mic delay while scoring applied it,**
+  so the picture and the score disagreed by exactly the offset — a trace on the
+  note bar that scored as if it were beside it. `sungBeat(beat, offsetMs, bpm)`
+  in `@/lib/mic-latency` is now the single definition of that shift, and
+  `usePracticeController` puts every trace sample through it. It is a no-op at
+  an unmeasured 0 ms. Recording (`processPitchFrame`) still stores arrival
+  beats: its pipeline keys off `performance.now()` as well as the beat, so
+  shifting one without the other would desync it — left as a follow-up.
+
+- **Audited the mic-latency measurement itself and found it sound.** The wizard
+  times clicks and their return on one `AudioContext` clock and uses the
+  scheduled time as the reference, which is right for measuring the device's
+  own delay (the contrast with `tap-calibration`, which measures a human
+  reaction, is documented in both files). The median over eight clicks, the
+  half-interval match window, `MIN_LATENCY_HITS` and `MAX_LATENCY_MS` all hold.
+  One inherent limit worth knowing: the capture anchor is
+  `currentTime - block/sampleRate` taken inside a `ScriptProcessor` callback,
+  which fires on the main thread, so a reading is biased high by however late
+  that callback runs — about ±10 ms at the 512-sample block size.
+
 - **Short-viewport layout, two distinct bugs.** A shrinkable flex item floors
   at its container's height while its children shrink below their text, so the
   text _overlaps_ rather than clips — `.exercise-idle-center` needed

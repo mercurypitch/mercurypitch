@@ -11,11 +11,13 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import type { RecordingController } from '@/features/recording/useRecordingController'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { sungBeat } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { PlaybackRuntime } from '@/lib/playback-runtime'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { micActive, setMicActive, setMicError, showNotification, } from '@/stores'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import type { PitchSample } from '@/types'
 import type { NoteResult, PitchResult, PracticeResult } from '@/types'
 
@@ -98,6 +100,15 @@ export function usePracticeController(deps: Deps): PracticeController {
       frameListeners.delete(listener)
     }
   }
+
+  /**
+   * Where the trace goes: the beat a frame arriving now was sung on. The scorer
+   * already credits it to the note that was running a round trip ago, so a
+   * trace drawn at the arrival beat would sit beside the note it was scored
+   * against. A no-op until a device is measured.
+   */
+  const traceBeat = (beat: number): number =>
+    sungBeat(beat, micLatencyMs(), audioEngine.getBpm?.() ?? 120)
 
   // Wire practice engine callbacks. This controller lives for the whole app
   // session and is the one place the shared mic-state signal gets updated,
@@ -200,7 +211,7 @@ export function usePracticeController(deps: Deps): PracticeController {
             ...prev,
             {
               freq: pitch.frequency,
-              time: beat,
+              time: traceBeat(beat),
               cents: pitch.cents,
             },
           ]
@@ -214,7 +225,7 @@ export function usePracticeController(deps: Deps): PracticeController {
         setPitchHistory((prev) => {
           const last = prev[prev.length - 1]
           if (last === undefined || last.freq === null) return prev
-          return [...prev, { freq: null, time: beat }]
+          return [...prev, { freq: null, time: traceBeat(beat) }]
         })
       }
 

@@ -63,6 +63,19 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   songs you had. It stays put now, and the first load says it is loading
   instead of showing nothing.
 
+- **Practising with rests between the notes no longer ruins your score.** A
+  note's accuracy was measured until the _next_ note began, so the silence
+  after it counted as part of it — and quietly finding the coming note during
+  the rest, which is what the rest is for, marked the note you had just sung
+  as off. A spaced run scored far worse than the very same singing with no
+  rests in it. Each note is now scored on its own length, and nothing sung
+  during a rest counts either way.
+
+- **The pitch line is drawn where the score counts it.** Once a microphone
+  delay had been measured, the trace was left where the sound arrived while
+  the score used where you actually sang, so a run could look right and read
+  wrong by exactly the measured delay.
+
 - **The prepare bar sat at the far left of centred lyrics,** pointing at empty
   space instead of the line it was counting you into.
 

@@ -2143,13 +2143,13 @@ const AppShell: Component<AppProps> = (props) => {
       const { note: item, index } = e
       melodyStore.setCurrentNoteIndex(index)
 
-      // Suppress audio for rest items. Session rests reuse the runtime
-      // (so the playhead can advance visibly across the rest bar),
-      // which means PlaybackRuntime emits noteStart for the synthetic
-      // rest MelodyItem. Without this guard the placeholder note would
-      // play at full volume during what's supposed to be silent.
-      // Spaced-rest items take the same path and benefit from the same
-      // guard. We also avoid passing rests to the practiceEngine.
+      // Suppress audio for rest items. Session and spaced rests reuse the
+      // runtime so the playhead advances visibly across the rest bar, and
+      // the placeholder note they carry must never sound. PlaybackRuntime
+      // already filters rests out of noteStart, so this is belt-and-braces
+      // against a rest reaching the audio path — and it is why the end of a
+      // note is announced through 'noteEnd' below rather than by the next
+      // start: a rest fires no start at all to close it.
       const isRestItem = item.isRest === true
 
       if (!isRestItem) {
@@ -2223,6 +2223,13 @@ const AppShell: Component<AppProps> = (props) => {
       if (noteId !== undefined) {
         audioEngine.stopNote(noteId)
         activeNoteIds.delete(index)
+      }
+      // Close the note's scoring window on its own duration. For notes that
+      // run back to back this changes nothing — the runtime emits the end and
+      // the next start on the same tick, in that order. It is what a rest or a
+      // gap needs: neither fires a start, so nothing else would ever close it.
+      if (activeTab() === TAB_SINGING) {
+        practiceEngine.onNoteEnd()
       }
       // If this was the last active note, clear target pitch
       if (activeNoteIndices().size === 0) {

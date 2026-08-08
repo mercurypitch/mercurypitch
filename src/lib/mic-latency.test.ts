@@ -7,7 +7,7 @@
 // depends on a device.
 
 import { describe, expect, it } from 'vitest'
-import { detectOnsets, LATENCY_CLICK_COUNT, matchOnsetDeltas, MAX_LATENCY_MS, MIN_LATENCY_HITS, summariseLatency, } from './mic-latency'
+import { detectOnsets, LATENCY_CLICK_COUNT, matchOnsetDeltas, MAX_LATENCY_MS, MIN_LATENCY_HITS, summariseLatency, sungBeat, } from './mic-latency'
 
 const SAMPLE_RATE = 48_000
 
@@ -167,5 +167,33 @@ describe('end to end on a synthetic run', () => {
     expect(result.failure).toBeNull()
     expect(result.latencyMs).toBeGreaterThanOrEqual(84)
     expect(result.latencyMs).toBeLessThanOrEqual(88)
+  })
+})
+
+describe('sungBeat', () => {
+  it('leaves the beat alone on an unmeasured device', () => {
+    expect(sungBeat(4, 0, 120)).toBe(4)
+  })
+
+  it('moves the frame back by the round trip, in beats', () => {
+    // 120 bpm is two beats a second, so 95 ms is 0.19 of a beat.
+    expect(sungBeat(4, 95, 120)).toBeCloseTo(3.81, 5)
+    // Half the tempo, half the shift for the same offset.
+    expect(sungBeat(4, 95, 60)).toBeCloseTo(4 - 0.095, 5)
+  })
+
+  it('moves it back, never forward — the frame is older than its arrival', () => {
+    expect(sungBeat(4, 95, 120)).toBeLessThan(4)
+  })
+
+  it('keeps a frame sung before the first note before it, rather than clamping', () => {
+    // The singer came in early: the trace belongs left of beat 0, which is
+    // where the canvas draws it. Clamping would stack early frames on the
+    // downbeat and hide exactly the mistake the trace is there to show.
+    expect(sungBeat(0.05, 95, 120)).toBeLessThan(0)
+  })
+
+  it('ignores a nonsense tempo instead of returning NaN', () => {
+    expect(sungBeat(4, 95, 0)).toBe(4)
   })
 })

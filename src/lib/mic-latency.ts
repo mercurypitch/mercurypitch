@@ -83,6 +83,18 @@ const DEFAULT_ONSET_OPTIONS: Required<OnsetOptions> = {
   refractorySec: 0.2,
 }
 
+/**
+ * The transport beat a frame arriving at `beat` was actually sung on. The
+ * scorer already attributes a frame to the note that was running one round trip
+ * ago (see PracticeEngine.applyDueNoteStarts); anything that *draws* the frame
+ * has to move it by the same amount, or the picture and the score disagree by
+ * exactly the offset. An unmeasured device (0 ms) returns the beat untouched.
+ */
+export function sungBeat(beat: number, offsetMs: number, bpm: number): number {
+  if (offsetMs <= 0 || bpm <= 0) return beat
+  return beat - (offsetMs / 1000) * (bpm / 60)
+}
+
 /** Root-mean-square amplitude of one window. */
 function windowRms(
   samples: Float32Array,
