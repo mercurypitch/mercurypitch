@@ -245,8 +245,7 @@ for (const shot of SHOTS) {
     // notice, a future tour channel): no transient card belongs in a
     // product screenshot.
     await page.addStyleTag({
-      content:
-        '[class*="notificationContainer"] { display: none !important; }',
+      content: '[class*="notificationContainer"] { display: none !important; }',
     })
     const path = join(OUT, shot.file)
     await page.screenshot({ path })
