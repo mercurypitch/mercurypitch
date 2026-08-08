@@ -2,6 +2,8 @@
 // ============================================================
 
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import { clampStringCount, DEFAULT_STRING_COUNT, standardTuning, } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
 import { measuredReferenceFromTranscription } from './reference-port'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
@@ -64,10 +66,24 @@ export function useGuitarNightReferenceController(
   })
   const [importStatus, setImportStatus] = createSignal<string | null>(null)
   const [libraryVersion, setLibraryVersion] = createSignal(0)
+  const [instrument, setInstrumentSignal] =
+    createSignal<StringedInstrument>('guitar')
+  const [stringCount, setStringCountSignal] = createSignal(
+    DEFAULT_STRING_COUNT.guitar,
+  )
+  const tuning = createMemo(() => standardTuning(instrument(), stringCount()))
 
   let disposed = false
   let attachGeneration = 0
   let portPromise: Promise<GuitarNightReferencePort> | null = null
+  /**
+   * The track the instrument was last chosen for. A manual choice sticks until
+   * a different part is attached, which is when the suggestion is worth having
+   * again.
+   */
+  let tunedForTrack: string | null = null
+  /** Kept so changing the instrument can re-place measured notes without re-reading audio. */
+  let lastMeasured: MeasuredReferenceInput | null = null
 
   const references = createMemo<readonly GuitarNightReferenceSummary[]>(() => {
     libraryVersion()
@@ -107,6 +123,18 @@ export function useGuitarNightReferenceController(
     void ensurePort()
   }
 
+  /**
+   * Move to an instrument and its most common string count, returning the
+   * tuning directly so callers never depend on signal propagation order.
+   */
+  const adoptInstrument = (next: StringedInstrument): InstrumentTuning => {
+    if (next === instrument()) return tuning()
+    const count = DEFAULT_STRING_COUNT[next]
+    setInstrumentSignal(next)
+    setStringCountSignal(count)
+    return standardTuning(next, count)
+  }
+
   const attach = async (
     songId: string,
     trackId?: string,
@@ -130,10 +158,29 @@ export function useGuitarNightReferenceController(
       return
     }
 
-    const result = loadedPort.openReference(normalizedSongId, trackId)
+    // A bass part read on guitar rows lands on the wrong strings with frets
+    // from another neck, so the instrument is settled before the notes are
+    // placed — but only when this is a part the player has not already tuned
+    // for by hand.
+    const suggestion = loadedPort.suggestInstrument(normalizedSongId, trackId)
+    let stageTuning = tuning()
+    if (suggestion !== null) {
+      const trackKey = `${normalizedSongId}:${suggestion.trackId}`
+      if (trackKey !== tunedForTrack) {
+        tunedForTrack = trackKey
+        stageTuning = adoptInstrument(suggestion.instrument)
+      }
+    }
+
+    const result = loadedPort.openReference(
+      normalizedSongId,
+      trackId,
+      stageTuning,
+    )
     if (disposed || generation !== attachGeneration) return
 
     if (result.ok) {
+      lastMeasured = null
       // Remember the visible track so the same part returns next time, in
       // Guitar Night and in the legacy tab that shares this library.
       loadedPort.rememberTrack(normalizedSongId, result.reference.trackId)
@@ -161,12 +208,47 @@ export function useGuitarNightReferenceController(
   const detach = (historyMode: HistoryMode = 'push'): void => {
     attachGeneration += 1
     cancelFollowStem()
+    lastMeasured = null
+    tunedForTrack = null
     setState({ kind: 'idle' })
     // Only the saved-score axis owns a URL parameter. A measured reference has
     // none, so clearing it must not push an identical entry onto history.
     if (historyMode !== 'none' && readGuitarNightScore() !== null) {
       writeScoreToHistory(null, historyMode)
     }
+  }
+
+  /**
+   * Re-place the attached notes on the instrument now selected. A measured line
+   * is re-placed from the transcription already in hand, so changing the neck
+   * never re-reads the audio.
+   */
+  const replaceOnCurrentInstrument = (nextTuning: InstrumentTuning): void => {
+    const current = state()
+    if (current.kind !== 'ready') return
+    if (current.reference.kind === 'measured') {
+      if (lastMeasured === null) return
+      setState({
+        kind: 'ready',
+        reference: measuredReferenceFromTranscription(lastMeasured, nextTuning),
+      })
+      return
+    }
+    void attach(current.reference.songId, current.reference.trackId, 'none')
+  }
+
+  const setInstrument = (next: StringedInstrument): void => {
+    if (next === instrument()) return
+    // A deliberate choice outranks the suggestion for as long as this part stays
+    // attached.
+    replaceOnCurrentInstrument(adoptInstrument(next))
+  }
+
+  const setStringCount = (next: number): void => {
+    const clamped = clampStringCount(next)
+    if (clamped === stringCount()) return
+    setStringCountSignal(clamped)
+    replaceOnCurrentInstrument(standardTuning(instrument(), clamped))
   }
 
   const importFile = async (file: File): Promise<void> => {
@@ -244,14 +326,21 @@ export function useGuitarNightReferenceController(
         )
         return
       }
+      const measured: MeasuredReferenceInput = {
+        sessionId: input.sessionId,
+        stemKind: input.stemKind,
+        stemLabel: input.stemLabel,
+        transcription,
+      }
+      lastMeasured = measured
+      // The stem names the instrument outright, so no guessing is needed.
+      tunedForTrack = `${input.sessionId}:${input.stemKind}`
+      const stageTuning = adoptInstrument(
+        input.stemKind === 'bass' ? 'bass' : 'guitar',
+      )
       setState({
         kind: 'ready',
-        reference: measuredReferenceFromTranscription({
-          sessionId: input.sessionId,
-          stemKind: input.stemKind,
-          stemLabel: input.stemLabel,
-          transcription,
-        }),
+        reference: measuredReferenceFromTranscription(measured, stageTuning),
       })
     } catch (caught) {
       if (disposed || abort.signal.aborted) return
@@ -302,6 +391,9 @@ export function useGuitarNightReferenceController(
     references,
     importStatus,
     transcribeProgress,
+    instrument,
+    stringCount,
+    tuning,
     initialize,
     attach,
     selectTrack,
@@ -309,5 +401,7 @@ export function useGuitarNightReferenceController(
     importFile,
     followStem,
     cancelFollowStem,
+    setInstrument,
+    setStringCount,
   }
 }

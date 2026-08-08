@@ -19,6 +19,8 @@ export interface Guitar3DStageProps {
   ariaLabel?: Accessor<string>
   fallbackText?: Accessor<string>
   borderRadius?: Accessor<string>
+  /** The instrument the notes sit on. Absent leaves the neck inferred. */
+  tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
 }
 
 export function Guitar3DStage(props: Guitar3DStageProps) {
@@ -36,6 +38,7 @@ export function Guitar3DStage(props: Guitar3DStageProps) {
       ariaLabel={props.ariaLabel}
       fallbackText={props.fallbackText}
       borderRadius={props.borderRadius}
+      tuning={props.tuning}
     />
   )
 }

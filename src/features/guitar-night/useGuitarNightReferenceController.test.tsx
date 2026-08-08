@@ -5,7 +5,7 @@ import { cleanup, render, waitFor } from '@solidjs/testing-library'
 import type { Component } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
-import { openGuitarNightReference } from './reference-port'
+import { openGuitarNightReference, suggestReferenceInstrument, } from './reference-port'
 import { useGuitarNightReferenceController } from './useGuitarNightReferenceController'
 
 const VELVET_RIFF = {
@@ -30,6 +30,16 @@ const VELVET_RIFF = {
         { midi: 45, startBeat: 2, duration: 2 },
       ],
     },
+    {
+      id: 'track-bass',
+      name: 'Bass',
+      noteCount: 2,
+      // Below a guitar's low E, so this part only reads on bass rows.
+      notes: [
+        { midi: 28, startBeat: 0, duration: 1, stringIndex: 3, fret: 0 },
+        { midi: 33, startBeat: 1, duration: 1, stringIndex: 2, fret: 0 },
+      ],
+    },
   ],
 }
 
@@ -44,10 +54,14 @@ function fakePort(overrides: Partial<GuitarNightReferencePort> = {}) {
         importedAt: VELVET_RIFF.importedAt,
       },
     ],
-    openReference: (songId, trackId) =>
+    openReference: (songId, trackId, tuning) =>
       songId === VELVET_RIFF.id
-        ? openGuitarNightReference(VELVET_RIFF, trackId)
+        ? openGuitarNightReference(VELVET_RIFF, trackId, tuning)
         : { ok: false, code: 'not-found' },
+    suggestInstrument: (songId, trackId) =>
+      songId === VELVET_RIFF.id
+        ? suggestReferenceInstrument(VELVET_RIFF, trackId)
+        : null,
     rememberTrack,
     importReference: vi.fn(async () => ({
       songId: VELVET_RIFF.id,
@@ -241,6 +255,84 @@ describe('useGuitarNightReferenceController', () => {
     expect(controller.importStatus()).toBe(
       'No clear notes could be read from the bass stem, so the stage stays in free play.',
     )
+  })
+
+  it('names a bass part on bass rows instead of guitar strings', async () => {
+    const { port } = fakePort()
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id)
+    expect(controller.instrument()).toBe('guitar')
+
+    await controller.selectTrack('track-bass')
+
+    expect(controller.instrument()).toBe('bass')
+    expect(controller.stringCount()).toBe(4)
+    expect(controller.tuning().labels).toEqual(['G', 'D', 'A', 'E'])
+    // Authored bass fingering now describes the rows on screen, so it is kept.
+    expect(controller.reference()?.notes[0].stringIndex).toBe(3)
+    expect(controller.reference()?.outOfRangeNotes).toBe(0)
+  })
+
+  it('keeps a deliberate instrument choice while that part stays attached', async () => {
+    const { port } = fakePort()
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id, 'track-bass')
+    expect(controller.instrument()).toBe('bass')
+
+    controller.setInstrument('guitar')
+    await waitFor(() => expect(controller.instrument()).toBe('guitar'))
+
+    expect(controller.stringCount()).toBe(6)
+    // The same part, re-opened: a guitar cannot reach either bass note.
+    await waitFor(() => expect(controller.reference()?.outOfRangeNotes).toBe(2))
+    expect(controller.reference()?.trackId).toBe('track-bass')
+  })
+
+  it('re-places the notes when the string count changes', async () => {
+    const { port } = fakePort()
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id, 'track-bass')
+
+    controller.setStringCount(5)
+
+    await waitFor(() =>
+      expect(controller.tuning().labels).toEqual(['G', 'D', 'A', 'E', 'B']),
+    )
+    expect(controller.reference()?.tuning.stringCount).toBe(5)
+    expect(controller.reference()?.outOfRangeNotes).toBe(0)
+  })
+
+  it('measures a bass stem onto bass rows at the pitch it was heard', async () => {
+    const { port } = fakePort()
+    const controller = mountWithTranscription(port, async () => ({
+      coverage: 0.74,
+      analysedSeconds: 90,
+      notes: [
+        {
+          midi: 28,
+          noteName: 'E1',
+          startSeconds: 0.25,
+          durationSeconds: 0.5,
+          confidence: 0.8,
+        },
+      ],
+    }))
+
+    await controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+
+    expect(controller.instrument()).toBe('bass')
+    expect(controller.reference()?.notes[0].midi).toBe(28)
+    expect(controller.reference()?.liftedOctaves).toBe(false)
+
+    // Re-placing onto a guitar must not re-read the audio.
+    controller.setInstrument('guitar')
+    await waitFor(() => expect(controller.reference()?.notes[0].midi).toBe(40))
+    expect(controller.reference()?.kind).toBe('measured')
   })
 
   it('attaching an authored score stops an in-flight measurement', async () => {

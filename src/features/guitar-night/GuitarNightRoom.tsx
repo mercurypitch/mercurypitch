@@ -8,6 +8,7 @@ import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/feat
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
@@ -21,6 +22,10 @@ interface GuitarNightRoomProps {
   transport: GuitarBackingTransportController
   /** The attached score, when one is verified. Absent keeps the room in free play. */
   reference?: Accessor<GuitarNightReference | null>
+  /** The instrument the stage rows describe. Absent means a standard six-string. */
+  tuning?: Accessor<InstrumentTuning>
+  onInstrument?(instrument: StringedInstrument): void
+  onStringCount?(count: number): void
   onSongs(): void
   onSeparateGuitar?(): void
 }
@@ -233,6 +238,9 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
       <GuitarNightStage
         source={performance.stage}
+        tuning={props.tuning}
+        onInstrument={props.onInstrument}
+        onStringCount={props.onStringCount}
         guideLabel={() => {
           const attached = reference()
           if (attached === null) return null

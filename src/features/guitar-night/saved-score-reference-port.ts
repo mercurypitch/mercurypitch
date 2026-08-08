@@ -6,12 +6,13 @@
 // keeping a private copy, so a tab imported in either place is attachable in
 // both.
 
+import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { parseMidiSong } from '@/lib/midi-song'
 import { defaultScoreTrack } from '@/lib/midi-song'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
 import { getMidiSong, savedMidiSongs, saveMidiSong, updateMidiSongSelection, } from '@/stores/saved-midi-songs-store'
 import type { GuitarNightOpenReferenceResult, GuitarNightReferencePort, GuitarNightReferenceSummary, } from './reference-port'
-import { isGuitarProReferenceFile, isMidiReferenceFile, openGuitarNightReference, } from './reference-port'
+import { isGuitarProReferenceFile, isMidiReferenceFile, openGuitarNightReference, suggestReferenceInstrument, } from './reference-port'
 
 function summarize(song: {
   id: string
@@ -37,10 +38,17 @@ export function createSavedScoreGuitarNightReferencePort(): GuitarNightReference
     openReference: (
       songId: string,
       trackId?: string,
+      tuning?: InstrumentTuning,
     ): GuitarNightOpenReferenceResult => {
       const song = getMidiSong(songId)
       if (song === undefined) return { ok: false, code: 'not-found' }
-      return openGuitarNightReference(song, trackId)
+      return openGuitarNightReference(song, trackId, tuning)
+    },
+
+    suggestInstrument: (songId: string, trackId?: string) => {
+      const song = getMidiSong(songId)
+      if (song === undefined) return null
+      return suggestReferenceInstrument(song, trackId)
     },
 
     rememberTrack: (songId: string, trackId: string): void => {

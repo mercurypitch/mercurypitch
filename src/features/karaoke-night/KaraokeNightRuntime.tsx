@@ -4,12 +4,12 @@
 // case) and keeps running if the visitor collapses the rail.
 import { onMount } from 'solid-js'
 import { useKaraokePlaylistRunner } from '@/features/stem-mixer/karaoke-playlist-runner'
+import { refreshCredits } from '@/lib/standalone-account'
 import { installAutoResume } from '@/lib/uvr-auto-resume'
 import { initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { initGroupStore, initSessionStore } from '@/stores/uvr-store'
 import { trackKaraoke } from './funnel'
-import { refreshCredits } from './karaoke-account'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
 interface KaraokeNightRuntimeProps {

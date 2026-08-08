@@ -9,8 +9,10 @@
 // not pretend to know them.
 
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { melodyToGuitarNotes } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, liftIntoTuningRange, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
 import type { MidiSongNote } from '@/lib/midi-song'
+import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
 import type { GuitarNightStemKind } from './song-port'
 
@@ -58,11 +60,15 @@ export interface GuitarNightReference {
   trackId: string
   trackName: string
   tempoBpm: number
+  /** The instrument these notes were placed on — the rows the stage draws. */
+  tuning: InstrumentTuning
   notes: readonly GuitarNote[]
   tracks: readonly GuitarNightReferenceTrack[]
+  /** Notes this instrument's neck could not reach, so they were not drawn. */
+  outOfRangeNotes: number
   /** Measured only: share of the stem that produced confident notes, 0–1. */
   coverage?: number
-  /** Measured only: true when notes were raised into the six-string range. */
+  /** Measured only: true when notes were raised into the instrument's range. */
   liftedOctaves?: boolean
 }
 
@@ -75,7 +81,16 @@ export interface GuitarNightReferencePort {
   openReference(
     songId: string,
     trackId?: string,
+    tuning?: InstrumentTuning,
   ): GuitarNightOpenReferenceResult
+  /**
+   * Which instrument a track reads as, and the track that answer describes.
+   * Asked before opening so the stage draws the right rows on the first frame.
+   */
+  suggestInstrument(
+    songId: string,
+    trackId?: string,
+  ): { trackId: string; instrument: StringedInstrument } | null
   /** Persist which track this source is scored against, for later opens. */
   rememberTrack(songId: string, trackId: string): void
   importReference(file: File): Promise<GuitarNightReferenceSummary>
@@ -127,39 +142,81 @@ export function referenceTrackSummaries(
     }))
 }
 
-/** Standard six-string open pitches, high to low, matching the stage's rows. */
-const STANDARD_GUITAR_OPEN_MIDI = [64, 59, 55, 50, 45, 40] as const
+interface StageNoteInput {
+  id: string
+  midi: number
+  startBeat: number
+  duration: number
+  stringIndex?: number
+  fret?: number
+}
 
 /**
- * Authored fingering is an index into *that track's own* tuning, so a bass,
- * seven-string or dropped-tuning track numbers its strings differently from the
- * six-string stage. Trust the fingering only when it genuinely describes a
- * standard-tuned guitar; otherwise the note is placed by pitch instead of drawn
- * on the wrong string.
+ * Place notes on the instrument the stage is actually showing. Authored
+ * fingering is an index into *that track's own* tuning, so it is kept only when
+ * it describes this instrument; otherwise the note is placed by pitch. A note
+ * the neck cannot reach is dropped and counted rather than drawn somewhere it
+ * could not be played.
  */
-export function describesStandardGuitarFingering(
-  midi: number,
-  stringIndex: number | undefined,
-  fret: number | undefined,
-): boolean {
-  if (stringIndex === undefined || fret === undefined) return false
-  if (stringIndex < 0 || stringIndex >= STANDARD_GUITAR_OPEN_MIDI.length) {
-    return false
+export function toStageNotes(
+  inputs: readonly StageNoteInput[],
+  tuning: InstrumentTuning,
+): { notes: GuitarNote[]; outOfRange: number } {
+  const notes: GuitarNote[] = []
+  let outOfRange = 0
+
+  for (const input of inputs) {
+    const placement = fingeringMatchesTuning(
+      input.midi,
+      input.stringIndex,
+      input.fret,
+      tuning,
+    )
+      ? { stringIndex: input.stringIndex as number, fret: input.fret as number }
+      : assignStringForMidi(input.midi, tuning)
+
+    if (placement === null) {
+      outOfRange += 1
+      continue
+    }
+    const { name, octave } = midiToNote(input.midi)
+    notes.push({
+      id: input.id,
+      midi: input.midi,
+      noteName: `${name}${octave}`,
+      stringIndex: placement.stringIndex,
+      fret: placement.fret,
+      startBeat: input.startBeat,
+      duration: input.duration,
+      targetFreq: 440 * Math.pow(2, (input.midi - 69) / 12),
+    })
   }
-  if (fret < 0) return false
-  return STANDARD_GUITAR_OPEN_MIDI[stringIndex] + fret === midi
+
+  return { notes, outOfRange }
 }
 
 /** Adapt one saved score into stage notes. Beats stay in the source's terms. */
 export function openGuitarNightReference(
   source: GuitarNightReferenceSource,
   requestedTrackId?: string,
+  tuning: InstrumentTuning = DEFAULT_GUITAR_TUNING,
 ): GuitarNightOpenReferenceResult {
   const track = resolveReferenceTrack(source, requestedTrackId)
   if (track === null) return { ok: false, code: 'no-playable-notes' }
 
   const tempoBpm =
     Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
+  const placed = toStageNotes(
+    track.notes.map((note, index) => ({
+      id: `${track.id}-${index}-${note.startBeat}`,
+      midi: note.midi,
+      startBeat: note.startBeat,
+      duration: note.duration,
+      stringIndex: note.stringIndex,
+      fret: note.fret,
+    })),
+    tuning,
+  )
 
   return {
     ok: true,
@@ -170,27 +227,28 @@ export function openGuitarNightReference(
       trackId: track.id,
       trackName: track.name,
       tempoBpm,
-      // Guitar Pro imports carry authored string/fret, but only for their own
-      // instrument's tuning. Keep it when it describes this stage's six
-      // strings; otherwise let the shared helper place the note by pitch.
-      notes: melodyToGuitarNotes(
-        track.notes.map((note) => {
-          const authored = describesStandardGuitarFingering(
-            note.midi,
-            note.stringIndex,
-            note.fret,
-          )
-          return {
-            midi: note.midi,
-            startBeat: note.startBeat,
-            duration: note.duration,
-            stringIndex: authored ? note.stringIndex : undefined,
-            fret: authored ? note.fret : undefined,
-          }
-        }),
-      ),
+      tuning,
+      notes: placed.notes,
+      outOfRangeNotes: placed.outOfRange,
       tracks: referenceTrackSummaries(source),
     },
+  }
+}
+
+/**
+ * The instrument a track was most likely written for, from its own pitches, and
+ * the track that answer is about — the same track `openGuitarNightReference`
+ * would resolve, so the two never disagree.
+ */
+export function suggestReferenceInstrument(
+  source: GuitarNightReferenceSource,
+  trackId?: string,
+): { trackId: string; instrument: StringedInstrument } | null {
+  const track = resolveReferenceTrack(source, trackId)
+  if (track === null) return null
+  return {
+    trackId: track.id,
+    instrument: suggestInstrumentForMidi(track.notes.map((note) => note.midi)),
   }
 }
 
@@ -204,16 +262,6 @@ export function openGuitarNightReference(
  */
 export const MEASURED_REFERENCE_TEMPO = 60
 
-/** Lowest note the six-string stage can show: the guitar's open low E. */
-export const GUITAR_LOW_E_MIDI = 40
-
-/** Raise a note by whole octaves until the stage can place it, keeping pitch class. */
-export function liftIntoGuitarRange(midi: number): number {
-  let lifted = midi
-  while (lifted < GUITAR_LOW_E_MIDI) lifted += 12
-  return lifted
-}
-
 export interface MeasuredReferenceInput {
   sessionId: string
   stemKind: GuitarNightStemKind
@@ -222,15 +270,30 @@ export interface MeasuredReferenceInput {
 }
 
 /**
- * Adapt one stem transcription into a stage reference. Bass sits an octave
- * below the six-string stage, so notes below its low E are raised into range
- * and the surface says so rather than dropping them silently.
+ * Adapt one stem transcription into a stage reference. A bass line read on a
+ * bass needs no help; read on a guitar it sits an octave below the lowest
+ * string, so notes below range are raised and the surface says so rather than
+ * dropping them silently.
  */
 export function measuredReferenceFromTranscription(
   input: MeasuredReferenceInput,
+  tuning: InstrumentTuning = DEFAULT_BASS_TUNING,
 ): GuitarNightReference {
+  const lowestPlayable = tuning.openMidi[tuning.openMidi.length - 1] ?? 40
   const liftedOctaves = input.transcription.notes.some(
-    (note) => note.midi < GUITAR_LOW_E_MIDI,
+    (note) => note.midi < lowestPlayable,
+  )
+  const placed = toStageNotes(
+    input.transcription.notes.map((note, index) => ({
+      id: `measured-${index}-${note.startSeconds.toFixed(3)}`,
+      // On a bass this changes nothing; on a guitar it lifts the line into a
+      // range the six strings can actually play.
+      midi: liftIntoTuningRange(note.midi, tuning),
+      // One beat per second: the measured time base, unchanged.
+      startBeat: note.startSeconds,
+      duration: note.durationSeconds,
+    })),
+    tuning,
   )
 
   return {
@@ -240,17 +303,11 @@ export function measuredReferenceFromTranscription(
     trackId: input.stemKind,
     trackName: input.stemLabel,
     tempoBpm: MEASURED_REFERENCE_TEMPO,
+    tuning,
     coverage: input.transcription.coverage,
     liftedOctaves,
-    notes: melodyToGuitarNotes(
-      input.transcription.notes.map((note, index) => ({
-        id: `measured-${index}-${note.startSeconds.toFixed(3)}`,
-        midi: liftIntoGuitarRange(note.midi),
-        // One beat per second: the measured time base, unchanged.
-        startBeat: note.startSeconds,
-        duration: note.durationSeconds,
-      })),
-    ),
+    notes: placed.notes,
+    outOfRangeNotes: placed.outOfRange,
     tracks: [
       {
         id: input.stemKind,

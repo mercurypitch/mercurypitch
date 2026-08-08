@@ -38,6 +38,22 @@ describe('buildTabScene', () => {
     expect(scene.display).toBe(VELVET_DISPLAY)
   })
 
+  it('draws a four-string bass as four strings when the host declares it', () => {
+    // Inference alone floors at six and fills the two extra rows from guitar
+    // defaults, which puts phantom strings above a bass's own G string.
+    const scene = buildTabScene({
+      notes: [note({ id: 'low-e', midi: 28, stringIndex: 3, fret: 0 })],
+      playheadBeat: 0,
+      visibleBeatWindow: 8,
+      showNoteLabels: true,
+      showFretboard: true,
+      tuning: { stringCount: 4, openMidi: [43, 38, 33, 28] },
+    })
+
+    expect(scene.stringCount).toBe(4)
+    expect(scene.openMidi).toEqual([43, 38, 33, 28])
+  })
+
   it('keeps backing notes unscored and maps recent input feedback onto the neck', () => {
     const scene = buildTabScene({
       notes: [note(), note({ id: 'backing', isBacking: true, startBeat: 4 })],

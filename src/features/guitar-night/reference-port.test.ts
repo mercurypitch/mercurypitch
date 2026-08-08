@@ -2,8 +2,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReferenceSource } from './reference-port'
-import { describesStandardGuitarFingering, isGuitarProReferenceFile, isMidiReferenceFile, liftIntoGuitarRange, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, } from './reference-port'
+import { isGuitarProReferenceFile, isMidiReferenceFile, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, suggestReferenceInstrument, } from './reference-port'
 
 function source(
   overrides: Partial<GuitarNightReferenceSource> = {},
@@ -93,48 +94,56 @@ describe('openGuitarNightReference', () => {
     ])
   })
 
-  it('re-places a bass track rather than drawing it on guitar strings', () => {
+  const bassSource = () =>
+    source({
+      scoreTrackId: 'track-bass',
+      tracks: [
+        {
+          id: 'track-bass',
+          name: 'Bass',
+          noteCount: 1,
+          // Bass low E (MIDI 28), open, indexed as that bass's string 3.
+          notes: [
+            { midi: 28, startBeat: 0, duration: 1, stringIndex: 3, fret: 0 },
+          ],
+        },
+      ],
+    })
+
+  it('never draws a bass note on a guitar row it could not sound', () => {
     // A four-string bass numbers its own strings 0-3, so trusting that index
-    // would draw the low E of a bass on the guitar's high e row.
+    // would draw the low E of a bass on the guitar's D row as a D3.
+    const result = openGuitarNightReference(bassSource())
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.notes).toHaveLength(0)
+    expect(result.reference.outOfRangeNotes).toBe(1)
+  })
+
+  it('keeps that same authored fingering once the rows are a bass', () => {
     const result = openGuitarNightReference(
-      source({
-        scoreTrackId: 'track-bass',
-        tracks: [
-          {
-            id: 'track-bass',
-            name: 'Bass',
-            noteCount: 1,
-            // Bass low E (MIDI 28), open, indexed as that bass's string 3.
-            notes: [
-              {
-                midi: 28,
-                startBeat: 0,
-                duration: 1,
-                stringIndex: 3,
-                fret: 0,
-              },
-            ],
-          },
-        ],
-      }),
+      bassSource(),
+      undefined,
+      DEFAULT_BASS_TUNING,
     )
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    // Not row 3 (the guitar's D string) with fret 0, which would be a D3.
-    const placed = result.reference.notes[0]
-    expect(placed.midi).toBe(28)
-    expect(placed.stringIndex === 3 && placed.fret === 0).toBe(false)
+    expect(result.reference.tuning).toBe(DEFAULT_BASS_TUNING)
+    expect(result.reference.outOfRangeNotes).toBe(0)
+    expect(result.reference.notes[0].stringIndex).toBe(3)
+    expect(result.reference.notes[0].fret).toBe(0)
+    expect(result.reference.notes[0].midi).toBe(28)
   })
 
-  it('keeps fingering that really describes a standard six-string', () => {
-    expect(describesStandardGuitarFingering(40, 5, 0)).toBe(true)
-    expect(describesStandardGuitarFingering(67, 0, 3)).toBe(true)
-    // Right row, wrong pitch for that row: not this instrument's fingering.
-    expect(describesStandardGuitarFingering(28, 3, 0)).toBe(false)
-    // Seven-string and out-of-range indices are rejected outright.
-    expect(describesStandardGuitarFingering(35, 6, 0)).toBe(false)
-    expect(describesStandardGuitarFingering(40, undefined, 0)).toBe(false)
+  it('reports the instrument the notes were placed on', () => {
+    const result = openGuitarNightReference(source(), 'track-lead')
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.tuning).toBe(DEFAULT_GUITAR_TUNING)
+    expect(result.reference.outOfRangeNotes).toBe(0)
   })
 
   it('places MIDI notes that carry no authored fingering', () => {
@@ -217,7 +226,7 @@ describe('measuredReferenceFromTranscription', () => {
     expect(reference.notes.map((note) => note.duration)).toEqual([0.4, 0.3])
   })
 
-  it('raises sub-guitar notes into range and says that it did', () => {
+  it('leaves a bass line on a bass at the pitch it was heard', () => {
     const reference = measuredReferenceFromTranscription({
       sessionId: 'session-room',
       stemKind: 'bass',
@@ -225,34 +234,84 @@ describe('measuredReferenceFromTranscription', () => {
       transcription,
     })
 
+    expect(reference.tuning).toBe(DEFAULT_BASS_TUNING)
+    expect(reference.liftedOctaves).toBe(false)
+    expect(reference.notes.map((note) => note.midi)).toEqual([28, 45])
+    expect(reference.outOfRangeNotes).toBe(0)
+  })
+
+  it('raises the same line into range when the rows are a guitar', () => {
+    const reference = measuredReferenceFromTranscription(
+      {
+        sessionId: 'session-room',
+        stemKind: 'bass',
+        stemLabel: 'Bass',
+        transcription,
+      },
+      DEFAULT_GUITAR_TUNING,
+    )
+
     expect(reference.liftedOctaves).toBe(true)
     // E1 becomes E2 — same pitch class, now placeable on six strings.
-    expect(reference.notes[0].midi).toBe(40)
-    expect(reference.notes[1].midi).toBe(45)
+    expect(reference.notes.map((note) => note.midi)).toEqual([40, 45])
   })
 
   it('leaves a line already in guitar range untouched', () => {
-    const reference = measuredReferenceFromTranscription({
-      sessionId: 'session-room',
-      stemKind: 'bass',
-      stemLabel: 'Bass',
-      transcription: {
-        ...transcription,
-        notes: [transcription.notes[1]],
+    const reference = measuredReferenceFromTranscription(
+      {
+        sessionId: 'session-room',
+        stemKind: 'bass',
+        stemLabel: 'Bass',
+        transcription: {
+          ...transcription,
+          notes: [transcription.notes[1]],
+        },
       },
-    })
+      DEFAULT_GUITAR_TUNING,
+    )
 
     expect(reference.liftedOctaves).toBe(false)
     expect(reference.notes[0].midi).toBe(45)
   })
 })
 
-describe('liftIntoGuitarRange', () => {
-  it('raises by whole octaves only', () => {
-    expect(liftIntoGuitarRange(28)).toBe(40)
-    expect(liftIntoGuitarRange(31)).toBe(43)
-    expect(liftIntoGuitarRange(40)).toBe(40)
-    expect(liftIntoGuitarRange(64)).toBe(64)
+describe('suggestReferenceInstrument', () => {
+  it('calls a track that lives below the guitar a bass part', () => {
+    expect(
+      suggestReferenceInstrument(
+        source({
+          scoreTrackId: 'track-bass',
+          tracks: [
+            {
+              id: 'track-bass',
+              name: 'Bass',
+              noteCount: 2,
+              notes: [
+                { midi: 28, startBeat: 0, duration: 1 },
+                { midi: 33, startBeat: 1, duration: 1 },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toEqual({ trackId: 'track-bass', instrument: 'bass' })
+  })
+
+  it('names the same track openReference would resolve', () => {
+    expect(suggestReferenceInstrument(source())).toEqual({
+      trackId: 'track-lead',
+      instrument: 'guitar',
+    })
+  })
+
+  it('has no answer for a source with nothing playable', () => {
+    expect(
+      suggestReferenceInstrument(
+        source({
+          tracks: [{ id: 'only', name: 'Only', noteCount: 0, notes: [] }],
+        }),
+      ),
+    ).toBeNull()
   })
 })
 

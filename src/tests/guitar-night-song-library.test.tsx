@@ -335,7 +335,12 @@ describe('GuitarNightApp prepared songs', () => {
         'Backing ready. Guitar remains inside this mix, so it cannot be muted independently.',
       ),
     ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Guitar/ })).toBeNull()
+    // No guitar *channel*: a mute chip is named "<track> on"/"<track> muted".
+    // The stage's instrument picker also says "Guitar", and it is not a claim
+    // about the mix, so match the channel naming rather than the word.
+    expect(
+      screen.queryByRole('button', { name: /^Guitar (on|muted)$/ }),
+    ).toBeNull()
   })
 
   it('describes available band parts honestly when no separate guitar stem exists', async () => {

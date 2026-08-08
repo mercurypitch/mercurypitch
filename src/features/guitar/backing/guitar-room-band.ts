@@ -22,6 +22,12 @@ export interface GuitarRoomBandStartResult {
 
 export interface GuitarRoomBand {
   start(options: GuitarRoomBandStartOptions): Promise<GuitarRoomBandStartResult>
+  /**
+   * Bring the audio graph up without scheduling a beat. A room that offers
+   * microphone input before the click starts needs a live context to analyse
+   * into; `getAudioGraph` stays null until something has opened one.
+   */
+  activate(): Promise<GuitarSessionAudioGraph | null>
   stop(): void
   getAudioGraph(): GuitarSessionAudioGraph | null
   dispose(): Promise<void>
@@ -82,6 +88,16 @@ export function createGuitarRoomBand(
   }
 
   return {
+    async activate() {
+      const currentGraph = ensureGraph()
+      try {
+        await activateContext(currentGraph.context)
+      } catch {
+        return null
+      }
+      return currentGraph
+    },
+
     async start(startOptions) {
       stop()
       const currentGeneration = generation

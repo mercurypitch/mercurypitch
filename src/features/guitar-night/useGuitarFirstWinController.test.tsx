@@ -14,6 +14,7 @@ function createBandHarness(expectedHitTimesMs = [1_000, 1_500, 2_000, 2_500]) {
       callbacks = options
       return { expectedHitTimesMs }
     }),
+    activate: vi.fn(async () => null),
     stop: vi.fn(),
     getAudioGraph: () => null,
     dispose: vi.fn(async () => undefined),
