@@ -25,11 +25,17 @@ export interface BuildTabSceneOptions {
   showFretboard: boolean
   display?: TabScene['display']
   feedback?: TabSceneFeedback
+  /**
+   * The instrument the notes were placed on, when the host knows it. Without
+   * it the neck is inferred from the notes, which cannot tell a four-string
+   * bass from a guitar whose top two strings happen to be silent.
+   */
+  tuning?: { stringCount: number; openMidi: readonly number[] }
   now?: number
 }
 
 export function buildTabScene(options: BuildTabSceneOptions): TabScene {
-  let stringCount = MIN_STRING_COUNT
+  let stringCount = options.tuning?.stringCount ?? MIN_STRING_COUNT
   let maxFret = 0
   const observedOpen: number[] = []
   for (const note of options.notes) {
@@ -37,9 +43,11 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
     if (note.fret > maxFret) maxFret = note.fret
     observedOpen[note.stringIndex] = note.midi - note.fret
   }
+  const declaredOpen = options.tuning?.openMidi
   const openMidi: number[] = []
   for (let index = 0; index < stringCount; index += 1) {
-    openMidi[index] = observedOpen[index] ?? DEFAULT_OPEN[index] ?? 40
+    openMidi[index] =
+      declaredOpen?.[index] ?? observedOpen[index] ?? DEFAULT_OPEN[index] ?? 40
   }
   const laidMaxFret = Math.min(24, Math.max(12, maxFret))
   const clampFret = (fret: number) => Math.max(0, Math.min(laidMaxFret, fret))
