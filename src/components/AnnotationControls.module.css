@@ -1,0 +1,493 @@
+/* ============================================================
+   AnnotationControls — the annotation ledger under the Lab's spectral
+   workbench.
+
+   Palette comes from the `--lab-*` names declared on `.page` in
+   Lab.module.css, which this panel always renders inside. Fallbacks are
+   global tokens, never hexes: this file replaces 25 hardcoded colours
+   (a slate-navy panel, white at nine different alphas, and the dark
+   theme's green spelled out literally) that ignored 7 of the 8 themes
+   and went invisible on the light one.
+   ============================================================ */
+
+.panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  /* The ledger is a companion to the pane stack above it, not a page of
+     its own — capped so a long capture cannot push the workbench's
+     tools off screen. The list inside scrolls. */
+  max-height: 320px;
+  padding: var(--spacing-lg);
+  overflow: hidden;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--lab-panel, var(--bg-card)) 92%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.titleGroup {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* Uppercase micro-label — the app's standard mark for a named region of a
+   work surface (cf. the pitch studio's stage labels). */
+.title {
+  overflow: hidden;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* The count is a number, so it gets the instrument treatment: monospace,
+   tabular, and wide enough that going 9 → 10 does not shift the row. */
+.count {
+  display: inline-flex;
+  min-width: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: var(--radius-pill, 999px);
+  background: var(--lab-void, var(--bg-primary));
+  color: var(--text-secondary);
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  min-height: 32px;
+  padding: 0 var(--spacing-lg);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.actionBtn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.actionBtn:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 46%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 12%,
+    transparent
+  );
+  color: var(--lab-ink, var(--text-primary));
+  transform: translateY(-1px);
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 2px;
+}
+
+/* Was an inline `cursor`/`opacity` pair recomputed from the annotation
+   count on every render — the `disabled` attribute was already there and
+   already says it. */
+.actionBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+/* Play Tones makes sound, which is the one thing in this panel the user
+   hears rather than reads — green is the app's "go" accent. */
+.toneBtn {
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  color: color-mix(in srgb, var(--green) 82%, var(--text-primary));
+}
+
+.toneBtn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--green) 62%, transparent);
+  background: color-mix(in srgb, var(--green) 22%, transparent);
+  color: color-mix(in srgb, var(--green) 92%, var(--text-primary));
+}
+
+/* ── Type filter ────────────────────────────────────────────── */
+
+/* A padded tray, like the Lab's tab strip: the active pill floats inside
+   it instead of four equally-weighted buttons competing in a row. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 9px;
+  background: var(--lab-void, var(--bg-primary));
+  box-shadow: var(--lab-bevel, none);
+}
+
+.filterBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-height: 26px;
+  padding: 0 var(--spacing-md);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--lab-muted, var(--text-muted));
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease;
+}
+
+.filterGlyph {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.filterBtn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.filterBtn:hover {
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--lab-ink, var(--text-primary));
+}
+
+.filterBtn:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 1px;
+}
+
+.filterActive,
+.filterActive:hover {
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 18%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 88%,
+    var(--text-primary)
+  );
+}
+
+.filterActive svg {
+  opacity: 1;
+}
+
+/* ── List ───────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.rowSelected,
+.rowSelected:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 34%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 14%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
+}
+
+.rowIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--lab-muted, var(--text-muted));
+}
+
+.rowIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.rowSelected .rowIcon {
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 78%,
+    var(--text-primary)
+  );
+}
+
+/* Fixed-width tabular readout: without it the list re-flows every time a
+   timestamp crosses a minute boundary. */
+.rowTime {
+  min-width: 48px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* An imported label can be arbitrarily long — `min-width: 0` is what stops
+   it pushing the edit and delete buttons out of the panel. */
+.rowLabel {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--lab-ink, var(--text-primary));
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowUnlabeled {
+  color: var(--lab-muted, var(--text-muted));
+}
+
+.rowInput {
+  min-width: 0;
+  flex: 1;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 1px solid
+    color-mix(in srgb, var(--lab-signal, var(--accent)) 44%, transparent);
+  border-radius: 6px;
+  background: var(--lab-void, var(--bg-primary));
+  color: var(--lab-ink, var(--text-primary));
+  font-family: inherit;
+  font-size: var(--text-sm);
+}
+
+.rowInput:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 1px;
+}
+
+.rowBtn {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--lab-muted, var(--text-muted));
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.rowBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.rowBtn:hover {
+  border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--lab-ink, var(--text-primary));
+}
+
+.rowBtn:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 1px;
+}
+
+.rowBtnDanger:hover {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+
+/* Reachable two ways: a filter that matches nothing, and (if this panel is
+   ever mounted unconditionally) a capture with no markers yet. A glyph, a
+   heading and one line reads as a designed state; the bare grey sentence
+   this replaces read as a missing feature. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  text-align: center;
+}
+
+.emptyGlyph {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid
+    color-mix(in srgb, var(--lab-signal, var(--accent)) 44%, transparent);
+  border-radius: 11px;
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 12%,
+    transparent
+  );
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 82%,
+    var(--text-primary)
+  );
+}
+
+.emptyGlyph svg {
+  width: 19px;
+  height: 19px;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: var(--lab-ink, var(--text-primary));
+  font-size: var(--text-md);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.emptyBody {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.key {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 5px;
+  background: var(--lab-void, var(--bg-primary));
+  box-shadow: inset 0 -1px
+    color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-secondary);
+  font: 0.62rem/1.5
+    var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Three buttons plus the title do not fit one phone-width row. */
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .actionBtn,
+  .filterBtn {
+    min-height: var(--touch-target, 44px);
+  }
+
+  /* The row buttons stay short — a 44px-tall row button would make every
+     annotation row twice as tall as its own text — but they get the full
+     target width, which is the axis a thumb actually misses on. */
+  .rowBtn {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actionBtn,
+  .filterBtn,
+  .row,
+  .rowBtn {
+    transition: none;
+  }
+
+  .actionBtn:hover:not(:disabled) {
+    transform: none;
+  }
+}

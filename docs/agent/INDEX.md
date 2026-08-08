@@ -92,7 +92,7 @@ These are the rules that break things when ignored.
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.9k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 2.9k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
-| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 2.1k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
+| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 2.2k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
@@ -333,7 +333,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 2.8k |
-| [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
+| [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.4k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.3k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 2.2k |
