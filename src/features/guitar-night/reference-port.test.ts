@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GuitarNightReferenceSource } from './reference-port'
-import { isGuitarProReferenceFile, isMidiReferenceFile, liftIntoGuitarRange, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, } from './reference-port'
+import { describesStandardGuitarFingering, isGuitarProReferenceFile, isMidiReferenceFile, liftIntoGuitarRange, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, } from './reference-port'
 
 function source(
   overrides: Partial<GuitarNightReferenceSource> = {},
@@ -91,6 +91,50 @@ describe('openGuitarNightReference', () => {
       { stringIndex: 0, fret: 0, startBeat: 0 },
       { stringIndex: 0, fret: 3, startBeat: 1 },
     ])
+  })
+
+  it('re-places a bass track rather than drawing it on guitar strings', () => {
+    // A four-string bass numbers its own strings 0-3, so trusting that index
+    // would draw the low E of a bass on the guitar's high e row.
+    const result = openGuitarNightReference(
+      source({
+        scoreTrackId: 'track-bass',
+        tracks: [
+          {
+            id: 'track-bass',
+            name: 'Bass',
+            noteCount: 1,
+            // Bass low E (MIDI 28), open, indexed as that bass's string 3.
+            notes: [
+              {
+                midi: 28,
+                startBeat: 0,
+                duration: 1,
+                stringIndex: 3,
+                fret: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // Not row 3 (the guitar's D string) with fret 0, which would be a D3.
+    const placed = result.reference.notes[0]
+    expect(placed.midi).toBe(28)
+    expect(placed.stringIndex === 3 && placed.fret === 0).toBe(false)
+  })
+
+  it('keeps fingering that really describes a standard six-string', () => {
+    expect(describesStandardGuitarFingering(40, 5, 0)).toBe(true)
+    expect(describesStandardGuitarFingering(67, 0, 3)).toBe(true)
+    // Right row, wrong pitch for that row: not this instrument's fingering.
+    expect(describesStandardGuitarFingering(28, 3, 0)).toBe(false)
+    // Seven-string and out-of-range indices are rejected outright.
+    expect(describesStandardGuitarFingering(35, 6, 0)).toBe(false)
+    expect(describesStandardGuitarFingering(40, undefined, 0)).toBe(false)
   })
 
   it('places MIDI notes that carry no authored fingering', () => {
