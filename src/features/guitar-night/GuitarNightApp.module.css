@@ -1260,6 +1260,30 @@
     );
 }
 
+.stageTabLanes {
+  position: relative;
+  display: grid;
+  gap: clamp(0.7rem, 2vh, 1.05rem);
+  width: 100%;
+  overflow: hidden;
+}
+
+/* The now-line stays put; the music moves past it. */
+.stageTabPlayhead {
+  position: absolute;
+  top: -0.4rem;
+  bottom: -0.4rem;
+  z-index: 2;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(224, 164, 93, 0.72) 12%,
+    rgba(224, 164, 93, 0.72) 88%,
+    transparent
+  );
+}
+
 .stageTabString {
   display: grid;
   grid-template-columns: 1.2rem 1fr;
@@ -1281,14 +1305,16 @@
 }
 
 .stageTabString > div {
+  position: relative;
   z-index: 1;
   grid-column: 2;
   grid-row: 1;
-  display: flex;
-  justify-content: space-evenly;
+  height: 1.6rem;
 }
 
 .stageTabString b {
+  position: absolute;
+  top: 0;
   display: grid;
   place-items: center;
   min-width: 1.6rem;
@@ -1299,6 +1325,29 @@
   background: #142522;
   font-size: 0.68rem;
   box-shadow: 0 0 1.1rem rgba(106, 202, 189, 0.13);
+  transform: translateX(-50%);
+}
+
+.stageTabString .stageTabNoteActive {
+  border-color: rgba(224, 164, 93, 0.85);
+  color: #fdf3e4;
+  background: #2c1f10;
+  box-shadow: 0 0 1.4rem rgba(224, 164, 93, 0.4);
+}
+
+.stageTabString .stageTabNotePast {
+  border-color: rgba(244, 234, 219, 0.16);
+  color: rgba(244, 234, 219, 0.42);
+  background: rgba(20, 37, 34, 0.6);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stageTabString b {
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease;
+  }
 }
 
 .stageTab > p,
