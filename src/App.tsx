@@ -206,6 +206,7 @@ import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-m
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { seedExamplesLibrary } from '@/features/karaoke-night/seed-examples'
+import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import type { LabTab } from '@/features/lab/LabSurface'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
@@ -229,6 +230,10 @@ import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_S
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
+import { createTransportVoiceCommands } from '@/features/voice-control/transport-commands'
+import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
+import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
 import type { InstrumentType } from '@/lib/audio-engine'
@@ -1448,7 +1453,11 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Keyboard shortcuts & piano roll events ─────────────────
   let guitarDrumActivationGeneration = 0
-  useKeyboardShortcuts({
+  // Voice control wires up after the A-B loop state below exists (its
+  // command set needs the loop handlers); the V shortcut forwards through
+  // this indirection instead of reordering the setup.
+  let voiceControlToggle: () => void = () => {}
+  const transportShortcutHandlers: KeyboardShortcutHandlers = {
     isPlaying,
     isPaused,
     play: handlePlay,
@@ -1535,7 +1544,11 @@ const AppShell: Component<AppProps> = (props) => {
         }
       },
     },
-  })
+    onVoiceToggle: () => {
+      voiceControlToggle()
+    },
+  }
+  useKeyboardShortcuts(transportShortcutHandlers)
 
   usePianoRollEvents({
     audioEngine,
@@ -1834,6 +1847,29 @@ const AppShell: Component<AppProps> = (props) => {
       t.seekTo(loopA())
     }
   })
+
+  // ── Voice control — hands-free transport ────────────────────
+  // Spoken commands drive the SAME handler object the keyboard shortcuts
+  // use, plus the loop handlers above; the registry is the seam where
+  // surfaces with their own audio graph (StemMixer, Guitar Night) plug in
+  // their own sets later.
+  const voiceCommands = createTransportVoiceCommands({
+    handlers: transportShortcutHandlers,
+    transport: loopTransport,
+    bpm,
+    loop: {
+      enabled: loopEnabled,
+      a: loopA,
+      b: loopB,
+      setA: handleSetLoopA,
+      setB: handleSetLoopB,
+      toggle: handleToggleLoop,
+      clear: handleClearLoop,
+    },
+  })
+  onCleanup(registerVoiceCommands(() => voiceCommands))
+  const voiceControl = useVoiceControlController()
+  voiceControlToggle = voiceControl.toggle
 
   // Karaoke backing: the "heard" (non-scored) tracks play as audio while the
   // scored track stays the reference/scored melody.
@@ -3977,6 +4013,9 @@ const AppShell: Component<AppProps> = (props) => {
         <Notifications />
         {/* Follows the mic, not the tab, so it belongs to the shell too. */}
         <PracticeTimerPill />
+        {/* Shares the bottom-left corner with the timer pill and raises
+            itself above it when both are visible. */}
+        <VoiceControlHud controller={voiceControl} />
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />
         <VerifyEmailBanner />
