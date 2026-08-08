@@ -110,6 +110,27 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Fixed
 
+- **Failed sign-in re-arms the password field for autofill.** Password
+  managers (Proton Pass and friends) refuse to overwrite a non-empty
+  password input, and skip one revealed as `type="text"` — so the AuthModal
+  keeping the wrong attempt in the field after a rejected login made every
+  retry look like autofill was broken. On a rejected `login` attempt the
+  modal now clears the password, resets the reveal toggle and refocuses the
+  field (guarded so a retype already in progress is not wiped; `register`
+  keeps the typed attempt for fix-ups). The form itself was already
+  manager-friendly — real `<form>`, `name` + `autocomplete="username"` /
+  `current-password` — and the focus trap only reacts to `focusin`, so it
+  was ruled out. Covered in `AuthModal.test.tsx`, probe-verified.
+
+- **Delete account joins the Danger Zone.** The erasure block moved out of
+  `AccountSection` into `DeleteAccountRow` (self-contained: restore-only
+  `fetchMe` on `authVersion`, failure surfaced via notification), rendered
+  as the last row of the Settings Danger Zone card — server-side and most
+  permanent, after the two local rows. It reuses `SettingsPanel.module.css`
+  row classes deliberately so it reads as one of them; the old
+  `dangerZone`/`dangerButton` classes were removed from
+  `AccountSection.module.css` (module-scoped, provably unreferenced).
+
 - **The singing-stage grid follows the melody.** Three coordinated changes,
   one invariant: the stage must always label what it shows.
   `gridRowsForBounds` (`src/lib/scale-data.ts`) extends the built scale's

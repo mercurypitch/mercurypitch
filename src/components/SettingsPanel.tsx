@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { AccountSection } from '@/components/account/AccountSection'
+import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
@@ -1498,6 +1499,11 @@ export const SettingsPanel: Component = () => {
                   Reset
                 </button>
               </div>
+
+              {/* Server-side erasure last — the only row here that reaches
+                  beyond this device. Renders only when a server identity
+                  exists (the row gates itself). */}
+              <DeleteAccountRow />
             </Show>
 
             {/* Clear Karaoke/UVR Confirmation Modal */}
