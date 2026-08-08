@@ -109,11 +109,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **The app opens like it means it.** Every launch now starts on a
   MercuryPitch backdrop — a quicksilver sea at first light, under the
-  logo — held for a breath while things ready, then the intro (first
-  visit) or your app fades in. A first visit used to flash the whole app
-  for an instant before the intro covered it; that flash is gone. Phones
-  get their own upright version of the artwork rather than a blown-up
-  crop of the wide one.
+  logo. Your very first arrival gets the full reveal: the sea settles,
+  first light spreads along the horizon, and the intro follows about two
+  seconds later. Every visit after that is the same curtain without the
+  ceremony — under a second, straight into the app. A first visit used
+  to flash the whole app for an instant before the intro covered it;
+  that flash is gone. Phones get their own upright version of the
+  artwork rather than a blown-up crop of the wide one.
 - **Guided tours say where you are.** The step markers used to stack into a
   block of specks on any tour longer than about eight steps — which is most of
   them. A step is now a dash and where you are is a circle, on one line

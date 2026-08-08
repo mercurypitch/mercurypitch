@@ -6,8 +6,10 @@
 //
 // Four scenarios, asserted, exit 1 on any violation:
 //   fresh        first visit: backdrop (with art) covers the shell at
-//                ~400ms, First Light revealed once it drops
-//   returning    seen-flags set: backdrop at ~400ms, app revealed, no flow
+//                ~400ms, still up at 1.5s (the 2s first-arrival hold),
+//                First Light revealed once it drops
+//   returning    seen-flags set: backdrop at ~400ms, gone by 1.5s (the
+//                750ms hold), app revealed, no flow
 //   fresh-mobile the same first visit at 390x844
 //   automation   navigator.webdriver left true: the backdrop must never
 //                render, so specs and tour walkers never wait behind it
@@ -68,6 +70,11 @@ const results = {}
 const OPENING = '[class*="appOpening"]'
 const FLOW = '[data-onboarding-flow]:not([class*="appOpening"])'
 
+/** Matches App.tsx: 2s on a first arrival, 750ms on every later one. */
+const HOLD_FIRST_RUN_MS = 2000
+const HOLD_RETURNING_MS = 750
+const FADE_MS = 400
+
 async function scenario(name, { human, returning, mobile }) {
   const ctx = await browser.newContext({
     viewport: mobile
@@ -89,7 +96,7 @@ async function scenario(name, { human, returning, mobile }) {
   const page = await ctx.newPage()
   const t0 = Date.now()
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'commit' })
-  // Inside the 750ms minimum hold, with slack for boot.
+  // Inside either hold, with slack for boot.
   await page.waitForTimeout(Math.max(0, 420 - (Date.now() - t0)))
   const during = await page.evaluate(
     ([o, f]) => ({
@@ -102,8 +109,22 @@ async function scenario(name, { human, returning, mobile }) {
     [OPENING, FLOW],
   )
   await page.screenshot({ path: `${OUT}/${name}-during.png` })
-  // Past hold (750ms) + fade (400ms), with slack.
-  await page.waitForTimeout(1400)
+  // Between the two holds: a first arrival must still be up, a return
+  // visit must already be gone. This is what proves they differ.
+  await page.waitForTimeout(
+    Math.max(0, HOLD_RETURNING_MS + FADE_MS + 350 - (Date.now() - t0)),
+  )
+  const between = await page.evaluate(
+    (o) => ({ opening: !!document.querySelector(o) }),
+    OPENING,
+  )
+  // The reveal fully arrived, on a first visit — and on a return visit
+  // the proof that the backdrop has already stepped aside.
+  await page.screenshot({ path: `${OUT}/${name}-held.png` })
+  // Past the longer hold + fade, with slack.
+  await page.waitForTimeout(
+    Math.max(0, HOLD_FIRST_RUN_MS + FADE_MS + 600 - (Date.now() - t0)),
+  )
   const after = await page.evaluate(
     ([o, f]) => ({
       opening: !!document.querySelector(o),
@@ -113,7 +134,7 @@ async function scenario(name, { human, returning, mobile }) {
     [OPENING, FLOW],
   )
   await page.screenshot({ path: `${OUT}/${name}-after.png` })
-  results[name] = { during, after }
+  results[name] = { during, between, after }
   await ctx.close()
 }
 
@@ -132,14 +153,26 @@ const expect = (cond, label) => {
 for (const name of ['fresh', 'fresh-mobile']) {
   expect(results[name].during.opening, `${name}: backdrop up during hold`)
   expect(results[name].during.artReady, `${name}: art loaded during hold`)
+  expect(
+    results[name].between.opening,
+    `${name}: first arrival still held past the returning hold`,
+  )
   expect(!results[name].after.opening, `${name}: backdrop gone after hold`)
   expect(results[name].after.flow, `${name}: First Light revealed`)
 }
 expect(results.returning.during.opening, 'returning: backdrop up during hold')
+expect(
+  !results.returning.between.opening,
+  'returning: gone on the short hold, not held for the first-arrival one',
+)
 expect(!results.returning.after.opening, 'returning: backdrop gone after hold')
 expect(!results.returning.after.flow, 'returning: no flow for a seen visitor')
 expect(results.returning.after.nav, 'returning: app chrome revealed')
 expect(!results.automation.during.opening, 'automation: no backdrop, ever')
+expect(
+  !results.automation.between.opening,
+  'automation: no backdrop, ever (mid)',
+)
 expect(
   !results.automation.after.opening,
   'automation: no backdrop, ever (late)',
@@ -151,4 +184,6 @@ if (failures.length > 0) {
   console.error(`\nFAIL:\n- ${failures.join('\n- ')}`)
   process.exit(1)
 }
-console.log('\nOK: opening backdrop behaves in all four scenarios.')
+console.log(
+  '\nOK: both holds (2s first arrival, 750ms return) and all four scenarios.',
+)

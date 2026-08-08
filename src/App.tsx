@@ -641,8 +641,16 @@ const AppShell: Component<AppProps> = (props) => {
   //     chunk is lazy, so without a cover the whole app painted and
   //     then got covered a beat later.
   //  2. The reveal should feel composed rather than raced, so the
-  //     backdrop holds for OPENING_MIN_MS even when the load is
-  //     instant, and the art gets one breath on screen.
+  //     backdrop holds a minimum even when the load is instant, and
+  //     the art gets one breath on screen.
+  // The two holds are deliberately different, because the two arrivals
+  // are. A first arrival is the one moment this app gets to introduce
+  // itself, so it runs the full reveal — the plate settles out of a
+  // slow push-in, first light blooms along the horizon — and holds long
+  // enough (FIRST_RUN) to be watched rather than glimpsed. Every visit
+  // after that is someone who came to sing: the same curtain, no
+  // ceremony, gone in RETURNING. A splash that charges the regular
+  // 2 seconds is a splash people learn to resent.
   // The first-run decision is synchronous (`showWelcome` is a
   // localStorage read). Past the minimum hold, the backdrop leaves the
   // moment its successor is ready: for a first run that is First
@@ -650,7 +658,8 @@ const AppShell: Component<AppProps> = (props) => {
   // already beneath it. Automation (navigator.webdriver) skips the
   // whole thing so no spec or tour walker waits behind a cosmetic
   // hold.
-  const OPENING_MIN_MS = 750
+  const OPENING_HOLD_FIRST_RUN_MS = 2000
+  const OPENING_HOLD_RETURNING_MS = 750
   const OPENING_FADE_MS = 400
   const openingDue =
     navigator.webdriver !== true &&
@@ -676,9 +685,12 @@ const AppShell: Component<AppProps> = (props) => {
       OPENING_FADE_MS,
     )
   }
-  /** Drop, but never before the minimum hold has been honoured. */
+  /** Drop, but never before this arrival's minimum hold is honoured. */
   const dropOpeningAfterHold = () => {
-    const left = OPENING_MIN_MS - (Date.now() - openedAtMs)
+    const hold = firstRunBoot
+      ? OPENING_HOLD_FIRST_RUN_MS
+      : OPENING_HOLD_RETURNING_MS
+    const left = hold - (Date.now() - openedAtMs)
     if (left <= 0) {
       dropOpening()
     } else {
@@ -2635,6 +2647,7 @@ const AppShell: Component<AppProps> = (props) => {
             class={styles.appOpening}
             classList={{
               [styles.appOpeningLeaving]: opening() === 'fading',
+              [styles.appOpeningFirstRun]: firstRunBoot,
             }}
             data-onboarding-flow
             role="status"
@@ -2663,6 +2676,12 @@ const AppShell: Component<AppProps> = (props) => {
                 onLoad={() => setOpeningArtReady(true)}
               />
             </picture>
+            {/* First light itself, blooming along the horizon — first
+                arrival only, and only once the plate is actually there
+                to bloom over. */}
+            <Show when={firstRunBoot && openingArtReady()}>
+              <div class={styles.appOpeningBloom} aria-hidden="true" />
+            </Show>
             {/* The mark is the shipped brand asset, never a copy pasted
                 into JSX: this opening first went out carrying the
                 superseded pre-meniscus mark because it was hand-inlined.
