@@ -3,6 +3,8 @@
 
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { triggerDrumVoice } from '@/lib/drum-voices'
+import type { LoopSpan } from '@/lib/guitar/loop-span'
+import { foldIntoLoop } from '@/lib/guitar/loop-span'
 import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
 
@@ -12,6 +14,13 @@ export interface GuitarRoomBandStartOptions {
   tempoBpm: number
   countInBeats: number
   exerciseBeats: number
+  /**
+   * Repeat this half-open span of exercise beats for as long as the room is
+   * running. Scheduled as one unbroken pulse rather than restarted per pass —
+   * a restart costs the scheduler's lead-in every cycle, which is audible as a
+   * hitch exactly where the player is trying to hear the downbeat.
+   */
+  loop?: LoopSpan | null
   onBeat?(beatIndex: number, phase: GuitarRoomBandBeatPhase): void
   onComplete?(): void
 }
@@ -38,6 +47,18 @@ interface GuitarRoomBandOptions {
   activateContext?: (context: AudioContext) => Promise<void>
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
+}
+
+/** A loop clamped to beats this exercise actually has, or null if unusable. */
+export function resolveBandLoop(
+  loop: LoopSpan | null | undefined,
+  exerciseBeats: number,
+): LoopSpan | null {
+  if (loop === null || loop === undefined) return null
+  const start = Math.max(0, Math.floor(loop.start))
+  const end = Math.min(exerciseBeats, Math.floor(loop.end))
+  if (start >= exerciseBeats || end - start < 1) return null
+  return { start, end }
 }
 
 async function defaultActivateContext(context: AudioContext): Promise<void> {
@@ -111,6 +132,7 @@ export function createGuitarRoomBand(
         60 / Math.min(200, Math.max(30, startOptions.tempoBpm))
       const countInBeats = Math.max(0, Math.floor(startOptions.countInBeats))
       const exerciseBeats = Math.max(1, Math.floor(startOptions.exerciseBeats))
+      const loop = resolveBandLoop(startOptions.loop, exerciseBeats)
       const totalBeats = countInBeats + exerciseBeats
       const firstBeatAt = currentGraph.context.currentTime + 0.09
       const firstBeatAtMs = performance.now() + 90
@@ -134,7 +156,7 @@ export function createGuitarRoomBand(
       }
 
       const schedule = (): void => {
-        while (nextBeat < totalBeats) {
+        while (loop !== null || nextBeat < totalBeats) {
           const at = firstBeatAt + nextBeat * beatSeconds
           if (at > currentGraph.context.currentTime + scheduleAheadSeconds) {
             break
@@ -142,7 +164,9 @@ export function createGuitarRoomBand(
           const scheduledBeat = nextBeat
           const phase: GuitarRoomBandBeatPhase =
             scheduledBeat < countInBeats ? 'count-in' : 'exercise'
-          const exerciseIndex = scheduledBeat - countInBeats
+          // The slot index only ever grows; a loop folds it back onto the
+          // beats being repeated, so the pulse never pauses to restart.
+          const exerciseIndex = foldIntoLoop(scheduledBeat - countInBeats, loop)
           if (phase === 'count-in') {
             triggerDrumVoice(
               'sidestick',
@@ -178,7 +202,7 @@ export function createGuitarRoomBand(
           nextBeat += 1
         }
 
-        if (nextBeat >= totalBeats) {
+        if (loop === null && nextBeat >= totalBeats) {
           if (interval !== null) window.clearInterval(interval)
           interval = null
           const completeAt = firstBeatAt + totalBeats * beatSeconds

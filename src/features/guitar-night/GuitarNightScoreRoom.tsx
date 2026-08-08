@@ -12,9 +12,11 @@ import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/gui
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
+import { useGuitarNightLoopController } from './useGuitarNightLoopController'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 interface GuitarNightScoreRoomProps {
@@ -33,12 +35,38 @@ function formatTime(seconds: number): string {
   return `${minutes}:${String(wholeSeconds % 60).padStart(2, '0')}`
 }
 
+/** Beats are counted from one on screen, the way a player counts them. */
+function formatBeat(beat: number): string {
+  return `beat ${Math.round(beat) + 1}`
+}
+
 const COUNT_IN_CHOICES = [0, 2, 4, 8]
 
 export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let roomHeading!: HTMLHeadingElement
+  // The tab room counts in beats, not seconds: a tempo change should move the
+  // same bars, not a different span of the score.
+  const scoreBeats = createMemo(() =>
+    props
+      .reference()
+      .notes.reduce(
+        (latest, note) => Math.max(latest, note.startBeat + note.duration),
+        0,
+      ),
+  )
+  const loop = useGuitarNightLoopController({ limit: scoreBeats })
   const room = useGuitarNightScoreRoomController({
     reference: () => props.reference(),
+    loop: loop.span,
+  })
+  // A loop is scheduled into the click at start, so marks moved mid-take take
+  // effect on the next one. Say so rather than looking ignored.
+  const loopPendingRestart = createMemo(() => {
+    const marked = loop.span()
+    const running = room.runningLoop()
+    if (marked === null || room.status() === 'quiet') return false
+    if (running === null) return true
+    return running.start !== marked.start || running.end !== marked.end
   })
   const listening = useGuitarListeningController({
     activateAudio: room.activateAudio,
@@ -165,9 +193,20 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       <div class={styles.transportDeck} data-testid="guitar-night-score-deck">
         <div class={styles.transportIdentity}>
           <span>
-            This tab keeps its own clock. No recording is attached, so nothing
-            has to line up with one.
+            {loopPendingRestart()
+              ? 'The click is already scheduled — this loop starts on the next count-in.'
+              : 'This tab keeps its own clock. No recording is attached, so nothing has to line up with one.'}
           </span>
+          <GuitarNightLoopControls
+            span={loop.span()}
+            pending={loop.isPending()}
+            hasStart={loop.markA() !== null}
+            hasEnd={loop.markB() !== null}
+            format={formatBeat}
+            onMarkStart={() => loop.markStart(room.playheadBeat() ?? 0)}
+            onMarkEnd={() => loop.markEnd(room.playheadBeat() ?? scoreBeats())}
+            onClear={loop.clear}
+          />
         </div>
         <div class={styles.timeRail}>
           <span>{formatTime(room.positionSeconds())}</span>
