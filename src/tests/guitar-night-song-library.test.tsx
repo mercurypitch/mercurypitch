@@ -52,6 +52,25 @@ function mixedBackingResult(
   }
 }
 
+/** A device whose library is long enough to page: newest song first. */
+function libraryPort(count: number): GuitarNightSongPort {
+  const songs = Array.from({ length: count }, (_, index) => {
+    const ordinal = String(index + 1).padStart(2, '0')
+    return {
+      sessionId: `session-${ordinal}`,
+      title: `Song ${ordinal}.wav`,
+      createdAt: Date.UTC(2026, 7, 6) - index * 86_400_000,
+    }
+  })
+  return {
+    initialize: vi.fn(async () => undefined),
+    completedSongs: () => songs,
+    openSession: vi.fn(async (sessionId: string) =>
+      mixedBackingResult(sessionId),
+    ),
+  }
+}
+
 function fakeBackingTransport() {
   let status: GuitarBackingTransportStatus = 'idle'
   let playbackRate = 1
@@ -603,5 +622,70 @@ describe('GuitarNightApp prepared songs', () => {
     expect(prepare).not.toHaveBeenCalled()
     expect(release).not.toHaveBeenCalled()
     expect(window.location.search).toBe('?session=session-ready')
+  })
+
+  it('opens on the newest five prepared songs and reveals the rest on request', async () => {
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(12))} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    expect(
+      await screen.findByText('5 of 12 on this device'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Song 01\.wav/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Song 06\.wav/ }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show 7 more' }))
+
+    expect(await screen.findByText('12 on this device')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Song 12\.wav/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Show \d+ more/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the routed song reachable when it sits below the first page', async () => {
+    window.history.replaceState(null, '', '/guitar-night?session=session-11')
+
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(12))} />
+    ))
+
+    expect(
+      await screen.findByRole('button', { name: /Song 11\.wav/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Song 06\.wav/ }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('6 of 12 on this device')).toBeInTheDocument()
+  })
+
+  it('counts only the rows a press actually reveals, not the raw page step', async () => {
+    window.history.replaceState(null, '', '/guitar-night?session=session-13')
+
+    render(() => (
+      <GuitarNightApp loadSongPort={() => Promise.resolve(libraryPort(20))} />
+    ))
+
+    // Song 13 is pinned above the fold already, so the next page adds nine
+    // unseen rows rather than the full ten-song step.
+    expect(
+      await screen.findByText('6 of 20 on this device'),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Show 9 more' }))
+
+    expect(
+      await screen.findByText('15 of 20 on this device'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Show 5 more' }),
+    ).toBeInTheDocument()
   })
 })

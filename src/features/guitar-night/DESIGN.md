@@ -67,6 +67,11 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 - If stems are saved but the room cannot refresh or stage them, the player can
   recover the result from Prepared songs rather than separating the file
   again.
+- Prepared songs opens on the five most recent sessions and reveals the rest
+  ten at a time, so a long library never turns the entry panel into a wall of
+  rows. The routed song stays listed even when it falls below that first page.
+  While the local library is opening, a slow open explains itself instead of
+  leaving the panel looking stuck.
 - A staged song exposes one explicit `Enter room` handoff. Entering remains
   silent and cuts over from the setup faceplate to a bounded `100dvh`
   workspace. The song identity becomes a compact signal bar, the photographic
