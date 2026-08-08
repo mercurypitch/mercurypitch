@@ -12,7 +12,7 @@
 
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
-import { getFunnelClientId } from '@/lib/funnel'
+import { funnelEventBody } from '@/lib/funnel'
 import type { KaraokeFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type KaraokeFunnelEvent = KaraokeFunnelEventName
@@ -48,7 +48,9 @@ function viewAlreadySentThisSession(): boolean {
 function beacon(event: KaraokeFunnelEvent): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   const url = `${API_BASE_URL}/api/mirror/event`
-  const payload = JSON.stringify({ clientId: getFunnelClientId(), event })
+  // One body shape for every transport — acquisition included. See
+  // funnelEventBody for why it is not built here.
+  const payload = funnelEventBody(event)
   try {
     // keepalive fetch with credentials omitted, NOT navigator.sendBeacon —
     // sendBeacon is always credentialed and the worker answers CORS with a

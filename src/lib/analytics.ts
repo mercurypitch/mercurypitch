@@ -10,7 +10,7 @@
 // ============================================================
 
 import { API_BASE_URL } from '@/lib/defaults'
-import { getFunnelClientId } from '@/lib/funnel'
+import { funnelEventBody } from '@/lib/funnel'
 import type { AppFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type AppFunnelEvent = AppFunnelEventName
@@ -31,7 +31,9 @@ function alreadySentThisSession(): boolean {
 function beacon(event: AppFunnelEvent): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   const url = `${API_BASE_URL}/api/mirror/event`
-  const payload = JSON.stringify({ clientId: getFunnelClientId(), event })
+  // One body shape for every transport — acquisition included. See
+  // funnelEventBody for why it is not built here.
+  const payload = funnelEventBody(event)
   try {
     // NOT navigator.sendBeacon: it is always credentialed, and the worker
     // answers CORS with a wildcard origin — the browser then drops the

@@ -1163,7 +1163,12 @@ async function handleMirrorEvent(
   // the whole thing is non-fatal on purpose: the Worker can deploy ahead of
   // the migration that creates the table, and a funnel that 500s over a
   // reporting nicety would cost more than the reporting is worth.
-  const acquisition = sanitizeAcquisition(acq)
+  // 'no-storage' is the literal id every storage-disabled browser shares.
+  // With first-wins semantics, one such visitor's source would become the
+  // recorded acquisition for all of them — a row that looks precise and
+  // means nothing. Better no row than that row.
+  const acquisition =
+    clientId === 'no-storage' ? null : sanitizeAcquisition(acq)
   if (acquisition !== null) {
     try {
       await env.DB.prepare(
