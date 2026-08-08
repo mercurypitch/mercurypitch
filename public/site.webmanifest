@@ -1,14 +1,41 @@
 {
+  "id": "/",
   "name": "MercuryPitch",
   "short_name": "MercuryPitch",
   "description": "Train your vocal pitch with real-time audio feedback, piano roll visualization, and accuracy scoring.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
+  "categories": ["music", "education", "entertainment"],
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-narrow.png",
+      "sizes": "540x1170",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Your daily Home: streak, today's session and this week's Legend"
+    },
+    {
+      "src": "/screenshots/path-narrow.png",
+      "sizes": "540x1170",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "The Ascent: a guided path of seven themed practice weeks"
+    },
+    {
+      "src": "/screenshots/home-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "MercuryPitch on a wide screen"
+    }
   ]
 }

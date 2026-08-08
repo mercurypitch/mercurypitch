@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig, loadEnv } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import { qrcode } from 'vite-plugin-qrcode'
 import solidPlugin from 'vite-plugin-solid'
 
@@ -142,7 +143,7 @@ function removeWasmAssetsPlugin() {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const modeEnv = loadEnv(mode, __dirname, '')
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
@@ -162,6 +163,51 @@ export default defineConfig(({ mode }) => {
       standaloneEntryRewritePlugin(),
       standaloneAliasFilesPlugin(),
       removeWasmAssetsPlugin(),
+      // PWA. `injectManifest` — not `generateSW` — because the caching rules
+      // are the risky part of shipping a worker here (see src/sw.ts for the two
+      // hazards) and they have to be readable and reviewable, not generated.
+      //
+      // The plugin's only jobs are to bundle src/sw.ts to dist/sw.js at the
+      // root, so its scope is the whole origin, and to inject the list of URLs
+      // this build shipped. It must not touch HTML: the manifest is
+      // hand-maintained in public/site.webmanifest and already linked, and
+      // registration happens in src/index.tsx where the rest of the boot
+      // sequence lives.
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        injectRegister: null,
+        manifest: false,
+        injectManifest: {
+          // Classic script rather than an ES module worker, so Firefox and
+          // older WebKit can register it without `{ type: 'module' }`.
+          rollupFormat: 'iife',
+          // This list is an allowlist of "safe to serve from cache", so it
+          // names only immutable hashed build output plus the few small,
+          // stable files the shell needs. Deliberately absent:
+          // public/models/** (ONNX/WASM, hundreds of MB), the OG images, and
+          // icon-512/maskable-512/screenshots — those are read by the OS
+          // install sheet, never by the page, and the sheet does not go
+          // through the worker.
+          globDirectory: 'dist',
+          globPatterns: [
+            'assets/**/*.{js,css}',
+            'site.webmanifest',
+            'favicon.svg',
+            'favicon-32.png',
+            'icon-192.png',
+            'apple-touch-icon.png',
+          ],
+          globIgnores: ['**/*.map', 'sw.js', 'workbox-*.js'],
+          // The vendor chunk alone is 2.5 MB. Above the default 2 MB cap
+          // Workbox silently drops a file from the manifest, which here would
+          // mean the biggest chunk is the one asset never cached.
+          maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+          // Hashed filenames are already their own revision.
+          dontCacheBustURLsMatching: /-[A-Za-z0-9_-]{8}\.(?:js|css)$/,
+        },
+      }),
     ],
     // Absolute base so asset URLs resolve from the site root. Required for
     // path-based deep-links (e.g. /exercises/<slug>): a relative './' base would
@@ -359,6 +405,10 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': {},
       __COMMIT_SHA__: JSON.stringify(commitSha),
+      // dist/sw.js only exists after a build, so `vite dev` must not try to
+      // register it. Keyed on the command rather than the mode because
+      // `build:dev` is a real deploy that should carry the worker.
+      __SW_ENABLED__: JSON.stringify(command === 'build'),
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],

@@ -8,6 +8,7 @@ import { AccountSection } from '@/components/account/AccountSection'
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import { ChangelogModal } from '@/components/ChangelogModal'
 import { ConsoleLog } from '@/components/ConsoleLog'
+import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { ThemePicker } from '@/components/ThemePicker'
 import { TierSelector } from '@/components/TierSelector'
@@ -1489,6 +1490,22 @@ export const SettingsPanel: Component = () => {
               <Show when={showConsoleLog()}>
                 <ConsoleLog />
               </Show>
+            </div>
+          </Show>
+
+          {/* Install as an app — the section disappears entirely when there is
+              nothing to offer (already installed, or a browser with no install
+              path), so it never advertises something that cannot happen. */}
+          <Show when={canOfferInstall()}>
+            <div class={styles.settingsSection} data-testid="install-app-section">
+              <h3 class={styles.settingsSectionTitle}>Install as an app</h3>
+              <div class={styles.settingsDivider} />
+              <p class={styles.settingsDesc}>
+                Add MercuryPitch to your home screen. It opens in its own
+                window, without browser chrome, and keeps working when the
+                connection drops.
+              </p>
+              <InstallAppButton variant="panel" />
             </div>
           </Show>
 

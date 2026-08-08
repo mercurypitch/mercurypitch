@@ -20,9 +20,31 @@ import { consumeEmailVerifyRedirect, consumeGoogleRedirect, } from '@/db/service
 import { normalizeAdminEntryRoute } from '@/lib/admin-entry-route'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
+import { installPwaInstallListeners } from '@/lib/pwa-install'
+import { registerServiceWorker } from '@/lib/pwa-service-worker'
+import { showActionNotification } from '@/stores/notifications-store'
 
 installChunkLoadRecovery()
 initGlobalErrorHandlers()
+// `beforeinstallprompt` can fire before the first render and is never
+// replayed, so the listener has to exist before anything else runs.
+installPwaInstallListeners()
+// The service worker is what makes the app installable. Its update is offered,
+// never forced: see src/lib/pwa-service-worker.ts for why nothing here reloads
+// on its own.
+registerServiceWorker({
+  onUpdateReady: (applyUpdate) => {
+    showActionNotification(
+      'A new version of MercuryPitch is ready.',
+      'info',
+      { label: 'Reload', onClick: applyUpdate },
+      // Longer than a normal toast because it asks for a decision, but not
+      // sticky: ignoring it is a valid answer. The waiting worker takes over
+      // on the next navigation either way.
+      { channel: 'pwa-update', durationMs: 60_000 },
+    )
+  },
+})
 // Boot Consent Mode + the cookie banner before anything ad-related loads.
 setupConsent()
 // Store the JWT from a Google sign-in redirect (#gauth=…) before the
