@@ -113,12 +113,15 @@ function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
   }
 }
 
+/** Runs one utterance; returns the success label or the failure message. */
 function fire(fixture: Fixture, utterance: string): string | undefined {
   const commands = createTransportVoiceCommands(fixture.deps)
   const match = matchVoiceCommand(utterance, commands)
   if (match === null) return undefined
   const result = match.command.run({ n: match.n })
-  return typeof result === 'string' ? result : match.command.label
+  if (typeof result === 'string') return result
+  if (typeof result === 'object') return result.message
+  return match.command.label
 }
 
 beforeEach(() => {

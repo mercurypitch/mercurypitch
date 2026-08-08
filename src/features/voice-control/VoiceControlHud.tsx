@@ -29,6 +29,9 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     if (hasError()) return 'Mic unavailable'
     const fb = props.controller.feedback()
     if (fb !== null && fb.kind === 'matched') return fb.action ?? 'Done'
+    if (fb !== null && (fb.kind === 'failed' || fb.kind === 'unavailable')) {
+      return fb.message ?? 'Could not do that'
+    }
     const interim = props.controller.interim()
     if (interim !== '') return interim
     if (fb !== null) return `"${fb.heard}"?`
@@ -76,6 +79,9 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
               props.controller.feedback()?.kind === 'matched',
             [styles.statusMiss]:
               props.controller.feedback()?.kind === 'unrecognized',
+            [styles.statusWarn]:
+              props.controller.feedback()?.kind === 'failed' ||
+              props.controller.feedback()?.kind === 'unavailable',
           }}
           title={props.controller.feedback()?.heard ?? ''}
           data-testid="voice-control-status"

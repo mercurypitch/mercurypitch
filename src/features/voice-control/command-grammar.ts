@@ -179,25 +179,52 @@ function matchPhrase(
   return ti === tokens.length ? { value } : null
 }
 
+export type VoiceResolveOutcome =
+  | { kind: 'matched'; command: VoiceCommand; n?: number }
+  /**
+   * A phrase matched but every command carrying it is gated off (wrong tab,
+   * suspended surface). Distinct from 'none' so the user hears "not
+   * available here" instead of "did not understand".
+   */
+  | { kind: 'unavailable'; command: VoiceCommand }
+  | { kind: 'none' }
+
 /**
- * Runs one utterance against the registered commands. First command whose
- * `available()` passes and whose phrase consumes the full utterance wins;
- * registration order is the priority order.
+ * Runs one utterance against the registered commands. The first command
+ * whose `available()` passes and whose phrase consumes the full utterance
+ * wins; registration order is the priority order. When only gated-off
+ * commands match the phrase, the outcome says so.
  */
+export function resolveVoiceCommand(
+  rawUtterance: string,
+  commands: readonly VoiceCommand[],
+): VoiceResolveOutcome {
+  const tokens = stripFillerTokens(
+    normalizeUtterance(rawUtterance).split(' ').filter(Boolean),
+  )
+  if (tokens.length === 0) return { kind: 'none' }
+  let unavailable: VoiceCommand | null = null
+  for (const command of commands) {
+    const isAvailable = command.available === undefined || command.available()
+    for (const phrase of command.phrases) {
+      const matched = matchPhrase(tokens, phrase)
+      if (matched === null) continue
+      if (isAvailable) return { kind: 'matched', command, n: matched.value }
+      unavailable ??= command
+      break
+    }
+  }
+  if (unavailable !== null) return { kind: 'unavailable', command: unavailable }
+  return { kind: 'none' }
+}
+
+/** Matched-only view of `resolveVoiceCommand`, for callers and tests that
+ *  do not care why an utterance failed. */
 export function matchVoiceCommand(
   rawUtterance: string,
   commands: readonly VoiceCommand[],
 ): VoiceMatch | null {
-  const tokens = stripFillerTokens(
-    normalizeUtterance(rawUtterance).split(' ').filter(Boolean),
-  )
-  if (tokens.length === 0) return null
-  for (const command of commands) {
-    if (command.available !== undefined && !command.available()) continue
-    for (const phrase of command.phrases) {
-      const matched = matchPhrase(tokens, phrase)
-      if (matched !== null) return { command, n: matched.value }
-    }
-  }
-  return null
+  const outcome = resolveVoiceCommand(rawUtterance, commands)
+  if (outcome.kind !== 'matched') return null
+  return { command: outcome.command, n: outcome.n }
 }

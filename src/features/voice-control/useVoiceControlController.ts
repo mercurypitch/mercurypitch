@@ -12,17 +12,25 @@ import type { Accessor } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { showNotification } from '@/stores/notifications-store'
-import { matchVoiceCommand } from './command-grammar'
-import type { VoiceListenerState } from './types'
+import { normalizeUtterance, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
+import type { VoiceCommandResult, VoiceListenerState } from './types'
 import { activeVoiceCommands } from './voice-command-registry'
 import { createWebSpeechListener } from './webspeech-listener'
 
 export interface VoiceFeedback {
-  kind: 'matched' | 'unrecognized'
+  /**
+   * matched      — the command ran; `action` says what it did.
+   * failed       — the command matched but did nothing; `message` says why.
+   * unavailable  — the phrase exists but is gated off on this view.
+   * unrecognized — no registered phrase consumed the utterance.
+   */
+  kind: 'matched' | 'failed' | 'unavailable' | 'unrecognized'
   /** What the recognizer heard, verbatim. */
   heard: string
   /** What happened, when it matched (e.g. 'Loop B set', 'Speed 1.5x'). */
   action?: string
+  /** Why nothing happened, for 'failed' / 'unavailable'. */
+  message?: string
 }
 
 export interface VoiceControlController {
@@ -41,6 +49,13 @@ const FEEDBACK_VISIBLE_MS = 2600
 
 /** Permission-shaped listener errors that force the flag back off. */
 const PERMISSION_ERRORS = new Set(['not-allowed', 'service-not-allowed'])
+
+// Unrecognized-speech toasts are rationed: only short, command-shaped
+// utterances qualify (long ones are ambient talk or backing-track lyrics
+// bleeding in — the HUD still shows those), and no more than one toast per
+// interval so singing near the mic cannot flood the corner.
+const UNRECOGNIZED_TOAST_MAX_TOKENS = 4
+const UNRECOGNIZED_TOAST_INTERVAL_MS = 6000
 
 export function useVoiceControlController(): VoiceControlController {
   const [enabled, setEnabled] = createPersistedSignal<boolean>(
@@ -64,19 +79,55 @@ export function useVoiceControlController(): VoiceControlController {
     }, FEEDBACK_VISIBLE_MS)
   }
 
-  const handleUtterance = (text: string) => {
-    const match = matchVoiceCommand(text, activeVoiceCommands())
-    if (match === null) {
-      presentFeedback({ kind: 'unrecognized', heard: text })
+  let lastUnrecognizedToastAt = 0
+
+  const toastUnrecognizedMaybe = (heard: string) => {
+    const tokens = stripFillerTokens(
+      normalizeUtterance(heard).split(' ').filter(Boolean),
+    )
+    if (tokens.length === 0 || tokens.length > UNRECOGNIZED_TOAST_MAX_TOKENS) {
       return
     }
-    let action = match.command.label
-    try {
-      const result = match.command.run({ n: match.n })
-      if (typeof result === 'string') action = result
-    } catch (err) {
-      console.error('[voice-control] command failed:', match.command.id, err)
+    const now = Date.now()
+    if (now - lastUnrecognizedToastAt < UNRECOGNIZED_TOAST_INTERVAL_MS) return
+    lastUnrecognizedToastAt = now
+    showNotification(`Voice: no command matches "${heard.trim()}"`, 'info')
+  }
+
+  const handleUtterance = (text: string) => {
+    const outcome = resolveVoiceCommand(text, activeVoiceCommands())
+
+    if (outcome.kind === 'none') {
+      presentFeedback({ kind: 'unrecognized', heard: text })
+      toastUnrecognizedMaybe(text)
+      return
     }
+
+    if (outcome.kind === 'unavailable') {
+      const message = `${outcome.command.label} is not available on this view`
+      presentFeedback({ kind: 'unavailable', heard: text, message })
+      showNotification(`Voice: ${message}`, 'warning')
+      return
+    }
+
+    let result: VoiceCommandResult
+    try {
+      result = outcome.command.run({ n: outcome.n })
+    } catch (err) {
+      console.error('[voice-control] command failed:', outcome.command.id, err)
+      const message = `${outcome.command.label} failed`
+      presentFeedback({ kind: 'failed', heard: text, message })
+      showNotification(`Voice: ${message}`, 'warning')
+      return
+    }
+
+    if (typeof result === 'object' && result.failed) {
+      presentFeedback({ kind: 'failed', heard: text, message: result.message })
+      showNotification(`Voice: ${result.message}`, 'warning')
+      return
+    }
+
+    const action = typeof result === 'string' ? result : outcome.command.label
     presentFeedback({ kind: 'matched', heard: text, action })
   }
 

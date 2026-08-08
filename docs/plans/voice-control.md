@@ -1,6 +1,9 @@
 # Voice control — hands-free practice transport
 
-Status: phase 1 shipped (this branch), phases 2-4 pending.
+Status: phase 1 shipped (this branch), phases 2-4 pending. The per-command
+catalog and approval roadmap live in
+[docs/VOICE-COMMANDS.md](../VOICE-COMMANDS.md); phase order confirmed by the
+owner is latency pass (phase 2) first, then command integration (phase 3).
 
 ## Why
 
@@ -99,7 +102,10 @@ Scope decisions for phase 1:
 - English only (`en-US`), matching the grammar.
 - Final results only — no eager execution on interim text. Simple and never
   double-fires; the latency cost is ~300-800 ms and phase 2 attacks it.
-- Feedback is the HUD, not toasts; toasts only for real errors.
+- Feedback: the HUD always; toasts when a command fails ("Nothing playing",
+  "Set A and B first"), when a known phrase is gated on the current view, and
+  for short unrecognized command-shaped utterances (throttled). Long ambient
+  speech and lyrics stay HUD-only so singing cannot flood the screen.
 - Off by default; the enable flag persists (`pitchperfect_voice_control_enabled`).
 
 ## Phase 2 — latency + robustness (the "really fast" pass)

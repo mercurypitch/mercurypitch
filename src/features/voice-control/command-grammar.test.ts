@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchVoiceCommand, normalizeUtterance, parseNumberAt, stripFillerTokens, } from './command-grammar'
+import { matchVoiceCommand, normalizeUtterance, parseNumberAt, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
 import type { VoiceCommand } from './types'
 
 const command = (
@@ -149,5 +149,27 @@ describe('matchVoiceCommand', () => {
     const first = command('first', ['go'])
     const second = command('second', ['go'])
     expect(matchVoiceCommand('go', [first, second])?.command.id).toBe('first')
+  })
+})
+
+describe('resolveVoiceCommand', () => {
+  it('reports a phrase that only matches gated-off commands as unavailable', () => {
+    const gated = command('gated', ['play'], { available: () => false })
+    const outcome = resolveVoiceCommand('play', [gated])
+    expect(outcome.kind).toBe('unavailable')
+    expect(outcome.kind === 'unavailable' && outcome.command.id).toBe('gated')
+  })
+
+  it('reports unknown speech as none, not unavailable', () => {
+    const gated = command('gated', ['play'], { available: () => false })
+    expect(resolveVoiceCommand('something else', [gated]).kind).toBe('none')
+  })
+
+  it('still prefers an available command over an earlier gated one', () => {
+    const gated = command('gated', ['go'], { available: () => false })
+    const live = command('live', ['go'])
+    const outcome = resolveVoiceCommand('go', [gated, live])
+    expect(outcome.kind).toBe('matched')
+    expect(outcome.kind === 'matched' && outcome.command.id).toBe('live')
   })
 })

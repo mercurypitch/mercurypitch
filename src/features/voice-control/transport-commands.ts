@@ -16,7 +16,8 @@ import type { Accessor } from 'solid-js'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import * as transportStore from '@/stores/transport-store'
-import type { VoiceCommand } from './types'
+import type { VoiceCommand, VoiceCommandResult } from './types'
+import { voiceFailure } from './types'
 
 export interface TransportVoiceLoopDeps {
   enabled: Accessor<boolean>
@@ -70,11 +71,11 @@ export function createTransportVoiceCommands(
 
   // ── Play / pause / stop, routed per tab like the Space key ──
 
-  const doPlay = (): string => {
+  const doPlay = (): VoiceCommandResult => {
     const t = tab()
     if (t === TAB_PIANO && deps.handlers.piano) {
       const gs = deps.handlers.piano.gameState()
-      if (gs === 'playing') return 'Already playing'
+      if (gs === 'playing') return voiceFailure('Already playing')
       if (gs === 'paused') {
         deps.handlers.piano.resumeGame()
         return 'Resume'
@@ -88,7 +89,7 @@ export function createTransportVoiceCommands(
     }
     if (t === TAB_COMPOSE && deps.handlers.editor) {
       const editor = deps.handlers.editor
-      if (editor.isPlaying()) return 'Already playing'
+      if (editor.isPlaying()) return voiceFailure('Already playing')
       if (editor.isPaused()) {
         editor.resume()
         return 'Resume'
@@ -96,7 +97,7 @@ export function createTransportVoiceCommands(
       void editor.play()
       return 'Play'
     }
-    if (deps.handlers.isPlaying()) return 'Already playing'
+    if (deps.handlers.isPlaying()) return voiceFailure('Already playing')
     if (deps.handlers.isPaused()) {
       deps.handlers.resume()
       return 'Resume'
@@ -105,14 +106,14 @@ export function createTransportVoiceCommands(
     return 'Play'
   }
 
-  const doPause = (): string => {
+  const doPause = (): VoiceCommandResult => {
     const t = tab()
     if (t === TAB_PIANO && deps.handlers.piano) {
       if (deps.handlers.piano.gameState() === 'playing') {
         deps.handlers.piano.pauseGame()
         return 'Pause'
       }
-      return 'Nothing playing'
+      return voiceFailure('Nothing playing')
     }
     if (t === TAB_GUITAR && deps.handlers.guitar?.togglePlayback) {
       deps.handlers.guitar.togglePlayback()
@@ -123,20 +124,20 @@ export function createTransportVoiceCommands(
         deps.handlers.editor.pause()
         return 'Pause'
       }
-      return 'Nothing playing'
+      return voiceFailure('Nothing playing')
     }
     if (deps.handlers.isPlaying()) {
       deps.handlers.pause()
       return 'Pause'
     }
-    return 'Nothing playing'
+    return voiceFailure('Nothing playing')
   }
 
-  const doStop = (): string => {
+  const doStop = (): VoiceCommandResult => {
     const t = tab()
     if (t === TAB_PIANO && deps.handlers.piano) {
       const gs = deps.handlers.piano.gameState()
-      if (gs === 'idle') return 'Nothing playing'
+      if (gs === 'idle') return voiceFailure('Nothing playing')
       deps.handlers.piano.resetGame()
       return 'Stop'
     }
@@ -149,13 +150,13 @@ export function createTransportVoiceCommands(
         deps.handlers.editor.pause()
         return 'Pause'
       }
-      return 'Nothing playing'
+      return voiceFailure('Nothing playing')
     }
     deps.handlers.stop()
     return 'Stop'
   }
 
-  const doRestart = (): string => {
+  const doRestart = (): VoiceCommandResult => {
     const t = tab()
     if (t === TAB_PIANO && deps.handlers.piano) {
       deps.handlers.piano.resetGame()
@@ -165,7 +166,7 @@ export function createTransportVoiceCommands(
     if (t === TAB_GUITAR) {
       // The guitar transports (drum loop / tab playback) have no seek —
       // phase 3 gives Guitar its own command set.
-      return 'Not on this tab yet'
+      return voiceFailure('Not on this tab yet')
     }
     deps.transport().seekTo(0)
     if (deps.handlers.isPaused()) {
@@ -228,9 +229,9 @@ export function createTransportVoiceCommands(
     return formatSpeed(transportStore.playbackSpeed())
   }
 
-  const setSpokenSpeed = (raw: number | undefined): string => {
+  const setSpokenSpeed = (raw: number | undefined): VoiceCommandResult => {
     if (raw === undefined || !Number.isFinite(raw) || raw <= 0) {
-      return 'Speed unchanged'
+      return voiceFailure('Speed unchanged')
     }
     // "speed 75" and "speed 150 percent" both mean percent; a small number
     // ("speed 1.5") reads as a multiplier.
@@ -436,7 +437,10 @@ export function createTransportVoiceCommands(
       available: seekableTab,
       run: () => {
         deps.loop.setB()
-        return deps.loop.b() > 0 ? 'Loop B set' : 'Loop B must come after A'
+        if (deps.loop.b() <= 0) {
+          return voiceFailure('Loop B must come after A')
+        }
+        return 'Loop B set'
       },
     },
     {
@@ -462,7 +466,7 @@ export function createTransportVoiceCommands(
       available: seekableTab,
       run: () => {
         if (deps.loop.a() <= 0 || deps.loop.b() <= 0) {
-          return 'Set A and B first'
+          return voiceFailure('Set A and B first')
         }
         if (!deps.loop.enabled()) deps.loop.toggle()
         return 'Loop on'
