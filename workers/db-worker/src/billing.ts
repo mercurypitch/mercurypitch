@@ -176,6 +176,20 @@ interface CheckoutBody {
   planId?: string
 }
 
+/** 429 for the shared checkout/portal bucket. */
+function tooManyStripeSessions(
+  respond: Respond,
+  rl: { retryAfter?: number },
+): Response {
+  const after = rl.retryAfter ?? 60
+  return respond(
+    {
+      error: `Too many payment attempts. Try again in ${after} seconds.`,
+    },
+    { status: 429, headers: { 'Retry-After': String(after) } },
+  )
+}
+
 async function handleCheckout(
   request: Request,
   env: Env,
@@ -186,6 +200,12 @@ async function handleCheckout(
   }
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  const rl = await checkRateLimit(
+    env.DB,
+    `user:${auth.userId}`,
+    'billing-checkout',
+  )
+  if (!rl.allowed) return tooManyStripeSessions(respond, rl)
   if (auth.isTestAccount) {
     return respond(
       { error: 'Billing is disabled for managed testing accounts' },
@@ -283,6 +303,14 @@ async function handlePortal(
   }
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+  // Shares the checkout bucket: both routes mint a Stripe session, and a
+  // caller looping one is the same problem as looping the other.
+  const rl = await checkRateLimit(
+    env.DB,
+    `user:${auth.userId}`,
+    'billing-checkout',
+  )
+  if (!rl.allowed) return tooManyStripeSessions(respond, rl)
   if (auth.isTestAccount) {
     return respond(
       { error: 'Billing is disabled for managed testing accounts' },

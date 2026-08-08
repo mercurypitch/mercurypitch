@@ -443,4 +443,42 @@ describe('account suspension against the migrated schema', () => {
     })
     expect(activeAgain.status).toBe(200)
   })
+
+  // The request-count limiter bounds how often a caller writes, not how big
+  // each write is. Without a byte cap, an allowed request could still buffer
+  // hundreds of megabytes into the Worker before any validation ran.
+  it('refuses an oversized CRUD write body with 413, and accepts a normal one', async () => {
+    const registration = await workerRequest('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'bulky@example.com',
+        password: 'secret123',
+        displayName: 'Bulky Singer',
+      }),
+    })
+    expect(registration.status).toBe(200)
+    const { token } = (await registration.json()) as { token: string }
+
+    const write = (body: unknown): Promise<Response> =>
+      workerRequest('/api/userSettings', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+    // Just past the 256 KiB ceiling.
+    const oversized = await write({
+      key: 'theme',
+      value: 'x'.repeat(300 * 1024),
+    })
+    expect(oversized.status).toBe(413)
+
+    // A real setting still goes through untouched.
+    const normal = await write({ key: 'theme', value: 'midnight' })
+    expect(normal.status).toBe(201)
+  })
 })

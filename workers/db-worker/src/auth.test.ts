@@ -840,6 +840,52 @@ describe('suspended account authentication', () => {
   })
 })
 
+describe('anonymous provisioning needs a real deviceId', () => {
+  // Minting a server-side UUID for a caller who sent none created a row that
+  // nothing could ever sign back into — the junk-identity population. The
+  // deviceId IS the identity, so a request without one is a bad request.
+  async function anonymousStatus(
+    body: unknown,
+    db: AuthDatabase,
+  ): Promise<number> {
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/anonymous', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      makeEnv(db),
+      '/api/auth/anonymous',
+      respond,
+    )
+    if (response == null) throw new Error('Anonymous route was not handled')
+    return response.status
+  }
+
+  it('400s a missing deviceId and creates nothing', async () => {
+    const db = new AuthDatabase()
+
+    expect(await anonymousStatus({}, db)).toBe(400)
+    expect(db.users.size).toBe(0)
+    expect(db.profiles.size).toBe(0)
+  })
+
+  it('400s a deviceId that is not a UUID', async () => {
+    const db = new AuthDatabase()
+
+    expect(await anonymousStatus({ deviceId: 'not-a-uuid' }, db)).toBe(400)
+    expect(db.users.size).toBe(0)
+  })
+
+  it('still provisions once for a valid deviceId, idempotently', async () => {
+    const db = new AuthDatabase()
+
+    expect(await anonymousStatus({ deviceId: FRESH_DEVICE_ID }, db)).toBe(200)
+    expect(await anonymousStatus({ deviceId: FRESH_DEVICE_ID }, db)).toBe(200)
+    expect(db.users.size).toBe(1)
+  })
+})
+
 describe('db-worker account creation classification', () => {
   it('REQ-SFA-001 reports fresh password registration as new', async () => {
     const db = new AuthDatabase()

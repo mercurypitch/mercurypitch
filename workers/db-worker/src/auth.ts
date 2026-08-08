@@ -2,7 +2,7 @@
 // Zero-dependency auth built on WebCrypto.
 //
 // Endpoints (handled by handleAuth):
-//   POST /api/auth/anonymous { deviceId? }
+//   POST /api/auth/anonymous { deviceId }   (required — it is the id)
 //   POST /api/auth/register  { email, password, displayName?, deviceId? }
 //   POST /api/auth/login     { email, password }
 //   POST /api/auth/google    { idToken, deviceId? }
@@ -536,15 +536,25 @@ interface RateLimitBucket {
 }
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
+  // A device mints once, ever, and then reuses the id. The per-minute cap
+  // bounds a burst; the daily tier is what stops a rotating-UUID script from
+  // adding 43k identity rows per IP per day, which is how the junk-user
+  // population happened (analysis 2026-08-08).
   anonymous: { max: 30, windowMs: 60_000 }, // 30/min
+  'anonymous-day': { max: 100, windowMs: 86_400_000 }, // 100/day
   register: { max: 5, windowMs: 300_000 }, // 5/5min
   login: { max: 10, windowMs: 300_000 }, // 10/5min
   google: { max: 30, windowMs: 60_000 }, // 30/min
+  // The OAuth callback creates a user on first sign-in, so it needs its own
+  // bucket: it is reached before the generic auth limiter and a real Google
+  // code exchange is the only thing standing in front of it.
+  'google-callback': { max: 30, windowMs: 300_000 }, // 30/5min
   logout: { max: 30, windowMs: 60_000 }, // 30/min
   // Email-verification: the confirm link is a cheap GET; resend actually
   // sends mail, so it gets the tightest budget.
   'verify-email': { max: 30, windowMs: 60_000 }, // 30/min
-  'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min
+  'resend-verification': { max: 3, windowMs: 600_000 }, // 3/10min per IP
+  'resend-email': { max: 5, windowMs: 3_600_000 }, // 5/h per address
   // Account erasure is irreversible and needs a valid token anyway; the cap
   // just bounds a scripted sweep against harvested tokens.
   'delete-account': { max: 5, windowMs: 600_000 }, // 5/10min
@@ -577,6 +587,11 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // reads. Keep enough headroom for a 12-singer room behind one NAT while
   // bounding replay of a guest bearer token or a runaway supporter client.
   'background-read': { max: 120, windowMs: 60_000 },
+  // The leaderboard is public and each read is a multi-table aggregate over
+  // sessionRecords — the most expensive query an unauthenticated caller can
+  // reach. A visitor flicking between five categories and two periods makes a
+  // handful of reads; 60/min leaves room for that and for a shared address.
+  leaderboard: { max: 60, windowMs: 60_000 },
   // Paid UVR dispatch: the client runs one song at a time, so three starts in
   // one minute leaves ample room for retries while stopping a loop or multiple
   // tabs from rapidly burning GPU spend. The sustained cap mirrors the
@@ -589,6 +604,12 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'friend-code': { max: 10, windowMs: 300_000 },
   'uvr-process-burst': { max: 3, windowMs: 60_000 },
   'uvr-process-hour': { max: 15, windowMs: 3_600_000 },
+  // Every checkout or portal open is an outbound Stripe API call that creates
+  // a session object on their side, so an unbounded loop is a bill and a
+  // dashboard full of abandoned sessions — not just load on us. A buyer who
+  // changes their mind and comes back needs a handful; ten in five minutes is
+  // past any real hesitation.
+  'billing-checkout': { max: 10, windowMs: 300_000 },
 }
 
 /**
@@ -612,6 +633,15 @@ export function rateLimitSubject(
 ): string {
   if (auth) return `user:${auth.userId}`
   return request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+}
+
+/** The 429 every limiter in this file answers with. */
+function tooMany(respond: Respond, rl: { retryAfter?: number }): Response {
+  const after = rl.retryAfter ?? 60
+  return respond(
+    { error: `Too many requests. Retry after ${after} seconds.` },
+    { status: 429, headers: { 'Retry-After': String(after) } },
+  )
 }
 
 export async function checkRateLimit(
@@ -1000,10 +1030,16 @@ async function handleAnonymous(
   env: Env,
   respond: Respond,
 ): Promise<Response> {
-  const id =
-    body.deviceId && UUID_RE.test(body.deviceId)
-      ? body.deviceId
-      : crypto.randomUUID()
+  // The deviceId IS the idempotency key: the same device must resolve to the
+  // same identity forever. Inventing one server-side when the caller sends
+  // none looks harmless and is the opposite — every such call mints a row
+  // nothing can ever sign back into, which is exactly the junk population
+  // (analysis 2026-08-08). Our client always sends getUserId(); a caller that
+  // does not gets told to, not given a throwaway account.
+  const id = body.deviceId
+  if (!id || !UUID_RE.test(id)) {
+    return respond({ error: 'A deviceId (UUID) is required' }, { status: 400 })
+  }
   const existing = await findUserById(env.DB, id)
   if (existing) {
     assertAccountActive(existing)
@@ -1509,6 +1545,13 @@ async function handleResendVerification(
       { status: 501 },
     )
   }
+  // Per-address cap on top of the per-IP one, same reasoning as
+  // forgot-password: the IP bucket does nothing against a caller who rotates
+  // addresses, and this route sends real mail to a real inbox. Unlike
+  // forgot-password the 429 can be visible — the caller already proved they
+  // own the account, so there is no address-existence oracle to protect.
+  const addressRl = await checkRateLimit(env.DB, row.email, 'resend-email')
+  if (!addressRl.allowed) return tooMany(respond, addressRl)
   const profile = await env.DB.prepare(
     'SELECT displayName FROM userProfiles WHERE id = ?',
   )
@@ -1782,6 +1825,13 @@ export async function handleAuth(
     return handleGoogleStart(request, env, respond)
   }
   if (route === 'google/callback' && request.method === 'GET') {
+    // Reached before the POST-only gate below, so it needs its own bucket:
+    // `resolveGoogleUser` can create a user, which makes this the one
+    // user-creating route that would otherwise have no cap at all. A real
+    // code exchange is required, so the limit only has to bound a loop.
+    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+    const rl = await checkRateLimit(env.DB, ip, 'google-callback')
+    if (!rl.allowed) return tooMany(respond, rl)
     return handleGoogleCallback(request, env, respond)
   }
   if (route === 'verify-email' && request.method === 'GET') {
@@ -1823,13 +1873,15 @@ export async function handleAuth(
   // Rate limiting on auth POST endpoints
   const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
   const rl = await checkRateLimit(env.DB, ip, route)
-  if (!rl.allowed) {
-    return respond(
-      {
-        error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-      },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
-    )
+  if (!rl.allowed) return tooMany(respond, rl)
+
+  // Anonymous provisioning also carries a daily tier. The per-minute cap
+  // bounds a burst but says nothing about a slow script: 30/min sustained is
+  // 43k identities a day from one address, which is what the junk-user
+  // population looked like.
+  if (route === 'anonymous') {
+    const daily = await checkRateLimit(env.DB, ip, 'anonymous-day')
+    if (!daily.allowed) return tooMany(respond, daily)
   }
 
   // These don't need a body

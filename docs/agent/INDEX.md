@@ -210,7 +210,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 14.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 14.5k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -312,13 +312,13 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
 | [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.2k |
-| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.1k |
+| [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
 | [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 1.9k |
-| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
+| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.7k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
