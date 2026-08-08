@@ -263,6 +263,7 @@ function bestWindowOffset(heard, truth, toleranceSeconds) {
 function scoreAgainstTruth(heardNotes, truthNotes, toleranceSeconds) {
   const onsetErrors = []
   const offsets = []
+  const pitchErrors = new Map()
   let exact = 0
   let octaveOff = 0
   let wrongPitch = 0
@@ -316,13 +317,24 @@ function scoreAgainstTruth(heardNotes, truthNotes, toleranceSeconds) {
       onsetErrors.push((truth.startSeconds - at) * 1000)
       if (truth.midi === heard.midi) exact += 1
       else if (Math.abs(truth.midi - heard.midi) % 12 === 0) octaveOff += 1
-      else wrongPitch += 1
+      else {
+        wrongPitch += 1
+        // What KIND of wrong matters. Errors clustered at a few semitones are
+        // the detector hearing a harmonic or a neighbour; errors spread evenly
+        // are the matcher pairing notes that have nothing to do with each
+        // other, which is a fault in this bench and not in the transcription.
+        const delta = truth.midi - heard.midi
+        pitchErrors.set(delta, (pitchErrors.get(delta) ?? 0) + 1)
+      }
     }
     matchedTruth += used.size
   }
 
   const absErrors = onsetErrors.map(Math.abs).sort((a, b) => a - b)
   return {
+    pitchErrors: [...pitchErrors.entries()]
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 10),
     windowOffsetSpread:
       offsets.length > 1
         ? Math.max(...offsets) - Math.min(...offsets)
@@ -402,6 +414,10 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
       `| Recall | ${pct(scored.recall)} |`,
       `| Onset error p50 | ${scored.onsetP50Ms === null ? 'n/a' : `${scored.onsetP50Ms.toFixed(0)} ms`} |`,
       `| Onset error p95 | ${scored.onsetP95Ms === null ? 'n/a' : `${scored.onsetP95Ms.toFixed(0)} ms`} |`,
+      '',
+      `Wrong-pitch errors by interval (semitones, truth minus heard): ${scored.pitchErrors
+        .map(([delta, count]) => `${delta > 0 ? '+' : ''}${delta}x${count}`)
+        .join(', ')}`,
       '',
       '### Pitch histograms',
       '',

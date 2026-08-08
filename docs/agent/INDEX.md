@@ -124,7 +124,7 @@ These are the rules that break things when ignored.
 | `backgrounds` | [background-surface.ts](../../src/lib/backgrounds/background-surface.ts) | 1.4k | Background surface controller — one resolved image for every Karaoke/Jam view A controller owns the selected private object URL and expos... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `transcription` | [stem-transcription.ts](../../src/lib/transcription/stem-transcription.ts) | 646 | Stem transcription — measured notes from one separated instrument The vocal path in `midi-generator.ts` proved the shape of this: detect... |
+| `transcription` | [stem-transcription.ts](../../src/lib/transcription/stem-transcription.ts) | 753 | Stem transcription — measured notes from one separated instrument The vocal path in `midi-generator.ts` proved the shape of this: detect... |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 262 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 151 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 127 | Platform services — web implementations. |
