@@ -255,12 +255,15 @@ export function toggleTheme(): void {
 }
 
 export function initTheme(): void {
-  const source = themeSource()
-  if (source === 'manual') {
-    document.documentElement.setAttribute('data-theme', theme())
-    return
-  }
-  startAutoWatch()
+  // Put the stored preset on the DOM unconditionally, whatever the source.
+  // An auto source then corrects it if the environment has moved — but
+  // syncAutoTheme only writes when the preset CHANGES, and on an ordinary
+  // reload the resolved preset already equals the stored one. Leaving the
+  // attribute to startAutoWatch meant nothing was written at all in that
+  // case, so :root's dark defaults won and an auto user on a light preset
+  // loaded dark every time.
+  document.documentElement.setAttribute('data-theme', theme())
+  if (themeSource() !== 'manual') startAutoWatch()
 }
 
 /** Test-only teardown: drops the media-query listener and the clock timer. */
