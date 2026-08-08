@@ -6,6 +6,50 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Map cards auto-reveal on touch.** `BeatMap` now runs one
+  `IntersectionObserver` (gated on `matchMedia('(hover: none)')`, threshold
+  0.45, one-way — a revealed card unobserves) that stamps `.roomInView` per
+  card; `onboarding.module.css` plays the full hover reveal for that class
+  inside the existing `(hover: none)` block. Viewport-root intersection
+  honours ancestor clipping, so the same code works inside the scrollable
+  onboarding modal and on the standalone `#/map`. Reduced-motion keeps its
+  instant transition.
+
+- **Voice constellation: vertical grid on small screens.**
+  `VoiceConstellationSurface.module.css` ≤820px: the per-band horizontal
+  snap-rows (`display: flex` + `overflow-x` + `scroll-snap`) are replaced by
+  `repeat(auto-fill, minmax(140px, 1fr))` — two columns on phones, one
+  vertical scroll for the whole surface. The ≤430px width overrides went
+  with them. The desktop base grid is untouched, and no JS depended on the
+  horizontal scroller.
+
+- **Zen vocal pill: drag-to-unmute + legible track.** New pure decision
+  `vocalDragUnmutes(muted, level)` in `zen-navigation.ts` (unit-tested):
+  a level drag `> 0` on a muted pill toggles the mute off first, so the
+  fill and the audio track the finger instead of writing to a bypassed
+  gain. `KaraokeMobileStage` routes `PillControl.onLevel` through it. The
+  sing pill also pins `--pill-bg` to a near-solid stage plum — the default
+  glass let the lyric column shine through the expanded track — and
+  `PillControl` now sets `user-select: none` + `-webkit-touch-callout:
+none` so iOS never answers the hold with the selection magnifier.
+
+- **Karaoke Night topbar fits an iPhone.** The stage background picker gets
+  `iconOnly={isNarrow()}` (its existing visually-hidden-label mode), and
+  the brand renders logo + wordmark: `karaoke-night.css` hides the logo on
+  desks and swaps the tracked-out wordmark for it under 560px, with an
+  `aria-label` keeping the link named.
+
+- **Community page: no sideways pan on phones.** The mobile
+  `.community-panel` rule adds `overflow-x: hidden` (its `overflow-y: auto`
+  computed the x-axis to auto as well), and the backdrop art's `inset`
+  bleed shrinks from the desktop 24px to the phone padding (14/16px) — the
+  right-hand overhang past the content edge is what minted the horizontal
+  scroll range.
+
 ## [0.8.1] - 2026-08-08
 
 ### Added
