@@ -416,6 +416,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm pr:prepare:test` | `node --test scripts/pr-prepare.test.mjs` |
 | `pnpm assets:legends` | `node scripts/gen-legend-tiers.mjs` |
 | `pnpm assets:legends:check` | `node scripts/gen-legend-tiers.mjs --check` |
+| `pnpm assets:pwa-images` | `node scripts/optimize-pwa-images.mjs` |
 | `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |

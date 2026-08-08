@@ -158,7 +158,16 @@ function isHtmlDocument(response: Response): boolean {
 async function warm(cache: Cache, pathname: string): Promise<void> {
   if (!ALLOWED_PATHS.has(pathname)) return
   try {
-    const response = await fetch(pathname, { cache: 'no-cache' })
+    // Hashed build output is immutable — the filename is its revision — so
+    // let the HTTP cache answer without a revalidation round-trip: the visit
+    // that installs this worker has just downloaded these same files to
+    // render the page. Stable names (site.webmanifest, the icons) still
+    // revalidate with the server.
+    const immutable = pathname.startsWith('/assets/')
+    const response = await fetch(
+      pathname,
+      immutable ? undefined : { cache: 'no-cache' },
+    )
     if (isCacheableAsset(pathname, response)) {
       await cache.put(pathname, response)
     }
