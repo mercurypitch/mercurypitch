@@ -92,10 +92,11 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (handlers.isSuspended?.() === true) return
 
-    // Skip if typing in input/select/textarea
-    const isTyping = !!(e.target as Element | null)?.closest(
-      'input,textarea,select,[contenteditable]',
-    )
+    // Skip if typing in input/select/textarea. instanceof guard: synthetic
+    // events can target window itself, which has no closest().
+    const isTyping =
+      e.target instanceof Element &&
+      e.target.closest('input,textarea,select,[contenteditable]') !== null
 
     const tab = handlers.activeTab?.()
 

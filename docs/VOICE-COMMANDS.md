@@ -153,6 +153,12 @@ The mixer transport runs on seconds (audio time), not beats.
 - [ ] `start exercise` / `stop` / `try again` in the exercise shell (shell registers its set, like Space handling)
 - [ ] `next exercise` / `skip this one` in a practice session (session sequencer)
 
+### Standalone stages **(requested)**
+
+- [x] **Karaoke Night**: the voice pill, V shortcut and listener are mounted on the standalone page; the mixer's whole command set works there (its tab gate recognizes the standalone surface). Same persisted engine and wake-word settings as the app
+- [x] **Guitar Night**: the room registers its own set over the stage transport — play/pause/stop/from the top, seconds seeking, speed (shared rules), and `mute/unmute <stem>` by kind; pill and V on the shell; stage playback counts as music for the wake-word mode
+- [x] V verified: a unit test pins the main-app binding (KeyV with or without Shift; Ctrl+V stays paste; typing surfaces ignored). Standalone pages previously had NO V binding at all — that is what "V did nothing" was
+
 ### Mic and recording
 
 - [ ] `microphone on` / `microphone off` (the M shortcut; does not affect voice control's own listener)

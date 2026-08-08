@@ -13,6 +13,10 @@
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Notifications } from '@/components/Notifications'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { markStandaloneKaraokeSurface } from '@/features/stem-mixer/karaoke-launch-intent'
+import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
+import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { studioSessionUrl } from '@/lib/karaoke-night-link'
 import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
@@ -60,6 +64,12 @@ function loadRailCollapsed(): boolean {
 }
 
 export function KaraokeNightApp() {
+  // Voice control works here exactly like in the app: the stage host's
+  // mixer registers its command set on mount, and this flag lets that set
+  // through its tab gate (there are no tabs on this surface).
+  markStandaloneKaraokeSurface()
+  const voiceControl = useVoiceControlController()
+  useVoiceToggleKey(voiceControl.toggle)
   const background = useBackgroundSurfaceController('karaoke')
   // The whole demo list. `manifest()` is the first of them — the one the
   // hero's single call to action offers, since that copy promises "our
@@ -662,6 +672,7 @@ export function KaraokeNightApp() {
           (e.g. "song unavailable, skipping…"); without this they'd render
           nowhere on the standalone page. */}
       <Notifications />
+      <VoiceControlHud controller={voiceControl} />
       <Suspense>
         <KaraokeNightRuntime onSong={(s) => setSongWithUrl(s, true)} />
       </Suspense>

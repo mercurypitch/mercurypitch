@@ -9,11 +9,15 @@ FORM: A grounded rehearsal-room welcome with three deliberately unequal paths an
 */
 
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { Notifications } from '@/components/Notifications'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
+import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
+import { useVoiceToggleKey } from '@/features/voice-control/useVoiceToggleKey'
+import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
@@ -73,6 +77,10 @@ function unavailableSongCopy(
 }
 
 export function GuitarNightApp(props: GuitarNightAppProps) {
+  // Voice control: the room registers its command set on entry; this shell
+  // owns the listener, the pill and the V shortcut, like App does in-app.
+  const voiceControl = useVoiceControlController()
+  useVoiceToggleKey(voiceControl.toggle)
   const firstWinConfig = createMemo(() =>
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )
@@ -1108,6 +1116,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           </Switch>
         </div>
       </main>
+
+      <Notifications />
+      <VoiceControlHud controller={voiceControl} />
 
       <Show when={view() !== 'room'}>
         <div

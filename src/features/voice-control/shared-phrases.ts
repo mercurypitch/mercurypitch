@@ -209,3 +209,58 @@ export const SPEED_SPOKEN_PHRASES = [
   '<n> percent speed',
   'speed <n>',
 ]
+
+// ── Stem naming ────────────────────────────────────────────────
+// Shared by every surface that mixes stems (karaoke mixer, guitar night):
+// one spoken vocabulary per stem, homophones included.
+
+/** Spoken aliases per canonical stem key (lowercased track label/kind). */
+export const STEM_ALIASES: Record<string, string[]> = {
+  vocal: ['vocals', 'voice', 'the vocals', 'singing'],
+  // "bass" reaches the recognizer as "base" more often than not, and
+  // "bass guitar" as "base guitar" or even "based guitar".
+  bass: [
+    'the bass',
+    'base',
+    'the base',
+    'bass guitar',
+    'base guitar',
+    'based guitar',
+  ],
+  instrumental: [
+    'instrumentals',
+    'the instrumental',
+    'music',
+    'backing',
+    'backing track',
+    'the band',
+  ],
+  midi: ['the midi', 'guide', 'melody guide'],
+  drums: ['the drums', 'drum', 'percussion'],
+  guitar: ['the guitar', 'guitars'],
+  piano: ['the piano', 'keys', 'keyboard'],
+  other: ['the rest', 'everything else'],
+}
+
+/** Stems that get commands even when the surface lacks them, so "mute
+ *  drums" with no drum stem explains itself instead of reading as noise. */
+export const KNOWN_STEM_KEYS = Object.keys(STEM_ALIASES)
+
+export const keyMatchesStemLabel = (key: string, label: string): boolean => {
+  const l = label.toLowerCase()
+  return l === key || l === `${key}s` || `${l}s` === key
+}
+
+export const stemDisplayName = (key: string): string =>
+  key.charAt(0).toUpperCase() + key.slice(1)
+
+/** All spoken forms for a stem key, each also with a "the" prefix. */
+export function stemSpokenNames(key: string): string[] {
+  return [
+    ...new Set(
+      [key, ...(STEM_ALIASES[key] ?? [])].flatMap((n) =>
+        n.startsWith('the ') ? [n] : [n, `the ${n}`],
+      ),
+    ),
+  ]
+}

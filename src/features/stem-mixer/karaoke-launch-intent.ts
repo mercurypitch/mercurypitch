@@ -24,3 +24,19 @@ export function consumeKaraokeAutoplayIntent(): boolean {
   autoplayRequestedAt = 0
   return fresh
 }
+
+// ── Standalone surface flag ────────────────────────────────────
+// The mixer's voice set is gated to the Karaoke TAB inside the main app;
+// the standalone Karaoke Night page has no tabs, so it marks itself here
+// and the gate lets its commands through. Set once at page mount — the
+// standalone entry is its own document, so it never needs clearing.
+
+let standaloneKaraokeSurface = false
+
+export function markStandaloneKaraokeSurface(): void {
+  standaloneKaraokeSurface = true
+}
+
+export function isStandaloneKaraokeSurface(): boolean {
+  return standaloneKaraokeSurface
+}

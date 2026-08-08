@@ -6,9 +6,11 @@ import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
+import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
+import { createGuitarNightVoiceCommands } from './guitar-night-voice-commands'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
@@ -87,6 +89,36 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     () => EMPTY_STAGE_NOTES,
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
+
+  // ── Voice commands (room-owned) ────────────────────────────
+  // The same transport controller the room's buttons drive; registered for
+  // the room's lifetime. Track ids are stem kinds, so the shared stem
+  // vocabulary maps straight onto mute/unmute.
+  const voiceCommands = createGuitarNightVoiceCommands({
+    playing: () => props.transport.status() === 'playing',
+    positionSeconds: () => props.transport.positionSeconds(),
+    durationSeconds: () => props.transport.durationSeconds(),
+    play: () => {
+      void props.transport.play()
+    },
+    pause: () => props.transport.pause(),
+    stop: () => props.transport.stop(),
+    seek: (seconds) => props.transport.seek(seconds),
+    playbackRate: () => props.transport.playbackRate(),
+    setPlaybackRate: (rate) => {
+      void props.transport.setPlaybackRate(rate)
+    },
+    tracks: () =>
+      props.transport
+        .tracks()
+        .map((t) => ({ id: t.id, muted: t.muted, available: t.available })),
+    setTrackMuted: (id, muted) => props.transport.setTrackMuted(id, muted),
+  })
+  onCleanup(registerVoiceCommands(() => voiceCommands))
+  // Wake-word mode must hear this stage's playback as "music rolling".
+  onCleanup(
+    registerMusicPlayingSource(() => props.transport.status() === 'playing'),
+  )
   const isListening = createMemo(
     () =>
       listening.status() === 'listening' || listening.status() === 'requesting',

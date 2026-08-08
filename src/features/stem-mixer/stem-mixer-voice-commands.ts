@@ -12,7 +12,7 @@
 // (audio time), unlike the beat-based global transport.
 
 import type { Accessor } from 'solid-js'
-import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STEM_ALIASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
 
@@ -68,48 +68,6 @@ export interface StemMixerVoiceDeps {
   }
 }
 
-// ── Stem naming ────────────────────────────────────────────────
-
-/** Spoken aliases per canonical stem key (lowercased track label). */
-const STEM_ALIASES: Record<string, string[]> = {
-  vocal: ['vocals', 'voice', 'the vocals', 'singing'],
-  // "bass" reaches the recognizer as "base" more often than not, and
-  // "bass guitar" as "base guitar" or even "based guitar".
-  bass: [
-    'the bass',
-    'base',
-    'the base',
-    'bass guitar',
-    'base guitar',
-    'based guitar',
-  ],
-  instrumental: [
-    'instrumentals',
-    'the instrumental',
-    'music',
-    'backing',
-    'backing track',
-    'the band',
-  ],
-  midi: ['the midi', 'guide', 'melody guide'],
-  drums: ['the drums', 'drum', 'percussion'],
-  guitar: ['the guitar', 'guitars'],
-  piano: ['the piano', 'keys', 'keyboard'],
-  other: ['the rest', 'everything else'],
-}
-
-/** Stems that get commands even when the session lacks them, so "mute
- *  drums" with no drum stem explains itself instead of reading as noise. */
-const KNOWN_STEM_KEYS = Object.keys(STEM_ALIASES)
-
-const keyMatchesLabel = (key: string, label: string): boolean => {
-  const l = label.toLowerCase()
-  return l === key || l === `${key}s` || `${l}s` === key
-}
-
-const displayName = (key: string): string =>
-  key.charAt(0).toUpperCase() + key.slice(1)
-
 const VOLUME_STEP = 0.1
 
 /** Same ladder the global transport's speed steps climb. */
@@ -122,7 +80,7 @@ export function createStemMixerVoiceCommands(
   deps: StemMixerVoiceDeps,
 ): VoiceCommand[] {
   const findTrack = (key: string): StemMixerVoiceTrack | undefined =>
-    deps.tracks().find((t) => keyMatchesLabel(key, t.label))
+    deps.tracks().find((t) => keyMatchesStemLabel(key, t.label))
 
   const missing = (key: string): VoiceCommandResult =>
     voiceFailure(`No ${key} stem in this mix`)
@@ -203,7 +161,7 @@ export function createStemMixerVoiceCommands(
 
   /** Everything except the MIDI guide participates in role presets. */
   const presetTracks = (): StemMixerVoiceTrack[] =>
-    deps.tracks().filter((t) => !keyMatchesLabel('midi', t.label))
+    deps.tracks().filter((t) => !keyMatchesStemLabel('midi', t.label))
 
   const applyRolePreset = (mutedKey: string | null): VoiceCommandResult => {
     let target: StemMixerVoiceTrack | undefined
@@ -662,7 +620,7 @@ export function createStemMixerVoiceCommands(
   // splits) get commands generated from their own label.
   const stemKeys = [...KNOWN_STEM_KEYS]
   for (const track of deps.tracks()) {
-    if (!stemKeys.some((key) => keyMatchesLabel(key, track.label))) {
+    if (!stemKeys.some((key) => keyMatchesStemLabel(key, track.label))) {
       stemKeys.push(track.label.toLowerCase())
     }
   }
@@ -670,14 +628,8 @@ export function createStemMixerVoiceCommands(
   for (const key of stemKeys) {
     // Every name also answers with a "the" prefix — "mute the vocals" and
     // "mute vocals" are the same intent.
-    const names = [
-      ...new Set(
-        [key, ...(STEM_ALIASES[key] ?? [])].flatMap((n) =>
-          n.startsWith('the ') ? [n] : [n, `the ${n}`],
-        ),
-      ),
-    ]
-    const shown = displayName(key)
+    const names = stemSpokenNames(key)
+    const shown = stemDisplayName(key)
     commands.push(
       {
         id: `karaoke.mute.${key}`,

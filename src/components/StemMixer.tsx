@@ -9,7 +9,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
-import { consumeKaraokeAutoplayIntent } from '@/features/stem-mixer/karaoke-launch-intent'
+import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
@@ -1618,7 +1618,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       toggleMute,
       toggleSolo,
       setTrackVolume,
-      available: () => activeTab() === TAB_KARAOKE,
+      available: () =>
+        activeTab() === TAB_KARAOKE || isStandaloneKaraokeSurface(),
       speed: audio.speed,
       setSpeed: audio.setSpeed,
       loop: {
