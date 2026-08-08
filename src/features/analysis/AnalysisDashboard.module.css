@@ -78,21 +78,29 @@
   margin: 0 0 var(--spacing-md);
 }
 
-/* Horizontal rail on phones, wrapping grid once there's room. */
+/* One card per row on phones, a wrapping rail once there's room.
+
+   It used to be a horizontal snap rail at every width. On a phone that meant
+   the moment a second take existed — the first separated song — the list ran
+   off the right edge: half a card visible, the rest reachable only by a
+   sideways swipe nobody expects on a vertical page. */
 .takeRail {
   display: flex;
-  gap: var(--spacing-lg);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  flex-direction: column;
+  gap: var(--spacing-md);
   padding-bottom: var(--spacing-md);
+  /* A library of separated songs would otherwise push the analysis itself
+     several screens down. Bounded here, scrolled here — the page keeps its
+     own single vertical gesture. */
+  max-height: 46vh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 .takeCard {
-  flex: 0 0 auto;
-  width: 190px;
+  width: 100%;
   min-height: var(--touch-target, 44px);
-  scroll-snap-align: start;
   text-align: left;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -543,12 +551,18 @@
     padding: var(--spacing-2xl) var(--spacing-xl) var(--spacing-2xl);
   }
 
+  /* Room for a wrapping rail of fixed-width cards — no height cap needed
+     once several fit per row. */
   .takeRail {
+    flex-direction: row;
     flex-wrap: wrap;
-    overflow-x: visible;
+    gap: var(--spacing-lg);
+    max-height: none;
+    overflow-y: visible;
   }
 
   .takeCard {
+    flex: 0 0 auto;
     width: 220px;
   }
 
