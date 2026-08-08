@@ -140,7 +140,10 @@ expect(!results.returning.after.opening, 'returning: backdrop gone after hold')
 expect(!results.returning.after.flow, 'returning: no flow for a seen visitor')
 expect(results.returning.after.nav, 'returning: app chrome revealed')
 expect(!results.automation.during.opening, 'automation: no backdrop, ever')
-expect(!results.automation.after.opening, 'automation: no backdrop, ever (late)')
+expect(
+  !results.automation.after.opening,
+  'automation: no backdrop, ever (late)',
+)
 expect(results.automation.after.flow, 'automation: flow mounts directly')
 
 console.log(JSON.stringify(results, null, 1))
