@@ -16,7 +16,7 @@
 //
 // ============================================================
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, } from 'node:fs'
 import { join, relative, basename, extname, dirname } from 'node:path'
 
 const ROOT = process.cwd()
@@ -95,7 +95,11 @@ function leadingComment(src) {
       if (out.length) break
       continue
     }
-    if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) {
+    if (
+      line.startsWith('//') ||
+      line.startsWith('/*') ||
+      line.startsWith('*')
+    ) {
       const text = line
         .replace(/^\/\*+|^\*+\/?|^\/\/+/g, '')
         .replace(/[=─—-]{4,}/g, '')
@@ -146,7 +150,18 @@ const href = (relPath) => relative(OUT_DIR, join(ROOT, relPath))
 /** Markdown link: readable root-relative text, correctly resolving target. */
 const link = (text, relPath) => `[${text}](${href(relPath)})`
 
-const fmtLoc = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
+// LOC are quantized before display AND sorting. Exact counts change on nearly
+// every commit, and a size-ordered generated file that shifts with every
+// merged PR is a standing merge conflict for every open branch — the PR's
+// checks (and its preview deploy) never even start while it conflicts. With
+// 50/100-line buckets a file has to genuinely grow before its row changes.
+const bucketLoc = (n) =>
+  n >= 1000 ? Math.round(n / 100) * 100 : Math.max(50, Math.round(n / 50) * 50)
+
+const fmtLoc = (n) => {
+  const b = bucketLoc(n)
+  return b >= 1000 ? `${(b / 1000).toFixed(1)}k` : String(b)
+}
 
 /** Table of every subdirectory of `base` treated as a module. */
 function dirTable(base, label) {
@@ -162,11 +177,17 @@ function dirTable(base, label) {
       return { name, entry: rel(entry), loc: total, blurb: blurb(entry) }
     })
     .filter(Boolean)
-    .sort((a, b) => b.loc - a.loc || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) =>
+        bucketLoc(b.loc) - bucketLoc(a.loc) || a.name.localeCompare(b.name),
+    )
 
   if (!rows.length) return ''
   const body = rows
-    .map((r) => `| \`${r.name}\` | ${link(basename(r.entry), r.entry)} | ${fmtLoc(r.loc)} | ${r.blurb || '_(no header comment)_'} |`)
+    .map(
+      (r) =>
+        `| \`${r.name}\` | ${link(basename(r.entry), r.entry)} | ${fmtLoc(r.loc)} | ${r.blurb || '_(no header comment)_'} |`,
+    )
     .join('\n')
   return `#### ${label}\n\n| Module | Entry point | LOC | What it is |\n|---|---|---|---|\n${body}\n`
 }
@@ -182,12 +203,18 @@ function fileTable(base, label, { min = 0, limit = Infinity } = {}) {
       return { name: n, path: rel(full), loc: loc(full), blurb: blurb(full) }
     })
     .filter((r) => r.loc >= min)
-    .sort((a, b) => b.loc - a.loc || a.name.localeCompare(b.name))
+    .sort(
+      (a, b) =>
+        bucketLoc(b.loc) - bucketLoc(a.loc) || a.name.localeCompare(b.name),
+    )
     .slice(0, limit)
 
   if (!rows.length) return ''
   const body = rows
-    .map((r) => `| ${link(r.name, r.path)} | ${fmtLoc(r.loc)} | ${r.blurb || '_(no header comment)_'} |`)
+    .map(
+      (r) =>
+        `| ${link(r.name, r.path)} | ${fmtLoc(r.loc)} | ${r.blurb || '_(no header comment)_'} |`,
+    )
     .join('\n')
   return `#### ${label}\n\n| File | LOC | What it is |\n|---|---|---|\n${body}\n`
 }
@@ -197,9 +224,14 @@ function heavyFiles(threshold = 1200) {
   const files = [...walk(join(ROOT, 'src')), ...walk(join(ROOT, 'workers'))]
     .map((f) => ({ path: rel(f), loc: loc(f) }))
     .filter((r) => r.loc >= threshold)
-    .sort((a, b) => b.loc - a.loc || a.path.localeCompare(b.path))
+    .sort(
+      (a, b) =>
+        bucketLoc(b.loc) - bucketLoc(a.loc) || a.path.localeCompare(b.path),
+    )
   if (!files.length) return ''
-  const body = files.map((r) => `| ${link(r.path, r.path)} | ${fmtLoc(r.loc)} |`).join('\n')
+  const body = files
+    .map((r) => `| ${link(r.path, r.path)} | ${fmtLoc(r.loc)} |`)
+    .join('\n')
   return [
     `Reading any of these end-to-end costs roughly ${fmtLoc(threshold)}+ lines of context.`,
     `Grep for the symbol and read the surrounding range instead.`,
@@ -220,9 +252,17 @@ function scriptTable() {
 
 const SECTIONS = {
   'module-map': [
-    dirTable('src/features', 'Features (`src/features/`) — self-contained user-facing surfaces'),
-    dirTable('src/lib', 'Library subsystems (`src/lib/<dir>/`) — algorithm packages'),
-    fileTable('src/lib', 'Core library files (`src/lib/*.ts`, 400+ LOC)', { min: 400 }),
+    dirTable(
+      'src/features',
+      'Features (`src/features/`) — self-contained user-facing surfaces',
+    ),
+    dirTable(
+      'src/lib',
+      'Library subsystems (`src/lib/<dir>/`) — algorithm packages',
+    ),
+    fileTable('src/lib', 'Core library files (`src/lib/*.ts`, 400+ LOC)', {
+      min: 400,
+    }),
     fileTable('src/stores', 'Stores (`src/stores/`) — global reactive state'),
     fileTable('src/pages', 'Pages (`src/pages/`) — route-level shells'),
     dirTable('workers', 'Cloudflare Workers (`workers/`) — backend'),
@@ -235,7 +275,9 @@ const SECTIONS = {
 
 // ── Splice generated blocks into the existing file, preserving prose ──
 if (!existsSync(OUT)) {
-  console.error(`${rel(OUT)} not found -- create it with the marker comments first.`)
+  console.error(
+    `${rel(OUT)} not found -- create it with the marker comments first.`,
+  )
   process.exit(1)
 }
 
@@ -254,9 +296,7 @@ for (const [key, content] of Object.entries(SECTIONS)) {
 
 if (CHECK) {
   if (after !== before) {
-    console.error(
-      `${rel(OUT)} is stale. Run: node scripts/gen-agent-index.mjs`,
-    )
+    console.error(`${rel(OUT)} is stale. Run: node scripts/gen-agent-index.mjs`)
     process.exit(1)
   }
   console.log(`${rel(OUT)} is up to date.`)

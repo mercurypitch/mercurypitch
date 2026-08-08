@@ -87,30 +87,30 @@ These are the rules that break things when ignored.
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 2.7k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 2.6k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 2.1k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
-| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.9k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
+| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.9k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
-| `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 936 | useFallingNotesController — Game logic for Synthesia-style piano practice |
-| `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 779 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
-| `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 768 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
-| `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 594 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
-| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 518 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
-| `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 436 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
-| `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 382 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
-| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 328 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
-| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 299 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
-| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 294 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
-| `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 292 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
+| `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 950 | useFallingNotesController — Game logic for Synthesia-style piano practice |
+| `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 800 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
+| `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
+| `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 600 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
+| `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 500 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
+| `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 400 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
+| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
+| `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
+| `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
+| `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 300 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
-| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 236 | ── Tab ID constants Use these everywhere instead of raw strings. |
-| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 192 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
-| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 111 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
-| `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 93 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
-| `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 80 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
-| `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 72 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
+| `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 250 | ── Tab ID constants Use these everywhere instead of raw strings. |
+| `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 200 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
+| `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
+| `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
+| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
+| `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 50 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
 
@@ -118,17 +118,17 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.1k | Voice Mirror — pure metrics over F0 frame streams. |
-| `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 2.0k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
+| `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `backgrounds` | [background-surface.ts](../../src/lib/backgrounds/background-surface.ts) | 1.4k | Background surface controller — one resolved image for every Karaoke/Jam view A controller owns the selected private object URL and expos... |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
-| `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 262 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
-| `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 177 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
-| `platform` | [index.ts](../../src/lib/platform/index.ts) | 127 | Platform services — web implementations. |
-| `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 66 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |
+| `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
+| `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
+| `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 200 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
+| `platform` | [index.ts](../../src/lib/platform/index.ts) | 150 | Platform services — web implementations. |
+| `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 50 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |
 
 #### Core library files (`src/lib/*.ts`, 400+ LOC)
 
@@ -137,25 +137,25 @@ These are the rules that break things when ignored.
 | [piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k | Piano Roll Editor — Canvas-based note editor |
 | [audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k | Audio Engine — Web Audio API playback and microphone input |
 | [vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k | Vocal Analyzer — DSP utilities for vocal analysis features Phase 1: Intensity Mirroring, Breathiness Index, Slide Tracking |
-| [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 956 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
-| [uvr-api.ts](../../src/lib/uvr-api.ts) | 860 | UVR API Client - Frontend Integration |
-| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 766 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
-| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 743 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
-| [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 742 | Lyrics Service — fetch, parse, and sync lyrics |
-| [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
-| [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 668 | Shared Whisper transcription controller hook. |
-| [practice-engine.ts](../../src/lib/practice-engine.ts) | 660 | Practice Engine — Mic, pitch detection, accuracy scoring |
-| [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
-| [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 557 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
-| [runpod.ts](../../src/lib/runpod.ts) | 534 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
-| [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 506 | Pitch Algorithm Tester — Compare pitch detection algorithms |
-| [mic-manager.ts](../../src/lib/mic-manager.ts) | 499 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
-| [scale-data.ts](../../src/lib/scale-data.ts) | 499 | Scale Data — Music theory utilities for MercuryPitch |
-| [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 490 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
-| [midi-song.ts](../../src/lib/midi-song.ts) | 476 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
-| [midi-generator.ts](../../src/lib/midi-generator.ts) | 428 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
-| [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 418 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
-| [share-codec.ts](../../src/lib/share-codec.ts) | 402 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
+| [sheet-music-renderer.ts](../../src/lib/sheet-music-renderer.ts) | 950 | Sheet Music Renderer — MelodyItem[] → VexFlow notation Renders a melody as proper multi-measure notation (barlines, key-aware accidentals... |
+| [uvr-api.ts](../../src/lib/uvr-api.ts) | 850 | UVR API Client - Frontend Integration |
+| [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 750 | Lyrics Service — fetch, parse, and sync lyrics |
+| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 750 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
+| [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 750 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
+| [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
+| [practice-engine.ts](../../src/lib/practice-engine.ts) | 650 | Practice Engine — Mic, pitch detection, accuracy scoring |
+| [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 650 | Shared Whisper transcription controller hook. |
+| [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
+| [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
+| [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
+| [mic-manager.ts](../../src/lib/mic-manager.ts) | 500 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
+| [midi-song.ts](../../src/lib/midi-song.ts) | 500 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
+| [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 500 | Pitch Algorithm Tester — Compare pitch detection algorithms |
+| [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
+| [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
+| [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
+| [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
+| [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
 #### Stores (`src/stores/`) — global reactive state
 
@@ -165,50 +165,50 @@ These are the rules that break things when ignored.
 | [app-store.ts](../../src/stores/app-store.ts) | 2.0k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
-| [settings-store.ts](../../src/stores/settings-store.ts) | 683 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
-| [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 502 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
-| [session-store.ts](../../src/stores/session-store.ts) | 472 | Session Store — Unified session management with localStorage |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 457 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
-| [background-store.ts](../../src/stores/background-store.ts) | 326 | Premium background store — account-safe shipped catalog and access evidence Access is memory-only and server-evidenced. |
-| [theme-store.ts](../../src/stores/theme-store.ts) | 273 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
-| [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 258 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
-| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 222 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
-| [annotation-store.ts](../../src/stores/annotation-store.ts) | 217 | Annotation Store — Sonic Visualiser-style annotation CRUD |
-| [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 185 | Walkthrough Store — Track completed walkthroughs |
-| [notifications-store.ts](../../src/stores/notifications-store.ts) | 184 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
-| [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 171 | Practice Timer Store — the voice-rest clock Off by default. |
-| [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 155 | Falling Notes Store — Game state for Synthesia-style piano practice |
-| [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 126 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
-| [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 114 | Pane Layout Store — Multi-pane layout persistence |
+| [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
+| [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 450 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [background-store.ts](../../src/stores/background-store.ts) | 350 | Premium background store — account-safe shipped catalog and access evidence Access is memory-only and server-evidenced. |
+| [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 250 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
+| [theme-store.ts](../../src/stores/theme-store.ts) | 250 | Theme Store — the nine colour presets and how one gets picked Adding a preset means three edits in lockstep: the `THEME_PRESETS` tuple, a... |
+| [annotation-store.ts](../../src/stores/annotation-store.ts) | 200 | Annotation Store — Sonic Visualiser-style annotation CRUD |
+| [notifications-store.ts](../../src/stores/notifications-store.ts) | 200 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
+| [onboarding-store.ts](../../src/stores/onboarding-store.ts) | 200 | First Light — onboarding flow state Which beat the visitor is on, which track they picked, and what (if anything) the voiceprint measured. |
+| [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
+| [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 150 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
+| [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
+| [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
+| [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
+| [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
+| [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 100 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
+| [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 100 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
-| [console-store.ts](../../src/stores/console-store.ts) | 96 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
-| [index.ts](../../src/stores/index.ts) | 95 | Stores barrel export |
-| [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 75 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
-| [playback-store.ts](../../src/stores/playback-store.ts) | 67 | Playback Store — Transport and playback state |
-| [usage-store.ts](../../src/stores/usage-store.ts) | 64 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
-| [mic-store.ts](../../src/stores/mic-store.ts) | 51 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
 | [billing-store.ts](../../src/stores/billing-store.ts) | 50 | Billing store — credit-balance refresh signal The balance is displayed by PricingPanel (Settings → Account) via /api/billing/me. |
-| [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 39 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
-| [transport-store.ts](../../src/stores/transport-store.ts) | 37 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
-| [uvr-upload-queue-store.ts](../../src/stores/uvr-upload-queue-store.ts) | 22 | UVR Upload Queue Store — app-lifetime holder for the stem-upload queue |
+| [mic-store.ts](../../src/stores/mic-store.ts) | 50 | Mic Store — page-facing mic indicator (NOT the device owner) Device ownership lives in src/lib/mic-manager.ts. |
+| [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
+| [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
+| [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
+| [usage-store.ts](../../src/stores/usage-store.ts) | 50 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
+| [uvr-upload-queue-store.ts](../../src/stores/uvr-upload-queue-store.ts) | 50 | UVR Upload Queue Store — app-lifetime holder for the stem-upload queue |
 
 #### Pages (`src/pages/`) — route-level shells
 
 | File | LOC | What it is |
 |---|---|---|
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.2k | Original tab fingering (Guitar Pro imports) is preserved through load. |
-| [HomePage.tsx](../../src/pages/HomePage.tsx) | 594 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
-| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 407 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
-| [PathPage.tsx](../../src/pages/PathPage.tsx) | 339 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
-| [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 223 | The app's single pitch-frame stream. |
-| [LabPage.tsx](../../src/pages/LabPage.tsx) | 101 | Supporter research surface. |
+| [HomePage.tsx](../../src/pages/HomePage.tsx) | 600 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
+| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
+| [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
+| [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 200 | The app's single pitch-frame stream. |
+| [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Supporter research surface. |
+| [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 50 | One dashboard at every width. |
+| [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 50 | Challenges tab (TAB_CHALLENGES). |
+| [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 50 | Community tab (TAB_COMMUNITY). |
+| [JamPage.tsx](../../src/pages/JamPage.tsx) | 50 | Jam tab (TAB_JAM). |
 | [KaraokePage.tsx](../../src/pages/KaraokePage.tsx) | 50 | Initial view / session come from the hash router (deep links), owned by AppShell so the router can keep writing them. |
-| [JamPage.tsx](../../src/pages/JamPage.tsx) | 27 | Jam tab (TAB_JAM). |
-| [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 24 | Leaderboard tab (TAB_LEADERBOARD). |
-| [ChallengesPage.tsx](../../src/pages/ChallengesPage.tsx) | 20 | Challenges tab (TAB_CHALLENGES). |
-| [CommunityPage.tsx](../../src/pages/CommunityPage.tsx) | 20 | Community tab (TAB_COMMUNITY). |
-| [AnalysisPage.tsx](../../src/pages/AnalysisPage.tsx) | 19 | One dashboard at every width. |
-| [SettingsPage.tsx](../../src/pages/SettingsPage.tsx) | 11 | Settings tab (TAB_SETTINGS). |
+| [LeaderboardPage.tsx](../../src/pages/LeaderboardPage.tsx) | 50 | Leaderboard tab (TAB_LEADERBOARD). |
+| [SettingsPage.tsx](../../src/pages/SettingsPage.tsx) | 50 | Settings tab (TAB_SETTINGS). |
 
 #### Cloudflare Workers (`workers/`) — backend
 
@@ -315,33 +315,33 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 2.8k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.5k |
 | [src/lib/audio-engine.ts](../../src/lib/audio-engine.ts) | 2.4k |
-| [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.2k |
 | [workers/db-worker/src/index.ts](../../workers/db-worker/src/index.ts) | 2.2k |
-| [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
+| [workers/db-worker/src/premium-background-admin.ts](../../workers/db-worker/src/premium-background-admin.ts) | 2.2k |
 | [src/components/PitchCanvas.tsx](../../src/components/PitchCanvas.tsx) | 2.1k |
+| [src/features/glass/GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 2.1k |
 | [src/features/admin/AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 2.0k |
 | [src/stores/app-store.ts](../../src/stores/app-store.ts) | 2.0k |
 | [src/components/SettingsPanel.tsx](../../src/components/SettingsPanel.tsx) | 1.9k |
-| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
-| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
 | [src/features/stem-mixer/useStemMixerCanvasController.ts](../../src/features/stem-mixer/useStemMixerCanvasController.ts) | 1.9k |
+| [src/features/stem-mixer/useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 1.9k |
+| [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 1.9k |
 | [src/features/mirror/MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 1.7k |
-| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/stem-mixer/useLrcGenController.ts](../../src/features/stem-mixer/useLrcGenController.ts) | 1.7k |
-| [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
-| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
+| [src/stores/melody-store.ts](../../src/stores/melody-store.ts) | 1.7k |
 | [src/features/admin/exercises/ExerciseEditor.tsx](../../src/features/admin/exercises/ExerciseEditor.tsx) | 1.6k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 1.6k |
+| [src/stores/uvr-store.ts](../../src/stores/uvr-store.ts) | 1.6k |
+| [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
-| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
+| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
-| [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
-| [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
-| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.3k |
+| [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
+| [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
+| [src/features/stem-mixer/useStemMixerAudioController.ts](../../src/features/stem-mixer/useStemMixerAudioController.ts) | 1.3k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->
