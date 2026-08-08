@@ -283,27 +283,39 @@ export function getAllTestableAlgorithms(): PitchAlgorithm[] {
   )
 }
 
-/** Get algorithm difficulty classification */
+/** Difficulty bands for an algorithm's 0-100 score */
+export type DifficultyBand =
+  | 'excellent'
+  | 'very-good'
+  | 'good'
+  | 'fair'
+  | 'poor'
+  | 'very-poor'
+
+/**
+ * Get algorithm difficulty classification. Returns a band name, not a colour —
+ * the rendering surface owns colour so the `[data-theme]` palettes reach it.
+ */
 export function getDifficultyClassification(score: number): {
   label: string
-  color: string
+  band: DifficultyBand
 } {
   if (score >= 95) {
-    return { label: 'Excellent', color: 'text-green-400' }
+    return { label: 'Excellent', band: 'excellent' }
   }
   if (score >= 85) {
-    return { label: 'Very Good', color: 'text-emerald-400' }
+    return { label: 'Very Good', band: 'very-good' }
   }
   if (score >= 70) {
-    return { label: 'Good', color: 'text-blue-400' }
+    return { label: 'Good', band: 'good' }
   }
   if (score >= 55) {
-    return { label: 'Fair', color: 'text-yellow-400' }
+    return { label: 'Fair', band: 'fair' }
   }
   if (score >= 40) {
-    return { label: 'Poor', color: 'text-orange-400' }
+    return { label: 'Poor', band: 'poor' }
   }
-  return { label: 'Very Poor', color: 'text-red-400' }
+  return { label: 'Very Poor', band: 'very-poor' }
 }
 
 /** Export for dynamic imports */
