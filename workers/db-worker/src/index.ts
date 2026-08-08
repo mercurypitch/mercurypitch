@@ -1026,6 +1026,51 @@ const MIRROR_METRIC_KEYS = new Set([
   'steadiness',
 ])
 
+// ── First-touch acquisition (src/lib/acquisition.ts) ─────────────────
+// One row per clientId in funnelAcquisition, so the funnel can finally be
+// read per campaign — "do Campaign E's visitors finish an upload more often
+// than organic ones?" had no answer before this, because the events carried
+// no source and GA4 carries none of the events.
+//
+// Anonymous like the rest of the funnel: a click id and campaign labels,
+// no account, no profile, and referrers arrive already stripped of their
+// query string by the client.
+
+const ACQUISITION_FIELDS = [
+  'gclid',
+  'utmSource',
+  'utmMedium',
+  'utmCampaign',
+  'utmContent',
+  'utmTerm',
+  'referrer',
+] as const
+
+export type FunnelAcquisitionInput = Partial<
+  Record<(typeof ACQUISITION_FIELDS)[number], string>
+>
+
+/**
+ * Keep the known string fields, bounded; drop everything else, including a
+ * client that invents a field. Returns null when there is nothing worth a
+ * row. Exported for the ingest contract tests.
+ */
+export function sanitizeAcquisition(
+  input: unknown,
+): FunnelAcquisitionInput | null {
+  if (typeof input !== 'object' || input === null) return null
+  const source = input as Record<string, unknown>
+  const clean: FunnelAcquisitionInput = {}
+  for (const field of ACQUISITION_FIELDS) {
+    const value = source[field]
+    if (typeof value !== 'string') continue
+    const trimmed = value.trim()
+    if (trimmed === '') continue
+    clean[field] = trimmed.slice(0, field === 'referrer' ? 256 : 128)
+  }
+  return Object.keys(clean).length > 0 ? clean : null
+}
+
 async function handleMirrorEvent(
   request: Request,
   env: Env,
@@ -1065,10 +1110,11 @@ async function handleMirrorEvent(
   } catch {
     return respond({ error: 'Invalid JSON' }, { status: 400 })
   }
-  const { clientId, event, metrics } = (body ?? {}) as {
+  const { clientId, event, metrics, acq } = (body ?? {}) as {
     clientId?: unknown
     event?: unknown
     metrics?: unknown
+    acq?: unknown
   }
   // The client always sends a UUID (or the literal 'no-storage') — enforce
   // the shape so the clientId index stays clean for grouping/dedup.
@@ -1111,6 +1157,38 @@ async function handleMirrorEvent(
       metricsJson,
     )
     .run()
+
+  // Acquisition rides along on every event, so this runs constantly and must
+  // stay cheap and harmless. ON CONFLICT keeps the first row per client, and
+  // the whole thing is non-fatal on purpose: the Worker can deploy ahead of
+  // the migration that creates the table, and a funnel that 500s over a
+  // reporting nicety would cost more than the reporting is worth.
+  const acquisition = sanitizeAcquisition(acq)
+  if (acquisition !== null) {
+    try {
+      await env.DB.prepare(
+        `INSERT INTO funnelAcquisition
+           (clientId, createdAt, gclid, utmSource, utmMedium, utmCampaign, utmContent, utmTerm, referrer)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(clientId) DO NOTHING`,
+      )
+        .bind(
+          clientId,
+          new Date().toISOString(),
+          acquisition.gclid ?? null,
+          acquisition.utmSource ?? null,
+          acquisition.utmMedium ?? null,
+          acquisition.utmCampaign ?? null,
+          acquisition.utmContent ?? null,
+          acquisition.utmTerm ?? null,
+          acquisition.referrer ?? null,
+        )
+        .run()
+    } catch {
+      // Reporting must never break ingest.
+    }
+  }
+
   return respond({ ok: true }, { status: 201 })
 }
 
