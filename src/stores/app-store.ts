@@ -724,6 +724,10 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-account"]'],
+    // The Danger Zone ships collapsed, and its buttons are not in the DOM
+    // until it opens — so the step has to expand it (and the engine collapses
+    // it again afterwards) or it spotlights nothing.
+    reveal: '[data-testid="danger-zone-toggle"]',
   },
   {
     title: 'About & What’s New',

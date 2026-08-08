@@ -3,55 +3,6 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
-## [Unreleased]
-
-### Changed
-
-- **The mic starts on its most forgiving setting.** A fresh browser now begins
-  on the Quiet Room profile instead of Home, so first-run onboarding and your
-  first exercises are as likely as possible to hear you. If your room is loud,
-  pick a preset in the sidebar or let auto-calibrate measure it.
-
-### Fixed
-
-- **The stage picker stays open while you use it.** On a phone, a stray drag
-  inside the stage gallery scrolled the page behind it and closed the picker.
-  It is now a proper drawer: the page cannot move underneath it, and it closes
-  when you choose a stage, tap outside, or press Escape.
-
-- **The Analysis list of takes fits a phone.** As soon as you had a separated
-  song, the second card ran off the right edge and could only be reached by a
-  sideways swipe. Takes are now one per row, in a list that scrolls with the
-  page.
-
-- **An exercise result keeps its contour inside the card.** On a phone the run
-  trace under your score rendered wider than the card it sits in and hung off
-  the right edge.
-
-- **The map reveals itself on phones.** The room cards on your map used to
-  show their cover art only on hover — which a touch screen doesn't have, so
-  tapping just entered the room sight unseen. Now each card plays its reveal
-  as it scrolls into view.
-
-- **The voice constellation reads top to bottom on phones.** Each voice
-  band's portraits used to sit in a sideways strip you had to pan through,
-  band after band. On a small screen they now wrap into a grid, so one
-  scroll down shows everything. Desktop is unchanged.
-
-- **The karaoke vocal pill unmutes when you drag it.** Dragging the guide
-  vocals' level up while they were muted changed a volume you couldn't hear
-  — the pill looked stuck until you tapped it first. A drag up now brings
-  the vocals straight back at the level under your finger, and the slider
-  no longer lets the lyrics shine through it while open.
-
-- **Karaoke Night's top bar fits a phone again.** The stage picker keeps
-  just its icon and the wordmark yields to the logo on small screens, so
-  the way back to the app and your account chip stay on one line.
-
-- **The Community page no longer drifts sideways.** On phones the whole
-  page could be panned in any direction from empty space; it now scrolls
-  top to bottom only, like the leaderboard.
-
 ## [0.8.1] - 2026-08-08
 
 ### Added
@@ -117,7 +68,26 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   for a year instead of being re-checked on every visit, and code that only
   runs behind a click no longer loads with the first screen.
 
+- **The mic starts on its most forgiving setting.** A fresh browser now begins
+  on the Quiet Room profile instead of Home, so first-run onboarding and your
+  first exercises are as likely as possible to hear you. If your room is loud,
+  pick a preset in the sidebar or let auto-calibrate measure it.
+
 ### Fixed
+
+- **A phone-polish pass across the app.** The stage picker in Karaoke Night is
+  a proper drawer now, so a stray drag inside it no longer scrolls the page and
+  closes it. Karaoke Night's top bar fits again — the stage picker keeps just
+  its icon and the wordmark yields to the logo. Dragging the guide-vocal pill
+  up while it is muted brings the vocals back at the level under your finger
+  instead of changing a volume you cannot hear, and the lyrics no longer show
+  through the open slider. The Community page scrolls top to bottom only rather
+  than drifting in every direction, the Analysis list of takes stacks one per
+  row instead of running off the right edge, and an exercise result keeps its
+  contour inside the card. Your map's room cards reveal their cover art as they
+  scroll into view — a touch screen has no hover to wait for — and the voice
+  constellation wraps each band into a grid, so one scroll down shows every
+  portrait. Desktop is unchanged throughout.
 
 - **Closing the share sheet no longer downloads the card anyway.** Backing
   out of sharing a voiceprint or glass card used to force a download and
