@@ -298,12 +298,19 @@ export default {
     // Voice Mirror — the standalone entry (mirror.html) is served for its
     // path on the main domain, the SEO alias landings, and the root of the
     // mirror.* subdomain. Hashed /assets/* requests fall through untouched.
+    //
+    // All four rewrites below fetch the EXTENSIONLESS path and let the asset
+    // layer's html_handling resolve it to the .html file. Fetching the .html
+    // path directly makes ASSETS.fetch answer with its own drop-`.html` 307
+    // redirect instead of the content — which the worker would pass through,
+    // so mirror.mercurypitch.com/ and every glass alias redirected instead of
+    // serving (observed live 2026-08-08).
     const isMirrorPath =
       MIRROR_PATHS.has(url.pathname) ||
       (url.hostname.startsWith('mirror.') && url.pathname === '/')
     if (isMirrorPath && method === 'GET') {
       const mirrorUrl = new URL(request.url)
-      mirrorUrl.pathname = '/mirror.html'
+      mirrorUrl.pathname = '/mirror'
       return env.ASSETS.fetch(new Request(mirrorUrl.toString(), request))
     }
 
@@ -311,14 +318,16 @@ export default {
     // metadata and first/result H1 answer the range-search intent directly.
     if (VOCAL_RANGE_PATHS.has(url.pathname) && method === 'GET') {
       const rangeUrl = new URL(request.url)
-      rangeUrl.pathname = '/vocal-range-test.html'
+      rangeUrl.pathname = '/vocal-range-test'
       return env.ASSETS.fetch(new Request(rangeUrl.toString(), request))
     }
 
     // Karaoke Night — same standalone-entry treatment as the mirror.
+    // /karaoke maps to karaoke.html via html_handling; /karaoke-night has its
+    // own emitted alias file, so both spellings resolve at the asset layer.
     if (KARAOKE_PATHS.has(url.pathname) && method === 'GET') {
       const karaokeUrl = new URL(request.url)
-      karaokeUrl.pathname = '/karaoke.html'
+      karaokeUrl.pathname = '/karaoke'
       return env.ASSETS.fetch(new Request(karaokeUrl.toString(), request))
     }
 
@@ -328,7 +337,7 @@ export default {
     // in assets.run_worker_first (wrangler.jsonc) — no byte-copied HTML.
     if (GLASS_PATHS.has(url.pathname) && method === 'GET') {
       const glassUrl = new URL(request.url)
-      glassUrl.pathname = '/glass.html'
+      glassUrl.pathname = '/glass'
       return env.ASSETS.fetch(new Request(glassUrl.toString(), request))
     }
 
