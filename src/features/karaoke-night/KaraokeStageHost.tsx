@@ -10,6 +10,7 @@ import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 import { getUvrSession } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
+import { isExampleSession } from './examples-library'
 import { trackKaraoke, trackKaraokeOnce, trackKaraokeSessionOnce, } from './funnel'
 import type { KaraokeSong } from './KaraokeRailPanels'
 
@@ -59,7 +60,10 @@ export function KaraokeStageHost(props: KaraokeStageHostProps) {
         )
         return
       }
-      trackKaraoke('karaoke_song_staged')
+      // A seeded example is not "their own song" — see examples-library.
+      trackKaraoke(
+        isExampleSession(s) ? 'karaoke_example_staged' : 'karaoke_song_staged',
+      )
       props.onSong({
         sessionId,
         title: s.originalFile?.name ?? 'Your song',

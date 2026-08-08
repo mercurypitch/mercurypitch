@@ -13,6 +13,7 @@ import { showNotification } from '@/stores/notifications-store'
 import type { UvrProcessingMode } from '@/stores/uvr-store'
 import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, initGroupStore, initSessionStore, setErrorUvrSession, setUvrProcessingMode, startUvrSession, } from '@/stores/uvr-store'
 import { isDemoSessionId } from './demo-song'
+import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
 import { credits, refreshCredits, signedIn } from './karaoke-account'
 import { groupLibrarySongs } from './library-grouping'
@@ -184,7 +185,10 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         )
         return
       }
-      trackKaraoke('karaoke_song_staged')
+      // A seeded example is not "their own song" — see examples-library.
+      trackKaraoke(
+        isExampleSession(s) ? 'karaoke_example_staged' : 'karaoke_song_staged',
+      )
       props.onSing({
         sessionId,
         title: s.originalFile?.name ?? 'Your song',

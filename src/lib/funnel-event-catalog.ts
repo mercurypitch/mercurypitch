@@ -65,7 +65,14 @@ export const KARAOKE_FUNNEL_EVENTS = [
   'karaoke_upload_start',
   'karaoke_upload_done',
   'karaoke_upload_error',
+  // Two staging events, deliberately. `karaoke_song_staged` is the one
+  // Campaign E bids on, and it must mean the visitor brought a song of
+  // their OWN — that is the vocal-remover intent the campaign buys. The
+  // seeded Examples are stored as ordinary sessions, so before the split
+  // one event covered both and a visitor could fire it by tapping a
+  // built-in track without ever uploading anything.
   'karaoke_song_staged',
+  'karaoke_example_staged',
   'karaoke_playlist_deeplink',
   'karaoke_playlist_start',
   'karaoke_mic_granted',

@@ -29,6 +29,11 @@ const AD_CONVERSION_BY_EVENT = new Map<KaraokeFunnelEvent, string>([
   // Campaign E's better-matched goal: the visitor brought their OWN song to the
   // stage (vocal-remover intent → upload → sing), which this traffic does far
   // more than the demo. See mercury/config/conversion-map.md.
+  //
+  // `karaoke_example_staged` is deliberately absent. Tapping a seeded example
+  // is worth counting first-party, but bidding on it would teach the campaign
+  // to buy visitors who never bring a song — the exact behaviour the campaign
+  // exists to find.
   ['karaoke_song_staged', AD_CONVERSIONS.karaoke_song_staged],
 ])
 
