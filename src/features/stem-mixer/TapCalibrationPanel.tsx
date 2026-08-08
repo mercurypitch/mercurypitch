@@ -15,7 +15,8 @@
 //    over-corrects every tap for the rest of the session.
 
 import { createSignal, For, onCleanup, Show } from 'solid-js'
-import { buildClickSchedule, CALIBRATION_CLICK_COUNT, CALIBRATION_INTERVAL_SEC, CALIBRATION_LEAD_IN_SEC, medianOffsetMs, MIN_CALIBRATION_TAPS, nearestClickDelta, spreadMs, } from '@/lib/tap-calibration'
+import { spreadMs } from '@/lib/calibration-stats'
+import { buildClickSchedule, CALIBRATION_CLICK_COUNT, CALIBRATION_INTERVAL_SEC, CALIBRATION_LEAD_IN_SEC, medianOffsetMs, MIN_CALIBRATION_TAPS, nearestClickDelta, } from '@/lib/tap-calibration'
 
 export interface TapCalibrationPanelProps {
   currentOffsetMs: number

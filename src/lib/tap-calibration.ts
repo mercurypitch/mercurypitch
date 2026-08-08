@@ -8,11 +8,14 @@
 // population average). These helpers turn it into a measurement: play a steady
 // click, tap along, take the median signed error.
 //
-// Median rather than mean on purpose — one distracted tap in ten should not
-// move the result, and reaction-time samples are skewed with a long late tail.
+// The statistics live in @/lib/calibration-stats, shared with the mic latency
+// wizard. What stays here is the domain: how the click track is laid out and
+// how a reaction offset is clamped.
 //
 // See docs/plans/lrc-per-word-mapping-research.md. Tests:
 // src/tests/tap-calibration.test.ts.
+
+import { median, nearestEventDelta } from './calibration-stats'
 
 /** Clicks played in one calibration run. */
 export const CALIBRATION_CLICK_COUNT = 10
@@ -38,33 +41,13 @@ export function buildClickSchedule(
   return times
 }
 
-/**
- * Signed error of one tap against the nearest click, in seconds. Positive
- * means the tap landed late, which is the normal direction. Returns null when
- * the tap is too far from every click to be a response to one.
- */
+/** Signed error of one tap against the nearest click, in seconds. */
 export function nearestClickDelta(
   clickTimes: number[],
   tapTime: number,
   maxDistance: number = MAX_TAP_DISTANCE_SEC,
 ): number | null {
-  let best: number | null = null
-  for (const click of clickTimes) {
-    const delta = tapTime - click
-    if (Math.abs(delta) > maxDistance) continue
-    if (best === null || Math.abs(delta) < Math.abs(best)) best = delta
-  }
-  return best
-}
-
-/** Median of a numeric sample. Returns null for an empty sample. */
-export function median(values: number[]): number | null {
-  if (values.length === 0) return null
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid]
+  return nearestEventDelta(clickTimes, tapTime, maxDistance)
 }
 
 /**
@@ -83,18 +66,4 @@ export function medianOffsetMs(
   const mid = median(deltasSec)
   if (mid === null) return null
   return Math.max(0, Math.min(MAX_OFFSET_MS, Math.round(mid * 1000)))
-}
-
-/**
- * Spread of the sample in ms, as a confidence hint for the operator. A tight
- * spread means the median is a real personal constant; a wide one means the
- * taps were guesswork and the run is worth repeating.
- */
-export function spreadMs(deltasSec: number[]): number | null {
-  if (deltasSec.length < 2) return null
-  const sorted = [...deltasSec].sort((a, b) => a - b)
-  const lower = median(sorted.slice(0, Math.floor(sorted.length / 2)))
-  const upper = median(sorted.slice(Math.ceil(sorted.length / 2)))
-  if (lower === null || upper === null) return null
-  return Math.round((upper - lower) * 1000)
 }

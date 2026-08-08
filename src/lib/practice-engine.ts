@@ -3,6 +3,7 @@
 // ============================================================
 
 import { PLAYBACK_MODE_SESSION } from '@/features/tabs/constants'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { AccuracyRating, MelodyNote, NoteResult, PitchResult, PitchSample, PlaybackMode, PracticeResult, } from '@/types'
 import type { AudioEngine } from './audio-engine'
@@ -55,6 +56,22 @@ export class PracticeEngine {
   private currentTargetNote: MelodyNote | null = null
   private currentTargetFreq = 0
   private currentSamples: PitchSample[] = []
+
+  /**
+   * Note starts the scheduler has announced but the singer has not been heard
+   * on yet. A frame that reaches us now was sung `micLatencyMs` ago, so the
+   * note it belongs to is the one that was running then, not the one running
+   * now — without this, the tail of every note is scored against the next one.
+   *
+   * At the default offset of zero every start is due immediately and this
+   * queue is drained on the same call that fills it, which is why an
+   * unmeasured device behaves exactly as it did before.
+   */
+  private pendingNoteStarts: {
+    note: MelodyNote
+    index: number
+    announcedAt: number
+  }[] = []
 
   // Practice session
   private noteResults: NoteResult[] = []
@@ -343,6 +360,10 @@ export class PracticeEngine {
       })
     }
 
+    // Frames arriving now answer whatever note was running one round trip
+    // ago, so resolve the boundaries before attributing this frame to one.
+    this.applyDueNoteStarts(performance.now())
+
     const pitch = this.detectPitch()
 
     if (pitch && this.isPlaying && this.currentTargetNote) {
@@ -387,6 +408,32 @@ export class PracticeEngine {
 
   /** Called when a new note starts */
   onNoteStart(note: MelodyNote, noteIndex: number): void {
+    this.pendingNoteStarts.push({
+      note,
+      index: noteIndex,
+      announcedAt: performance.now(),
+    })
+    // With no measured offset the start is due the moment it is announced,
+    // so it takes effect on this call rather than waiting for the next frame.
+    this.applyDueNoteStarts(performance.now())
+  }
+
+  /**
+   * Promote every announced note start whose audio has had time to come back.
+   * Called once per frame before the pitch is attributed.
+   */
+  private applyDueNoteStarts(now: number): void {
+    const dueBy = now - micLatencyMs()
+    while (
+      this.pendingNoteStarts.length > 0 &&
+      this.pendingNoteStarts[0].announcedAt <= dueBy
+    ) {
+      const pending = this.pendingNoteStarts.shift()!
+      this.activateNote(pending.note, pending.index)
+    }
+  }
+
+  private activateNote(note: MelodyNote, noteIndex: number): void {
     // Finalize the previous note's result
     if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
@@ -400,6 +447,13 @@ export class PracticeEngine {
 
   /** Called when playback completes */
   onPlaybackComplete(): NoteResult[] | null {
+    // Anything still queued never got its share of frames, but its result is
+    // still owed — a run that ends mid-offset must not silently drop notes.
+    for (const pending of this.pendingNoteStarts) {
+      this.activateNote(pending.note, pending.index)
+    }
+    this.pendingNoteStarts = []
+
     if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
@@ -448,10 +502,15 @@ export class PracticeEngine {
     this.noteResults = []
     this.currentSamples = []
     this.currentNoteIndex = -1
+    this.pendingNoteStarts = []
   }
 
   endSession(): NoteResult[] {
     this.isPlaying = false
+    for (const pending of this.pendingNoteStarts) {
+      this.activateNote(pending.note, pending.index)
+    }
+    this.pendingNoteStarts = []
     if (this.currentNoteIndex >= 0) {
       this.finalizeNoteResult()
     }
@@ -465,6 +524,7 @@ export class PracticeEngine {
     this.currentNoteIndex = -1
     this.currentTargetNote = null
     this.currentTargetFreq = 0
+    this.pendingNoteStarts = []
     this.runsCompleted++
   }
 

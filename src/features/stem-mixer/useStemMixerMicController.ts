@@ -14,6 +14,7 @@ import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { createPersistedSignal } from '@/lib/storage'
 import { sliderToGain } from '@/lib/volume-curve'
+import { micLatencySec } from '@/stores/mic-latency-store'
 import { pitchAlgorithm, pitchBufferSize, settings, } from '@/stores/settings-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -105,12 +106,53 @@ export const useStemMixerMicController = (
   const [pointsTotal, setPointsTotal] = createSignal(0)
   const [iterationStart, setIterationStart] = createSignal(0)
 
+  /**
+   * Recent reference pitches, so a mic frame can be judged against the part of
+   * the song the singer was actually answering. The caller hands us the
+   * reference at the current playback position and the mic frame captured at
+   * the same instant, but that mic frame is one measured round trip old — it
+   * holds sound made while the song was `micLatencySec()` earlier. Judging it
+   * against the reference at the current position scores every note against
+   * the one after it.
+   *
+   * Only kept while an offset is set; at zero the lookup is skipped entirely
+   * and this stays empty, so an unmeasured device behaves as it always did.
+   */
+  const refHistory: { t: number; f: number }[] = []
+
+  /** Reference pitch at (or just before) a past playback position. */
+  const referenceAt = (timeSec: number): number | null => {
+    for (let i = refHistory.length - 1; i >= 0; i--) {
+      if (refHistory[i].t <= timeSec) return refHistory[i].f
+    }
+    return null
+  }
+
   const pushComparison = (
     timeSec: number,
     refFreq: number,
     micFreq: number,
   ): void => {
-    const point = compareEngine.push(timeSec, refFreq, micFreq)
+    const offset = micLatencySec()
+
+    let judgeTime = timeSec
+    let judgeRef = refFreq
+    if (offset > 0) {
+      refHistory.push({ t: timeSec, f: refFreq })
+      // One round trip of history is all the lookup can ever need.
+      const keepFrom = timeSec - offset * 2
+      while (refHistory.length > 0 && refHistory[0].t < keepFrom) {
+        refHistory.shift()
+      }
+      judgeTime = timeSec - offset
+      // Before the song has run for one round trip there is nothing to look
+      // back at; those first frames are dropped rather than mis-scored.
+      const past = referenceAt(judgeTime)
+      if (past === null) return
+      judgeRef = past
+    }
+
+    const point = compareEngine.push(judgeTime, judgeRef, micFreq)
     if (point) {
       setComparisonData((prev) => [...prev.slice(-12000), point])
       setPointsTotal((n) => n + 1)
@@ -123,6 +165,7 @@ export const useStemMixerMicController = (
 
   const clearComparisonData = (): void => {
     compareEngine.reset()
+    refHistory.length = 0
     setComparisonData([])
     setPointsTotal(0)
     setIterationStart(0)
