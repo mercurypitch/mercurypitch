@@ -421,6 +421,13 @@ export class PitchDetector {
     // valid period candidate. If the higher-octave dip is below threshold
     // and comparable in depth, prefer it — this avoids sub-harmonic errors
     // where YIN locks onto 2× the actual period.
+    //
+    // The same promotion at tau·2/3 — the fifth-low flavour of this mistake,
+    // the largest error class against a real bass stem — was tried here and
+    // measured a no-op: the dip at the true period is SHALLOW (that is why
+    // the threshold search skipped it), so a gate that demands a deep dip
+    // there never fires. Fixing the fifth class needs evidence from the
+    // spectrum, not from this buffer.
     const octaveTau = Math.round(tauEstimate / 2)
     if (
       octaveTau >= minTau &&
