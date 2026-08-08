@@ -253,6 +253,12 @@ async function handleNavigation(request: Request): Promise<Response> {
 
   try {
     const response = await fetch(request)
+    // A redirect followed *inside* the worker keeps the requested URL in the
+    // address bar while showing the target's content — so /tone-deaf-test
+    // would serve Voice Mirror under the wrong canonical URL
+    // (public/_redirects). Hand the redirect back and let the browser perform
+    // it, which is what happens without a worker in the way.
+    if (response.redirected) return Response.redirect(response.url, 302)
     if (servesShell && isHtmlDocument(response)) {
       const cache = await caches.open(CACHE_NAME)
       await cache.put(SHELL_KEY, response.clone())
