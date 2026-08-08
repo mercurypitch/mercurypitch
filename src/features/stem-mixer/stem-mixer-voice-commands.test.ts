@@ -122,7 +122,7 @@ function fire(fixture: Fixture, utterance: string): string | undefined {
   const commands = createStemMixerVoiceCommands(fixture.deps)
   const match = matchVoiceCommand(utterance, commands)
   if (match === null) return undefined
-  const result = match.command.run({ n: match.n })
+  const result = match.command.run({ n: match.n, m: match.m })
   if (typeof result === 'string') return result
   if (typeof result === 'object') return result.message
   return match.command.label
