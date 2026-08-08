@@ -23,21 +23,28 @@ import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-s
 import type { GuitarInputTap } from '@/lib/guitar/guitar-input-node'
 import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
 import type { GuitarInputEvent, GuitarInputHealthReading, } from '@/lib/guitar/input-events'
-import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, } from '@/lib/guitar/input-events'
-import type { InputLatencyProfile } from '@/lib/guitar/input-latency'
-import { assumeLatencyProfile, loadInputLatencyProfile, measureRoundTrip, playedAt, saveInputLatencyProfile, } from '@/lib/guitar/input-latency'
+import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, playedAt, } from '@/lib/guitar/input-events'
+import type { LatencyFailure } from '@/lib/mic-latency'
+import { LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { PitchDetector } from '@/lib/pitch-detector'
+import { buildClickSchedule } from '@/lib/tap-calibration'
+import { micLatencyMs, micLatencySec, setMicLatencyMs, } from '@/stores/mic-latency-store'
 
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
 const ANALYSER_SIZE = 2048
 
-/** Clicks played by one calibration run, and how far apart. */
-const CALIBRATION_CLICKS = 8
-const CALIBRATION_SPACING_SEC = 0.35
-const CALIBRATION_LEAD_IN_SEC = 0.4
+/** What to say about a run that produced no number. */
+const CALIBRATION_FAILURES: Record<LatencyFailure, string> = {
+  'not-heard':
+    'The clicks never came back — calibration needs speakers, not headphones.',
+  'too-few-hits':
+    'Too few clicks came back to trust the result. Try again somewhere quieter.',
+  'out-of-range':
+    'That measured further out than any real round trip. Nothing was saved.',
+}
 
 export type GuitarListeningStatus =
   | 'off'
@@ -200,7 +207,6 @@ export function useGuitarListeningController(
   const [events, setEvents] = createSignal<readonly GuitarInputEvent[]>([])
   const [timingSource, setTimingSource] =
     createSignal<GuitarTimingSource>('frame-loop')
-  const [latency, setLatency] = createSignal<InputLatencyProfile | null>(null)
   const [health, setHealth] = createSignal<GuitarInputHealthReading | null>(
     null,
   )
@@ -288,12 +294,6 @@ export function useGuitarListeningController(
       }
 
       const context = graph.context
-      const deviceId =
-        stream.getAudioTracks()[0]?.getSettings().deviceId ?? 'default'
-      const profile =
-        loadInputLatencyProfile(deviceId) ??
-        assumeLatencyProfile(deviceId, context, new Date().toISOString())
-      setLatency(profile)
 
       const nextSource = context.createMediaStreamSource(stream)
       const nextAnalyser = context.createAnalyser()
@@ -304,9 +304,9 @@ export function useGuitarListeningController(
       analyser = nextAnalyser
 
       // Messages arrive from the audio thread, not from a tracked scope. The
-      // latency read inside wants whatever was calibrated at the moment the
+      // latency read inside wants whatever was measured at the moment the
       // strike landed — subscribing to it would be meaningless here.
-      // eslint-disable-next-line solid/reactivity
+
       tap = await connectGuitarInputWorklet(context, nextSource, (message) => {
         if (currentGeneration !== generation) return
         if (message.type === 'level') {
@@ -321,7 +321,7 @@ export function useGuitarListeningController(
         pushEvent({
           kind: 'attack',
           source: 'microphone',
-          at: playedAt(capturedAt, latency()),
+          at: playedAt(capturedAt, micLatencySec()),
           capturedAt,
           level: message.level,
           pitch: null,
@@ -390,7 +390,7 @@ export function useGuitarListeningController(
               cents: detected.cents,
               clarity: detected.clarity,
             }
-            const at = playedAt(capturedAt, latency())
+            const at = playedAt(capturedAt, micLatencySec())
             const attached = attachPitchToLatestAttack(events(), pitch, at)
             if (attached !== events()) {
               setEvents(attached)
@@ -447,8 +447,7 @@ export function useGuitarListeningController(
   const calibrate = async (): Promise<boolean> => {
     if (status() !== 'listening' || tap === null) return false
     const graph = options.getAudioGraph()
-    const profile = latency()
-    if (graph === null || profile === null) return false
+    if (graph === null) return false
 
     const currentGeneration = generation
     const context = graph.context
@@ -456,15 +455,15 @@ export function useGuitarListeningController(
     calibrationHits = hits
     setStatus('calibrating')
 
-    const firstAt = context.currentTime + CALIBRATION_LEAD_IN_SEC
-    const clickTimes = Array.from(
-      { length: CALIBRATION_CLICKS },
-      (_, index) => firstAt + index * CALIBRATION_SPACING_SEC,
+    const clickTimes = buildClickSchedule(
+      context.currentTime + LATENCY_LEAD_IN_SEC,
+      LATENCY_CLICK_COUNT,
+      LATENCY_CLICK_INTERVAL_SEC,
     )
     for (const at of clickTimes) scheduleCalibrationClick(context, at)
 
     const runSeconds =
-      CALIBRATION_LEAD_IN_SEC + CALIBRATION_CLICKS * CALIBRATION_SPACING_SEC
+      LATENCY_LEAD_IN_SEC + LATENCY_CLICK_COUNT * LATENCY_CLICK_INTERVAL_SEC
     await new Promise((resolve) => {
       window.setTimeout(resolve, Math.round(runSeconds * 1000) + 400)
     })
@@ -472,22 +471,17 @@ export function useGuitarListeningController(
     calibrationHits = null
     setStatus('listening')
 
-    const measured = measureRoundTrip(clickTimes, hits)
-    if (measured === null) {
-      setError(
-        'The clicks never came back — calibration needs speakers, not headphones.',
-      )
+    // The wizard in @/features/mic-feedback records a buffer and finds its
+    // onsets afterwards. Here the worklet has already found them, at the render
+    // quantum, so only the matching and the verdict are shared — and they must
+    // be, or two places in the app would disagree about the same measurement.
+    const deltas = matchOnsetDeltas(clickTimes, hits)
+    const result = summariseLatency(deltas, hits.length)
+    if (result.latencyMs === null) {
+      setError(CALIBRATION_FAILURES[result.failure ?? 'not-heard'])
       return false
     }
-    const next: InputLatencyProfile = {
-      deviceId: profile.deviceId,
-      roundTripMs: measured.roundTripMs,
-      origin: 'measured',
-      spreadMs: measured.spreadMs,
-      updatedAt: new Date().toISOString(),
-    }
-    saveInputLatencyProfile(next)
-    setLatency(next)
+    setMicLatencyMs(result.latencyMs)
     setError(null)
     return true
   }
@@ -511,7 +505,7 @@ export function useGuitarListeningController(
     events,
     observations,
     timingSource,
-    latency,
+    latencyMs: micLatencyMs,
     health,
     start,
     stop,
