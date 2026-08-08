@@ -5,10 +5,29 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
-import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
-import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
+import type { AlgorithmResult, PerformanceBand, TestSample, } from '@/lib/pitch-algorithm-tester'
+import { ACCURACY_BAND_NAMES, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
 import type { PitchAlgorithm } from '@/lib/pitch-detector'
 import styles from './PitchAlgorithmTester.module.css'
+
+/** Speed badge tint per performance band */
+const PERF_CLASS: Record<PerformanceBand, string> = {
+  excellent: styles.perfGreen,
+  good: styles.perfBlue,
+  acceptable: styles.perfYellow,
+  slow: styles.perfOrange,
+  'too-slow': styles.perfRed,
+}
+
+/**
+ * Score band class for a 0-100 score. Scores between the bands — every
+ * averaged `totalScore`, in practice — fall back to muted rather than to a
+ * literal grey.
+ */
+function bandClass(score: number | undefined): string {
+  const name = ACCURACY_BAND_NAMES[score as keyof typeof ACCURACY_BAND_NAMES]
+  return name ? styles[name] : styles.bandMuted
+}
 
 interface PitchAlgorithmTesterProps {
   onClose?: () => void
@@ -245,15 +264,6 @@ export const PitchAlgorithmTester: Component<
                   const perf = getPerformanceClassification(
                     result.avgComputationTime,
                   )
-                  const perfClass: Record<string, string> = {
-                    green: styles.perfGreen,
-                    yellow: styles.perfYellow,
-                    red: styles.perfRed,
-                  }
-                  const color =
-                    ACCURACY_BAND_COLORS[
-                      result.totalScore as keyof typeof ACCURACY_BAND_COLORS
-                    ] || '#666'
 
                   return (
                     <div class={styles.resultCard}>
@@ -262,13 +272,15 @@ export const PitchAlgorithmTester: Component<
                           {result.algorithm}
                         </span>
                         <span
-                          class={`${styles.perfBadge} ${perfClass[perf.color]}`}
+                          class={`${styles.perfBadge} ${PERF_CLASS[perf.band]}`}
                         >
                           {perf.label}
                         </span>
                       </div>
                       <div class={styles.resultCardRight}>
-                        <span class={styles.resultScore} style={{ color }}>
+                        <span
+                          class={`${styles.resultScore} ${bandClass(result.totalScore)}`}
+                        >
                           {result.totalScore}
                           <span class={styles.scoreMax}>/100</span>
                         </span>
@@ -344,25 +356,12 @@ export const PitchAlgorithmTester: Component<
                                             rr.targetFreq === note.frequency,
                                         )
                                       const band = matchingResult?.accuracyBand
-                                      const color =
-                                        band !== undefined
-                                          ? ACCURACY_BAND_COLORS[
-                                              band as keyof typeof ACCURACY_BAND_COLORS
-                                            ] || 'var(--text-muted)'
-                                          : 'var(--text-muted)'
                                       const offsetCents =
                                         matchingResult?.offsetCents
 
                                       return (
                                         <span
-                                          class={styles.resultDev}
-                                          classList={{
-                                            [styles.resultDevGood]:
-                                              band !== undefined && band >= 90,
-                                            [styles.resultDevPoor]:
-                                              band !== undefined && band <= 50,
-                                          }}
-                                          style={{ color }}
+                                          class={`${styles.resultDev} ${bandClass(band)}`}
                                         >
                                           {matchingResult
                                             ? `${offsetCents!.toFixed(0)}`

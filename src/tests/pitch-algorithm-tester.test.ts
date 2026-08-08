@@ -3,49 +3,57 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { ACCURACY_BAND_COLORS, ACCURACY_BAND_LABELS, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '../lib/pitch-algorithm-tester'
+import { ACCURACY_BAND_LABELS, ACCURACY_BAND_NAMES, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '../lib/pitch-algorithm-tester'
 
 describe('Pitch Algorithm Tester', () => {
   describe('Performance Classification', () => {
     it('should classify very fast performance as Excellent', () => {
       const classification = getPerformanceClassification(2)
       expect(classification.label).toBe('Excellent')
-      expect(classification.color).toBe('text-green-400')
+      expect(classification.band).toBe('excellent')
     })
 
     it('should classify fast performance as Good', () => {
       const classification = getPerformanceClassification(5)
       expect(classification.label).toBe('Good')
-      expect(classification.color).toBe('text-blue-400')
+      expect(classification.band).toBe('good')
     })
 
     it('should classify medium performance as Acceptable', () => {
       const classification = getPerformanceClassification(10)
       expect(classification.label).toBe('Acceptable')
-      expect(classification.color).toBe('text-yellow-400')
+      expect(classification.band).toBe('acceptable')
     })
 
     it('should classify medium-fast performance as Acceptable', () => {
       const classification = getPerformanceClassification(15)
       expect(classification.label).toBe('Acceptable')
-      expect(classification.color).toBe('text-yellow-400')
+      expect(classification.band).toBe('acceptable')
     })
 
     it('should classify slow performance as Slow', () => {
       const classification = getPerformanceClassification(20)
       expect(classification.label).toBe('Slow')
-      expect(classification.color).toBe('text-orange-400')
+      expect(classification.band).toBe('slow')
     })
 
     it('should classify extremely slow performance as Too Slow', () => {
       const classification = getPerformanceClassification(100)
       expect(classification.label).toBe('Too Slow')
-      expect(classification.color).toBe('text-red-400')
+      expect(classification.band).toBe('too-slow')
     })
 
-    it('should use fallback color for unknown values', () => {
+    it('should use fallback band for unknown values', () => {
       const classification = getPerformanceClassification(-1)
-      expect(classification.color).toBe('text-green-400') // Falls back to excellent color
+      expect(classification.band).toBe('excellent') // Falls back to the fastest band
+    })
+
+    it('should name bands semantically, never as style classes', () => {
+      for (const time of [2, 5, 10, 20, 100]) {
+        expect(getPerformanceClassification(time).band).not.toMatch(
+          /^(text-|#)|\bvar\(/,
+        )
+      }
     })
 
     it('should handle edge cases around thresholds', () => {
@@ -71,27 +79,32 @@ describe('Pitch Algorithm Tester', () => {
     })
   })
 
-  describe('Accuracy Band Colors', () => {
+  describe('Accuracy Band Names', () => {
     it('should define all required accuracy bands', () => {
-      expect(ACCURACY_BAND_COLORS[100]).toBeDefined()
-      expect(ACCURACY_BAND_COLORS[90]).toBeDefined()
-      expect(ACCURACY_BAND_COLORS[75]).toBeDefined()
-      expect(ACCURACY_BAND_COLORS[50]).toBeDefined()
-      expect(ACCURACY_BAND_COLORS[0]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES[100]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES[90]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES[75]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES[50]).toBeDefined()
+      expect(ACCURACY_BAND_NAMES[0]).toBeDefined()
     })
 
-    it('should have different colors for different bands', () => {
-      const colors = Object.values(ACCURACY_BAND_COLORS)
-      const uniqueColors = new Set(colors)
-      expect(uniqueColors.size).toBeGreaterThan(1)
+    it('should have a distinct name per band', () => {
+      const names = Object.values(ACCURACY_BAND_NAMES)
+      expect(new Set(names).size).toBe(names.length)
     })
 
-    it('should have a greenish color for high accuracy', () => {
-      expect(ACCURACY_BAND_COLORS[100]).toMatch(/^#/)
+    it('should name bands, never carry a colour value', () => {
+      // Colour belongs to PitchAlgorithmTester.module.css, where the
+      // [data-theme] palettes can reach it.
+      for (const name of Object.values(ACCURACY_BAND_NAMES)) {
+        expect(name).not.toMatch(/^#|\b(rgba?|hsla?|color-mix|var)\(/)
+      }
     })
 
-    it('should have an orange/red color for failed accuracy', () => {
-      expect(ACCURACY_BAND_COLORS[0]).toMatch(/^#/)
+    it('should cover the same bands as the labels', () => {
+      expect(Object.keys(ACCURACY_BAND_NAMES)).toEqual(
+        Object.keys(ACCURACY_BAND_LABELS),
+      )
     })
   })
 

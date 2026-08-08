@@ -465,25 +465,36 @@ export function runAllTests(
   return results
 }
 
-/** Get performance classification for an algorithm */
+/** Speed bands for an algorithm's average computation time */
+export type PerformanceBand =
+  | 'excellent'
+  | 'good'
+  | 'acceptable'
+  | 'slow'
+  | 'too-slow'
+
+/**
+ * Get performance classification for an algorithm. Returns a band name, not a
+ * colour — the UI owns colour so the `[data-theme]` palettes reach it.
+ */
 export function getPerformanceClassification(time: number): {
   label: string
-  color: string
+  band: PerformanceBand
 } {
   // 60fps = 16.67ms per frame
   if (time < 5) {
-    return { label: 'Excellent', color: 'text-green-400' }
+    return { label: 'Excellent', band: 'excellent' }
   }
   if (time < 10) {
-    return { label: 'Good', color: 'text-blue-400' }
+    return { label: 'Good', band: 'good' }
   }
   if (time < 16.67) {
-    return { label: 'Acceptable', color: 'text-yellow-400' }
+    return { label: 'Acceptable', band: 'acceptable' }
   }
   if (time < 33) {
-    return { label: 'Slow', color: 'text-orange-400' }
+    return { label: 'Slow', band: 'slow' }
   }
-  return { label: 'Too Slow', color: 'text-red-400' }
+  return { label: 'Too Slow', band: 'too-slow' }
 }
 
 /** Score band names */
@@ -495,11 +506,15 @@ export const ACCURACY_BAND_LABELS = {
   0: 'Failed',
 } as const
 
-/** Score band colors for UI */
-export const ACCURACY_BAND_COLORS = {
-  100: '#3fb950',
-  90: '#2dd4cf',
-  75: '#8dcb41',
-  50: '#d29922',
-  0: '#f8514d',
+/**
+ * Score band names, one per band in {@link ACCURACY_BAND_LABELS}. Never a
+ * colour: the band's colour lives in `PitchAlgorithmTester.module.css`
+ * (`.band100` … `.band0`), so the eight `[data-theme]` palettes own it.
+ */
+export const ACCURACY_BAND_NAMES = {
+  100: 'band100',
+  90: 'band90',
+  75: 'band75',
+  50: 'band50',
+  0: 'band0',
 } as const
