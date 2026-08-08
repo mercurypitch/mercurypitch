@@ -64,6 +64,13 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   score arrives as a small card in the corner, the way it already did for
   singing, and pressing play runs the melody again.
 
+- **Recorded takes land where you sang them.** Once your microphone's delay
+  has been measured, recording a melody removes it too — before, every
+  recorded note landed late by that delay, which at strong cleanup could
+  even snap notes to the wrong beat. The review panel also gained a Timing
+  slider to nudge the whole take earlier or later by ear before keeping it,
+  and it says when a measured delay has already been removed.
+
 - **The prepare bar before a lyric line** is now the same in the lyrics panel
   as in zen mode: one fixed width, under the start of the line rather than
   shoved in front of the first word — including on centred and right-aligned

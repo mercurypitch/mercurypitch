@@ -220,7 +220,7 @@ import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-int
 import { computeImprovementRate, computePracticeStats, getRecentScores, } from '@/features/practice-intelligence/trends-computer'
 import { generateWeaknessReport } from '@/features/practice-intelligence/weakness-analyzer'
 import { PracticeTimerPill } from '@/features/practice-timer/PracticeTimerPill'
-import { useRecordingController } from '@/features/recording/useRecordingController'
+import { shiftTakeFrames, useRecordingController, } from '@/features/recording/useRecordingController'
 import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
@@ -271,6 +271,7 @@ import { selectedSongName as pianoSongName } from '@/stores/falling-notes-store'
 import { setJamRoomToJoin } from '@/stores/jam-store'
 import { initKaraokePlaylistStore } from '@/stores/karaoke-playlist-store'
 import { melodyStore } from '@/stores/melody-store'
+import { micLatencyMs } from '@/stores/mic-latency-store'
 import { closeOnboarding, flowOpen, openBeat, startOnboarding, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -1233,15 +1234,31 @@ const AppShell: Component<AppProps> = (props) => {
   // amount (gentle: as-sung -> strong: key-snapped + quantized). This drives
   // both the on-roll preview and what Keep commits.
   const [reviewAmount, setReviewAmount] = createSignal(0.5)
+  // Hand-adjustable timing on top of the automatic round-trip compensation
+  // (applied at capture in useRecordingController): a measured offset can
+  // still be a few frames off, and a singer may simply have come in late.
+  // Reset per take — the last take's correction says nothing about this one.
+  const [reviewNudgeMs, setReviewNudgeMs] = createSignal(0)
+  createEffect(
+    on(
+      () => recording.pendingTake(),
+      (take) => {
+        if (take !== null) setReviewNudgeMs(0)
+      },
+    ),
+  )
   const reviewMelody = createMemo<MelodyItem[]>(() => {
     const take = recording.pendingTake()
     if (take === null) return []
-    return segmentContourToMelody(take.frames, {
-      bpm: bpm(),
-      key: keyNameSignal(),
-      scaleType: scaleTypeSignal(),
-      cleanupAmount: reviewAmount(),
-    })
+    return segmentContourToMelody(
+      shiftTakeFrames(take.frames, reviewNudgeMs(), bpm()),
+      {
+        bpm: bpm(),
+        key: keyNameSignal(),
+        scaleType: scaleTypeSignal(),
+        cleanupAmount: reviewAmount(),
+      },
+    )
   })
 
   // The piano roll's preview channel shows the live take while recording, then
@@ -3427,6 +3444,9 @@ const AppShell: Component<AppProps> = (props) => {
                         <ComposeTakeReview
                           amount={reviewAmount}
                           onAmount={setReviewAmount}
+                          nudgeMs={reviewNudgeMs}
+                          onNudgeMs={setReviewNudgeMs}
+                          compensatedMs={micLatencyMs}
                           noteCount={() => reviewMelody().length}
                           onCommit={commitTake}
                           onDiscard={recording.discardTake}
