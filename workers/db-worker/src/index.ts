@@ -29,7 +29,7 @@ import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
 import { handlePremiumBackgroundRequest } from './premium-backgrounds'
 import { resolveSupporterFeatureAccess } from './supporter-feature-access'
 import type { TableDef } from './tables'
-import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
+import { blockedForAnonymous, fromSql, maskPublicRow, queryableCol, TABLES, } from './tables'
 import { ManagedTestAccountInactiveError, managedTestAccountErrorResponse, } from './testing-account-state'
 import { handleTestingAccountRequest } from './testing-accounts'
 import { validateWrite } from './validation'
@@ -275,6 +275,17 @@ async function handleList(
 ): Promise<Response> {
   const q = parseListQuery(url)
   if (!q) return respond({ error: 'Invalid query' }, { status: 400 })
+
+  // Refuse to filter or sort on a column this reader may not read. Checked
+  // before scopeRead, so it sees the columns the CLIENT asked for and not the
+  // userId filter the server injects on private tables. The error is the same
+  // 'Invalid query' an unparseable column name gets, so a refusal does not
+  // confirm that the column exists.
+  const queried = q.filters.map(([col]) => col)
+  if (q.orderBy !== undefined) queried.push(q.orderBy)
+  if (queried.some((col) => !queryableCol(def, col, admin))) {
+    return respond({ error: 'Invalid query' }, { status: 400 })
+  }
 
   const scope = scopeRead(def, q, auth)
   if (scope instanceof Response) return scope

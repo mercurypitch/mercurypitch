@@ -92,3 +92,60 @@ describe('GET /api/pricingPlans', () => {
     expect(rows[0]!.stripePriceId).toBe(SECRET_PRICE)
   })
 })
+
+// Omitting the column from the body is not the same as withholding it. A list
+// query reads columns the body never carries: a filter on stripePriceId
+// answers "is this the id?" by returning the row or nothing, and a sort on it
+// orders the page by a value the caller may not see.
+describe('GET /api/pricingPlans — querying the withheld column', () => {
+  it('refuses a filter on it', async () => {
+    const response = await get(
+      `/api/pricingPlans?where[stripePriceId]=${SECRET_PRICE}`,
+    )
+    expect(response.status).toBe(400)
+    // No row comes back, so a hit is indistinguishable from a miss.
+    expect(await response.text()).not.toContain('sup-fund')
+  })
+
+  it('refuses a sort on it', async () => {
+    const response = await get('/api/pricingPlans?orderBy=stripePriceId')
+    expect(response.status).toBe(400)
+  })
+
+  it('refuses the same filter on the count endpoint', async () => {
+    // /count returns only a number, which is all an oracle needs.
+    const response = await get(
+      `/api/pricingPlans/count?where[stripePriceId]=${SECRET_PRICE}`,
+    )
+    expect(response.status).toBe(400)
+  })
+
+  it('is not fooled by a different case', async () => {
+    // SQLite resolves quoted column names case-insensitively, so
+    // ORDER BY "STRIPEPRICEID" sorts by stripePriceId all the same.
+    const response = await get('/api/pricingPlans?orderBy=STRIPEPRICEID')
+    expect(response.status).toBe(400)
+  })
+
+  it('leaves ordinary filters and sorts working', async () => {
+    const filtered = await get('/api/pricingPlans?where[kind]=donation')
+    expect(filtered.status).toBe(200)
+    const sorted = await get('/api/pricingPlans?orderBy=sortOrder')
+    expect(sorted.status).toBe(200)
+  })
+
+  it('still lets the admin studio filter and sort by it', async () => {
+    const admin = { 'X-Admin-Key': 'test-admin-key' }
+    expect(
+      (
+        await get(
+          `/api/pricingPlans?where[stripePriceId]=${SECRET_PRICE}`,
+          admin,
+        )
+      ).status,
+    ).toBe(200)
+    expect(
+      (await get('/api/pricingPlans?orderBy=stripePriceId', admin)).status,
+    ).toBe(200)
+  })
+})

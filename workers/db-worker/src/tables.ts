@@ -144,6 +144,38 @@ export function maskPublicRow<T extends Record<string, unknown>>(
   return visible
 }
 
+/**
+ * Whether this reader may name `col` in a `where[...]` filter or `orderBy`.
+ *
+ * Keeping a column out of the response body is only half the job, because a
+ * list query reads columns the body never carries. `?where[stripePriceId]=X`
+ * answers "is X the id?" — the row comes back, or nothing does — and
+ * `?orderBy=stripePriceId` sorts the page by a value the caller is not
+ * allowed to see. Neither goes near `maskPublicRow`; both read the column
+ * through the query planner instead.
+ *
+ * The comparison folds case because SQLite resolves column names
+ * case-insensitively even when they are quoted: `ORDER BY "STRIPEPRICEID"`
+ * sorts by `stripePriceId` just fine, so an exact-match guard would be one
+ * keystroke wide.
+ */
+export function queryableCol(
+  def: TableDef,
+  col: string,
+  admin: boolean,
+): boolean {
+  if (admin) return true
+  const wanted = col.toLowerCase()
+  const names = (list: string[] | undefined): boolean =>
+    list !== undefined && list.some((c) => c.toLowerCase() === wanted)
+  if (names(def.privateCols)) return false
+  // publicCols is an allowlist, so anything absent from it is already masked
+  // out of a stranger's response and must not be filterable either. The row's
+  // owner is exempt from that mask, but a filter is evaluated before any row
+  // is in hand — there is nobody to exempt yet.
+  return def.publicCols === undefined || names(def.publicCols)
+}
+
 export const TABLES: Record<string, TableDef> = {
   // currentLeagueId is placement — only the weekly cut moves players between
   // rungs. friendCode is minted by GET /api/friends/code (registered accounts

@@ -8,7 +8,7 @@
 // melody in the URL and never reaches this registry at all.
 
 import { describe, expect, it } from 'vitest'
-import { blockedForAnonymous, maskPublicRow, TABLES } from './tables'
+import { blockedForAnonymous, maskPublicRow, queryableCol, TABLES, } from './tables'
 
 const anon = { provider: 'anonymous' }
 const account = { provider: 'password' }
@@ -123,5 +123,48 @@ describe('maskPublicRow — privateCols', () => {
       .filter(([, def]) => def.privateCols !== undefined)
       .map(([name, def]) => [name, def.privateCols] as const)
     expect(withPrivate).toEqual([['pricingPlans', ['stripePriceId']]])
+  })
+})
+
+// A masked column is still reachable through the query itself: `where[col]=x`
+// answers "is x the value?" and `orderBy=col` sorts by it. Both read the
+// column without it ever appearing in a response body.
+describe('queryableCol', () => {
+  it('refuses a privateCol to a non-admin, whatever the case', () => {
+    const plans = TABLES.pricingPlans!
+    expect(queryableCol(plans, 'stripePriceId', false)).toBe(false)
+    // SQLite matches quoted identifiers case-insensitively, so a guard that
+    // did not fold case would be bypassed by shouting the column name.
+    expect(queryableCol(plans, 'STRIPEPRICEID', false)).toBe(false)
+    expect(queryableCol(plans, 'stripepriceid', false)).toBe(false)
+  })
+
+  it('allows the columns the pricing page actually queries', () => {
+    const plans = TABLES.pricingPlans!
+    expect(queryableCol(plans, 'kind', false)).toBe(true)
+    expect(queryableCol(plans, 'active', false)).toBe(true)
+    expect(queryableCol(plans, 'sortOrder', false)).toBe(true)
+  })
+
+  it('allows an admin everything — the studio edits these rows', () => {
+    expect(queryableCol(TABLES.pricingPlans!, 'stripePriceId', true)).toBe(true)
+    expect(queryableCol(TABLES.userProfiles!, 'friendCode', true)).toBe(true)
+  })
+
+  it('treats a publicCols allowlist as the queryable set too', () => {
+    // friendCode is a linking credential that /api/friends/redeem rate limits
+    // precisely because it is guessable. Filtering profiles by it would be the
+    // same guessing game with no limit at all, against a column a stranger is
+    // already forbidden to read.
+    const profiles = TABLES.userProfiles!
+    expect(queryableCol(profiles, 'friendCode', false)).toBe(false)
+    expect(queryableCol(profiles, 'currentLeagueId', false)).toBe(false)
+    expect(queryableCol(profiles, 'id', false)).toBe(true)
+    expect(queryableCol(profiles, 'displayName', false)).toBe(true)
+  })
+
+  it('leaves a table that declares neither list fully queryable', () => {
+    expect(queryableCol(TABLES.sessionRecords!, 'userId', false)).toBe(true)
+    expect(queryableCol(TABLES.leagues!, 'rank', false)).toBe(true)
   })
 })
