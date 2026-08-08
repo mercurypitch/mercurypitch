@@ -36,6 +36,12 @@ single-page-application` means a deleted chunk answers with index.html and a
   `useSupporterFeatures()` — an auth-keyed, stale-guarded, fail-closed wrapper
   over `GET /api/perks/me` for perk-gated links.
 
+- Lyric alignment (left/middle/right) is a shared `LyricsAlignSelect` chip in
+  all three workspace layouts, replacing the performance layout's three-button
+  strip. Native `SafeSelect` on purpose: the panels are draggable, and a
+  hand-rolled popover here is the clipping/stacking mistake MISTAKES.md
+  records.
+
 ### Changed
 
 - **Rate limits closed on every gap the 106-route audit confirmed.**
@@ -103,6 +109,43 @@ single-page-application` means a deleted chunk answers with index.html and a
 - **Stripe price ids no longer ride along in the public pricing read.**
 
 - **A canvas in the Lab** stopped repainting when nothing on it was changing.
+- **Lyric lead-in cue ignored the panel's text alignment.**
+  `.sm-lyrics-lead-in` was absolute against `.sm-lyrics-line`, which is a
+  full-width flex item so the active-line highlight can span the panel. `left`
+  therefore resolved against the row edge, correct only for left-aligned
+  lyrics: measured offset from the first item in the line was -130px centred
+  and -260px right-aligned. Each line's content now sits in a shrink-to-fit
+  `.sm-lyrics-line-body` that `text-align` positions, with the cue anchored to
+  that — 0px at all three alignments.
+
+- **Karaoke Night rail reloaded the whole library on every song.** Two
+  independent causes in `KaraokeRailPanels`. (1) The `partCounts` resource took
+  the session-id array as its source; an array literal is a fresh reference per
+  source evaluation, so Solid's `!==` check refetched on every session-store
+  tick — and staging a song ticks the store (hydration, orphan pruning), so
+  each song load re-ran one `listStemTypes` IndexedDB query per library song.
+  The source is a joined string key now. (2) Counts were read via
+  `partCounts()`, and reading a loading resource inside `<Suspense>`
+  re-suspends the boundary, which is what blanked the rail rather than merely
+  staling it; now `.latest`, matching `AnalysisDashboard`'s existing note on
+  the same trap. The boundary also had no `fallback`, so the genuine first load
+  rendered nothing. Both halves are pinned by tests that fail independently.
+
+- **Alignment debug logging is opt-in.** `formatAlignmentDebugLog` printed a
+  per-word table plus a single-line JSON dump of every entry on each staged
+  song, and `logAlignmentComparison` ran `alignPitchToWords` twice over the
+  whole song purely to print two lines. Both now require
+  `localStorage.pitchperfect_debug_alignment === '1'`; the one-line summaries
+  are unchanged.
+
+- **Lyric wheel-zoom listener declares `passive: false`.** Chrome logged a
+  scroll-blocking violation on every mount because the handler was a JSX
+  `onWheel` with no stated intent. Moved to the ref callback alongside the
+  touch handlers — which also fixes those: they were bound in `onMount`, but
+  the list lives inside a `<Show>` keyed on edit / LRC-gen / text-edit mode, so
+  it is rebuilt when the user changes mode and the handlers were left on a
+  discarded element. Pinch-zoom stopped working after the first trip through
+  edit mode.
 
 ## [0.8.0] - 2026-08-06
 

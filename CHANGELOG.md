@@ -22,6 +22,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   the studio still needs the admin key — the link only saves remembering the
   address.
 
+- **Choose how lyrics sit in their panel** — left, middle or right — from any
+  of the studio layouts. It used to be available on the karaoke stage only.
+
 ### Fixed
 
 - **Screens wider than they are tall.** On a tablet in landscape, and at heavy
@@ -41,6 +44,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 - **Lyrics search in the studio had nowhere to show its results.** Looking up
   a song returned matches that were never displayed.
+
+- **Karaoke Night no longer reloads your songs every time you pick one.** The
+  list used to empty itself and come back a few seconds later — longer the more
+  songs you had. It stays put now, and the first load says it is loading
+  instead of showing nothing.
+
+- **The prepare bar sat at the far left of centred lyrics,** pointing at empty
+  space instead of the line it was counting you into.
 
 - **A collapsed pane in the Lab** could take the whole app down with it.
 
