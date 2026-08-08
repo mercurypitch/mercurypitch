@@ -59,9 +59,9 @@ export interface FirstLightProps {
   /** True when opened as a replay (#/map) rather than on first run. */
   replay?: boolean
   /**
-   * Called once the flow's shell is in the DOM. App.tsx holds an opaque
-   * boot veil over a first visit until this fires, so the app shell
-   * never flashes while this lazy chunk is still on the wire.
+   * Called once the flow's shell is in the DOM. App.tsx holds the
+   * opening backdrop over a first visit until this fires, so the app
+   * shell never flashes while this lazy chunk is still on the wire.
    */
   onReady?: () => void
 }

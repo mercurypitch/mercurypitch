@@ -845,51 +845,125 @@
   outline-offset: 3px;
 }
 
-/* First Light boot veil ------------------------------------------------
-   A first visit must never flash the app shell before the flow: the
-   opener effect runs post-render and FirstLight is a lazy chunk. The
-   veil shares the flow's obsidian ground (--ob-ground in
-   onboarding.module.css) and its z-layer, sitting just before it in
-   the DOM, so the sky paints over it with no visible seam. The hint
-   fades in late — a fast load never shows it. */
-.firstLightBootVeil {
+/* The opening ----------------------------------------------------------
+   MercuryPitch's curtain-up: a branded backdrop over every cold load,
+   held for a moment (App.tsx owns the timing), then faded to reveal
+   First Light or the app beneath. Obsidian ground (--bg-primary in
+   BRAND.md) carries the first frame; the art rides in when its file
+   lands; the hint appears only when the wait outlives the minimum
+   hold. Above the flow overlay (3000) and app chrome, below dialogs
+   and notifications (10000+). */
+.appOpening {
   position: fixed;
   inset: 0;
-  z-index: 3000;
+  z-index: 9500;
   display: grid;
   place-items: center;
+  overflow: hidden;
   background: #0d1117;
   transition: opacity 0.4s ease;
 }
 
-.firstLightBootVeilLeaving {
+.appOpeningLeaving {
   opacity: 0;
   pointer-events: none;
 }
 
-.firstLightBootVeilHint {
-  margin: 0;
-  color: #6e7681;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+.appOpeningArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   opacity: 0;
-  animation: firstLightBootHint 2.2s ease-in-out 0.45s infinite;
+  transition: opacity 0.45s ease;
 }
 
-@keyframes firstLightBootHint {
+.appOpeningArtReady {
+  opacity: 1;
+}
+
+.appOpeningLockup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  filter: drop-shadow(0 2px 24px rgba(0, 0, 0, 0.55));
+  animation: appOpeningLockupIn 0.5s ease both;
+}
+
+.appOpeningMark {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+
+.appOpeningWordmark {
+  color: #e6edf3;
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.appOpeningWordmark > span {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@keyframes appOpeningLockupIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.appOpeningHint {
+  position: absolute;
+  bottom: 14%;
+  margin: 0;
+  color: #a8b3bf;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  animation: appOpeningHint 2.2s ease-in-out 1.2s infinite;
+}
+
+@keyframes appOpeningHint {
   0% {
     opacity: 0;
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.8;
   }
   100% {
     opacity: 0;
   }
 }
 
+@media (max-width: 640px) {
+  .appOpeningLockup {
+    gap: 12px;
+  }
+
+  .appOpeningMark {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .firstLightBootVeilHint {
+  .appOpeningLockup {
+    animation: none;
+  }
+
+  .appOpeningHint {
     opacity: 0.6;
     animation: none;
   }

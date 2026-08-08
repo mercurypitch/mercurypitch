@@ -632,45 +632,87 @@ const AppShell: Component<AppProps> = (props) => {
   // bookkeeping, so closing it can't rewind anyone's seen-flag.
   const [onboardingReplay, setOnboardingReplay] = createSignal(false)
 
-  // A first visit must never flash the app shell before the flow. The
-  // opener effect below runs post-render and FirstLight is a lazy
-  // chunk, so a fresh visitor used to see the whole app paint and then
-  // get covered by the sky a beat later. Whether the flow is due is
-  // known synchronously (`showWelcome` is a localStorage read), so an
-  // opaque veil in the flow's own ground colour holds from the very
-  // first paint while the chunk — fetched from here, in parallel with
-  // app boot — arrives. No artificial delay: the veil leaves the moment
-  // the flow's shell has mounted. Captured once, not reactively, so a
-  // Settings replay never re-drops it over a working app.
-  const firstRunBoot =
-    showWelcome() &&
+  // ── The opening ─────────────────────────────────────────────
+  // Every cold load opens on a branded backdrop for a moment —
+  // MercuryPitch's own curtain-up — and only then reveals what the
+  // visitor is here for. It exists for two reasons at once:
+  //  1. A first visit must never flash the app shell before First
+  //     Light. The flow opens from an effect (post-render) and its
+  //     chunk is lazy, so without a cover the whole app painted and
+  //     then got covered a beat later.
+  //  2. The reveal should feel composed rather than raced, so the
+  //     backdrop holds for OPENING_MIN_MS even when the load is
+  //     instant, and the art gets one breath on screen.
+  // The first-run decision is synchronous (`showWelcome` is a
+  // localStorage read). Past the minimum hold, the backdrop leaves the
+  // moment its successor is ready: for a first run that is First
+  // Light's shell mounting (onReady below); for anyone else the app is
+  // already beneath it. Automation (navigator.webdriver) skips the
+  // whole thing so no spec or tour walker waits behind a cosmetic
+  // hold.
+  const OPENING_MIN_MS = 750
+  const OPENING_FADE_MS = 400
+  const openingDue =
+    navigator.webdriver !== true &&
     parseHash(window.location.hash).type !== 'voice-constellation'
-  const [bootVeil, setBootVeil] = createSignal<'up' | 'fading' | 'gone'>(
-    firstRunBoot ? 'up' : 'gone',
+  const firstRunBoot = openingDue && showWelcome()
+  const [opening, setOpening] = createSignal<'up' | 'fading' | 'gone'>(
+    openingDue ? 'up' : 'gone',
   )
-  let bootVeilFailsafe: number | undefined
-  const dropBootVeil = () => {
-    if (bootVeil() !== 'up') return
-    window.clearTimeout(bootVeilFailsafe)
-    setBootVeil('fading')
-    window.setTimeout(() => setBootVeil('gone'), 400)
+  const [openingArtReady, setOpeningArtReady] = createSignal(false)
+  const openedAtMs = Date.now()
+  let openingHoldTimer: number | undefined
+  let openingFadeTimer: number | undefined
+  let openingFailsafe: number | undefined
+  const dropOpening = () => {
+    if (opening() !== 'up') return
+    window.clearTimeout(openingHoldTimer)
+    window.clearTimeout(openingFailsafe)
+    setOpening('fading')
+    // One-shot fade-end timer, untracked on purpose — not a computation.
+
+    openingFadeTimer = window.setTimeout(
+      () => setOpening('gone'),
+      OPENING_FADE_MS,
+    )
   }
-  if (firstRunBoot) {
-    // The rejection (if any) surfaces through the lazy component and its
-    // ErrorBoundary below; this copy of the promise just must not spam
-    // the console as unhandled.
-    void FirstLight.preload().catch(() => {})
-    // A hung chunk fetch must never strand a black screen over a
-    // usable app: worst case the old flicker comes back, once.
-    // A one-shot failsafe timer, untracked on purpose — not a computation.
-    // eslint-disable-next-line solid/reactivity
-    bootVeilFailsafe = window.setTimeout(dropBootVeil, 8000)
+  /** Drop, but never before the minimum hold has been honoured. */
+  const dropOpeningAfterHold = () => {
+    const left = OPENING_MIN_MS - (Date.now() - openedAtMs)
+    if (left <= 0) {
+      dropOpening()
+    } else {
+      window.clearTimeout(openingHoldTimer)
+      // One-shot hold timer, untracked on purpose — not a computation.
+
+      openingHoldTimer = window.setTimeout(dropOpening, left)
+    }
   }
-  onCleanup(() => window.clearTimeout(bootVeilFailsafe))
-  // Dismissing the welcome while the veil is up (the e2e bridge calls
-  // setShowWelcome(false) directly) must release the veil too.
+  if (openingDue) {
+    if (firstRunBoot) {
+      // First Light is what comes up next: fetch it from here, in
+      // parallel with app boot. The rejection (if any) surfaces through
+      // the lazy component and its ErrorBoundary below; this copy of
+      // the promise just must not spam the console as unhandled.
+      void FirstLight.preload().catch(() => {})
+      // A hung chunk fetch must never strand the backdrop over a
+      // usable app: worst case the old flicker comes back, once.
+      // One-shot failsafe timer, untracked on purpose — not a computation.
+      // eslint-disable-next-line solid/reactivity
+      openingFailsafe = window.setTimeout(dropOpening, 8000)
+    } else {
+      dropOpeningAfterHold()
+    }
+  }
+  onCleanup(() => {
+    window.clearTimeout(openingHoldTimer)
+    window.clearTimeout(openingFadeTimer)
+    window.clearTimeout(openingFailsafe)
+  })
+  // Dismissing the welcome while the backdrop is up (skip, or the e2e
+  // bridge calling setShowWelcome(false) directly) must release it too.
   createEffect(() => {
-    if (!showWelcome()) dropBootVeil()
+    if (firstRunBoot && !showWelcome()) dropOpening()
   })
   const [voiceConstellationOpen, setVoiceConstellationOpen] = createSignal(
     parseHash(window.location.hash).type === 'voice-constellation',
@@ -2582,24 +2624,97 @@ const AppShell: Component<AppProps> = (props) => {
         <a class="skip-link" href="#main-content">
           Skip to main content
         </a>
-        {/* Boot veil — the flow's ground colour, held from the first
-            paint of a first visit so the app shell never flashes before
-            the sky. FirstLight renders after it in the DOM and shares
-            its z-layer, so the hand-off paints over it seamlessly. The
-            hint fades in late; a fast load never shows it. */}
-        <Show when={bootVeil() !== 'gone'}>
+        {/* The opening — MercuryPitch's curtain-up. Sits above the flow
+            and the app (z 9500): both mount beneath it and are revealed
+            by its fade. Timing contract in the state block above. The
+            art rides in when its file lands (the obsidian ground and
+            the lockup carry the frame until then); the hint appears
+            only when the wait outlives the minimum hold. */}
+        <Show when={opening() !== 'gone'}>
           <div
-            class={styles.firstLightBootVeil}
+            class={styles.appOpening}
             classList={{
-              [styles.firstLightBootVeilLeaving]: bootVeil() === 'fading',
+              [styles.appOpeningLeaving]: opening() === 'fading',
             }}
             data-onboarding-flow
             role="status"
             aria-live="polite"
           >
-            <p class={styles.firstLightBootVeilHint}>
-              Preparing your first note…
-            </p>
+            <img
+              class={styles.appOpeningArt}
+              classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
+              src="/opening/first-light.webp"
+              alt=""
+              decoding="async"
+              ref={(el) => {
+                if (el.complete && el.naturalWidth > 0) setOpeningArtReady(true)
+              }}
+              onLoad={() => setOpeningArtReady(true)}
+            />
+            <div class={styles.appOpeningLockup}>
+              <svg
+                class={styles.appOpeningMark}
+                viewBox="0 0 128 128"
+                aria-hidden="true"
+              >
+                <defs>
+                  <radialGradient
+                    id="appOpeningMarkBody"
+                    cx="38%"
+                    cy="30%"
+                    r="80%"
+                  >
+                    <stop offset="0%" stop-color="#f4f8fd" />
+                    <stop offset="28%" stop-color="#aeb9c6" />
+                    <stop offset="62%" stop-color="#5b6b7b" />
+                    <stop offset="100%" stop-color="#1b2430" />
+                  </radialGradient>
+                  <linearGradient
+                    id="appOpeningMarkRim"
+                    x1="0"
+                    y1="0"
+                    x2="1"
+                    y2="1"
+                  >
+                    <stop offset="0" stop-color="#58a6ff" />
+                    <stop offset="0.5" stop-color="#2dd4bf" />
+                    <stop offset="1" stop-color="#bc8cff" />
+                  </linearGradient>
+                  <clipPath id="appOpeningMarkClip">
+                    <circle cx="64" cy="64" r="42" />
+                  </clipPath>
+                </defs>
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="47"
+                  fill="none"
+                  stroke="url(#appOpeningMarkRim)"
+                  stroke-width="3"
+                  opacity="0.9"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="42"
+                  fill="url(#appOpeningMarkBody)"
+                />
+                <g clip-path="url(#appOpeningMarkClip)">
+                  <path
+                    d="M22 72 C 36 46, 48 46, 64 64 S 92 82, 106 56"
+                    fill="none"
+                    stroke="#0b0e14"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                    opacity="0.92"
+                  />
+                </g>
+              </svg>
+              <span class={styles.appOpeningWordmark}>
+                Mercury<span>Pitch</span>
+              </span>
+            </div>
+            <p class={styles.appOpeningHint}>Preparing your first note…</p>
           </div>
         </Show>
         {/* First Light — the whole first run. A fresh visitor lands
@@ -2610,7 +2725,7 @@ const AppShell: Component<AppProps> = (props) => {
             fallback={() => {
               // A dead chunk (offline, or a deploy swapped the hashed
               // assets) used to take the whole app down with it — and
-              // would now also strand the boot veil. Give up on the flow
+              // would now also strand the opening backdrop. Give up on the flow
               // for this session only: the seen-flag in localStorage is
               // untouched, so the next visit offers it again. Deferred a
               // tick — these are writes, not render work.
@@ -2621,7 +2736,10 @@ const AppShell: Component<AppProps> = (props) => {
               return null
             }}
           >
-            <FirstLight replay={onboardingReplay()} onReady={dropBootVeil} />
+            <FirstLight
+              replay={onboardingReplay()}
+              onReady={dropOpeningAfterHold}
+            />
           </ErrorBoundary>
         </Show>
 
