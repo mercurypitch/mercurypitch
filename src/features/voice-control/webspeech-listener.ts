@@ -17,7 +17,7 @@ import type { VoiceListener, VoiceListenerCallbacks } from './types'
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean
-  0: { transcript: string }
+  0: { transcript: string; confidence?: number }
   length: number
 }
 
@@ -47,6 +47,13 @@ const FAST_END_LIMIT = 5
 
 /** Permission-shaped errors: do not restart, the user has to act first. */
 const FATAL_ERRORS = new Set(['not-allowed', 'service-not-allowed'])
+
+/**
+ * Finals with a REAL low confidence estimate are dropped before they reach
+ * the grammar. Chrome reports 0 when it has no estimate at all, so only a
+ * positive-but-low value blocks the utterance.
+ */
+const MIN_FINAL_CONFIDENCE = 0.3
 
 export function createWebSpeechListener(
   callbacks: VoiceListenerCallbacks,
@@ -85,8 +92,14 @@ export function createWebSpeechListener(
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
-          const text = result[0].transcript.trim()
-          if (text !== '') callbacks.onUtterance(text)
+          const alternative = result[0]
+          const text = alternative.transcript.trim()
+          const confidence = alternative.confidence
+          const tooUncertain =
+            typeof confidence === 'number' &&
+            confidence > 0 &&
+            confidence < MIN_FINAL_CONFIDENCE
+          if (text !== '' && !tooUncertain) callbacks.onUtterance(text)
         } else {
           interim += result[0].transcript
         }

@@ -27,6 +27,9 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
 
   const statusText = () => {
     if (hasError()) return 'Mic unavailable'
+    if (props.controller.listenerState() === 'starting') {
+      return 'Loading voice engine'
+    }
     const fb = props.controller.feedback()
     if (fb !== null && fb.kind === 'matched') return fb.action ?? 'Done'
     if (fb !== null && (fb.kind === 'failed' || fb.kind === 'unavailable')) {
@@ -88,6 +91,14 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
         >
           {statusText()}
         </span>
+        <Show when={props.controller.lastLatencyMs() !== null}>
+          <span
+            class={styles.latency}
+            title="End-of-speech to text time (on-device engine)"
+          >
+            {props.controller.lastLatencyMs()} ms
+          </span>
+        </Show>
       </Show>
     </div>
   )

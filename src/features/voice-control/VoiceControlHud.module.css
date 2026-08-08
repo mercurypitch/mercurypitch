@@ -116,6 +116,12 @@
   color: var(--warning, #e5a50a);
 }
 
+.latency {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
 /* Clear the mobile tab bar rather than sitting on it. */
 @media (max-width: 768px) {
   .pill {

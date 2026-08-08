@@ -7,7 +7,7 @@
 // utterance engine without touching the grammar or the dispatcher. See
 // docs/plans/voice-control.md for the whole architecture.
 
-export type VoiceListenerState = 'idle' | 'listening' | 'error'
+export type VoiceListenerState = 'idle' | 'starting' | 'listening' | 'error'
 
 export interface VoiceListenerCallbacks {
   /** One discrete final utterance — a phrase the recognizer closed. */
@@ -15,6 +15,8 @@ export interface VoiceListenerCallbacks {
   /** Live not-yet-final text for the HUD ('' when cleared). */
   onInterim: (text: string) => void
   onStateChange: (state: VoiceListenerState, detail?: string) => void
+  /** End-of-speech to transcript time, when the engine can measure it. */
+  onLatency?: (roundTripMs: number) => void
 }
 
 export interface VoiceListener {

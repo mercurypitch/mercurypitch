@@ -76,12 +76,12 @@ recognized (throttled so singing cannot flood the screen).
 Latency and robustness before more commands; the grammar and adapters do not
 change, only the ear.
 
-- [ ] Local utterance engine behind `VoiceListener`: MicManager capture, RMS/VAD gate, 1-2 s utterance buffer into the existing whisper-tiny worker; target under 300 ms from end-of-phrase to action, works offline
-- [ ] Evaluate Moonshine tiny as the alternative local model (streaming-oriented, lower latency floor)
-- [ ] Eager interim matching: execute when an interim transcript exactly equals a command and is stable ~150 ms, with a cooldown so the final result cannot double-fire
-- [ ] Engine picker in Settings (Web Speech vs local) with a latency readout in the HUD
-- [ ] Optional wake-word-required mode while music is playing (echo hardening without headphones)
-- [ ] Confidence threshold when the engine reports one
+- [x] Local utterance engine behind `VoiceListener`: MicManager capture (with mic-sentinel registration), adaptive RMS gate with pre-roll, 0.2-3.6 s utterances into a dedicated no-timestamps whisper-tiny worker (same cached weights as karaoke transcription, warm-up at load), WebGPU with WASM fallback
+- [ ] Evaluate Moonshine tiny as the alternative local model (the worker takes a model id, so this is a measurement task on real hardware, not a code change)
+- [x] Eager interim matching (browser engine): an interim that resolves to a command and stays stable ~150 ms executes immediately; the confirming final is suppressed so it cannot double-fire
+- [x] Engine picker in Settings (Browser vs On-device) with a speech-to-text latency readout in the pill
+- [x] Optional wake-word-required mode while music is playing ("Mercury, from the top"); wakeless speech is then ignored silently — no toasts, no HUD noise
+- [x] Confidence threshold on browser-engine finals (real low estimates are dropped; Chrome's "no estimate" zero is not treated as low)
 
 ---
 

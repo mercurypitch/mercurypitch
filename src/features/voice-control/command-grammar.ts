@@ -34,19 +34,35 @@ export function normalizeUtterance(text: string): string {
 const LEADING_FILLERS = new Set(['hey', 'ok', 'okay'])
 const WAKE_NAME = 'mercury'
 
+export interface FillerSplit {
+  tokens: string[]
+  /** True when the utterance carried the wake word ("mercury ..."). */
+  hadWakeWord: boolean
+}
+
 /**
  * Drops an optional leading "hey/ok/okay [mercury]" or bare "mercury" plus a
  * leading/trailing "please", so a wake-word habit works without being
- * required. Only ever removes tokens — never rewrites them.
+ * required — and reports whether the wake word was there, for the
+ * wake-word-required-while-playing mode. Only ever removes tokens — never
+ * rewrites them.
  */
-export function stripFillerTokens(tokens: readonly string[]): string[] {
+export function splitFillerTokens(tokens: readonly string[]): FillerSplit {
   let start = 0
   let end = tokens.length
+  let hadWakeWord = false
   if (start < end && LEADING_FILLERS.has(tokens[start])) start++
-  if (start < end && tokens[start] === WAKE_NAME) start++
+  if (start < end && tokens[start] === WAKE_NAME) {
+    start++
+    hadWakeWord = true
+  }
   if (start < end && tokens[start] === 'please') start++
   if (end > start && tokens[end - 1] === 'please') end--
-  return tokens.slice(start, end)
+  return { tokens: tokens.slice(start, end), hadWakeWord }
+}
+
+export function stripFillerTokens(tokens: readonly string[]): string[] {
+  return splitFillerTokens(tokens).tokens
 }
 
 // ── Number parsing ─────────────────────────────────────────────
@@ -187,7 +203,16 @@ export type VoiceResolveOutcome =
    * available here" instead of "did not understand".
    */
   | { kind: 'unavailable'; command: VoiceCommand }
+  /** Wake word required but absent — expected while music plays; callers
+   *  give no feedback at all (it is the backing track singing, not the
+   *  user talking to us). */
+  | { kind: 'ignored' }
   | { kind: 'none' }
+
+export interface VoiceResolveOptions {
+  /** Only utterances starting with the wake word count as commands. */
+  requireWakeWord?: boolean
+}
 
 /**
  * Runs one utterance against the registered commands. The first command
@@ -198,11 +223,16 @@ export type VoiceResolveOutcome =
 export function resolveVoiceCommand(
   rawUtterance: string,
   commands: readonly VoiceCommand[],
+  options?: VoiceResolveOptions,
 ): VoiceResolveOutcome {
-  const tokens = stripFillerTokens(
+  const split = splitFillerTokens(
     normalizeUtterance(rawUtterance).split(' ').filter(Boolean),
   )
+  const tokens = split.tokens
   if (tokens.length === 0) return { kind: 'none' }
+  if (options?.requireWakeWord === true && !split.hadWakeWord) {
+    return { kind: 'ignored' }
+  }
   let unavailable: VoiceCommand | null = null
   for (const command of commands) {
     const isAvailable = command.available === undefined || command.available()

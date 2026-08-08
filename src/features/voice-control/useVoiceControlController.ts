@@ -2,18 +2,25 @@
 // useVoiceControlController — voice control's dispatcher and lifecycle
 // ============================================================
 //
-// Owns the listener (started/stopped with the persisted enable flag), runs
-// each final utterance through the grammar against the registry's live
-// command sets, executes the match, and exposes the HUD's signals. Mounted
-// once by App, right beside useKeyboardShortcuts — the two drive the same
-// handler surface on purpose.
+// Owns the listener (started/stopped with the persisted enable flag, engine
+// chosen in Settings), runs each final utterance through the grammar against
+// the registry's live command sets, executes the match, and exposes the
+// HUD's signals. Interim transcripts from the browser engine are matched
+// EAGERLY: an interim that exactly equals a command and stays stable for a
+// beat executes immediately, and the confirming final is suppressed so the
+// command cannot double-fire. Mounted once by App, right beside
+// useKeyboardShortcuts — the two drive the same handler surface on purpose.
 
 import type { Accessor } from 'solid-js'
-import { createSignal, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { showNotification } from '@/stores/notifications-store'
+import type { VoiceControlEngine } from '@/stores/settings-store'
+import { voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
+import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
 import { normalizeUtterance, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
-import type { VoiceCommandResult, VoiceListenerState } from './types'
+import { createLocalWhisperListener } from './local-whisper-listener'
+import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
 import { activeVoiceCommands } from './voice-command-registry'
 import { createWebSpeechListener } from './webspeech-listener'
 
@@ -33,6 +40,12 @@ export interface VoiceFeedback {
   message?: string
 }
 
+export interface VoiceControlControllerDeps {
+  /** True while any transport is audibly rolling — gates the optional
+   *  wake-word-required mode. */
+  musicPlaying?: Accessor<boolean>
+}
+
 export interface VoiceControlController {
   isSupported: boolean
   enabled: Accessor<boolean>
@@ -43,6 +56,8 @@ export interface VoiceControlController {
   /** Most recent utterance outcome; clears itself after a short hold. */
   feedback: Accessor<VoiceFeedback | null>
   errorDetail: Accessor<string | null>
+  /** End-of-speech to action time in ms, when the engine measures it. */
+  lastLatencyMs: Accessor<number | null>
 }
 
 const FEEDBACK_VISIBLE_MS = 2600
@@ -57,7 +72,15 @@ const PERMISSION_ERRORS = new Set(['not-allowed', 'service-not-allowed'])
 const UNRECOGNIZED_TOAST_MAX_TOKENS = 4
 const UNRECOGNIZED_TOAST_INTERVAL_MS = 6000
 
-export function useVoiceControlController(): VoiceControlController {
+// Eager interim execution: an interim transcript that resolves to a command
+// and stays unchanged this long runs immediately; the confirming final is
+// then suppressed for the window below so it cannot double-fire.
+const EAGER_STABLE_MS = 150
+const EAGER_FINAL_SUPPRESS_MS = 2500
+
+export function useVoiceControlController(
+  deps?: VoiceControlControllerDeps,
+): VoiceControlController {
   const [enabled, setEnabled] = createPersistedSignal<boolean>(
     'pitchperfect_voice_control_enabled',
     false,
@@ -67,6 +90,7 @@ export function useVoiceControlController(): VoiceControlController {
   const [interim, setInterim] = createSignal('')
   const [feedback, setFeedback] = createSignal<VoiceFeedback | null>(null)
   const [errorDetail, setErrorDetail] = createSignal<string | null>(null)
+  const [lastLatencyMs, setLastLatencyMs] = createSignal<number | null>(null)
 
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -78,6 +102,18 @@ export function useVoiceControlController(): VoiceControlController {
       setFeedback(null)
     }, FEEDBACK_VISIBLE_MS)
   }
+
+  const resolveOptions = (): VoiceResolveOptions => ({
+    requireWakeWord:
+      voiceWakeWordWhilePlaying() && (deps?.musicPlaying?.() ?? false),
+  })
+
+  /** Filler-stripped normalized form — the identity used to pair an eager
+   *  execution with the final transcript that confirms it. */
+  const utteranceKey = (text: string): string =>
+    stripFillerTokens(normalizeUtterance(text).split(' ').filter(Boolean)).join(
+      ' ',
+    )
 
   let lastUnrecognizedToastAt = 0
 
@@ -94,8 +130,100 @@ export function useVoiceControlController(): VoiceControlController {
     showNotification(`Voice: no command matches "${heard.trim()}"`, 'info')
   }
 
+  const executeMatched = (
+    outcome: Extract<VoiceResolveOutcome, { kind: 'matched' }>,
+    heard: string,
+  ) => {
+    let result: VoiceCommandResult
+    try {
+      result = outcome.command.run({ n: outcome.n })
+    } catch (err) {
+      console.error('[voice-control] command failed:', outcome.command.id, err)
+      const message = `${outcome.command.label} failed`
+      presentFeedback({ kind: 'failed', heard, message })
+      showNotification(`Voice: ${message}`, 'warning')
+      return
+    }
+    if (typeof result === 'object' && result.failed) {
+      presentFeedback({ kind: 'failed', heard, message: result.message })
+      showNotification(`Voice: ${result.message}`, 'warning')
+      return
+    }
+    const action = typeof result === 'string' ? result : outcome.command.label
+    presentFeedback({ kind: 'matched', heard, action })
+  }
+
+  // ── Eager interim execution ────────────────────────────────
+
+  let eagerTimer: ReturnType<typeof setTimeout> | null = null
+  let eagerCandidateKey = ''
+  let eagerFiredKey = ''
+  let eagerFiredAt = 0
+
+  const clearEagerTimer = () => {
+    if (eagerTimer !== null) {
+      clearTimeout(eagerTimer)
+      eagerTimer = null
+    }
+    eagerCandidateKey = ''
+  }
+
+  const handleInterim = (text: string) => {
+    setInterim(text)
+    if (text === '') {
+      clearEagerTimer()
+      return
+    }
+    const key = utteranceKey(text)
+    if (key === '') {
+      clearEagerTimer()
+      return
+    }
+    if (key === eagerCandidateKey) return
+    clearEagerTimer()
+    eagerCandidateKey = key
+    eagerTimer = setTimeout(() => {
+      eagerTimer = null
+      eagerCandidateKey = ''
+      const outcome = resolveVoiceCommand(
+        text,
+        activeVoiceCommands(),
+        resolveOptions(),
+      )
+      if (outcome.kind !== 'matched') return
+      eagerFiredKey = key
+      eagerFiredAt = Date.now()
+      executeMatched(outcome, text)
+    }, EAGER_STABLE_MS)
+  }
+
+  // ── Final utterances ───────────────────────────────────────
+
   const handleUtterance = (text: string) => {
-    const outcome = resolveVoiceCommand(text, activeVoiceCommands())
+    clearEagerTimer()
+
+    // The final confirming an utterance the eager path already executed.
+    const key = utteranceKey(text)
+    if (
+      key !== '' &&
+      key === eagerFiredKey &&
+      Date.now() - eagerFiredAt < EAGER_FINAL_SUPPRESS_MS
+    ) {
+      eagerFiredKey = ''
+      return
+    }
+
+    const outcome = resolveVoiceCommand(
+      text,
+      activeVoiceCommands(),
+      resolveOptions(),
+    )
+
+    if (outcome.kind === 'ignored') {
+      // Wake word required and absent: this is the backing track singing,
+      // not the user talking to us. Stay completely quiet.
+      return
+    }
 
     if (outcome.kind === 'none') {
       presentFeedback({ kind: 'unrecognized', heard: text })
@@ -110,31 +238,15 @@ export function useVoiceControlController(): VoiceControlController {
       return
     }
 
-    let result: VoiceCommandResult
-    try {
-      result = outcome.command.run({ n: outcome.n })
-    } catch (err) {
-      console.error('[voice-control] command failed:', outcome.command.id, err)
-      const message = `${outcome.command.label} failed`
-      presentFeedback({ kind: 'failed', heard: text, message })
-      showNotification(`Voice: ${message}`, 'warning')
-      return
-    }
-
-    if (typeof result === 'object' && result.failed) {
-      presentFeedback({ kind: 'failed', heard: text, message: result.message })
-      showNotification(`Voice: ${result.message}`, 'warning')
-      return
-    }
-
-    const action = typeof result === 'string' ? result : outcome.command.label
-    presentFeedback({ kind: 'matched', heard: text, action })
+    executeMatched(outcome, text)
   }
 
-  const listener = createWebSpeechListener({
+  // ── Listener lifecycle ─────────────────────────────────────
+
+  const listenerCallbacks = {
     onUtterance: handleUtterance,
-    onInterim: setInterim,
-    onStateChange: (state, detail) => {
+    onInterim: handleInterim,
+    onStateChange: (state: VoiceListenerState, detail?: string) => {
       setListenerState(state)
       if (state !== 'error') {
         setErrorDetail(null)
@@ -149,12 +261,40 @@ export function useVoiceControlController(): VoiceControlController {
         )
       }
     },
-  })
+    onLatency: (roundTripMs: number) => {
+      setLastLatencyMs(Math.round(roundTripMs))
+    },
+  }
+
+  let webspeechListener: VoiceListener | null = null
+  let localListener: VoiceListener | null = null
+  let activeListener: VoiceListener | null = null
+
+  const listenerFor = (engine: VoiceControlEngine): VoiceListener => {
+    if (engine === 'local') {
+      localListener ??= createLocalWhisperListener(listenerCallbacks)
+      return localListener
+    }
+    webspeechListener ??= createWebSpeechListener(listenerCallbacks)
+    return webspeechListener
+  }
+
+  const startListening = () => {
+    const listener = listenerFor(voiceControlEngine())
+    activeListener = listener
+    listener.start()
+  }
+
+  const stopListening = () => {
+    activeListener?.stop()
+    activeListener = null
+  }
 
   const toggle = () => {
+    const listener = listenerFor(voiceControlEngine())
     if (!listener.isSupported) {
       showNotification(
-        'Voice control needs the Web Speech API — try Chrome, Edge or Safari.',
+        'The browser speech engine needs Chrome, Edge or Safari. Switch voice control to the on-device engine in Settings.',
         'warning',
       )
       return
@@ -162,15 +302,33 @@ export function useVoiceControlController(): VoiceControlController {
     const next = !enabled()
     setEnabled(next)
     if (next) {
-      listener.start()
+      setLastLatencyMs(null)
+      startListening()
     } else {
-      listener.stop()
+      stopListening()
     }
   }
 
+  // Switching the engine in Settings while listening swaps listeners live.
+  createEffect(
+    on(
+      voiceControlEngine,
+      (engine, previous) => {
+        if (previous === undefined || engine === previous) return
+        if (!untrack(enabled)) return
+        stopListening()
+        setLastLatencyMs(null)
+        startListening()
+      },
+      { defer: true },
+    ),
+  )
+
   onMount(() => {
     if (!enabled()) return
+    const listener = listenerFor(voiceControlEngine())
     if (listener.isSupported) {
+      activeListener = listener
       listener.start()
     } else {
       // The flag was persisted in a supporting browser; drop it quietly here.
@@ -179,7 +337,8 @@ export function useVoiceControlController(): VoiceControlController {
   })
 
   onCleanup(() => {
-    listener.stop()
+    stopListening()
+    clearEagerTimer()
     if (feedbackTimer !== null) {
       clearTimeout(feedbackTimer)
       feedbackTimer = null
@@ -187,12 +346,13 @@ export function useVoiceControlController(): VoiceControlController {
   })
 
   return {
-    isSupported: listener.isSupported,
+    isSupported: true,
     enabled,
     toggle,
     listenerState,
     interim,
     feedback,
     errorDetail,
+    lastLatencyMs,
   }
 }

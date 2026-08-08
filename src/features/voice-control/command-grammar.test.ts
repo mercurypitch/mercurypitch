@@ -172,4 +172,18 @@ describe('resolveVoiceCommand', () => {
     expect(outcome.kind).toBe('matched')
     expect(outcome.kind === 'matched' && outcome.command.id).toBe('live')
   })
+
+  it('ignores wakeless speech when the wake word is required', () => {
+    const play = command('transport.play', ['play'])
+    const options = { requireWakeWord: true }
+    expect(resolveVoiceCommand('play', [play], options).kind).toBe('ignored')
+    expect(resolveVoiceCommand('some lyric line', [play], options).kind).toBe(
+      'ignored',
+    )
+    const withWake = resolveVoiceCommand('mercury play', [play], options)
+    expect(withWake.kind).toBe('matched')
+    expect(resolveVoiceCommand('hey mercury play', [play], options).kind).toBe(
+      'matched',
+    )
+  })
 })

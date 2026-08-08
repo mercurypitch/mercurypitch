@@ -1868,7 +1868,12 @@ const AppShell: Component<AppProps> = (props) => {
     },
   })
   onCleanup(registerVoiceCommands(() => voiceCommands))
-  const voiceControl = useVoiceControlController()
+  const voiceControl = useVoiceControlController({
+    // Gates the optional wake-word-required mode: "music is audibly rolling"
+    // means the shared runtime or the piano game, the two transports voice
+    // currently drives.
+    musicPlaying: () => isPlaying() || pianoIsPlaying(),
+  })
   voiceControlToggle = voiceControl.toggle
 
   // Karaoke backing: the "heard" (non-scored) tracks play as audio while the
