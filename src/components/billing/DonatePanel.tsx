@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/analytics'
 import { GITHUB_SPONSORS_URL, KOFI_URL, SPONSORS_LIVE, } from '@/lib/contact-links'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './DonatePanel.module.css'
 
 // Warmer accents than the credit cards, cycled by position — donations should
@@ -186,13 +187,14 @@ export const DonatePanel: Component = () => {
                 <Show
                   when={isUpgraded()}
                   fallback={
-                    <a
+                    <button
+                      type="button"
                       class={styles.donateBtn}
-                      href="#/settings/account"
+                      onClick={() => openAuthModal('register')}
                       data-testid="donate-signin"
                     >
                       Create an account
-                    </a>
+                    </button>
                   }
                 >
                   <button

@@ -3,6 +3,16 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [Unreleased]
+
+### Fixed
+
+- **Credits and supporter tiers now offer the account they need.** Buying
+  credits requires an account, so the button on a credit pack says "Create
+  account" until you have one instead of failing after the click. Both it and
+  the supporter tiers' button open the sign-up dialog on the spot, rather than
+  sending you to the settings page you were already on.
+
 ## [0.8.1] - 2026-08-08
 
 ### Added

@@ -2,7 +2,7 @@
 // DonatePanel component tests
 // ============================================================
 
-import { render, screen, waitFor } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/db/services/billing-service', async (importOriginal) => {
@@ -25,6 +25,7 @@ import { DonatePanel } from '@/components/billing/DonatePanel'
 import { fetchMe } from '@/db/services/auth-service'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
+import { authModalMode, closeAuthModal } from '@/stores/ui-store'
 
 const plan = (over: Partial<PricingPlan>): PricingPlan => ({
   id: 'sup-fund',
@@ -54,7 +55,11 @@ const pricing = (donations: PricingPlan[]): Pricing => ({
 /** Signed-in with a real (non-anonymous) account. */
 const upgraded = { user: { authProvider: 'password' } }
 
-afterEach(() => vi.resetAllMocks())
+afterEach(() => {
+  vi.resetAllMocks()
+  // The auth modal is a module-level signal shared across tests.
+  closeAuthModal()
+})
 
 describe('DonatePanel', () => {
   it('renders a card per donation tier with its perk bullets', async () => {
@@ -141,11 +146,26 @@ describe('DonatePanel', () => {
     await waitFor(() =>
       expect(screen.getByTestId('donate-signin')).toBeInTheDocument(),
     )
-    expect(screen.getByTestId('donate-signin')).toHaveAttribute(
-      'href',
-      '#/settings/account',
-    )
     expect(screen.queryByTestId('donate-button')).not.toBeInTheDocument()
+  })
+
+  // It used to link to #/settings/account, which is the panel this card is
+  // already inside: the click looked like it did nothing, and the visitor had
+  // to find the sign-in button themselves. Open the dialog instead.
+  it('opens the sign-up dialog instead of navigating to the account panel', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(pricing([plan({})]))
+    vi.mocked(fetchBillingMe).mockResolvedValue(null)
+    vi.mocked(fetchMe).mockResolvedValue({
+      user: { authProvider: 'anonymous' },
+    } as never)
+
+    render(() => <DonatePanel />)
+    const cta = await screen.findByTestId('donate-signin')
+    expect(cta).not.toHaveAttribute('href')
+    expect(authModalMode()).toBeNull()
+
+    fireEvent.click(cta)
+    expect(authModalMode()).toBe('register')
   })
 
   it('does not offer donations to managed testing accounts', async () => {
