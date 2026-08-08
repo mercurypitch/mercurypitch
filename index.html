@@ -70,13 +70,24 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <!-- The opening backdrop races the JS bundle so the art is usually
-         there for the app's first commit. -->
+         there for the app's first commit. Media-gated so a phone fetches
+         only the portrait recomposition and a desktop only the wide one —
+         the same tiers the <picture> in App.tsx chooses between. -->
     <link
       rel="preload"
       as="image"
-      href="/opening/first-light.webp"
+      href="/opening/first-light-wide.webp"
+      media="(min-aspect-ratio: 1/1)"
       fetchpriority="high"
     />
+    <link
+      rel="preload"
+      as="image"
+      href="/opening/first-light-tall.webp"
+      media="(max-aspect-ratio: 1/1)"
+      fetchpriority="high"
+    />
+    <link rel="preload" as="image" href="/brand-mark.svg" />
     <meta name="theme-color" content="#0d1117" />
   </head>
   <body>
