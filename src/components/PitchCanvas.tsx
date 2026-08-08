@@ -12,7 +12,7 @@ import { audioRegistry } from '@/lib/audio-registry'
 import { drawChordShape, drawEffectBadge, drawSlideProgress, drawSlideShape, drawStaccatoShape, drawTremoloShape, drawTrillProgress, drawTrillShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
-import { freqToNote, melodyIndexAtBeat } from '@/lib/scale-data'
+import { freqToNote, gridRowsForBounds, melodyIndexAtBeat, } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
 import type { ChordType, EffectType, MelodyItem, NoteResult, PitchResult, PitchSample, ScaleDegree, } from '@/types'
@@ -1072,9 +1072,16 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const scale = props.scale()
     const melody = props.melody()
 
+    // Rows for lanes, gridlines and labels: the scale's pitch classes
+    // extended across the whole melody-fitted view. Iterating the built
+    // scale directly left any part of the view outside its octave window —
+    // e.g. a G4 melody over a C3 grid — without lines or labels.
+    const bounds = verticalBounds()
+    const gridRows = gridRowsForBounds(scale, bounds.minMidi, bounds.maxMidi)
+
     // Quiet pitch lanes give the stage the same technical, editable feel as
     // the vocal-cleanup view without competing with notes or live feedback.
-    const laneYs = scale
+    const laneYs = gridRows
       .map((note) => freqToY(note.freq, h))
       .sort((a, b) => a - b)
     for (let i = 0; i < laneYs.length; i++) {
@@ -1126,7 +1133,11 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    for (const note of scale) {
+    // Wide views (large imports) produce more rows than labels fit; thin the
+    // labels, never the lines.
+    const labelStep = gridRows.length > 30 ? 2 : 1
+    for (let i = 0; i < gridRows.length; i++) {
+      const note = gridRows[i]
       const y = freqToY(note.freq, h)
 
       if (gridLinesVisible()) {
@@ -1138,10 +1149,12 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.stroke()
       }
 
-      ctx.fillStyle = 'rgba(172,188,208,0.58)'
-      ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace'
-      ctx.textAlign = 'right'
-      ctx.fillText(note.name + note.octave, w - 6, y - 3)
+      if (i % labelStep === 0) {
+        ctx.fillStyle = 'rgba(172,188,208,0.58)'
+        ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace'
+        ctx.textAlign = 'right'
+        ctx.fillText(note.name + note.octave, w - 6, y - 3)
+      }
     }
 
     drawAccuracyHeatmap(h)

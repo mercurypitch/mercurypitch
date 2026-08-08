@@ -2051,34 +2051,27 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // ── Octave shift ──────────────────────────────────────────
+  // One shared store operation: melody and reference grid move together,
+  // rebuilt from the store's own tracked key/scale (the app-store signals
+  // can lag behind a loaded melody).
   const handleOctaveShift = (delta: number) => {
-    const newOctave = melodyStore.getCurrentOctave() + delta
-    if (newOctave < 1) return
-
-    const keyName = keyNameSignal()
-    const scaleType = scaleTypeSignal()
-
-    // Check if we have notes that can be transposed
-    if (melodyStore.items().length > 0) {
-      // Transpose all notes by the octave delta
-      const MIDI_OCTAVE_SHIFT = 12
-      const transposed = melodyStore.items().map((item) => ({
-        ...item,
-        note: {
-          ...item.note,
-          midi: item.note.midi + delta * MIDI_OCTAVE_SHIFT,
-          octave: item.note.octave + delta,
-          freq:
-            440 *
-            Math.pow(2, (item.note.midi + delta * MIDI_OCTAVE_SHIFT - 69) / 12),
-        },
-      }))
-      melodyStore.setMelody(transposed)
-    }
-
-    // Rebuild scale with new octave
-    melodyStore.refreshScale(keyName, newOctave, scaleType)
+    melodyStore.shiftMelodyOctave(delta)
   }
+
+  // A loaded melody carries its own key and scale type; mirror them into the
+  // app-store signals so the sidebar pickers and share links describe the
+  // melody actually on the stage (the grid itself is aligned by loadMelody).
+  createEffect(
+    on(
+      () => melodyStore.currentMelody()?.id,
+      () => {
+        const m = melodyStore.currentMelody()
+        if (m == null) return
+        if (m.key !== '') setKeyName(m.key)
+        if (m.scaleType !== '') setScaleType(m.scaleType)
+      },
+    ),
+  )
 
   // ── Target note for pitch display ──────────────────────────
   const targetNote = createMemo(() => {
