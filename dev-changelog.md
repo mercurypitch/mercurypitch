@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Analysis take picker: a column on phones, a wrapping rail above 720px.**
   `.takeRail` was a horizontal snap rail at every width, so a second take —
   the first separated song — ran off the right edge. Now `flex-direction:
-  column` with full-width cards, capped at `46vh` with contained overscroll so
+column` with full-width cards, capped at `46vh` with contained overscroll so
   a large library cannot push the analysis itself off screen; the ≥720px block
   restores `row` + `flex-wrap` + fixed-width cards and drops the cap.
 
