@@ -244,3 +244,103 @@ describe('resolveVoiceCommand', () => {
     )
   })
 })
+
+describe('brand phrases starting with the wake word', () => {
+  const sing = command('mercurySing.start', ['mercury sing', 'find my song'])
+
+  it('matches after the stripper ate the wake word, via the retry', () => {
+    expect(matchVoiceCommand('mercury sing', [sing])?.command.id).toBe(
+      'mercurySing.start',
+    )
+    expect(matchVoiceCommand('hey mercury sing', [sing])?.command.id).toBe(
+      'mercurySing.start',
+    )
+    expect(matchVoiceCommand('mercury sing please', [sing])?.command.id).toBe(
+      'mercurySing.start',
+    )
+  })
+
+  it('a doubled wake word still reaches the brand phrase', () => {
+    // The stripper removes exactly ONE leading mercury, so the primary pass
+    // sees "mercury sing" directly.
+    expect(matchVoiceCommand('mercury mercury sing', [sing])?.command.id).toBe(
+      'mercurySing.start',
+    )
+  })
+
+  it('the bare tail of a brand phrase does not match', () => {
+    // "sing" is a lyric word; only the full brand phrase triggers.
+    expect(matchVoiceCommand('sing', [sing])).toBeNull()
+  })
+
+  it('trailing tokens after the brand phrase still reject the match', () => {
+    expect(matchVoiceCommand('mercury sing something', [sing])).toBeNull()
+  })
+
+  it('prefers the wake-stripped reading when both parse', () => {
+    const play = command('play', ['play'])
+    const brand = command('brand', ['mercury play'])
+    expect(matchVoiceCommand('mercury play', [play, brand])?.command.id).toBe(
+      'play',
+    )
+  })
+
+  it('passes the wake gate — the wake word is right there', () => {
+    const options = { requireWakeWord: true }
+    expect(resolveVoiceCommand('mercury sing', [sing], options).kind).toBe(
+      'matched',
+    )
+    expect(resolveVoiceCommand('find my song', [sing], options).kind).toBe(
+      'ignored',
+    )
+    expect(
+      resolveVoiceCommand('mercury find my song', [sing], options).kind,
+    ).toBe('matched')
+  })
+})
+
+describe('ignoresWakeWord exemption', () => {
+  const play = command('transport.play', ['play'])
+  const cancel = command('stage.cancel', ['cancel', 'stop listening'], {
+    ignoresWakeWord: true,
+  })
+  const options = { requireWakeWord: true }
+
+  it('exempt commands match without the wake word; others stay ignored', () => {
+    const outcome = resolveVoiceCommand('cancel', [play, cancel], options)
+    expect(outcome.kind).toBe('matched')
+    expect(outcome.kind === 'matched' && outcome.command.id).toBe(
+      'stage.cancel',
+    )
+    expect(resolveVoiceCommand('play', [play, cancel], options).kind).toBe(
+      'ignored',
+    )
+  })
+
+  it('salvage still reaches exempt commands under the gate', () => {
+    const outcome = resolveVoiceCommand(
+      'uh stop listening',
+      [play, cancel],
+      options,
+    )
+    expect(outcome.kind).toBe('matched')
+    expect(outcome.kind === 'matched' && outcome.command.id).toBe(
+      'stage.cancel',
+    )
+  })
+
+  it('unmatched wakeless speech stays ignored, never unrecognized', () => {
+    expect(
+      resolveVoiceCommand('la la la la', [play, cancel], options).kind,
+    ).toBe('ignored')
+  })
+
+  it('the flag changes nothing when the wake word is not required', () => {
+    expect(matchVoiceCommand('cancel', [play, cancel])?.command.id).toBe(
+      'stage.cancel',
+    )
+    expect(matchVoiceCommand('play', [play, cancel])?.command.id).toBe(
+      'transport.play',
+    )
+  })
+})

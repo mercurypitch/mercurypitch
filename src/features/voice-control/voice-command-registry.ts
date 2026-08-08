@@ -63,3 +63,29 @@ export function registerMusicPlayingSource(
 export function anyRegisteredMusicPlaying(): boolean {
   return musicSources().some((source) => source())
 }
+
+// ── Wake-word holds ────────────────────────────────────────────
+// A surface that deliberately captures open-ended audio — the Mercury Sing
+// stage, where the user is SINGING into the mic — forces wake-word-required
+// mode on for its lifetime, regardless of the user's setting, so sung
+// lyrics cannot fire transport commands. Commands flagged `ignoresWakeWord`
+// (the stage's own cancel phrases) still work bare.
+
+const [wakeHolds, setWakeHolds] = createSignal<readonly symbol[]>([])
+
+/** Forces wake-word-required mode on until the returned release is called.
+ *  Call the release from onCleanup; releasing twice is safe. */
+export function acquireWakeWordHold(): () => void {
+  const token = Symbol('wake-word-hold')
+  setWakeHolds((prev) => [...prev, token])
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    setWakeHolds((prev) => prev.filter((t) => t !== token))
+  }
+}
+
+export function wakeWordHoldActive(): boolean {
+  return wakeHolds().length > 0
+}

@@ -64,6 +64,13 @@ export interface VoiceCommand {
   /** When present and false, the command is skipped during matching. */
   available?: () => boolean
   /**
+   * Matches even when wake-word mode would ignore the utterance. For the
+   * few commands that must stay reachable while open-ended audio is being
+   * captured — a listening stage's own cancel phrases. Use sparingly:
+   * every exempt phrase is one more thing a lyric line could say.
+   */
+  ignoresWakeWord?: boolean
+  /**
    * Perform the action. May return a feedback label that overrides `label`
    * (e.g. 'Speed 1.5x'), undefined to fall back to `label`, or a
    * `voiceFailure(...)` explaining why nothing happened.

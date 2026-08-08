@@ -21,7 +21,7 @@ import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-gramma
 import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
-import { activeVoiceCommands, anyRegisteredMusicPlaying, } from './voice-command-registry'
+import { activeVoiceCommands, anyRegisteredMusicPlaying, wakeWordHoldActive, } from './voice-command-registry'
 import { createWebSpeechListener } from './webspeech-listener'
 
 /** Experimental on-device alternative, selectable in Settings for latency
@@ -114,9 +114,13 @@ export function useVoiceControlController(
   }
 
   const resolveOptions = (): VoiceResolveOptions => ({
+    // A wake-word hold (the Mercury Sing stage) overrides the setting: while
+    // a surface is deliberately capturing singing, only wake-word commands
+    // and the stage's own exempt phrases may fire.
     requireWakeWord:
-      voiceWakeWordWhilePlaying() &&
-      ((deps?.musicPlaying?.() ?? false) || anyRegisteredMusicPlaying()),
+      wakeWordHoldActive() ||
+      (voiceWakeWordWhilePlaying() &&
+        ((deps?.musicPlaying?.() ?? false) || anyRegisteredMusicPlaying())),
   })
 
   /** Filler-stripped normalized form — the identity used to pair an eager

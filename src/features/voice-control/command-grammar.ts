@@ -236,6 +236,42 @@ export interface VoiceResolveOptions {
 /** Leading tokens the salvage pass may discard (see resolveVoiceCommand). */
 const SALVAGE_MAX_DROPPED_TOKENS = 2
 
+interface CommandScan {
+  matched: Extract<VoiceResolveOutcome, { kind: 'matched' }> | null
+  /** First gated-off command whose phrase consumed the tokens, if any. */
+  unavailable: VoiceCommand | null
+}
+
+/** One full-consumption pass of `tokens` over `commands`, in order. */
+function scanCommands(
+  tokens: readonly string[],
+  commands: readonly VoiceCommand[],
+): CommandScan {
+  let unavailable: VoiceCommand | null = null
+  for (const command of commands) {
+    const isAvailable = command.available === undefined || command.available()
+    for (const phrase of command.phrases) {
+      const matched = matchPhrase(tokens, phrase)
+      if (matched === null) continue
+      if (isAvailable) {
+        return {
+          matched: {
+            kind: 'matched',
+            command,
+            n: matched.value,
+            m: matched.value2,
+            phrase,
+          },
+          unavailable,
+        }
+      }
+      unavailable ??= command
+      break
+    }
+  }
+  return { matched: null, unavailable }
+}
+
 /**
  * Runs one utterance against the registered commands. The first command
  * whose `available()` passes and whose phrase consumes the full utterance
@@ -252,27 +288,26 @@ export function resolveVoiceCommand(
   )
   const tokens = split.tokens
   if (tokens.length === 0) return { kind: 'none' }
-  if (options?.requireWakeWord === true && !split.hadWakeWord) {
-    return { kind: 'ignored' }
-  }
-  let unavailable: VoiceCommand | null = null
-  for (const command of commands) {
-    const isAvailable = command.available === undefined || command.available()
-    for (const phrase of command.phrases) {
-      const matched = matchPhrase(tokens, phrase)
-      if (matched === null) continue
-      if (isAvailable) {
-        return {
-          kind: 'matched',
-          command,
-          n: matched.value,
-          m: matched.value2,
-          phrase,
-        }
-      }
-      unavailable ??= command
-      break
-    }
+
+  // Wake-word mode: wakeless speech reaches only commands that opted out of
+  // the gate (a listening stage's cancel phrases). Everything else in the
+  // utterance stream is music, not the user talking to us.
+  const wakeGated = options?.requireWakeWord === true && !split.hadWakeWord
+  const candidates = wakeGated
+    ? commands.filter((c) => c.ignoresWakeWord === true)
+    : commands
+
+  const primary = scanCommands(tokens, candidates)
+  if (primary.matched !== null) return primary.matched
+
+  // Brand-phrase retry — a phrase may START with the wake word ("mercury
+  // sing"). The stripper already ate it, so when the stripped tokens match
+  // nothing, retry with the wake word restored. Runs before salvage:
+  // restoring a token the user said beats discarding ones they also said.
+  let branded: CommandScan | null = null
+  if (split.hadWakeWord) {
+    branded = scanCommands([WAKE_NAME, ...tokens], candidates)
+    if (branded.matched !== null) return branded.matched
   }
 
   // Salvage pass — self-corrections and stray lead-ins: "backwards...
@@ -286,7 +321,7 @@ export function resolveVoiceCommand(
     drop++
   ) {
     const tail = tokens.slice(drop)
-    for (const command of commands) {
+    for (const command of candidates) {
       if (command.available !== undefined && !command.available()) continue
       for (const phrase of command.phrases) {
         const matched = matchPhrase(tail, phrase)
@@ -303,8 +338,9 @@ export function resolveVoiceCommand(
     }
   }
 
+  const unavailable = primary.unavailable ?? branded?.unavailable ?? null
   if (unavailable !== null) return { kind: 'unavailable', command: unavailable }
-  return { kind: 'none' }
+  return wakeGated ? { kind: 'ignored' } : { kind: 'none' }
 }
 
 /** Matched-only view of `resolveVoiceCommand`, for callers and tests that
