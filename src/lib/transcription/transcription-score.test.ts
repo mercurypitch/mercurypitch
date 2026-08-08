@@ -64,9 +64,12 @@ describe('scoreAgainstTruth', () => {
   })
 
   it('follows a shift no single global offset could fit', () => {
-    // The tab is half a second late for the first stretch and three seconds
-    // late for the rest. One offset gets at most half of it right; per-window
-    // offsets get all of it, which is the whole reason alignment is windowed.
+    // The tab is half a second late for the first two windows and three
+    // seconds late after that. One offset gets at most part of it right;
+    // per-window offsets get all of it, which is why alignment is windowed.
+    // The shift lands on a window boundary, as real drift effectively does —
+    // a step INSIDE a window is unfittable by any single offset, and losing
+    // that window's far side would be the correct result, not a regression.
     const PITCHES = [40, 43, 45, 47, 50]
     const heard: ScorableNote[] = []
     const truth: ScorableNote[] = []
@@ -74,11 +77,29 @@ describe('scoreAgainstTruth', () => {
       const at = index * 0.9
       const pitch = PITCHES[index % PITCHES.length] ?? 40
       heard.push(note(pitch, at))
-      truth.push(note(pitch, at + (index < 10 ? 0.5 : 3)))
+      truth.push(note(pitch, at + (at < 12 ? 0.5 : 3)))
     }
     const score = scoreAgainstTruth(heard, truth, 0.12)
-    expect(score.exact).toBeGreaterThanOrEqual(18)
+    expect(score.exact).toBeGreaterThanOrEqual(19)
     expect(score.windowOffsetSpread).toBeGreaterThan(2)
+  })
+
+  it('holds the riff-period alias off with the continuity prior', () => {
+    // A riff that repeats every 2.4 s: in isolation a window scores as well
+    // one riff-period off as at the true offset, and every note lands on its
+    // neighbour's pitch. The anchor from the previous window is what keeps
+    // the alignment on the right bar.
+    const RIFF = [40, 43, 45, 40, 47, 45]
+    const heard: ScorableNote[] = []
+    const truth: ScorableNote[] = []
+    for (let index = 0; index < 40; index += 1) {
+      const pitch = RIFF[index % RIFF.length] ?? 40
+      heard.push(note(pitch, index * 0.4))
+      truth.push(note(pitch, index * 0.4 + 0.3))
+    }
+    const score = scoreAgainstTruth(heard, truth, 0.12)
+    expect(score.exact).toBe(40)
+    expect(score.windowOffsetSpread).toBeLessThan(0.5)
   })
 
   it('reports per-note verdicts against the caller original indices', () => {
@@ -92,6 +113,35 @@ describe('scoreAgainstTruth', () => {
       verdict: 'wrong-pitch',
       truthMidi: 42,
     })
+  })
+
+  // Anchors pin the window's offset at zero; without them the aligner is free
+  // to slide a lone heard note onto its counterpart and there is nothing left
+  // to classify.
+  const ANCHORS_TRUTH = [note(30, 2), note(31, 3), note(33, 4)]
+  const ANCHORS_HEARD = [note(30, 2), note(31, 3), note(33, 4)]
+
+  it('calls a wrong pair a shadow when the tab holds the heard pitch nearby', () => {
+    // Root-and-fifth riff: the tab has E2 then B2 180 ms later. We heard the
+    // E2 but late enough that the B2 is the nearest reference note. The E2 is
+    // not a wrong pitch — its counterpart is right there; the defect is the
+    // unheard B2, and the verdict has to say so or the display sends whoever
+    // reads it hunting a detector bug that does not exist.
+    const truth = [...ANCHORS_TRUTH, note(40, 5), note(47, 5.18)]
+    const heard = [...ANCHORS_HEARD, note(40, 5.22)]
+    const score = scoreAgainstTruth(heard, truth, 0.12)
+    expect(score.shadowed).toBe(1)
+    expect(score.wrongPitch).toBe(0)
+    expect(score.notes[3]?.verdict).toBe('shadow')
+  })
+
+  it('keeps a genuine wrong pitch wrong when no such neighbour exists', () => {
+    const truth = [...ANCHORS_TRUTH, note(47, 5.18)]
+    const heard = [...ANCHORS_HEARD, note(40, 5.22)]
+    const score = scoreAgainstTruth(heard, truth, 0.12)
+    expect(score.shadowed).toBe(0)
+    expect(score.wrongPitch).toBe(1)
+    expect(score.notes[3]?.verdict).toBe('wrong-pitch')
   })
 
   it('has no reference notes to miss when the tab is empty', () => {
