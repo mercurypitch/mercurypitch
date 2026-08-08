@@ -3,6 +3,50 @@
 What's new in MercuryPitch, in plain terms. For the full, detailed
 engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.8.1] - 2026-08-08
+
+### Added
+
+- **Guitar Night.** A rehearsal room for the guitar: prepare a song into its
+  parts, stage it, and play along with the band in a room of its own. The
+  Guitar tab links straight into it, and a prepared-song library that has
+  grown past a screenful now pages instead of running off the end.
+
+- **MercuryPitch installs as an app.** Android and desktop both offer to
+  install it now. It opens in its own window without browser chrome, still
+  opens once you are offline, and the install sheet shows real screens of the
+  app instead of a bare bookmark prompt.
+
+- **A shortcut to the Content Studio for founders,** in Settings beside your
+  account, and a Lab link at the top of Vocal Analysis for supporters. Opening
+  the studio still needs the admin key — the link only saves remembering the
+  address.
+
+### Fixed
+
+- **Screens wider than they are tall.** On a tablet in landscape, and at heavy
+  browser zoom, pages that used to cut off their own content now scroll to it:
+  the Start button on an exercise is reachable, the tab strip no longer hides
+  its first tabs behind the header, and the text above a routine no longer
+  prints over the picker beneath it.
+
+- **Finishing a melody on the piano no longer opens a panel to dismiss.** The
+  score arrives as a small card in the corner, the way it already did for
+  singing, and pressing play runs the melody again.
+
+- **The prepare bar before a lyric line** is now the same in the lyrics panel
+  as in zen mode: one fixed width, under the start of the line rather than
+  shoved in front of the first word. It says _when_ to come in, not what to
+  sing, so it no longer changes size with the length of a word.
+
+- **Lyrics search in the studio had nowhere to show its results.** Looking up
+  a song returned matches that were never displayed.
+
+- **A collapsed pane in the Lab** could take the whole app down with it.
+
+- **The voice twin's artwork** now has a box it can land in instead of
+  overflowing its card.
+
 ## [0.8.0] - 2026-08-06
 
 ### Added
@@ -83,10 +127,6 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   remembered across devices.
 - **One tab holds the microphone,** and a live meter shows what it hears.
 - **Session exports carry every stem,** with a picker for which to include.
-- **Install MercuryPitch like an app.** Add it to your home screen from the
-  header or from Settings and it opens in its own window, without browser
-  chrome, and still opens when the connection drops. On iPhone and iPad, use
-  Safari's Share menu and Add to Home Screen.
 
 ### Changed
 
