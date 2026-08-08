@@ -6,3 +6,14 @@
   Permissions-Policy: geolocation=(), camera=(self), microphone=(self)
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Content-Security-Policy: default-src 'self' https://googleads.g.doubleclick.net https://www.googletagmanager.com https://www.google.com; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: data: https://*.r2.cloudflarestorage.com https://*.r2.dev; worker-src 'self' blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://td.doubleclick.net https://www.googletagmanager.com https://googleads.g.doubleclick.net; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+
+# Everything Vite emits into /assets/ carries a content hash in its filename,
+# so the URL changes whenever the bytes do and the response can never go stale.
+# Without this the Cloudflare asset layer answers `public, max-age=0,
+# must-revalidate` for hashed chunks too, and every repeat visit spends a
+# conditional request per file — 29 of them before first paint on the app
+# entry — to be told nothing changed. Deliberately scoped to /assets/*: the
+# HTML entries, /sw.js and the unhashed files in public/ must keep revalidating
+# or a deploy would never reach an existing visitor.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
