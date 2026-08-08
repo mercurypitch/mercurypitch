@@ -17,6 +17,7 @@
 // Everything degrades silently when no API is configured (pure-local
 // dev), because telemetry must never break the product.
 
+import { getFunnelAcquisition } from '@/lib/acquisition'
 import { trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
 
@@ -111,6 +112,12 @@ function beacon(event: string, metrics?: FunnelMetrics): void {
         clientId: getFunnelClientId(),
         event,
         metrics,
+        // Rides along on every event rather than once, deliberately: a
+        // "send it with the first event" flag drifts the moment an
+        // event is dropped in flight, and the first event is exactly
+        // the one most likely to race a page unload. The worker keeps
+        // only the first row per client, so repetition is free.
+        acq: getFunnelAcquisition(),
       }),
       keepalive: true,
       credentials: 'omit',
