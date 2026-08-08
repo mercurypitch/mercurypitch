@@ -95,6 +95,34 @@ export function getFunnelClientId(): string {
   }
 }
 
+/**
+ * The wire body for one funnel event — THE body, for every transport.
+ *
+ * The karaoke, glass and app funnels still carry their own beacon (their
+ * dedup rules differ), and the first version of acquisition capture was
+ * added only to this file's transport. Nobody noticed until review that
+ * /karaoke-night — the page Campaign E pays for — therefore never
+ * recorded a source. A body built in four places is four places to
+ * forget; every transport now calls this instead.
+ *
+ * Acquisition rides along on every event rather than once, deliberately:
+ * a "send it with the first event" flag drifts the moment an event is
+ * dropped in flight, and the first event is exactly the one most likely
+ * to race a page unload. The worker keeps only the first row per client,
+ * so repetition is free.
+ */
+export function funnelEventBody(
+  event: string,
+  metrics?: FunnelMetrics,
+): string {
+  return JSON.stringify({
+    clientId: getFunnelClientId(),
+    event,
+    metrics,
+    acq: getFunnelAcquisition(),
+  })
+}
+
 function beacon(event: string, metrics?: FunnelMetrics): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   try {
@@ -108,17 +136,7 @@ function beacon(event: string, metrics?: FunnelMetrics): void {
     void fetch(`${API_BASE_URL}${ENDPOINT}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: getFunnelClientId(),
-        event,
-        metrics,
-        // Rides along on every event rather than once, deliberately: a
-        // "send it with the first event" flag drifts the moment an
-        // event is dropped in flight, and the first event is exactly
-        // the one most likely to race a page unload. The worker keeps
-        // only the first row per client, so repetition is free.
-        acq: getFunnelAcquisition(),
-      }),
+      body: funnelEventBody(event, metrics),
       keepalive: true,
       credentials: 'omit',
     }).catch(() => undefined)

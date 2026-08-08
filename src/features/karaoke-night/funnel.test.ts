@@ -39,6 +39,36 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('Karaoke Night beacons carry acquisition', () => {
+  it('sends the recorded source with an ordinary event', async () => {
+    // The regression: acquisition was first added to lib/funnel.ts's
+    // transport only, and this funnel — the one on the page Campaign E
+    // pays for — kept its own beacon and never sent a source. This pins
+    // the karaoke transport specifically, not the shared builder.
+    window.history.replaceState(
+      {},
+      '',
+      '/?gclid=CjwKCA&utm_campaign=E%20Karaoke',
+    )
+    const { trackKaraoke } = await loadFunnel()
+    const fetchFn = vi.fn(async () => ({ ok: true }))
+    vi.stubGlobal('fetch', fetchFn)
+
+    trackKaraoke('karaoke_upload_start')
+
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(init.body as string) as {
+      event: string
+      clientId: string
+      acq?: Record<string, string>
+    }
+    expect(body.event).toBe('karaoke_upload_start')
+    expect(body.acq).toEqual({ gclid: 'CjwKCA', utmCampaign: 'E Karaoke' })
+
+    window.history.replaceState({}, '', '/')
+  })
+})
+
 describe('Karaoke Night activation milestones', () => {
   it('sends each activation milestone once in a browser session', async () => {
     const { trackKaraokeSessionOnce } = await loadFunnel()

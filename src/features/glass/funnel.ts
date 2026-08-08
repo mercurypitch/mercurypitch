@@ -13,11 +13,11 @@
 
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
+import { funnelEventBody } from '@/lib/funnel'
 import type { GlassFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type GlassFunnelEvent = GlassFunnelEventName
 
-const CLIENT_ID_KEY = 'mirror.clientId.v1' // one anonymous id per device, shared across funnels
 const VIEW_SENT_KEY = 'glass.funnel.viewSent.v1'
 
 /** Milestones that are also Google Ads conversion actions.
@@ -30,19 +30,6 @@ const AD_CONVERSION_BY_EVENT = new Map<GlassFunnelEvent, string>([
   ['glass_card_shared', AD_CONVERSIONS.card_shared],
   ['glass_cta_app_click', AD_CONVERSIONS.app_open],
 ])
-
-function clientId(): string {
-  try {
-    let id = localStorage.getItem(CLIENT_ID_KEY)
-    if (id === null || id === '') {
-      id = globalThis.crypto.randomUUID()
-      localStorage.setItem(CLIENT_ID_KEY, id)
-    }
-    return id
-  } catch {
-    return 'no-storage'
-  }
-}
 
 /** glass_view counts browser sessions, not renders/reloads. */
 function viewAlreadySentThisSession(): boolean {
@@ -61,7 +48,9 @@ function beacon(
 ): void {
   if (API_BASE_URL === undefined || API_BASE_URL === '') return
   const url = `${API_BASE_URL}/api/mirror/event`
-  const payload = JSON.stringify({ clientId: clientId(), event, metrics })
+  // One body shape for every transport — acquisition included. See
+  // funnelEventBody for why it is not built here.
+  const payload = funnelEventBody(event, metrics)
   try {
     // keepalive fetch with credentials omitted, NOT navigator.sendBeacon —
     // sendBeacon is always credentialed and the worker answers CORS with a
