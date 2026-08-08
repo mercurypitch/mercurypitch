@@ -13,8 +13,8 @@
 import type { MidiSong } from '@/lib/midi-song'
 import { parseMidiSong } from '@/lib/midi-song'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
-import type { StemTranscription, TranscriptionProfile, } from '@/lib/transcription/stem-transcription'
-import { BASS_TRANSCRIPTION_PROFILE, transcribeStemSamples, } from '@/lib/transcription/stem-transcription'
+import type { StemTranscription, TranscriptionPitchSource, TranscriptionProfile, } from '@/lib/transcription/stem-transcription'
+import { BASS_SWIFT_TRANSCRIPTION_PROFILE, BASS_TRANSCRIPTION_PROFILE, transcribeStemSamples, } from '@/lib/transcription/stem-transcription'
 
 interface DecodedStem {
   samples: Float32Array
@@ -51,6 +51,8 @@ export interface BenchTranscribeResult extends StemTranscription {
   sampleRate: number
   durationSeconds: number
   elapsedMs: number
+  /** The profile actually run, so a report can state it rather than assume it. */
+  profile: TranscriptionProfile
 }
 
 declare global {
@@ -58,6 +60,7 @@ declare global {
     transcribeBench: {
       transcribe(
         url: string,
+        source?: TranscriptionPitchSource,
         profileOverrides?: Partial<TranscriptionProfile>,
       ): Promise<BenchTranscribeResult>
       readTab(url: string, fileName: string): Promise<MidiSong>
@@ -73,11 +76,15 @@ async function fetchBytes(url: string): Promise<ArrayBuffer> {
 }
 
 window.transcribeBench = {
-  async transcribe(url, profileOverrides = {}) {
-    const profile: TranscriptionProfile = {
-      ...BASS_TRANSCRIPTION_PROFILE,
-      ...profileOverrides,
-    }
+  async transcribe(url, source = 'yin', profileOverrides = {}) {
+    // The base profile carries the settings a source cannot work without —
+    // SwiftF0's 16 kHz rate above all — so picking a source has to pick a base
+    // rather than patch one field of the other's.
+    const base =
+      source === 'swift'
+        ? BASS_SWIFT_TRANSCRIPTION_PROFILE
+        : BASS_TRANSCRIPTION_PROFILE
+    const profile: TranscriptionProfile = { ...base, ...profileOverrides }
     const bytes = await fetchBytes(url)
     const decoded = await decodeBytes(bytes, profile.analysisSampleRate)
     const startedAt = performance.now()
@@ -91,6 +98,7 @@ window.transcribeBench = {
       sampleRate: decoded.sampleRate,
       durationSeconds: decoded.durationSeconds,
       elapsedMs: Math.round(performance.now() - startedAt),
+      profile,
     }
   },
 
