@@ -25,6 +25,19 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **Choose how lyrics sit in their panel** — left, middle or right — from any
   of the studio layouts. It used to be available on the karaoke stage only.
 
+- **Themes can switch themselves.** System follows your device's light and dark
+  mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each
+  one uses. Picking a theme by hand always wins.
+
+- **A voice-rest timer.** Set how long you sing and how long you rest, and it
+  counts singing rather than screen time — the clock only runs while the
+  microphone hears you.
+
+- **Measure your microphone's delay.** A short wizard plays a click and listens
+  for it, then scores your singing against when you actually sang rather than
+  when the note was drawn. Devices that have not been measured behave exactly
+  as before.
+
 ### Fixed
 
 - **Screens wider than they are tall.** On a tablet in landscape, and at heavy

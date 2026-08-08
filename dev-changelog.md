@@ -42,6 +42,23 @@ single-page-application` means a deleted chunk answers with index.html and a
   hand-rolled popover here is the clipping/stacking mistake MISTAKES.md
   records.
 
+- Theme auto-switch (#455): `themeSource` of `manual` | `system` | `time`, with
+  `autoDayTheme`/`autoNightTheme` so all nine presets stay reachable from an
+  auto source. `system` watches `prefers-color-scheme`, `time` polls the local
+  clock every 60s. Any manual pick drops the source back to `manual`.
+
+- Practice/voice-rest timer (#457): `practice-timer-store` accrues on mic-open
+  for the practice phase and on silence for the break phase, so the clock
+  measures singing rather than screen time. Off by default, and
+  `practiceTimerTick` returns immediately when disabled.
+
+- Mic latency calibration (#459): `mic-latency-store` plus a measuring wizard;
+  `PracticeEngine` queues announced note starts and promotes them one round
+  trip late, and the stem mixer judges a mic frame against the reference from
+  `micLatencySec()` ago. Both paths are inert at the default offset of zero —
+  the queue drains on the same call that fills it — so an unmeasured device
+  scores exactly as before.
+
 ### Changed
 
 - **Rate limits closed on every gap the 106-route audit confirmed.**
@@ -137,6 +154,14 @@ single-page-application` means a deleted chunk answers with index.html and a
   whole song purely to print two lines. Both now require
   `localStorage.pitchperfect_debug_alignment === '1'`; the one-line summaries
   are unchanged.
+
+- **An auto theme source did not put its preset on the DOM at boot.**
+  `initTheme` set `data-theme` only on the `manual` path and left the auto
+  sources to `startAutoWatch`; `syncAutoTheme` writes only when the resolved
+  preset differs from the stored one, which on a normal reload it does not. No
+  attribute was written at all, so `:root`'s dark tokens applied and an auto
+  user on a light preset loaded dark every time. Found reviewing #455 before
+  merging it; regression test in `theme-store.test.ts`.
 
 - **Lyric wheel-zoom listener declares `passive: false`.** Chrome logged a
   scroll-blocking violation on every mount because the handler was a JSX
