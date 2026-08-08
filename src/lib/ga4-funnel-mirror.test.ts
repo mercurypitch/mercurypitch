@@ -119,3 +119,56 @@ describe('the karaoke dedup rules are unchanged by the mirror', () => {
     ).toHaveLength(1)
   })
 })
+
+// ── GA4 will silently drop a name it dislikes ─────────────────
+
+describe('every funnel event name is legal in GA4', () => {
+  // A rejected event is not an error anywhere: gtag accepts the call, GA4
+  // drops it, and the only symptom is a report that stays empty. Since the
+  // catalog is where new events get added, the rules live next to the
+  // mirror that sends them.
+  //
+  // Rules: https://support.google.com/analytics/answer/13316687
+  const RESERVED = new Set([
+    'ad_activeview',
+    'ad_click',
+    'ad_exposure',
+    'ad_query',
+    'ad_reward',
+    'adunit_exposure',
+    'app_clear_data',
+    'app_exception',
+    'app_remove',
+    'app_store_refund',
+    'app_store_subscription_cancel',
+    'app_store_subscription_convert',
+    'app_store_subscription_renew',
+    'error',
+    'first_open',
+    'first_visit',
+    'in_app_purchase',
+    'notification_dismiss',
+    'notification_foreground',
+    'notification_open',
+    'notification_receive',
+    'os_update',
+    'session_start',
+    'user_engagement',
+  ])
+
+  it('is under 40 characters, alphanumeric, and starts with a letter', async () => {
+    const { FUNNEL_EVENT_NAMES } = await import('@/lib/funnel-event-catalog')
+    for (const name of FUNNEL_EVENT_NAMES) {
+      expect(name.length, name).toBeLessThanOrEqual(40)
+      expect(name, name).toMatch(/^[a-zA-Z][a-zA-Z0-9_]*$/)
+    }
+  })
+
+  it('collides with no reserved name or reserved prefix', async () => {
+    const { FUNNEL_EVENT_NAMES } = await import('@/lib/funnel-event-catalog')
+    for (const name of FUNNEL_EVENT_NAMES) {
+      expect(RESERVED.has(name), `${name} is reserved by GA4`).toBe(false)
+      expect(name, name).not.toMatch(/^(firebase_|google_|ga_)/)
+    }
+  })
+})
