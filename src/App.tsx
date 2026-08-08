@@ -230,6 +230,7 @@ import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_S
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
+import { createNavigationVoiceCommands } from '@/features/voice-control/navigation-commands'
 import { createTransportVoiceCommands } from '@/features/voice-control/transport-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
@@ -1868,6 +1869,10 @@ const AppShell: Component<AppProps> = (props) => {
     },
   })
   onCleanup(registerVoiceCommands(() => voiceCommands))
+  const navigationVoiceCommands = createNavigationVoiceCommands({
+    suspended: () => transportShortcutHandlers.isSuspended?.() === true,
+  })
+  onCleanup(registerVoiceCommands(() => navigationVoiceCommands))
   const voiceControl = useVoiceControlController({
     // Gates the optional wake-word-required mode: "music is audibly rolling"
     // means the shared runtime or the piano game, the two transports voice

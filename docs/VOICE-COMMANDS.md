@@ -118,10 +118,11 @@ The mixer transport runs on seconds (audio time), not beats.
 
 ### Navigation **(requested)**
 
-- [ ] **(requested)** `go to <tab>`: karaoke, singing, piano, guitar, exercises, home, settings, jam, analysis (visible tabs only; `setActiveTab` is the primitive)
-- [ ] **(requested)** `open karaoke night` (standalone stage entry)
-- [ ] `start my routine` / `today's session` (daily routine launcher)
-- [ ] `open library` / `close library`, `close this` for modals
+- [x] **(requested)** `go to <tab>` / `open <tab>` / `switch to <tab>`: home, singing, karaoke, piano, guitar, exercises/drills, compose, path, jam, analysis, challenges, community, leaderboard, settings — visible tabs only (scope and simple-mode rules respected; hidden tabs answer "not available")
+- [x] `open library` / `close library`
+- [ ] **(requested)** `open karaoke night` (standalone stage entry — separate page, needs a navigation decision: same-tab redirect or new window)
+- [ ] `start my routine` / `today's session` (daily routine launcher — needs a clean launch seam out of HomePage)
+- [ ] `close this` for whichever modal is topmost (reuse the Escape dismiss chain)
 
 ### Piano adapter
 
