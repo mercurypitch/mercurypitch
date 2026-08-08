@@ -891,6 +891,67 @@
   transition: opacity 0.45s ease;
 }
 
+/* ── The first-arrival reveal ──────────────────────────────────────
+   Only the first arrival gets the ceremony (App.tsx holds 2s for it;
+   every later visit holds 750ms and skips these). Transform and opacity
+   only — a brightness() filter over a full-screen plate is the one way
+   to make this stutter on a phone. Animations are keyed to
+   .appOpeningArtReady so the settle begins when the plate becomes
+   visible, not while it is still on the wire. */
+.appOpeningFirstRun .appOpeningArtReady {
+  animation: appOpeningSettle 2.6s cubic-bezier(0.16, 0.84, 0.44, 1) both;
+}
+
+@keyframes appOpeningSettle {
+  0% {
+    transform: scale(1.07);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* First light along the horizon: a wide, shallow bloom that swells and
+   then settles back, sitting exactly where both tiers put the waterline
+   (just under half on wide, lower third on tall — hence the two
+   positions). */
+.appOpeningBloom {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 38%;
+  height: 24%;
+  z-index: 0;
+  background: radial-gradient(
+    58% 50% at 50% 50%,
+    rgba(45, 212, 191, 0.34),
+    rgba(88, 166, 255, 0.16) 45%,
+    transparent 72%
+  );
+  pointer-events: none;
+  animation: appOpeningBloom 2.4s ease-out both;
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .appOpeningBloom {
+    top: 56%;
+  }
+}
+
+@keyframes appOpeningBloom {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.45);
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.45;
+    transform: scaleX(1);
+  }
+}
+
 /* A scrim over the sky only. The plate is deliberately detailed; this
    deepens the upper air the lockup sits in and leaves the water alone.
    Painted between the plate and the lockup — hence the z-index pair. */
@@ -920,6 +981,13 @@
   gap: 16px;
   filter: drop-shadow(0 2px 24px rgba(0, 0, 0, 0.55));
   animation: appOpeningLockupIn 0.5s ease both;
+}
+
+/* On a first arrival the lockup lands after the plate has begun to
+   settle, so the two do not arrive on top of each other. */
+.appOpeningFirstRun .appOpeningLockup {
+  animation-duration: 0.65s;
+  animation-delay: 0.2s;
 }
 
 .appOpeningMark {
@@ -994,7 +1062,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .appOpeningLockup {
+  .appOpeningLockup,
+  .appOpeningFirstRun .appOpeningLockup,
+  .appOpeningFirstRun .appOpeningArtReady {
+    animation: none;
+  }
+
+  /* The bloom still arrives, it just stops moving to do it. */
+  .appOpeningBloom {
+    opacity: 0.45;
     animation: none;
   }
 
