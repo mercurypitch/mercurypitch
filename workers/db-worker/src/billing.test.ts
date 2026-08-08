@@ -633,4 +633,67 @@ describe('billing endpoints', () => {
       expect(res.status).toBe(401)
     })
   })
+
+  // Both routes create a session object on Stripe's side, so an unbounded
+  // loop is their bill and their dashboard, not only our load.
+  describe('Stripe session creation is capped', () => {
+    it('429s a checkout flood before calling Stripe', async () => {
+      const stripeEnv = makeEnv(db, { STRIPE_SECRET_KEY: 'sk_test_never_used' })
+      db.rateLimited = 'billing-checkout'
+
+      const response = await handleBilling(
+        new Request('https://api.test/api/billing/checkout', {
+          method: 'POST',
+          headers: { Authorization: auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId: 'tier-runpod-gpu' }),
+        }),
+        stripeEnv,
+        '/api/billing/checkout',
+        respond,
+      )
+
+      expect(response?.status).toBe(429)
+      expect(response?.headers.get('Retry-After')).not.toBeNull()
+    })
+
+    it('429s a portal flood, sharing the checkout budget', async () => {
+      const stripeEnv = makeEnv(db, { STRIPE_SECRET_KEY: 'sk_test_never_used' })
+      db.rateLimited = 'billing-checkout'
+
+      const response = await handleBilling(
+        new Request('https://api.test/api/billing/portal', {
+          method: 'GET',
+          headers: { Authorization: auth },
+        }),
+        stripeEnv,
+        '/api/billing/portal',
+        respond,
+      )
+
+      expect(response?.status).toBe(429)
+    })
+
+    it('lets a normal checkout past the gate to the plan lookup', async () => {
+      const stripeEnv = makeEnv(db, { STRIPE_SECRET_KEY: 'sk_test_never_used' })
+
+      // Under the limit, control reaches the pricing query — which this fake
+      // deliberately does not answer. Reaching it at all is the assertion:
+      // the gate let a first-time buyer through.
+      await expect(
+        handleBilling(
+          new Request('https://api.test/api/billing/checkout', {
+            method: 'POST',
+            headers: {
+              Authorization: auth,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ planId: 'tier-runpod-gpu' }),
+          }),
+          stripeEnv,
+          '/api/billing/checkout',
+          respond,
+        ),
+      ).rejects.toThrow(/pricingPlans/)
+    })
+  })
 })

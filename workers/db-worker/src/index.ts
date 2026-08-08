@@ -125,6 +125,48 @@ function rateLimited(rl: { retryAfter?: number }): Response {
   )
 }
 
+/**
+ * Ceiling on a generic CRUD write body.
+ *
+ * The request-count limiter bounds how OFTEN a caller writes but says nothing
+ * about how BIG each write is, so 120 requests a minute could still be
+ * hundreds of megabytes parsed into a Worker's memory and pushed at D1. The
+ * largest legitimate payload here is a session's per-note `results` array —
+ * tens of KB for a long song — so 256 KiB leaves an order of magnitude of
+ * headroom while making the unbounded case impossible.
+ */
+const MAX_WRITE_BYTES = 256 * 1024
+
+/**
+ * Parse a CRUD write body with that ceiling enforced BEFORE the bytes are
+ * buffered as JSON. Content-Length is checked first because it lets an
+ * oversized request be refused without reading it at all; the actual byte
+ * length is checked too, since chunked and HTTP/2 requests may omit the
+ * header. Returns a Response to send on failure, or the parsed row.
+ */
+async function readWriteBody(
+  request: Request,
+): Promise<{ body: Row } | { error: Response }> {
+  const declared = Number(request.headers.get('Content-Length') ?? '0')
+  if (declared > MAX_WRITE_BYTES) {
+    return { error: respond({ error: 'Payload too large' }, { status: 413 }) }
+  }
+  let raw: string
+  try {
+    raw = await request.text()
+  } catch {
+    return { error: respond({ error: 'Invalid JSON body' }, { status: 400 }) }
+  }
+  if (raw.length > MAX_WRITE_BYTES) {
+    return { error: respond({ error: 'Payload too large' }, { status: 413 }) }
+  }
+  try {
+    return { body: JSON.parse(raw) as Row }
+  } catch {
+    return { error: respond({ error: 'Invalid JSON body' }, { status: 400 }) }
+  }
+}
+
 // ── Value & identifier handling ──────────────────────────────────────
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -376,12 +418,9 @@ async function handleCreate(
     return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
   }
 
-  let body: Row
-  try {
-    body = await request.json<Row>()
-  } catch {
-    return respond({ error: 'Invalid JSON body' }, { status: 400 })
-  }
+  const parsed = await readWriteBody(request)
+  if ('error' in parsed) return parsed.error
+  const body = parsed.body
 
   const createErr = validateWrite(entity, body)
   if (createErr) return respond({ error: createErr }, { status: 400 })
@@ -461,12 +500,9 @@ async function handleUpdate(
     return respond({ error: ACCOUNT_REQUIRED }, { status: 403 })
   }
 
-  let body: Row
-  try {
-    body = await request.json<Row>()
-  } catch {
-    return respond({ error: 'Invalid JSON body' }, { status: 400 })
-  }
+  const parsed = await readWriteBody(request)
+  if ('error' in parsed) return parsed.error
+  const body = parsed.body
 
   const updateErr = validateWrite(entity, body)
   if (updateErr) return respond({ error: updateErr }, { status: 400 })
@@ -1942,6 +1978,12 @@ async function handleRequest(
   }
 
   if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'leaderboard',
+    )
+    if (!rl.allowed) return rateLimited(rl)
     return handleLeaderboard(url, auth, env)
   }
 
@@ -2000,39 +2042,29 @@ async function handleRequest(
     return handleBadgeBulk(request, auth, env, respond)
   }
 
+  // Both friend routes require a token, so bucket them by the user like every
+  // other authenticated write (rateLimitSubject). Keying by IP made a choir
+  // rehearsal or a school music lab share one budget: ten code fetches for the
+  // whole building, and the 429 lands on whoever swaps codes last.
   if (url.pathname === '/api/friends/code' && request.method === 'GET') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
-    const rl = await checkRateLimit(env.DB, ip, 'friend-code')
-    if (!rl.allowed) {
-      return respond(
-        {
-          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-        },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
-        },
-      )
-    }
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'friend-code',
+    )
+    if (!rl.allowed) return rateLimited(rl)
     return handleFriendCode(request, env)
   }
 
   if (url.pathname === '/api/friends/redeem' && request.method === 'POST') {
-    const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
     // Codes are 8 chars from a 32-symbol alphabet, so guessing is hopeless —
     // but a cap stops anyone trying, and stops a redeem loop spamming follows.
-    const rl = await checkRateLimit(env.DB, ip, 'friend-redeem')
-    if (!rl.allowed) {
-      return respond(
-        {
-          error: `Too many requests. Retry after ${rl.retryAfter ?? 60} seconds.`,
-        },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(rl.retryAfter ?? 60) },
-        },
-      )
-    }
+    const rl = await checkRateLimit(
+      env.DB,
+      rateLimitSubject(request, auth),
+      'friend-redeem',
+    )
+    if (!rl.allowed) return rateLimited(rl)
     return handleFriendRedeem(request, env)
   }
 
