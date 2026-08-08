@@ -72,6 +72,22 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   rows. The routed song stays listed even when it falls below that first page.
   While the local library is opening, a slow open explains itself instead of
   leaving the panel looking stuck.
+- Score and backing are independent axes. `?song=` selects the score reference
+  and `?session=` selects the separated backing; either may be used alone, and
+  writing one never disturbs the other. A score identifier that is not on this
+  device fails visibly rather than quietly attaching a different one.
+- A reference comes from the shared imported-song library, so a tab opened in
+  the legacy Guitar tab is attachable here and the chosen part is remembered in
+  both. Multi-track files expose their playable parts; a part with no notes is
+  never offered.
+- The stage shows authored notes only. Tempo, tracks and Guitar Pro fingering
+  are attached because the saved representation really carries them; meter,
+  sections, tuning and capo are not claimed. MIDI notes without authored
+  fingering are placed by the shared helper.
+- Score beat time is derived from the canonical audio clock, never from render
+  frames, and only while a reference supplies a usable tempo — otherwise the
+  stage reports free play. A slowed take slows the score with it, and seeking
+  moves both together.
 - A staged song exposes one explicit `Enter room` handoff. Entering remains
   silent and cuts over from the setup faceplate to a bounded `100dvh`
   workspace. The song identity becomes a compact signal bar, the photographic

@@ -739,6 +739,74 @@
   font-size: 0.7rem;
 }
 
+/* Tab to follow: the score axis, quiet next to the backing it accompanies. */
+
+.referenceDetach {
+  min-height: var(--touch-target);
+  padding: 0 0.5rem;
+  border: 0;
+  color: rgba(244, 234, 219, 0.6);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+}
+
+.referenceDetach:hover {
+  color: var(--ivory);
+}
+
+.referenceAttached {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(106, 202, 189, 0.34);
+  border-radius: 0.48rem;
+  background: rgba(106, 202, 189, 0.07);
+}
+
+.referenceAttached strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referenceAttached small {
+  color: rgba(244, 234, 219, 0.55);
+  font-size: 0.68rem;
+}
+
+.referenceTracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.referenceTracks button {
+  min-height: var(--touch-target);
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(244, 234, 219, 0.16);
+  border-radius: 0.4rem;
+  color: rgba(244, 234, 219, 0.78);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+}
+
+.referenceTracks .referenceTrackActive {
+  border-color: rgba(224, 164, 93, 0.5);
+  color: var(--ivory);
+  background: rgba(224, 164, 93, 0.12);
+}
+
+.referenceError {
+  margin: 0.45rem 0 0;
+  color: rgba(233, 150, 122, 0.92);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .songMessageRow {
   display: flex;
   align-items: center;

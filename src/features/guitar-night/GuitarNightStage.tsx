@@ -17,6 +17,8 @@ export type GuitarNightStageMode = 'flow' | 'tab' | 'neck'
 
 interface GuitarNightStageProps {
   source: GuitarPerformanceStageSource
+  /** Names the attached score while one is guiding the stage. */
+  guideLabel?: Accessor<string | null>
   active: Accessor<boolean>
   listening?: Accessor<boolean>
   heardNote?: Accessor<string | null>
@@ -85,7 +87,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           <strong>
             {heardCopy() ??
               (hasGuide()
-                ? 'Follow the next note into the neck'
+                ? (props.guideLabel?.() ?? 'Follow the next note into the neck')
                 : 'Your fretboard is ready')}
           </strong>
         </div>
