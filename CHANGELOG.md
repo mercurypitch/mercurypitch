@@ -5,7 +5,28 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ## [Unreleased]
 
+### Changed
+
+- **The mic starts on its most forgiving setting.** A fresh browser now begins
+  on the Quiet Room profile instead of Home, so first-run onboarding and your
+  first exercises are as likely as possible to hear you. If your room is loud,
+  pick a preset in the sidebar or let auto-calibrate measure it.
+
 ### Fixed
+
+- **The stage picker stays open while you use it.** On a phone, a stray drag
+  inside the stage gallery scrolled the page behind it and closed the picker.
+  It is now a proper drawer: the page cannot move underneath it, and it closes
+  when you choose a stage, tap outside, or press Escape.
+
+- **The Analysis list of takes fits a phone.** As soon as you had a separated
+  song, the second card ran off the right edge and could only be reached by a
+  sideways swipe. Takes are now one per row, in a list that scrolls with the
+  page.
+
+- **An exercise result keeps its contour inside the card.** On a phone the run
+  trace under your score rendered wider than the card it sits in and hung off
+  the right edge.
 
 - **The map reveals itself on phones.** The room cards on your map used to
   show their cover art only on hover — which a touch screen doesn't have, so

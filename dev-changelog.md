@@ -8,7 +8,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Default sensitivity preset: `quiet`, not `home`.** `DEFAULT_SETTINGS` and
+  the `pitchperfect_sensitivity_preset` signal both move (they are two halves
+  of one choice — a mismatch labels the panel with a preset the numbers do not
+  reflect). The failure modes are asymmetric: too strict reads as a dead mic
+  with no feedback explaining why — which is what the original `noisy` default
+  did — while too forgiving lets a little room noise through, which is visible
+  and fixable. Auto-calibrate and the sidebar presets are unchanged, and both
+  halves are pinned by `app-store.test.ts`.
+
 ### Fixed
+
+- **Background picker: a real drawer below the mobile breakpoint.** Three
+  parts. (1) `handleScroll` no longer closes the popover when `isNarrow()` —
+  the close-on-scroll rule exists so the desktop popover cannot drift from the
+  trigger it is anchored to, but the phone panel is viewport-pinned, and a
+  one-item gallery has nothing of its own to scroll, so a drag inside it
+  chained to the page and dismissed itself. (2) A `.scrim` renders behind the
+  panel on narrow viewports with `touch-action: none`, so nothing behind it
+  pans, whichever element is the scroller. (3) `DrawerScrollLock` (a
+  render-nothing component under the same `<Show>`) holds the counted
+  `useScrollLock` for the drawer's lifetime — `useScrollLock` locks for a
+  component's lifetime, so a conditional lock has to be a conditional mount.
+  The CSS breakpoint also moves 620px → 768px to match `isNarrow()`; the
+  window between them got the anchored-popover JS with the drawer's CSS.
+
+- **Analysis take picker: a column on phones, a wrapping rail above 720px.**
+  `.takeRail` was a horizontal snap rail at every width, so a second take —
+  the first separated song — ran off the right edge. Now `flex-direction:
+  column` with full-width cards, capped at `46vh` with contained overscroll so
+  a large library cannot push the analysis itself off screen; the ≥720px block
+  restores `row` + `flex-wrap` + fixed-width cards and drops the cap.
+
+- **Exercise result trace stayed inside the card.** A `<canvas>` carries a
+  300px intrinsic width until its draw sizes it, and `.exercise-result-main`
+  is a flex item beside the grade badge with the default `min-width: auto` —
+  so that 300px became the floor and the plot rendered past the card's right
+  padding on a phone. `min-width: 0` on the result column and on
+  `RunTraceCanvas`'s wrap/plot, plus `max-width: 100%` on the canvas itself.
+  (The live tracker's canvas already had `width: 100%`, which is why only the
+  result card was affected.)
 
 - **Map cards auto-reveal on touch.** `BeatMap` now runs one
   `IntersectionObserver` (gated on `matchMedia('(hover: none)')`, threshold
