@@ -27,8 +27,18 @@ export interface NavigationVoiceDeps {
   openVoiceHelp?: () => void
 }
 
-const TAB_SPOKEN_NAMES: Array<{ tab: ActiveTab; names: string[] }> = [
-  { tab: TAB_HOME, names: ['home', 'the home page', 'home page'] },
+const TAB_SPOKEN_NAMES: Array<{
+  tab: ActiveTab
+  names: string[]
+  /** Whole phrases beyond the go-to/open/show/switch-to templates. */
+  extra?: string[]
+}> = [
+  {
+    tab: TAB_HOME,
+    names: ['home', 'the home page', 'home page'],
+    // "go home" reads naturally without the "to".
+    extra: ['go home', 'take me home'],
+  },
   { tab: TAB_SINGING, names: ['singing', 'the singing tab', 'singing tab'] },
   { tab: TAB_KARAOKE, names: ['karaoke', 'the karaoke tab', 'karaoke tab'] },
   { tab: TAB_PIANO, names: ['piano', 'the piano tab', 'piano tab'] },
@@ -49,22 +59,27 @@ export function createNavigationVoiceCommands(
 ): VoiceCommand[] {
   const notSuspended = () => deps.suspended?.() !== true
 
-  const commands: VoiceCommand[] = TAB_SPOKEN_NAMES.map(({ tab, names }) => ({
-    id: `nav.${tab}`,
-    label: `Go to ${tabLabel(tab)}`,
-    phrases: names.flatMap((name) => [
-      `go to ${name}`,
-      `open ${name}`,
-      `show ${name}`,
-      `switch to ${name}`,
-    ]),
-    available: () =>
-      notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
-    run: () => {
-      setActiveTab(tab)
-      return `Go to ${tabLabel(tab)}`
-    },
-  }))
+  const commands: VoiceCommand[] = TAB_SPOKEN_NAMES.map(
+    ({ tab, names, extra }) => ({
+      id: `nav.${tab}`,
+      label: `Go to ${tabLabel(tab)}`,
+      phrases: [
+        ...names.flatMap((name) => [
+          `go to ${name}`,
+          `open ${name}`,
+          `show ${name}`,
+          `switch to ${name}`,
+        ]),
+        ...(extra ?? []),
+      ],
+      available: () =>
+        notSuspended() && isTabVisible(tab, practiceScope(), uiMode()),
+      run: () => {
+        setActiveTab(tab)
+        return `Go to ${tabLabel(tab)}`
+      },
+    }),
+  )
 
   commands.push(
     {

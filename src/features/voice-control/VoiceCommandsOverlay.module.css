@@ -73,13 +73,15 @@
 }
 
 /* Each group scrolls by itself, so a huge section (karaoke stems) cannot
-   stretch the page while the small ones float in whitespace. */
+   stretch the page while the small ones float in whitespace. Solid
+   background on purpose: boxes must never read through each other. */
 .group {
   overflow-y: auto;
   max-height: 15rem;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: 10px;
+  background: var(--bg-card);
 }
 
 .groupTitle {
@@ -105,12 +107,6 @@
   color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.35;
-}
-
-.groupTitle {
-  position: sticky;
-  top: 0;
-  background: var(--bg-card);
 }
 
 @media (max-width: 700px) {

@@ -46,6 +46,9 @@ describe('navigation voice commands', () => {
     expect(activeTab()).toBe(TAB_SETTINGS)
     fire('switch to home')
     expect(activeTab()).toBe(TAB_HOME)
+    fire('go to karaoke')
+    fire('go home')
+    expect(activeTab()).toBe(TAB_HOME)
   })
 
   it('goes quiet while an immersive surface suspends shortcuts', () => {

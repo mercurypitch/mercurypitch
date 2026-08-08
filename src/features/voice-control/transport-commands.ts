@@ -17,6 +17,7 @@ import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardSh
 import { tryDismissModal } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import * as transportStore from '@/stores/transport-store'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from './shared-phrases'
 import type { VoiceCommand, VoiceCommandResult } from './types'
 import { voiceFailure } from './types'
 
@@ -333,60 +334,35 @@ export function createTransportVoiceCommands(
     {
       id: 'transport.play',
       label: 'Play',
-      phrases: [
-        'play',
-        'start',
-        'go',
-        'begin',
-        'resume',
-        'continue',
-        'keep going',
-      ],
+      phrases: PLAY_PHRASES,
       available: transportTab,
       run: () => doPlay(),
     },
     {
       id: 'transport.pause',
       label: 'Pause',
-      phrases: ['pause', 'hold', 'hold on', 'wait'],
+      phrases: PAUSE_PHRASES,
       available: transportTab,
       run: () => doPause(),
     },
     {
       id: 'transport.stop',
       label: 'Stop',
-      phrases: ['stop', 'finish', 'stop playback', 'stop playing'],
+      phrases: STOP_PHRASES,
       available: transportTab,
       run: () => doStop(),
     },
     {
       id: 'transport.restart',
       label: 'From the top',
-      phrases: [
-        'again',
-        'restart',
-        'from the top',
-        'from the beginning',
-        'start over',
-        'start again',
-        'one more time',
-        'once more',
-        'take it from the top',
-      ],
+      phrases: RESTART_PHRASES,
       available: transportTab,
       run: () => doRestart(),
     },
     {
       id: 'transport.seekStart',
       label: 'Go to start',
-      phrases: [
-        'go to start',
-        'go to the start',
-        'go to beginning',
-        'go to the beginning',
-        'beginning',
-        'rewind',
-      ],
+      phrases: SEEK_START_PHRASES,
       available: seekableTab,
       run: () => {
         deps.transport().seekTo(0)
@@ -396,104 +372,56 @@ export function createTransportVoiceCommands(
     {
       id: 'seek.absoluteSeconds',
       label: 'Go to time',
-      phrases: [
-        'go to <n> seconds',
-        'go to <n> second',
-        'go to second <n>',
-        'start at <n> seconds',
-        'jump to <n> seconds',
-        'go to <n>',
-        'skip the first <n> seconds',
-        'skip first <n> seconds',
-      ],
+      phrases: ABSOLUTE_SECONDS_PHRASES,
       available: seekableTab,
       run: (args) => seekAbsoluteSeconds(args.n ?? 0),
     },
     {
       id: 'seek.absoluteMinutes',
       label: 'Go to time',
-      phrases: [
-        'go to <n> minutes',
-        'go to <n> minute',
-        'go to minute <n>',
-        'start at <n> minutes',
-        'skip the first <n> minutes',
-      ],
+      phrases: ABSOLUTE_MINUTES_PHRASES,
       available: seekableTab,
       run: (args) => seekAbsoluteSeconds((args.n ?? 0) * 60),
     },
     {
       id: 'seek.middle',
       label: 'Go to the middle',
-      phrases: ['go to the middle', 'go to middle', 'middle', 'halfway'],
+      phrases: MIDDLE_PHRASES,
       available: seekableTab,
       run: () => seekFraction(0.5, 'Go to the middle'),
     },
     {
       id: 'seek.end',
       label: 'Go to the end',
-      phrases: ['go to the end', 'go to end', 'the end'],
+      phrases: END_PHRASES,
       available: seekableTab,
       run: () => seekFraction(1, 'Go to the end'),
     },
     {
       id: 'seek.forwardSeconds',
       label: 'Skip forward',
-      phrases: [
-        'forward <n> seconds',
-        'forward <n> second',
-        // Recognizers often write the adverb form.
-        'forwards <n> seconds',
-        'forwards <n>',
-        'skip <n> seconds',
-        'skip ahead <n> seconds',
-        'skip forward <n> seconds',
-        'ahead <n> seconds',
-        'jump forward <n> seconds',
-        'jump ahead <n> seconds',
-        'forward <n>',
-        'skip <n>',
-      ],
+      phrases: FORWARD_SECONDS_PHRASES,
       available: seekableTab,
       run: (args) => seekSeconds(args.n ?? 10),
     },
     {
       id: 'seek.backSeconds',
       label: 'Skip back',
-      phrases: [
-        'back <n> seconds',
-        'back <n> second',
-        'go back <n> seconds',
-        'rewind <n> seconds',
-        'backwards <n> seconds',
-        'backwards <n>',
-        'jump back <n> seconds',
-        'back <n>',
-      ],
+      phrases: BACK_SECONDS_PHRASES,
       available: seekableTab,
       run: (args) => seekSeconds(-(args.n ?? 10)),
     },
     {
       id: 'seek.forwardMinutes',
       label: 'Skip forward',
-      phrases: [
-        'forward <n> minutes',
-        'forward <n> minute',
-        'skip <n> minutes',
-        'ahead <n> minutes',
-      ],
+      phrases: FORWARD_MINUTES_PHRASES,
       available: seekableTab,
       run: (args) => seekMinutes(args.n ?? 1),
     },
     {
       id: 'seek.backMinutes',
       label: 'Skip back',
-      phrases: [
-        'back <n> minutes',
-        'back <n> minute',
-        'go back <n> minutes',
-        'rewind <n> minutes',
-      ],
+      phrases: BACK_MINUTES_PHRASES,
       available: seekableTab,
       run: (args) => seekMinutes(-(args.n ?? 1)),
     },
@@ -519,35 +447,26 @@ export function createTransportVoiceCommands(
     {
       id: 'speed.faster',
       label: 'Faster',
-      phrases: ['faster', 'speed up', 'a bit faster', 'little faster'],
+      phrases: SPEED_FASTER_PHRASES,
       available: seekableTab,
       run: () => stepSpeed(1),
     },
     {
       id: 'speed.slower',
       label: 'Slower',
-      phrases: ['slower', 'slow down', 'a bit slower', 'little slower'],
+      phrases: SPEED_SLOWER_PHRASES,
       available: seekableTab,
       run: () => stepSpeed(-1),
     },
-    speedPreset('speed.normal', 1.0, [
-      'normal speed',
-      'full speed',
-      'regular speed',
-    ]),
-    speedPreset('speed.half', 0.5, ['half speed']),
-    speedPreset('speed.quarter', 0.25, ['quarter speed']),
-    speedPreset('speed.threeQuarter', 0.75, [
-      'three quarter speed',
-      'three quarters speed',
-    ]),
-    speedPreset('speed.double', 2.0, ['double speed']),
+    ...SPEED_PRESETS.map(([multiplier, phrases]) =>
+      speedPreset(`speed.preset${String(multiplier)}`, multiplier, phrases),
+    ),
     {
       id: 'speed.multiplier',
       label: 'Set speed',
       // Explicit "x"/"times" phrasing is ALWAYS a multiplier — "10 x" must
       // clamp to 2x, never be reinterpreted as 10 percent.
-      phrases: ['speed <n> x', '<n> x', 'speed <n> times', '<n> times speed'],
+      phrases: SPEED_MULTIPLIER_PHRASES,
       available: seekableTab,
       run: (args) =>
         args.n !== undefined && Number.isFinite(args.n) && args.n > 0
@@ -557,7 +476,7 @@ export function createTransportVoiceCommands(
     {
       id: 'speed.spoken',
       label: 'Set speed',
-      phrases: ['speed <n> percent', '<n> percent speed', 'speed <n>'],
+      phrases: SPEED_SPOKEN_PHRASES,
       available: seekableTab,
       run: (args) => setSpokenSpeed(args.n),
     },
@@ -638,14 +557,7 @@ export function createTransportVoiceCommands(
       label: 'Loop A set',
       // "b" is often transcribed as "be"/"bee"; "a" has no such problem,
       // but keep the phrasing families symmetrical where it is.
-      phrases: [
-        'set a',
-        'set point a',
-        'mark a',
-        'loop start',
-        'set loop start',
-        'loop from here',
-      ],
+      phrases: LOOP_SET_A_PHRASES,
       available: seekableTab,
       run: () => {
         deps.loop.setA()
@@ -655,17 +567,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.setB',
       label: 'Loop B set',
-      phrases: [
-        'set b',
-        'set be',
-        'set bee',
-        'set point b',
-        'mark b',
-        'mark be',
-        'loop end',
-        'set loop end',
-        'loop to here',
-      ],
+      phrases: LOOP_SET_B_PHRASES,
       available: seekableTab,
       run: () => {
         deps.loop.setB()
@@ -678,7 +580,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.toggle',
       label: 'Toggle loop',
-      phrases: ['loop', 'toggle loop'],
+      phrases: LOOP_TOGGLE_PHRASES,
       available: seekableTab,
       run: () => {
         deps.loop.toggle()
@@ -688,13 +590,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.on',
       label: 'Loop on',
-      phrases: [
-        'loop on',
-        'enable loop',
-        'start loop',
-        'start looping',
-        'loop this',
-      ],
+      phrases: LOOP_ON_PHRASES,
       available: seekableTab,
       run: () => {
         if (deps.loop.a() <= 0 || deps.loop.b() <= 0) {
@@ -707,13 +603,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.off',
       label: 'Loop off',
-      phrases: [
-        'loop off',
-        'disable loop',
-        'stop looping',
-        'stop loop',
-        'no loop',
-      ],
+      phrases: LOOP_OFF_PHRASES,
       available: seekableTab,
       run: () => {
         if (deps.loop.enabled()) deps.loop.toggle()
@@ -723,16 +613,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.range',
       label: 'Loop range',
-      phrases: [
-        'loop from <n> to <n> seconds',
-        'loop from <n> to <n>',
-        'play a loop from <n> to <n> seconds',
-        'play a loop from <n> to <n>',
-        'play loop from <n> to <n> seconds',
-        'loop between <n> and <n> seconds',
-        'loop <n> to <n> seconds',
-        'loop <n> to <n>',
-      ],
+      phrases: LOOP_RANGE_PHRASES,
       available: seekableTab,
       run: (args) => {
         const from = args.n
@@ -764,14 +645,7 @@ export function createTransportVoiceCommands(
     {
       id: 'loop.clear',
       label: 'Loop cleared',
-      phrases: [
-        'clear loop',
-        'clear the loop',
-        'remove loop',
-        'delete loop',
-        'reset loop',
-        'clear a b',
-      ],
+      phrases: [...LOOP_CLEAR_PHRASES, 'clear a b'],
       available: seekableTab,
       run: () => {
         deps.loop.clear()

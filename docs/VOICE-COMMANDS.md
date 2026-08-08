@@ -168,6 +168,7 @@ The mixer transport runs on seconds (audio time), not beats.
 
 - [x] Reactive per-surface command registration (registry seam)
 - [x] Typed failure results with user-facing messages
+- [x] Shared phrase families (`shared-phrases.ts`): the global transport and the karaoke mixer import one vocabulary, so "backwards 60 seconds" can never again work on one surface and report "not available" on the other
 - [x] Salvage matching: a changed mind mid-utterance ("backwards... forwards 60 seconds", "guitar, i play guitar") drops up to two leading tokens; what remains must be at least two tokens, so single-word commands stay exact and lyrics stay inert
 - [x] Two numeric slots per phrase (`loop from N to M seconds`)
 - [x] Tense and homophone tolerance where it bites: `i played drums`, `bass` heard as `base`/`base guitar`/`based guitar`

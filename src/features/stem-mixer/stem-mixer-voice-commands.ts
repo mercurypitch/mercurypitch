@@ -12,6 +12,7 @@
 // (audio time), unlike the beat-based global transport.
 
 import type { Accessor } from 'solid-js'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
 
@@ -280,15 +281,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.play',
       label: 'Play',
-      phrases: [
-        'play',
-        'start',
-        'go',
-        'begin',
-        'resume',
-        'continue',
-        'keep going',
-      ],
+      phrases: PLAY_PHRASES,
       run: () => {
         if (deps.playing()) return voiceFailure('Already playing')
         deps.play()
@@ -298,7 +291,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.pause',
       label: 'Pause',
-      phrases: ['pause', 'hold', 'hold on', 'wait'],
+      phrases: PAUSE_PHRASES,
       run: () => {
         if (!deps.playing()) return voiceFailure('Nothing playing')
         deps.pause()
@@ -308,7 +301,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.stop',
       label: 'Stop',
-      phrases: ['stop', 'finish', 'stop playback', 'stop playing'],
+      phrases: STOP_PHRASES,
       run: () => {
         deps.stop()
         return 'Stop'
@@ -317,19 +310,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.restart',
       label: 'From the top',
-      phrases: [
-        'again',
-        'restart',
-        'from the top',
-        'from the beginning',
-        'start over',
-        'start again',
-        'one more time',
-        'once more',
-        'take it from the top',
-        'sing that again',
-        'sing it again',
-      ],
+      phrases: [...RESTART_PHRASES, 'sing that again', 'sing it again'],
       run: () => {
         deps.seekToTime(0)
         if (!deps.playing()) deps.play()
@@ -339,14 +320,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.seekStart',
       label: 'Go to start',
-      phrases: [
-        'go to start',
-        'go to the start',
-        'go to beginning',
-        'go to the beginning',
-        'beginning',
-        'rewind',
-      ],
+      phrases: SEEK_START_PHRASES,
       run: () => {
         deps.seekToTime(0)
         return 'Go to start'
@@ -355,74 +329,43 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.forwardSeconds',
       label: 'Skip forward',
-      phrases: [
-        'forward <n> seconds',
-        'forward <n> second',
-        'forwards <n> seconds',
-        'forwards <n>',
-        'skip <n> seconds',
-        'skip ahead <n> seconds',
-        'ahead <n> seconds',
-        'jump forward <n> seconds',
-        'forward <n>',
-        'skip <n>',
-      ],
+      phrases: FORWARD_SECONDS_PHRASES,
       run: (args) => seekRelative(args.n ?? 10),
     },
     {
       id: 'karaoke.backSeconds',
       label: 'Skip back',
-      phrases: [
-        'back <n> seconds',
-        'back <n> second',
-        'go back <n> seconds',
-        'rewind <n> seconds',
-        'jump back <n> seconds',
-        'back <n>',
-      ],
+      phrases: BACK_SECONDS_PHRASES,
       run: (args) => seekRelative(-(args.n ?? 10)),
     },
     {
       id: 'karaoke.forwardMinutes',
       label: 'Skip forward',
-      phrases: [
-        'forward <n> minutes',
-        'forward <n> minute',
-        'skip <n> minutes',
-      ],
+      phrases: FORWARD_MINUTES_PHRASES,
       run: (args) => seekRelative((args.n ?? 1) * 60),
     },
     {
       id: 'karaoke.backMinutes',
       label: 'Skip back',
-      phrases: ['back <n> minutes', 'back <n> minute', 'go back <n> minutes'],
+      phrases: BACK_MINUTES_PHRASES,
       run: (args) => seekRelative(-(args.n ?? 1) * 60),
     },
     {
       id: 'karaoke.absoluteSeconds',
       label: 'Go to time',
-      phrases: [
-        'go to <n> seconds',
-        'go to <n> second',
-        'go to second <n>',
-        'start at <n> seconds',
-        'jump to <n> seconds',
-        'go to <n>',
-        'skip the first <n> seconds',
-        'skip first <n> seconds',
-      ],
+      phrases: ABSOLUTE_SECONDS_PHRASES,
       run: (args) => seekAbsolute(args.n ?? 0),
     },
     {
       id: 'karaoke.absoluteMinutes',
       label: 'Go to time',
-      phrases: ['go to <n> minutes', 'go to <n> minute', 'go to minute <n>'],
+      phrases: ABSOLUTE_MINUTES_PHRASES,
       run: (args) => seekAbsolute((args.n ?? 0) * 60),
     },
     {
       id: 'karaoke.middle',
       label: 'Go to the middle',
-      phrases: ['go to the middle', 'go to middle', 'middle', 'halfway'],
+      phrases: MIDDLE_PHRASES,
       run: () => {
         if (deps.duration() <= 0) return voiceFailure('Nothing loaded')
         deps.seekToTime(deps.duration() / 2)
@@ -432,7 +375,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.end',
       label: 'Go to the end',
-      phrases: ['go to the end', 'go to end', 'the end'],
+      phrases: END_PHRASES,
       run: () => {
         if (deps.duration() <= 0) return voiceFailure('Nothing loaded')
         deps.seekToTime(clampSeconds(deps.duration() - 2))
@@ -544,14 +487,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopSetA',
       label: 'Loop A set',
-      phrases: [
-        'set a',
-        'set point a',
-        'mark a',
-        'loop start',
-        'set loop start',
-        'loop from here',
-      ],
+      phrases: LOOP_SET_A_PHRASES,
       run: () => {
         const at = deps.elapsed()
         deps.loop.setStart(at)
@@ -565,17 +501,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopSetB',
       label: 'Loop B set',
-      phrases: [
-        'set b',
-        'set be',
-        'set bee',
-        'set point b',
-        'mark b',
-        'mark be',
-        'loop end',
-        'set loop end',
-        'loop to here',
-      ],
+      phrases: LOOP_SET_B_PHRASES,
       run: () => {
         const at = deps.elapsed()
         if (at <= deps.loop.start()) {
@@ -589,7 +515,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopToggle',
       label: 'Toggle loop',
-      phrases: ['loop', 'toggle loop'],
+      phrases: LOOP_TOGGLE_PHRASES,
       run: () => {
         const next = !deps.loop.enabled()
         deps.loop.setEnabled(next)
@@ -599,13 +525,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopOn',
       label: 'Loop on',
-      phrases: [
-        'loop on',
-        'enable loop',
-        'start loop',
-        'start looping',
-        'loop this',
-      ],
+      phrases: LOOP_ON_PHRASES,
       run: () => {
         if (deps.loop.end() <= deps.loop.start()) {
           return voiceFailure('Set A and B first')
@@ -617,13 +537,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopOff',
       label: 'Loop off',
-      phrases: [
-        'loop off',
-        'disable loop',
-        'stop looping',
-        'stop loop',
-        'no loop',
-      ],
+      phrases: LOOP_OFF_PHRASES,
       run: () => {
         deps.loop.setEnabled(false)
         return 'Loop off'
@@ -632,13 +546,7 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopClear',
       label: 'Loop cleared',
-      phrases: [
-        'clear loop',
-        'clear the loop',
-        'remove loop',
-        'delete loop',
-        'reset loop',
-      ],
+      phrases: LOOP_CLEAR_PHRASES,
       run: () => {
         deps.loop.clear()
         return 'Loop cleared'
@@ -647,39 +555,22 @@ export function createStemMixerVoiceCommands(
     {
       id: 'karaoke.loopRange',
       label: 'Loop range',
-      phrases: [
-        'loop from <n> to <n> seconds',
-        'loop from <n> to <n>',
-        'play a loop from <n> to <n> seconds',
-        'play a loop from <n> to <n>',
-        'play loop from <n> to <n> seconds',
-        'loop between <n> and <n> seconds',
-        'loop <n> to <n> seconds',
-        'loop <n> to <n>',
-      ],
+      phrases: LOOP_RANGE_PHRASES,
       run: (args) => setLoopRange(args.n, args.m),
     },
     {
       id: 'karaoke.speedFaster',
       label: 'Faster',
-      phrases: ['faster', 'speed up', 'a bit faster', 'little faster'],
+      phrases: SPEED_FASTER_PHRASES,
       run: () => stepSpeed(1),
     },
     {
       id: 'karaoke.speedSlower',
       label: 'Slower',
-      phrases: ['slower', 'slow down', 'a bit slower', 'little slower'],
+      phrases: SPEED_SLOWER_PHRASES,
       run: () => stepSpeed(-1),
     },
-    ...(
-      [
-        [1, ['normal speed', 'full speed', 'regular speed']],
-        [0.5, ['half speed']],
-        [0.25, ['quarter speed']],
-        [0.75, ['three quarter speed', 'three quarters speed']],
-        [2, ['double speed']],
-      ] as Array<[number, string[]]>
-    ).map(
+    ...SPEED_PRESETS.map(
       ([multiplier, phrases]): VoiceCommand => ({
         id: `karaoke.speedPreset.${String(multiplier)}`,
         label: formatSpeed(multiplier),
@@ -692,7 +583,7 @@ export function createStemMixerVoiceCommands(
       label: 'Set speed',
       // Explicit x/times is ALWAYS a multiplier — "10 x" clamps to 2x, it
       // never becomes 10 percent.
-      phrases: ['speed <n> x', '<n> x', 'speed <n> times'],
+      phrases: SPEED_MULTIPLIER_PHRASES,
       run: (args) =>
         args.n !== undefined && Number.isFinite(args.n) && args.n > 0
           ? setSpeedClamped(args.n)
@@ -703,7 +594,7 @@ export function createStemMixerVoiceCommands(
       label: 'Set speed',
       // Bare numbers over 2.5 read as percent — same rule as the global
       // transport.
-      phrases: ['speed <n> percent', '<n> percent speed', 'speed <n>'],
+      phrases: SPEED_SPOKEN_PHRASES,
       run: (args) => {
         if (args.n === undefined || !Number.isFinite(args.n) || args.n <= 0) {
           return voiceFailure('Speed unchanged')

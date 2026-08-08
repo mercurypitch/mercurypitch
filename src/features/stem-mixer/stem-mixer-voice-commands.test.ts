@@ -148,6 +148,9 @@ describe('stem mixer voice commands — transport', () => {
     expect(fire(fixture, 'pause')).toBe('Pause')
     expect(fire(fixture, 'forward ten seconds')).toBe('Forward 10s')
     expect(fixture.seekedTo()).toBe(40)
+    // Shared phrase families: what works on the Singing tab works here.
+    expect(fire(fixture, 'backwards 60')).toBe('Back 60s')
+    expect(fixture.seekedTo()).toBe(0)
     expect(fire(fixture, 'go to one minute')).toBe('Go to 1:00')
     expect(fixture.seekedTo()).toBe(60)
     expect(fire(fixture, 'go to the middle')).toBe('Go to the middle')
