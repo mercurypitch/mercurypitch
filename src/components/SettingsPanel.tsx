@@ -31,7 +31,8 @@ import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceIntervalMin, practiceTimerEnabled, setBreakIntervalMin, setPracticeIntervalMin, setPracticeTimerEnabled, } from '@/stores/practice-timer-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
-import type { PitchBufferSize } from '@/stores/settings-store'
+import type { PitchBufferSize, VoiceControlEngine, } from '@/stores/settings-store'
+import { setVoiceControlEngine, setVoiceWakeWordWhilePlaying, voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import { CHARACTER_INFO, characterSounds, colorCodeNotes, flameMode, fontFamily, scoreMode, selectedCharacter, setCharacterSounds, setColorCodeNotes, setFlameMode, setFontFamily, setScoreMode, setShowAccuracyPercent, setShowPracticeResultPopup, setShowSidebarNoteList, showAccuracyPercent, showPracticeResultPopup, showSidebarNoteList, } from '@/stores/settings-store'
 import { pitchAlgorithm, setPitchAlgorithm } from '@/stores/settings-store'
 import { PITCH_BUFFER_DESCRIPTIONS, PITCH_BUFFER_LABELS, PITCH_BUFFER_SIZES, pitchBufferSize, setPitchBufferSize, } from '@/stores/settings-store'
@@ -734,6 +735,65 @@ export const SettingsPanel: Component = () => {
                 </small>
               </div>
             </Show>
+          </div>
+
+          {/* Voice Control Section */}
+          <div class={styles.settingsSection}>
+            <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
+            <div class={styles.settingsDivider} />
+            <p class={styles.settingsDesc}>
+              Hands-free transport: enable the mic pill (bottom-left, or press
+              V) and speak — "play", "from the top", "set a", "loop off". The
+              full phrase list lives in docs/VOICE-COMMANDS.md.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="voice-engine-select">Recognition Engine</label>
+              <SafeSelect
+                id="voice-engine-select"
+                value={voiceControlEngine()}
+                onChange={(e) => {
+                  setVoiceControlEngine(
+                    e.currentTarget.value as VoiceControlEngine,
+                  )
+                }}
+              >
+                <option value="webspeech">Browser (Web Speech API)</option>
+                <option value="local">On-device (Whisper)</option>
+                <option value="moonshine">
+                  On-device (Moonshine, experimental)
+                </option>
+              </SafeSelect>
+              <small>
+                Browser is instant to start but needs Chrome, Edge or Safari and
+                a network. On-device downloads a small model once, then works
+                offline and keeps audio on this machine; the pill shows its
+                speech-to-text time. Moonshine is an alternative on-device model
+                for comparing latency against Whisper.
+              </small>
+            </div>
+
+            <div class={styles.settingsRow}>
+              <label for="voice-wake-word">
+                Require "Mercury" While Playing
+              </label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="voice-wake-word"
+                  checked={voiceWakeWordWhilePlaying()}
+                  onChange={(e) => {
+                    setVoiceWakeWordWhilePlaying(e.currentTarget.checked)
+                  }}
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                While a track is playing, commands must start with "Mercury"
+                ("Mercury, from the top") so backing-track lyrics cannot drive
+                the transport through speakers.
+              </small>
+            </div>
           </div>
 
           {/* Accuracy Bands Section */}

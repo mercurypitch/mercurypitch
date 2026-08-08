@@ -22,7 +22,7 @@ import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
 import type { PlaybackMode } from '@/types'
 
-interface KeyboardShortcutHandlers {
+export interface KeyboardShortcutHandlers {
   isPlaying: Accessor<boolean>
   isPaused: Accessor<boolean>
   play: () => void
@@ -73,6 +73,9 @@ interface KeyboardShortcutHandlers {
 
   /** Mic toggle handler for keyboard shortcut. */
   onMicToggle?: () => void
+
+  /** Voice control toggle — V key. */
+  onVoiceToggle?: () => void
 
   /** Toggle shortcut help overlay. */
   onToggleShortcutHelp?: () => void
@@ -167,6 +170,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     if (e.code === 'KeyM' && !isTyping && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()
       handlers.onMicToggle?.()
+      return
+    }
+
+    // ── V — toggle voice control ───────────────────────────
+    if (e.code === 'KeyV' && !isTyping && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault()
+      handlers.onVoiceToggle?.()
       return
     }
 
@@ -282,8 +292,9 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
  * Attempt to close the topmost open modal/overlay.
  * Returns true if a modal was dismissed, false if nothing was open.
  * Order: specific overlays first, then library modals, then walkthrough.
+ * Exported for voice control's "close this" — one dismiss chain, two inputs.
  */
-function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
+export function tryDismissModal(handlers: KeyboardShortcutHandlers): boolean {
   // App-level modals passed via the handlers
   const m = handlers.modals
   if (m) {

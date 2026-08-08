@@ -1,0 +1,144 @@
+/* ============================================================
+   VoiceControlHud — ambient voice pill
+   ============================================================
+   Bottom-left corner shared with the practice-timer pill (which owns the
+   default offset); when that pill is visible this one raises a row above
+   it. Top-right stays clear for toasts, bottom-right for the floating
+   transport controls. */
+
+.pill {
+  position: fixed;
+  left: calc(var(--safe-left, 0px) + 0.75rem);
+  bottom: calc(var(--safe-bottom, 0px) + 0.75rem);
+  z-index: var(--z-tabbar, 380);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  opacity: 0.82;
+  transition:
+    opacity 0.2s ease,
+    bottom 0.2s ease;
+}
+
+.pill:hover,
+.pill:focus-within {
+  opacity: 1;
+}
+
+.raised {
+  bottom: calc(var(--safe-bottom, 0px) + 3.15rem);
+}
+
+.expanded {
+  padding-right: 0.6rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.toggle svg {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-card),
+    0 0 0 4px var(--accent);
+}
+
+.listening {
+  color: var(--accent);
+  animation: voice-pulse 2.2s ease-out infinite;
+}
+
+@keyframes voice-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent-glow, rgb(88 166 255 / 30%));
+  }
+
+  70% {
+    box-shadow: 0 0 0 9px rgb(0 0 0 / 0%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(0 0 0 / 0%);
+  }
+}
+
+.errorState {
+  color: var(--warning, #e5a50a);
+}
+
+.unsupported {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status {
+  overflow: hidden;
+  max-width: 15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusMatched {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.statusMiss {
+  font-style: italic;
+}
+
+.statusWarn {
+  color: var(--warning, #e5a50a);
+}
+
+.latency {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
+/* Clear the mobile tab bar rather than sitting on it. */
+@media (max-width: 768px) {
+  .pill {
+    bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
+  }
+
+  .raised {
+    bottom: calc(var(--tabbar-total, 54px) + 3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+
+  .listening {
+    animation: none;
+  }
+}

@@ -1,0 +1,120 @@
+/* ============================================================
+   VoiceCommandsOverlay — the "what can I say" panel
+   ============================================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(0 0 0 / 55%);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(46rem, 100%);
+  max-height: min(80vh, 42rem);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 45%);
+  color: var(--text);
+}
+
+.header {
+  flex-shrink: 0;
+  padding: 1.1rem 1.25rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: var(--text);
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  overflow-y: auto;
+  align-items: start;
+  padding: 0.9rem 1.25rem 1.1rem;
+}
+
+/* Each group scrolls by itself, so a huge section (karaoke stems) cannot
+   stretch the page while the small ones float in whitespace. */
+.group {
+  overflow-y: auto;
+  max-height: 15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.groupTitle {
+  margin: 0 0 0.4rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.45rem;
+}
+
+.rowLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rowPhrases {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.groupTitle {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+}
+
+@media (max-width: 700px) {
+  .groups {
+    grid-template-columns: 1fr;
+  }
+}

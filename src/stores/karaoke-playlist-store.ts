@@ -485,6 +485,14 @@ export function prev(): void {
   setPhase('ready')
 }
 
+/** Jump straight to a queue position (voice control's "random song"):
+ *  the same index+phase move advance()/prev() make, bounds-checked. */
+export function jumpTo(index: number): void {
+  if (index < 0 || index >= queue().length) return
+  setCurrentIndex(index)
+  setPhase('ready')
+}
+
 export function restartPlaylist(): void {
   if (queue().length === 0) return
   setCurrentIndex(0)

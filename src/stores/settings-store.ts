@@ -197,6 +197,29 @@ export const [fontFamily, setFontFamily] = createPersistedSignal<FontFamily>(
 export const [vocalRangePreset, setVocalRangePreset] =
   createPersistedSignal<VocalRangePreset>('pitchperfect_vocal_range', 'tenor')
 
+// ── Voice control ──────────────────────────────────────────────
+// 'webspeech' is the browser recognizer (instant start, needs Chrome/Edge/
+// Safari and network); 'local' runs whisper-tiny on-device via the
+// voice-stt worker (one-time model download, offline, audio never leaves
+// the machine); 'moonshine' is the experimental on-device alternative for
+// latency comparison.
+export type VoiceControlEngine = 'webspeech' | 'local' | 'moonshine'
+
+export const [voiceControlEngine, setVoiceControlEngine] =
+  createPersistedSignal<VoiceControlEngine>(
+    'pitchperfect_voice_engine',
+    'webspeech',
+  )
+
+/** While music plays, require commands to start with the wake word
+ *  ("Mercury, from the top") so backing-track lyrics cannot drive the
+ *  transport without headphones. */
+export const [voiceWakeWordWhilePlaying, setVoiceWakeWordWhilePlaying] =
+  createPersistedSignal<boolean>(
+    'pitchperfect_voice_wake_word_while_playing',
+    false,
+  )
+
 // ── Setters ─────────────────────────────────────────────────────────
 
 export function setSensitivityPresetValue(value: SensitivityPreset): void {

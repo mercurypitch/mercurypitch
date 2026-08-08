@@ -9,10 +9,12 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { consumeKaraokeAutoplayIntent } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -20,6 +22,8 @@ import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixer
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
+import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -42,7 +46,7 @@ import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
-import { karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
+import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -1596,6 +1600,72 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     commitStemMix(toggleStemSolo(tracks(), label))
   }
 
+  // ── Voice commands (mixer-owned) ─────────────────────────────
+  // Rebuilt whenever the track list changes so the phrase lists follow the
+  // stems actually in the mix; registered for this mixer's lifetime and
+  // gated to the Karaoke tab so the phrases go quiet elsewhere. Handlers
+  // are the SAME functions the mixer's own buttons call.
+  const stemVoiceCommands = createMemo(() =>
+    createStemMixerVoiceCommands({
+      playing: audio.playing,
+      elapsed: audio.elapsed,
+      duration: audio.duration,
+      play: audio.handlePlay,
+      pause: audio.handlePause,
+      stop: audio.handleStop,
+      seekToTime: audio.seekTo,
+      tracks,
+      toggleMute,
+      toggleSolo,
+      setTrackVolume,
+      available: () => activeTab() === TAB_KARAOKE,
+      speed: audio.speed,
+      setSpeed: audio.setSpeed,
+      loop: {
+        enabled: audio.loopEnabled,
+        setEnabled: audio.setLoopEnabled,
+        start: audio.loopStart,
+        setStart: audio.setLoopStart,
+        end: audio.loopEnd,
+        setEnd: audio.setLoopEnd,
+        clear: audio.clearLoop,
+      },
+      songsSidebar: {
+        isOpen: playlistSidebarOpen,
+        // Mirrors the Songs button: mount on first open, pitch tools yield.
+        open: () => {
+          closePitchTools()
+          setPlaylistSidebarMounted(true)
+          setPlaylistSidebarOpen(true)
+        },
+        close: () => setPlaylistSidebarOpen(false),
+      },
+      playlist: {
+        active: playlist.isPlaylistActive,
+        next: handlePlaylistNext,
+        prev: handlePlaylistPrev,
+        random: () => {
+          const entries = playlist.queue()
+          if (entries.length === 0) return false
+          audio.handlePause()
+          let index = Math.floor(Math.random() * entries.length)
+          if (entries.length > 1 && index === playlist.currentIndex()) {
+            index = (index + 1) % entries.length
+          }
+          playlist.jumpTo(index)
+          return true
+        },
+      },
+    }),
+  )
+  // Read lazily per utterance by the voice dispatcher, deliberately outside
+  // any tracked scope — commands are matched on demand, not re-rendered.
+  // eslint-disable-next-line solid/reactivity
+  onCleanup(registerVoiceCommands(() => stemVoiceCommands()))
+  // The wake-word-required mode must treat karaoke playback as "music is
+  // rolling" — this graph is invisible to App's own isPlaying.
+  onCleanup(registerMusicPlayingSource(audio.playing))
+
   // ── Stem controls props bundle ─────────────────────────────────
   // ── Add-stem pills ───────────────────────────────────────────
   // Session part stems on this device but not yet in the mix. stemMeta
@@ -1794,7 +1864,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
-  // Auto-seek + autoplay from Shazam match offset
+  // Auto-seek + autoplay from Shazam match offset, or a one-shot voice
+  // launch intent ("play a random song" should sing, not wait).
   let autoPlayHandled = false
   createEffect(() => {
     if (autoPlayHandled) return
@@ -1803,6 +1874,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (audio.loadError()) return
     autoPlayHandled = true
 
+    const voiceLaunch = consumeKaraokeAutoplayIntent()
     const seekSec = props.initialSeekSec
     console.log(
       '[StemMixer] Auto-play triggered. seekSec=',
@@ -1818,7 +1890,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       console.log(`[StemMixer] Seeking to match offset: ${target.toFixed(2)}s`)
       audio.seekTo(target)
     }
-    if (props.autoPlay === true) {
+    if (props.autoPlay === true || voiceLaunch) {
       console.log('[StemMixer] Scheduling auto-play...')
       // Small delay to let the seek settle before starting playback
       setTimeout(() => {
