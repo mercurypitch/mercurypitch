@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_KARAOKE, TAB_PIANO, TAB_SINGING } from '@/features/tabs/constants'
-import { playbackSpeed, setPlaybackSpeed } from '@/stores/transport-store'
+import { bpm, countIn, playbackSpeed, setBpm, setCountIn, setPlaybackSpeed, } from '@/stores/transport-store'
 import type { PlaybackMode } from '@/types'
 import { matchVoiceCommand } from './command-grammar'
 import type { TransportVoiceDeps } from './transport-commands'
@@ -126,6 +126,8 @@ function fire(fixture: Fixture, utterance: string): string | undefined {
 
 beforeEach(() => {
   setPlaybackSpeed(1.0)
+  setBpm(60)
+  setCountIn(0)
 })
 
 describe('transport voice commands — singing tab', () => {
@@ -243,6 +245,39 @@ describe('transport voice commands — singing tab', () => {
     // Clamped by the transport store.
     expect(fire(fixture, 'speed 300 percent')).toBe('Speed 2x')
     expect(playbackSpeed()).toBe(2)
+  })
+
+  it('accepts explicit multiplier phrasing as a multiplier, never percent', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    expect(fire(fixture, 'speed one point two x')).toBe('Speed 1.2x')
+    expect(playbackSpeed()).toBe(1.2)
+    expect(fire(fixture, '1.5 x')).toBe('Speed 1.5x')
+    expect(playbackSpeed()).toBe(1.5)
+    expect(fire(fixture, '10 x')).toBe('Speed 2x')
+    expect(playbackSpeed()).toBe(2)
+  })
+
+  it('sets and nudges the tempo in bpm', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    expect(fire(fixture, 'set tempo to 120')).toBe('Tempo 120 bpm')
+    expect(bpm()).toBe(120)
+    expect(fire(fixture, 'ninety bpm')).toBe('Tempo 90 bpm')
+    expect(fire(fixture, 'tempo 300')).toBe('Tempo 280 bpm')
+    expect(fire(fixture, 'reduce tempo')).toBe('Tempo 270 bpm')
+    expect(fire(fixture, 'tempo down 30')).toBe('Tempo 240 bpm')
+    expect(fire(fixture, 'tempo up 20')).toBe('Tempo 260 bpm')
+  })
+
+  it('controls the count-in within its legal bar counts', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    expect(fire(fixture, 'count in')).toBe('Count-in 2 bars')
+    expect(countIn()).toBe(2)
+    expect(fire(fixture, 'count in off')).toBe('Count-in off')
+    expect(countIn()).toBe(0)
+    expect(fire(fixture, 'count in four bars')).toBe('Count-in 4 bars')
+    expect(countIn()).toBe(4)
+    expect(fire(fixture, 'count in 3')).toBe('Count-in can be 1, 2 or 4 bars')
+    expect(countIn()).toBe(4)
   })
 
   it('switches play modes', () => {

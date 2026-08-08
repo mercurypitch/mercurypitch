@@ -60,6 +60,14 @@ describe('parseNumberAt', () => {
     expect(parseNumberAt(['.5'], 0)).toEqual({ value: 0.5, consumed: 1 })
   })
 
+  it('parses spoken decimals and splits digit-letter tokens', () => {
+    expect(parseNumberAt(['one', 'point', 'five'], 0)).toEqual({
+      value: 1.5,
+      consumed: 3,
+    })
+    expect(normalizeUtterance('1.5x')).toBe('1.5 x')
+  })
+
   it('parses number words', () => {
     expect(parseNumberAt(['ten'], 0)).toEqual({ value: 10, consumed: 1 })
     expect(parseNumberAt(['twenty'], 0)).toEqual({ value: 20, consumed: 1 })

@@ -95,10 +95,10 @@ change, only the ear.
 
 ### Tempo and speed additions
 
-- [ ] **(requested)** `set tempo to N` / `tempo N` — bpm store (clamped 40-280), for melodies and exercises
-- [ ] **(requested)** Multiplier phrasing for songs: `speed one point two x`, `1.5 x`
-- [ ] **(requested)** `reduce tempo` / `increase tempo` (and `tempo down N`) — bpm steps, distinct from playback-speed steps
-- [ ] `count in on` / `count in off` / `count in N bars` (transport store already has it)
+- [x] **(requested)** `set tempo to N` / `tempo N` / `N bpm` — bpm store (clamped 40-280), for melodies and exercises
+- [x] **(requested)** Multiplier phrasing for songs: `speed one point two x`, `1.5 x` — the explicit x/times form is always a multiplier, never reinterpreted as percent
+- [x] **(requested)** `reduce tempo` / `increase tempo` / `tempo down N` — 10 bpm nudges by default, distinct from playback-speed steps
+- [x] `count in` / `count in off` / `count in N bars` — N limited to the store's 1, 2 or 4; anything else reports the legal values
 
 ### Karaoke / StemMixer adapter **(requested)**
 

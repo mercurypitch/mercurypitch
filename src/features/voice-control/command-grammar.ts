@@ -25,6 +25,7 @@ export function normalizeUtterance(text: string): string {
     .replace(/\p{M}+/gu, '')
     .replace(/[^\p{L}\p{N}.]+/gu, ' ')
     .replace(/\.(?![0-9])/g, ' ')
+    .replace(/([0-9])(\p{L})/gu, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -158,6 +159,15 @@ export function parseNumberAt(
     if (rest !== null) {
       value += rest.value
       consumed += rest.consumed
+    }
+  }
+  // Spoken decimals — "one point five" (single fractional digit; that is
+  // how speeds are actually said).
+  if (tokens[start + consumed] === 'point') {
+    const fraction = SMALL_NUMBER_WORDS.get(tokens[start + consumed + 1] ?? '')
+    if (fraction !== undefined && fraction <= 9) {
+      value += fraction / 10
+      consumed += 2
     }
   }
   return { value, consumed }

@@ -287,6 +287,38 @@ export function createTransportVoiceCommands(
     run: () => setSpeed(multiplier),
   })
 
+  // ── Tempo (bpm) and count-in ───────────────────────────────
+
+  const formatTempo = (): string => `Tempo ${String(transportStore.bpm())} bpm`
+
+  const setTempo = (raw: number | undefined): VoiceCommandResult => {
+    if (raw === undefined || !Number.isFinite(raw) || raw <= 0) {
+      return voiceFailure('Tempo unchanged')
+    }
+    transportStore.setBpm(raw)
+    return formatTempo()
+  }
+
+  /** Distinct from playback-speed steps: bpm moves in 10-beat nudges. */
+  const TEMPO_NUDGE_BPM = 10
+
+  const nudgeTempo = (delta: number): string => {
+    transportStore.setBpm(transportStore.bpm() + delta)
+    return formatTempo()
+  }
+
+  const setCountInBars = (raw: number | undefined): VoiceCommandResult => {
+    if (raw === 0) {
+      transportStore.setCountIn(0)
+      return 'Count-in off'
+    }
+    if (raw === 1 || raw === 2 || raw === 4) {
+      transportStore.setCountIn(raw)
+      return `Count-in ${String(raw)} ${raw === 1 ? 'bar' : 'bars'}`
+    }
+    return voiceFailure('Count-in can be 1, 2 or 4 bars')
+  }
+
   // ── The set ────────────────────────────────────────────────
 
   return [
@@ -499,11 +531,95 @@ export function createTransportVoiceCommands(
     ]),
     speedPreset('speed.double', 2.0, ['double speed']),
     {
+      id: 'speed.multiplier',
+      label: 'Set speed',
+      // Explicit "x"/"times" phrasing is ALWAYS a multiplier — "10 x" must
+      // clamp to 2x, never be reinterpreted as 10 percent.
+      phrases: ['speed <n> x', '<n> x', 'speed <n> times', '<n> times speed'],
+      available: seekableTab,
+      run: (args) =>
+        args.n !== undefined && Number.isFinite(args.n) && args.n > 0
+          ? setSpeed(args.n)
+          : voiceFailure('Speed unchanged'),
+    },
+    {
       id: 'speed.spoken',
       label: 'Set speed',
       phrases: ['speed <n> percent', '<n> percent speed', 'speed <n>'],
       available: seekableTab,
       run: (args) => setSpokenSpeed(args.n),
+    },
+    {
+      id: 'tempo.set',
+      label: 'Set tempo',
+      phrases: [
+        'set tempo to <n>',
+        'set tempo <n>',
+        'tempo to <n>',
+        'tempo <n>',
+        '<n> bpm',
+        'set tempo to <n> bpm',
+        'tempo <n> bpm',
+        'set the tempo to <n>',
+      ],
+      available: seekableTab,
+      run: (args) => setTempo(args.n),
+    },
+    {
+      id: 'tempo.up',
+      label: 'Tempo up',
+      phrases: [
+        'increase tempo',
+        'tempo up',
+        'faster tempo',
+        'raise the tempo',
+        'tempo up <n>',
+        'increase tempo by <n>',
+      ],
+      available: seekableTab,
+      run: (args) => nudgeTempo(args.n ?? TEMPO_NUDGE_BPM),
+    },
+    {
+      id: 'tempo.down',
+      label: 'Tempo down',
+      phrases: [
+        'reduce tempo',
+        'decrease tempo',
+        'tempo down',
+        'slower tempo',
+        'lower the tempo',
+        'tempo down <n>',
+        'reduce tempo by <n>',
+        'decrease tempo by <n>',
+      ],
+      available: seekableTab,
+      run: (args) => nudgeTempo(-(args.n ?? TEMPO_NUDGE_BPM)),
+    },
+    {
+      id: 'countIn.on',
+      label: 'Count-in on',
+      phrases: ['count in on', 'count in', 'count me in', 'enable count in'],
+      available: seekableTab,
+      run: () => setCountInBars(2),
+    },
+    {
+      id: 'countIn.off',
+      label: 'Count-in off',
+      phrases: ['count in off', 'no count in', 'disable count in'],
+      available: seekableTab,
+      run: () => setCountInBars(0),
+    },
+    {
+      id: 'countIn.bars',
+      label: 'Count-in',
+      phrases: [
+        'count in <n>',
+        'count in <n> bars',
+        'count in <n> bar',
+        '<n> bar count in',
+      ],
+      available: seekableTab,
+      run: (args) => setCountInBars(args.n),
     },
     {
       id: 'loop.setA',
