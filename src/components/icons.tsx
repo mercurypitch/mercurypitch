@@ -676,6 +676,23 @@ export const Plus: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// Minus Icon — the counterpart to Plus (zoom out, decrement). Same geometry
+// and stroke weight so a plus/minus pair reads as one control, not two.
+export const Minus: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+  >
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+)
+
 // Repeat / Replace Icon — swap a stem for a new one
 export const Repeat: Component<{ size?: number }> = (p) => (
   <svg

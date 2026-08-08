@@ -1,140 +1,230 @@
+/* ============================================================
+   LrcDiffTool — mapping-vs-mapping measurement.
+
+   Palette comes from the `--lab-*` names declared on `.page` in
+   Lab.module.css, which this tool always renders inside. Fallbacks are the
+   global tokens, never hexes: `--fg-*` (a legacy compat alias) and
+   `--accent-lighter` (never defined anywhere — its uses survived only on a
+   hardcoded blue that ignored 7 of the 8 themes) used to be all over this
+   file, and both are gone.
+   ============================================================ */
+
 .inputs {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  margin-bottom: 18px;
+  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(288px, 1fr));
+  margin-bottom: var(--spacing-xl);
 }
 
 .slot {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 10px;
-  background: var(--bg-secondary, #161b22);
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--lab-panel, var(--bg-card)) 92%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
 }
 
 .slotHead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 .slotLabel {
-  color: var(--fg-primary, #c9d1d9);
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .slotHint {
-  color: var(--fg-tertiary, #484f58);
-  font-size: 0.68rem;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* A recessed well, so the pasted mapping reads as data rather than chrome. */
 .paste {
-  min-height: 108px;
-  padding: 8px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 6px;
-  color: var(--fg-primary, #c9d1d9);
-  background: var(--bg-primary, #0d1117);
-  font:
-    0.68rem/1.5 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  min-height: 112px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 8px;
+  background: var(--lab-void, var(--bg-primary));
+  color: var(--text-primary);
+  font: 0.68rem/1.55
+    var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   resize: vertical;
+  transition: border-color 0.15s ease;
 }
 
-.file {
-  color: var(--fg-secondary, #8b949e);
-  font-size: 0.68rem;
+.paste:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
+
+.paste::placeholder {
+  color: var(--text-muted);
+}
+
+/* A bare file input renders the browser's own chrome. Styling the selector
+   button is the only way to make it match the surrounding buttons. */
+.file {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.file::file-selector-button {
+  margin-right: var(--spacing-md);
+  padding: 5px var(--spacing-lg);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: 650;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.file::file-selector-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
+/* ── Headline numbers ───────────────────────────────────────── */
 
 .summary {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  margin-bottom: 18px;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  margin-bottom: var(--spacing-xl);
 }
 
 .stat {
-  padding: 10px 12px;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
-  background: var(--bg-secondary, #161b22);
+  min-width: 0;
+  padding: var(--spacing-lg);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 11px;
+  background: color-mix(
+    in srgb,
+    var(--lab-panel, var(--bg-card)) 92%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
 }
 
 .statLabel {
   display: block;
-  color: var(--fg-tertiary, #8b949e);
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .statValue {
   display: block;
-  margin-top: 4px;
-  color: var(--fg-primary, #c9d1d9);
-  font:
-    700 1.05rem/1 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  margin-top: 5px;
+  color: var(--text-primary);
+  font: 700 1.05rem/1
+    var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
+/* ── Callouts ───────────────────────────────────────────────── */
+
+/* A left bar rather than a full box: these are notes on a result, not
+   errors, and a boxed warning per finding would shout over the table. */
 .warn {
-  padding: 10px 12px;
-  border: 1px solid rgba(210, 153, 34, 0.4);
-  border-radius: 8px;
-  margin-bottom: 16px;
-  color: #d29922;
-  font-size: 0.72rem;
+  max-width: 84ch;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) 0 var(--spacing-md) var(--spacing-lg);
+  border-left: 2px solid color-mix(in srgb, var(--warning) 70%, transparent);
+  color: color-mix(in srgb, var(--warning) 78%, var(--text-primary));
+  font-size: var(--text-sm);
+  line-height: 1.55;
 }
+
+/* ── Line table ─────────────────────────────────────────────── */
 
 .tableWrap {
   overflow-x: auto;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 8px;
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--lab-panel, var(--bg-card)) 92%,
+    transparent
+  );
+  box-shadow: var(--lab-bevel, none);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.72rem;
+  font-size: var(--text-sm);
 }
 
 .table th {
   position: sticky;
   top: 0;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border, #30363d);
-  background: var(--bg-secondary, #161b22);
-  color: var(--fg-tertiary, #8b949e);
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
+  z-index: 1;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--lab-line, var(--border));
+  background: var(--lab-raised, var(--bg-tertiary));
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
-  color: var(--fg-secondary, #8b949e);
+  padding: 7px var(--spacing-lg);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 55%, transparent);
+  color: var(--text-secondary);
   vertical-align: top;
 }
 
+/* The wrapper already draws the bottom edge — a row border under the last
+   row doubles it up into a visible 2px line. */
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .table tbody tr:hover td {
-  background: rgba(110, 118, 129, 0.08);
+  background: var(
+    --bg-hover,
+    color-mix(in srgb, var(--text-primary) 8%, transparent)
+  );
 }
 
 .num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
@@ -153,23 +243,24 @@
 .lineText {
   max-width: 34ch;
   overflow: hidden;
-  color: var(--fg-primary, #c9d1d9);
+  color: var(--text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mismatch td {
-  color: #d29922;
+  color: color-mix(in srgb, var(--warning) 78%, var(--text-primary));
 }
 
 /* The bar reads left-early / right-late from a centre line, so a mapping
    that drifts one way is visible without reading a single number. */
 .biasBar {
   position: relative;
+  display: inline-block;
   width: 120px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(110, 118, 129, 0.18);
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
 }
 
 .biasBar::before {
@@ -177,18 +268,35 @@
   top: -2px;
   bottom: -2px;
   left: 50%;
-  border-left: 1px solid var(--fg-tertiary, #484f58);
+  border-left: 1px solid var(--lab-line, var(--border));
   content: '';
 }
 
+/* Early and late get the two halves of the Lab's accent pair, so direction
+   is legible at a glance and neither reads as "the error colour". */
 .biasFill {
   position: absolute;
   top: 0;
   bottom: 0;
   border-radius: 999px;
-  background: var(--accent-lighter, #79c0ff);
+  background: color-mix(in srgb, var(--accent) 82%, #fff);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .biasFillLate {
-  background: #d29922;
+  background: var(--warning);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+@media (max-width: 768px) {
+  .file::file-selector-button {
+    min-height: var(--touch-target, 44px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paste,
+  .file::file-selector-button {
+    transition: none;
+  }
 }

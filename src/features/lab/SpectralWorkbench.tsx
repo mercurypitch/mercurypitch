@@ -10,8 +10,10 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { AnnotationControls } from '@/components/AnnotationControls'
+import { ExportFile, ImportFile, WaveformBars } from '@/components/icons'
 import type { PitchTracePoint } from '@/components/MultiPaneView'
 import { MultiPaneView } from '@/components/MultiPaneView'
+import { IconRecord, IconStop } from '@/components/shared/control-bar/icons'
 import { TransformRunner } from '@/components/TransformRunner'
 import { UnitConverter } from '@/components/UnitConverter'
 import { useEngines } from '@/contexts/EngineContext'
@@ -67,6 +69,18 @@ export const SpectralWorkbench: Component = () => {
     const samples = capture.samples()
     return samples.length > 0 ? samples[samples.length - 1].timestamp + 2 : 60
   })
+
+  /** Every tile in the results grid is behind its own <Show>, so the grid
+   *  itself has to be gated too — otherwise it contributes its bottom margin
+   *  as dead space before anything has been measured. */
+  const hasResults = createMemo(
+    () =>
+      bpm() !== null ||
+      key() !== null ||
+      chords().length > 0 ||
+      segments() !== null ||
+      alignment() !== null,
+  )
 
   // Space drops a time marker while the mic is live.
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -239,141 +253,178 @@ export const SpectralWorkbench: Component = () => {
   return (
     <div>
       <div class={styles.toolbar}>
-        <Show
-          when={capture.isActive()}
-          fallback={
+        <div class={styles.toolGroup}>
+          <Show
+            when={capture.isActive()}
+            fallback={
+              <button
+                type="button"
+                class={`${styles.toolBtn} ${styles.captureBtn}`}
+                onClick={() => void capture.start()}
+              >
+                <IconRecord />
+                Start capture
+              </button>
+            }
+          >
             <button
               type="button"
-              class={styles.toolBtn}
-              onClick={() => void capture.start()}
+              class={`${styles.toolBtn} ${styles.captureActive}`}
+              onClick={() => capture.stop()}
             >
-              ● Start capture
+              <IconStop />
+              Stop capture
             </button>
-          }
-        >
+          </Show>
+        </div>
+
+        <span class={styles.toolDivider} aria-hidden="true" />
+
+        <div class={styles.toolGroup}>
           <button
             type="button"
             class={styles.toolBtn}
-            onClick={() => capture.stop()}
+            onClick={detectBeats}
+            disabled={busy() || !enoughFrames()}
           >
-            ■ Stop capture
+            Detect beats
           </button>
-        </Show>
+          <button
+            type="button"
+            class={styles.toolBtn}
+            onClick={detectKey}
+            disabled={busy() || !enoughFrames()}
+          >
+            Detect key
+          </button>
+          <button
+            type="button"
+            class={styles.toolBtn}
+            onClick={detectChordsNow}
+            disabled={busy() || !enoughFrames()}
+          >
+            Detect chords
+          </button>
+          <button
+            type="button"
+            class={styles.toolBtn}
+            onClick={segment}
+            disabled={busy() || spectra().length < MIN_SEGMENT_FRAMES}
+          >
+            Segment
+          </button>
+          <button
+            type="button"
+            class={styles.toolBtn}
+            onClick={alignToSelf}
+            disabled={busy() || !enoughFrames()}
+            title="Self-alignment demo — no reference track picker yet"
+          >
+            Align (demo)
+          </button>
+        </div>
 
-        <button
-          type="button"
-          class={styles.toolBtn}
-          onClick={detectBeats}
-          disabled={busy() || !enoughFrames()}
-        >
-          Detect beats
-        </button>
-        <button
-          type="button"
-          class={styles.toolBtn}
-          onClick={detectKey}
-          disabled={busy() || !enoughFrames()}
-        >
-          Detect key
-        </button>
-        <button
-          type="button"
-          class={styles.toolBtn}
-          onClick={detectChordsNow}
-          disabled={busy() || !enoughFrames()}
-        >
-          Detect chords
-        </button>
-        <button
-          type="button"
-          class={styles.toolBtn}
-          onClick={segment}
-          disabled={busy() || spectra().length < MIN_SEGMENT_FRAMES}
-        >
-          Segment
-        </button>
-        <button
-          type="button"
-          class={styles.toolBtn}
-          onClick={alignToSelf}
-          disabled={busy() || !enoughFrames()}
-          title="Self-alignment demo — no reference track picker yet"
-        >
-          Align (demo)
-        </button>
+        <span class={styles.toolDivider} aria-hidden="true" />
 
-        <button type="button" class={styles.toolBtn} onClick={exportWorkspace}>
-          Export
-        </button>
-        <label class={styles.toolBtn}>
-          Import
-          <input
-            type="file"
-            accept=".json"
-            style={{ display: 'none' }}
-            onChange={(e) => {
-              const file = e.currentTarget.files?.[0]
-              if (file !== undefined) importWorkspace(file)
-            }}
-          />
-        </label>
+        <div class={styles.toolGroup}>
+          <button
+            type="button"
+            class={styles.toolBtn}
+            onClick={exportWorkspace}
+          >
+            <ExportFile />
+            Export
+          </button>
+          <label class={styles.toolBtn}>
+            <ImportFile />
+            Import
+            <input
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.currentTarget.files?.[0]
+                if (file !== undefined) importWorkspace(file)
+              }}
+            />
+          </label>
+        </div>
 
         <span class={styles.frameCount}>
+          <Show when={capture.isActive()}>
+            <span class={styles.liveDot} aria-hidden="true" />
+          </Show>
           {spectra().length} frames · {transformCount()} transforms
         </span>
       </div>
 
       <Show when={!enoughFrames()}>
-        <p class={styles.hint}>
-          The analysis tools run on accumulated spectra. Start capture and sing
-          for a few seconds to fill the buffer. Press Space while capturing to
-          drop a time marker.
-        </p>
+        <div class={styles.empty}>
+          <span class={styles.emptyGlyph} aria-hidden="true">
+            <WaveformBars />
+          </span>
+          <h3 class={styles.emptyTitle}>No spectra yet</h3>
+          <p class={styles.emptyBody}>
+            Every analysis tool above runs on accumulated spectra, and spectra
+            only accumulate while the mic is live. Start capture and sing for a
+            few seconds to fill the buffer. Press{' '}
+            <kbd class={styles.key}>Space</kbd> while capturing to drop a time
+            marker.
+          </p>
+        </div>
       </Show>
 
-      <div class={styles.results}>
-        <Show when={bpm() !== null}>
-          <div class={styles.resultCard}>
-            <span class={styles.resultLabel}>Tempo</span>
-            <span class={styles.resultValue}>{bpm()?.toFixed(1)} BPM</span>
-            <span class={styles.resultLabel}>{onsets().length} onsets</span>
-          </div>
-        </Show>
-        <Show when={key()}>
-          <div class={styles.resultCard}>
-            <span class={styles.resultLabel}>Key</span>
-            <span class={styles.resultValue}>{key()!.key}</span>
-            <span class={styles.resultLabel}>
-              {Math.round(key()!.confidence * 100)}% confident
-            </span>
-          </div>
-        </Show>
-        <Show when={chords().length > 0}>
-          <div class={styles.resultCard}>
-            <span class={styles.resultLabel}>Chords</span>
-            <span class={styles.resultValue}>{chords().length}</span>
-          </div>
-        </Show>
-        <Show when={segments()}>
-          <div class={styles.resultCard}>
-            <span class={styles.resultLabel}>Segments</span>
-            <span class={styles.resultValue}>
-              {segments()!.segments.length}
-            </span>
-          </div>
-        </Show>
-        <Show when={alignment()}>
-          <div class={styles.resultCard}>
-            <span class={styles.resultLabel}>Alignment</span>
-            <span class={styles.resultValue}>
-              {Math.round(alignment()!.similarityScore * 100)}%
-            </span>
-            <span class={styles.resultLabel}>
-              {alignment()!.tempoRatio.toFixed(2)}× tempo
-            </span>
-          </div>
-        </Show>
-      </div>
+      <Show when={hasResults()}>
+        <div class={styles.results}>
+          <Show when={bpm() !== null}>
+            <div class={styles.resultCard}>
+              <span class={styles.resultLabel}>Tempo</span>
+              <span class={styles.resultValue}>
+                {bpm()?.toFixed(1)}
+                <span class={styles.resultUnit}>BPM</span>
+              </span>
+              <span class={styles.resultDetail}>{onsets().length} onsets</span>
+            </div>
+          </Show>
+          <Show when={key()}>
+            <div class={styles.resultCard}>
+              <span class={styles.resultLabel}>Key</span>
+              <span class={styles.resultValue}>{key()!.key}</span>
+              <span class={styles.resultDetail}>
+                {Math.round(key()!.confidence * 100)}% confident
+              </span>
+            </div>
+          </Show>
+          <Show when={chords().length > 0}>
+            <div class={styles.resultCard}>
+              <span class={styles.resultLabel}>Chords</span>
+              <span class={styles.resultValue}>{chords().length}</span>
+              <span class={styles.resultDetail}>simplified sequence</span>
+            </div>
+          </Show>
+          <Show when={segments()}>
+            <div class={styles.resultCard}>
+              <span class={styles.resultLabel}>Segments</span>
+              <span class={styles.resultValue}>
+                {segments()!.segments.length}
+              </span>
+              <span class={styles.resultDetail}>structural boundaries</span>
+            </div>
+          </Show>
+          <Show when={alignment()}>
+            <div class={styles.resultCard}>
+              <span class={styles.resultLabel}>Alignment</span>
+              <span class={styles.resultValue}>
+                {Math.round(alignment()!.similarityScore * 100)}
+                <span class={styles.resultUnit}>%</span>
+              </span>
+              <span class={styles.resultDetail}>
+                {alignment()!.tempoRatio.toFixed(2)}× tempo
+              </span>
+            </div>
+          </Show>
+        </div>
+      </Show>
 
       <div class={styles.paneWrap}>
         <MultiPaneView

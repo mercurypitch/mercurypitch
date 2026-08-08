@@ -146,6 +146,34 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Changed
 
+- **The Lab restyled onto one shared vocabulary.** `Lab.module.css` declares a
+  private palette on `.page` — `--lab-void`/`panel`/`raised`/`line`/`ink`/
+  `muted`, the `--lab-signal`/`--lab-measured` accent pair, `--lab-bevel` and
+  `--lab-mono` — and every tab's own stylesheet inherits it through the
+  cascade, including `PitchTestingTab`'s and `PitchAlgorithmTester`'s. Unlike
+  Zen's `--studio-*` or Guitar Night's `--amber`, which hardcode hexes because
+  they are standalone Vite entries that never load `app.css`, every name here
+  derives from a global token: the Lab runs inside the app shell, where a
+  literal hex breaks 7 of the 8 themes. `signal` dresses controls the Lab owns,
+  `measured` dresses numbers a capture produced. The header gained the same
+  eyebrow, mark-chip and monospace-meta treatment the pitch-stage shell uses,
+  and the tab row became a padded pill tray with per-tab icons.
+
+- **The four Lab workbench sub-panels gained stylesheets.** `UnitConverter`,
+  `TransformRunner`, `AnnotationControls` and `MultiPaneView` had none: ~80
+  inline `style={{}}` objects carrying 122 literal colours between them, plus
+  two global class names (`unit-converter`, `transform-runner`) that no CSS
+  anywhere defined. All four now have CSS modules on the `--lab-*` palette,
+  with binary-state ternaries converted to `classList` toggles rather than
+  frozen into CSS. Canvas paint colours deliberately stayed in JS — a 2D
+  context's `fillStyle` cannot take `var()`, so resolving them would mean a
+  `getComputedStyle` pass, which is a behaviour change. The pane splitter also
+  grew a `::before` hit area larger than the 1px hairline it draws, and its
+  hover state moved from imperative `style.background` mutation to CSS.
+  `PitchTestingTab.module.css` shed ~560 lines of dead rules, including a
+  duplicated copy of the algorithm tester's, and gained its first media
+  queries.
+
 - **Mic waveform overlay defaults off.** `micWaveVisible` moved from a
   session `createSignal(true)` to a persisted signal
   (`pitchperfect_mic_wave_visible`, default `false`): the overlay is a
@@ -194,6 +222,28 @@ single-page-application` means a deleted chunk answers with index.html and a
   hashed assets during priming.
 
 ### Fixed
+
+- **Four latent Lab bugs the restyle surfaced.** `PitchAlgorithmTester`'s
+  performance badge keyed its class map on `green`/`yellow`/`red` while
+  `getPerformanceClassification` returns `text-green-400` and friends, so every
+  lookup missed and all five bands rendered `class="perfBadge undefined"`.
+  `PitchTestingTab` passed the undefined `--border-primary` into a `border:`
+  shorthand — an undefined var invalidates the entire shorthand, so the zoom
+  buttons and the resize grip had no border at all rather than a wrong one —
+  and its `height: 100%` never resolved against the content-height Lab panel,
+  so neither rail ever got the scrollbar its `overflow-y: auto` asked for. An
+  Ensemble checkbox row lost its `display: flex` to a more specific
+  `.pitchTestingControls .controlGroup label` rule. Eleven other undefined
+  token names (`--red-dim`, `--red-rgb`, `--green-bright`, `--yellow-dim`,
+  `--bg-secondary-hover`, `--accent-lighter`, `--surface-1`/`-2`) were
+  rendering their hardcoded fallbacks on all 8 themes.
+
+- **The Lab access gate's primary button had no guaranteed contrast.**
+  `LabPage.module.css` set `color: var(--on-accent, #07101d)`, but
+  `--on-accent` is only ever defined by the Karaoke Night entry
+  (`karaoke-night.css`), so inside the app shell it always fell through to
+  that literal. Now `var(--bg-primary)`, the one colour every theme guarantees
+  reads against its own accent.
 
 - **A dismissed share sheet is not a delivery.** `shareCard`
   (`card-renderer.ts`) returns a third outcome, `'dismissed'`, when

@@ -1,10 +1,16 @@
 // ============================================================
-// UnitConverter — Frequency ↔ MIDI ↔ Note Name converter
+// UnitConverter — Frequency / MIDI / note-name cross-reference
+//
+// Lab-exclusive: the only mount point is the Spectral workbench tab. All
+// styling lives in the sibling module — the panel used to carry ~25 literal
+// rgba() values inline, which meant it only looked right in the dark theme.
 // ============================================================
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For } from 'solid-js'
 import { midiToNoteName } from '@/lib/frequency-to-note'
+import { SpeedGauge } from './icons'
+import styles from './UnitConverter.module.css'
 
 const NOTE_NAMES = [
   'C',
@@ -73,197 +79,105 @@ export const UnitConverter: Component = () => {
   })
 
   return (
-    <div
-      class="unit-converter"
-      style={{
-        padding: '12px',
-        background: 'rgba(255,255,255,0.03)',
-        'border-radius': '8px',
-        border: '1px solid rgba(255,255,255,0.08)',
-        'font-size': '0.8rem',
-      }}
-    >
-      <h3
-        style={{
-          margin: '0 0 10px 0',
-          'font-size': '0.85rem',
-          color: 'rgba(255,255,255,0.6)',
-        }}
-      >
-        📐 Unit Converter
+    <div class={styles.panel}>
+      <h3 class={styles.title}>
+        <span aria-hidden="true">
+          <SpeedGauge />
+        </span>
+        Unit converter
       </h3>
 
-      <div style={{ display: 'flex', gap: '12px', 'flex-wrap': 'wrap' }}>
-        {/* Freq → MIDI */}
-        <div
-          style={{
-            flex: 1,
-            'min-width': '140px',
-            padding: '8px',
-            background: 'rgba(255,255,255,0.03)',
-            'border-radius': '4px',
-          }}
-        >
-          <div
-            style={{
-              'font-size': '0.7rem',
-              color: 'rgba(255,255,255,0.4)',
-              'margin-bottom': '4px',
-            }}
-          >
-            Frequency
+      <div class={styles.lanes}>
+        {/* Frequency → note name + MIDI */}
+        <div class={styles.lane}>
+          <span class={styles.laneLabel}>Frequency</span>
+          <div class={styles.control}>
+            <input
+              aria-label="Frequency in hertz"
+              class={styles.field}
+              onInput={(e) => setFreqInput(e.currentTarget.value)}
+              placeholder="440"
+              type="number"
+              value={freqInput()}
+            />
+            <span class={styles.unit}>Hz</span>
           </div>
-          <input
-            type="number"
-            value={freqInput()}
-            onInput={(e) => setFreqInput(e.currentTarget.value)}
-            placeholder="440"
-            style={{
-              width: '80px',
-              padding: '4px 6px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              'border-radius': '3px',
-              color: '#fff',
-              'font-size': '0.8rem',
-            }}
-          />
-          <span
-            style={{
-              'margin-left': '4px',
-              'font-size': '0.7rem',
-              color: 'rgba(255,255,255,0.4)',
-            }}
-          >
-            Hz
-          </span>
           {fromFreq() !== null && (
-            <div
-              style={{
-                'margin-top': '4px',
-                'font-size': '0.75rem',
-                color: '#58a6ff',
-              }}
-            >
-              {fromFreq()!.name} {formatCents(fromFreq()!.cents)} · MIDI{' '}
-              {fromFreq()!.midi.toFixed(1)}
+            <div class={styles.out}>
+              <span class={styles.outMain}>{fromFreq()!.name}</span>
+              <span class={styles.outMeta}>
+                {formatCents(fromFreq()!.cents)}
+              </span>
+              <span class={styles.outMeta}>
+                MIDI {fromFreq()!.midi.toFixed(1)}
+              </span>
             </div>
           )}
         </div>
 
-        {/* MIDI → Freq */}
-        <div
-          style={{
-            flex: 1,
-            'min-width': '140px',
-            padding: '8px',
-            background: 'rgba(255,255,255,0.03)',
-            'border-radius': '4px',
-          }}
-        >
-          <div
-            style={{
-              'font-size': '0.7rem',
-              color: 'rgba(255,255,255,0.4)',
-              'margin-bottom': '4px',
-            }}
-          >
-            MIDI Note
+        {/* MIDI → frequency + note name */}
+        <div class={styles.lane}>
+          <span class={styles.laneLabel}>MIDI note</span>
+          <div class={styles.control}>
+            <input
+              aria-label="MIDI note number"
+              class={styles.field}
+              max="127"
+              min="0"
+              onInput={(e) => setMidiInput(e.currentTarget.value)}
+              placeholder="69"
+              type="number"
+              value={midiInput()}
+            />
           </div>
-          <input
-            type="number"
-            value={midiInput()}
-            onInput={(e) => setMidiInput(e.currentTarget.value)}
-            placeholder="69"
-            min="0"
-            max="127"
-            style={{
-              width: '60px',
-              padding: '4px 6px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              'border-radius': '3px',
-              color: '#fff',
-              'font-size': '0.8rem',
-            }}
-          />
           {fromMidi() !== null && (
-            <div
-              style={{
-                'margin-top': '4px',
-                'font-size': '0.75rem',
-                color: '#58a6ff',
-              }}
-            >
-              {fromMidi()!.freq.toFixed(1)} Hz · {fromMidi()!.name}{' '}
-              {formatCents(fromMidi()!.cents)}
+            <div class={styles.out}>
+              <span class={styles.outMain}>
+                {fromMidi()!.freq.toFixed(1)}
+                <span class={styles.outUnit}>Hz</span>
+              </span>
+              <span class={styles.outMeta}>{fromMidi()!.name}</span>
+              <span class={styles.outMeta}>
+                {formatCents(fromMidi()!.cents)}
+              </span>
             </div>
           )}
         </div>
 
-        {/* Note → Freq */}
-        <div
-          style={{
-            flex: 1,
-            'min-width': '140px',
-            padding: '8px',
-            background: 'rgba(255,255,255,0.03)',
-            'border-radius': '4px',
-          }}
-        >
-          <div
-            style={{
-              'font-size': '0.7rem',
-              color: 'rgba(255,255,255,0.4)',
-              'margin-bottom': '4px',
-            }}
-          >
-            Note Name
-          </div>
-          <select
-            value={noteInput()}
-            onChange={(e) => setNoteInput(e.currentTarget.value)}
-            style={{
-              padding: '4px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              'border-radius': '3px',
-              color: '#fff',
-              'font-size': '0.8rem',
-            }}
-          >
-            <For each={NOTE_NAMES}>
-              {(n: string) => <option value={n}>{n}</option>}
-            </For>
-          </select>
-          <input
-            type="number"
-            value={octaveInput()}
-            onInput={(e) => setOctaveInput(e.currentTarget.value)}
-            placeholder="4"
-            min="0"
-            max="9"
-            style={{
-              width: '40px',
-              padding: '4px 6px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              'border-radius': '3px',
-              color: '#fff',
-              'font-size': '0.8rem',
-              'margin-left': '4px',
-            }}
-          />
-          {fromNote() !== null && (
-            <div
-              style={{
-                'margin-top': '4px',
-                'font-size': '0.75rem',
-                color: '#58a6ff',
-              }}
+        {/* Note name + octave → frequency + MIDI */}
+        <div class={styles.lane}>
+          <span class={styles.laneLabel}>Note name</span>
+          <div class={styles.control}>
+            <select
+              aria-label="Note name"
+              class={styles.select}
+              onChange={(e) => setNoteInput(e.currentTarget.value)}
+              value={noteInput()}
             >
-              {fromNote()!.freq.toFixed(1)} Hz · MIDI{' '}
-              {fromNote()!.midi.toFixed(1)}
+              <For each={NOTE_NAMES}>
+                {(n: string) => <option value={n}>{n}</option>}
+              </For>
+            </select>
+            <input
+              aria-label="Octave"
+              class={`${styles.field} ${styles.fieldTight}`}
+              max="9"
+              min="0"
+              onInput={(e) => setOctaveInput(e.currentTarget.value)}
+              placeholder="4"
+              type="number"
+              value={octaveInput()}
+            />
+          </div>
+          {fromNote() !== null && (
+            <div class={styles.out}>
+              <span class={styles.outMain}>
+                {fromNote()!.freq.toFixed(1)}
+                <span class={styles.outUnit}>Hz</span>
+              </span>
+              <span class={styles.outMeta}>
+                MIDI {fromNote()!.midi.toFixed(1)}
+              </span>
             </div>
           )}
         </div>

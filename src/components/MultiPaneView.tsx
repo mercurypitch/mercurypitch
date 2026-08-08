@@ -7,7 +7,8 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import type { VibratoResult } from '@/lib/vocal-analyzer'
 import { addPane, paneLayout, removePane, setPaneHeights, togglePaneCollapse, toggleSyncTime, } from '@/stores/pane-layout-store'
 import type { PaneConfig, PaneLayerType } from '@/types'
-import { LinkChain, Pencil } from './icons'
+import { AudioWave, ChevronDown, ChevronUp, LinkChain, ListRows, MusicNote, Pencil, Plus, Repeat, RotateCcw, SpeedGauge, WaveformBars, X, } from './icons'
+import styles from './MultiPaneView.module.css'
 import { CentsDeviationPane } from './panes/CentsDeviationPane'
 import { PitchTracePane } from './panes/PitchTracePane'
 // ── Pane renderer selectors (imported lazily to avoid circular deps) ──
@@ -58,25 +59,24 @@ const PANE_LABELS: Record<PaneLayerType, string> = {
   spectrum: 'Spectrum',
 }
 
-// Unicode DRAWING glyphs, not emoji (repo rule) — the one entry that
-// needs a pictorial icon renders the shared Pencil SVG instead.
-const PANE_ICONS: Record<PaneLayerType, string | (() => JSX.Element)> = {
-  spectrogram: '≋',
-  waveform: '∿',
-  'pitch-trace': '╱╲',
-  'cents-deviation': '◎',
-  vibrato: '〜',
-  annotation: () => (
-    <span style={{ display: 'inline-flex', 'vertical-align': '-2px' }}>
-      <Pencil size={11} />
-    </span>
-  ),
-  spectrum: '▁',
+// One SVG mark per pane type. This map used to hold Unicode drawing
+// characters (a triple wave, a sine, two diagonals, a circled dot, a tilde,
+// a low block) — arguably legal under the no-emoji rule, but rendered at
+// whatever weight and baseline the user's font fallback happened to supply,
+// and the pitch-trace entry was two glyphs pretending to be one icon.
+const PANE_ICONS: Record<PaneLayerType, Component> = {
+  spectrogram: ListRows,
+  waveform: AudioWave,
+  'pitch-trace': MusicNote,
+  'cents-deviation': SpeedGauge,
+  vibrato: Repeat,
+  annotation: Pencil,
+  spectrum: WaveformBars,
 }
 
 const paneIcon = (type: PaneLayerType): JSX.Element => {
-  const icon = PANE_ICONS[type]
-  return typeof icon === 'function' ? icon() : icon
+  const Icon = PANE_ICONS[type]
+  return <Icon />
 }
 
 // ============================================================
@@ -265,6 +265,10 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
   }
 
   // ── Render a single pane ───────────────────────────────────
+  // Every branch below hands the pane its own pixel height and lets it
+  // paint itself. No colour crosses this boundary: the canvas palettes live
+  // in the *Canvas components, because a 2D context cannot resolve a CSS
+  // variable.
   const renderPaneContent = (pane: PaneConfig) => {
     const [t0, t1] = timeRange()
     const h = (pane.height / 100) * containerHeight()
@@ -311,7 +315,10 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
         )
       case 'vibrato':
         return (
-          <div style={{ height: `${Math.max(80, h - 32)}px`, padding: '4px' }}>
+          <div
+            class={styles.vibratoWrap}
+            style={{ height: `${Math.max(80, h - 32)}px` }}
+          >
             <VibratoWaveformCanvas
               vibrato={vibratoResult()}
               isActive={props.isPlaying ?? true}
@@ -328,99 +335,47 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
           />
         )
       default:
-        return (
-          <div style={{ padding: '12px', color: 'rgba(255,255,255,0.4)' }}>
-            Unknown layer
-          </div>
-        )
+        return <div class={styles.unknown}>Unknown layer</div>
     }
   }
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <div
-      ref={containerRef!}
-      class="multi-pane-view"
-      style={{
-        display: 'flex',
-        'flex-direction': 'column',
-        height: '100%',
-        'min-height': '400px',
-        background: 'var(--surface-1, rgba(255,255,255,0.02))',
-        'border-radius': '8px',
-        border: '1px solid var(--border, rgba(255,255,255,0.08))',
-        overflow: 'hidden',
-      }}
-    >
+    <div ref={containerRef!} class={styles.root}>
       {/* Toolbar */}
-      <div
-        class="multi-pane-toolbar"
-        style={{
-          display: 'flex',
-          'align-items': 'center',
-          gap: '8px',
-          padding: '6px 12px',
-          'border-bottom': '1px solid var(--border, rgba(255,255,255,0.08))',
-          background: 'rgba(255,255,255,0.03)',
-        }}
-      >
+      <div class={styles.toolbar}>
         {/* Add Pane dropdown */}
-        <div style={{ position: 'relative' }}>
+        <div class={styles.addWrap}>
           <button
-            class="pane-toolbar-btn"
+            type="button"
+            class={styles.toolBtn}
             onClick={() => {
               const menu = document.getElementById('add-pane-menu')
               if (menu)
                 menu.style.display =
                   menu.style.display === 'none' ? 'block' : 'none'
             }}
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: 'rgba(255,255,255,0.7)',
-              'font-size': '0.75rem',
-              padding: '4px 10px',
-              'border-radius': '4px',
-              cursor: 'pointer',
-            }}
           >
-            + Add Pane
+            <Plus />
+            Add Pane
           </button>
+          {/* `display` is the one declaration that cannot move to the
+              stylesheet: the toggle above reads it back off the element, and
+              an empty inline value would invert the first click. */}
           <div
             id="add-pane-menu"
-            style={{
-              display: 'none',
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              'z-index': 100,
-              background: 'var(--surface-2, #1a1a2e)',
-              border: '1px solid var(--border, rgba(255,255,255,0.15))',
-              'border-radius': '6px',
-              'min-width': '160px',
-              'margin-top': '4px',
-              'box-shadow': '0 8px 24px rgba(0,0,0,0.4)',
-            }}
+            class={styles.menu}
+            style={{ display: 'none' }}
           >
             <For each={availableTypes}>
               {(type) => (
                 <button
-                  class="pane-menu-item"
+                  type="button"
+                  class={styles.menuItem}
                   onClick={() => {
                     addPane(type)
                     const menu = document.getElementById('add-pane-menu')
                     if (menu) menu.style.display = 'none'
-                  }}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    'text-align': 'left',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'rgba(255,255,255,0.7)',
-                    padding: '6px 12px',
-                    cursor: 'pointer',
-                    'font-size': '0.8rem',
                   }}
                 >
                   {paneIcon(type)} {PANE_LABELS[type]}
@@ -430,162 +385,85 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
           </div>
         </div>
 
-        <div style={{ flex: 1 }} />
+        <div class={styles.spacer} />
 
         {/* Sync toggle */}
         <button
-          class="pane-toolbar-btn"
+          type="button"
+          class={styles.toolBtn}
+          classList={{ [styles.syncOn]: syncTime() }}
           onClick={toggleSyncTime}
+          aria-pressed={syncTime()}
           title={
             syncTime()
               ? 'Synced (click to unsync)'
               : 'Independent (click to sync)'
           }
-          style={{
-            background: syncTime()
-              ? 'rgba(34,197,94,0.15)'
-              : 'rgba(255,255,255,0.06)',
-            border: syncTime()
-              ? '1px solid rgba(34,197,94,0.3)'
-              : '1px solid rgba(255,255,255,0.1)',
-            color: syncTime() ? '#22c55e' : 'rgba(255,255,255,0.5)',
-            'font-size': '0.72rem',
-            padding: '4px 10px',
-            'border-radius': '4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            'align-items': 'center',
-            gap: '4px',
-          }}
         >
-          <LinkChain size={11} /> Sync
+          <LinkChain /> Sync
         </button>
 
         {/* Reset */}
         <button
-          class="pane-toolbar-btn"
+          type="button"
+          class={styles.toolBtn}
           onClick={() => {
             setTimeRange([0, props.audioDuration || 60])
           }}
           title="Reset time range"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.5)',
-            'font-size': '0.72rem',
-            padding: '4px 10px',
-            'border-radius': '4px',
-            cursor: 'pointer',
-          }}
         >
-          ↺ Reset
+          <RotateCcw /> Reset
         </button>
       </div>
 
       {/* Panes */}
-      <div
-        class="multi-pane-panes"
-        style={{
-          flex: 1,
-          display: 'flex',
-          'flex-direction': 'column',
-          overflow: 'hidden',
-        }}
-      >
+      <div class={styles.panes}>
         <For each={panes()}>
           {(pane, idx) => (
             <>
               {/* Pane */}
               <div
-                class={`multi-pane ${pane.collapsed ? 'collapsed' : ''}`}
+                class={styles.pane}
+                classList={{
+                  [styles.paneCollapsed]: pane.collapsed,
+                  [styles.paneStatic]: dragState() !== null,
+                }}
                 style={{
                   height: pane.collapsed ? '32px' : `${pane.height}%`,
-                  'min-height': pane.collapsed ? '32px' : '60px',
-                  display: 'flex',
-                  'flex-direction': 'column',
-                  'border-bottom':
-                    idx() < panes().length - 1
-                      ? '1px solid rgba(255,255,255,0.04)'
-                      : 'none',
-                  transition: dragState() ? 'none' : 'height 0.15s ease',
                 }}
               >
                 {/* Pane Header */}
-                <div
-                  class="pane-header"
-                  style={{
-                    display: 'flex',
-                    'align-items': 'center',
-                    gap: '6px',
-                    padding: '2px 10px',
-                    background: 'rgba(255,255,255,0.02)',
-                    'min-height': '28px',
-                    'user-select': 'none',
-                  }}
-                >
-                  <span
-                    style={{
-                      'font-size': '0.75rem',
-                      color: 'rgba(255,255,255,0.5)',
-                      'margin-right': '2px',
-                    }}
-                  >
+                <div class={styles.paneHeader}>
+                  <span class={styles.paneGlyph} aria-hidden="true">
                     {paneIcon(pane.layerType)}
                   </span>
-                  <span
-                    style={{
-                      'font-size': '0.72rem',
-                      color: 'rgba(255,255,255,0.65)',
-                      'font-weight': '500',
-                    }}
-                  >
+                  <span class={styles.paneTitle}>
                     {PANE_LABELS[pane.layerType]}
                   </span>
-                  <div style={{ flex: 1 }} />
+                  <div class={styles.spacer} />
                   <button
-                    class="pane-header-btn"
+                    type="button"
+                    class={styles.paneBtn}
                     onClick={() => togglePaneCollapse(pane.id)}
                     title={pane.collapsed ? 'Expand' : 'Collapse'}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'rgba(255,255,255,0.4)',
-                      cursor: 'pointer',
-                      'font-size': '0.7rem',
-                      padding: '0 4px',
-                    }}
                   >
-                    {pane.collapsed ? '▸' : '▾'}
+                    {pane.collapsed ? <ChevronDown /> : <ChevronUp />}
                   </button>
                   <Show when={panes().length > 1}>
                     <button
-                      class="pane-header-btn"
+                      type="button"
+                      class={`${styles.paneBtn} ${styles.paneBtnDanger}`}
                       onClick={() => removePane(pane.id)}
                       title="Remove pane"
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'rgba(255,255,255,0.3)',
-                        cursor: 'pointer',
-                        'font-size': '0.7rem',
-                        padding: '0 4px',
-                      }}
                     >
-                      ×
+                      <X />
                     </button>
                   </Show>
                 </div>
 
                 {/* Pane Content */}
                 <Show when={!pane.collapsed}>
-                  <div
-                    class="pane-content"
-                    style={{
-                      flex: 1,
-                      overflow: 'hidden',
-                      position: 'relative',
-                    }}
-                  >
+                  <div class={styles.paneContent}>
                     {renderPaneContent(pane)}
                   </div>
                 </Show>
@@ -600,33 +478,16 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
                 }
               >
                 <div
-                  class="pane-resize-handle"
+                  class={styles.handle}
+                  classList={{
+                    [styles.handleActive]: dragState()?.paneId === pane.id,
+                  }}
+                  role="separator"
+                  aria-orientation="horizontal"
                   onMouseDown={(e) => onDragStart(e, pane.id)}
                   onTouchStart={(e) =>
                     onDragStart(e as unknown as TouchEvent, pane.id)
                   }
-                  style={{
-                    height: '6px',
-                    'min-height': '6px',
-                    cursor: 'row-resize',
-                    background:
-                      dragState()?.paneId === pane.id
-                        ? 'rgba(88,166,255,0.3)'
-                        : 'rgba(255,255,255,0.03)',
-                    transition: dragState() ? 'none' : 'background 0.15s',
-                    'flex-shrink': 0,
-                    'z-index': 10,
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLElement).style.background =
-                      'rgba(88,166,255,0.15)'
-                  }}
-                  onMouseLeave={(e) => {
-                    if (dragState()?.paneId !== pane.id) {
-                      ;(e.currentTarget as HTMLElement).style.background =
-                        'rgba(255,255,255,0.03)'
-                    }
-                  }}
                 />
               </Show>
             </>
@@ -635,37 +496,14 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
       </div>
 
       {/* Time Ruler */}
-      <div
-        class="multi-pane-time-ruler"
-        style={{
-          height: '24px',
-          'min-height': '24px',
-          display: 'flex',
-          'align-items': 'center',
-          padding: '0 12px',
-          'border-top': '1px solid rgba(255,255,255,0.08)',
-          background: 'rgba(255,255,255,0.03)',
-          position: 'relative',
-          'font-size': '0.65rem',
-          color: 'rgba(255,255,255,0.4)',
-        }}
-      >
+      <div class={styles.ruler}>
         <For each={timeTicks()}>
           {(t) => {
             const [start, end] = timeRange()
             const dur = end - start
             const pct = dur > 0 ? ((t - start) / dur) * 100 : 0
             return (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${pct}%`,
-                  bottom: '4px',
-                  transform: 'translateX(-50%)',
-                  'font-size': '0.6rem',
-                  color: 'rgba(255,255,255,0.35)',
-                }}
-              >
+              <div class={styles.tick} style={{ left: `${pct}%` }}>
                 {formatTime(t)}
               </div>
             )
@@ -678,20 +516,7 @@ export const MultiPaneView: Component<MultiPaneViewProps> = (props) => {
             const dur = end - start
             const pct =
               dur > 0 ? ((props.playheadPosition - start) / dur) * 100 : 0
-            return (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${pct}%`,
-                  top: 0,
-                  bottom: 0,
-                  width: '2px',
-                  background: '#f85149',
-                  'z-index': 5,
-                  'pointer-events': 'none',
-                }}
-              />
-            )
+            return <div class={styles.playhead} style={{ left: `${pct}%` }} />
           })()}
         </Show>
       </div>

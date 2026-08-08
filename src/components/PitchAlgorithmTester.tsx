@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { Play, WaveformBars, Zap } from '@/components/icons'
 import { REGISTERED_ALGORITHMS, TEST_SAMPLES } from '@/data/pitch-test-samples'
 import type { AlgorithmResult, TestSample } from '@/lib/pitch-algorithm-tester'
 import { ACCURACY_BAND_COLORS, benchmarkAlgorithmAsync, DEFAULT_ALGORITHMS, getPerformanceClassification, } from '@/lib/pitch-algorithm-tester'
@@ -188,6 +189,7 @@ export const PitchAlgorithmTester: Component<
                 selectedAlgorithms().length === 0
               }
             >
+              <Play />
               {running() ? 'Running...' : 'Run Selected'}
             </button>
             <button
@@ -195,6 +197,7 @@ export const PitchAlgorithmTester: Component<
               onClick={runAll}
               disabled={running()}
             >
+              <Zap />
               Run All
             </button>
           </div>
@@ -245,10 +248,16 @@ export const PitchAlgorithmTester: Component<
                   const perf = getPerformanceClassification(
                     result.avgComputationTime,
                   )
+                  // Keyed on what getPerformanceClassification actually
+                  // returns. The old map keyed on bare colour names, so every
+                  // lookup missed and the badge rendered `class="perfBadge
+                  // undefined"` — unstyled, for all five bands.
                   const perfClass: Record<string, string> = {
-                    green: styles.perfGreen,
-                    yellow: styles.perfYellow,
-                    red: styles.perfRed,
+                    'text-green-400': styles.perfGreen,
+                    'text-blue-400': styles.perfBlue,
+                    'text-yellow-400': styles.perfYellow,
+                    'text-orange-400': styles.perfOrange,
+                    'text-red-400': styles.perfRed,
                   }
                   const color =
                     ACCURACY_BAND_COLORS[
@@ -262,7 +271,7 @@ export const PitchAlgorithmTester: Component<
                           {result.algorithm}
                         </span>
                         <span
-                          class={`${styles.perfBadge} ${perfClass[perf.color]}`}
+                          class={`${styles.perfBadge} ${perfClass[perf.color] ?? ''}`}
                         >
                           {perf.label}
                         </span>
@@ -386,7 +395,15 @@ export const PitchAlgorithmTester: Component<
 
           <Show when={!showResults()}>
             <div class={styles.emptyResults}>
-              Select algorithms and samples above, then click Run to benchmark.
+              <span class={styles.emptyGlyph} aria-hidden="true">
+                <WaveformBars />
+              </span>
+              <h3 class={styles.emptyTitle}>No benchmark yet</h3>
+              <p class={styles.emptyBody}>
+                Pick the detectors and test samples you want to compare, then
+                run the bench. Total score, per-note deviation in cents and
+                average compute time land here.
+              </p>
             </div>
           </Show>
         </div>

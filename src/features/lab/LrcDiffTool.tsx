@@ -13,6 +13,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
+import { Split } from '@/components/icons'
 import { compareLrcText, shareWithin } from '@/lib/lrc-compare'
 import labStyles from './Lab.module.css'
 import styles from './LrcDiffTool.module.css'
@@ -116,9 +117,16 @@ export const LrcDiffTool: Component = () => {
 
       <Show
         fallback={
-          <p class={labStyles.hint}>
-            Load or paste both mappings to compare them.
-          </p>
+          <div class={labStyles.empty}>
+            <span class={labStyles.emptyGlyph} aria-hidden="true">
+              <Split />
+            </span>
+            <h3 class={labStyles.emptyTitle}>Nothing to compare yet</h3>
+            <p class={labStyles.emptyBody}>
+              Load or paste both mappings above. The headline numbers and the
+              per-line table appear as soon as each side has content.
+            </p>
+          </div>
         }
         when={comparison()}
       >
