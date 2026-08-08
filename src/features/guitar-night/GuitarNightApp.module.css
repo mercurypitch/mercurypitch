@@ -1905,6 +1905,17 @@
   margin: 0;
 }
 
+/* The score room reuses the controls class with a DIFFERENT child list —
+   play, tempo group, count-in, tab sounds — so the play-along column template
+   cannot fit it: the tempo group landed in the 3.4rem column and its BPM
+   readout and plus button disappeared under the count-in select. Flex lets
+   each control take its own width instead of inheriting another room's. */
+[data-room-kind='score'] .transportControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .transportControls button,
 .channelStrip button,
 .roomFooter > button {
