@@ -1253,6 +1253,23 @@ export const Copy: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// UserRound Icon — the signed-in account itself
+export const UserRound: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 16}
+    height={p.size ?? 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21a8 8 0 0 1 16 0" />
+  </svg>
+)
+
 // UserPlus Icon — add someone as a friend
 export const UserPlus: Component<{ size?: number }> = (p) => (
   <svg

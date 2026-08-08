@@ -8,13 +8,15 @@ FIRST VIEWPORT: One calm amp-faceplate entry surface leaves the approved room an
 FORM: A grounded rehearsal-room welcome with three deliberately unequal paths and no synthetic activity.
 */
 
-import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, Match, onCleanup, onMount, Show, Suspense, Switch, } from 'solid-js'
 import type { GuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { createGuitarBackingTransport } from '@/features/guitar/backing/guitar-backing-transport'
 import { useGuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { beatToSeconds } from '@/features/guitar/runtime/guitar-performance-contract'
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
+import { createPersistedSignal } from '@/lib/storage'
+import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBackdropId, resolveBackdrop, } from './backdrops'
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
@@ -33,7 +35,19 @@ import { loadDefaultGuitarNightReferencePort, useGuitarNightReferenceController,
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
-type EntryView = 'choices' | 'first-win' | 'song' | 'room'
+/** The auth and billing services stay out of the room's first paint. */
+const GuitarNightAccount = lazy(async () => {
+  const module = await import('./GuitarNightAccount')
+  return { default: module.GuitarNightAccount }
+})
+
+/** The tab-only room brings its own audio clock, so it loads on demand. */
+const GuitarNightScoreRoom = lazy(async () => {
+  const module = await import('./GuitarNightScoreRoom')
+  return { default: module.GuitarNightScoreRoom }
+})
+
+type EntryView = 'choices' | 'first-win' | 'song' | 'room' | 'score-room'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
@@ -119,9 +133,19 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       tempoBpm: firstWinController.tempoBpm,
     },
   }
+  const [backdropId, setBackdropId] = createPersistedSignal<string>(
+    BACKDROP_STORAGE_KEY,
+    DEFAULT_BACKDROP_ID,
+    { validator: isBackdropId },
+  )
+  const backdrop = createMemo(() => resolveBackdrop(backdropId()))
   const initialSessionId = readGuitarNightSession()
   const [view, setView] = createSignal<EntryView>(
     initialSessionId === null ? 'choices' : 'song',
+  )
+  // Both rooms take the panel full-bleed and hide the entry chrome.
+  const isRoomView = createMemo(
+    () => view() === 'room' || view() === 'score-room',
   )
   const [visitedRoomSessionId, setVisitedRoomSessionId] = createSignal<
     string | null
@@ -172,6 +196,21 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const unavailableReference = createMemo(() => {
     const current = referenceController.state()
     return current.kind === 'unavailable' ? current : null
+  })
+  /**
+   * One reference, two rooms — and never both at once. An authored tab carries
+   * its own nominal tempo, which nothing has aligned to a recording, so it
+   * rehearses on its own clock in the tab room. A measured line was read from
+   * this very recording, so it is already on the recording's timeline and is
+   * the only reference the play-along room will guide with.
+   */
+  const authoredReference = createMemo(() => {
+    const attached = attachedReference()
+    return attached !== null && attached.kind === 'authored' ? attached : null
+  })
+  const measuredReference = createMemo(() => {
+    const attached = attachedReference()
+    return attached !== null && attached.kind === 'measured' ? attached : null
   })
 
   const preparationController = useGuitarNightPreparationController({
@@ -347,6 +386,17 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     setView('room')
   }
 
+  /**
+   * Rehearse the tab alone. The recording is left paused rather than played
+   * underneath it: nothing has aligned the two timelines, and a backing
+   * running against an unrelated tempo is worse than silence.
+   */
+  const enterScoreRoom = () => {
+    if (authoredReference() === null) return
+    playbackController.pause()
+    setView('score-room')
+  }
+
   const returnToSongs = () => {
     playbackController.pause()
     setView('song')
@@ -359,7 +409,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     bandPreparationController.clear()
     playbackController.configure(null)
     setVisitedRoomSessionId(null)
-    if (view() === 'song' || view() === 'room') {
+    if (view() === 'song' || view() === 'room' || view() === 'score-room') {
       songController.clearSession('push')
     }
     setView('choices')
@@ -442,6 +492,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     setView('song')
   })
 
+  // Removing the tab from under the tab room leaves nothing to rehearse.
+  createEffect(() => {
+    if (view() !== 'score-room' || authoredReference() !== null) return
+    setView('song')
+  })
+
   onMount(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (view() !== 'first-win' || event.code !== 'Space' || event.repeat) {
@@ -505,7 +561,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   return (
     <div
       class={styles.app}
-      classList={{ [styles.appRoom]: view() === 'room' }}
+      classList={{ [styles.appRoom]: isRoomView() }}
       data-testid="guitar-night-shell"
     >
       <a class={styles.skipLink} href="#guitar-night-main">
@@ -515,6 +571,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       <div
         class={styles.backdrop}
         data-testid="guitar-night-backdrop"
+        data-backdrop={backdrop().id}
+        style={{ '--room-backdrop': `url('${backdrop().url}')` }}
         aria-hidden="true"
       />
       <div class={styles.roomGlow} aria-hidden="true" />
@@ -526,22 +584,47 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         </a>
         <span class={styles.topbarDivider} aria-hidden="true" />
         <span class={styles.topbarTitle}>Guitar Night</span>
-        <span class={styles.roomName}>Velvet Rehearsal</span>
+        <span class={styles.roomName}>{backdrop().name}</span>
+
+        <div class={styles.topbarActions}>
+          <label class={styles.roomSelect}>
+            <span class={styles.visuallyHidden}>Room</span>
+            <select
+              value={backdrop().id}
+              title={backdrop().detail}
+              onChange={(event) => setBackdropId(event.currentTarget.value)}
+            >
+              <For each={GUITAR_NIGHT_BACKDROPS}>
+                {(room) => (
+                  <option value={room.id} title={room.detail}>
+                    {room.name}
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>
+          <a class={styles.studioLink} href="/#/guitar">
+            Full studio
+          </a>
+          <Suspense>
+            <GuitarNightAccount />
+          </Suspense>
+        </div>
       </div>
 
       <main
         class={styles.main}
-        classList={{ [styles.mainRoom]: view() === 'room' }}
+        classList={{ [styles.mainRoom]: isRoomView() }}
         id="guitar-night-main"
       >
         <div
           class={styles.entryPanel}
           classList={{
-            [styles.entryPanelRoom]: view() === 'room',
+            [styles.entryPanelRoom]: isRoomView(),
             [styles.entryPanelLesson]: view() === 'first-win',
           }}
         >
-          <Show when={view() !== 'room'}>
+          <Show when={!isRoomView()}>
             <div class={styles.panelEdge} aria-hidden="true" />
           </Show>
 
@@ -1063,10 +1146,41 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                             ? `${attached().notes.length} notes heard across ${Math.round((attached().coverage ?? 0) * 100)}% of this stem`
                             : `${attached().notes.length} authored notes at ${attached().tempoBpm} BPM`}
                         </small>
+                        <small>
+                          On a {attached().tuning.stringCount}-string{' '}
+                          {attached().tuning.instrument} ·{' '}
+                          {attached().tuning.labels.join(' ')}
+                        </small>
                         <Show when={attached().liftedOctaves === true}>
                           <small>
-                            Raised into guitar range to fit the six-string
-                            stage.
+                            Raised by whole octaves to reach this instrument’s
+                            range.
+                          </small>
+                        </Show>
+                        <Show
+                          when={
+                            attached().kind === 'authored' &&
+                            activeBacking() !== null
+                          }
+                        >
+                          <small>
+                            This tab keeps its own {attached().tempoBpm} BPM,
+                            which nothing has aligned to the recording yet — so
+                            it rehearses in the tab room, not over the backing.
+                          </small>
+                        </Show>
+                        <Show when={attached().outOfRangeNotes > 0}>
+                          <small>
+                            {attached().outOfRangeNotes}{' '}
+                            {attached().outOfRangeNotes === 1
+                              ? 'note sits'
+                              : 'notes sit'}{' '}
+                            off this neck, so{' '}
+                            {attached().outOfRangeNotes === 1
+                              ? 'it is'
+                              : 'they are'}{' '}
+                            not shown. Another instrument or string count may
+                            reach them.
                           </small>
                         </Show>
                         <Show when={attached().tracks.length > 1}>
@@ -1296,8 +1410,22 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                           type="button"
                           onClick={enterRoom}
                         >
-                          Enter room
+                          {authoredReference() === null
+                            ? 'Enter room'
+                            : 'Play along'}
                         </button>
+                        {/* Two rooms, one at a time: the tab has its own
+                            tempo and the recording has its own, and nothing
+                            aligns them yet. */}
+                        <Show when={authoredReference()}>
+                          <button
+                            class={styles.bandPreparationAction}
+                            type="button"
+                            onClick={enterScoreRoom}
+                          >
+                            Rehearse the tab
+                          </button>
+                        </Show>
                         <Show
                           when={
                             backing().defaultMix.kind === 'mixed-instrumental'
@@ -1320,6 +1448,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       </>
                     )}
                   </Match>
+                  <Match when={authoredReference() !== null}>
+                    {/* A tab alone is a complete rehearsal — no recording
+                        needed to enter a room. */}
+                    <button
+                      class={styles.completionAction}
+                      type="button"
+                      onClick={enterScoreRoom}
+                    >
+                      Rehearse the tab
+                    </button>
+                    <button type="button" onClick={() => songInput?.click()}>
+                      Choose audio
+                    </button>
+                  </Match>
                   <Match when={true}>
                     <button
                       class={styles.completionAction}
@@ -1340,16 +1482,37 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               <GuitarNightRoom
                 backing={activeBacking()!}
                 transport={playbackController}
-                reference={attachedReference}
+                reference={measuredReference}
+                tuning={referenceController.tuning}
+                onInstrument={referenceController.setInstrument}
+                onStringCount={referenceController.setStringCount}
                 onSongs={returnToSongs}
                 onSeparateGuitar={prepareGuitarFreeBand}
               />
+            </Match>
+
+            <Match when={view() === 'score-room' && authoredReference()}>
+              {(authored) => (
+                <Suspense
+                  fallback={
+                    <p class={styles.songMessage}>Opening the tab room…</p>
+                  }
+                >
+                  <GuitarNightScoreRoom
+                    reference={authored}
+                    tuning={referenceController.tuning}
+                    onInstrument={referenceController.setInstrument}
+                    onStringCount={referenceController.setStringCount}
+                    onSongs={returnToSongs}
+                  />
+                </Suspense>
+              )}
             </Match>
           </Switch>
         </div>
       </main>
 
-      <Show when={view() !== 'room'}>
+      <Show when={!isRoomView()}>
         <div
           class={styles.roomStatus}
           aria-label={`Room status: ${roomStatus().title}. ${roomStatus().detail}`}
