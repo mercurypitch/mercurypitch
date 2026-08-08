@@ -12,6 +12,10 @@ vi.mock('@/lib/consent', () => ({
     card_shared: 'AW-X/cs',
   },
   trackAdConversion,
+  // Every funnel event is also mirrored into GA4; this suite is about the
+  // Ads mapping, so the mirror only has to exist. Its own coverage lives in
+  // src/lib/ga4-funnel-mirror.test.ts.
+  trackGa4Event: vi.fn(),
 }))
 
 import { trackFunnel } from '@/features/mirror/funnel'

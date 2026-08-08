@@ -11,9 +11,9 @@
 // also built from, so the two cannot drift.
 // ============================================================
 
-import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
+import { AD_CONVERSIONS } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
-import { funnelEventBody } from '@/lib/funnel'
+import { funnelEventBody, trackFunnelTags } from '@/lib/funnel'
 import type { GlassFunnelEventName } from '@/lib/funnel-event-catalog'
 
 export type GlassFunnelEvent = GlassFunnelEventName
@@ -76,8 +76,7 @@ export function trackGlass(
   if (event === 'glass_view' && viewAlreadySentThisSession()) return
   console.info('[glass-funnel]', event)
   beacon(event, metrics)
-  // Consent Mode decides whether the Ads conversion sets cookies; a no-op
-  // unless the build ships an ad tag.
-  const sendTo = AD_CONVERSION_BY_EVENT.get(event)
-  if (sendTo !== undefined) trackAdConversion(sendTo)
+  // Consent Mode decides whether either tag sets cookies; a no-op unless
+  // the build ships them.
+  trackFunnelTags(event, AD_CONVERSION_BY_EVENT.get(event))
 }

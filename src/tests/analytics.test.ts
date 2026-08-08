@@ -12,7 +12,14 @@ async function loadAnalytics(
   apiBase: string | undefined,
 ): Promise<AnalyticsModule> {
   vi.resetModules()
-  vi.doMock('@/lib/defaults', () => ({ API_BASE_URL: apiBase }))
+  // The funnel's GA4 mirror reads the tag ids from defaults too; empty ids
+  // make it a no-op, which keeps this suite about the beacon alone.
+  vi.doMock('@/lib/defaults', () => ({
+    API_BASE_URL: apiBase,
+    GA4_MEASUREMENT_ID: '',
+    GOOGLE_ADS_TAG_ID: '',
+    IS_TEST: true,
+  }))
   return await import('@/lib/analytics')
 }
 
