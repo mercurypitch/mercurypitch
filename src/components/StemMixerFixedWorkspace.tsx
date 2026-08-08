@@ -7,9 +7,11 @@ import type { Accessor, Setter } from 'solid-js'
 import { Show } from 'solid-js'
 import type { MicInsight } from '@/features/mic-feedback/useMicInsights'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
+import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
 import { karaokeFocus } from '@/stores/ui-store'
+import { LyricsAlignSelect } from './LyricsAlignSelect'
 import { LyricsVersionMenu } from './LyricsVersionMenu'
 import { MicInsightHint } from './MicInsightHint'
 import { PitchCanvasToolbar } from './PitchCanvasToolbar'
@@ -64,6 +66,7 @@ interface StemMixerFixedWorkspaceProps {
   handleDownloadLyricsfile: () => void
   lyricsFileInputRef: (el: HTMLInputElement) => void
   handleLyricsChange: (e: Event) => void
+  setLyricsAlign: Setter<LyricsAlign>
   triggerChangeFile: () => void
   handlePasteLyricsHeader: () => void
 
@@ -453,6 +456,10 @@ export const StemMixerFixedWorkspace: Component<
                         A+
                       </button>
                     </div>
+                    <LyricsAlignSelect
+                      lyricsAlign={lp().lyricsAlign}
+                      setLyricsAlign={props.setLyricsAlign}
+                    />
                     <Show when={lp().hasMultipleSections()}>
                       <div class="sm-lyrics-col-toggle">
                         <button
