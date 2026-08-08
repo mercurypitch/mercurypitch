@@ -1,6 +1,7 @@
 // Guitar Night Room turns a prepared backing into a deliberate, silent-until-play stage.
 // ============================================================
 
+import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
@@ -11,12 +12,15 @@ import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightStage } from './GuitarNightStage'
+import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease
   transport: GuitarBackingTransportController
+  /** The attached score, when one is verified. Absent keeps the room in free play. */
+  reference?: Accessor<GuitarNightReference | null>
   onSongs(): void
   onSeparateGuitar?(): void
 }
@@ -81,10 +85,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
   })
+  const reference = createMemo(() => props.reference?.() ?? null)
   const performance = createGuitarNightPerformanceAdapter(
     () => props.transport,
     () => props.backing.title,
-    () => EMPTY_STAGE_NOTES,
+    () => reference()?.notes ?? EMPTY_STAGE_NOTES,
+    () => reference()?.tempoBpm ?? null,
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
   const isListening = createMemo(
@@ -227,6 +233,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
 
       <GuitarNightStage
         source={performance.stage}
+        guideLabel={() => {
+          const attached = reference()
+          if (attached === null) return null
+          return attached.tracks.length > 1
+            ? `${attached.title} · ${attached.trackName}`
+            : attached.title
+        }}
         active={() => true}
         listening={isListening}
         heardNote={listening.currentNote}
