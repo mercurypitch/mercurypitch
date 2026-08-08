@@ -9,6 +9,7 @@ import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroun
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, } from '@/features/karaoke-night/stage-transparency'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { consumeKaraokeAutoplayIntent } from '@/features/stem-mixer/karaoke-launch-intent'
 import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
@@ -1853,7 +1854,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   })
 
-  // Auto-seek + autoplay from Shazam match offset
+  // Auto-seek + autoplay from Shazam match offset, or a one-shot voice
+  // launch intent ("play a random song" should sing, not wait).
   let autoPlayHandled = false
   createEffect(() => {
     if (autoPlayHandled) return
@@ -1862,6 +1864,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (audio.loadError()) return
     autoPlayHandled = true
 
+    const voiceLaunch = consumeKaraokeAutoplayIntent()
     const seekSec = props.initialSeekSec
     console.log(
       '[StemMixer] Auto-play triggered. seekSec=',
@@ -1877,7 +1880,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       console.log(`[StemMixer] Seeking to match offset: ${target.toFixed(2)}s`)
       audio.seekTo(target)
     }
-    if (props.autoPlay === true) {
+    if (props.autoPlay === true || voiceLaunch) {
       console.log('[StemMixer] Scheduling auto-play...')
       // Small delay to let the seek settle before starting playback
       setTimeout(() => {

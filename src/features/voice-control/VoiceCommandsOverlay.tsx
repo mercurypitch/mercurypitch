@@ -24,8 +24,28 @@ const GROUP_TITLES: Record<string, string> = {
   countIn: 'Count-in',
   loop: 'A-B loop',
   mode: 'Play modes',
-  karaoke: 'Karaoke',
+  mic: 'Microphone',
+  ui: 'Windows',
   nav: 'Navigation and help',
+}
+
+// Karaoke alone would dwarf every other group (a command per stem per verb),
+// so it splits into digestible sections of its own.
+const KARAOKE_SUBGROUPS: Array<[RegExp, string]> = [
+  [/^karaoke\.(mute|unmute|solo|unsolo|volume)/, 'Karaoke — stems'],
+  [/^karaoke\.role/, 'Karaoke — who plays what'],
+  [/^karaoke\.(loop|speed)/, 'Karaoke — loop and speed'],
+  [/^karaoke\.(nextSong|previousSong|randomSong)/, 'Karaoke — songs'],
+]
+
+function groupTitleFor(id: string): string {
+  if (id.startsWith('karaoke.')) {
+    for (const [pattern, title] of KARAOKE_SUBGROUPS) {
+      if (pattern.test(id)) return title
+    }
+    return 'Karaoke — transport'
+  }
+  return GROUP_TITLES[id.split('.')[0]] ?? 'Other'
 }
 
 const MAX_PHRASES_SHOWN = 3
@@ -45,8 +65,7 @@ export function VoiceCommandsOverlay(props: VoiceCommandsOverlayProps) {
     const byTitle = new Map<string, OverlayRow[]>()
     for (const command of activeVoiceCommands()) {
       if (command.available !== undefined && !command.available()) continue
-      const prefix = command.id.split('.')[0]
-      const title = GROUP_TITLES[prefix] ?? 'Other'
+      const title = groupTitleFor(command.id)
       const shown = command.phrases
         .slice(0, MAX_PHRASES_SHOWN)
         .map((phrase) => phrase.replace(/<n>/g, 'N'))

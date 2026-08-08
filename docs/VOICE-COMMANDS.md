@@ -61,6 +61,15 @@ recognized (throttled so singing cannot flood the screen).
 
 - [x] `repeat mode`, `practice mode` / `session mode`, `normal mode` / `play once`
 
+### Reliability (hard-won, from field testing)
+
+- [x] The STT worker decodes strictly one utterance at a time — concurrent decodes on one pipeline corrupt each other into REPEATED output, which upstream read as the same command spoken 3-4 times (the "forward 2 min jumped 8 min" bug)
+- [x] Latest-wins utterance queue: one decode in flight, at most one waiting; a backlog of stale speaker-bleed chunks can never execute commands late (the "set B re-fired after the loop jumped" bug)
+- [x] The voice gate adapts its noise floor UNDER sustained loud audio and recalibrates on forced flushes, so a song through speakers cannot pin it open feeding the model music forever
+- [x] Duplicate-execution suppressor: the identical command inside 1.5 s is dropped no matter which engine produced it (repeating a command on purpose just needs a beat of pause)
+- [x] Engine switches apply on the FIRST change (previously the first switch was silently ignored and the old engine kept running under the new label)
+- [x] `[voice]` console logs on every heard utterance, dispatch, suppression and engine switch — reactivity bugs are visible in the in-app console capture
+
 ### Feedback and failure modes
 
 - [x] HUD pill: listening state, live interim text, "heard, did" confirmation
@@ -77,7 +86,7 @@ Latency and robustness before more commands; the grammar and adapters do not
 change, only the ear.
 
 - [x] Local utterance engine behind `VoiceListener`: MicManager capture (with mic-sentinel registration), adaptive RMS gate with pre-roll, 0.2-3.6 s utterances into a dedicated no-timestamps whisper-tiny worker (same cached weights as karaoke transcription, warm-up at load), WebGPU with WASM fallback
-- [ ] Moonshine verdict: selectable in Settings as "On-device (Moonshine, experimental)" — measure latency and accuracy against Whisper on real hardware, then pick the on-device default
+- [x] Moonshine verdict (owner, on real hardware): usable with its own quirks, slower to warm up; Whisper and the browser engine both good — **all three engines stay** and Whisper remains the on-device default. Re-compare cheaply any time: the first-engine-switch bug that could silently keep the old engine running is fixed
 - [x] Eager interim matching (browser engine): an interim that resolves to a command and stays stable ~150 ms executes immediately; the confirming final is suppressed so it cannot double-fire, and a phrase that is a prefix of a longer one ("go" on its way to "go to karaoke", "loop" to "loop off") always waits for the final
 - [x] Engine picker in Settings (Browser vs On-device) with a speech-to-text latency readout in the pill
 - [x] Optional wake-word-required mode while music is playing ("Mercury, from the top"); wakeless speech is then ignored silently — no toasts, no HUD noise
@@ -123,7 +132,7 @@ The mixer transport runs on seconds (audio time), not beats.
 - [x] **(requested)** `go to <tab>` / `open <tab>` / `switch to <tab>`: home, singing, karaoke, piano, guitar, exercises/drills, compose, path, jam, analysis, challenges, community, leaderboard, settings — visible tabs only (scope and simple-mode rules respected; hidden tabs answer "not available")
 - [x] `open library` / `close library`
 - [x] **(requested)** `open karaoke night` / `karaoke night` — leaves for the standalone stage in the same tab (owner's call); `go to karaoke` keeps meaning the in-app tab
-- [x] **(requested)** Global `play random song from my list` / `play a song` / `surprise me` — from anywhere: opens a random SONG from the library (completed separations — no playlist required) straight in its mixer, announcing its name; falls back to a random playlist song for playlist-organized libraries, and stands down while a playlist is running (the in-mixer version owns that case)
+- [x] **(requested)** Global `play random song from my list` / `play a song` / `surprise me` — from anywhere: opens a random SONG from the library (completed separations — no playlist required) straight in its mixer, announcing its name, and **auto-plays once loaded** (a one-shot launch intent the mixer consumes — reusable by any future launcher); falls back to a random playlist song for playlist-organized libraries, and stands down while a playlist is running (the in-mixer version owns that case)
 - [ ] `start my routine` / `today's session` (daily routine launcher — needs a clean launch seam out of HomePage)
 - [x] `close this` / `close` / `dismiss` — whichever modal is topmost, through the Escape key's own dismiss chain
 

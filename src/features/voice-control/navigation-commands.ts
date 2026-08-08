@@ -9,6 +9,7 @@
 // after the transport set, for the shell's lifetime.
 
 import type { Accessor } from 'solid-js'
+import { requestKaraokeAutoplay } from '@/features/stem-mixer/karaoke-launch-intent'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
 import { navigateTo } from '@/lib/hash-router'
@@ -109,6 +110,7 @@ export function createNavigationVoiceCommands(
         if (songs.length > 0) {
           const pick = songs[Math.floor(Math.random() * songs.length)]
           setActiveTab(TAB_KARAOKE)
+          requestKaraokeAutoplay()
           navigateTo({
             type: 'uvr-session-mixer',
             sessionId: pick.sessionId,

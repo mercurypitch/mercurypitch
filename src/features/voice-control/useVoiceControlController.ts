@@ -12,7 +12,7 @@
 // useKeyboardShortcuts — the two drive the same handler surface on purpose.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'
 import { showNotification } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
@@ -82,6 +82,12 @@ const UNRECOGNIZED_TOAST_INTERVAL_MS = 6000
 const EAGER_STABLE_MS = 150
 const EAGER_FINAL_SUPPRESS_MS = 2500
 
+// Defense in depth against ANY upstream duplication (engine echo, decode
+// repeats): the identical command key executing twice inside this window is
+// dropped. Deliberately short — repeating "faster" on purpose only needs a
+// beat of pause between the two.
+const DUPLICATE_EXEC_SUPPRESS_MS = 1500
+
 export function useVoiceControlController(
   deps?: VoiceControlControllerDeps,
 ): VoiceControlController {
@@ -135,10 +141,26 @@ export function useVoiceControlController(
     showNotification(`Voice: no command matches "${heard.trim()}"`, 'info')
   }
 
+  let lastExecutedKey = ''
+  let lastExecutedAt = 0
+
   const executeMatched = (
     outcome: Extract<VoiceResolveOutcome, { kind: 'matched' }>,
     heard: string,
   ) => {
+    const key = utteranceKey(heard)
+    const now = Date.now()
+    if (
+      key !== '' &&
+      key === lastExecutedKey &&
+      now - lastExecutedAt < DUPLICATE_EXEC_SUPPRESS_MS
+    ) {
+      console.log('[voice] duplicate execution suppressed:', key)
+      return
+    }
+    lastExecutedKey = key
+    lastExecutedAt = now
+    console.log('[voice] execute:', outcome.command.id, 'for:', heard)
     let result: VoiceCommandResult
     try {
       result = outcome.command.run({ n: outcome.n, m: outcome.m })
@@ -223,6 +245,7 @@ export function useVoiceControlController(
       activeVoiceCommands(),
       resolveOptions(),
     )
+    console.log('[voice] heard:', JSON.stringify(text), '->', outcome.kind)
 
     if (outcome.kind === 'ignored') {
       // Wake word required and absent: this is the backing track singing,
@@ -322,19 +345,21 @@ export function useVoiceControlController(
   }
 
   // Switching the engine in Settings while listening swaps listeners live.
-  createEffect(
-    on(
-      voiceControlEngine,
-      (engine, previous) => {
-        if (previous === undefined || engine === previous) return
-        if (!untrack(enabled)) return
-        stopListening()
-        setLastLatencyMs(null)
-        startListening()
-      },
-      { defer: true },
-    ),
-  )
+  // Tracked by hand rather than `on(..., { defer: true })`: with defer, the
+  // FIRST change arrives with `previous === undefined`, and guarding on it
+  // silently ignored the user's first engine switch — the old engine kept
+  // running under the new engine's label.
+  let lastEngine = untrack(voiceControlEngine)
+  createEffect(() => {
+    const engine = voiceControlEngine()
+    if (engine === lastEngine) return
+    lastEngine = engine
+    if (!untrack(enabled)) return
+    console.log('[voice] engine switched to:', engine)
+    stopListening()
+    setLastLatencyMs(null)
+    startListening()
+  })
 
   onMount(() => {
     if (!enabled()) return

@@ -19,6 +19,8 @@ const DEFAULT_MODEL_ID = 'Xenova/whisper-tiny'
 
 let asrPipeline: AutomaticSpeechRecognitionPipeline | null = null
 let loadingPromise: Promise<void> | null = null
+/** Serializes decodes — see the transcribe handler. */
+let transcribeQueue: Promise<void> = Promise.resolve()
 /** Whisper needs language/task generate kwargs; Moonshine and other
  *  English-only models reject them — pick per loaded model. */
 let generateKwargs: Record<string, unknown> = {}
@@ -81,7 +83,7 @@ self.onmessage = (e: MessageEvent) => {
   if (data.type === 'transcribe') {
     const id = data.id ?? -1
     const audioData = data.audioData
-    void (async () => {
+    const task = async () => {
       if (asrPipeline == null || audioData == null) {
         self.postMessage({ type: 'error', id, message: 'Model not loaded' })
         return
@@ -99,6 +101,10 @@ self.onmessage = (e: MessageEvent) => {
           message: err instanceof Error ? err.message : 'Transcription failed',
         })
       }
-    })()
+    }
+    // STRICTLY one decode at a time: the pipeline is not reentrant, and
+    // concurrent generate() calls corrupt each other's state into repeated
+    // output — which upstream reads as the same command spoken N times.
+    transcribeQueue = transcribeQueue.then(task, task)
   }
 }

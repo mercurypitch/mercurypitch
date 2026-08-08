@@ -64,15 +64,22 @@
 }
 
 .groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
   overflow-y: auto;
+  align-items: start;
   padding: 0.9rem 1.25rem 1.1rem;
-  columns: 2;
-  column-gap: 1.75rem;
 }
 
+/* Each group scrolls by itself, so a huge section (karaoke stems) cannot
+   stretch the page while the small ones float in whitespace. */
 .group {
-  margin-bottom: 1rem;
-  break-inside: avoid;
+  overflow-y: auto;
+  max-height: 15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .groupTitle {
@@ -100,8 +107,14 @@
   line-height: 1.35;
 }
 
+.groupTitle {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+}
+
 @media (max-width: 700px) {
   .groups {
-    columns: 1;
+    grid-template-columns: 1fr;
   }
 }

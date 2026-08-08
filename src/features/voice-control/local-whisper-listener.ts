@@ -95,6 +95,18 @@ export function createLocalWhisperListener(
   let speechFrames = 0
   let silenceFrames = 0
   let noiseFloor = 0.005
+  /** EMA of in-speech loudness — calibrates the floor on forced flushes. */
+  let speechRms = 0
+
+  // One decode in flight, at most one waiting, LATEST WINS: under speaker
+  // bleed the gate can outpace the model, and a backlog of stale music
+  // chunks decoding late is exactly how one spoken command turns into
+  // several delayed executions.
+  let transcribeInFlight = false
+  let queuedUtterance: {
+    buffer: Float32Array<ArrayBuffer>
+    queuedAt: number
+  } | null = null
 
   const service = () => sharedVoiceSttService(options?.modelId)
 
@@ -105,30 +117,15 @@ export function createLocalWhisperListener(
     risingFrames = 0
     speechFrames = 0
     silenceFrames = 0
+    queuedUtterance = null
   }
 
-  const flushUtterance = () => {
-    const frames = utterance
-    const voicedFrames = speechFrames
-    utterance = []
-    inSpeech = false
-    risingFrames = 0
-    speechFrames = 0
-    silenceFrames = 0
-    if (voicedFrames < minSpeechFrames) return
-
-    const tailSamples = Math.round((TAIL_PAD_MS / 1000) * captureRate)
-    let total = 0
-    for (const frame of frames) total += frame.length
-    const buffer = new Float32Array(total + tailSamples)
-    let offset = 0
-    for (const frame of frames) {
-      buffer.set(frame, offset)
-      offset += frame.length
-    }
-
+  const runTranscribe = (
+    buffer: Float32Array<ArrayBuffer>,
+    startedAt: number,
+  ) => {
+    transcribeInFlight = true
     const generation = runGeneration
-    const startedAt = performance.now()
     resampleForModel(buffer, captureRate)
       .then((resampled) => {
         if (generation !== runGeneration) return null
@@ -144,6 +141,54 @@ export function createLocalWhisperListener(
         if (generation !== runGeneration) return
         console.warn('[voice-control] local transcription failed:', err)
       })
+      .finally(() => {
+        transcribeInFlight = false
+        const queued = queuedUtterance
+        queuedUtterance = null
+        if (queued !== null && started && generation === runGeneration) {
+          runTranscribe(queued.buffer, queued.queuedAt)
+        }
+      })
+  }
+
+  const submitUtterance = (buffer: Float32Array<ArrayBuffer>) => {
+    if (transcribeInFlight) {
+      queuedUtterance = { buffer, queuedAt: performance.now() }
+      return
+    }
+    runTranscribe(buffer, performance.now())
+  }
+
+  const flushUtterance = (forcedByLength: boolean) => {
+    const frames = utterance
+    const voicedFrames = speechFrames
+    utterance = []
+    inSpeech = false
+    risingFrames = 0
+    speechFrames = 0
+    silenceFrames = 0
+
+    // A gate pinned open for the whole window means the "speech" is really
+    // sustained loud audio (the backing track through speakers). Raise the
+    // floor toward that loudness so the gate closes against it instead of
+    // feeding the model music forever.
+    if (forcedByLength) {
+      noiseFloor = Math.max(noiseFloor, speechRms * 0.5)
+    }
+
+    if (voicedFrames < minSpeechFrames) return
+
+    const tailSamples = Math.round((TAIL_PAD_MS / 1000) * captureRate)
+    let total = 0
+    for (const frame of frames) total += frame.length
+    const buffer = new Float32Array(total + tailSamples)
+    let offset = 0
+    for (const frame of frames) {
+      buffer.set(frame, offset)
+      offset += frame.length
+    }
+
+    submitUtterance(buffer)
   }
 
   const handleAudio = (e: AudioProcessingEvent) => {
@@ -167,6 +212,7 @@ export function createLocalWhisperListener(
           utterance = [...preroll]
           speechFrames = risingFrames
           silenceFrames = 0
+          speechRms = rms
         }
       } else {
         risingFrames = 0
@@ -180,14 +226,17 @@ export function createLocalWhisperListener(
     if (rms > threshold) {
       speechFrames++
       silenceFrames = 0
+      speechRms = 0.9 * speechRms + 0.1 * rms
+      // Constant loud input drifts the floor upward even mid-"speech", so
+      // a playing song cannot hold the gate open indefinitely.
+      noiseFloor = 0.995 * noiseFloor + 0.005 * rms
     } else {
       silenceFrames++
     }
-    if (
-      silenceFrames >= endSilenceFrames ||
-      utterance.length >= maxUtteranceFrames
-    ) {
-      flushUtterance()
+    if (utterance.length >= maxUtteranceFrames) {
+      flushUtterance(true)
+    } else if (silenceFrames >= endSilenceFrames) {
+      flushUtterance(false)
     }
   }
 
