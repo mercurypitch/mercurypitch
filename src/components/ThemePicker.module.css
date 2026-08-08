@@ -2,6 +2,113 @@
    ThemePicker — Visual theme selection grid
    ============================================================ */
 
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Source segmented control ── */
+
+.sources {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.sourceBtn {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.sourceBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.sourceBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-secondary),
+    0 0 0 4px var(--accent);
+}
+
+.sourceBtnActive,
+.sourceBtnActive:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Day / night preset selects, only shown for an auto source ── */
+
+.autoRow {
+  display: flex;
+  gap: 10px;
+}
+
+.autoField {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.autoLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.autoSelect {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.autoSelect:hover {
+  border-color: var(--accent-glow);
+}
+
+.autoSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.autoOption {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.autoHint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -11,6 +118,10 @@
 @media (max-width: 540px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .autoRow {
+    flex-direction: column;
   }
 }
 
