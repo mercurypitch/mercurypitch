@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TranscriptionFrame } from './stem-transcription'
-import { BASS_TRANSCRIPTION_PROFILE, repairOctaveSlips, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
+import { BASS_TRANSCRIPTION_PROFILE, profileWindowSamples, repairOctaveSlips, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
 
 const PROFILE = BASS_TRANSCRIPTION_PROFILE
 
@@ -138,6 +138,32 @@ describe('transcribeStemSamples', () => {
     expect(result.notes[0].midi).toBe(28)
     expect(result.notes[0].noteName).toBe('E1')
     expect(result.coverage).toBeGreaterThan(0.8)
+  })
+
+  it('hears the same note at the cheap analysis rate the room actually uses', async () => {
+    // Production decodes to 8 kHz: a tenth of the samples, and the pitch
+    // search runs over a tenth of the lags. The answer must not change.
+    const sampleRate = BASS_TRANSCRIPTION_PROFILE.analysisSampleRate
+    const samples = new Float32Array(Math.floor(sampleRate * 1.5))
+    for (let index = 0; index < samples.length; index += 1) {
+      samples[index] =
+        0.5 * Math.sin((2 * Math.PI * 41.203 * index) / sampleRate)
+    }
+
+    const result = await transcribeStemSamples(samples, sampleRate)
+
+    expect(result.notes[0]?.midi).toBe(28)
+    expect(result.coverage).toBeGreaterThan(0.8)
+  })
+
+  it('sizes the analysis window in time, not in samples', () => {
+    expect(
+      profileWindowSamples(BASS_TRANSCRIPTION_PROFILE, 44100),
+    ).toBeGreaterThan(profileWindowSamples(BASS_TRANSCRIPTION_PROFILE, 8000))
+    // Same span of music either way.
+    expect(
+      profileWindowSamples(BASS_TRANSCRIPTION_PROFILE, 8000) / 8000,
+    ).toBeCloseTo(BASS_TRANSCRIPTION_PROFILE.windowSeconds, 2)
   })
 
   it('returns nothing for a clip shorter than one analysis window', async () => {

@@ -239,7 +239,7 @@ describe('useGuitarNightReferenceController', () => {
 
     expect(controller.reference()).toBeNull()
     expect(controller.importStatus()).toBe(
-      'No clear notes were heard in the bass stem, so the stage stays in free play.',
+      'No clear notes could be read from the bass stem, so the stage stays in free play.',
     )
   })
 
