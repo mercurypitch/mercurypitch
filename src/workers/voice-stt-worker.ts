@@ -19,10 +19,16 @@ const DEFAULT_MODEL_ID = 'Xenova/whisper-tiny'
 
 let asrPipeline: AutomaticSpeechRecognitionPipeline | null = null
 let loadingPromise: Promise<void> | null = null
+/** Whisper needs language/task generate kwargs; Moonshine and other
+ *  English-only models reject them — pick per loaded model. */
+let generateKwargs: Record<string, unknown> = {}
 
 async function loadModel(modelId: string): Promise<void> {
   if (asrPipeline != null) return
   if (loadingPromise != null) return loadingPromise
+  generateKwargs = modelId.toLowerCase().includes('whisper')
+    ? { language: 'en', task: 'transcribe' }
+    : {}
 
   loadingPromise = (async () => {
     self.postMessage({ type: 'status', status: 'loading' })
@@ -48,10 +54,7 @@ async function loadModel(modelId: string): Promise<void> {
 
     try {
       // Half a second of silence pre-compiles the whole inference path.
-      await asrPipeline(new Float32Array(8000), {
-        language: 'en',
-        task: 'transcribe',
-      })
+      await asrPipeline(new Float32Array(8000), generateKwargs)
     } catch {
       // Warm-up failure is non-fatal.
     }
@@ -84,10 +87,7 @@ self.onmessage = (e: MessageEvent) => {
         return
       }
       try {
-        const result = await asrPipeline(audioData, {
-          language: 'en',
-          task: 'transcribe',
-        })
+        const result = await asrPipeline(audioData, generateKwargs)
         const single = (Array.isArray(result) ? result[0] : result) as {
           text?: string
         }

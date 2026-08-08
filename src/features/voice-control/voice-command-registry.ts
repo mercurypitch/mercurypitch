@@ -35,3 +35,31 @@ export function registerVoiceCommands(source: VoiceCommandSource): () => void {
 export function activeVoiceCommands(): VoiceCommand[] {
   return sources().flatMap((source) => [...source()])
 }
+
+// ── Music-playing sources ──────────────────────────────────────
+// The wake-word-required-while-playing mode needs to know when ANY
+// transport is audibly rolling. App reports the shared runtime and the
+// piano game directly; surfaces with their own audio graph (StemMixer)
+// register here, exactly like their command sets.
+
+type MusicPlayingSource = Accessor<boolean>
+
+const [musicSources, setMusicSources] = createSignal<
+  readonly MusicPlayingSource[]
+>([])
+
+export function registerMusicPlayingSource(
+  source: MusicPlayingSource,
+): () => void {
+  setMusicSources((prev) => [...prev, source])
+  let disposed = false
+  return () => {
+    if (disposed) return
+    disposed = true
+    setMusicSources((prev) => prev.filter((s) => s !== source))
+  }
+}
+
+export function anyRegisteredMusicPlaying(): boolean {
+  return musicSources().some((source) => source())
+}

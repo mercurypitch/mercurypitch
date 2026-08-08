@@ -77,8 +77,8 @@ Latency and robustness before more commands; the grammar and adapters do not
 change, only the ear.
 
 - [x] Local utterance engine behind `VoiceListener`: MicManager capture (with mic-sentinel registration), adaptive RMS gate with pre-roll, 0.2-3.6 s utterances into a dedicated no-timestamps whisper-tiny worker (same cached weights as karaoke transcription, warm-up at load), WebGPU with WASM fallback
-- [ ] Evaluate Moonshine tiny as the alternative local model (the worker takes a model id, so this is a measurement task on real hardware, not a code change)
-- [x] Eager interim matching (browser engine): an interim that resolves to a command and stays stable ~150 ms executes immediately; the confirming final is suppressed so it cannot double-fire
+- [ ] Moonshine verdict: selectable in Settings as "On-device (Moonshine, experimental)" — measure latency and accuracy against Whisper on real hardware, then pick the on-device default
+- [x] Eager interim matching (browser engine): an interim that resolves to a command and stays stable ~150 ms executes immediately; the confirming final is suppressed so it cannot double-fire, and a phrase that is a prefix of a longer one ("go" on its way to "go to karaoke", "loop" to "loop off") always waits for the final
 - [x] Engine picker in Settings (Browser vs On-device) with a speech-to-text latency readout in the pill
 - [x] Optional wake-word-required mode while music is playing ("Mercury, from the top"); wakeless speech is then ignored silently — no toasts, no HUD noise
 - [x] Confidence threshold on browser-engine finals (real low estimates are dropped; Chrome's "no estimate" zero is not treated as low)
@@ -90,8 +90,9 @@ change, only the ear.
 ### Seeking additions
 
 - [x] **(requested)** Absolute seek / skip the intro: `go to N seconds`, `go to N minutes`, `go to minute N`, `start at N seconds`, `jump to N seconds`, `skip the first N seconds/minutes`, bare `go to N` (seconds)
-- [x] Minutes unit for relative seek: `back two minutes`, `forward one minute`, `rewind N minutes`
+- [x] Minutes unit for relative seek: `back two minutes`, `forward one minute`, `rewind N minutes`; `forwards`/`backwards` adverb forms accepted
 - [x] `go to the middle` / `halfway`, `go to the end` (lands 2 s short so track-end handling wins); both report `Nothing loaded` when no song is up
+- [x] **(requested)** `loop from N to M seconds` / `play a loop from N to M` — places A and B by time, arms the loop, seeks to A and starts playing (on Piano it sets the loop and seeks, leaving the game start to you)
 
 ### Tempo and speed additions
 
@@ -120,7 +121,8 @@ The mixer transport runs on seconds (audio time), not beats.
 
 - [x] **(requested)** `go to <tab>` / `open <tab>` / `switch to <tab>`: home, singing, karaoke, piano, guitar, exercises/drills, compose, path, jam, analysis, challenges, community, leaderboard, settings — visible tabs only (scope and simple-mode rules respected; hidden tabs answer "not available")
 - [x] `open library` / `close library`
-- [ ] **(requested)** `open karaoke night` (standalone stage entry — separate page, needs a navigation decision: same-tab redirect or new window)
+- [x] **(requested)** `open karaoke night` / `karaoke night` — leaves for the standalone stage in the same tab (owner's call); `go to karaoke` keeps meaning the in-app tab
+- [x] **(requested)** Global `play random song from my list` / `play a song` / `surprise me` — from anywhere: starts a random playlist at a random song and opens the Karaoke tab (the in-mixer version handles an already-running playlist; this one stands down while a playlist is active)
 - [ ] `start my routine` / `today's session` (daily routine launcher — needs a clean launch seam out of HomePage)
 - [ ] `close this` for whichever modal is topmost (reuse the Escape dismiss chain)
 
@@ -147,7 +149,7 @@ The mixer transport runs on seconds (audio time), not beats.
 
 ### Voice help
 
-- [ ] `what can i say` / `voice help` — overlay listing the live commands for the current view (generated from the registry, so it can never go stale)
+- [x] `what can i say` / `voice help` / `voice commands` — overlay listing the live commands for the current view, generated from the registry so it can never go stale; Escape or a click closes it
 
 ---
 
@@ -155,6 +157,9 @@ The mixer transport runs on seconds (audio time), not beats.
 
 - [x] Reactive per-surface command registration (registry seam)
 - [x] Typed failure results with user-facing messages
+- [x] Salvage matching: a changed mind mid-utterance ("backwards... forwards 60 seconds", "guitar, i play guitar") drops up to two leading tokens; what remains must be at least two tokens, so single-word commands stay exact and lyrics stay inert
+- [x] Two numeric slots per phrase (`loop from N to M seconds`)
+- [x] Tense and homophone tolerance where it bites: `i played drums`, `bass` heard as `base`/`base guitar`/`based guitar`
 - [ ] `<name>` free-text slot with fuzzy matching against dynamic lists (song titles, stem names) — unlocks `play <song>`, `mute <stem>` with odd stem labels
 - [ ] Careful number homophones inside `<n>` slots only (`for` as 4, `to` as 2) — opt-in per phrase, never global
 - [ ] Localized grammars (the listener already takes a lang; phrases need translation tables)

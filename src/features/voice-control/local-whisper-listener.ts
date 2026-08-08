@@ -3,15 +3,19 @@
 // ============================================================
 //
 // VoiceListener over MicManager + an RMS voice-activity gate + the
-// voice-stt worker (whisper-tiny). The gate segments speech into 0.2-3.6 s
-// utterances so the model only ever sees actual talking: capture runs at
-// 16 kHz through a ScriptProcessorNode (AudioWorklet + MediaStreamSource
-// resampling outputs silence on Chrome — same reason ShazamListen uses it),
-// keeps a pre-roll ring so the first syllable is not clipped, tracks an
-// adaptive noise floor, and flushes on ~0.4 s of silence. Unlike the Web
-// Speech engine this one holds the shared mic, so it registers with
-// MicManager AND the mic sentinel, and releases both unconditionally on
-// stop. Reports end-of-speech to text latency through onLatency.
+// voice-stt worker. The gate segments speech into 0.2-3.6 s utterances so
+// the model only ever sees actual talking. Capture runs at the context's
+// NATIVE rate — forcing a 16 kHz AudioContext breaks on Firefox, which
+// refuses to connect a MediaStream whose device rate differs from the
+// context — and each finished utterance is resampled to the model's 16 kHz
+// offline. A ScriptProcessorNode does the tapping (AudioWorklet +
+// MediaStreamSource resampling outputs silence on Chrome — same reason
+// ShazamListen uses it), a pre-roll ring keeps the first syllable, an
+// adaptive noise floor tracks the room, and ~0.4 s of silence flushes.
+// Unlike the Web Speech engine this one holds the shared mic, so it
+// registers with MicManager AND the mic sentinel, and releases both
+// unconditionally on stop. Reports end-of-speech-to-text latency through
+// onLatency.
 
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
@@ -19,23 +23,53 @@ import type { VoiceListener, VoiceListenerCallbacks } from './types'
 import { sharedVoiceSttService } from './voice-stt-service'
 
 const MIC_CONSUMER_ID = 'voice-control'
-const SAMPLE_RATE = 16_000
-const FRAME_SIZE = 1024 // 64 ms per onaudioprocess callback
+const MODEL_SAMPLE_RATE = 16_000
+const FRAME_SIZE = 1024
 
-// Voice-activity gate, all in ~64 ms frames.
-const PREROLL_FRAMES = 6 // ~384 ms kept from before the trigger
-const START_FRAMES = 2 // consecutive loud frames to open
-const END_SILENCE_FRAMES = 6 // ~384 ms of quiet closes the utterance
-const MIN_SPEECH_FRAMES = 3 // shorter than ~192 ms of voice is a cough
-const MAX_UTTERANCE_FRAMES = 56 // ~3.6 s hard flush
+// Voice-activity gate in milliseconds; frame counts derive from the actual
+// context rate at start (1024 samples is 64 ms at 16 kHz but only ~21 ms at
+// 48 kHz, so hardcoded frame counts would triple every window on Firefox).
+const PREROLL_MS = 384
+const START_MS = 128
+const END_SILENCE_MS = 384
+const MIN_SPEECH_MS = 192
+const MAX_UTTERANCE_MS = 3600
+/** Silence appended after the utterance; whisper decodes cleaner with a tail. */
+const TAIL_PAD_MS = 240
+
 const ABS_THRESHOLD_MIN = 0.012
 const NOISE_FLOOR_ALPHA = 0.05
 const NOISE_FLOOR_RATIO = 3.5
-/** Silence appended after the utterance; whisper decodes cleaner with a tail. */
-const TAIL_PAD_SAMPLES = 3840
+
+export interface LocalListenerOptions {
+  /** Override the STT model (e.g. Moonshine); defaults to whisper-tiny. */
+  modelId?: string
+}
+
+/** Offline-renders mono PCM to the model's 16 kHz. */
+async function resampleForModel(
+  data: Float32Array<ArrayBuffer>,
+  fromRate: number,
+): Promise<Float32Array> {
+  if (fromRate === MODEL_SAMPLE_RATE) return data
+  const offline = new OfflineAudioContext(
+    1,
+    Math.max(1, Math.ceil((data.length * MODEL_SAMPLE_RATE) / fromRate)),
+    MODEL_SAMPLE_RATE,
+  )
+  const buffer = offline.createBuffer(1, data.length, fromRate)
+  buffer.copyToChannel(data, 0)
+  const source = offline.createBufferSource()
+  source.buffer = buffer
+  source.connect(offline.destination)
+  source.start(0)
+  const rendered = await offline.startRendering()
+  return rendered.getChannelData(0)
+}
 
 export function createLocalWhisperListener(
   callbacks: VoiceListenerCallbacks,
+  options?: LocalListenerOptions,
 ): VoiceListener {
   let started = false
   let runGeneration = 0
@@ -45,6 +79,14 @@ export function createLocalWhisperListener(
   let source: MediaStreamAudioSourceNode | null = null
   let script: ScriptProcessorNode | null = null
 
+  // Derived per start() from the context's real rate.
+  let captureRate = MODEL_SAMPLE_RATE
+  let prerollFrames = 6
+  let startFrames = 2
+  let endSilenceFrames = 6
+  let minSpeechFrames = 3
+  let maxUtteranceFrames = 56
+
   // Gate state.
   let preroll: Float32Array[] = []
   let utterance: Float32Array[] = []
@@ -53,6 +95,8 @@ export function createLocalWhisperListener(
   let speechFrames = 0
   let silenceFrames = 0
   let noiseFloor = 0.005
+
+  const service = () => sharedVoiceSttService(options?.modelId)
 
   const resetGate = () => {
     preroll = []
@@ -71,11 +115,12 @@ export function createLocalWhisperListener(
     risingFrames = 0
     speechFrames = 0
     silenceFrames = 0
-    if (voicedFrames < MIN_SPEECH_FRAMES) return
+    if (voicedFrames < minSpeechFrames) return
 
+    const tailSamples = Math.round((TAIL_PAD_MS / 1000) * captureRate)
     let total = 0
     for (const frame of frames) total += frame.length
-    const buffer = new Float32Array(total + TAIL_PAD_SAMPLES)
+    const buffer = new Float32Array(total + tailSamples)
     let offset = 0
     for (const frame of frames) {
       buffer.set(frame, offset)
@@ -84,10 +129,13 @@ export function createLocalWhisperListener(
 
     const generation = runGeneration
     const startedAt = performance.now()
-    sharedVoiceSttService()
-      .transcribe(buffer)
+    resampleForModel(buffer, captureRate)
+      .then((resampled) => {
+        if (generation !== runGeneration) return null
+        return service().transcribe(resampled)
+      })
       .then((text) => {
-        if (generation !== runGeneration) return
+        if (text === null || generation !== runGeneration) return
         callbacks.onLatency?.(performance.now() - startedAt)
         const trimmed = text.trim()
         if (trimmed !== '') callbacks.onUtterance(trimmed)
@@ -111,10 +159,10 @@ export function createLocalWhisperListener(
 
     if (!inSpeech) {
       preroll.push(frame)
-      if (preroll.length > PREROLL_FRAMES) preroll.shift()
+      if (preroll.length > prerollFrames) preroll.shift()
       if (rms > threshold) {
         risingFrames++
-        if (risingFrames >= START_FRAMES) {
+        if (risingFrames >= startFrames) {
           inSpeech = true
           utterance = [...preroll]
           speechFrames = risingFrames
@@ -136,8 +184,8 @@ export function createLocalWhisperListener(
       silenceFrames++
     }
     if (
-      silenceFrames >= END_SILENCE_FRAMES ||
-      utterance.length >= MAX_UTTERANCE_FRAMES
+      silenceFrames >= endSilenceFrames ||
+      utterance.length >= maxUtteranceFrames
     ) {
       flushUtterance()
     }
@@ -181,8 +229,7 @@ export function createLocalWhisperListener(
     const generation = ++runGeneration
     callbacks.onStateChange('starting')
     try {
-      const service = sharedVoiceSttService()
-      const modelReady = service.init()
+      const modelReady = service().init()
       const stream = await micManager.acquire(MIC_CONSUMER_ID)
       micHeld = true
       if (!started || generation !== runGeneration) {
@@ -197,7 +244,17 @@ export function createLocalWhisperListener(
           stopInternal()
         },
       )
-      audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE })
+      // Native rate on purpose — see the header.
+      audioCtx = new AudioContext()
+      captureRate = audioCtx.sampleRate
+      const frameMs = (FRAME_SIZE / captureRate) * 1000
+      const framesFor = (ms: number) => Math.max(1, Math.round(ms / frameMs))
+      prerollFrames = framesFor(PREROLL_MS)
+      startFrames = framesFor(START_MS)
+      endSilenceFrames = framesFor(END_SILENCE_MS)
+      minSpeechFrames = framesFor(MIN_SPEECH_MS)
+      maxUtteranceFrames = framesFor(MAX_UTTERANCE_MS)
+
       source = audioCtx.createMediaStreamSource(stream)
       script = audioCtx.createScriptProcessor(FRAME_SIZE, 1, 1)
       script.onaudioprocess = handleAudio

@@ -18,11 +18,15 @@ import { showNotification } from '@/stores/notifications-store'
 import type { VoiceControlEngine } from '@/stores/settings-store'
 import { voiceControlEngine, voiceWakeWordWhilePlaying, } from '@/stores/settings-store'
 import type { VoiceResolveOptions, VoiceResolveOutcome, } from './command-grammar'
-import { normalizeUtterance, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
+import { normalizeUtterance, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
 import { createLocalWhisperListener } from './local-whisper-listener'
 import type { VoiceCommandResult, VoiceListener, VoiceListenerState, } from './types'
-import { activeVoiceCommands } from './voice-command-registry'
+import { activeVoiceCommands, anyRegisteredMusicPlaying, } from './voice-command-registry'
 import { createWebSpeechListener } from './webspeech-listener'
+
+/** Experimental on-device alternative, selectable in Settings for latency
+ *  comparison against whisper-tiny. */
+const MOONSHINE_MODEL_ID = 'onnx-community/moonshine-tiny-ONNX'
 
 export interface VoiceFeedback {
   /**
@@ -105,7 +109,8 @@ export function useVoiceControlController(
 
   const resolveOptions = (): VoiceResolveOptions => ({
     requireWakeWord:
-      voiceWakeWordWhilePlaying() && (deps?.musicPlaying?.() ?? false),
+      voiceWakeWordWhilePlaying() &&
+      ((deps?.musicPlaying?.() ?? false) || anyRegisteredMusicPlaying()),
   })
 
   /** Filler-stripped normalized form — the identity used to pair an eager
@@ -136,7 +141,7 @@ export function useVoiceControlController(
   ) => {
     let result: VoiceCommandResult
     try {
-      result = outcome.command.run({ n: outcome.n })
+      result = outcome.command.run({ n: outcome.n, m: outcome.m })
     } catch (err) {
       console.error('[voice-control] command failed:', outcome.command.id, err)
       const message = `${outcome.command.label} failed`
@@ -185,12 +190,12 @@ export function useVoiceControlController(
     eagerTimer = setTimeout(() => {
       eagerTimer = null
       eagerCandidateKey = ''
-      const outcome = resolveVoiceCommand(
-        text,
-        activeVoiceCommands(),
-        resolveOptions(),
-      )
+      const commands = activeVoiceCommands()
+      const outcome = resolveVoiceCommand(text, commands, resolveOptions())
       if (outcome.kind !== 'matched') return
+      // An interim that could still grow into a longer phrase ("go" on its
+      // way to "go to karaoke", "loop" to "loop off") waits for the final.
+      if (phraseExtendsFurther(outcome.phrase, commands)) return
       eagerFiredKey = key
       eagerFiredAt = Date.now()
       executeMatched(outcome, text)
@@ -268,12 +273,19 @@ export function useVoiceControlController(
 
   let webspeechListener: VoiceListener | null = null
   let localListener: VoiceListener | null = null
+  let moonshineListener: VoiceListener | null = null
   let activeListener: VoiceListener | null = null
 
   const listenerFor = (engine: VoiceControlEngine): VoiceListener => {
     if (engine === 'local') {
       localListener ??= createLocalWhisperListener(listenerCallbacks)
       return localListener
+    }
+    if (engine === 'moonshine') {
+      moonshineListener ??= createLocalWhisperListener(listenerCallbacks, {
+        modelId: MOONSHINE_MODEL_ID,
+      })
+      return moonshineListener
     }
     webspeechListener ??= createWebSpeechListener(listenerCallbacks)
     return webspeechListener

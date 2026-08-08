@@ -199,8 +199,9 @@ export const [vocalRangePreset, setVocalRangePreset] =
 // 'webspeech' is the browser recognizer (instant start, needs Chrome/Edge/
 // Safari and network); 'local' runs whisper-tiny on-device via the
 // voice-stt worker (one-time model download, offline, audio never leaves
-// the machine).
-export type VoiceControlEngine = 'webspeech' | 'local'
+// the machine); 'moonshine' is the experimental on-device alternative for
+// latency comparison.
+export type VoiceControlEngine = 'webspeech' | 'local' | 'moonshine'
 
 export const [voiceControlEngine, setVoiceControlEngine] =
   createPersistedSignal<VoiceControlEngine>(

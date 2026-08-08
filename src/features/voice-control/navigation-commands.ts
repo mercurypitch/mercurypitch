@@ -11,6 +11,7 @@
 import type { Accessor } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, tabLabel, } from '@/features/tabs/constants'
+import { getPlaylistsReactive, isPlaylistActive, jumpTo, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { hideLibrary, isLibraryModalOpen, setActiveTab, showLibrary, } from '@/stores/ui-store'
 import type { VoiceCommand } from './types'
@@ -19,6 +20,8 @@ import { voiceFailure } from './types'
 export interface NavigationVoiceDeps {
   /** Immersive overlays suspend navigation like they suspend shortcuts. */
   suspended?: Accessor<boolean>
+  /** Opens the "what can I say" overlay. */
+  openVoiceHelp?: () => void
 }
 
 const TAB_SPOKEN_NAMES: Array<{ tab: ActiveTab; names: string[] }> = [
@@ -61,6 +64,72 @@ export function createNavigationVoiceCommands(
   }))
 
   commands.push(
+    {
+      id: 'nav.karaokeNight',
+      label: 'Karaoke Night',
+      // Distinct wording from "go to karaoke" (the tab): this leaves the
+      // app for the standalone stage, same tab per the owner's call.
+      phrases: [
+        'open karaoke night',
+        'karaoke night',
+        'start karaoke night',
+        'go to karaoke night',
+      ],
+      available: notSuspended,
+      run: () => {
+        window.location.assign('/karaoke-night')
+        return 'Karaoke Night'
+      },
+    },
+    {
+      id: 'nav.randomSong',
+      label: 'Random song',
+      // The in-mixer version handles an ALREADY-running playlist; this one
+      // starts karaoke from anywhere. Gated so it never restarts a session
+      // mid-singing.
+      phrases: [
+        'play random song from my list',
+        'play a random song',
+        'play random song',
+        'random song',
+        'play a song',
+        'play song',
+        'play something',
+        'surprise me',
+      ],
+      available: () => notSuspended() && !isPlaylistActive(),
+      run: () => {
+        const playlists = getPlaylistsReactive()
+        if (playlists.length === 0) {
+          return voiceFailure('No playlists yet — build one in Karaoke')
+        }
+        const pick = playlists[Math.floor(Math.random() * playlists.length)]
+        startPlaylist(pick.id)
+        const entries = queue()
+        if (entries.length === 0) {
+          return voiceFailure('That playlist is empty')
+        }
+        jumpTo(Math.floor(Math.random() * entries.length))
+        setActiveTab(TAB_KARAOKE)
+        return 'Random song — starting karaoke'
+      },
+    },
+    {
+      id: 'nav.voiceHelp',
+      label: 'Voice commands',
+      phrases: [
+        'what can i say',
+        'voice help',
+        'voice commands',
+        'show voice commands',
+        'list commands',
+      ],
+      available: notSuspended,
+      run: () => {
+        deps.openVoiceHelp?.()
+        return 'Voice commands'
+      },
+    },
     {
       id: 'nav.libraryOpen',
       label: 'Open library',

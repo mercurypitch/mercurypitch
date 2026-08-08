@@ -234,6 +234,7 @@ import { createNavigationVoiceCommands } from '@/features/voice-control/navigati
 import { createTransportVoiceCommands } from '@/features/voice-control/transport-commands'
 import { useVoiceControlController } from '@/features/voice-control/useVoiceControlController'
 import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import { VoiceCommandsOverlay } from '@/features/voice-control/VoiceCommandsOverlay'
 import { VoiceControlHud } from '@/features/voice-control/VoiceControlHud'
 import { clampLoopB, isSeekOutsideLoop, shouldLoopBack } from '@/lib/ab-loop'
 import { trackEvent } from '@/lib/analytics'
@@ -1864,13 +1865,17 @@ const AppShell: Component<AppProps> = (props) => {
       b: loopB,
       setA: handleSetLoopA,
       setB: handleSetLoopB,
+      moveA: handleMoveLoopA,
+      moveB: handleMoveLoopB,
       toggle: handleToggleLoop,
       clear: handleClearLoop,
     },
   })
   onCleanup(registerVoiceCommands(() => voiceCommands))
+  const [showVoiceHelp, setShowVoiceHelp] = createSignal(false)
   const navigationVoiceCommands = createNavigationVoiceCommands({
     suspended: () => transportShortcutHandlers.isSuspended?.() === true,
+    openVoiceHelp: () => setShowVoiceHelp(true),
   })
   onCleanup(registerVoiceCommands(() => navigationVoiceCommands))
   const voiceControl = useVoiceControlController({
@@ -4026,6 +4031,9 @@ const AppShell: Component<AppProps> = (props) => {
         {/* Shares the bottom-left corner with the timer pill and raises
             itself above it when both are visible. */}
         <VoiceControlHud controller={voiceControl} />
+        <Show when={showVoiceHelp()}>
+          <VoiceCommandsOverlay close={() => setShowVoiceHelp(false)} />
+        </Show>
         {/* Device-level, so it lives here rather than on any one mic page. */}
         <MicHandoffPrompt />
         <VerifyEmailBanner />

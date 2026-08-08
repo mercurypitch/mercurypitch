@@ -11,6 +11,8 @@ import Worker from '@/workers/voice-stt-worker?worker'
 
 export type VoiceSttStatus = 'idle' | 'loading' | 'ready' | 'error'
 
+export const DEFAULT_VOICE_STT_MODEL = 'Xenova/whisper-tiny'
+
 const TRANSCRIBE_TIMEOUT_MS = 20_000
 const LOAD_TIMEOUT_MS = 300_000
 
@@ -20,10 +22,12 @@ export class VoiceSttService {
   private destroyed = false
   private resolves = new Map<number, (text: string) => void>()
   private rejects = new Map<number, (err: Error) => void>()
+  private readonly modelId: string
 
   public status: VoiceSttStatus = 'idle'
 
-  constructor() {
+  constructor(modelId: string = DEFAULT_VOICE_STT_MODEL) {
+    this.modelId = modelId
     this.worker = new Worker()
     this.worker.addEventListener('message', (e) => {
       const { type, id, status, text, message } = e.data as {
@@ -52,7 +56,7 @@ export class VoiceSttService {
     if (this.status === 'ready') return
     if (this.status === 'idle') {
       this.status = 'loading'
-      this.worker.postMessage({ type: 'load' })
+      this.worker.postMessage({ type: 'load', modelId: this.modelId })
     }
     return new Promise((resolve, reject) => {
       const startedAt = Date.now()
@@ -118,11 +122,18 @@ export class VoiceSttService {
   }
 }
 
-let shared: VoiceSttService | null = null
+const shared = new Map<string, VoiceSttService>()
 
-/** Page-lifetime instance so re-enabling voice control reuses the loaded
+/** Page-lifetime instance per model, so re-enabling voice control — or
+ *  switching between the whisper and Moonshine engines — reuses a loaded
  *  model instead of paying the download and warm-up again. */
-export function sharedVoiceSttService(): VoiceSttService {
-  shared ??= new VoiceSttService()
-  return shared
+export function sharedVoiceSttService(
+  modelId: string = DEFAULT_VOICE_STT_MODEL,
+): VoiceSttService {
+  let service = shared.get(modelId)
+  if (service === undefined) {
+    service = new VoiceSttService(modelId)
+    shared.set(modelId, service)
+  }
+  return service
 }

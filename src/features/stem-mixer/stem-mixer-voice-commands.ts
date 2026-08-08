@@ -53,6 +53,16 @@ export interface StemMixerVoiceDeps {
 /** Spoken aliases per canonical stem key (lowercased track label). */
 const STEM_ALIASES: Record<string, string[]> = {
   vocal: ['vocals', 'voice', 'the vocals', 'singing'],
+  // "bass" reaches the recognizer as "base" more often than not, and
+  // "bass guitar" as "base guitar" or even "based guitar".
+  bass: [
+    'the bass',
+    'base',
+    'the base',
+    'bass guitar',
+    'base guitar',
+    'based guitar',
+  ],
   instrumental: [
     'instrumentals',
     'the instrumental',
@@ -63,7 +73,6 @@ const STEM_ALIASES: Record<string, string[]> = {
   ],
   midi: ['the midi', 'guide', 'melody guide'],
   drums: ['the drums', 'drum', 'percussion'],
-  bass: ['the bass'],
   guitar: ['the guitar', 'guitars'],
   piano: ['the piano', 'keys', 'keyboard'],
   other: ['the rest', 'everything else'],
@@ -275,6 +284,8 @@ export function createStemMixerVoiceCommands(
       phrases: [
         'forward <n> seconds',
         'forward <n> second',
+        'forwards <n> seconds',
+        'forwards <n>',
         'skip <n> seconds',
         'skip ahead <n> seconds',
         'ahead <n> seconds',
@@ -418,30 +429,52 @@ export function createStemMixerVoiceCommands(
 
   // ── Role presets ───────────────────────────────────────────
 
+  // Tense and homophone tolerance: "i played drums" and "i play base
+  // guitar" are the same intent as their canonical forms.
+  const roleInstrumentPhrases = (spokenNames: string[]): string[] =>
+    spokenNames.flatMap((name) => [
+      `i play ${name}`,
+      `i played ${name}`,
+      `i play the ${name}`,
+      `i played the ${name}`,
+      `i am playing ${name}`,
+      `i m playing ${name}`,
+    ])
+
   const rolePresets: Array<{ key: string; phrases: string[] }> = [
     {
       key: 'vocal',
-      phrases: ['i sing', 'i am singing', 'i m singing', 'i am the singer'],
+      phrases: [
+        'i sing',
+        'i am singing',
+        'i m singing',
+        'i am the singer',
+        'i m the singer',
+        'i am a singer',
+      ],
     },
+    { key: 'guitar', phrases: roleInstrumentPhrases(['guitar', 'guitars']) },
     {
-      key: 'guitar',
-      phrases: ['i play guitar', 'i play the guitar', 'i am playing guitar'],
+      key: 'bass',
+      phrases: roleInstrumentPhrases([
+        'bass',
+        'base',
+        'bass guitar',
+        'base guitar',
+        'based guitar',
+      ]),
     },
-    { key: 'bass', phrases: ['i play bass', 'i play the bass'] },
-    {
-      key: 'piano',
-      phrases: ['i play piano', 'i play the piano', 'i play keys'],
-    },
+    { key: 'piano', phrases: roleInstrumentPhrases(['piano', 'keys']) },
     {
       key: 'drums',
-      phrases: ['i play drums', 'i play the drums', 'i drum'],
+      phrases: [...roleInstrumentPhrases(['drums']), 'i drum'],
     },
   ]
   for (const preset of rolePresets) {
     commands.push({
       id: `karaoke.role.${preset.key}`,
       label: `You play ${preset.key}`,
-      phrases: preset.phrases,
+      phrases: [...new Set(preset.phrases)],
       run: () => applyRolePreset(preset.key),
     })
   }

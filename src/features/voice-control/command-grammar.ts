@@ -177,12 +177,14 @@ export function parseNumberAt(
 
 interface PhraseMatch {
   value?: number
+  /** Second `<n>` occurrence, for range phrases ("loop from <n> to <n>"). */
+  value2?: number
 }
 
 /**
  * A phrase matches only when it consumes the WHOLE utterance — leftover
- * tokens on either side mean no match. `<n>` consumes whatever tokens parse
- * as one number.
+ * tokens on either side mean no match. Each `<n>` consumes whatever tokens
+ * parse as one number; a phrase may carry two.
  */
 function matchPhrase(
   tokens: readonly string[],
@@ -190,23 +192,30 @@ function matchPhrase(
 ): PhraseMatch | null {
   const phraseTokens = phrase.split(' ').filter(Boolean)
   let ti = 0
-  let value: number | undefined
+  const values: number[] = []
   for (const phraseToken of phraseTokens) {
     if (phraseToken === '<n>') {
       const parsed = parseNumberAt(tokens, ti)
       if (parsed === null) return null
-      value = parsed.value
+      values.push(parsed.value)
       ti += parsed.consumed
       continue
     }
     if (tokens[ti] !== phraseToken) return null
     ti++
   }
-  return ti === tokens.length ? { value } : null
+  if (ti !== tokens.length) return null
+  return { value: values[0], value2: values[1] }
 }
 
 export type VoiceResolveOutcome =
-  | { kind: 'matched'; command: VoiceCommand; n?: number }
+  | {
+      kind: 'matched'
+      command: VoiceCommand
+      n?: number
+      m?: number
+      phrase: string
+    }
   /**
    * A phrase matched but every command carrying it is gated off (wrong tab,
    * suspended surface). Distinct from 'none' so the user hears "not
@@ -223,6 +232,9 @@ export interface VoiceResolveOptions {
   /** Only utterances starting with the wake word count as commands. */
   requireWakeWord?: boolean
 }
+
+/** Leading tokens the salvage pass may discard (see resolveVoiceCommand). */
+const SALVAGE_MAX_DROPPED_TOKENS = 2
 
 /**
  * Runs one utterance against the registered commands. The first command
@@ -249,11 +261,48 @@ export function resolveVoiceCommand(
     for (const phrase of command.phrases) {
       const matched = matchPhrase(tokens, phrase)
       if (matched === null) continue
-      if (isAvailable) return { kind: 'matched', command, n: matched.value }
+      if (isAvailable) {
+        return {
+          kind: 'matched',
+          command,
+          n: matched.value,
+          m: matched.value2,
+          phrase,
+        }
+      }
       unavailable ??= command
       break
     }
   }
+
+  // Salvage pass — self-corrections and stray lead-ins: "backwards...
+  // forward 60 seconds", "guitar, i play guitar". Up to two leading tokens
+  // may be dropped, and what remains must be at least two tokens, so
+  // single-word commands stay exact-only ("baby stop" and lyric tails never
+  // fire) while a changed mind mid-utterance still lands.
+  for (
+    let drop = 1;
+    drop <= SALVAGE_MAX_DROPPED_TOKENS && tokens.length - drop >= 2;
+    drop++
+  ) {
+    const tail = tokens.slice(drop)
+    for (const command of commands) {
+      if (command.available !== undefined && !command.available()) continue
+      for (const phrase of command.phrases) {
+        const matched = matchPhrase(tail, phrase)
+        if (matched !== null) {
+          return {
+            kind: 'matched',
+            command,
+            n: matched.value,
+            m: matched.value2,
+            phrase,
+          }
+        }
+      }
+    }
+  }
+
   if (unavailable !== null) return { kind: 'unavailable', command: unavailable }
   return { kind: 'none' }
 }
@@ -266,5 +315,28 @@ export function matchVoiceCommand(
 ): VoiceMatch | null {
   const outcome = resolveVoiceCommand(rawUtterance, commands)
   if (outcome.kind !== 'matched') return null
-  return { command: outcome.command, n: outcome.n }
+  return {
+    command: outcome.command,
+    n: outcome.n,
+    m: outcome.m,
+    phrase: outcome.phrase,
+  }
+}
+
+/**
+ * True when `phrase` is a strict prefix of another registered phrase.
+ * Eager interim execution defers such matches to the final transcript:
+ * an interim "go" that is still becoming "go to karaoke" — or "loop"
+ * becoming "loop off" — must not fire the shorter command mid-sentence.
+ * Compared over raw phrase strings, so `<n>` slots line up literally
+ * ("back <n>" is a prefix of "back <n> seconds").
+ */
+export function phraseExtendsFurther(
+  phrase: string,
+  commands: readonly VoiceCommand[],
+): boolean {
+  const prefix = `${phrase} `
+  return commands.some((command) =>
+    command.phrases.some((candidate) => candidate.startsWith(prefix)),
+  )
 }

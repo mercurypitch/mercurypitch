@@ -174,6 +174,11 @@ describe('stem mixer voice commands — roles and playlist', () => {
     expect(fire(fixture, 'i play guitar')).toBe(
       'Guitar muted, everything else on',
     )
+    // Past tense and homophones land on the same intent.
+    expect(fire(fixture, 'i played guitar')).toBe(
+      'Guitar muted, everything else on',
+    )
+    expect(fire(fixture, 'i play base guitar')).toBe('No bass stem in this mix')
     expect(fixture.track('Guitar').muted).toBe(true)
     expect(fire(fixture, 'i play drums')).toBe('No drums stem in this mix')
     expect(fire(fixture, 'full mix')).toBe('Full mix')

@@ -26,8 +26,10 @@ export interface VoiceListener {
 }
 
 export interface VoiceCommandArgs {
-  /** Parsed `<n>` slot value when the matched phrase has one. */
+  /** Parsed value of the first `<n>` slot when the phrase has one. */
   n?: number
+  /** Parsed value of the second `<n>` slot ("loop from <n> to <n>"). */
+  m?: number
 }
 
 export interface VoiceCommandFailure {
@@ -72,4 +74,7 @@ export interface VoiceCommand {
 export interface VoiceMatch {
   command: VoiceCommand
   n?: number
+  m?: number
+  /** The exact phrase (with `<n>` literals) that consumed the utterance. */
+  phrase?: string
 }

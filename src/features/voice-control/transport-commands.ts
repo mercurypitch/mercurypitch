@@ -25,6 +25,9 @@ export interface TransportVoiceLoopDeps {
   b: Accessor<number>
   setA: () => void
   setB: () => void
+  /** Place a marker at an absolute beat (the marker-drag handlers). */
+  moveA: (beat: number) => void
+  moveB: (beat: number) => void
   toggle: () => void
   clear: () => void
 }
@@ -169,14 +172,18 @@ export function createTransportVoiceCommands(
       return voiceFailure('Not on this tab yet')
     }
     deps.transport().seekTo(0)
+    if (t === TAB_COMPOSE && deps.handlers.editor) {
+      // The editor has its own pause state — the singing accessors do not
+      // see it.
+      const editor = deps.handlers.editor
+      if (editor.isPaused()) editor.resume()
+      else if (!editor.isPlaying()) void editor.play()
+      return 'From the top'
+    }
     if (deps.handlers.isPaused()) {
       deps.handlers.resume()
     } else if (!deps.handlers.isPlaying()) {
-      if (t === TAB_COMPOSE && deps.handlers.editor) {
-        void deps.handlers.editor.play()
-      } else {
-        deps.handlers.play()
-      }
+      deps.handlers.play()
     }
     return 'From the top'
   }
@@ -434,6 +441,9 @@ export function createTransportVoiceCommands(
       phrases: [
         'forward <n> seconds',
         'forward <n> second',
+        // Recognizers often write the adverb form.
+        'forwards <n> seconds',
+        'forwards <n>',
         'skip <n> seconds',
         'skip ahead <n> seconds',
         'skip forward <n> seconds',
@@ -455,6 +465,7 @@ export function createTransportVoiceCommands(
         'go back <n> seconds',
         'rewind <n> seconds',
         'backwards <n> seconds',
+        'backwards <n>',
         'jump back <n> seconds',
         'back <n>',
       ],
@@ -706,6 +717,47 @@ export function createTransportVoiceCommands(
       run: () => {
         if (deps.loop.enabled()) deps.loop.toggle()
         return 'Loop off'
+      },
+    },
+    {
+      id: 'loop.range',
+      label: 'Loop range',
+      phrases: [
+        'loop from <n> to <n> seconds',
+        'loop from <n> to <n>',
+        'play a loop from <n> to <n> seconds',
+        'play a loop from <n> to <n>',
+        'play loop from <n> to <n> seconds',
+        'loop between <n> and <n> seconds',
+        'loop <n> to <n> seconds',
+        'loop <n> to <n>',
+      ],
+      available: seekableTab,
+      run: (args) => {
+        const from = args.n
+        const to = args.m
+        if (
+          from === undefined ||
+          to === undefined ||
+          !Number.isFinite(from) ||
+          !Number.isFinite(to)
+        ) {
+          return voiceFailure('Say loop from A to B seconds')
+        }
+        if (to <= from) {
+          return voiceFailure('Loop end must be after its start')
+        }
+        deps.loop.moveA(secondsToBeats(from))
+        deps.loop.moveB(secondsToBeats(to))
+        if (!deps.loop.enabled()) deps.loop.toggle()
+        deps.transport().seekTo(deps.loop.a())
+        // Piano owns its own start flow (starting the game resets the
+        // playhead); on the shared runtime the loop starts sounding now.
+        if (tab() !== TAB_PIANO) {
+          if (deps.handlers.isPaused()) deps.handlers.resume()
+          else if (!deps.handlers.isPlaying()) deps.handlers.play()
+        }
+        return `Loop ${String(from)}s to ${String(to)}s`
       },
     },
     {

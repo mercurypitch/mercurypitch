@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchVoiceCommand, normalizeUtterance, parseNumberAt, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
+import { matchVoiceCommand, normalizeUtterance, parseNumberAt, phraseExtendsFurther, resolveVoiceCommand, stripFillerTokens, } from './command-grammar'
 import type { VoiceCommand } from './types'
 
 const command = (
@@ -179,6 +179,55 @@ describe('resolveVoiceCommand', () => {
     const outcome = resolveVoiceCommand('go', [gated, live])
     expect(outcome.kind).toBe('matched')
     expect(outcome.kind === 'matched' && outcome.command.id).toBe('live')
+  })
+
+  it('flags phrases that are strict prefixes of longer ones', () => {
+    const play = command('play', ['go'])
+    const nav = command('nav', ['go to karaoke'])
+    const loop = command('loop', ['loop', 'loop off'])
+    expect(phraseExtendsFurther('go', [play, nav])).toBe(true)
+    expect(phraseExtendsFurther('go to karaoke', [play, nav])).toBe(false)
+    expect(phraseExtendsFurther('loop', [loop])).toBe(true)
+    expect(
+      phraseExtendsFurther('back <n>', [command('s', ['back <n> seconds'])]),
+    ).toBe(true)
+    expect(phraseExtendsFurther('stop', [play, nav, loop])).toBe(false)
+  })
+
+  it('salvages self-corrections by dropping up to two leading tokens', () => {
+    const role = command('role', ['i play guitar'])
+    const forward = command('seek', [
+      'forward <n> seconds',
+      'forwards <n> seconds',
+    ])
+    expect(matchVoiceCommand('guitar i play guitar', [role])?.command.id).toBe(
+      'role',
+    )
+    expect(
+      matchVoiceCommand('backwards forwards 60 seconds', [forward])?.n,
+    ).toBe(60)
+    // Single-word commands stay exact-only, so lyric tails never fire.
+    expect(
+      matchVoiceCommand('baby stop', [command('stop', ['stop'])]),
+    ).toBeNull()
+    expect(
+      matchVoiceCommand('you make me wanna play', [command('p', ['play'])]),
+    ).toBeNull()
+  })
+
+  it('fills two numeric slots for range phrases', () => {
+    const range = command('loop', ['loop from <n> to <n> seconds'])
+    const match = matchVoiceCommand('loop from 20 to 60 seconds', [range])
+    expect(match?.n).toBe(20)
+    expect(match?.m).toBe(60)
+  })
+
+  it('reports the matched phrase on the outcome', () => {
+    const forward = command('seek', ['forward <n> seconds'])
+    const outcome = resolveVoiceCommand('forward ten seconds', [forward])
+    expect(outcome.kind === 'matched' && outcome.phrase).toBe(
+      'forward <n> seconds',
+    )
   })
 
   it('ignores wakeless speech when the wake word is required', () => {

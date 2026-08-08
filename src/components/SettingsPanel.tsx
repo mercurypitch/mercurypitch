@@ -725,12 +725,16 @@ export const SettingsPanel: Component = () => {
               >
                 <option value="webspeech">Browser (Web Speech API)</option>
                 <option value="local">On-device (Whisper)</option>
+                <option value="moonshine">
+                  On-device (Moonshine, experimental)
+                </option>
               </SafeSelect>
               <small>
                 Browser is instant to start but needs Chrome, Edge or Safari and
                 a network. On-device downloads a small model once, then works
                 offline and keeps audio on this machine; the pill shows its
-                speech-to-text time.
+                speech-to-text time. Moonshine is an alternative on-device model
+                for comparing latency against Whisper.
               </small>
             </div>
 

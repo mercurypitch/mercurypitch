@@ -14,6 +14,8 @@ interface Fixture {
   deps: TransportVoiceDeps
   calls: string[]
   seekedTo: () => number | null
+  movedA: () => number | null
+  movedB: () => number | null
   setPlaying: (v: boolean) => void
   setPaused: (v: boolean) => void
   setLoopOn: (v: boolean) => void
@@ -30,6 +32,8 @@ function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
   const [loopA, setLoopA] = createSignal(0)
   const [loopB, setLoopB] = createSignal(0)
   let seekedTo: number | null = null
+  let movedA: number | null = null
+  let movedB: number | null = null
 
   const handlers: KeyboardShortcutHandlers = {
     isPlaying: playing,
@@ -85,6 +89,16 @@ function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
         calls.push('setB')
         setLoopB(80)
       },
+      moveA: (beat) => {
+        calls.push('moveA')
+        movedA = beat
+        setLoopA(beat)
+      },
+      moveB: (beat) => {
+        calls.push('moveB')
+        movedB = beat
+        setLoopB(beat)
+      },
       toggle: () => {
         calls.push('toggleLoop')
         setLoopOn((v) => !v)
@@ -102,6 +116,8 @@ function makeFixture(tab: ActiveTab, currentBeat = 40): Fixture {
     deps,
     calls,
     seekedTo: () => seekedTo,
+    movedA: () => movedA,
+    movedB: () => movedB,
     setPlaying,
     setPaused,
     setLoopOn,
@@ -118,7 +134,7 @@ function fire(fixture: Fixture, utterance: string): string | undefined {
   const commands = createTransportVoiceCommands(fixture.deps)
   const match = matchVoiceCommand(utterance, commands)
   if (match === null) return undefined
-  const result = match.command.run({ n: match.n })
+  const result = match.command.run({ n: match.n, m: match.m })
   if (typeof result === 'string') return result
   if (typeof result === 'object') return result.message
   return match.command.label
@@ -212,6 +228,25 @@ describe('transport voice commands — singing tab', () => {
     const fixture = makeFixture(TAB_SINGING)
     expect(fire(fixture, 'set be')).toBe('Loop B set')
     expect(fixture.calls).toEqual(['setB'])
+  })
+
+  it('sets an a-b loop from a spoken time range and starts it', () => {
+    const fixture = makeFixture(TAB_SINGING)
+    expect(fire(fixture, 'loop from 20 to 60 seconds')).toBe('Loop 20s to 60s')
+    // 120 bpm: 20 s = 40 beats, 60 s = 120 beats.
+    expect(fixture.movedA()).toBe(40)
+    expect(fixture.movedB()).toBe(120)
+    expect(fixture.calls).toContain('toggleLoop')
+    expect(fixture.calls).toContain('play')
+    expect(fire(fixture, 'loop from 60 to 20 seconds')).toBe(
+      'Loop end must be after its start',
+    )
+  })
+
+  it('salvages a self-correction into the trailing command', () => {
+    const fixture = makeFixture(TAB_SINGING, 40)
+    expect(fire(fixture, 'backwards forwards 60 seconds')).toBe('Forward 60s')
+    expect(fixture.seekedTo()).toBe(160)
   })
 
   it('turns the loop off only when it is on', () => {

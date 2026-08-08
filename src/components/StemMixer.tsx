@@ -22,7 +22,7 @@ import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMic
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { autoAdvanceTarget, nextSessionId, orderedLibrarySessions, playlistEndAction, prevSessionId, } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
-import { registerVoiceCommands } from '@/features/voice-control/voice-command-registry'
+import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/voice-control/voice-command-registry'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { PREMIUM_FEATURES } from '@/lib/defaults'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -1640,6 +1640,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // any tracked scope — commands are matched on demand, not re-rendered.
   // eslint-disable-next-line solid/reactivity
   onCleanup(registerVoiceCommands(() => stemVoiceCommands()))
+  // The wake-word-required mode must treat karaoke playback as "music is
+  // rolling" — this graph is invisible to App's own isPlaying.
+  onCleanup(registerMusicPlayingSource(audio.playing))
 
   // ── Stem controls props bundle ─────────────────────────────────
   // ── Add-stem pills ───────────────────────────────────────────

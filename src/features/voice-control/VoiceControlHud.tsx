@@ -26,7 +26,12 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
     props.controller.enabled() && props.controller.listenerState() === 'error'
 
   const statusText = () => {
-    if (hasError()) return 'Mic unavailable'
+    if (hasError()) {
+      // The mic and the model fail differently; say which one it was.
+      return props.controller.errorDetail() === 'local-engine-failed'
+        ? 'Voice engine failed'
+        : 'Mic unavailable'
+    }
     if (props.controller.listenerState() === 'starting') {
       return 'Loading voice engine'
     }
