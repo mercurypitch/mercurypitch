@@ -9,7 +9,7 @@
 //
 // Sizes are baked into public/site.webmanifest — if you change a viewport
 // here, update the matching `sizes` there. Exits non-zero if any shot fails.
-import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 import { chromium } from '@playwright/test'
@@ -64,7 +64,9 @@ const MIME = new Map([
 ])
 
 if (!existsSync(join(DIST, 'index.html'))) {
-  console.error('gen-pwa-screenshots: dist/index.html is missing. Run `pnpm run build` first.')
+  console.error(
+    'gen-pwa-screenshots: dist/index.html is missing. Run `pnpm run build` first.',
+  )
   process.exit(1)
 }
 
@@ -75,9 +77,14 @@ if (!existsSync(join(DIST, 'index.html'))) {
  */
 const server = createServer((req, res) => {
   const requested = decodeURIComponent((req.url ?? '/').split('?')[0])
-  const candidate = join(DIST, normalize(requested).replace(/^(\.\.[/\\])+/, ''))
+  const candidate = join(
+    DIST,
+    normalize(requested).replace(/^(\.\.[/\\])+/, ''),
+  )
   const file =
-    candidate.startsWith(DIST) && existsSync(candidate) && statSync(candidate).isFile()
+    candidate.startsWith(DIST) &&
+    existsSync(candidate) &&
+    statSync(candidate).isFile()
       ? candidate
       : join(DIST, 'index.html')
   res.writeHead(200, {
@@ -123,7 +130,10 @@ for (const shot of SHOTS) {
     await page.waitForTimeout(1800)
     // A screenshot of the error boundary would ship to the install sheet and
     // nobody would notice until it was live.
-    if ((await page.getByRole('dialog', { name: 'Application error' }).count()) > 0) {
+    if (
+      (await page.getByRole('dialog', { name: 'Application error' }).count()) >
+      0
+    ) {
       throw new Error('the app rendered its error boundary')
     }
     // Any tab button will do: the top bar and BottomTabBar share the `tab-*`
@@ -139,7 +149,9 @@ for (const shot of SHOTS) {
     )
   } catch (error) {
     failed += 1
-    console.error(`FAIL  ${shot.file}: ${error instanceof Error ? error.message : error}`)
+    console.error(
+      `FAIL  ${shot.file}: ${error instanceof Error ? error.message : error}`,
+    )
   } finally {
     await context.close()
   }
@@ -152,4 +164,6 @@ if (failed > 0) {
   console.error(`gen-pwa-screenshots: ${failed} shot(s) failed`)
   process.exit(1)
 }
-console.log('gen-pwa-screenshots: done. Update `screenshots` in public/site.webmanifest if sizes changed.')
+console.log(
+  'gen-pwa-screenshots: done. Update `screenshots` in public/site.webmanifest if sizes changed.',
+)

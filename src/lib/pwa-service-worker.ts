@@ -93,7 +93,8 @@ export function registerServiceWorker(
   options: RegisterServiceWorkerOptions = {},
 ): void {
   if (!__SW_ENABLED__) return
-  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator))
+    return
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     // Only the tab whose user accepted reloads. Another tab's decision must

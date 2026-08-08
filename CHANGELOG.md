@@ -83,6 +83,10 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   remembered across devices.
 - **One tab holds the microphone,** and a live meter shows what it hears.
 - **Session exports carry every stem,** with a picker for which to include.
+- **Install MercuryPitch like an app.** Add it to your home screen from the
+  header or from Settings and it opens in its own window, without browser
+  chrome, and still opens when the connection drops. On iPhone and iPad, use
+  Safari's Share menu and Add to Home Screen.
 
 ### Changed
 
