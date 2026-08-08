@@ -1022,7 +1022,10 @@ export const SettingsPanel: Component = () => {
             <div class={styles.settingsRow}>
               <label>Theme</label>
               <ThemePicker />
-              <small>Pick a color theme for the app</small>
+              <small>
+                Pick a color theme for the app, or let it follow your system
+                setting or the time of day
+              </small>
             </div>
           </div>
 

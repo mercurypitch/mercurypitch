@@ -852,7 +852,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: 'Theme',
     targetSelector: '[data-tour="settings.theme"]',
     description:
-      'Pick from nine colour themes with live preview swatches — the whole app, canvases included, follows instantly.',
+      'Pick from nine colour themes with live preview swatches — the whole app, canvases included, follows instantly. Or let it switch itself: System follows your device’s light/dark mode, Time of day swaps at 07:00 and 19:00, and you choose which preset each one uses. Picking a theme by hand always wins.',
     placement: 'left',
     section: 'settings-display',
     requiredTab: TAB_SETTINGS,

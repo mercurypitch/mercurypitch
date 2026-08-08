@@ -2,14 +2,68 @@
 // Theme Store Tests
 // ============================================================
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appStore, initTheme, setTheme, toggleTheme } from '@/stores'
+import { autoDayTheme, autoNightTheme, isDaytime, resolveThemeForSource, setAutoTheme, setThemeSource, stopThemeAutoWatch, themeSource, } from '@/stores/theme-store'
+
+/**
+ * jsdom ships no `window.matchMedia` at all, so `system` mode needs a fake
+ * whose `matches` we can flip and whose `change` listeners we can fire.
+ * `restoreMatchMedia` puts the (absent) original back.
+ */
+const NO_MATCH_MEDIA = Symbol('no matchMedia')
+let originalMatchMedia: typeof window.matchMedia | typeof NO_MATCH_MEDIA =
+  NO_MATCH_MEDIA
+
+function installMatchMedia(initialDark: boolean) {
+  if (originalMatchMedia === NO_MATCH_MEDIA && 'matchMedia' in window) {
+    originalMatchMedia = window.matchMedia
+  }
+  const listeners = new Set<() => void>()
+  let dark = initialDark
+  const mql = {
+    get matches() {
+      return dark
+    },
+    media: '(prefers-color-scheme: dark)',
+    addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+    removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+  }
+  window.matchMedia = (() => mql) as unknown as typeof window.matchMedia
+
+  return {
+    setDark(next: boolean) {
+      dark = next
+      listeners.forEach((fn) => {
+        fn()
+      })
+    },
+    listenerCount: () => listeners.size,
+  }
+}
+
+function restoreMatchMedia(): void {
+  if (originalMatchMedia === NO_MATCH_MEDIA) {
+    // @ts-expect-error — jsdom has no matchMedia; put the gap back
+    delete window.matchMedia
+    return
+  }
+  window.matchMedia = originalMatchMedia
+}
 
 describe('Theme Store', () => {
   beforeEach(() => {
-    // Reset to dark theme
+    // Reset to dark theme (also drops any auto source back to manual)
     setTheme('dark')
+    setAutoTheme('day', 'light')
+    setAutoTheme('night', 'dark')
     localStorage.clear()
+  })
+
+  afterEach(() => {
+    stopThemeAutoWatch()
+    restoreMatchMedia()
+    vi.useRealTimers()
   })
 
   describe('theme signal', () => {
@@ -144,6 +198,141 @@ describe('Theme Store', () => {
       expect(() => {
         setTheme('dark')
       }).not.toThrow()
+    })
+  })
+
+  describe('auto source — system', () => {
+    it('applies the night preset when the device prefers dark', () => {
+      installMatchMedia(true)
+      setAutoTheme('night', 'midnight')
+      setThemeSource('system')
+      expect(appStore.theme()).toBe('midnight')
+      expect(document.documentElement.getAttribute('data-theme')).toBe(
+        'midnight',
+      )
+    })
+
+    it('applies the day preset when the device prefers light', () => {
+      installMatchMedia(false)
+      setAutoTheme('day', 'amber')
+      setThemeSource('system')
+      expect(appStore.theme()).toBe('amber')
+    })
+
+    it('follows a later change of the system preference', () => {
+      const mm = installMatchMedia(false)
+      setThemeSource('system')
+      expect(appStore.theme()).toBe('light')
+      mm.setDark(true)
+      expect(appStore.theme()).toBe('dark')
+      mm.setDark(false)
+      expect(appStore.theme()).toBe('light')
+    })
+
+    it('re-applies when the day or night preset is changed', () => {
+      installMatchMedia(true)
+      setThemeSource('system')
+      expect(appStore.theme()).toBe('dark')
+      setAutoTheme('night', 'ocean')
+      expect(appStore.theme()).toBe('ocean')
+    })
+
+    it('survives an environment with no matchMedia', () => {
+      restoreMatchMedia()
+      expect(() => {
+        setThemeSource('system')
+      }).not.toThrow()
+      expect(themeSource()).toBe('system')
+    })
+  })
+
+  describe('auto source — time of day', () => {
+    it('treats the window from 07:00 to 18:59 as day', () => {
+      expect(isDaytime(6)).toBe(false)
+      expect(isDaytime(7)).toBe(true)
+      expect(isDaytime(18)).toBe(true)
+      expect(isDaytime(19)).toBe(false)
+      expect(isDaytime(23)).toBe(false)
+    })
+
+    it('applies the day preset during the day window', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 0, 15, 10, 0, 0))
+      setAutoTheme('day', 'forest')
+      setThemeSource('time')
+      expect(appStore.theme()).toBe('forest')
+    })
+
+    it('flips to the night preset when the clock crosses the boundary', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 0, 15, 18, 59, 0))
+      setAutoTheme('night', 'slate')
+      setThemeSource('time')
+      expect(appStore.theme()).toBe('light')
+
+      vi.setSystemTime(new Date(2026, 0, 15, 19, 0, 0))
+      vi.advanceTimersByTime(60_000)
+      expect(appStore.theme()).toBe('slate')
+    })
+  })
+
+  describe('manual override', () => {
+    it('picking a preset drops the source back to manual', () => {
+      installMatchMedia(true)
+      setThemeSource('system')
+      expect(themeSource()).toBe('system')
+
+      setTheme('rose')
+      expect(themeSource()).toBe('manual')
+      expect(appStore.theme()).toBe('rose')
+    })
+
+    it('stops listening once the source is manual', () => {
+      const mm = installMatchMedia(false)
+      setThemeSource('system')
+      expect(mm.listenerCount()).toBe(1)
+
+      setTheme('rose')
+      expect(mm.listenerCount()).toBe(0)
+      mm.setDark(true)
+      expect(appStore.theme()).toBe('rose')
+    })
+
+    it('toggleTheme is a manual pick', () => {
+      installMatchMedia(true)
+      setThemeSource('system')
+      toggleTheme()
+      expect(themeSource()).toBe('manual')
+    })
+  })
+
+  describe('resolveThemeForSource', () => {
+    it('returns the current preset for a manual source', () => {
+      setTheme('cyberpunk')
+      expect(resolveThemeForSource('manual')).toBe('cyberpunk')
+    })
+
+    it('maps the system preference onto the day and night presets', () => {
+      const mm = installMatchMedia(true)
+      expect(resolveThemeForSource('system')).toBe(autoNightTheme())
+      mm.setDark(false)
+      expect(resolveThemeForSource('system')).toBe(autoDayTheme())
+    })
+  })
+
+  describe('initTheme with an auto source', () => {
+    it('resolves the source instead of restoring the stored preset', () => {
+      installMatchMedia(true)
+      setAutoTheme('night', 'midnight')
+      setThemeSource('system')
+      setTheme('light')
+      setThemeSource('system')
+
+      initTheme()
+      expect(appStore.theme()).toBe('midnight')
+      expect(document.documentElement.getAttribute('data-theme')).toBe(
+        'midnight',
+      )
     })
   })
 })
