@@ -6,6 +6,104 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-08-08
+
+### Added
+
+- **Guitar Night — the full rehearsal room.** Song preparation runs behind a
+  port so the room and the practice host share one performance runtime rather
+  than each growing its own: `refactor(guitar): share the room performance
+runtime` moved the common half out, and the band-preparation controller owns
+  progress, cancellation and exact-session restaging (both pinned by tests).
+  Oversized room mixes stream instead of being buffered whole. The Guitar tab
+  links into the room, and the prepared-song library pages once it outgrows a
+  screenful. The room contract is recorded in
+  `src/features/guitar-night/DESIGN.md`.
+
+- **PWA install.** `src/sw.ts` is hand-written rather than generated because
+  the caching rules are the risky part: `assets.not_found_handling:
+single-page-application` means a deleted chunk answers with index.html and a
+  200, so `__WB_MANIFEST` is used as an _allowlist_ — only URLs this build
+  shipped may be read from or written to the cache, and nothing is stored
+  until its content type matches what its extension claims. Entry HTML is
+  network-first without exception, and `activate` prunes every entry the new
+  build does not list. Install priming is the shell plus the first-paint
+  assets parsed out of the shipped HTML; everything else caches lazily.
+  `scripts/gen-pwa-screenshots.mjs` shoots the install-sheet screenshots from
+  the real built app, with the per-tab tour offers pre-dismissed.
+
+- **`admin-console` feature perk** in the shared supporter catalog, plus
+  `useSupporterFeatures()` — an auth-keyed, stale-guarded, fail-closed wrapper
+  over `GET /api/perks/me` for perk-gated links.
+
+### Changed
+
+- **Rate limits closed on every gap the 106-route audit confirmed.**
+  `POST /api/billing/checkout` and `GET /api/billing/portal` had none at all,
+  and each mints a Stripe session object, so a loop was Stripe's bill as much
+  as our load; both now share a `billing-checkout` bucket at 10/5min per user.
+  Generic CRUD gained a 256 KiB body ceiling enforced from Content-Length
+  first and the real byte length second, since the request-count limiter said
+  nothing about size. `/api/auth/google/callback` (matched before the auth
+  limiter, and able to create a user) and `/api/leaderboard` (the most
+  expensive query an anonymous caller can reach) got buckets.
+  `resend-verification` gained a per-address tier on top of the per-IP one.
+  `friend-code` and `friend-redeem` moved from IP keys to `rateLimitSubject`,
+  because both require a token and an IP bucket made a choir or a school lab
+  share one budget. The audit's claim that the `logout` bucket was dead config
+  was wrong — `handleAuth` buckets by `route` before dispatch.
+
+- **One source for funnel event names.** The worker's ingest allowlist and each
+  client surface's union were maintained separately and drifted:
+  `donate_view`, `donate_start`, `onboarding_prints`,
+  `onboarding_track_gallery` and `onboarding_another_voiceprint` were answered
+  400 and dropped, and because `beacon()` never inspects the response the
+  donation funnel and the returning-visitor onboarding track recorded nothing
+  for as long as both features had shipped. `src/lib/funnel-event-catalog.ts`
+  is now the single source, shared across the worker boundary the way
+  `supporter-feature-catalog.ts` already was, so a one-sided name is a type
+  error. The suite asserts set equality both ways, per-surface coverage, and
+  no duplicate names.
+
+- **`POST /api/auth/anonymous` requires a real `deviceId`.** It used to invent
+  a UUID when the caller sent none, minting a row nothing could ever sign back
+  into — the junk-identity source. The deviceId _is_ the identity, so a
+  missing or malformed one is a 400; the bucket also gained a 100/day/IP tier,
+  since 30/min sustained is 43k rows a day from one address.
+
+- **Install surface 2.1 MB lighter.** The manifest icons and screenshots are
+  bytes Android fetches outside the service worker — the install sheet
+  downloads every screenshot, and WebAPK minting fetches the icons — so
+  `scripts/optimize-pwa-images.mjs` quantizes them via sharp/libimagequant at
+  0.3-0.9% RMSE, and the screenshot generator runs it over everything it
+  writes. `warm()` no longer forces a revalidation round-trip for immutable
+  hashed assets during priming.
+
+### Fixed
+
+- **Short-viewport layout, two distinct bugs.** A shrinkable flex item floors
+  at its container's height while its children shrink below their text, so the
+  text _overlaps_ rather than clips — `.exercise-idle-center` needed
+  `flex-shrink: 0`. Separately, `justify-content: flex-end` on a scrollable
+  strip spills past the unreachable _start_ edge, which is why a tablet could
+  not reach the first tabs; `safe flex-end` fixes it. Both pinned by
+  `exercise-tablet-landscape.spec.ts` at 660, 560 and 420 CSS pixels.
+
+- **The piano's finished-run card** dropped its Play Again / Close row and, on
+  the mobile stage, its full-width bottom dock — which read as a blocking
+  modal. Replay needed no new wiring: the transport play button already
+  restarts a finished run on both stages. Guitar 3D keeps its buttons; the
+  change is an additive `--quiet` variant.
+
+- **The lead-in cue is one language across both surfaces:** a fixed `2.4em`
+  bar anchored to the start of the line, `position: absolute` inside a
+  `position: relative` line, instead of an inline-block that shoved the first
+  word sideways and changed width with it.
+
+- **Stripe price ids no longer ride along in the public pricing read.**
+
+- **A canvas in the Lab** stopped repainting when nothing on it was changing.
+
 ## [0.8.0] - 2026-08-06
 
 ### Added
