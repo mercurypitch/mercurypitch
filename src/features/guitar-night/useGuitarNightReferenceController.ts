@@ -2,7 +2,8 @@
 // ============================================================
 
 import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
-import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, } from './reference-port'
+import type { GuitarNightReference, GuitarNightReferencePort, GuitarNightReferenceSummary, GuitarNightTranscriptionPort, MeasuredReferenceInput, } from './reference-port'
+import { measuredReferenceFromTranscription } from './reference-port'
 import { readGuitarNightScore, withGuitarNightScore } from './session-link'
 
 export type GuitarNightReferenceLibraryState =
@@ -24,6 +25,18 @@ type HistoryMode = 'push' | 'replace' | 'none'
 
 interface GuitarNightReferenceControllerOptions {
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
+  loadTranscriptionPort?: () => Promise<GuitarNightTranscriptionPort>
+}
+
+export async function loadDefaultGuitarNightTranscriptionPort(): Promise<GuitarNightTranscriptionPort> {
+  const module = await import('@/lib/transcription/stem-transcription')
+  return {
+    transcribeStem: (stemUrl, options) =>
+      module.transcribeStemUrl(stemUrl, {
+        signal: options.signal,
+        onProgress: options.onProgress,
+      }),
+  }
 }
 
 export async function loadDefaultGuitarNightReferencePort(): Promise<GuitarNightReferencePort> {
@@ -102,6 +115,9 @@ export function useGuitarNightReferenceController(
     const normalizedSongId = songId.trim()
     if (normalizedSongId === '') return
     const generation = ++attachGeneration
+    // An authored score replaces whatever was being measured: stop that work
+    // rather than letting a late transcription overwrite this attachment.
+    cancelFollowStem()
 
     const loadedPort = await ensurePort()
     if (disposed || generation !== attachGeneration) return
@@ -144,9 +160,11 @@ export function useGuitarNightReferenceController(
 
   const detach = (historyMode: HistoryMode = 'push'): void => {
     attachGeneration += 1
-    const hadReference = state().kind !== 'idle'
+    cancelFollowStem()
     setState({ kind: 'idle' })
-    if (historyMode !== 'none' && hadReference) {
+    // Only the saved-score axis owns a URL parameter. A measured reference has
+    // none, so clearing it must not push an identical entry onto history.
+    if (historyMode !== 'none' && readGuitarNightScore() !== null) {
       writeScoreToHistory(null, historyMode)
     }
   }
@@ -176,6 +194,84 @@ export function useGuitarNightReferenceController(
     }
   }
 
+  const [transcribeProgress, setTranscribeProgress] = createSignal<
+    number | null
+  >(null)
+  let transcribeAbort: AbortController | null = null
+
+  /**
+   * Follow what one separated stem actually plays. A measured reference is
+   * derived from this recording, so it carries no saved id and never routes on
+   * the score axis — re-opening the room re-derives it.
+   */
+  const followStem = async (
+    input: Omit<MeasuredReferenceInput, 'transcription'> & { stemUrl: string },
+  ): Promise<void> => {
+    if (transcribeProgress() !== null) return
+    const generation = ++attachGeneration
+
+    let loaded: GuitarNightTranscriptionPort
+    try {
+      const load =
+        options.loadTranscriptionPort ?? loadDefaultGuitarNightTranscriptionPort
+      loaded = await load()
+    } catch {
+      if (!disposed) setImportStatus('The note reader could not be opened.')
+      return
+    }
+    if (disposed || generation !== attachGeneration) return
+
+    const abort = new AbortController()
+    transcribeAbort = abort
+    setImportStatus(null)
+    setTranscribeProgress(0)
+
+    try {
+      const transcription = await loaded.transcribeStem(input.stemUrl, {
+        signal: abort.signal,
+        onProgress: (fraction) => {
+          if (!disposed && generation === attachGeneration) {
+            setTranscribeProgress(Math.min(1, Math.max(0, fraction)))
+          }
+        },
+      })
+      if (disposed || generation !== attachGeneration || abort.signal.aborted) {
+        return
+      }
+      if (transcription.notes.length === 0) {
+        setImportStatus(
+          `No clear notes were heard in the ${input.stemLabel.toLowerCase()} stem, so the stage stays in free play.`,
+        )
+        return
+      }
+      setState({
+        kind: 'ready',
+        reference: measuredReferenceFromTranscription({
+          sessionId: input.sessionId,
+          stemKind: input.stemKind,
+          stemLabel: input.stemLabel,
+          transcription,
+        }),
+      })
+    } catch (caught) {
+      if (disposed || abort.signal.aborted) return
+      setImportStatus(
+        caught instanceof Error
+          ? caught.message
+          : 'That stem could not be read.',
+      )
+    } finally {
+      if (transcribeAbort === abort) transcribeAbort = null
+      if (!disposed) setTranscribeProgress(null)
+    }
+  }
+
+  const cancelFollowStem = (): void => {
+    transcribeAbort?.abort()
+    transcribeAbort = null
+    setTranscribeProgress(null)
+  }
+
   onMount(() => {
     const initialSongId = readGuitarNightScore()
     if (initialSongId !== null) void attach(initialSongId, undefined, 'none')
@@ -195,6 +291,8 @@ export function useGuitarNightReferenceController(
   onCleanup(() => {
     disposed = true
     attachGeneration += 1
+    transcribeAbort?.abort()
+    transcribeAbort = null
   })
 
   return {
@@ -203,10 +301,13 @@ export function useGuitarNightReferenceController(
     reference,
     references,
     importStatus,
+    transcribeProgress,
     initialize,
     attach,
     selectTrack,
     detach,
     importFile,
+    followStem,
+    cancelFollowStem,
   }
 }
