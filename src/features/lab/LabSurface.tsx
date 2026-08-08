@@ -28,13 +28,26 @@ const PitchAlgorithmTester = lazy(async () =>
 const LrcDiffTool = lazy(async () =>
   import('./LrcDiffTool').then((m) => ({ default: m.LrcDiffTool })),
 )
+// Lazy for the usual reason and one extra: picking the SwiftF0 source pulls in
+// the ONNX runtime, and nobody opening the spectral workbench should pay for it.
+const TranscriptionBench = lazy(async () =>
+  import('./TranscriptionBench').then((m) => ({
+    default: m.TranscriptionBench,
+  })),
+)
 
-export type LabTab = 'workbench' | 'detection' | 'algorithms' | 'lrc-diff'
+export type LabTab =
+  | 'workbench'
+  | 'detection'
+  | 'algorithms'
+  | 'lrc-diff'
+  | 'transcribe'
 
 const TABS: Array<{ id: LabTab; label: string }> = [
   { id: 'workbench', label: 'Spectral workbench' },
   { id: 'detection', label: 'Pitch detection' },
   { id: 'algorithms', label: 'Pitch algorithms' },
+  { id: 'transcribe', label: 'Transcription bench' },
   { id: 'lrc-diff', label: 'Mapping differ' },
 ]
 
@@ -94,6 +107,11 @@ export const LabSurface: Component<{ initialTab?: LabTab }> = (props) => {
         <Show when={tab() === 'algorithms'}>
           <Suspense fallback={<SkeletonTabContent />}>
             <PitchAlgorithmTester onClose={backToAnalysis} />
+          </Suspense>
+        </Show>
+        <Show when={tab() === 'transcribe'}>
+          <Suspense fallback={<SkeletonTabContent />}>
+            <TranscriptionBench />
           </Suspense>
         </Show>
         <Show when={tab() === 'lrc-diff'}>

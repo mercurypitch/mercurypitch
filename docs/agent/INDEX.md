@@ -91,13 +91,13 @@ These are the rules that break things when ignored.
 | `piano-night` | [piano-night-demo-project.ts](../../src/features/piano-night/piano-night-demo-project.ts) | 2.2k | Piano Night prepared project — one truthful first-party score for silent entry The bundled study is canonical PianoProject data rather th... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.9k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
+| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 1.9k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 800 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
-| `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 800 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `voice-constellation` | [useVoiceConstellationIsolation.ts](../../src/features/voice-constellation/useVoiceConstellationIsolation.ts) | 750 | Voice Constellation Isolation — route-lifetime focus and page isolation. |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 600 | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `community` | [ProfileView.tsx](../../src/features/community/ProfileView.tsx) | 500 | ProfileView — your voice, so far Lifted out of CommunityShare, where it was ~200 lines inside an 1100-line component and could not be loo... |
@@ -125,9 +125,9 @@ These are the rules that break things when ignored.
 | `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 2.0k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
+| `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.3k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `transcription` | [stem-transcription.ts](../../src/lib/transcription/stem-transcription.ts) | 750 | Stem transcription — measured notes from one separated instrument The vocal path in `midi-generator.ts` proved the shape of this: detect... |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 150 | Platform services — web implementations. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 150 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
@@ -152,12 +152,12 @@ These are the rules that break things when ignored.
 | [runpod.ts](../../src/lib/runpod.ts) | 550 | RunPod bridge — translate the app's /api/uvr/* contract to/from RunPod's serverless job API. |
 | [uvr-processing-pipeline.ts](../../src/lib/uvr-processing-pipeline.ts) | 550 | UVR Processing Pipeline — Unified abstraction over: • Server mode → upload → poll /status → download stems • Local mode → VocalSeparator... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 500 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
+| [midi-song.ts](../../src/lib/midi-song.ts) | 500 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 500 | Pitch Algorithm Tester — Compare pitch detection algorithms |
 | [scale-data.ts](../../src/lib/scale-data.ts) | 500 | Scale Data — Music theory utilities for MercuryPitch |
 | [uvr-stem-split.ts](../../src/lib/uvr-stem-split.ts) | 500 | Stem split — break a session's instrumental into its parts Second separation pass over the ALREADY-SEPARATED instrumental: the server (de... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
-| [midi-song.ts](../../src/lib/midi-song.ts) | 400 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
 | [share-codec.ts](../../src/lib/share-codec.ts) | 400 | Share Codec — Base64url self-contained payload encoding Encodes melodies, exercises, and daily routines into compact base64url strings su... |
 | [uvr-song-preparation.ts](../../src/lib/uvr-song-preparation.ts) | 400 | UVR song preparation — durable file-to-session orchestration shared by every upload surface UI remains outside this module. |
 
