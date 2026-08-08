@@ -6,6 +6,24 @@ app's "What's New" modal lives in [`CHANGELOG.md`](./CHANGELOG.md).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A credit pack offered "Buy" to visitors who cannot check out.**
+  `startCheckout` needs a real identity — the db-worker 403s an anonymous or
+  absent token, deliberately, since a receipt without an account is useless —
+  so the click could only end in a "Checkout failed" toast. `PricingPanel` now
+  reads `accountHeld()` (synchronous and reactive: it decodes the stored token
+  instead of fetching `/me`, so the label is right on the first paint) and
+  labels the button "Create account", opening the auth modal on `register`.
+  "Soon" and "Unavailable" still outrank it — neither has a checkout to reach.
+- **The supporter tiers' account CTA linked to the panel it was already in.**
+  `DonatePanel`'s signed-out fallback was an `<a href="#/settings/account">`,
+  which from Settings → Credits reads as a click that did nothing and left the
+  visitor to find the sign-in button themselves. It is a button now, opening
+  the same shared `AuthModal` on its register pane.
+
 ## [0.8.1] - 2026-08-08
 
 ### Added

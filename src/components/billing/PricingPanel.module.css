@@ -231,6 +231,10 @@
   border-radius: 8px;
   background: var(--card-accent, var(--accent));
   color: #fff;
+  /* Sits directly above the donation tiers' matching CTA, so it has to ask
+     for the app font the same way that one does — there is no global button
+     reset, and side by side the UA default was the odd one out. */
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;

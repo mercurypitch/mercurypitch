@@ -8,6 +8,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
 import { DonatePanel } from '@/components/billing/DonatePanel'
+import { accountHeld } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
@@ -17,6 +18,7 @@ import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
+import { openAuthModal } from '@/stores/ui-store'
 import styles from './PricingPanel.module.css'
 
 // Distinct, subtle per-card accent hues, cycled by card position. Drive the
@@ -82,6 +84,27 @@ export const PricingPanel: Component = () => {
         'error',
       )
     }
+  }
+
+  // Checkout needs a real identity — the worker 403s an anonymous or absent
+  // token, deliberately, because a receipt without an account is useless. So
+  // a signed-out visitor gets the account offer the donation tiers already
+  // make, instead of a Buy button that fails after the click. accountHeld()
+  // is synchronous and reactive: it decodes the stored token rather than
+  // fetching /me, so the label is right on the first paint and corrects
+  // itself the moment they sign in.
+  const packLabel = (pack: PricingPlan): string => {
+    if (!pack.purchasable) return 'Soon'
+    if (checkoutUnavailable()) return 'Unavailable'
+    return accountHeld() ? 'Buy' : 'Create account'
+  }
+
+  const packAction = (pack: PricingPlan): void => {
+    if (!accountHeld()) {
+      openAuthModal('register')
+      return
+    }
+    void buy(pack)
   }
 
   const hasBadge = (b: string | null): boolean => b != null && b !== ''
@@ -253,14 +276,10 @@ export const PricingPanel: Component = () => {
                       <button
                         class={styles.buyBtn}
                         disabled={!pack.purchasable || checkoutUnavailable()}
-                        onClick={() => void buy(pack)}
+                        onClick={() => packAction(pack)}
                         data-testid="pricing-buy"
                       >
-                        {!pack.purchasable
-                          ? 'Soon'
-                          : checkoutUnavailable()
-                            ? 'Unavailable'
-                            : 'Buy'}
+                        {packLabel(pack)}
                       </button>
                     </div>
                   )}

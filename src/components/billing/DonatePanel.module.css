@@ -145,6 +145,10 @@
   border-radius: 8px;
   background: var(--card-accent, var(--accent));
   color: #fff;
+  /* This is a <button> in both states now (the signed-out CTA opens the auth
+     modal rather than navigating), and there is no global button reset — so
+     the family has to be asked for, or the CTA drops to the UA default. */
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
