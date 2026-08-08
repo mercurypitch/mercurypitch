@@ -69,6 +69,14 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- The opening backdrop races the JS bundle so the art is usually
+         there for the app's first commit. -->
+    <link
+      rel="preload"
+      as="image"
+      href="/opening/first-light.webp"
+      fetchpriority="high"
+    />
     <meta name="theme-color" content="#0d1117" />
   </head>
   <body>
