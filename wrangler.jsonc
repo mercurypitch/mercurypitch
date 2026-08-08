@@ -9,13 +9,13 @@
       "enabled": true,
       "head_sampling_rate": 1,
       "persist": true,
-      "invocation_logs": true
+      "invocation_logs": true,
     },
     "traces": {
       "enabled": false,
       "persist": true,
-      "head_sampling_rate": 1
-    }
+      "head_sampling_rate": 1,
+    },
   },
   "main": "src/worker.ts",
   // Wrangler runs this on every deploy, so THIS is the bundle that ships --
@@ -24,7 +24,7 @@
   // the wrangler step". Any VITE_* that must reach users belongs on the
   // wrangler step, not on the gate.
   "build": {
-    "command": "pnpm run build"
+    "command": "pnpm run build",
   },
   "assets": {
     "directory": "dist",
@@ -53,12 +53,10 @@
       "/",
       "/break-glass-with-your-voice",
       "/high-note-test",
-      "/shatter"
-    ]
+      "/shatter",
+    ],
   },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   // Local dev (plain `wrangler dev`, no --env) needs the R2 staging bucket
   // too: without it every upload over the 7 MB inline cap — and every
   // instrumental split, whose WAV payload is far bigger — 503s before
@@ -69,8 +67,8 @@
     {
       "binding": "UVR_INPUT_BUCKET",
       "bucket_name": "mercurypitch-uvr-output",
-      "remote": true
-    }
+      "remote": true,
+    },
   ],
   "env": {
     "prod": {
@@ -80,10 +78,10 @@
         // Voice Mirror standalone entry — the worker serves mirror.html at
         // this hostname's root (src/worker.ts). custom_domain creates the
         // DNS record automatically on deploy.
-        { "pattern": "mirror.mercurypitch.com", "custom_domain": true }
+        { "pattern": "mirror.mercurypitch.com", "custom_domain": true },
       ],
       "kv_namespaces": [
-        { "binding": "SHARE_STORE", "id": "d7c42a4fac32488ab199890ac050ebb8" }
+        { "binding": "SHARE_STORE", "id": "d7c42a4fac32488ab199890ac050ebb8" },
       ],
       // Temp holding for server-side separation inputs too big to inline into
       // the RunPod job payload (>7 MB). The worker streams them here under
@@ -92,8 +90,8 @@
       "r2_buckets": [
         {
           "binding": "UVR_INPUT_BUCKET",
-          "bucket_name": "mercurypitch-uvr-output-prod"
-        }
+          "bucket_name": "mercurypitch-uvr-output-prod",
+        },
       ],
       // db-worker base URL — lets the worker meter RunPod jobs against the
       // credit ledger (debits no-op until a tier's credit cost is set in
@@ -104,40 +102,66 @@
         // R2 output bucket (matches the `expire-runpod` 1-day lifecycle rule).
         // Lets the worker serve stems straight from R2 for ~24 h after RunPod
         // forgets the job (~30 min).
-        "RUNPOD_STEM_PREFIX": "runpod"
-      }
+        "RUNPOD_STEM_PREFIX": "runpod",
+      },
     },
     "dev": {
       "name": "mercurypitch-dev",
-      "routes": [
-        { "pattern": "dev.mercurypitch.com", "custom_domain": true }
-      ],
+      "routes": [{ "pattern": "dev.mercurypitch.com", "custom_domain": true }],
       "kv_namespaces": [
-        { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" }
+        { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" },
       ],
       "r2_buckets": [
-        { "binding": "UVR_INPUT_BUCKET", "bucket_name": "mercurypitch-uvr-output" }
+        {
+          "binding": "UVR_INPUT_BUCKET",
+          "bucket_name": "mercurypitch-uvr-output",
+        },
       ],
       "vars": {
         "DB_API_URL": "https://api-dev.mercurypitch.com",
         // Dev endpoint writes stems under `runpod-dev/` in the dev output
         // bucket `mercurypitch-uvr-output` (matches its `expire-runpod-dev`
         // 1-day lifecycle rule). Must equal the endpoint's S3_KEY_PREFIX.
-        "RUNPOD_STEM_PREFIX": "runpod-dev"
+        "RUNPOD_STEM_PREFIX": "runpod-dev",
       },
       "build": {
-        "command": "pnpm run build:dev"
-      }
+        "command": "pnpm run build:dev",
+      },
     },
     "preview": {
       "name": "mercurypitch-preview",
+      // A named environment inherits NOTHING from the top level, so every
+      // binding the Worker touches has to be repeated here. Both of these
+      // were missing, and the failures were invisible until someone
+      // exercised the feature on a preview URL:
+      //   SHARE_STORE — share-handler.ts calls it unguarded, so /api/share/*
+      //     threw a 500 on every preview deploy. Wrangler cannot warn about
+      //     this one (there is no top-level kv_namespaces to compare against).
+      //   UVR_INPUT_BUCKET — optional in the Env type and handled as null, so
+      //     this only 503s uploads over the 7 MB inline cap and every
+      //     instrumental split. That is the warning Wrangler does print.
+      // Previews point at the dev API, so they share dev's KV and dev's
+      // bucket: both are TTL'd (60-day share payloads, 1-day `input/`
+      // lifecycle) and never the prod ones.
+      "kv_namespaces": [
+        { "binding": "SHARE_STORE", "id": "6770f5ce13f64e4a9bcefb74039a7d9a" },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "UVR_INPUT_BUCKET",
+          "bucket_name": "mercurypitch-uvr-output",
+        },
+      ],
       "vars": {
         "ENVIRONMENT": "preview",
-        "DB_API_URL": "https://api-dev.mercurypitch.com"
+        "DB_API_URL": "https://api-dev.mercurypitch.com",
+        // Must match the dev RunPod endpoint's S3_KEY_PREFIX, since that is
+        // the API a preview talks to — the code default is prod's `runpod`.
+        "RUNPOD_STEM_PREFIX": "runpod-dev",
       },
       "build": {
-        "command": "pnpm run build:dev"
-      }
-    }
-  }
+        "command": "pnpm run build:dev",
+      },
+    },
+  },
 }
