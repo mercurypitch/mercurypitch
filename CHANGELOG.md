@@ -107,6 +107,11 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 
 ### Fixed
 
+- **Links show the right picture.** Sharing Jam Rooms or Guitar Night in a
+  chat now unfurls its own card — the real room, the real way in — instead of
+  the generic site image, the way Karaoke Night already did. Jam also has a
+  plain `/jam` address to share, since a link with `#` in it can't carry a
+  preview at all.
 - **The app opens like it means it.** Every launch now starts on a
   MercuryPitch backdrop — a quicksilver sea at first light, under the
   logo. Your very first arrival gets the full reveal: the sea settles,

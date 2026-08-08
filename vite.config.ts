@@ -49,6 +49,9 @@ const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
+// Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
+// exists so the feature has a real URL a crawler can fetch — see jam.html.
+const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
 // Glass aliases are worker-routed in production (wrangler `run_worker_first`
 // + src/worker.ts) — deliberately NO alias HTML files are emitted for them.
 const GLASS_PATHS = new Set([
@@ -91,6 +94,7 @@ function standaloneEntryRewritePlugin() {
         else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
+        else if (JAM_PATHS.has(path)) req.url = '/jam.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
       next()
@@ -125,6 +129,12 @@ function standaloneAliasFilesPlugin() {
       copyFileSync(
         resolve(outDir, 'karaoke.html'),
         resolve(outDir, 'karaoke-night.html'),
+      )
+      // /jam maps to jam.html via Cloudflare's html_handling; the /jam-rooms
+      // alias needs its own real file, same as karaoke-night.
+      copyFileSync(
+        resolve(outDir, 'jam.html'),
+        resolve(outDir, 'jam-rooms.html'),
       )
     },
   }
@@ -285,6 +295,7 @@ export default defineConfig(({ command, mode }) => {
           mirror: resolve(__dirname, 'mirror.html'),
           vocalRangeTest: resolve(__dirname, 'vocal-range-test.html'),
           karaoke: resolve(__dirname, 'karaoke.html'),
+          jam: resolve(__dirname, 'jam.html'),
           guitarNight: resolve(__dirname, 'guitar-night.html'),
           glass: resolve(__dirname, 'glass.html'),
         },

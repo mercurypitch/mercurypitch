@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Jam Rooms — Sing Together From Anywhere | MercuryPitch</title>
+    <meta
+      name="description"
+      content="Open a room, share the link, and sing a song together. Lyrics down the left, a live pitch lane for every singer, and one shared scoreboard — in your browser."
+    />
+    <meta
+      name="keywords"
+      content="sing together online, online jam room, group karaoke online, harmony practice, sing with friends remotely"
+    />
+    <meta name="author" content="MercuryPitch" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mercurypitch.com/jam" />
+
+    <!-- Open Graph -->
+    <meta
+      property="og:title"
+      content="Jam Rooms — sing it together, from anywhere"
+    />
+    <meta
+      property="og:description"
+      content="Open a room, share the link, and take a part. A live pitch lane for every singer, and one scoreboard for the whole room."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mercurypitch.com/jam" />
+    <meta property="og:image" content="https://mercurypitch.com/jam-og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="MercuryPitch Jam Rooms — a rehearsal room with a mic and drum kit, and a panel showing three singers, each with their own pitch lane and a shared score."
+    />
+    <meta property="og:site_name" content="MercuryPitch" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Jam Rooms — sing it together, from anywhere"
+    />
+    <meta
+      name="twitter:description"
+      content="A live pitch lane for every singer, and one scoreboard for the whole room. In your browser."
+    />
+    <meta name="twitter:image" content="https://mercurypitch.com/jam-og.png" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0d1117" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      Jam Rooms needs JavaScript — the room, the lyrics and the live scoring all
+      run right here in your browser.
+    </noscript>
+    <!-- Unlike the other standalone entries, Jam has no separate mini-app: it
+         is a tab of the studio. This page exists so the feature has a real URL
+         a crawler can fetch — a share of "#/jam" carries no card at all,
+         because a fragment never reaches the server. It boots the same studio
+         entry and lands on the Jam tab. -->
+    <script>
+      if (!window.location.hash) window.location.hash = '#/jam'
+    </script>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>
