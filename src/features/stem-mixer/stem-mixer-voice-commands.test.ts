@@ -17,6 +17,10 @@ function makeFixture(): Fixture {
   let playing = false
   let playlistActive = false
   let seekedTo: number | null = null
+  let speed = 1
+  let loopEnabled = false
+  let loopStart = 0
+  let loopEnd = 0
   const tracks: StemMixerVoiceTrack[] = [
     { label: 'Vocal', muted: false, soloed: false, volume: 0.8 },
     { label: 'Instrumental', muted: true, soloed: false, volume: 0.8 },
@@ -61,6 +65,31 @@ function makeFixture(): Fixture {
     setTrackVolume: (label, volume) => {
       calls.push(`volume:${label}:${String(volume)}`)
       find(label).volume = volume
+    },
+    speed: () => speed,
+    setSpeed: (multiplier) => {
+      calls.push(`speed:${String(multiplier)}`)
+      speed = multiplier
+    },
+    loop: {
+      enabled: () => loopEnabled,
+      setEnabled: (on) => {
+        loopEnabled = on
+      },
+      start: () => loopStart,
+      setStart: (seconds) => {
+        loopStart = seconds
+      },
+      end: () => loopEnd,
+      setEnd: (seconds) => {
+        loopEnd = seconds
+      },
+      clear: () => {
+        calls.push('loop:clear')
+        loopEnabled = false
+        loopStart = 0
+        loopEnd = 0
+      },
     },
     playlist: {
       active: () => playlistActive,
@@ -154,6 +183,41 @@ describe('stem mixer voice commands — stems', () => {
     expect(fire(fixture, 'guitar volume 25 percent')).toBe('Guitar 25%')
     expect(fixture.track('Guitar').volume).toBeCloseTo(0.25)
     expect(fire(fixture, 'turn keys up')).toBe('No piano stem in this mix')
+  })
+})
+
+describe('stem mixer voice commands — loop and speed', () => {
+  it('sets a loop by spoken range in the seconds domain and plays it', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'play a loop from 20 to 60 seconds')).toBe(
+      'Loop 20s to 60s',
+    )
+    expect(fixture.deps.loop.start()).toBe(20)
+    expect(fixture.deps.loop.end()).toBe(60)
+    expect(fixture.deps.loop.enabled()).toBe(true)
+    expect(fixture.seekedTo()).toBe(20)
+    expect(fixture.calls).toContain('play')
+    expect(fire(fixture, 'loop from 60 to 20')).toBe(
+      'Loop end must be after its start',
+    )
+  })
+
+  it('sets loop points at the playhead and toggles', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+    expect(fixture.deps.loop.start()).toBe(30)
+    expect(fire(fixture, 'set b')).toBe('Loop B must come after A')
+    expect(fire(fixture, 'loop on')).toBe('Set A and B first')
+    expect(fire(fixture, 'clear loop')).toBe('Loop cleared')
+  })
+
+  it('steps and sets the mixer speed with the multiplier rule', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'faster')).toBe('Speed 1.5x')
+    expect(fixture.deps.speed()).toBe(1.5)
+    expect(fire(fixture, 'half speed')).toBe('Speed 0.5x')
+    expect(fire(fixture, '10 x')).toBe('Speed 2x')
+    expect(fire(fixture, 'speed 75 percent')).toBe('Speed 0.75x')
   })
 })
 

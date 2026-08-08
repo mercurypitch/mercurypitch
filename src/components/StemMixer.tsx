@@ -1618,6 +1618,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       toggleSolo,
       setTrackVolume,
       available: () => activeTab() === TAB_KARAOKE,
+      speed: audio.speed,
+      setSpeed: audio.setSpeed,
+      loop: {
+        enabled: audio.loopEnabled,
+        setEnabled: audio.setLoopEnabled,
+        start: audio.loopStart,
+        setStart: audio.setLoopStart,
+        end: audio.loopEnd,
+        setEnd: audio.setLoopEnd,
+        clear: audio.clearLoop,
+      },
       playlist: {
         active: playlist.isPlaylistActive,
         next: handlePlaylistNext,

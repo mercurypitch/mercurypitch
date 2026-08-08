@@ -39,6 +39,19 @@ export interface StemMixerVoiceDeps {
   /** Gate for the whole set (e.g. "only while the Karaoke tab is active");
    *  heard-elsewhere phrases then report "not available on this view". */
   available?: Accessor<boolean>
+  /** Playback rate, 1 = normal. */
+  speed: Accessor<number>
+  setSpeed: (multiplier: number) => void
+  /** The mixer's own A-B loop, in seconds. */
+  loop: {
+    enabled: Accessor<boolean>
+    setEnabled: (on: boolean) => void
+    start: Accessor<number>
+    setStart: (seconds: number) => void
+    end: Accessor<number>
+    setEnd: (seconds: number) => void
+    clear: () => void
+  }
   playlist: {
     active: Accessor<boolean>
     next: () => void
@@ -91,6 +104,12 @@ const displayName = (key: string): string =>
   key.charAt(0).toUpperCase() + key.slice(1)
 
 const VOLUME_STEP = 0.1
+
+/** Same ladder the global transport's speed steps climb. */
+const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
+
+const formatSpeed = (multiplier: number): string =>
+  `Speed ${String(multiplier)}x`
 
 export function createStemMixerVoiceCommands(
   deps: StemMixerVoiceDeps,
@@ -200,6 +219,53 @@ export function createStemMixerVoiceCommands(
       if (track.soloed) deps.toggleSolo(track.label)
     }
     return 'Solo off'
+  }
+
+  // ── Speed and loop (mixer-owned, seconds domain) ───────────
+
+  const setSpeedClamped = (multiplier: number): string => {
+    const clamped = Math.min(Math.max(multiplier, 0.25), 2)
+    deps.setSpeed(clamped)
+    return formatSpeed(clamped)
+  }
+
+  const stepSpeed = (direction: 1 | -1): string => {
+    const current = deps.speed()
+    let nearest = 0
+    let bestDistance = Number.POSITIVE_INFINITY
+    for (let i = 0; i < SPEED_STEPS.length; i++) {
+      const distance = Math.abs(SPEED_STEPS[i] - current)
+      if (distance < bestDistance) {
+        bestDistance = distance
+        nearest = i
+      }
+    }
+    return setSpeedClamped(
+      SPEED_STEPS[
+        Math.min(Math.max(nearest + direction, 0), SPEED_STEPS.length - 1)
+      ],
+    )
+  }
+
+  const setLoopRange = (
+    from: number | undefined,
+    to: number | undefined,
+  ): VoiceCommandResult => {
+    if (
+      from === undefined ||
+      to === undefined ||
+      !Number.isFinite(from) ||
+      !Number.isFinite(to)
+    ) {
+      return voiceFailure('Say loop from A to B seconds')
+    }
+    if (to <= from) return voiceFailure('Loop end must be after its start')
+    deps.loop.setStart(clampSeconds(from))
+    deps.loop.setEnd(clampSeconds(to))
+    deps.loop.setEnabled(true)
+    deps.seekToTime(clampSeconds(from))
+    if (!deps.playing()) deps.play()
+    return `Loop ${String(from)}s to ${String(to)}s`
   }
 
   // ── The set ────────────────────────────────────────────────
@@ -426,6 +492,176 @@ export function createStemMixerVoiceCommands(
       label: 'Solo off',
       phrases: ['solo off', 'clear solo', 'no solo', 'unsolo everything'],
       run: () => clearSolos(),
+    },
+    {
+      id: 'karaoke.loopSetA',
+      label: 'Loop A set',
+      phrases: [
+        'set a',
+        'set point a',
+        'mark a',
+        'loop start',
+        'set loop start',
+        'loop from here',
+      ],
+      run: () => {
+        const at = deps.elapsed()
+        deps.loop.setStart(at)
+        if (deps.loop.end() > 0 && deps.loop.end() <= at) {
+          deps.loop.setEnd(0)
+          deps.loop.setEnabled(false)
+        }
+        return 'Loop A set'
+      },
+    },
+    {
+      id: 'karaoke.loopSetB',
+      label: 'Loop B set',
+      phrases: [
+        'set b',
+        'set be',
+        'set bee',
+        'set point b',
+        'mark b',
+        'mark be',
+        'loop end',
+        'set loop end',
+        'loop to here',
+      ],
+      run: () => {
+        const at = deps.elapsed()
+        if (at <= deps.loop.start()) {
+          return voiceFailure('Loop B must come after A')
+        }
+        deps.loop.setEnd(at)
+        deps.loop.setEnabled(true)
+        return 'Loop B set'
+      },
+    },
+    {
+      id: 'karaoke.loopToggle',
+      label: 'Toggle loop',
+      phrases: ['loop', 'toggle loop'],
+      run: () => {
+        const next = !deps.loop.enabled()
+        deps.loop.setEnabled(next)
+        return next ? 'Loop on' : 'Loop off'
+      },
+    },
+    {
+      id: 'karaoke.loopOn',
+      label: 'Loop on',
+      phrases: [
+        'loop on',
+        'enable loop',
+        'start loop',
+        'start looping',
+        'loop this',
+      ],
+      run: () => {
+        if (deps.loop.end() <= deps.loop.start()) {
+          return voiceFailure('Set A and B first')
+        }
+        deps.loop.setEnabled(true)
+        return 'Loop on'
+      },
+    },
+    {
+      id: 'karaoke.loopOff',
+      label: 'Loop off',
+      phrases: [
+        'loop off',
+        'disable loop',
+        'stop looping',
+        'stop loop',
+        'no loop',
+      ],
+      run: () => {
+        deps.loop.setEnabled(false)
+        return 'Loop off'
+      },
+    },
+    {
+      id: 'karaoke.loopClear',
+      label: 'Loop cleared',
+      phrases: [
+        'clear loop',
+        'clear the loop',
+        'remove loop',
+        'delete loop',
+        'reset loop',
+      ],
+      run: () => {
+        deps.loop.clear()
+        return 'Loop cleared'
+      },
+    },
+    {
+      id: 'karaoke.loopRange',
+      label: 'Loop range',
+      phrases: [
+        'loop from <n> to <n> seconds',
+        'loop from <n> to <n>',
+        'play a loop from <n> to <n> seconds',
+        'play a loop from <n> to <n>',
+        'play loop from <n> to <n> seconds',
+        'loop between <n> and <n> seconds',
+        'loop <n> to <n> seconds',
+        'loop <n> to <n>',
+      ],
+      run: (args) => setLoopRange(args.n, args.m),
+    },
+    {
+      id: 'karaoke.speedFaster',
+      label: 'Faster',
+      phrases: ['faster', 'speed up', 'a bit faster', 'little faster'],
+      run: () => stepSpeed(1),
+    },
+    {
+      id: 'karaoke.speedSlower',
+      label: 'Slower',
+      phrases: ['slower', 'slow down', 'a bit slower', 'little slower'],
+      run: () => stepSpeed(-1),
+    },
+    ...(
+      [
+        [1, ['normal speed', 'full speed', 'regular speed']],
+        [0.5, ['half speed']],
+        [0.25, ['quarter speed']],
+        [0.75, ['three quarter speed', 'three quarters speed']],
+        [2, ['double speed']],
+      ] as Array<[number, string[]]>
+    ).map(
+      ([multiplier, phrases]): VoiceCommand => ({
+        id: `karaoke.speedPreset.${String(multiplier)}`,
+        label: formatSpeed(multiplier),
+        phrases,
+        run: () => setSpeedClamped(multiplier),
+      }),
+    ),
+    {
+      id: 'karaoke.speedMultiplier',
+      label: 'Set speed',
+      // Explicit x/times is ALWAYS a multiplier — "10 x" clamps to 2x, it
+      // never becomes 10 percent.
+      phrases: ['speed <n> x', '<n> x', 'speed <n> times'],
+      run: (args) =>
+        args.n !== undefined && Number.isFinite(args.n) && args.n > 0
+          ? setSpeedClamped(args.n)
+          : voiceFailure('Speed unchanged'),
+    },
+    {
+      id: 'karaoke.speedSpoken',
+      label: 'Set speed',
+      // Bare numbers over 2.5 read as percent — same rule as the global
+      // transport.
+      phrases: ['speed <n> percent', '<n> percent speed', 'speed <n>'],
+      run: (args) => {
+        if (args.n === undefined || !Number.isFinite(args.n) || args.n <= 0) {
+          return voiceFailure('Speed unchanged')
+        }
+        return setSpeedClamped(args.n > 2.5 ? args.n / 100 : args.n)
+      },
     },
   ]
 
