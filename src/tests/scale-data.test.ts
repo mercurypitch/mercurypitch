@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, isBlackKey, keyTonicFreq, melodyIndexAtBeat, melodyIndicesAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS, } from '@/lib/scale-data'
+import { buildMajorScale, buildMultiOctaveScale, freqToMidi, freqToNote, gridRowsForBounds, isBlackKey, keyTonicFreq, melodyIndexAtBeat, melodyIndicesAtBeat, melodyMidiRange, melodyNoteAtBeat, melodyTotalBeats, midiToFreq, midiToNote, NOTE_NAMES, noteToMidi, SCALE_DEFINITIONS, } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
 describe('MIDI/Frequency Conversion', () => {
@@ -454,5 +454,50 @@ describe('Custom Scales', () => {
     expect(gScale[gScale.length - 1].midi).toBe(
       cScale[cScale.length - 1].midi + 7,
     )
+  })
+})
+
+describe('gridRowsForBounds', () => {
+  const gMajor = buildMultiOctaveScale('G', 3, 2, 'major')
+
+  it('covers the whole range with the scale pitch classes, low to high', () => {
+    // Grid built at G3..G5, view fitted to a melody an octave higher.
+    const rows = gridRowsForBounds(gMajor, 74, 84)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows[0].midi).toBeGreaterThanOrEqual(74)
+    expect(rows[rows.length - 1].midi).toBeLessThanOrEqual(84)
+    for (let i = 1; i < rows.length; i++) {
+      expect(rows[i].midi).toBeGreaterThan(rows[i - 1].midi)
+    }
+    // Every G-major pitch class in range appears; no chromatic strangers.
+    const gMajorPcs = new Set(gMajor.map((n) => n.midi % 12))
+    for (let midi = 74; midi <= 84; midi++) {
+      const present = rows.some((r) => r.midi === midi)
+      expect(present).toBe(gMajorPcs.has(midi % 12))
+    }
+  })
+
+  it('names extended rows after the scale spelling with per-row octaves', () => {
+    const rows = gridRowsForBounds(gMajor, 78, 78) // F#5
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe('F#')
+    expect(rows[0].octave).toBe(5)
+    expect(rows[0].freq).toBeCloseTo(midiToFreq(78), 6)
+  })
+
+  it('returns every semitone for a chromatic scale', () => {
+    const chromatic = buildMultiOctaveScale('C', 3, 1, 'chromatic')
+    const rows = gridRowsForBounds(chromatic, 60, 71)
+    expect(rows).toHaveLength(12)
+  })
+
+  it('returns nothing for an empty scale', () => {
+    expect(gridRowsForBounds([], 60, 72)).toEqual([])
+  })
+
+  it('handles fractional bounds by staying inside them', () => {
+    const rows = gridRowsForBounds(gMajor, 66.4, 67.6)
+    expect(rows).toHaveLength(1) // only G4 (67) fits
+    expect(rows[0].midi).toBe(67)
   })
 })

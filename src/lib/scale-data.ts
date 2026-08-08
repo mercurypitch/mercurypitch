@@ -353,6 +353,41 @@ export function buildMultiOctaveScale(
   return scale
 }
 
+/**
+ * The horizontal reference rows for a pitch stage whose view is fitted to
+ * the melody, not to the scale grid. The built scale covers a fixed octave
+ * window; a loaded melody can sit partly (or entirely) outside it, which
+ * used to leave those regions of the stage without any lines or labels.
+ * Extending the scale's pitch CLASSES across the visible MIDI range keeps
+ * the row density and naming of the chosen scale while guaranteeing the
+ * whole view is lined. Rows come back low to high.
+ */
+export function gridRowsForBounds(
+  scale: readonly Pick<ScaleDegree, 'midi' | 'name'>[],
+  minMidi: number,
+  maxMidi: number,
+): Pick<ScaleDegree, 'midi' | 'name' | 'octave' | 'freq'>[] {
+  const nameByPitchClass = new Map<number, string>()
+  for (const note of scale) {
+    if (!Number.isFinite(note.midi)) continue
+    const pc = ((note.midi % 12) + 12) % 12
+    if (!nameByPitchClass.has(pc)) nameByPitchClass.set(pc, note.name)
+  }
+  const rows: Pick<ScaleDegree, 'midi' | 'name' | 'octave' | 'freq'>[] = []
+  if (nameByPitchClass.size === 0) return rows
+  for (let midi = Math.ceil(minMidi); midi <= Math.floor(maxMidi); midi++) {
+    const name = nameByPitchClass.get(((midi % 12) + 12) % 12)
+    if (name === undefined) continue
+    rows.push({
+      midi,
+      name,
+      octave: Math.floor(midi / 12) - 1,
+      freq: midiToFreq(midi),
+    })
+  }
+  return rows
+}
+
 /** Build a sample melody in the given key */
 export function buildSampleMelody(
   keyName: string,

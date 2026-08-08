@@ -61,6 +61,12 @@ single-page-application` means a deleted chunk answers with index.html and a
 
 ### Changed
 
+- **Mic waveform overlay defaults off.** `micWaveVisible` moved from a
+  session `createSignal(true)` to a persisted signal
+  (`pitchperfect_mic_wave_visible`, default `false`): the overlay is a
+  mic-health check, not something every run needs drawn over the stage, and
+  turning it on once now sticks across sessions.
+
 - **Rate limits closed on every gap the 106-route audit confirmed.**
   `POST /api/billing/checkout` and `GET /api/billing/portal` had none at all,
   and each mints a Stripe session object, so a loop was Stripe's bill as much
@@ -103,6 +109,35 @@ single-page-application` means a deleted chunk answers with index.html and a
   hashed assets during priming.
 
 ### Fixed
+
+- **The singing-stage grid follows the melody.** Three coordinated changes,
+  one invariant: the stage must always label what it shows.
+  `gridRowsForBounds` (`src/lib/scale-data.ts`) extends the built scale's
+  pitch classes across the melody-fitted `verticalBounds`, and
+  `PitchCanvas.draw` now derives lanes, gridlines and right-edge labels from
+  those rows instead of iterating `props.scale()` — whose octave window a
+  loaded melody could sit entirely outside (the reported "top half of the
+  screen has no note lines" after loading the G4 scale over a C3 grid).
+  `loadMelody`/`_restoreCurrentMelodyId` align the grid from the melody's own
+  key/scaleType/octave metadata via `refreshScale`, and an App effect mirrors
+  key/scale type into the app-store signals so the sidebar pickers and share
+  links describe the melody actually on stage. Label density thins (every
+  2nd row) past 30 rows so huge imports stay readable. Covered by
+  `src/tests/playback-grid-sync.test.ts` and new `gridRowsForBounds` cases in
+  `src/tests/scale-data.test.ts`; both suites verified to fail with the fix
+  pinned off.
+
+- **One octave-shift path for every surface.** The desktop sidebar's octave
+  buttons on the singing tab moved only the reference grid ("view-only"), a
+  behavior that became invisible when the stage view started fitting itself
+  to the melody — the buttons read as dead, and their `refreshScale` rebuilt
+  the grid from app-store key/scale signals that a loaded melody never
+  updated (stale-C-major grid under a G-major song). New
+  `melodyStore.shiftMelodyOctave(delta)` transposes the melody and moves the
+  grid together, rebuilt from the store's tracked key/scale type, clamped to
+  octaves 1-6; Compose, the desktop sidebar and the mobile options sheet all
+  route through it, and the sidebar's displayed octave is now derived from
+  `currentScale()` (root row) instead of dead local state.
 
 - **Merged from main into this release** (reviewed and landed separately):
   funnel acquisition capture — where a funnel visitor came from, carried on

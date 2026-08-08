@@ -54,11 +54,25 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   font-change reload prompt also actually appears now; it used to render on a
   different settings tab than the font picker that triggered it.
 
+- **Octave up and down now moves the song.** On the singing sidebar the
+  buttons used to move only an invisible reference grid; they now transpose
+  the melody itself, exactly like the Compose editor and the mobile options
+  sheet, within a sensible vocal window.
+
+- **The microphone waveform starts hidden.** It is a mic-health check, not
+  something every run needs drawn across it — toggle it on when you want it,
+  and the choice is remembered.
+
 - **The app starts faster.** Fingerprinted files are now cached by the browser
   for a year instead of being re-checked on every visit, and code that only
   runs behind a click no longer loads with the first screen.
 
 ### Fixed
+
+- **The singing stage no longer runs out of note lines.** Loading a melody
+  now brings its own key, scale and octave to the stage grid, and the grid
+  rows extend across the whole visible range — a G4 scale over an old C3
+  grid used to leave the top half of the screen without lines or labels.
 
 - **Screens wider than they are tall.** On a tablet in landscape, and at heavy
   browser zoom, pages that used to cut off their own content now scroll to it:
