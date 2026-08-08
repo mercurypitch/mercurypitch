@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { TranscriptionFrame } from './stem-transcription'
-import { BASS_TRANSCRIPTION_PROFILE, octaveCorrectedMidi, profileWindowSamples, repairOctaveSlips, resolvableMinFrequency, toneMagnitude, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
+import { BASS_TRANSCRIPTION_PROFILE, harmonicCorrectedMidi, profileWindowSamples, repairOctaveSlips, resolvableMinFrequency, toneMagnitude, transcribeFrames, transcribeStemSamples, } from './stem-transcription'
 
 const PROFILE = BASS_TRANSCRIPTION_PROFILE
 
@@ -223,7 +223,7 @@ describe('toneMagnitude', () => {
   })
 })
 
-describe('octaveCorrectedMidi', () => {
+describe('harmonicCorrectedMidi', () => {
   const SAMPLE_RATE = 8000
 
   /** A string whose fundamental is E2, with the harmonics a real one has. */
@@ -244,7 +244,7 @@ describe('octaveCorrectedMidi', () => {
     // 28 is E1 — the octave below, which is what YIN reports when it locks
     // onto twice the true period.
     expect(
-      octaveCorrectedMidi(
+      harmonicCorrectedMidi(
         samples,
         SAMPLE_RATE,
         28,
@@ -258,7 +258,7 @@ describe('octaveCorrectedMidi', () => {
   it('leaves a correct reading alone, harmonics and all', () => {
     const samples = pluckedE2()
     expect(
-      octaveCorrectedMidi(
+      harmonicCorrectedMidi(
         samples,
         SAMPLE_RATE,
         40,
@@ -272,7 +272,7 @@ describe('octaveCorrectedMidi', () => {
   it('never shifts a note out of the profile it belongs to', () => {
     const samples = pluckedE2()
     expect(
-      octaveCorrectedMidi(
+      harmonicCorrectedMidi(
         samples,
         SAMPLE_RATE,
         BASS_TRANSCRIPTION_PROFILE.maxMidi,
@@ -316,5 +316,32 @@ describe('transcribeFrames with onsets', () => {
     expect(
       transcribeFrames(heldFrames, profile, heldFrames.length, 1, [99]).notes,
     ).toHaveLength(1)
+  })
+})
+
+describe('the fine window', () => {
+  const SAMPLE_RATE = 8000
+
+  function tone(frequency: number, seconds: number) {
+    const samples = new Float32Array(Math.round(seconds * SAMPLE_RATE))
+    for (let index = 0; index < samples.length; index += 1) {
+      const time = index / SAMPLE_RATE
+      samples[index] =
+        0.5 * Math.sin(2 * Math.PI * frequency * time) +
+        0.25 * Math.sin(2 * Math.PI * frequency * 2 * time)
+    }
+    return samples
+  }
+
+  it('is off by default, and that is a measured choice not an oversight', () => {
+    expect(BASS_TRANSCRIPTION_PROFILE.fineWindowSeconds).toBeNull()
+  })
+
+  it('still transcribes when switched on, so the path is not dead', async () => {
+    const result = await transcribeStemSamples(tone(110, 1.2), SAMPLE_RATE, {
+      profile: { ...BASS_TRANSCRIPTION_PROFILE, fineWindowSeconds: 0.045 },
+    })
+    expect(result.notes.length).toBeGreaterThan(0)
+    expect(result.notes[0].midi).toBe(45)
   })
 })

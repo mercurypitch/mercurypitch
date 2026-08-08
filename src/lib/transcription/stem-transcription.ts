@@ -19,6 +19,19 @@ import { midiToNote } from '@/lib/scale-data'
 export interface TranscriptionProfile {
   /** Analysis window in seconds, so the sample rate can change under it. */
   windowSeconds: number
+  /**
+   * A second, shorter window run over the same audio.
+   *
+   * One window cannot serve a bass line. Long enough to resolve the low
+   * strings means long enough to straddle two sixteenth notes and resolve
+   * neither; short enough for the fast passage cannot express the low string
+   * at all. Rather than split the difference and be wrong at both ends, each
+   * window is asked only about the range it can actually hear, and the clearer
+   * answer wins where they overlap.
+   *
+   * Null runs the long window alone.
+   */
+  fineWindowSeconds: number | null
   stepSeconds: number
   /**
    * Rate the audio is decoded at for analysis. YIN costs roughly
@@ -60,12 +73,21 @@ export interface TranscriptionProfile {
  * The shape of the trade: a longer window reaches lower and blurs fast notes,
  * because it straddles two of them and resolves neither. Measured against
  * Dance of Death's bass stem, shortening the window from 93 ms to 60 ms and
- * halving the step found 55% more notes. Low B lives below what this can
- * resolve; a five-string profile needs its own longer window, and pretending
- * one profile covers both is how the contradiction got here.
+ * halving the step found 55% more notes, at the cost of slightly more octave
+ * errors (83 to 93) — the shorter view has less evidence to settle an octave
+ * with. Finding the notes at all was worth more. Low B lives below what this
+ * can resolve; a five-string profile needs its own longer window, and
+ * pretending one profile covers both is how the contradiction got here.
  */
 export const BASS_TRANSCRIPTION_PROFILE: TranscriptionProfile = {
   windowSeconds: 0.06,
+  // Off, measured rather than assumed. A second shorter window is the textbook
+  // answer to fast notes, and against Dance of Death it was neutral-to-worse:
+  // that bass line has no two onsets closer than 90 ms, so the fine window had
+  // nothing to resolve that the main one could not, and its shorter view only
+  // added noise. The path stays for material that IS that fast — which this
+  // has not been tested on, so it is available rather than recommended.
+  fineWindowSeconds: null,
   stepSeconds: 0.02,
   // 8 kHz leaves a 4 kHz ceiling, ten times the highest note this profile
   // looks for, and cuts the work per frame by roughly thirty.
@@ -229,22 +251,39 @@ export function toneMagnitude(
 }
 
 /**
- * Ask the audio which octave a note is really in.
+ * Ask the audio whether a note is really where the detector put it.
  *
- * A detector that locks onto twice the true period reports the octave below,
- * and on a plucked string it does that often: the difference function dips
- * nearly as deep at 2T as at T. Statistics cannot settle it — when half a
- * line is reported an octave down, the median sits between the two and every
- * note looks equally plausible. The audio can settle it. A real fundamental
- * has energy at its own frequency; an invented sub-octave has almost none,
- * and all the energy sits an octave above.
+ * A period detector settles into whichever repetition it finds first, and on a
+ * plucked string more than one is available: twice the true period reads an
+ * octave low, and one-and-a-half times it reads a fifth low.
  *
- * Deliberately one-directional. Shifting up repairs the error the detector
- * actually makes; shifting down on the same evidence would just as happily
- * "repair" a real note whose fundamental is weak, which is most notes near the
- * bottom of a bass.
+ * Only the octave is corrected here, and that is a measured decision rather
+ * than an oversight. Against Dance of Death the fifth is in fact the LARGER
+ * error — 244 of them, six times any other interval — but this same energy
+ * test cannot pick out which ones they are. A fifth above a bass note is
+ * frequently another instrument bleeding through the separation, or a
+ * neighbouring note of the passage, so the evidence looks identical whether
+ * the reading is wrong or right. Correcting on it cost more notes than it
+ * recovered at every threshold tried, so it is left alone and written down.
+ * Distinguishing them needs more than two magnitudes — the harmonic series as
+ * a whole, or a detector that does not produce the error in the first place.
+ *
+ * Statistics cannot settle this. When half a line is displaced the median sits
+ * between the two readings and every note looks equally plausible. The audio
+ * can: a real fundamental has energy at its own frequency, and an invented
+ * sub-harmonic has almost none while the frequency it was derived from is
+ * loud.
+ *
+ * Candidates are tried smallest-shift-first, and only upward. Shifting up
+ * repairs the error the detector actually makes; the same evidence read
+ * downward would just as happily "repair" a real note whose fundamental is
+ * genuinely weak, which is most notes near the bottom of a bass.
  */
-export function octaveCorrectedMidi(
+const HARMONIC_CANDIDATES: readonly { ratio: number; semitones: number }[] = [
+  { ratio: 2, semitones: 12 },
+]
+
+export function harmonicCorrectedMidi(
   samples: Float32Array,
   sampleRate: number,
   midi: number,
@@ -252,10 +291,9 @@ export function octaveCorrectedMidi(
   toSample: number,
   profile: TranscriptionProfile,
 ): number {
-  if (midi + 12 > profile.maxMidi) return midi
   const frequency = 440 * Math.pow(2, (midi - 69) / 12)
 
-  // Widen a short note's span to a few periods before asking. A sixteenth at
+  // Widen a short note's span to a few periods before asking. A brief note at
   // the bottom of a bass is barely two cycles long, and two cycles cannot tell
   // two frequencies apart — the test would answer from noise. Reaching past
   // the note borrows its own ringing, which is the same string either way.
@@ -266,9 +304,21 @@ export function octaveCorrectedMidi(
   const to = Math.min(samples.length, centre + half)
 
   const fundamental = toneMagnitude(samples, sampleRate, frequency, from, to)
-  const octaveUp = toneMagnitude(samples, sampleRate, frequency * 2, from, to)
-  if (octaveUp <= 0) return midi
-  return fundamental < octaveUp * profile.octaveEvidenceRatio ? midi + 12 : midi
+
+  for (const candidate of HARMONIC_CANDIDATES) {
+    if (midi + candidate.semitones > profile.maxMidi) continue
+    const above = toneMagnitude(
+      samples,
+      sampleRate,
+      frequency * candidate.ratio,
+      from,
+      to,
+    )
+    if (above > 0 && fundamental < above * profile.octaveEvidenceRatio) {
+      return midi + candidate.semitones
+    }
+  }
+  return midi
 }
 
 /** Times, in seconds, at which the stem was struck. */
@@ -417,21 +467,66 @@ export async function transcribeStemSamples(
 ): Promise<StemTranscription> {
   const profile = options.profile ?? BASS_TRANSCRIPTION_PROFILE
   const windowSamples = profileWindowSamples(profile, sampleRate)
-  const detector = new PitchDetector({
-    sampleRate,
-    algorithm: 'yin',
-    bufferSize: windowSamples,
-    minFrequency: profile.minFrequency,
-    maxFrequency: profile.maxFrequency,
-    minConfidence: profile.minConfidence,
-    minAmplitude: profile.minAmplitude,
-    // The detector's smoother replaces any reading more than a couple of
-    // semitones from its recent median, and needs two consecutive agreeing
-    // frames before it accepts a note change. That is right for a sung line
-    // watched live and wrong here: a bass line's next note IS a jump, and at
-    // this step size a short one is gone before the filter believes in it.
-    stabilize: false,
-  })
+
+  /**
+   * How far above a window's hard limit its answers start being worth having.
+   * Measured, not chosen: at 2x, the fine window's floor landed on 89 Hz and
+   * shut it out of E2 at 82.4 Hz — the single most common note in the material
+   * this was tuned against, which left the fine window covering almost nothing
+   * that mattered.
+   */
+  const FINE_FLOOR_MARGIN = 1.5
+
+  /**
+   * One analysis window and the band it is allowed to answer about. The floor
+   * is above what the window can barely express, because an estimate resting
+   * on one cycle of overlap is a guess, and a guess admitted into the frame
+   * stream is indistinguishable from a note.
+   */
+  interface Lens {
+    detector: PitchDetector
+    samples: number
+    minFrequency: number
+  }
+
+  const lensFor = (seconds: number, isFine: boolean): Lens => {
+    const lensSamples = Math.max(256, Math.round(seconds * sampleRate))
+    const minFrequency = Math.max(
+      profile.minFrequency,
+      isFine ? FINE_FLOOR_MARGIN * resolvableMinFrequency(seconds) : 0,
+    )
+    return {
+      detector: new PitchDetector({
+        sampleRate,
+        algorithm: 'yin',
+        bufferSize: lensSamples,
+        minFrequency,
+        maxFrequency: profile.maxFrequency,
+        minConfidence: profile.minConfidence,
+        minAmplitude: profile.minAmplitude,
+        // The detector's smoother replaces any reading more than a couple of
+        // semitones from its recent median, and needs two consecutive agreeing
+        // frames before it accepts a note change. That is right for a sung line
+        // watched live and wrong here: a bass line's next note IS a jump, and at
+        // this step size a short one is gone before the filter believes in it.
+        stabilize: false,
+      }),
+      samples: lensSamples,
+      minFrequency,
+    }
+  }
+
+  // Fine window first, and the order is the merge rule. Clarity cannot arbitrate
+  // between windows of different lengths — a longer one scores higher simply by
+  // having more signal to agree with itself about — so picking the clearest
+  // reading just hands every frame back to the long window and undoes the
+  // split. Where the fine window can answer at all, its answer is the one with
+  // the time resolution worth having.
+  const lenses: Lens[] = []
+  if (profile.fineWindowSeconds !== null) {
+    lenses.push(lensFor(profile.fineWindowSeconds, true))
+  }
+  lenses.push(lensFor(profile.windowSeconds, false))
 
   const stepSamples = Math.max(1, Math.floor(profile.stepSeconds * sampleRate))
   const frameCount =
@@ -447,15 +542,27 @@ export async function transcribeStemSamples(
       throw new DOMException('Transcription cancelled', 'AbortError')
     }
     const offset = index * stepSamples
-    const detected = detector.detect(
-      samples.subarray(offset, offset + windowSamples),
-    )
-    if (detected.frequency > 0) {
+    // Every window is centred on the same instant, so a short one and a long
+    // one describe the same moment and their answers can be compared.
+    const centre = offset + windowSamples / 2
+
+    let best: { frequency: number; clarity: number } | null = null
+    for (const lens of lenses) {
+      const start = Math.round(centre - lens.samples / 2)
+      if (start < 0 || start + lens.samples > samples.length) continue
+      const detected = lens.detector.detect(
+        samples.subarray(start, start + lens.samples),
+      )
+      if (detected.frequency <= 0) continue
+      best = { frequency: detected.frequency, clarity: detected.clarity }
+      break
+    }
+
+    if (best !== null) {
       frames.push({
-        // Stamp the window's centre, not its edge, so onsets are not late.
-        timeSeconds: (offset + windowSamples / 2) / sampleRate,
-        midi: Math.round(69 + 12 * Math.log2(detected.frequency / 440)),
-        clarity: detected.clarity,
+        timeSeconds: centre / sampleRate,
+        midi: Math.round(69 + 12 * Math.log2(best.frequency / 440)),
+        clarity: best.clarity,
       })
     }
 
@@ -481,7 +588,7 @@ export async function transcribeStemSamples(
   // note spans enough samples for the two magnitudes to mean something, where
   // a single 93 ms frame of a decaying low string often does not.
   const notes = transcription.notes.map((note) => {
-    const midi = octaveCorrectedMidi(
+    const midi = harmonicCorrectedMidi(
       samples,
       sampleRate,
       note.midi,
