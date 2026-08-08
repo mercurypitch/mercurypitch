@@ -12,12 +12,14 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createResource, createSignal, onCleanup, Show, } from 'solid-js'
+import { Flask } from '@/components/icons'
 import type { SessionPitchData } from '@/db/services/session-pitch-analysis-service'
 import { getStreakState } from '@/db/services/streak-service'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { buildMobileAnalysisSummary } from '@/lib/mobile-analysis-summary'
 import type { TakeAnalysisResult } from '@/lib/take-analysis-client'
 import { TakeAnalysisClient } from '@/lib/take-analysis-client'
+import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { getSessionHistory } from '@/stores'
 import styles from './AnalysisDashboard.module.css'
 import { CollapsibleCard } from './CollapsibleCard'
@@ -41,6 +43,9 @@ export const AnalysisDashboard: Component = () => {
   const takes = createMemo(() => listTakes())
   const [selectedId, setSelectedId] = createSignal<string>(LIVE_TAKE_ID)
   const capture = useLiveCapture()
+  // Lab holders get a pill into the research surface; the dense spectral
+  // tooling that used to crowd this page lives there.
+  const features = useSupporterFeatures()
 
   // listTakes() rebuilds every take object on each run, and it re-runs
   // whenever the UVR store ticks (including separation progress) or a session
@@ -174,6 +179,19 @@ export const AnalysisDashboard: Component = () => {
     <div class={styles.page}>
       <header class={styles.header}>
         <h1 class={styles.title}>Analysis</h1>
+        {/* Supporters and founders hold the lab-access perk; everyone else
+            has no dead door to a locked surface. */}
+        <Show when={features.hasFeature('lab-access')}>
+          <a
+            class={styles.labPill}
+            href="#/lab"
+            data-testid="analysis-lab-pill"
+            title="MercuryPitch Lab — experimental audio tools"
+          >
+            <Flask size={14} />
+            Lab
+          </a>
+        </Show>
         <p class={styles.subtitle}>
           Pick a take to see what your voice actually did.
         </p>

@@ -298,6 +298,27 @@
   color: var(--text-secondary, #888);
 }
 
+/* Founders-only shortcut into the Content Studio. Sized like .authButton so
+   the account card keeps one control language. */
+.adminConsoleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #eee);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.adminConsoleLink:hover {
+  border-color: var(--accent, #7aa2f7);
+  color: var(--accent, #7aa2f7);
+}
+
 .identityRight {
   display: inline-flex;
   align-items: center;
