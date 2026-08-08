@@ -2416,6 +2416,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setWindowDuration={audio.setWindowDuration}
             stemControls={stemControls}
             micMonitor={micMonitor}
+            setLyricsAlign={setLyricsAlign}
             lyricsPanel={lyricsPanel}
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
@@ -2481,6 +2482,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             handleCanvasPointerUp={canvas.handleCanvasPointerUp}
             stemControls={stemControls}
             micMonitor={micMonitor}
+            setLyricsAlign={setLyricsAlign}
             lyricsPanel={lyricsPanel}
             handleForceSearch={() => void handleForceSearch()}
             toggleEditMode={toggleEditMode}
@@ -4007,7 +4009,6 @@ export const StemMixerStyles: string = `
 }
 
 .sm-lyrics-line {
-  /* Anchors the absolute lead-in cue to this row. */
   position: relative;
   color: var(--fg-tertiary, #484f58);
   padding: 0.12rem 0.3rem;
@@ -4015,6 +4016,15 @@ export const StemMixerStyles: string = `
   cursor: pointer;
   transition: all 0.1s;
   line-height: 1.3;
+}
+
+/* Shrink-to-fit wrapper for a line's own content, so text-align on the
+   list moves THIS box and anything anchored to it (the lead-in cue) travels
+   with the words. The row itself must stay full width for the highlight. */
+.sm-lyrics-line-body {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
 }
 
 .sm-lyrics-line:hover {
@@ -4081,13 +4091,19 @@ export const StemMixerStyles: string = `
    row. Sized in em so it tracks the lyric font. It used to sit inline before
    the first word, which shoved the line sideways for the run-in and read as
    punctuation; now it underlines the line's start the way the karaoke stage
-   cue does — fixed width, absolute, zero layout shift when it appears. */
+   cue does — fixed width, absolute, zero layout shift when it appears.
+
+   Anchored to .sm-lyrics-line-body, NOT to the row: the row is full width so
+   the active highlight can span the panel, so a left offset against the row means
+   the row's left edge — correct only for left-aligned lyrics. Centred and
+   right-aligned lyrics left the cue stranded at the far left, pointing at
+   nothing. The wrapper hugs the text, so left: 0 is the first word. */
 .sm-lyrics-lead-in {
   position: absolute;
-  left: 0.3rem;
+  left: 0;
   bottom: 0;
   width: 2.4em;
-  max-width: calc(100% - 0.6rem);
+  max-width: 100%;
   height: 0.22em;
   min-height: 2px;
   border-radius: 999px;
@@ -7066,25 +7082,53 @@ export const StemMixerStyles: string = `
 .sm-perf-title {
   font-weight: 600;
 }
-.sm-lyrics-align-toggle {
-  display: inline-flex;
-  gap: 2px;
-}
-.sm-lyrics-align-btn {
+/* Lyric alignment: one chip, not three buttons — see LyricsAlignSelect for
+   why. The icon is the visible control and the native <select> lies
+   transparently on top of it, so the browser draws the menu and we own no
+   popover positioning. Sized like the other header chips. */
+.sm-lyrics-align-select {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 5px;
+  width: 1.35rem;
+  height: 1.15rem;
   background: transparent;
   border: 1px solid var(--border, #30363d);
-  border-radius: 4px;
-  color: var(--fg-tertiary);
+  border-radius: 0.2rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-align-select:hover,
+.sm-lyrics-align-select:focus-within {
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+/* Covers the chip so the whole thing is the hit target, and carries the
+   focus ring to the wrapper via :focus-within above. */
+.sm-lyrics-align-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
   cursor: pointer;
 }
-.sm-lyrics-align-btn.sm-lyrics-align-active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+
+/* The menu itself is drawn by the browser, so it needs real colours — an
+   inherited transparent background renders unreadable on Windows/Linux. */
+.sm-lyrics-align-select option {
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-primary, #e6edf3);
 }
 
 .sm-sidebar {
