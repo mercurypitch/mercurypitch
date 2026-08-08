@@ -124,7 +124,7 @@ These are the rules that break things when ignored.
 | `backgrounds` | [background-surface.ts](../../src/lib/backgrounds/background-surface.ts) | 1.4k | Background surface controller — one resolved image for every Karaoke/Jam view A controller owns the selected private object URL and expos... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 786 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
-| `transcription` | [stem-transcription.ts](../../src/lib/transcription/stem-transcription.ts) | 428 | Stem transcription — measured notes from one separated instrument The vocal path in `midi-generator.ts` proved the shape of this: detect... |
+| `transcription` | [stem-transcription.ts](../../src/lib/transcription/stem-transcription.ts) | 646 | Stem transcription — measured notes from one separated instrument The vocal path in `midi-generator.ts` proved the shape of this: detect... |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 262 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 151 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 127 | Platform services — web implementations. |
@@ -141,8 +141,8 @@ These are the rules that break things when ignored.
 | [uvr-api.ts](../../src/lib/uvr-api.ts) | 860 | UVR API Client - Frontend Integration |
 | [runpod-bridge.ts](../../src/lib/runpod-bridge.ts) | 766 | RunPod bridge — HTTP request/response handling Turns the app's /api/uvr/* requests into RunPod job calls and back into the responses the... |
 | [lyrics-service.ts](../../src/lib/lyrics-service.ts) | 742 | Lyrics Service — fetch, parse, and sync lyrics |
+| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 736 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 699 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
-| [pitch-detector.ts](../../src/lib/pitch-detector.ts) | 690 | Pitch Detector — YIN + McLeod Pitch Method (MPM) |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 668 | Shared Whisper transcription controller hook. |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 660 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 607 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
