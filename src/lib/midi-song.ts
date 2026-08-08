@@ -36,10 +36,76 @@ export interface MidiSongTrack {
   notes: MidiSongNote[]
 }
 
+/** One set-tempo event, placed on the beat it takes effect. */
+export interface MidiTempoChange {
+  beat: number
+  /** Microseconds per quarter note — the value the file actually stores. */
+  usPerBeat: number
+}
+
 export interface MidiSong {
   /** Tempo from the first set-tempo meta event (default 120) */
   bpm: number
+  /**
+   * Every set-tempo event in the file, not just the first.
+   *
+   * Optional because two things produce a song without one: a Guitar Pro
+   * import, whose tempo automations are not read here, and a song saved before
+   * this field existed. Absent means "no map recorded" — `createBeatClock`
+   * then runs at `bpm` throughout, which is what those callers already assumed.
+   *
+   * It matters wherever a beat has to become a real second. Dance of Death
+   * changes tempo ten times, and reading only the first puts its last note
+   * minutes from where it is actually played.
+   */
+  tempoChanges?: MidiTempoChange[]
   tracks: MidiSongTrack[]
+}
+
+/**
+ * Beats to seconds through the whole tempo map.
+ *
+ * Returns a function rather than converting one beat at a time: the anchors
+ * are accumulated once, so converting a few thousand notes stays linear
+ * instead of rescanning the map per note.
+ */
+export function createBeatClock(song: MidiSong): (beat: number) => number {
+  const changes = [...(song.tempoChanges ?? [])].sort(
+    (left, right) => left.beat - right.beat,
+  )
+  const opening = 60000000 / Math.max(1, song.bpm)
+  if (changes.length === 0 || (changes[0]?.beat ?? 0) > 0) {
+    changes.unshift({ beat: 0, usPerBeat: opening })
+  }
+
+  // Seconds elapsed at each change, accumulated at the tempo in force before it.
+  const anchors: Array<{ beat: number; seconds: number; usPerBeat: number }> = [
+    { beat: 0, seconds: 0, usPerBeat: changes[0]?.usPerBeat ?? opening },
+  ]
+  for (let index = 1; index < changes.length; index += 1) {
+    const change = changes[index]
+    const previous = anchors[index - 1]
+    if (change === undefined || previous === undefined) continue
+    anchors.push({
+      beat: change.beat,
+      seconds:
+        previous.seconds +
+        ((change.beat - previous.beat) * previous.usPerBeat) / 1e6,
+      usPerBeat: change.usPerBeat,
+    })
+  }
+
+  return (beat: number): number => {
+    let anchor = anchors[0]
+    if (anchor === undefined) return 0
+    // Linear rather than binary: a tempo map is a handful of entries, and the
+    // scan is cheaper than the branchy search it would replace.
+    for (const candidate of anchors) {
+      if (candidate.beat <= beat) anchor = candidate
+      else break
+    }
+    return anchor.seconds + ((beat - anchor.beat) * anchor.usPerBeat) / 1e6
+  }
 }
 
 /** General MIDI program names (programs 0–127). */
@@ -209,6 +275,9 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
 
     let bpm = 120
     let bpmFound = false
+    // Tempo events can sit in any track, so these accumulate across all of
+    // them and are sorted once at the end.
+    const tempoChanges: MidiTempoChange[] = []
 
     const tracks: MidiSongTrack[] = []
     let offset = 14
@@ -282,12 +351,15 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
               .decode(data.slice(offset, offset + len))
               .trim()
           }
-          if (metaType === 0x51 && len === 3 && !bpmFound) {
+          if (metaType === 0x51 && len === 3) {
             const usPerBeat =
               (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2]
             if (usPerBeat > 0) {
-              bpm = Math.round(60000000 / usPerBeat)
-              bpmFound = true
+              if (!bpmFound) {
+                bpm = Math.round(60000000 / usPerBeat)
+                bpmFound = true
+              }
+              tempoChanges.push({ beat: tick / ticksPerBeat, usPerBeat })
             }
           }
           offset += len
@@ -383,7 +455,11 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
     }
 
     if (tracks.length === 0) return null
-    return { bpm, tracks }
+    return {
+      bpm,
+      tempoChanges: tempoChanges.sort((left, right) => left.beat - right.beat),
+      tracks,
+    }
   } catch {
     return null
   }
