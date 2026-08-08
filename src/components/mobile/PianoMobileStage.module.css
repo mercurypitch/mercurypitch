@@ -17,13 +17,15 @@
   min-height: 0;
 }
 
-/* The finished-run corner card docks above the transport, full width,
-   instead of the desktop's top-right corner. */
+/* The finished-run readout docks bottom-right above the transport as a
+   compact chip (like the singing score pill), never full width — a
+   full-width bottom card reads as a blocking modal on a phone. */
 .canvasWrap :global(.fn-score-corner) {
   top: auto;
   right: 12px;
-  left: 12px;
+  left: auto;
   bottom: 12px;
+  max-width: calc(100% - 24px);
 }
 
 .labelsOn {

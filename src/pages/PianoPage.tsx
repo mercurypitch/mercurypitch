@@ -196,10 +196,9 @@ export function PianoPage(props: PianoPageProps) {
     />
   )
 
-  // Finished-run score: a non-blocking corner card (same pattern as the
-  // Guitar 3D and Singing scoreboards) instead of a modal — the board
-  // stays visible and playable behind it. The mobile stage re-docks it
-  // above the transport via CSS.
+  // Finished-run score: a quiet corner readout (same pattern as the
+  // Singing scoreboard) — no action buttons; the transport's play
+  // control already restarts a finished run, and loading a song resets.
   const renderScoreCard = () => (
     <Show when={fallingNotes.gameState() === 'finished'}>
       {(() => {
@@ -220,7 +219,10 @@ export function PianoPage(props: PianoPageProps) {
                   ? 'Okay!'
                   : 'Keep Practicing!'
         return (
-          <div class="fn-score-corner" aria-label="Run score">
+          <div
+            class="fn-score-corner fn-score-corner--quiet"
+            aria-label="Run score"
+          >
             <span class="fn-score-corner-title">Complete</span>
             <span class="fn-score-corner-pct">{pct()}%</span>
             <span class="fn-score-corner-grade">{grade()}</span>
@@ -228,50 +230,6 @@ export function PianoPage(props: PianoPageProps) {
               {fallingNotes.totalNotes()} notes · Max Combo:{' '}
               {fallingNotes.maxCombo()}x
             </span>
-            <div class="fn-score-corner-actions">
-              <button
-                class="fn-btn fn-btn-play"
-                onClick={() => void fallingNotes.startGame()}
-                aria-label="Play again"
-                title="Play again"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="1 4 1 10 7 10" />
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                </svg>{' '}
-                Play Again
-              </button>
-              <button
-                class="fn-btn fn-btn-close"
-                onClick={fallingNotes.resetGame}
-                aria-label="Close"
-                title="Close"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>{' '}
-                Close
-              </button>
-            </div>
           </div>
         )
       })()}
