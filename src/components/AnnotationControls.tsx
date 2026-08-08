@@ -2,11 +2,13 @@
 // AnnotationControls — Annotation management panel
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { scheduleAnnotationTones } from '@/lib/synth-annotation-playback'
 import { exportAnnotationsCSV, importAnnotationsCSV, removeAnnotation, updateAnnotation, } from '@/stores/annotation-store'
 import type { Annotation, AnnotationType } from '@/types'
+import styles from './AnnotationControls.module.css'
+import { Clock, ExportFile, ImportFile, Pencil, Play, SpeedGauge, Split, X, } from './icons'
 
 interface AnnotationControlsProps {
   annotations: Annotation[]
@@ -37,10 +39,14 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
     return `${mins}:${secs.padStart(4, '0')}`
   }
 
-  const typeIcon = (type: AnnotationType): string => {
-    if (type === 'instant') return '📍'
-    if (type === 'value') return '📊'
-    return '📐'
+  // The three annotation kinds as SVG marks (repo rule: no emoji, and no
+  // glyph standing in for an icon). A time instant is a point on the clock,
+  // a value is a reading off a meter, a region is a stretch bounded at both
+  // ends — which is what Split's two blocks either side of a boundary draw.
+  const typeIcon = (type: AnnotationType): JSX.Element => {
+    if (type === 'instant') return <Clock />
+    if (type === 'value') return <SpeedGauge />
+    return <Split />
   }
 
   const handleExport = () => {
@@ -125,202 +131,118 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
   }
 
   return (
-    <div
-      style={{
-        background: 'rgba(15, 23, 42, 0.95)',
-        'border-radius': '8px',
-        border: '1px solid rgba(255,255,255,0.08)',
-        padding: '12px',
-        display: 'flex',
-        'flex-direction': 'column',
-        gap: '8px',
-        'max-height': '320px',
-        overflow: 'hidden',
-      }}
-    >
+    <div class={styles.panel}>
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          'justify-content': 'space-between',
-          'align-items': 'center',
-        }}
-      >
-        <span
-          style={{
-            color: 'rgba(255,255,255,0.8)',
-            'font-size': '0.8rem',
-            'font-weight': '600',
-          }}
-        >
-          Annotations ({props.annotations.length})
-        </span>
-        <div style={{ display: 'flex', gap: '6px' }}>
+      <div class={styles.header}>
+        <div class={styles.titleGroup}>
+          <span class={styles.title}>Annotations</span>
+          <span class={styles.count}>{props.annotations.length}</span>
+        </div>
+        <div class={styles.actions}>
           <button
+            type="button"
+            class={styles.actionBtn}
             onClick={handleImport}
             title="Import CSV"
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.6)',
-              'font-size': '0.65rem',
-              padding: '2px 8px',
-              'border-radius': '4px',
-              cursor: 'pointer',
-            }}
           >
+            <ImportFile />
             Import
           </button>
           <button
+            type="button"
+            class={styles.actionBtn}
             onClick={handleExport}
             title="Export CSV"
             disabled={props.annotations.length === 0}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(255,255,255,0.6)',
-              'font-size': '0.65rem',
-              padding: '2px 8px',
-              'border-radius': '4px',
-              cursor: props.annotations.length ? 'pointer' : 'not-allowed',
-              opacity: props.annotations.length ? 1 : 0.4,
-            }}
           >
+            <ExportFile />
             Export
           </button>
           <button
+            type="button"
+            class={`${styles.actionBtn} ${styles.toneBtn}`}
             onClick={handlePlayTones}
             title="Play reference tones at annotation times"
             disabled={
               props.annotations.filter((a) => a.type === 'instant').length === 0
             }
-            style={{
-              background: 'rgba(63,185,80,0.1)',
-              border: '1px solid rgba(63,185,80,0.25)',
-              color: '#3fb950',
-              'font-size': '0.65rem',
-              padding: '2px 8px',
-              'border-radius': '4px',
-              cursor: props.annotations.filter((a) => a.type === 'instant')
-                .length
-                ? 'pointer'
-                : 'not-allowed',
-              opacity: props.annotations.filter((a) => a.type === 'instant')
-                .length
-                ? 1
-                : 0.4,
-            }}
           >
+            <Play />
             Play Tones
           </button>
         </div>
       </div>
 
       {/* Type filter */}
-      <div style={{ display: 'flex', gap: '4px' }}>
+      <div
+        class={styles.filters}
+        role="group"
+        aria-label="Filter annotations by type"
+      >
         <For each={['all', 'instant', 'value', 'region'] as const}>
           {(t) => (
             <button
+              type="button"
+              class={styles.filterBtn}
+              classList={{ [styles.filterActive]: filterType() === t }}
+              aria-pressed={filterType() === t}
               onClick={() => setFilterType(t)}
-              style={{
-                background:
-                  filterType() === t ? 'rgba(255,255,255,0.12)' : 'transparent',
-                border: 'none',
-                color: filterType() === t ? 'white' : 'rgba(255,255,255,0.4)',
-                'font-size': '0.65rem',
-                padding: '2px 8px',
-                'border-radius': '4px',
-                cursor: 'pointer',
-              }}
             >
-              {t === 'all' ? 'All' : `${typeIcon(t)} ${t}s`}
+              {t === 'all' ? null : (
+                <span class={styles.filterGlyph} aria-hidden="true">
+                  {typeIcon(t)}
+                </span>
+              )}
+              {t === 'all' ? 'All' : `${t}s`}
             </button>
           )}
         </For>
       </div>
 
       {/* Annotation list */}
-      <div
-        style={{
-          overflow: 'auto',
-          flex: 1,
-          display: 'flex',
-          'flex-direction': 'column',
-          gap: '2px',
-        }}
-      >
+      <div class={styles.list}>
         <Show
           when={filtered().length > 0}
           fallback={
-            <span
-              style={{
-                color: 'rgba(255,255,255,0.3)',
-                'font-size': '0.75rem',
-                'text-align': 'center',
-                padding: '12px',
-              }}
-            >
-              No annotations. Click on the canvas or press Space during playback
-              to add one.
-            </span>
+            <div class={styles.empty}>
+              <span class={styles.emptyGlyph} aria-hidden="true">
+                <Pencil size={19} />
+              </span>
+              <h4 class={styles.emptyTitle}>No annotations</h4>
+              <p class={styles.emptyBody}>
+                Click on the canvas, or press{' '}
+                <kbd class={styles.key}>Space</kbd> during playback, to drop
+                one.
+              </p>
+            </div>
           }
         >
           <For each={filtered()}>
             {(a) => (
               <div
+                class={styles.row}
+                classList={{ [styles.rowSelected]: a.id === props.selectedId }}
                 onClick={() => props.onSelect(a.id)}
-                style={{
-                  display: 'flex',
-                  'align-items': 'center',
-                  gap: '8px',
-                  padding: '4px 8px',
-                  'border-radius': '4px',
-                  background:
-                    a.id === props.selectedId
-                      ? 'rgba(255,255,255,0.1)'
-                      : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'background 0.1s',
-                }}
               >
-                <span style={{ 'font-size': '0.75rem' }}>
+                <span class={styles.rowIcon} aria-hidden="true">
                   {typeIcon(a.type)}
                 </span>
-                <span
-                  style={{
-                    color: 'rgba(255,255,255,0.5)',
-                    'font-size': '0.7rem',
-                    'font-family': 'monospace',
-                    'min-width': '48px',
-                  }}
-                >
-                  {formatTime(a.time)}
-                </span>
+                <span class={styles.rowTime}>{formatTime(a.time)}</span>
 
                 <Show
                   when={editingId() === a.id}
                   fallback={
-                    <span
-                      style={{
-                        color: 'rgba(255,255,255,0.8)',
-                        'font-size': '0.75rem',
-                        flex: 1,
-                        overflow: 'hidden',
-                        'text-overflow': 'ellipsis',
-                        'white-space': 'nowrap',
-                      }}
-                    >
+                    <span class={styles.rowLabel}>
                       {a.label != null ? (
                         a.label
                       ) : (
-                        <i style={{ color: 'rgba(255,255,255,0.3)' }}>
-                          unlabeled
-                        </i>
+                        <i class={styles.rowUnlabeled}>unlabeled</i>
                       )}
                     </span>
                   }
                 >
                   <input
+                    class={styles.rowInput}
                     value={editLabel()}
                     onInput={(e) => setEditLabel(e.currentTarget.value)}
                     onBlur={commitEdit}
@@ -329,52 +251,31 @@ export const AnnotationControls: Component<AnnotationControlsProps> = (
                       if (e.key === 'Escape') setEditingId(null)
                     }}
                     autofocus
-                    style={{
-                      flex: 1,
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: 'white',
-                      'font-size': '0.75rem',
-                      padding: '2px 6px',
-                      'border-radius': '3px',
-                    }}
                   />
                 </Show>
 
                 <button
+                  type="button"
+                  class={styles.rowBtn}
                   onClick={(e) => {
                     e.stopPropagation()
                     startEdit(a)
                   }}
                   title="Edit label"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'rgba(255,255,255,0.3)',
-                    cursor: 'pointer',
-                    'font-size': '0.7rem',
-                    padding: '2px',
-                  }}
                 >
-                  ✏
+                  <Pencil />
                 </button>
                 <button
+                  type="button"
+                  class={`${styles.rowBtn} ${styles.rowBtnDanger}`}
                   onClick={(e) => {
                     e.stopPropagation()
                     if (a.id === props.selectedId) props.onDeselectAll()
                     removeAnnotation(a.id)
                   }}
                   title="Delete"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'rgba(255,255,255,0.3)',
-                    cursor: 'pointer',
-                    'font-size': '0.7rem',
-                    padding: '2px',
-                  }}
                 >
-                  ✕
+                  <X />
                 </button>
               </div>
             )}

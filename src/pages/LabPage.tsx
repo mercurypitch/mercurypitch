@@ -57,6 +57,7 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
         <section class={styles.gate} aria-live="polite" aria-busy="true">
           <span class={styles.checking} aria-hidden="true" />
           <div>
+            <p class={styles.eyebrow}>Research surface</p>
             <h1>Checking Lab access</h1>
             <p>Confirming your supporter benefits with MercuryPitch.</p>
           </div>
@@ -68,6 +69,7 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
             <Lock size={20} />
           </span>
           <div>
+            <p class={styles.eyebrow}>Research surface</p>
             <h1 id="lab-access-title">MercuryPitch Lab</h1>
             <p>
               Lab is an early-access supporter benefit for experimental audio

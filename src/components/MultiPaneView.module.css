@@ -1,0 +1,444 @@
+/* ============================================================
+   MultiPaneView — the Lab's stacked work surface: one pane per analysis
+   layer, sharing a time axis, divided by draggable splitters.
+
+   Palette comes from the `--lab-*` names declared on `.page` in
+   Lab.module.css, which this view always renders inside. Fallbacks are
+   global tokens, never hexes: this file replaces 36 hardcoded colours,
+   including two dead `var()` fallbacks: `--surface-1` and `--surface-2`
+   are not defined anywhere in the app, so those two uses only ever
+   rendered the literal near-white wash and indigo behind them.
+
+   Nothing here paints a canvas. Every pane draws itself — the canvas
+   colours live in src/components/panes/* and the *Canvas components they
+   wrap, because a 2D context cannot resolve `var(--token)`. This file is
+   chrome only: headers, splitters, the toolbar and the time ruler.
+   ============================================================ */
+
+.root {
+  /* No border of its own: the frame is `.paneWrap`'s (Lab.module.css), and
+     a second hairline sitting directly against it read as a rendering
+     artefact rather than a nested surface. */
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  min-height: 400px;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--lab-void, var(--bg-primary));
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--lab-line, var(--border));
+  background: linear-gradient(
+    180deg,
+    var(--lab-raised, var(--bg-tertiary)),
+    color-mix(in srgb, var(--lab-panel, var(--bg-card)) 96%, transparent)
+  );
+  box-shadow: var(--lab-bevel, none);
+}
+
+.toolBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  min-height: 32px;
+  padding: 0 var(--spacing-lg);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.toolBtn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.toolBtn:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 46%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 12%,
+    transparent
+  );
+  color: var(--lab-ink, var(--text-primary));
+  transform: translateY(-1px);
+}
+
+.toolBtn:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 2px;
+}
+
+/* Sync is a latch, not an action, so it reads as lit rather than hovered —
+   green is the app's "coupled / go" accent. */
+.syncOn,
+.syncOn:hover {
+  border-color: color-mix(in srgb, var(--green) 42%, transparent);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  color: color-mix(in srgb, var(--green) 84%, var(--text-primary));
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ── Add-pane menu ──────────────────────────────────────────── */
+
+.addWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Opaque on purpose: this floats over live canvases, and every token it
+   mixes from is itself opaque. `display` stays an inline style — the
+   open/close toggle reads `menu.style.display`, so moving the initial
+   `none` here would leave that read empty and invert the first click. */
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 184px;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--lab-line, var(--border));
+  border-radius: 10px;
+  background: var(--lab-panel, var(--bg-card));
+  box-shadow:
+    0 12px 30px color-mix(in srgb, #000 40%, transparent),
+    var(--lab-bevel, none);
+}
+
+.menuItem {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: 30px;
+  padding: 0 var(--spacing-md);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease;
+}
+
+.menuItem svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.menuItem:hover {
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 14%,
+    transparent
+  );
+  color: var(--lab-ink, var(--text-primary));
+}
+
+.menuItem:hover svg {
+  opacity: 1;
+}
+
+.menuItem:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: -2px;
+}
+
+/* ── Pane stack ─────────────────────────────────────────────── */
+
+.panes {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pane {
+  display: flex;
+  min-width: 0;
+  min-height: 60px;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.15s ease;
+}
+
+/* The last pane sits on the time ruler's own top border. */
+.pane:not(:last-child) {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--lab-line, var(--border)) 55%, transparent);
+}
+
+.paneCollapsed {
+  min-height: 32px;
+}
+
+/* Applied while a splitter is dragging: an eased height would lag the
+   pointer by a frame and make the drag feel elastic. */
+.paneStatic {
+  transition: none;
+}
+
+.paneHeader {
+  display: flex;
+  min-width: 0;
+  min-height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-lg);
+  background: var(--lab-raised, var(--bg-tertiary));
+  box-shadow: var(--lab-bevel, none);
+  user-select: none;
+}
+
+.paneGlyph {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 60%,
+    var(--text-muted)
+  );
+}
+
+.paneGlyph svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Uppercase micro-label, and ellipsised: "Cents Dev." is short but the
+   label map is data, and a long one must not shove the pane buttons out. */
+.paneTitle {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.paneBtn {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--lab-muted, var(--text-muted));
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.paneBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.paneBtn:hover {
+  border-color: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--lab-ink, var(--text-primary));
+}
+
+.paneBtn:focus-visible {
+  outline: 2px solid var(--lab-signal, var(--accent));
+  outline-offset: 1px;
+}
+
+.paneBtnDanger:hover {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+.paneContent {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* The vibrato canvas is the one pane that is not a *Pane wrapper, so it
+   needs its own gutter. Its height stays an inline style — it is derived
+   from the pane's share of the measured container. */
+.vibratoWrap {
+  padding: var(--spacing-sm);
+}
+
+.unknown {
+  padding: var(--spacing-lg);
+  color: var(--lab-muted, var(--text-muted));
+  font-size: var(--text-sm);
+}
+
+/* ── Splitters ──────────────────────────────────────────────── */
+
+/* A hairline at rest, an accent line under the pointer. The 6px slab this
+   replaces was visible dead space between every pair of panes; the hit
+   area is now bigger than that slab was (::before, below) while the thing
+   you see is one pixel. Drag maths is untouched — it reads pointer delta
+   against the container height, not this element's box. */
+.handle {
+  position: relative;
+  height: 1px;
+  min-height: 1px;
+  flex-shrink: 0;
+  z-index: 10;
+  background: var(--lab-line, var(--border));
+  cursor: row-resize;
+  transition:
+    background 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.handle::before {
+  position: absolute;
+  inset: -4px 0;
+  content: '';
+}
+
+.handle:hover {
+  background: color-mix(
+    in srgb,
+    var(--lab-signal, var(--accent)) 55%,
+    transparent
+  );
+}
+
+.handleActive,
+.handleActive:hover {
+  background: var(--lab-signal, var(--accent));
+  box-shadow: 0 0 8px
+    color-mix(in srgb, var(--lab-signal, var(--accent)) 55%, transparent);
+}
+
+/* ── Time ruler ─────────────────────────────────────────────── */
+
+.ruler {
+  position: relative;
+  height: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  border-top: 1px solid var(--lab-line, var(--border));
+  background: var(--lab-raised, var(--bg-tertiary));
+  box-shadow: var(--lab-bevel, none);
+  color: var(--lab-muted, var(--text-muted));
+}
+
+/* `left` stays an inline style — it is the tick's position in the current
+   time window, recomputed as the user zooms. */
+.tick {
+  position: absolute;
+  bottom: 3px;
+  transform: translateX(-50%);
+  color: var(--lab-muted, var(--text-muted));
+  font-family: var(--lab-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Same: `left` tracks the playhead and belongs inline. */
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--danger) 60%, transparent);
+  pointer-events: none;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolBtn,
+  .menuItem {
+    min-height: var(--touch-target, 44px);
+  }
+
+  /* Short buttons in a 28px header row, wide enough for a thumb. */
+  .paneBtn {
+    width: 34px;
+    height: 26px;
+  }
+
+  /* A one-pixel line is not a touch target — the hit area does the work. */
+  .handle::before {
+    inset: -9px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolBtn,
+  .menuItem,
+  .pane,
+  .paneBtn,
+  .handle {
+    transition: none;
+  }
+
+  .toolBtn:hover {
+    transform: none;
+  }
+}

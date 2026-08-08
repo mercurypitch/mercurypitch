@@ -34,7 +34,7 @@ import { completeUvrSession, getAllUvrSessions, getUvrProcessingMode, getUvrSess
 import { currentScale } from '@/stores/melody-store'
 import type { MelodyItem } from '@/types'
 import type { TimeStampedPitchSample } from '@/types/pitch-algorithms'
-import { FileText } from './icons'
+import { FileText, FileUpload, Minus, Plus, X } from './icons'
 import styles from './PitchTestingTab.module.css'
 
 interface PitchTestingTabProps {
@@ -1379,8 +1379,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
       <div class={styles.pitchTestingHeader}>
         <h2>Pitch Detection Testing</h2>
         {props.onClose && (
-          <button class={styles.closeBtn} onclick={props.onClose}>
-            ×
+          <button
+            class={styles.closeBtn}
+            aria-label="Close pitch detection testing"
+            onclick={props.onClose}
+          >
+            <X />
           </button>
         )}
       </div>
@@ -1602,50 +1606,10 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
           {/* File Upload Mode UI */}
           <Show when={detectionMode() === 'file'}>
-            <div
-              class={styles.fileControls}
-              style={{
-                display: 'flex',
-                'flex-direction': 'column',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  'align-items': 'center',
-                  gap: '12px',
-                  'flex-wrap': 'nowrap',
-                  overflow: 'hidden',
-                }}
-              >
-                <label
-                  class={`btn ${styles.btnSecondary} ${styles.btnSm}`}
-                  style={{
-                    display: 'inline-flex',
-                    'align-items': 'center',
-                    'justify-content': 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                    margin: 0,
-                    'white-space': 'nowrap',
-                    'flex-shrink': 0,
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
+            <div class={styles.fileControls}>
+              <div class={styles.fileRow}>
+                <label class={`btn ${styles.btnSecondary} ${styles.btnSm}`}>
+                  <FileUpload />
                   Browse Audio
                   <input
                     type="file"
@@ -1658,9 +1622,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               </div>
 
               <Show when={fileWaveform()}>
-                <div
-                  style={{ display: 'flex', gap: '8px', 'flex-wrap': 'wrap' }}
-                >
+                <div class={styles.fileActions}>
                   <button
                     class={`btn ${styles.btnPrimary} ${styles.btnSm}`}
                     onclick={() => {
@@ -1700,12 +1662,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                   </button>
                   <Show when={isSeparating()}>
                     <button
-                      class={`btn ${styles.btnSm}`}
-                      style={{
-                        background: 'var(--danger)',
-                        color: 'white',
-                        border: 'none',
-                      }}
+                      class={`btn ${styles.btnDanger} ${styles.btnSm}`}
                       onClick={() =>
                         cancelUvrPipeline(
                           getUvrProcessingMode(),
@@ -1723,12 +1680,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                     }
                   >
                     <button
-                      class={`btn ${styles.btnSm}`}
-                      style={{
-                        background: 'var(--danger)',
-                        color: 'white',
-                        border: 'none',
-                      }}
+                      class={`btn ${styles.btnDanger} ${styles.btnSm}`}
                       onClick={() => {
                         const track = activeTrack()
                         const fileHash = track?.fileHash
@@ -1915,8 +1867,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       onclick={zoomOut}
                       disabled={zoomLevel() <= 1}
                       title="Zoom out"
+                      aria-label="Zoom out"
                     >
-                      −
+                      <Minus />
                     </button>
                     <span class={styles.zoomValue}>{zoomLevel()}x</span>
                     <button
@@ -1924,8 +1877,9 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       onclick={zoomIn}
                       disabled={zoomLevel() >= 8}
                       title="Zoom in"
+                      aria-label="Zoom in"
                     >
-                      +
+                      <Plus />
                     </button>
                   </div>
                 </div>
@@ -1967,15 +1921,7 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
             }
           >
             <div class={styles.resultsPanel}>
-              <h4
-                style={{
-                  margin: '0 0 12px 0',
-                  'font-size': '0.9rem',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Session Gallery
-              </h4>
+              <h4>Session Gallery</h4>
               <div class={styles.galleryContainer}>
                 <For each={analyzedTracks()}>
                   {(track) => (
@@ -1986,35 +1932,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                       }}
                       onClick={() => setActiveTrackId(track.id)}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          'justify-content': 'space-between',
-                          'align-items': 'center',
-                        }}
-                      >
-                        <span
-                          style={{
-                            'font-size': '0.75rem',
-                            'font-weight': '600',
-                            overflow: 'hidden',
-                            'text-overflow': 'ellipsis',
-                            'white-space': 'nowrap',
-                            'max-width': '140px',
-                          }}
-                        >
+                      <div class={styles.galleryItemHead}>
+                        <span class={styles.galleryItemName}>
                           {track.file.name}
                         </span>
                         <button
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--text-secondary)',
-                            cursor: 'pointer',
-                            padding: '0 4px',
-                            'font-size': '1.1rem',
-                            'line-height': '1',
-                          }}
+                          class={styles.galleryRemoveBtn}
+                          aria-label={`Remove ${track.file.name} from the session gallery`}
                           onClick={(e) => {
                             e.stopPropagation()
                             const filtered = analyzedTracks().filter(
@@ -2026,28 +1950,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                             }
                           }}
                         >
-                          ×
+                          <X />
                         </button>
                       </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '4px',
-                          'flex-wrap': 'wrap',
-                          'min-height': '18px',
-                        }}
-                      >
+                      <div class={styles.galleryTags}>
                         <For each={track.analysisResults}>
                           {(res) => (
-                            <span
-                              style={{
-                                'font-size': '0.6rem',
-                                padding: '2px 6px',
-                                background: 'var(--bg-secondary-hover)',
-                                'border-radius': '4px',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
+                            <span class={styles.galleryTag}>
                               {res.algorithm.toUpperCase()}
                             </span>
                           )}
@@ -2091,36 +2000,13 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
 
               <Show when={fileWaveform() !== null}>
                 <div class={styles.waveformDisplay}>
-                  <div
-                    class={styles.waveformDisplayHeader}
-                    style={{
-                      display: 'flex',
-                      'justify-content': 'space-between',
-                      'align-items': 'center',
-                      'margin-bottom': '8px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        'align-items': 'center',
-                        gap: '12px',
-                      }}
-                    >
-                      <h4 style={{ margin: 0, 'font-size': '0.85rem' }}>
+                  <div class={styles.waveformDisplayHeader}>
+                    <div class={styles.waveformHeadGroup}>
+                      <h4 class={styles.waveformTitle}>
                         {uploadedFile()?.name}
                       </h4>
                       <Show when={activeTrack()?.segmentedNotes}>
-                        <label
-                          style={{
-                            display: 'flex',
-                            'align-items': 'center',
-                            gap: '6px',
-                            'font-size': '0.75rem',
-                            color: 'var(--text-secondary)',
-                            cursor: 'pointer',
-                          }}
-                        >
+                        <label class={styles.overlayToggle}>
                           <input
                             type="checkbox"
                             checked={showSegmentedNotes()}
@@ -2200,23 +2086,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
                           whisper.errorMessage() !== null
                         }
                       >
-                        <span
-                          style={{
-                            'font-size': '0.72rem',
-                            color: 'var(--red, #f85149)',
-                          }}
-                          role="alert"
-                        >
+                        <span class={styles.whisperError} role="alert">
                           {whisper.errorMessage()}
                         </span>
                       </Show>
                     </div>
-                    <span
-                      style={{
-                        'font-size': '0.75rem',
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
+                    <span class={styles.waveformDuration}>
                       {fileDuration().toFixed(2)}s
                     </span>
                   </div>
@@ -2383,19 +2258,12 @@ export const PitchTestingTab: Component<PitchTestingTabProps> = (props) => {
               <Show when={ensembleMode()}>
                 <div class={styles.infoPanel}>
                   <Show when={isSeparating()}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        'align-items': 'center',
-                        gap: '10px',
-                      }}
-                    >
+                    <div class={styles.progressRow}>
                       <span class={styles.progressText}>
                         Separating... {Math.round(offlineProgress())}%
                       </span>
                       <button
                         class={`btn ${styles.btnSecondary}`}
-                        style={{ padding: '4px 8px', 'font-size': '12px' }}
                         onClick={() =>
                           cancelUvrPipeline(
                             getUvrProcessingMode(),

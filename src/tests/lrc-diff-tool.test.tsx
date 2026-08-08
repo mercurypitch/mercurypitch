@@ -23,16 +23,14 @@ function paste(reference: string, candidate: string) {
 describe('LrcDiffTool', () => {
   it('waits for both sides before claiming any numbers', () => {
     render(() => <LrcDiffTool />)
-    expect(
-      screen.getByText('Load or paste both mappings to compare them.'),
-    ).toBeInTheDocument()
+    // The empty state's heading, not its body copy — the heading is the part
+    // that has to keep meaning "no result yet" through a visual pass.
+    expect(screen.getByText('Nothing to compare yet')).toBeInTheDocument()
 
     fireEvent.input(screen.getByLabelText('Reference enhanced LRC'), {
       target: { value: REFERENCE },
     })
-    expect(
-      screen.getByText('Load or paste both mappings to compare them.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Nothing to compare yet')).toBeInTheDocument()
   })
 
   it('reports the headline numbers once both are loaded', () => {

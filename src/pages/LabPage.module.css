@@ -10,7 +10,25 @@
   border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
   border-radius: 14px;
   background: var(--bg-card, #121821);
+  /* The same raised treatment the Lab's own panels carry, so the gate reads
+     as the front door of that surface rather than a generic interstitial. */
+  box-shadow:
+    0 18px 44px color-mix(in srgb, #000 26%, transparent),
+    inset 0 1px color-mix(in srgb, var(--text-primary, #f4f7fb) 5%, transparent);
   color: var(--text-primary, #f4f7fb);
+}
+
+/* Scoped like `.gate .hint` below, and for the same reason: the blanket
+   `.gate p` rule is (0,1,1) and would beat a bare `.eyebrow` on every
+   property it sets. */
+.gate .eyebrow {
+  max-width: none;
+  margin: 0 0 4px;
+  color: color-mix(in srgb, var(--accent) 74%, var(--text-secondary));
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 .gate h1 {
@@ -71,7 +89,11 @@
 
 .primaryAction {
   background: var(--accent, #8b8eff);
-  color: var(--on-accent, #07101d);
+  /* `--on-accent` is only defined by the Karaoke Night entry, so in the app
+     shell this fell through to a hardcoded near-black that ignored the theme.
+     `--bg-primary` is the one colour every theme guarantees reads against its
+     own accent — white is 2.53:1 on the default one. */
+  color: var(--bg-primary, #07101d);
 }
 
 .retryAction {

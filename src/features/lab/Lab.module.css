@@ -1,83 +1,251 @@
 /* ============================================================
-   Lab — audio-research workbench chrome.
+   Lab — audio-research instrument panel.
 
-   Deliberately dense and desktop-shaped: this surface is hidden from the
-   tab bar and reached by hash route only. The user-facing Analysis page
-   carries none of this.
+   Dense and desktop-shaped: this surface is hidden from the tab bar and
+   reached by hash route only. The user-facing Analysis page carries none of
+   this.
+
+   The private `--lab-*` palette below is the same "own world" move Zen and
+   the pitch studio make with `--studio-*`, with one difference: those are
+   standalone Vite entries that never load app.css, so they hardcode hexes.
+   The Lab runs inside the app shell, so every name here is DERIVED from a
+   global token — hardcode a hex and it breaks 7 of the 8 themes.
    ============================================================ */
 
 .page {
-  padding: var(--spacing-xl);
+  /* Six names, six jobs: deepest, panel, raised control, hairline, ink,
+     secondary ink. */
+  --lab-void: color-mix(in srgb, var(--bg-primary) 92%, #000);
+  --lab-panel: color-mix(in srgb, var(--bg-card) 94%, var(--bg-primary));
+  --lab-raised: color-mix(in srgb, var(--bg-card) 84%, var(--text-primary) 4%);
+  --lab-line: color-mix(in srgb, var(--border) 82%, var(--text-primary) 8%);
+  --lab-ink: var(--text-primary);
+  --lab-muted: var(--text-muted);
+
+  /* The semantic accent pair. `signal` is the instrument — controls, focus,
+     anything the Lab itself owns. `measured` is data that came out of a
+     capture. Legends, result tiles and hovers derive from these two so the
+     surface reads as one machine. */
+  --lab-signal: var(--accent);
+  --lab-measured: var(--purple);
+
+  /* The top-edge bevel every raised surface carries. Mixed off the ink
+     rather than literal white so it survives the light theme. */
+  --lab-bevel: inset 0 1px
+    color-mix(in srgb, var(--text-primary) 5%, transparent);
+
+  --lab-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-2xl);
 }
+
+/* ── Header ─────────────────────────────────────────────────── */
 
 /* AppHeader.css styles the bare `header` element globally — a page-level
    <header> picks up its background, centring and padding unless we say
    otherwise. Same reset as the Analysis dashboard. */
 .header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  background: transparent;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--spacing-lg);
   padding: 0;
+  background: transparent;
+}
+
+/* The icon chip. A signal-tinted gradient square is the app's standard mark
+   for a surface that owns its own tooling (cf. the pitch-stage shell). */
+.mark {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--lab-signal) 42%, transparent);
+  border-radius: 13px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--lab-signal) 26%, transparent),
+    color-mix(in srgb, var(--lab-measured) 12%, transparent)
+  );
+  box-shadow:
+    0 8px 22px color-mix(in srgb, var(--lab-signal) 16%, transparent),
+    var(--lab-bevel);
+  color: color-mix(in srgb, var(--lab-signal) 72%, var(--text-primary));
+}
+
+.mark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: color-mix(in srgb, var(--lab-signal) 74%, var(--text-secondary));
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 .title {
+  margin: 0;
+  color: var(--lab-ink);
   font-size: var(--text-xl);
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .subtitle {
+  /* Measure cap: this is body copy, and an unbounded line on a wide monitor
+     is unreadable no matter how good the type is. */
+  max-width: 62ch;
   margin: 0;
+  color: var(--lab-muted);
   font-size: var(--text-md);
-  color: var(--text-muted);
+  line-height: 1.5;
 }
 
+/* Right-hand meta — monospace with hairline separators, the app's standard
+   "instrument readout" treatment. */
+.headerMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-lg);
+  color: var(--lab-muted);
+  font: 0.66rem/1.2 var(--lab-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.headerMeta > span {
+  padding-right: var(--spacing-lg);
+  border-right: 1px solid var(--lab-line);
+  white-space: nowrap;
+}
+
+.headerMeta > span:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+
+/* A padded tray, so the active pill floats inside it rather than sitting in
+   a row of equally-weighted outlined buttons. */
 .tabs {
   display: flex;
-  gap: var(--spacing-md);
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: var(--spacing-md);
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--lab-line);
+  border-radius: 11px;
+  background: var(--lab-void);
+  box-shadow: var(--lab-bevel);
 }
 
 .tab {
-  min-height: var(--touch-target, 44px);
-  padding: 0 var(--spacing-xl);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: 34px;
+  padding: 0 var(--spacing-lg);
+  border: 0;
+  border-radius: 8px;
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--text-md);
   cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-body);
+  font-weight: 650;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease;
+}
+
+/* The icon is wrapped in an aria-hidden span, which is inline by default —
+   without this it would not sit on the label's centre line. */
+.tab > span {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.tab svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .tab:hover {
-  color: var(--text-primary);
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--lab-ink);
 }
 
-.tabActive {
-  background: var(--accent-dim);
-  border-color: var(--accent);
-  color: var(--accent);
+.tabActive,
+.tabActive:hover {
+  background: color-mix(in srgb, var(--lab-signal) 18%, transparent);
+  box-shadow: var(--lab-bevel);
+  color: color-mix(in srgb, var(--lab-signal) 88%, var(--text-primary));
+}
+
+.tabActive svg {
+  opacity: 1;
 }
 
 .panel {
   min-height: 60vh;
 }
 
+/* ── Toolbar ────────────────────────────────────────────────── */
+
+/* One raised bar rather than a loose row of buttons: groups are separated by
+   hairlines, so "capture", "analyse" and "workspace" read as three clusters
+   instead of nine equal peers. */
 .toolbar {
   display: flex;
-  gap: var(--spacing-md);
   flex-wrap: wrap;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-md);
+  border: 1px solid var(--lab-line);
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    var(--lab-raised),
+    color-mix(in srgb, var(--lab-panel) 96%, transparent)
+  );
+  box-shadow:
+    0 6px 20px color-mix(in srgb, #000 22%, transparent),
+    var(--lab-bevel);
+}
+
+.toolGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toolDivider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 0;
+  background: var(--lab-line);
 }
 
 .toolBtn {
@@ -86,73 +254,317 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-md);
   min-height: 32px;
   padding: 0 var(--spacing-lg);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
   color: var(--text-secondary);
-  font-size: var(--text-sm);
   cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.toolBtn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .toolBtn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: color-mix(in srgb, var(--lab-signal) 46%, transparent);
+  background: color-mix(in srgb, var(--lab-signal) 12%, transparent);
+  color: var(--lab-ink);
 }
 
 .toolBtn:disabled {
-  opacity: 0.4;
   cursor: not-allowed;
+  opacity: 0.38;
 }
 
+/* Capture is the one control that changes the machine's state, so it is the
+   only filled button in the bar — tinted signal at rest, danger while live. */
+.captureBtn {
+  border-color: color-mix(in srgb, var(--lab-signal) 52%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--lab-signal) 30%, transparent),
+    color-mix(in srgb, var(--lab-signal) 16%, transparent)
+  );
+  color: color-mix(in srgb, var(--lab-signal) 92%, var(--text-primary));
+}
+
+.captureBtn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--lab-signal) 72%, transparent);
+  background: color-mix(in srgb, var(--lab-signal) 26%, transparent);
+}
+
+.captureActive {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: color-mix(in srgb, var(--danger) 88%, var(--text-primary));
+}
+
+.captureActive:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 75%, transparent);
+  background: color-mix(in srgb, var(--danger) 24%, transparent);
+}
+
+/* Monospace readout, pushed to the far end of the bar. */
 .frameCount {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-md);
   margin-left: auto;
+  padding: 0 var(--spacing-md);
+  color: var(--lab-muted);
+  font-family: var(--lab-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
+/* Cheap and instantly reads "live". */
+.liveDot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 70%, transparent);
+  animation: labPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes labPulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Result tiles ───────────────────────────────────────────── */
+
+/* auto-FILL, not auto-fit: every tile here is behind its own <Show>, so the
+   row can hold one card. auto-fit collapses the empty tracks and lets that
+   single card stretch the full width of the page, which reads as a broken
+   layout rather than one result. */
 .results {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: var(--spacing-lg);
-  flex-wrap: wrap;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .resultCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
   padding: var(--spacing-lg);
-  min-width: 140px;
+  border: 1px solid var(--lab-line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--lab-panel) 92%, transparent);
+  box-shadow: var(--lab-bevel);
+}
+
+/* A result came out of a measurement, so the tiles carry the `measured`
+   half of the accent pair — the toolbar above them carries `signal`. */
+.resultCard::before {
+  height: 2px;
+  width: 26px;
+  border-radius: 999px;
+  margin-bottom: var(--spacing-sm);
+  background: var(--lab-measured);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--lab-measured) 55%, transparent);
+  content: '';
 }
 
 .resultLabel {
   display: block;
+  overflow: hidden;
+  color: var(--lab-muted);
   font-size: var(--text-xs);
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .resultValue {
   display: block;
-  font-size: var(--text-lg);
-  font-weight: 650;
-  color: var(--text-primary);
+  color: var(--lab-ink);
+  font: 700 1.3rem/1.15 var(--lab-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
+
+/* The unit rides along with the number at a smaller, quieter size, so the
+   digits stay the thing the eye lands on. */
+.resultUnit {
+  margin-left: 3px;
+  color: var(--lab-muted);
+  font-size: var(--text-sm);
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.resultDetail {
+  display: block;
+  overflow: hidden;
+  color: var(--lab-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Work surface ───────────────────────────────────────────── */
 
 .paneWrap {
   /* Tall by default and user-resizable: the pane splitters divide THIS
-     box, so growing it is how every pane gets more room at once. */
-  height: 70vh;
-  min-height: 480px;
-  resize: vertical;
+     box, so growing it is how every pane gets more room at once.
+
+     Height is clamped rather than a flat 70vh + 480px floor — that pairing
+     was taller than the space left after the header on a short laptop
+     window, and no breakpoint can fix a floor that is simply too high. */
+  height: clamp(320px, 62vh, 760px);
   overflow: auto;
+  border: 1px solid var(--lab-line);
+  border-radius: 14px;
+  background: var(--lab-void);
+  box-shadow:
+    0 18px 44px color-mix(in srgb, #000 30%, transparent),
+    var(--lab-bevel);
+  resize: vertical;
 }
 
+/* ── Hints and empty states ─────────────────────────────────── */
+
 .hint {
+  max-width: 72ch;
+  color: var(--lab-muted);
   font-size: var(--text-sm);
-  color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+/* The "do this first" state. A glyph, a heading and one paragraph reads as
+   a designed state; a bare grey sentence reads as a missing feature. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  border: 1px dashed color-mix(in srgb, var(--lab-signal) 34%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lab-signal) 5%, transparent);
+  text-align: center;
+}
+
+.emptyGlyph {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--lab-signal) 44%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--lab-signal) 12%, transparent);
+  color: color-mix(in srgb, var(--lab-signal) 82%, var(--text-primary));
+}
+
+.emptyGlyph svg {
+  width: 19px;
+  height: 19px;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: var(--lab-ink);
+  font-size: var(--text-md);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.emptyBody {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--lab-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+/* A keycap, for the shortcuts a research surface inevitably has. */
+.key {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  background: var(--lab-void);
+  box-shadow: inset 0 -1px
+    color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-secondary);
+  font: 0.62rem/1.5 var(--lab-mono);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-2xl);
+    gap: var(--spacing-lg);
+  }
+
+  /* The meta readout is the first thing to go — it is a nicety, and the
+     title needs the width more. */
+  .header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .headerMeta {
+    display: none;
+  }
+
+  .tabs {
+    align-self: stretch;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    min-height: var(--touch-target, 44px);
+    white-space: nowrap;
+  }
+
+  .toolBtn {
+    min-height: var(--touch-target, 44px);
+  }
+
+  .frameCount {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab,
+  .toolBtn {
+    transition: none;
+  }
+
+  /* Substituted, not just removed: the dot still has to read as live. */
+  .liveDot {
+    animation: none;
+    opacity: 1;
+  }
 }
