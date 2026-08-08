@@ -858,7 +858,13 @@
   inset: 0;
   z-index: 9500;
   display: grid;
-  place-items: center;
+  align-content: start;
+  justify-items: center;
+  /* The lockup sits in the sky, not on the water: the plate's horizon
+     falls just under halfway (lower third on the portrait tier), and
+     laying a wordmark over rippling chrome made it unreadable. Both
+     tiers keep clean dark sky at this height. */
+  padding-top: clamp(72px, 27vh, 260px);
   overflow: hidden;
   background: #0d1117;
   transition: opacity 0.4s ease;
@@ -869,14 +875,37 @@
   pointer-events: none;
 }
 
-.appOpeningArt {
+/* The <picture> itself must leave the flow, not just the <img> inside
+   it: as a plain grid item it counted as content and shoved the lockup
+   off centre. */
+.appOpeningArtLayer {
   position: absolute;
   inset: 0;
+}
+
+.appOpeningArt {
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: 0;
   transition: opacity 0.45s ease;
+}
+
+/* A scrim over the sky only. The plate is deliberately detailed; this
+   deepens the upper air the lockup sits in and leaves the water alone.
+   Painted between the plate and the lockup — hence the z-index pair. */
+.appOpening::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(13, 17, 23, 0.62),
+    rgba(13, 17, 23, 0.24) 42%,
+    transparent 62%
+  );
+  pointer-events: none;
 }
 
 .appOpeningArtReady {
@@ -885,24 +914,30 @@
 
 .appOpeningLockup {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   filter: drop-shadow(0 2px 24px rgba(0, 0, 0, 0.55));
   animation: appOpeningLockupIn 0.5s ease both;
 }
 
 .appOpeningMark {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   flex: none;
 }
 
+/* Outfit SemiBold is the wordmark face (BRAND.md §4) and is already
+   loaded in index.html — inheriting the app's Inter body font drew a
+   lockup that was not the brand's. Sized off the mark the way the
+   master lockup does: font-size ~0.5x the orb, tracking tight. */
 .appOpeningWordmark {
   color: #e6edf3;
-  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-size: clamp(1.7rem, 5vw, 2.2rem);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .appOpeningWordmark > span {
@@ -949,12 +984,12 @@
 
 @media (max-width: 640px) {
   .appOpeningLockup {
-    gap: 12px;
+    gap: 10px;
   }
 
   .appOpeningMark {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
   }
 }
 

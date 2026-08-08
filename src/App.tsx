@@ -2640,76 +2640,40 @@ const AppShell: Component<AppProps> = (props) => {
             role="status"
             aria-live="polite"
           >
-            <img
-              class={styles.appOpeningArt}
-              classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
-              src="/opening/first-light.webp"
-              alt=""
-              decoding="async"
-              ref={(el) => {
-                if (el.complete && el.naturalWidth > 0) setOpeningArtReady(true)
-              }}
-              onLoad={() => setOpeningArtReady(true)}
-            />
+            {/* Wide and tall are separate recompositions, not crops —
+                covering a 9:19.5 phone with the 16:9 plate meant a ~2.2x
+                upscale of the middle quarter, which is what read as
+                mushy. Both tiers are sized so an ordinary screen scales
+                them DOWN. Same wide/tall split as the onboarding sky. */}
+            <picture class={styles.appOpeningArtLayer}>
+              <source
+                srcset="/opening/first-light-tall.webp"
+                media="(max-aspect-ratio: 1/1)"
+              />
+              <img
+                class={styles.appOpeningArt}
+                classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
+                src="/opening/first-light-wide.webp"
+                alt=""
+                decoding="async"
+                ref={(el) => {
+                  if (el.complete && el.naturalWidth > 0)
+                    setOpeningArtReady(true)
+                }}
+                onLoad={() => setOpeningArtReady(true)}
+              />
+            </picture>
+            {/* The mark is the shipped brand asset, never a copy pasted
+                into JSX: this opening first went out carrying the
+                superseded pre-meniscus mark because it was hand-inlined.
+                public/brand-mark.svg is the Meniscus v2 master. */}
             <div class={styles.appOpeningLockup}>
-              <svg
+              <img
                 class={styles.appOpeningMark}
-                viewBox="0 0 128 128"
-                aria-hidden="true"
-              >
-                <defs>
-                  <radialGradient
-                    id="appOpeningMarkBody"
-                    cx="38%"
-                    cy="30%"
-                    r="80%"
-                  >
-                    <stop offset="0%" stop-color="#f4f8fd" />
-                    <stop offset="28%" stop-color="#aeb9c6" />
-                    <stop offset="62%" stop-color="#5b6b7b" />
-                    <stop offset="100%" stop-color="#1b2430" />
-                  </radialGradient>
-                  <linearGradient
-                    id="appOpeningMarkRim"
-                    x1="0"
-                    y1="0"
-                    x2="1"
-                    y2="1"
-                  >
-                    <stop offset="0" stop-color="#58a6ff" />
-                    <stop offset="0.5" stop-color="#2dd4bf" />
-                    <stop offset="1" stop-color="#bc8cff" />
-                  </linearGradient>
-                  <clipPath id="appOpeningMarkClip">
-                    <circle cx="64" cy="64" r="42" />
-                  </clipPath>
-                </defs>
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="47"
-                  fill="none"
-                  stroke="url(#appOpeningMarkRim)"
-                  stroke-width="3"
-                  opacity="0.9"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="42"
-                  fill="url(#appOpeningMarkBody)"
-                />
-                <g clip-path="url(#appOpeningMarkClip)">
-                  <path
-                    d="M22 72 C 36 46, 48 46, 64 64 S 92 82, 106 56"
-                    fill="none"
-                    stroke="#0b0e14"
-                    stroke-width="6"
-                    stroke-linecap="round"
-                    opacity="0.92"
-                  />
-                </g>
-              </svg>
+                src="/brand-mark.svg"
+                alt=""
+                decoding="async"
+              />
               <span class={styles.appOpeningWordmark}>
                 Mercury<span>Pitch</span>
               </span>
