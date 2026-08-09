@@ -53,14 +53,14 @@ the rebase (2026-08-09). Nothing depends on it; it is a safety net.
 
 The branch point predates a lot. The pieces that matter here:
 
-| On `main` | Why it matters |
-| --- | --- |
-| `src/lib/mic-latency.ts`, `src/stores/mic-latency-store.ts`, `src/features/mic-feedback/MicLatencyWizard.tsx` | A second latency wizard measuring the **same** physical quantity as the Ear Lab's. See §3. |
-| [`docs/specs/mic-latency.ears.md`](../specs/mic-latency.ears.md) | EARS spec for it, `REQ-ML-001..011`. Binding. |
-| `src/lib/calibration-stats.ts` | Shared statistics (median + spread), also used by tap calibration. The Ear Lab has its own copy of this maths in `aggregateLatency`. |
-| `src/lib/tap-calibration.ts`, `TapCalibrationPanel.tsx` | Reaction-time calibration — deliberately the *opposite* convention (it **adds** `outputLatency`). Do not conflate with round trip. |
-| [`AGENTS.md`](../../AGENTS.md), [`docs/agent/INDEX.md`](../agent/INDEX.md) | New agent conventions. `CLAUDE.md` is now only a pointer. Read `INDEX.md` before exploring — it is generated and CI-checked. |
-| `docs/specs/` (32 EARS specs) | If a change alters spec'd behaviour, the spec updates in the same PR. |
+| On `main`                                                                                                     | Why it matters                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/mic-latency.ts`, `src/stores/mic-latency-store.ts`, `src/features/mic-feedback/MicLatencyWizard.tsx` | A second latency wizard measuring the **same** physical quantity as the Ear Lab's. See §3.                                           |
+| [`docs/specs/mic-latency.ears.md`](../specs/mic-latency.ears.md)                                              | EARS spec for it, `REQ-ML-001..011`. Binding.                                                                                        |
+| `src/lib/calibration-stats.ts`                                                                                | Shared statistics (median + spread), also used by tap calibration. The Ear Lab has its own copy of this maths in `aggregateLatency`. |
+| `src/lib/tap-calibration.ts`, `TapCalibrationPanel.tsx`                                                       | Reaction-time calibration — deliberately the _opposite_ convention (it **adds** `outputLatency`). Do not conflate with round trip.   |
+| [`AGENTS.md`](../../AGENTS.md), [`docs/agent/INDEX.md`](../agent/INDEX.md)                                    | New agent conventions. `CLAUDE.md` is now only a pointer. Read `INDEX.md` before exploring — it is generated and CI-checked.         |
+| `docs/specs/` (32 EARS specs)                                                                                 | If a change alters spec'd behaviour, the spec updates in the same PR.                                                                |
 
 ---
 
@@ -73,7 +73,7 @@ audio path. The spread is tight, so this is a constant offset, not noise.
 **Diagnosis.** Both wizards define the round trip identically — scheduled click
 time to observed click time on one `AudioContext` clock, with no
 `outputLatency` added (`REQ-ML-001`, `REQ-ML-003`). They differ only in how
-they anchor the *capture* buffer to the clock:
+they anchor the _capture_ buffer to the clock:
 
 ```js
 // main — src/features/mic-feedback/MicLatencyWizard.tsx
@@ -83,7 +83,7 @@ captureStartSec ??= audio.currentTime - input.length / audio.sampleRate
 const at = event.playbackTime > 0 ? event.playbackTime : ...
 ```
 
-`AudioProcessingEvent.playbackTime` is *the time the audio will be played* —
+`AudioProcessingEvent.playbackTime` is _the time the audio will be played_ —
 an output-side reference scheduled ahead of `currentTime`. Using it as the
 capture-side origin shifts every detected onset later by roughly one buffer
 plus the output latency, and that shift lands whole on the reported round
@@ -92,7 +92,7 @@ and ~124 ms is exactly the observed gap.
 
 **Nothing currently recorded is corrupted.** The Grid is perception-only —
 clicks are scheduled sample-accurately and the user never taps, so no drill
-consumes the latency number yet. The wizard's only present job is to *unlock*
+consumes the latency number yet. The wizard's only present job is to _unlock_
 ms drills, and it does unlock at any plausible value.
 
 **Fix (recommended, deferred by decision on 2026-08-09):** delete the Ear Lab's
@@ -115,7 +115,7 @@ the number (Pulse, tap-response timing), which is Phase 5 territory.
 3. **Mic answers never update item difficulties.** `recordIdentificationAnswer`
    takes `updateItem`; sung answers pass `false` and rate under a separate
    `home-sing` track with no guess floor. Items stay tap-calibrated yardsticks
-   — that separation *is* the ear-vs-voice diagnostic.
+   — that separation _is_ the ear-vs-voice diagnostic.
 4. **Item difficulties freeze at 200 attempts** (`CALIBRATION_ATTEMPTS`). A
    yardstick that keeps moving measures nothing.
 5. **Pacing lives in one file.** `src/lib/ear/timing.ts` holds every note
@@ -124,7 +124,7 @@ the number (Pulse, tap-response timing), which is Phase 5 territory.
    gaps make a task genuinely easier.
 6. **Stop cancels the run, not just its timer.** A scheduled oscillator is
    committed to the audio clock and cannot be un-scheduled by clearing a
-   `setTimeout`. Every engine sets its cancel flag *before* finishing, exposes
+   `setTimeout`. Every engine sets its cancel flag _before_ finishing, exposes
    a cancel handle, and registers `onCleanup`. Guarded by
    `src/tests/ear-threshold-run.test.ts`.
 7. **Ear Lab drills are not in the vocal `ExerciseType` union.** The Ear Lab
@@ -167,7 +167,7 @@ ear-vs-voice line), §2d (Ear Report), §3b (stop behaviour on every drill).
 
 - §3's wizard deduplication.
 - The 0-1000 Mercury Index anchors are authored from the JND literature, not
-  fitted to users. The index is correctly *ordered*; its absolute value is an
+  fitted to users. The index is correctly _ordered_; its absolute value is an
   estimate (plan §9.4).
 - All thresholds are measured on synthetic tones; transfer to guitar and piano
   timbres is unverified (plan §9.5).
@@ -189,7 +189,7 @@ Per plan §8. Retention layer on top of a working measurement engine.
 1. **Daily sprint** — `src/lib/ear/sprint.ts` (pure, 14 tests) plus
    `SprintCard.tsx` on the dashboard. Two need slots (unmeasured first, then
    weakest) and one rotation slot keyed to the day index. Every segment shows
-   *why* it was picked.
+   _why_ it was picked.
 2. **Streak integration** — no second streak. Each drill run already calls
    `creditEarSession`, which feeds the app-wide streak and practice minutes;
    `completeSprint` only records the day. The card shows a sprint-day count
