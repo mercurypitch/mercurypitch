@@ -7,9 +7,18 @@ import { ringFill, startAscent } from '@/features/path/path-progress'
 import { launchRoutineSegment, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { getZenExercise } from '@/features/zen/exercise-catalog'
 import { ascentGuidedAssignmentsForWeek, refreshGuidedContent, } from '@/features/zen/guided-content-store'
+import { findIdentificationDrill, findThresholdDrill } from '@/lib/ear/drills'
 import { showNotification } from '@/stores/notifications-store'
-import { openSingingZen, startExercise } from '@/stores/ui-store'
+import { openSingingZen, startEarDrill, startExercise } from '@/stores/ui-store'
 import styles from './PathWeekGuide.module.css'
+
+function earDrillName(drillId: string): string {
+  return (
+    findThresholdDrill(drillId)?.name ??
+    findIdentificationDrill(drillId)?.name ??
+    drillId
+  )
+}
 
 export interface PathWeekGuideProps {
   week: PathWeek
@@ -155,6 +164,18 @@ export const PathWeekGuide: Component<PathWeekGuideProps> = (props) => {
                 title={`Practise ${exercise} now`}
               >
                 {exercise}
+              </button>
+            )}
+          </For>
+          <For each={props.week.earDrills ?? []}>
+            {(drillId) => (
+              <button
+                type="button"
+                class={`${styles.chip} ${styles.earChip}`}
+                onClick={() => startEarDrill(drillId)}
+                title={`Measure this in the Ear Lab: ${earDrillName(drillId)}`}
+              >
+                Ear Lab · {earDrillName(drillId)}
               </button>
             )}
           </For>
