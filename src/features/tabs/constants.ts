@@ -22,6 +22,7 @@ export const TAB_LAB = 'lab' as const
 export const TAB_LAB_TRANSCRIBE = 'lab-transcribe' as const
 export const TAB_LAB_DIFF = 'lab-diff' as const
 export const TAB_EXERCISES = 'exercises' as const
+export const TAB_EAR_LAB = 'ear-lab' as const
 export const TAB_JAM = 'jam' as const
 export const TAB_GUITAR = 'guitar' as const
 
@@ -44,6 +45,7 @@ export type ActiveTab =
   | typeof TAB_LAB_TRANSCRIBE
   | typeof TAB_LAB_DIFF
   | typeof TAB_EXERCISES
+  | typeof TAB_EAR_LAB
   | typeof TAB_JAM
   | typeof TAB_GUITAR
 
@@ -93,7 +95,7 @@ export const TAB_GROUPS: readonly TabGroupDef[] = [
     // to Play — it is a performance, not a practice surface.
     id: 'practice',
     label: 'Practice',
-    tabs: [TAB_SINGING, TAB_GUITAR, TAB_PIANO, TAB_EXERCISES],
+    tabs: [TAB_SINGING, TAB_GUITAR, TAB_PIANO, TAB_EXERCISES, TAB_EAR_LAB],
   },
   {
     // Singing at something or with someone.
@@ -189,6 +191,8 @@ const TAB_SCOPES: Record<ActiveTab, readonly PracticeScope[]> = {
   [TAB_PIANO]: ['piano'],
   [TAB_GUITAR]: ['guitar'],
   [TAB_EXERCISES]: ['singing'],
+  // The Ear Lab measures hearing, which every instrument shares.
+  [TAB_EAR_LAB]: ['singing', 'guitar', 'piano'],
   [TAB_KARAOKE]: ['singing'],
   [TAB_JAM]: ['singing'],
   [TAB_COMMUNITY]: ['singing', 'guitar', 'piano'],
@@ -296,6 +300,7 @@ const TAB_TO_ELEMENT_ID: Record<ActiveTab, string> = {
   [TAB_LAB_TRANSCRIBE]: 'lab-transcribe',
   [TAB_LAB_DIFF]: 'lab-diff',
   [TAB_EXERCISES]: 'exercises',
+  [TAB_EAR_LAB]: 'ear-lab',
   [TAB_JAM]: 'jam',
   [TAB_GUITAR]: 'guitar',
 }
@@ -331,6 +336,7 @@ export function tabLabel(tab: ActiveTab): string {
     [TAB_LAB_TRANSCRIBE]: 'Transcription Bench',
     [TAB_LAB_DIFF]: 'Mapping Differ',
     [TAB_EXERCISES]: 'Exercises',
+    [TAB_EAR_LAB]: 'Ear Lab',
     [TAB_JAM]: 'Jam',
     [TAB_GUITAR]: 'Guitar',
   }

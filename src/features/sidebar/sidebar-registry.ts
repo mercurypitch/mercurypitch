@@ -23,7 +23,7 @@
 import type { Component } from 'solid-js'
 import { lazy } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ActivityPanel } from './panels/ActivityPanel'
 import { CharacterPanel } from './panels/CharacterPanel'
 import { DisplayPanel } from './panels/DisplayPanel'
@@ -103,6 +103,10 @@ export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_PIANO]: ['library', 'playback-setup', 'mic', 'display'],
   [TAB_GUITAR]: ['library', 'mic'],
   [TAB_EXERCISES]: ['character', 'mic', 'routine', 'activity'],
+  // The Ear Lab's evidence is the Mercury Column on its own dashboard;
+  // the rail keeps the activity heatmap because sprints feed the same
+  // app-wide streak, and mic because Home's sing mode listens.
+  [TAB_EAR_LAB]: ['mic', 'activity'],
   [TAB_KARAOKE]: ['karaoke-queue', 'karaoke-groups', 'karaoke-setlists', 'mic'],
   [TAB_JAM]: ['jam-room', 'mic'],
   [TAB_COMMUNITY]: ['mic', 'activity'],

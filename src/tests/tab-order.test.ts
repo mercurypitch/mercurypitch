@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { TAB_META } from '@/components/AppNavTabs'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { isTabVisible, MAX_INLINE_GROUP_TABS, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, MAX_INLINE_GROUP_TABS, PRIMARY_TABS, splitGroupTabs, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabGroupOf, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -68,6 +68,7 @@ describe('tab groups', () => {
       TAB_GUITAR,
       TAB_PIANO,
       TAB_EXERCISES,
+      TAB_EAR_LAB,
     ])
   })
 
