@@ -7,10 +7,15 @@ import type { GuitarVariant } from '@/lib/guitar/guitar-synth'
 import { createBassVoice, createGuitarVoice } from '@/lib/guitar/guitar-synth'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { foldIntoLoop } from '@/lib/guitar/loop-span'
+import type { MidiTempoChange } from '@/lib/midi-song'
+import { createBeatClock } from '@/lib/midi-song'
 import type { GuitarSessionAudioGraph } from './guitar-session-audio-graph'
 import { createGuitarSessionAudioGraph } from './guitar-session-audio-graph'
 
 export type GuitarRoomBandBeatPhase = 'count-in' | 'exercise'
+
+export const GUITAR_ROOM_BAND_MIN_TEMPO_BPM = 30
+export const GUITAR_ROOM_BAND_MAX_TEMPO_BPM = 220
 
 /**
  * What the band plays under the player.
@@ -31,8 +36,12 @@ export interface GuitarRoomBandNote {
 
 export interface GuitarRoomBandStartOptions {
   tempoBpm: number
+  /** Tempo events already scaled so beat zero agrees with `tempoBpm`. */
+  tempoChanges?: readonly MidiTempoChange[]
   countInBeats: number
   exerciseBeats: number
+  /** Exact score length; defaults to the whole-beat scheduling horizon. */
+  durationBeats?: number
   /**
    * Repeat this half-open span of exercise beats for as long as the room is
    * running. Scheduled as one unbroken pulse rather than restarted per pass —
@@ -49,7 +58,12 @@ export interface GuitarRoomBandStartOptions {
    */
   melody?: readonly GuitarRoomBandNote[]
   melodyVariant?: GuitarVariant
-  onBeat?(beatIndex: number, phase: GuitarRoomBandBeatPhase): void
+  /** `scheduledAtSeconds` is the authoritative time on this band's context. */
+  onBeat?(
+    beatIndex: number,
+    phase: GuitarRoomBandBeatPhase,
+    scheduledAtSeconds: number,
+  ): void
   onComplete?(): void
 }
 
@@ -108,6 +122,15 @@ export function resolveBandLoop(
   return { start, end }
 }
 
+/** The exact tempo range every room using this scheduler can rely on. */
+export function resolveGuitarRoomBandTempoBpm(tempoBpm: number): number {
+  if (!Number.isFinite(tempoBpm)) return 120
+  return Math.min(
+    GUITAR_ROOM_BAND_MAX_TEMPO_BPM,
+    Math.max(GUITAR_ROOM_BAND_MIN_TEMPO_BPM, tempoBpm),
+  )
+}
+
 /**
  * Strike one string of the score at a scheduled time.
  *
@@ -119,30 +142,36 @@ export function resolveBandLoop(
  */
 function soundNote(
   graph: GuitarSessionAudioGraph,
+  destination: AudioNode,
   note: GuitarRoomBandNote,
   at: number,
-  beatSeconds: number,
+  durationSeconds: number,
   variant: GuitarVariant = 'electric',
 ): void {
   const frequency = 440 * Math.pow(2, (note.midi - 69) / 12)
   if (!Number.isFinite(frequency) || frequency <= 0) return
-  const durationSeconds = Math.max(0.08, note.durationBeats * beatSeconds)
+  const audibleDurationSeconds = Math.max(0.08, durationSeconds)
   const voice =
     variant === 'bass'
-      ? createBassVoice(graph.context, frequency, durationSeconds * 1000, at)
+      ? createBassVoice(
+          graph.context,
+          frequency,
+          audibleDurationSeconds * 1000,
+          at,
+        )
       : createGuitarVoice(
           graph.context,
           frequency,
-          durationSeconds * 1000,
+          audibleDurationSeconds * 1000,
           variant,
           at,
         )
 
-  const releaseAt = at + durationSeconds
+  const releaseAt = at + audibleDurationSeconds
   const RELEASE_SECONDS = 0.09
   voice.gain.gain.setValueAtTime(1, releaseAt)
   voice.gain.gain.linearRampToValueAtTime(0.0001, releaseAt + RELEASE_SECONDS)
-  voice.gain.connect(graph.buses.guide)
+  voice.gain.connect(destination)
 
   const disposeIn =
     (releaseAt + RELEASE_SECONDS - graph.context.currentTime) * 1000
@@ -171,6 +200,7 @@ export function createGuitarRoomBand(
   let graph: GuitarSessionAudioGraph | null = null
   let interval: number | null = null
   let generation = 0
+  let runOutput: { guide: GainNode; drums: GainNode } | null = null
   const callbackTimers = new Set<number>()
 
   const ensureGraph = (): GuitarSessionAudioGraph => {
@@ -194,6 +224,18 @@ export function createGuitarRoomBand(
   const stop = (): void => {
     generation += 1
     clearTimers()
+    const output = runOutput
+    runOutput = null
+    if (output !== null) {
+      // Sources already inside Web Audio's lookahead cannot be unscheduled.
+      // Disconnect their run-scoped gates so Stop is audibly immediate and a
+      // microphone opened next cannot hear the guide pretending to be input.
+      const now = context?.currentTime ?? 0
+      output.guide.gain.setValueAtTime(0, now)
+      output.drums.gain.setValueAtTime(0, now)
+      output.guide.disconnect()
+      output.drums.disconnect()
+    }
   }
 
   return {
@@ -216,23 +258,46 @@ export function createGuitarRoomBand(
         return { expectedHitTimesMs: [] }
       }
 
-      const beatSeconds =
-        60 / Math.min(200, Math.max(30, startOptions.tempoBpm))
+      const guideOutput = currentGraph.context.createGain()
+      const drumsOutput = currentGraph.context.createGain()
+      guideOutput.gain.value = 1
+      drumsOutput.gain.value = 1
+      guideOutput.connect(currentGraph.buses.guide)
+      drumsOutput.connect(currentGraph.buses.drums)
+      runOutput = { guide: guideOutput, drums: drumsOutput }
+
+      const tempoBpm = resolveGuitarRoomBandTempoBpm(startOptions.tempoBpm)
+      const openingBeatSeconds = 60 / tempoBpm
+      const beatToSeconds = createBeatClock({
+        bpm: tempoBpm,
+        tempoChanges: startOptions.tempoChanges,
+      })
       const countInBeats = Math.max(0, Math.floor(startOptions.countInBeats))
       const exerciseBeats = Math.max(1, Math.floor(startOptions.exerciseBeats))
+      const durationBeats = Number.isFinite(startOptions.durationBeats)
+        ? Math.min(
+            exerciseBeats,
+            Math.max(0, startOptions.durationBeats ?? exerciseBeats),
+          )
+        : exerciseBeats
       const loop = resolveBandLoop(startOptions.loop, exerciseBeats)
       const feel = startOptions.feel ?? 'groove'
       const notesByBeat = groupNotesByBeat(startOptions.melody ?? [])
       const melodyVariant = startOptions.melodyVariant ?? 'electric'
       const totalBeats = countInBeats + exerciseBeats
       const firstBeatAt = currentGraph.context.currentTime + 0.09
+      const firstExerciseAt = firstBeatAt + countInBeats * openingBeatSeconds
       const firstBeatAtMs = performance.now() + 90
       const expectedHitTimesMs = Array.from(
         { length: exerciseBeats },
         (_, index) =>
-          firstBeatAtMs + (countInBeats + index) * beatSeconds * 1000,
+          firstBeatAtMs +
+          countInBeats * openingBeatSeconds * 1000 +
+          beatToSeconds(index) * 1000,
       )
       let nextBeat = 0
+      let nextBeatAt = firstBeatAt
+      let completionScheduled = false
 
       const scheduleUiCallback = (at: number, callback: () => void): void => {
         const delay = Math.max(
@@ -248,7 +313,7 @@ export function createGuitarRoomBand(
 
       const schedule = (): void => {
         while (loop !== null || nextBeat < totalBeats) {
-          const at = firstBeatAt + nextBeat * beatSeconds
+          const at = nextBeatAt
           if (at > currentGraph.context.currentTime + scheduleAheadSeconds) {
             break
           }
@@ -264,7 +329,7 @@ export function createGuitarRoomBand(
               currentGraph.context,
               at,
               nextBeat === countInBeats - 1 ? 0.9 : 0.68,
-              currentGraph.buses.drums,
+              drumsOutput,
             )
           } else if (feel === 'click') {
             // Downbeat accented, everything else the same tick. Nothing here
@@ -274,7 +339,7 @@ export function createGuitarRoomBand(
               currentGraph.context,
               at,
               exerciseIndex % 4 === 0 ? 0.82 : 0.5,
-              currentGraph.buses.drums,
+              drumsOutput,
             )
           } else {
             triggerDrumVoice(
@@ -282,7 +347,7 @@ export function createGuitarRoomBand(
               currentGraph.context,
               at,
               exerciseIndex % 4 === 0 ? 0.74 : 0.58,
-              currentGraph.buses.drums,
+              drumsOutput,
             )
             if (exerciseIndex % 4 === 2) {
               triggerDrumVoice(
@@ -290,7 +355,7 @@ export function createGuitarRoomBand(
                 currentGraph.context,
                 at,
                 0.55,
-                currentGraph.buses.drums,
+                drumsOutput,
               )
             }
           }
@@ -300,29 +365,51 @@ export function createGuitarRoomBand(
               // Fractional positions inside the beat are kept: an eighth is
               // half a beat late, and quantising it to the beat would teach
               // the wrong rhythm.
-              const noteAt = at + (note.startBeat - exerciseIndex) * beatSeconds
-              soundNote(currentGraph, note, noteAt, beatSeconds, melodyVariant)
+              const noteAt =
+                at +
+                beatToSeconds(note.startBeat) -
+                beatToSeconds(exerciseIndex)
+              const noteDurationSeconds =
+                beatToSeconds(note.startBeat + note.durationBeats) -
+                beatToSeconds(note.startBeat)
+              soundNote(
+                currentGraph,
+                guideOutput,
+                note,
+                noteAt,
+                noteDurationSeconds,
+                melodyVariant,
+              )
             }
           }
           scheduleUiCallback(at, () =>
             startOptions.onBeat?.(
               phase === 'count-in' ? scheduledBeat : exerciseIndex,
               phase,
+              at,
             ),
           )
+          const beatDurationSeconds =
+            phase === 'count-in'
+              ? openingBeatSeconds
+              : beatToSeconds(exerciseIndex + 1) - beatToSeconds(exerciseIndex)
           nextBeat += 1
+          nextBeatAt += beatDurationSeconds
         }
 
-        if (loop === null && nextBeat >= totalBeats) {
+        if (loop === null && nextBeat >= totalBeats && !completionScheduled) {
+          completionScheduled = true
           if (interval !== null) window.clearInterval(interval)
           interval = null
-          const completeAt = firstBeatAt + totalBeats * beatSeconds
+          const completeAt = firstExerciseAt + beatToSeconds(durationBeats)
           scheduleUiCallback(completeAt, () => startOptions.onComplete?.())
         }
       }
 
       schedule()
-      interval = window.setInterval(schedule, schedulerIntervalMs)
+      if (!completionScheduled) {
+        interval = window.setInterval(schedule, schedulerIntervalMs)
+      }
       return { expectedHitTimesMs }
     },
     stop,

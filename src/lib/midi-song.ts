@@ -44,15 +44,15 @@ export interface MidiTempoChange {
 }
 
 export interface MidiSong {
-  /** Tempo from the first set-tempo meta event (default 120) */
+  /** Tempo in force at beat zero (SMF default 120 until a later event). */
   bpm: number
   /**
    * Every set-tempo event in the file, not just the first.
    *
-   * Optional because two things produce a song without one: a Guitar Pro
-   * import, whose tempo automations are not read here, and a song saved before
-   * this field existed. Absent means "no map recorded" — `createBeatClock`
-   * then runs at `bpm` throughout, which is what those callers already assumed.
+   * Optional because songs saved before this field existed do not have one,
+   * and callers may still construct a constant-tempo song directly. Absent
+   * means "no map recorded" — `createBeatClock` then runs at `bpm` throughout,
+   * which is what those callers already assumed.
    *
    * It matters wherever a beat has to become a real second. Dance of Death
    * changes tempo ten times, and reading only the first puts its last note
@@ -69,7 +69,20 @@ export interface MidiSong {
  * are accumulated once, so converting a few thousand notes stays linear
  * instead of rescanning the map per note.
  */
-export function createBeatClock(song: MidiSong): (beat: number) => number {
+type MidiTempoSource = {
+  bpm: number
+  tempoChanges?: readonly MidiTempoChange[]
+  /** Accepted for whole-song object literals; timing itself does not read it. */
+  tracks?: readonly unknown[]
+}
+
+interface TempoAnchor {
+  beat: number
+  seconds: number
+  usPerBeat: number
+}
+
+function tempoAnchors(song: MidiTempoSource): TempoAnchor[] {
   const changes = [...(song.tempoChanges ?? [])].sort(
     (left, right) => left.beat - right.beat,
   )
@@ -79,7 +92,7 @@ export function createBeatClock(song: MidiSong): (beat: number) => number {
   }
 
   // Seconds elapsed at each change, accumulated at the tempo in force before it.
-  const anchors: Array<{ beat: number; seconds: number; usPerBeat: number }> = [
+  const anchors: TempoAnchor[] = [
     { beat: 0, seconds: 0, usPerBeat: changes[0]?.usPerBeat ?? opening },
   ]
   for (let index = 1; index < changes.length; index += 1) {
@@ -94,6 +107,13 @@ export function createBeatClock(song: MidiSong): (beat: number) => number {
       usPerBeat: change.usPerBeat,
     })
   }
+  return anchors
+}
+
+export function createBeatClock(
+  song: MidiTempoSource,
+): (beat: number) => number {
+  const anchors = tempoAnchors(song)
 
   return (beat: number): number => {
     let anchor = anchors[0]
@@ -105,6 +125,23 @@ export function createBeatClock(song: MidiSong): (beat: number) => number {
       else break
     }
     return anchor.seconds + ((beat - anchor.beat) * anchor.usPerBeat) / 1e6
+  }
+}
+
+/** Seconds back to authored beat time through the same complete tempo map. */
+export function createSecondsToBeatClock(
+  song: MidiTempoSource,
+): (seconds: number) => number {
+  const anchors = tempoAnchors(song)
+
+  return (seconds: number): number => {
+    let anchor = anchors[0]
+    if (anchor === undefined) return 0
+    for (const candidate of anchors) {
+      if (candidate.seconds <= seconds) anchor = candidate
+      else break
+    }
+    return anchor.beat + ((seconds - anchor.seconds) * 1e6) / anchor.usPerBeat
   }
 }
 
@@ -273,8 +310,6 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
     const ticksPerBeat = (data[12] << 8) | data[13]
     if (ticksPerBeat === 0) return null
 
-    let bpm = 120
-    let bpmFound = false
     // Tempo events can sit in any track, so these accumulate across all of
     // them and are sorted once at the end.
     const tempoChanges: MidiTempoChange[] = []
@@ -355,10 +390,6 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
             const usPerBeat =
               (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2]
             if (usPerBeat > 0) {
-              if (!bpmFound) {
-                bpm = Math.round(60000000 / usPerBeat)
-                bpmFound = true
-              }
               tempoChanges.push({ beat: tick / ticksPerBeat, usPerBeat })
             }
           }
@@ -455,9 +486,16 @@ export function parseMidiSong(data: Uint8Array): MidiSong | null {
     }
 
     if (tracks.length === 0) return null
+    const sortedTempoChanges = tempoChanges.sort(
+      (left, right) => left.beat - right.beat,
+    )
+    const openingTempo = sortedTempoChanges.find((change) => change.beat === 0)
     return {
-      bpm,
-      tempoChanges: tempoChanges.sort((left, right) => left.beat - right.beat),
+      bpm:
+        openingTempo === undefined
+          ? 120
+          : Math.round(60000000 / openingTempo.usPerBeat),
+      tempoChanges: sortedTempoChanges,
       tracks,
     }
   } catch {

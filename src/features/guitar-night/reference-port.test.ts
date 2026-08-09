@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReferenceSource } from './reference-port'
-import { isGuitarProReferenceFile, isMidiReferenceFile, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, suggestReferenceInstrument, } from './reference-port'
+import { isGuitarProReferenceFile, isMidiReferenceFile, measuredReferenceForBacking, measuredReferenceFromTranscription, openGuitarNightReference, resolveReferenceTrack, suggestReferenceInstrument, } from './reference-port'
 
 function source(
   overrides: Partial<GuitarNightReferenceSource> = {},
@@ -92,6 +92,18 @@ describe('openGuitarNightReference', () => {
       { stringIndex: 0, fret: 0, startBeat: 0 },
       { stringIndex: 0, fret: 3, startBeat: 1 },
     ])
+  })
+
+  it('keeps the complete authored tempo map', () => {
+    const tempoChanges = [
+      { beat: 0, usPerBeat: 625000 },
+      { beat: 8, usPerBeat: 500000 },
+    ]
+    const result = openGuitarNightReference(source({ tempoChanges }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.tempoChanges).toEqual(tempoChanges)
   })
 
   const bassSource = () =>
@@ -219,11 +231,25 @@ describe('measuredReferenceFromTranscription', () => {
     })
 
     expect(reference.kind).toBe('measured')
+    expect(reference.backingSessionId).toBe('session-room')
     expect(reference.coverage).toBe(0.82)
     // One beat per second, so measured seconds reach the stage unscaled.
     expect(reference.tempoBpm).toBe(60)
     expect(reference.notes.map((note) => note.startBeat)).toEqual([0.5, 1.2])
     expect(reference.notes.map((note) => note.duration)).toEqual([0.4, 0.3])
+  })
+
+  it('is usable only with the backing session that produced it', () => {
+    const reference = measuredReferenceFromTranscription({
+      sessionId: 'session-a',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      transcription,
+    })
+
+    expect(measuredReferenceForBacking(reference, 'session-a')).toBe(reference)
+    expect(measuredReferenceForBacking(reference, 'session-b')).toBeNull()
+    expect(measuredReferenceForBacking(reference, null)).toBeNull()
   })
 
   it('leaves a bass line on a bass at the pitch it was heard', () => {

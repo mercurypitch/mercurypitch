@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GuitarRoomBand, GuitarRoomBandStartOptions, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
-import { scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
+import { scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 function reference(
   overrides: Partial<GuitarNightReference> = {},
@@ -121,6 +121,7 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(getOptions()?.tempoBpm).toBe(90)
       // Four beats of score, so four beats are scheduled.
       expect(getOptions()?.exerciseBeats).toBe(4)
+      expect(getOptions()?.durationBeats).toBe(4)
       dispose()
     })
   })
@@ -137,12 +138,14 @@ describe('useGuitarNightScoreRoomController', () => {
       })
       await room.start()
 
-      getOptions()?.onBeat?.(0, 'count-in')
+      getOptions()?.onBeat?.(0, 'count-in', 9)
       expect(room.status()).toBe('count-in')
       expect(room.countInRemaining()).toBe(4)
 
-      // Beat one of the score anchors the timeline here.
-      getOptions()?.onBeat?.(0, 'exercise')
+      // Beat one was scheduled at 10. A delayed main-thread callback must not
+      // redefine that audio-clock origin as the later delivery time.
+      clock.currentTime = 10.4
+      getOptions()?.onBeat?.(0, 'exercise', 10)
       expect(room.status()).toBe('playing')
 
       // Two seconds of audio clock at 90 BPM is three beats — whatever the
@@ -151,6 +154,87 @@ describe('useGuitarNightScoreRoomController', () => {
       frames.pump()
       expect(room.positionSeconds()).toBeCloseTo(2, 5)
       expect(room.playheadBeat()).toBeCloseTo(3, 5)
+      dispose()
+    })
+  })
+
+  it('pins every visible take value until the scheduled take is stopped', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const [currentReference, setCurrentReference] = createSignal(reference())
+      const [instrument, setInstrument] = createSignal<'guitar' | 'bass'>(
+        'guitar',
+      )
+      const room = useGuitarNightScoreRoomController({
+        reference: currentReference,
+        instrument,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+      room.setTempoBpm(120)
+      room.setCountInBeats(2)
+      await room.start()
+
+      room.setTempoBpm(60)
+      room.setCountInBeats(8)
+      room.setHearScore(false)
+      setCurrentReference(
+        reference({
+          title: 'Next Riff',
+          tempoBpm: 180,
+          notes: [
+            ...reference().notes,
+            {
+              ...reference().notes[0]!,
+              id: 'n3',
+              startBeat: 8,
+              duration: 2,
+            },
+          ],
+        }),
+      )
+      setInstrument('bass')
+
+      expect(room.tempoBpm()).toBe(120)
+      expect(room.countInBeats()).toBe(2)
+      expect(room.hearScore()).toBe(true)
+      expect(room.durationBeats()).toBe(4)
+      expect(room.durationSeconds()).toBe(2)
+      expect(room.displayReference()?.title).toBe('Velvet Riff')
+
+      getOptions()?.onBeat?.(0, 'count-in', 9.5)
+      expect(room.countInRemaining()).toBe(2)
+      clock.currentTime = 10.3
+      getOptions()?.onBeat?.(0, 'exercise', 10)
+      clock.currentTime = 11
+      frames.pump()
+      expect(room.positionSeconds()).toBeCloseTo(1, 5)
+      expect(room.playheadBeat()).toBeCloseTo(2, 5)
+
+      // A delayed completion callback must not let the visible position run
+      // past the duration the active take pinned.
+      clock.currentTime = 14
+      frames.pump()
+      expect(room.positionSeconds()).toBe(2)
+
+      getOptions()?.onComplete?.()
+      expect(room.positionSeconds()).toBe(2)
+      expect(room.durationSeconds()).toBe(2)
+      // The completed take keeps its timeline, while setup now describes the
+      // next count-in instead of trapping controls on the old values.
+      expect(room.tempoBpm()).toBe(60)
+      expect(room.countInBeats()).toBe(8)
+      expect(room.hearScore()).toBe(false)
+      expect(room.displayReference()?.title).toBe('Velvet Riff')
+
+      room.stop()
+      expect(room.tempoBpm()).toBe(60)
+      expect(room.countInBeats()).toBe(8)
+      expect(room.hearScore()).toBe(false)
+      expect(room.durationBeats()).toBe(10)
+      expect(room.displayReference()?.title).toBe('Next Riff')
       dispose()
     })
   })
@@ -177,6 +261,43 @@ describe('useGuitarNightScoreRoomController', () => {
 
       room.resetTempo()
       expect(room.tempoBpm()).toBe(90)
+      dispose()
+    })
+  })
+
+  it('follows and proportionally slows the complete authored tempo map', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const score = reference({
+        tempoBpm: 120,
+        tempoChanges: [
+          { beat: 0, usPerBeat: 500000 },
+          { beat: 2, usPerBeat: 1000000 },
+        ],
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => score,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      expect(room.durationSeconds()).toBe(3)
+      room.setTempoBpm(60)
+      expect(room.durationSeconds()).toBe(6)
+      await room.start()
+
+      expect(getOptions()?.tempoChanges).toEqual([
+        { beat: 0, usPerBeat: 1000000 },
+        { beat: 2, usPerBeat: 2000000 },
+      ])
+      clock.currentTime = 10
+      getOptions()?.onBeat?.(0, 'exercise', 10)
+      clock.currentTime = 12.5
+      frames.pump()
+      // Two one-second beats, then half of the next two-second beat.
+      expect(room.playheadBeat()).toBeCloseTo(2.25, 5)
       dispose()
     })
   })
@@ -223,16 +344,58 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(getOptions()?.loop).toEqual({ start: 1, end: 3 })
       expect(room.runningLoop()).toEqual({ start: 1, end: 3 })
 
-      getOptions()?.onBeat?.(0, 'exercise')
+      getOptions()?.onBeat?.(0, 'exercise', 10)
       // Three beats of elapsed clock is one beat past B, so the playhead reads
       // beat 1 again — the same fold the scheduler applied.
       clock.currentTime = 10 + 3 * (60 / 90)
       frames.pump()
       expect(room.playheadBeat()).toBeCloseTo(1, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(60 / 90, 5)
 
       clock.currentTime = 10 + 4 * (60 / 90)
       frames.pump()
       expect(room.playheadBeat()).toBeCloseTo(2, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(2 * (60 / 90), 5)
+      dispose()
+    })
+  })
+
+  it('repeats the mapped seconds between A and B when the score changes tempo', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tempoBpm: 120,
+            tempoChanges: [
+              { beat: 0, usPerBeat: 500000 },
+              { beat: 2, usPerBeat: 1000000 },
+            ],
+          }),
+        loop: () => ({ start: 1, end: 3 }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onBeat?.(0, 'exercise', 10)
+
+      // A is at 0.5 s and B is at 2 s. At B the scheduler returns to A.
+      clock.currentTime = 12
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1, 5)
+
+      // Half a second into the repeated 1.5 s interval reaches beat 2.
+      clock.currentTime = 12.5
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(2, 5)
+
+      // One complete repeated interval returns to A again.
+      clock.currentTime = 13.5
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1, 5)
       dispose()
     })
   })
@@ -312,7 +475,7 @@ describe('useGuitarNightScoreRoomController', () => {
         cancelFrame: frames.cancelFrame,
       })
       await room.start()
-      getOptions()?.onBeat?.(0, 'exercise')
+      getOptions()?.onBeat?.(0, 'exercise', 10)
       clock.currentTime = 11
       frames.pump()
       expect(room.positionSeconds()).toBeCloseTo(1, 5)
@@ -348,8 +511,27 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(await room.start()).toBe(false)
       expect(room.status()).toBe('error')
       expect(room.error()).not.toBeNull()
+      expect(band.stop).toHaveBeenCalledTimes(2)
       dispose()
     })
+  })
+})
+
+describe('scaleScoreTempoChanges', () => {
+  it('preserves every relative tempo change at a new opening tempo', () => {
+    expect(
+      scaleScoreTempoChanges(
+        [
+          { beat: 0, usPerBeat: 500000 },
+          { beat: 8, usPerBeat: 750000 },
+        ],
+        120,
+        60,
+      ),
+    ).toEqual([
+      { beat: 0, usPerBeat: 1000000 },
+      { beat: 8, usPerBeat: 1500000 },
+    ])
   })
 })
 
