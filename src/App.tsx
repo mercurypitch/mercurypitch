@@ -211,6 +211,7 @@ import type { LabTab } from '@/features/lab/LabSurface'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { usePlaybackMicNudge } from '@/features/mic-feedback/usePlaybackMicNudge'
+import { createLegacyPianoPerformanceAdapter } from '@/features/piano/legacy/createLegacyPianoPerformanceAdapter'
 import { usePlaybackController } from '@/features/playback/usePlaybackController'
 import type { BackingNote } from '@/features/playback/useSingingBacking'
 import { useSingingBacking } from '@/features/playback/useSingingBacking'
@@ -1400,6 +1401,9 @@ const AppShell: Component<AppProps> = (props) => {
 
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
+  const pianoPerformance = createLegacyPianoPerformanceAdapter(fallingNotes, {
+    title: pianoSongName,
+  })
 
   // ── Header practice-context pill ─────────────────────────────
   // On the practice tabs the header sub-title becomes a contextual pill that
@@ -1440,12 +1444,13 @@ const AppShell: Component<AppProps> = (props) => {
   // states, handleFretNotePlayed, mode-lifecycle effect) lives in
   // GuitarContext now — consumed via guitarCtx above.
 
-  const pianoIsPlaying = createMemo(
-    () =>
-      fallingNotes.gameState() === 'playing' ||
-      fallingNotes.gameState() === 'countdown',
+  const pianoIsPlaying = createMemo(() => {
+    const phase = pianoPerformance.transport.phase()
+    return phase === 'playing' || phase === 'count-in'
+  })
+  const pianoIsPaused = createMemo(
+    () => pianoPerformance.transport.phase() === 'paused',
   )
-  const pianoIsPaused = createMemo(() => fallingNotes.gameState() === 'paused')
 
   // ── Keyboard shortcuts & piano roll events ─────────────────
   let guitarDrumActivationGeneration = 0
@@ -1473,12 +1478,13 @@ const AppShell: Component<AppProps> = (props) => {
       isPaused: pianoIsPaused,
       gameState: fallingNotes.gameState,
       startGame: () => {
-        fallingNotes.setPianoCurrentCycle(1)
-        void fallingNotes.startGame()
+        void pianoPerformance.transport.play()
       },
-      pauseGame: fallingNotes.pauseGame,
-      resumeGame: fallingNotes.resumeGame,
-      resetGame: fallingNotes.resetGame,
+      pauseGame: pianoPerformance.transport.pause,
+      resumeGame: () => {
+        void pianoPerformance.transport.play()
+      },
+      resetGame: pianoPerformance.transport.stop,
     },
     modals: {
       practiceResult,
@@ -1583,8 +1589,8 @@ const AppShell: Component<AppProps> = (props) => {
     // stop the piano mic if active.
     if (prevTab === TAB_PIANO) {
       const pianoState = fallingNotes.gameState()
-      if (pianoState === 'playing') fallingNotes.pauseGame()
-      else if (pianoState === 'countdown') fallingNotes.resetGame()
+      if (pianoState === 'playing') pianoPerformance.transport.pause()
+      else if (pianoState === 'countdown') pianoPerformance.transport.stop()
       if (fallingNotes.isMicActive()) fallingNotes.stopMic()
     }
 
@@ -1724,9 +1730,9 @@ const AppShell: Component<AppProps> = (props) => {
   } => {
     if (activeTab() === TAB_PIANO) {
       return {
-        beat: fallingNotes.playheadBeat,
-        total: fallingNotes.totalBeats,
-        seekTo: fallingNotes.seekToBeat,
+        beat: pianoPerformance.transport.timeline.playheadBeat,
+        total: pianoPerformance.transport.timeline.totalBeats,
+        seekTo: pianoPerformance.transport.seekToBeat,
       }
     }
     return {
@@ -3600,8 +3606,7 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_PIANO)}>
                   <PianoPage
                     fallingNotes={fallingNotes}
-                    isPlaying={pianoIsPlaying}
-                    isPaused={pianoIsPaused}
+                    performance={pianoPerformance}
                     volume={savedVol}
                     onVolumeChange={(vol) => {
                       setSavedVol(vol)

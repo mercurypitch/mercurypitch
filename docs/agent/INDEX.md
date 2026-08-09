@@ -89,11 +89,12 @@ These are the rules that break things when ignored.
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 2.5k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 1.8k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
+| `piano` | [piano-input-state.ts](../../src/features/piano/input/piano-input-state.ts) | 1.8k | Piano input state — polyphonic note and pedal authority MIDI keyboards and touch surfaces feed the same normalized event stream. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.4k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.1k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
-| `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 950 | useFallingNotesController — Game logic for Synthesia-style piano practice |
+| `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `piano-night` | [PianoNightApp.tsx](../../src/features/piano-night/PianoNightApp.tsx) | 900 | Piano Night presents the app-store-free Performance Horizon pilot shell. |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 800 | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 800 | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
@@ -109,7 +110,6 @@ These are the rules that break things when ignored.
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 250 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `account` | [local-progress-notice.ts](../../src/features/account/local-progress-notice.ts) | 200 | Signing in to an account made somewhere else Creating an account upgrades THIS device's row in place, so the account id and the device id... |
-| `piano` | [piano-performance-contract.ts](../../src/features/piano/runtime/piano-performance-contract.ts) | 200 | Piano performance contract — one beat-native stage and transport boundary Legacy falling-notes practice and the standalone Piano Night sh... |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
@@ -201,7 +201,7 @@ These are the rules that break things when ignored.
 |---|---|---|
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.2k | Original tab fingering (Guitar Pro imports) is preserved through load. |
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 600 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
-| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Derived in AppShell (also consumed by the playback wiring), threaded in. |
+| [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 200 | The app's single pitch-frame stream. |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Supporter research surface. |
@@ -337,9 +337,9 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/icons.tsx](../../src/components/icons.tsx) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
+| [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
-| [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |

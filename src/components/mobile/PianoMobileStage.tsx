@@ -21,6 +21,7 @@ import { TransportBar } from '@/components/mobile/TransportBar'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import type { PianoPerformanceRuntime } from '@/features/piano/runtime/piano-performance-contract'
 import launchStyles from '@/features/piano-night/PianoNightLaunch.module.css'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { haptics } from '@/lib/haptics'
@@ -35,6 +36,7 @@ type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
 export interface PianoMobileStageProps {
   fallingNotes: FallingNotesController
+  performance: PianoPerformanceRuntime
   picker: MidiSongPicker
   onSeek: (beat: number) => void
   volume: () => number
@@ -52,11 +54,14 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
   // never changes), same as PianoPage does.
   // eslint-disable-next-line solid/reactivity
   const fn = props.fallingNotes
+  // Stable adapter constructed beside the App-owned controller.
+  // eslint-disable-next-line solid/reactivity
+  const performance = props.performance
 
   const [optionsOpen, setOptionsOpen] = createSignal(false)
 
-  const playing = (): boolean => fn.gameState() === 'playing'
-  const paused = (): boolean => fn.gameState() === 'paused'
+  const playing = (): boolean => performance.transport.phase() === 'playing'
+  const paused = (): boolean => performance.transport.phase() === 'paused'
 
   const playPauseLabel = (): string =>
     playing() ? 'Pause' : paused() ? 'Resume' : 'Play'
@@ -64,12 +69,11 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
   const onPlayPause = (): void => {
     haptics.tapLight()
     if (playing()) {
-      fn.pauseGame()
+      performance.transport.pause()
     } else if (paused()) {
-      fn.resumeGame()
+      void performance.transport.play()
     } else {
-      fn.setPianoCurrentCycle(1)
-      void fn.startGame()
+      void performance.transport.play()
     }
   }
 
@@ -103,7 +107,8 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
           onClick={() => setOptionsOpen(true)}
           aria-label="Tempo and playback options"
         >
-          {Math.round(fn.currentSongBpm())} BPM · {fn.zoomPercent()}%
+          {Math.round(performance.transport.timeline.tempoBpm())} BPM ·{' '}
+          {fn.zoomPercent()}%
         </button>
         <button
           classList={{
@@ -121,8 +126,8 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
       {/* ── Progress strip ───────────────────────────────── */}
       <Scrubber
         class={stageStyles.progress}
-        value={fn.playheadBeat()}
-        duration={fn.totalBeats()}
+        value={performance.transport.timeline.playheadBeat()}
+        duration={performance.transport.timeline.totalBeats()}
         onSeek={props.onSeek}
       />
 
@@ -170,7 +175,7 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
               [stageStyles.roundBtn]: true,
               [stageStyles.stopBtn]: true,
             }}
-            onClick={() => fn.resetGame()}
+            onClick={performance.transport.stop}
             title="Stop"
             aria-label="Stop"
           >
@@ -234,21 +239,27 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
         </OptionSection>
 
         <OptionSection label="Playback">
-          <OptionRow label={`Tempo ${Math.round(fn.currentSongBpm())} BPM`}>
+          <OptionRow
+            label={`Tempo ${Math.round(performance.transport.timeline.tempoBpm())} BPM`}
+          >
             <input
               type="range"
               min="40"
               max="220"
               step="1"
-              value={fn.currentSongBpm()}
-              onInput={(e) => fn.setBpm(Number(e.currentTarget.value))}
+              value={performance.transport.timeline.tempoBpm()}
+              onInput={(e) =>
+                performance.transport.setTempoBpm(Number(e.currentTarget.value))
+              }
             />
           </OptionRow>
           <OptionRow label="Speed">
             <select
               class="dropdown-select-style"
-              value={String(fn.speed())}
-              onChange={(e) => fn.setSpeed(Number(e.currentTarget.value))}
+              value={String(performance.transport.speed())}
+              onChange={(e) =>
+                performance.transport.setSpeed(Number(e.currentTarget.value))
+              }
             >
               <For each={SPEEDS}>
                 {(s) => <option value={String(s)}>{s}×</option>}
@@ -364,6 +375,23 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
               <i />
             </button>
           </OptionRow>
+          <Show when={fn.midiDevices().length > 0}>
+            <OptionRow label="MIDI input">
+              <select
+                class="dropdown-select-style"
+                value={fn.selectedMidiInputId() ?? ''}
+                aria-label="MIDI input device"
+                onChange={(event) =>
+                  fn.selectMidiInput(event.currentTarget.value || null)
+                }
+              >
+                <option value="">No MIDI input</option>
+                <For each={fn.midiDevices()}>
+                  {(device) => <option value={device.id}>{device.name}</option>}
+                </For>
+              </select>
+            </OptionRow>
+          </Show>
         </OptionSection>
 
         <DesktopHint message="A-B loops, per-track mixing & more — on desktop." />

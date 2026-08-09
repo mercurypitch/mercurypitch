@@ -29,8 +29,11 @@ interface FallingNotesCanvasProps {
   inputMode?: () => 'mic' | 'midi'
   visibleBeatWindow?: () => number
   midiHeldNotes?: () => { midi: number; velocity: number }[]
-  onClickPianoOn?: (midi: number) => void
-  onClickPianoOff?: () => void
+  onClickPianoOn?: (midi: number, pointerId?: number) => void
+  onClickPianoMove?: (pointerId: number, midi: number) => void
+  onClickPianoOff?: (pointerId?: number) => void
+  onClickPianoCancel?: (pointerId: number) => void
+  onReleaseAllClickPianoNotes?: () => void
   clickPianoEnabled?: () => boolean
   // ── A-B loop (beats; 0 = unset). Markers on the falling-notes lane;
   //    draggable via onMoveLoopA/B (the note area has no other pointer use). ──
@@ -167,9 +170,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
   })
 
   let lastHitCount = 0
-  let clickedKey: number | null = null
-  let pointerDownX = 0
-  let pointerDownY = 0
+  const pianoPointerKeys = new Map<number, number | null>()
+  const pianoPointerOrigins = new Map<number, { x: number; y: number }>()
   // Which A/B loop boundary the pointer is dragging in the note lane.
   let loopDrag: 'A' | 'B' | null = null
 
@@ -260,61 +262,28 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     return null
   }
 
-  // ── Piano key and A/B marker pointer gesture ──────────────────────
+  // ── A/B marker pointer gesture ────────────────────────────────────
+  // Piano keys use the multi-pointer lifecycle installed in onMount below;
+  // the shared single-pointer drag owner remains dedicated to loop markers.
 
   const canvasDrag: DragGestureOptions = {
-    canStart: (event) =>
-      hitLoopMarker(event.clientY) !== null ||
-      (props.clickPianoEnabled?.() === true &&
-        hitTestKeyboard(event.clientX, event.clientY) !== null),
+    canStart: (event) => hitLoopMarker(event.clientY) !== null,
     onStart: (event) => {
-      // A press on an A/B loop marker (in the note lane) starts a drag; it
-      // works regardless of the click-piano toggle and never touches the keys.
       const loopHit = hitLoopMarker(event.clientY)
       if (loopHit !== null) {
         loopDrag = loopHit
-        return
       }
-
-      const midi = hitTestKeyboard(event.clientX, event.clientY)
-      if (midi === null) return
-      clickedKey = midi
-      pointerDownX = event.clientX
-      pointerDownY = event.clientY
-      props.onClickPianoOn?.(midi)
     },
     onMove: (event) => {
       if (loopDrag !== null) {
         const beat = loopAxis().beatFromClientY(event.clientY)
         if (loopDrag === 'A') props.onMoveLoopA?.(beat)
         else props.onMoveLoopB?.(beat)
-        return
-      }
-      if (clickedKey === null) return
-
-      // Ignore sub-5px movement to prevent iOS tap-jitter key switching.
-      const dx = event.clientX - pointerDownX
-      const dy = event.clientY - pointerDownY
-      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return
-
-      const midi = hitTestKeyboard(event.clientX, event.clientY)
-      if (midi !== clickedKey) {
-        clickedKey = midi
-        if (midi !== null) {
-          props.onClickPianoOn?.(midi)
-        } else {
-          props.onClickPianoOff?.()
-        }
       }
     },
     onEnd: () => {
       if (loopDrag !== null) {
         loopDrag = null
-        return
-      }
-      if (clickedKey !== null) {
-        clickedKey = null
-        props.onClickPianoOff?.()
       }
     },
   }
@@ -341,9 +310,123 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       }
     }
 
+    const releasePianoPointer = (
+      event: PointerEvent,
+      cancelled: boolean,
+    ): void => {
+      if (!pianoPointerKeys.has(event.pointerId)) return
+      const midi = pianoPointerKeys.get(event.pointerId)
+      pianoPointerKeys.delete(event.pointerId)
+      pianoPointerOrigins.delete(event.pointerId)
+      if (midi !== null && midi !== undefined) {
+        if (cancelled && props.onClickPianoCancel !== undefined) {
+          props.onClickPianoCancel(event.pointerId)
+        } else {
+          props.onClickPianoOff?.(event.pointerId)
+        }
+      }
+      if (
+        event.type !== 'lostpointercapture' &&
+        canvasRef !== undefined &&
+        canvasRef.hasPointerCapture(event.pointerId)
+      ) {
+        canvasRef.releasePointerCapture(event.pointerId)
+      }
+    }
+
+    const releaseAllPianoPointers = (): void => {
+      const pointerIds = Array.from(pianoPointerKeys.keys())
+      if (pointerIds.length === 0) return
+      pianoPointerKeys.clear()
+      pianoPointerOrigins.clear()
+      if (props.onReleaseAllClickPianoNotes !== undefined) {
+        props.onReleaseAllClickPianoNotes()
+      } else {
+        for (const pointerId of pointerIds) {
+          props.onClickPianoOff?.(pointerId)
+        }
+      }
+      for (const pointerId of pointerIds) {
+        if (canvasRef !== undefined && canvasRef.hasPointerCapture(pointerId)) {
+          canvasRef.releasePointerCapture(pointerId)
+        }
+      }
+    }
+
+    const onPianoPointerDown = (event: PointerEvent): void => {
+      if (
+        props.clickPianoEnabled?.() !== true ||
+        hitLoopMarker(event.clientY) !== null ||
+        (event.pointerType === 'mouse' && event.button !== 0)
+      ) {
+        return
+      }
+      const midi = hitTestKeyboard(event.clientX, event.clientY)
+      if (midi === null || canvasRef === undefined) return
+      event.preventDefault()
+      try {
+        canvasRef.setPointerCapture(event.pointerId)
+      } catch {
+        return
+      }
+      pianoPointerKeys.set(event.pointerId, midi)
+      pianoPointerOrigins.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      })
+      props.onClickPianoOn?.(midi, event.pointerId)
+    }
+
+    const onPianoPointerMove = (event: PointerEvent): void => {
+      if (!pianoPointerKeys.has(event.pointerId)) return
+      const origin = pianoPointerOrigins.get(event.pointerId)
+      if (
+        origin !== undefined &&
+        Math.abs(event.clientX - origin.x) < 5 &&
+        Math.abs(event.clientY - origin.y) < 5
+      ) {
+        return
+      }
+
+      const previousMidi = pianoPointerKeys.get(event.pointerId) ?? null
+      const nextMidi = hitTestKeyboard(event.clientX, event.clientY)
+      if (previousMidi === nextMidi) return
+      pianoPointerKeys.set(event.pointerId, nextMidi)
+
+      if (previousMidi === null && nextMidi !== null) {
+        props.onClickPianoOn?.(nextMidi, event.pointerId)
+      } else if (previousMidi !== null && nextMidi === null) {
+        props.onClickPianoOff?.(event.pointerId)
+      } else if (nextMidi !== null) {
+        if (props.onClickPianoMove !== undefined) {
+          props.onClickPianoMove(event.pointerId, nextMidi)
+        } else {
+          props.onClickPianoOff?.(event.pointerId)
+          props.onClickPianoOn?.(nextMidi, event.pointerId)
+        }
+      }
+    }
+
+    const onPianoPointerUp = (event: PointerEvent): void =>
+      releasePianoPointer(event, false)
+    const onPianoPointerCancel = (event: PointerEvent): void =>
+      releasePianoPointer(event, true)
+    const onPianoLostPointerCapture = (event: PointerEvent): void =>
+      releasePianoPointer(event, true)
+
+    canvasRef.addEventListener('pointerdown', onPianoPointerDown)
+    canvasRef.addEventListener('pointermove', onPianoPointerMove)
+    canvasRef.addEventListener('pointerup', onPianoPointerUp)
+    canvasRef.addEventListener('pointercancel', onPianoPointerCancel)
+    canvasRef.addEventListener('lostpointercapture', onPianoLostPointerCapture)
+
     const onPointerHover = (event: PointerEvent): void => {
       // Idle hover: show a resize cursor over a loop marker.
-      if (clickedKey === null && loopDrag === null && canvasRef !== undefined) {
+      if (
+        pianoPointerKeys.size === 0 &&
+        loopDrag === null &&
+        canvasRef !== undefined
+      ) {
         canvasRef.style.cursor =
           hitLoopMarker(event.clientY) !== null ? 'ns-resize' : ''
       }
@@ -355,11 +438,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     let pinchStartWindow = 0
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        // Cancel any active piano click on multi-touch
-        if (clickedKey !== null) {
-          clickedKey = null
-          props.onClickPianoOff?.()
-        }
+        // Pinch takes ownership from every active piano pointer atomically.
+        releaseAllPianoPointers()
         pinchStartDist = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,
           e.touches[0].clientY - e.touches[1].clientY,
@@ -391,8 +471,17 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     canvasRef.addEventListener('touchend', onTouchEnd)
 
     onCleanup(() => {
+      releaseAllPianoPointers()
       ro.disconnect()
       canvasRef?.removeEventListener('wheel', onWheel)
+      canvasRef?.removeEventListener('pointerdown', onPianoPointerDown)
+      canvasRef?.removeEventListener('pointermove', onPianoPointerMove)
+      canvasRef?.removeEventListener('pointerup', onPianoPointerUp)
+      canvasRef?.removeEventListener('pointercancel', onPianoPointerCancel)
+      canvasRef?.removeEventListener(
+        'lostpointercapture',
+        onPianoLostPointerCapture,
+      )
       canvasRef?.removeEventListener('pointermove', onPointerHover)
       canvasRef?.removeEventListener('touchstart', onTouchStart)
       canvasRef?.removeEventListener('touchmove', onTouchMove)
@@ -1043,62 +1132,6 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       }
     }
 
-    // Highlight key being clicked/touched on piano
-    if (clickedKey !== null) {
-      const isBlack = IS_BLACK_KEY[clickedKey % 12]
-      const col = midiToWhiteIndex(clickedKey)
-      const wi = col - minWhite
-      if (wi >= 0 && wi < rangeWhite) {
-        if (isBlack) {
-          // Highlight the black key itself
-          const bw = colWidth * BLACK_KEY_WIDTH_RATIO
-          const bx = wi * colWidth + colWidth * 0.7 - bw / 2
-          const blackKeyH = kbHeight * BLACK_KEY_HEIGHT_RATIO
-          const bRadius = Math.min(bw * 0.15, 3)
-
-          ctx.fillStyle = 'rgba(255,255,255,0.4)'
-          ctx.beginPath()
-          ctx.moveTo(bx, kbTop + 1)
-          ctx.lineTo(bx + bw, kbTop + 1)
-          ctx.lineTo(bx + bw, kbTop + blackKeyH - bRadius)
-          ctx.arcTo(
-            bx + bw,
-            kbTop + blackKeyH,
-            bx + bw - bRadius,
-            kbTop + blackKeyH,
-            bRadius,
-          )
-          ctx.lineTo(bx + bRadius, kbTop + blackKeyH)
-          ctx.arcTo(
-            bx,
-            kbTop + blackKeyH,
-            bx,
-            kbTop + blackKeyH - bRadius,
-            bRadius,
-          )
-          ctx.closePath()
-          ctx.fill()
-        } else {
-          // Highlight the white key - subtle depth like MIDI
-          const x = wi * colWidth
-          const clickGrad = ctx.createLinearGradient(
-            x,
-            kbTop,
-            x,
-            kbTop + kbHeight,
-          )
-          clickGrad.addColorStop(0, 'rgba(0,0,0,0.15)')
-          clickGrad.addColorStop(1, 'rgba(0,0,0,0.05)')
-          ctx.fillStyle = clickGrad
-          ctx.fillRect(x + 1, kbTop + 1, colWidth - 2, kbHeight - 2)
-
-          // Subtle orange tint at the bottom edge for mouse clicks
-          ctx.fillStyle = 'rgba(255,180,60,0.5)'
-          ctx.fillRect(x + 1, kbTop + kbHeight - 6, colWidth - 2, 4)
-        }
-      }
-    }
-
     // Finally, draw note labels on top of all highlights
     for (let wi = 0; wi < rangeWhite; wi++) {
       const x = wi * colWidth
@@ -1150,7 +1183,8 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     if (!ctx) return
     const pitch = props.currentPitch()
     const isMidi = props.inputMode?.() === 'midi'
-    const hasInput = props.isMicActive() || isMidi || clickedKey !== null
+    const hasInput =
+      props.isMicActive() || isMidi || activePianoNotes().length > 0
     if (!pitch || !hasInput) return
 
     const midi = noteNameToMidi(pitch.noteName, pitch.octave)
@@ -1293,6 +1327,12 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
     return octave * 12 + whiteToChromatic[noteInOctave]
   }
 
+  const activePianoNotes = () => props.midiHeldNotes?.() ?? []
+  const activePianoPitches = () =>
+    Array.from(new Set(activePianoNotes().map((note) => note.midi)))
+      .sort((left, right) => left - right)
+      .join(',')
+
   return (
     <canvas
       ref={(element) => {
@@ -1302,6 +1342,9 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
       id="falling-notes-canvas"
       role="img"
       aria-label="Falling-notes piano. Play the falling notes with a connected MIDI keyboard or the on-screen piano keys."
+      aria-description={`${activePianoNotes().length} active piano keys`}
+      data-active-key-count={activePianoNotes().length}
+      data-active-pitches={activePianoPitches()}
       style={{
         width: '100%',
         height: '100%',

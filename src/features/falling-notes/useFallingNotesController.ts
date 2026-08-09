@@ -3,14 +3,18 @@
 // piano practice
 // ============================================================
 
-import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup, untrack } from 'solid-js'
+import type { PianoInputSnapshot } from '@/features/piano/input/piano-input-state'
+import { createPianoInputState } from '@/features/piano/input/piano-input-state'
+import { createTouchPianoInputPort } from '@/features/piano/input/touch-piano-input-port'
+import { createWebMidiInputPort } from '@/features/piano/input/web-midi-input-port'
+import { matchLegacyPianoInputPitch } from '@/features/piano/legacy/piano-input-compatibility'
 import type { AudioEngine } from '@/lib/audio-engine'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { FallingNotesEngine } from '@/lib/falling-notes-engine'
 import { rmsOfTimeData } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
-import type { MidiNoteEvent } from '@/lib/midi-engine'
-import { MidiEngine } from '@/lib/midi-engine'
 import { midiToNoteName } from '@/lib/note-utils'
 import { centsToRating, ratingToScore } from '@/lib/practice-engine'
 import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
@@ -30,7 +34,15 @@ const GOOD_MS = 150
 
 export function useFallingNotesController(audioEngine: AudioEngine) {
   const engine = new FallingNotesEngine(audioEngine)
-  const midiEngine = new MidiEngine()
+  const pianoInput = createPianoInputState()
+  const touchInput = createTouchPianoInputPort({
+    input: pianoInput,
+    sourceId: 'legacy-falling-notes-canvas',
+    sourceName: 'On-screen piano',
+  })
+  const midiInput = createWebMidiInputPort({
+    onInput: (event) => pianoInput.apply(event),
+  })
 
   const [currentPitch, setCurrentPitch] = createSignal<{
     frequency: number
@@ -39,8 +51,11 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     cents: number
   } | null>(null)
 
-  // Track if the user is actively holding a virtual key via mouse/touch
-  let clickedMidi: number | null = null
+  const [pianoInputSnapshot, setPianoInputSnapshot] =
+    createSignal<PianoInputSnapshot>(pianoInput.snapshot())
+  const [midiInputSnapshot, setMidiInputSnapshot] = createSignal(
+    midiInput.snapshot(),
+  )
   const [speed, setSpeed] = createSignal(1)
   const [micOn, setMicOn] = createSignal(false)
   const [isCountingIn, setIsCountingIn] = createSignal(false)
@@ -173,30 +188,50 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     void active
   }
 
-  // MIDI callbacks — inject pitch data via the same currentPitch signal
-  // AND play an audible tone so the user hears what they press.
-  midiEngine.callbacks.onNoteOn = (e) => {
-    const { name, octave } = midiToNote(e.midi)
-    const freq = midiToFreq(e.midi)
-    setCurrentPitch({
-      frequency: freq,
-      noteName: name,
-      octave,
-      cents: 0, // MIDI notes are exact — no cents deviation
-    })
-    // Play MIDI input tone directly (bypasses volume slider — always audible)
-    // Uses a short default duration; the note will be cut by the next
-    // noteOff or replaced by the next noteOn.
-    void audioEngine.playTone(freq, 800)
-  }
-
-  midiEngine.callbacks.onNoteOff = () => {
-    // If no more notes are held, clear pitch and stop the tone
-    if (midiEngine.getHeldNotes().size === 0) {
+  // Bridge the normalized polyphonic input authority into the legacy
+  // monophonic pitch readout and fallback synth. Scoring and key highlights
+  // read the whole snapshot below; only this compatibility surface selects a
+  // primary (most recently started) note.
+  let legacyPrimaryVoiceId: string | null = null
+  const syncLegacyInputPitch = (snapshot: PianoInputSnapshot): void => {
+    setPianoInputSnapshot(snapshot)
+    const primary = snapshot.primaryNote
+    if (primary === null) {
+      if (legacyPrimaryVoiceId !== null) audioEngine.stopTone(50)
+      legacyPrimaryVoiceId = null
       setCurrentPitch(null)
-      audioEngine.stopTone(50) // short release to avoid clicks
+      return
+    }
+
+    const { name, octave } = midiToNote(primary.midi)
+    const frequency = midiToFreq(primary.midi)
+    setCurrentPitch({ frequency, noteName: name, octave, cents: 0 })
+    if (primary.id !== legacyPrimaryVoiceId) {
+      legacyPrimaryVoiceId = primary.id
+      void audioEngine.playTone(frequency, 800)
     }
   }
+
+  const unsubscribePianoInput = pianoInput.subscribe((update) => {
+    syncLegacyInputPitch(update.snapshot)
+  })
+  let wasMidiInputConnected = midiInput.snapshot().connected
+  const unsubscribeMidiInput = midiInput.subscribe((snapshot) => {
+    untrack(() => {
+      setMidiInputSnapshot(snapshot)
+      setMidiConnected(snapshot.connected)
+      if (snapshot.connected && !wasMidiInputConnected) {
+        if (micOn()) stopMic()
+        setInputMode('midi')
+        touchInput.releaseAll()
+        setClickPianoEnabled(false)
+      } else if (!snapshot.connected && inputMode() === 'midi') {
+        setInputMode('mic')
+        setClickPianoEnabled(true)
+      }
+      wasMidiInputConnected = snapshot.connected
+    })
+  })
 
   // ── RAF Game Loop ────────────────────────────────────────────
 
@@ -204,8 +239,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     const loop = () => {
       // Detect pitch from mic (only in mic mode)
       if (inputMode() === 'mic') {
-        // If the user is actively clicking a piano key, do not overwrite it with mic silence
-        if (clickedMidi === null) {
+        // On-screen pointers are normalized alongside MIDI. Do not overwrite
+        // their primary note with mic silence while any touch key is held.
+        const hasTouchKey = pianoInputSnapshot().pressedNotes.some(
+          (note) => note.source.kind === 'touch',
+        )
+        if (!hasTouchKey) {
           const pitch = engine.detectPitch()
           if (pitch) {
             setCurrentPitch({
@@ -281,7 +320,10 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   startLoop()
   onCleanup(() => {
     stopLoop()
-    midiEngine.disconnect()
+    touchInput.dispose()
+    midiInput.dispose()
+    unsubscribePianoInput()
+    unsubscribeMidiInput()
   })
 
   // ── Hit Detection ────────────────────────────────────────────
@@ -296,6 +338,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     const pitch = currentPitch()
     const detectedMidi = pitch ? freqToMidi(pitch.frequency) : null
     const detectedCents = pitch?.cents ?? null
+    const normalizedInput = pianoInputSnapshot()
 
     for (const note of notes) {
       if (note.isBacking === true) continue
@@ -326,8 +369,14 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
 
       // Note is within timing window — check pitch
       if (Math.abs(deltaMs) <= GOOD_MS) {
-        if (detectedMidi === note.midi) {
-          recordHit(note, Math.abs(deltaMs), detectedCents)
+        const pitchMatch = matchLegacyPianoInputPitch(
+          note.midi,
+          normalizedInput,
+          detectedMidi,
+          detectedCents,
+        )
+        if (pitchMatch.matched) {
+          recordHit(note, Math.abs(deltaMs), pitchMatch.cents)
         }
         // If wrong pitch or no pitch, don't miss yet — wait until window closes
       }
@@ -484,58 +533,64 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
   })
 
   const midiConnect = async (): Promise<boolean> => {
-    const ok = await midiEngine.connect()
+    const ok = await midiInput.connect()
     if (ok) {
       // Stop mic if it's running — only one input mode at a time
       if (micOn()) stopMic()
       setInputMode('midi')
       setMidiConnected(true)
+      touchInput.releaseAll()
       setClickPianoEnabled(false)
     }
     return ok
   }
 
   const midiDisconnect = () => {
-    midiEngine.disconnect()
+    midiInput.disconnect()
     setCurrentPitch(null)
     setInputMode('mic')
     setMidiConnected(false)
     setClickPianoEnabled(true)
   }
 
-  const clickPianoNoteOn = (midi: number) => {
+  const selectMidiInput = (inputId: string | null): boolean =>
+    midiInput.selectInput(inputId)
+
+  const clickPianoNoteOn = (midi: number, pointerId = 0) => {
     if (!clickPianoEnabled()) return
-    clickedMidi = midi
-    const { name, octave } = midiToNote(midi)
-    const freq = midiToFreq(midi)
-    setCurrentPitch({
-      frequency: freq,
-      noteName: name,
-      octave,
-      cents: 0,
-    })
-    // Play the clicked note so the user hears it
-    void audioEngine.playTone(freq, 800)
+    touchInput.press(pointerId, midi)
   }
 
-  const clickPianoNoteOff = () => {
-    clickedMidi = null
-    setCurrentPitch(null)
-    audioEngine.stopTone(50)
+  const clickPianoNoteMove = (pointerId: number, midi: number) => {
+    if (!clickPianoEnabled()) return
+    touchInput.move(pointerId, midi)
+  }
+
+  const clickPianoNoteOff = (pointerId = 0) => {
+    touchInput.release(pointerId)
+  }
+
+  const cancelClickPianoNote = (pointerId: number) => {
+    touchInput.cancel(pointerId)
+  }
+
+  const releaseAllClickPianoNotes = () => {
+    touchInput.releaseAll()
   }
 
   const toggleClickPiano = () => {
-    setClickPianoEnabled((v) => !v)
+    if (clickPianoEnabled()) {
+      touchInput.releaseAll()
+      setClickPianoEnabled(false)
+    } else {
+      setClickPianoEnabled(true)
+    }
   }
 
   const startGame = async () => {
-    // Eagerly initialize and resume AudioContext on game start.
-    // This prevents the issue where audio is silent until the user
-    // interacts with BPM/play/stop controls (which internally call
-    // init/resume). User gesture (clicking Play) satisfies the
-    // browser autoplay policy requirement.
-    await audioEngine.init()
-    await audioEngine.resume()
+    // Keep context creation, iOS playback-session promotion, and resume in
+    // the same explicit Play gesture through the shared activation path.
+    await activateAudioPlayback(audioEngine)
 
     judgedNotes = new Set<number>()
     playedNotes = new Set<number>()
@@ -858,9 +913,12 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     setShowNoteLabels((v) => !v)
   }
 
-  const midiHeldNotes = (): MidiNoteEvent[] => {
-    return Array.from(midiEngine.getHeldNotes().values())
-  }
+  const midiHeldNotes = () =>
+    pianoInputSnapshot().soundingNotes.map((note) => ({
+      midi: note.midi,
+      velocity: Math.round(note.velocity * 127),
+      timestamp: note.startedAtMs,
+    }))
 
   return {
     // Signals
@@ -898,10 +956,17 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
       micOn() ? rmsOfTimeData(audioEngine.getTimeData()) : 0,
     midiConnect,
     midiDisconnect,
+    midiDevices: () => midiInputSnapshot().devices,
+    selectedMidiInputId: () => midiInputSnapshot().selectedInputId,
+    selectMidiInput,
+    pianoInputSnapshot,
     midiHeldNotes,
     clickPianoEnabled,
     clickPianoNoteOn,
+    clickPianoNoteMove,
     clickPianoNoteOff,
+    cancelClickPianoNote,
+    releaseAllClickPianoNotes,
     toggleClickPiano,
     inputMode,
     midiConnected,

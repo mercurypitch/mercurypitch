@@ -1162,7 +1162,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Sing it or play it',
     description:
-      'Turn on your mic to sing the falling notes, or connect a MIDI keyboard. The control bar also toggles note-name labels and MIDI input, so you can learn the keys as you go.',
+      'Turn on your mic to sing the falling notes, or connect a MIDI keyboard. When several inputs are available, expand the controls to choose the keyboard you want; note-name labels help you learn the keys as you go.',
     targetSelector: '#btn-mic',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
@@ -1227,7 +1227,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Practice options',
     description:
-      'Open Piano Night from this sheet, alongside tempo, speed, play mode, zoom and MIDI input.',
+      'Open Piano Night from this sheet, alongside tempo, speed, play mode, zoom and MIDI input. Connected keyboards appear here so you can choose the active device.',
     targetSelector: '[data-tour="piano-options"]',
     placement: 'top',
     requiredTab: TAB_PIANO,

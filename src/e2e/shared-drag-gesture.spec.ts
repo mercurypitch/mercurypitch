@@ -68,6 +68,19 @@ const openSinging = async (page: Page): Promise<void> => {
   if ((await singingTab.count()) > 0) await singingTab.click()
 }
 
+const openPiano = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    ;(window as Window & { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+    localStorage.setItem('pitchperfect_onboarding_done', '1')
+    localStorage.setItem('pitchperfect_focus_mode', 'false')
+  })
+  await page.goto('/#/piano')
+  await page.waitForSelector('#app-tabs, [data-tour="mobile-tabbar"]', {
+    timeout: 10_000,
+  })
+  await dismissOverlays(page)
+}
+
 const createLoopMarkers = async (page: Page): Promise<void> => {
   const rail = page.getByTestId('singing-seek-rail')
   await expect(rail).toBeVisible()
@@ -84,6 +97,66 @@ const createLoopMarkers = async (page: Page): Promise<void> => {
 }
 
 test.describe('shared drag gesture verification', () => {
+  test('Piano touch keys and scrubber preserve pointer lifecycles @smoke (REQ-PN-INPUT-006, REQ-PN-COMPAT-004)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openPiano(page)
+
+    const canvas = page.locator('#falling-notes-canvas')
+    await expect(canvas).toBeVisible()
+    await expect(canvas).toHaveAttribute('data-active-key-count', '0')
+    await rememberCapturedPointer(canvas)
+
+    const canvasBox = await canvas.boundingBox()
+    if (canvasBox === null) throw new Error('Piano canvas has no bounding box')
+    const keyY = canvasBox.y + canvasBox.height * 0.9
+    const firstKeyX = canvasBox.x + canvasBox.width * 0.38
+    const secondKeyX = canvasBox.x + canvasBox.width * 0.55
+
+    await page.mouse.move(firstKeyX, keyY)
+    await page.mouse.down()
+    await expect(canvas).toHaveAttribute('data-active-key-count', '1')
+    const firstPitch = await canvas.getAttribute('data-active-pitches')
+    expect(firstPitch).not.toBe('')
+
+    await page.mouse.move(secondKeyX, keyY, { steps: 6 })
+    await expect
+      .poll(() => canvas.getAttribute('data-active-pitches'))
+      .not.toBe(firstPitch)
+    await expect(canvas).toHaveAttribute('data-active-key-count', '1')
+
+    await page.mouse.up()
+    await expect(canvas).toHaveAttribute('data-active-key-count', '0')
+    await expectCaptureReleased(canvas)
+
+    const scrubber = page.getByRole('slider', { name: 'Playback position' })
+    await expect(scrubber).toBeVisible()
+    await expect
+      .poll(async () => Number(await scrubber.getAttribute('aria-valuemax')))
+      .toBeGreaterThan(0)
+    await rememberCapturedPointer(scrubber)
+    const scrubberBox = await scrubber.boundingBox()
+    if (scrubberBox === null)
+      throw new Error('Piano scrubber has no bounding box')
+    const beforeScrub = await readSliderValue(scrubber)
+
+    await page.mouse.move(
+      scrubberBox.x + scrubberBox.width * 0.2,
+      scrubberBox.y + scrubberBox.height / 2,
+    )
+    await page.mouse.down()
+    await page.mouse.move(
+      scrubberBox.x + scrubberBox.width * 0.72,
+      scrubberBox.y + scrubberBox.height / 2,
+      { steps: 6 },
+    )
+    await page.mouse.up()
+
+    expect(await readSliderValue(scrubber)).not.toBe(beforeScrub)
+    await expectCaptureReleased(scrubber)
+  })
+
   test('navigation pan releases after the pointer leaves the window and recovers (REQ-DRAG-001, REQ-DRAG-002)', async ({
     page,
   }) => {
