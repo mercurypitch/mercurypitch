@@ -21,7 +21,7 @@
 import { createSignal } from 'solid-js'
 import type { FeatureFlag } from '@/db'
 import { getDb } from '@/db'
-import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
@@ -1701,8 +1701,76 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'The Mercury Column',
+    description:
+      'Your ear as one number out of 1000. The solid line is what Calibration proved; the lighter level above it is what practice suggests. Every dated mark is a measurement you actually earned.',
+    targetSelector: '[data-tour="ear.column"]',
+    placement: 'right',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'The Mercury Index',
+    description:
+      'One score over faculties measured in different units — cents, milliseconds, chord qualities. It only moves when a Calibration marks it, so it cannot drift upward on a good day.',
+    targetSelector: '[data-tour="ear.index"]',
+    placement: 'left',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'Six faculties',
+    description:
+      'Resolution, Function, Shape, Colour, Time and In The Wild. Anything you have never measured says "Unmeasured" rather than pretending to be a zero — missing data is not a bad ear.',
+    targetSelector: '[data-tour="ear.faculties"]',
+    placement: 'left',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: "Today's sprint",
+    description:
+      'Three drills, about five minutes, chosen from your own readings — and each one tells you why it was picked. Finish a drill anywhere in the Lab and it ticks off here.',
+    targetSelector: '[data-tour="ear.sprint"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'Calibration marks the column',
+    description:
+      'About three minutes. Three separate measurements run interleaved and are averaged together — that pooling is what makes the reading precise enough to keep. Practice runs never mark the column.',
+    targetSelector: '[data-tour="ear.actions"]',
+    placement: 'left',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'The drills',
+    description:
+      'Hairline splits two tones in cents, Home names scale degrees by tap or by voice, The Grid catches a click off the beat, and Leap, Stack and Contour cover intervals, chords and direction.',
+    targetSelector: '[data-tour="ear.drills"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'Timing calibration',
+    description:
+      'Measures the round trip from your speakers back to your microphone, so millisecond drills can subtract your hardware instead of blaming your ear for it.',
+    targetSelector: '[data-tour="ear.latency"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'Why there is no percent',
+    description:
+      'Every other trainer holds you near 75% correct forever, so the score can never show growth. Here the units are real and the item difficulties are frozen — the number moves only when your ear does.',
+    targetSelector: '[data-tour="ear.rulers"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+]
+
 export const PAGE_TOURS: Partial<Record<ActiveTab, WalkthroughStep[]>> = {
   [TAB_HOME]: HOME_TOUR_STEPS,
+  [TAB_EAR_LAB]: EAR_LAB_TOUR_STEPS,
   [TAB_PATH]: PATH_TOUR_STEPS,
   [TAB_GUITAR]: GUITAR_TOUR_STEPS,
   [TAB_PIANO]: PIANO_TOUR_STEPS,
@@ -1734,6 +1802,12 @@ export const PAGE_TOUR_CATALOG: {
     title: 'Path',
     description:
       'The Ascent — the guided seven-week path whose orbs fill as you practise',
+  },
+  {
+    tab: TAB_EAR_LAB,
+    title: 'Ear Lab',
+    description:
+      'Measure your ear in cents and milliseconds, and prove the number moved',
   },
   {
     tab: TAB_GUITAR,

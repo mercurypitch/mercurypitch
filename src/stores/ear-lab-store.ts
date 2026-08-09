@@ -9,13 +9,16 @@
 // ============================================================
 
 import { addScoredMs } from '@/db/services/practice-minutes'
+import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { trackEvent } from '@/lib/analytics'
 import type { FacultyId } from '@/lib/ear/drills'
-import { IDENTIFICATION_DRILLS, THRESHOLD_DRILLS } from '@/lib/ear/drills'
+import { findIdentificationDrill, findThresholdDrill, IDENTIFICATION_DRILLS, THRESHOLD_DRILLS, } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
 import { isProvisional, newRating, updateItemDifficulty, updateRating, } from '@/lib/ear/elo'
 import type { FacultyReading, MercuryIndex } from '@/lib/ear/mercury-index'
-import { mercuryIndex } from '@/lib/ear/mercury-index'
+import { mercuryIndex, scoreReading } from '@/lib/ear/mercury-index'
+import type { SprintCandidate, SprintSegment } from '@/lib/ear/sprint'
+import { planDailySprint, SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
 import { createPersistedSignal } from '@/lib/storage'
 import { recordActivity } from './usage-store'
 
@@ -298,6 +301,159 @@ export function creditEarSession(durationMs: number): void {
   recordActivity()
 }
 
+// ── The Daily Sprint ────────────────────────────────────────────
+
+export interface SprintDayState {
+  /** Local day the sprint belongs to, `YYYY-MM-DD`. */
+  day: string
+  /** Drills finished today, in the order they were played. */
+  done: string[]
+  completedAt: number | null
+}
+
+const MAX_SPRINT_HISTORY = 400
+
+const [sprintDay, setSprintDay] = createPersistedSignal<SprintDayState | null>(
+  `${KEY_PREFIX}sprint`,
+  null,
+)
+/** Local day keys of finished sprints, newest first. */
+const [sprintDays, setSprintDays] = createPersistedSignal<string[]>(
+  `${KEY_PREFIX}sprint_days`,
+  [],
+)
+
+/** Today in the user's own timezone. A sprint is a daily habit, so
+ *  bucketing it in UTC would roll the day over mid-evening for
+ *  anyone east of it. */
+export function earToday(): string {
+  return localDayKey(new Date().toISOString())
+}
+
+/**
+ * The 0–1000 standing for every drill the sprint can schedule, which
+ * is what decides who is neediest.
+ *
+ * A provisional rating counts as *unmeasured* rather than as a low
+ * score: it is a guess the Elo has not settled yet, and the honest
+ * response to a guess is more reps, which is exactly what ranking it
+ * first achieves.
+ */
+export function sprintCandidates(): SprintCandidate[] {
+  const out: SprintCandidate[] = []
+  for (const drillId of SPRINT_DRILL_IDS) {
+    const threshold = findThresholdDrill(drillId)
+    if (threshold) {
+      const reading = latestThresholdReading(drillId)
+      out.push({
+        drillId,
+        kind: 'threshold',
+        score: reading ? scoreReading(reading.value, threshold.scale) : null,
+      })
+      continue
+    }
+    const identification = findIdentificationDrill(drillId)
+    if (identification) {
+      const rating = ratings()[drillId]
+      const settled = rating !== undefined && !isProvisional(rating)
+      out.push({
+        drillId,
+        kind: 'identification',
+        score: settled
+          ? scoreReading(rating.rating, identification.scale)
+          : null,
+      })
+    }
+  }
+  return out
+}
+
+/** Today's sprint. Recomputed from current standings, so finishing a
+ *  drill can change tomorrow's plan but never today's mid-run. */
+export function todaysSprint(): SprintSegment[] {
+  return planDailySprint(sprintCandidates(), earToday())
+}
+
+/** Today's progress, or a fresh day once the date rolls over. */
+export function sprintProgress(): SprintDayState {
+  const today = earToday()
+  const stored = sprintDay()
+  if (stored && stored.day === today) return stored
+  return { day: today, done: [], completedAt: null }
+}
+
+export function isSprintComplete(): boolean {
+  return sprintProgress().completedAt !== null
+}
+
+/** Book one finished segment. Idempotent per drill so replaying a
+ *  segment cannot double-count it. */
+export function markSprintSegmentDone(drillId: string): SprintDayState {
+  const current = sprintProgress()
+  const next: SprintDayState = current.done.includes(drillId)
+    ? current
+    : { ...current, done: [...current.done, drillId] }
+  setSprintDay(next)
+  return next
+}
+
+/**
+ * Close the sprint for today and remember the day.
+ *
+ * Deliberately does **not** credit practice minutes or the streak:
+ * each segment is a real drill run, and all three engines already
+ * call `creditEarSession` when they finish. Crediting again here
+ * would count a sprint twice — once per drill and once more for
+ * having done them in a row. The Ear Lab feeds the one app-wide
+ * streak, and it feeds it exactly once per run.
+ */
+export function completeSprint(): SprintDayState {
+  const current = sprintProgress()
+  if (current.completedAt !== null) return current
+
+  const closed: SprintDayState = { ...current, completedAt: Date.now() }
+  setSprintDay(closed)
+  setSprintDays((prev) =>
+    prev.includes(closed.day)
+      ? prev
+      : [closed.day, ...prev].slice(0, MAX_SPRINT_HISTORY),
+  )
+  return closed
+}
+
+/** Finished-sprint day keys, newest first. */
+export function sprintHistory(): string[] {
+  return sprintDays()
+}
+
+/**
+ * Consecutive days ending today (or yesterday, if today's sprint is
+ * still to come — a streak should not read as broken at breakfast).
+ */
+export function sprintStreak(today: string = earToday()): number {
+  const done = new Set(sprintDays())
+  if (done.size === 0) return 0
+
+  const dayMs = 86_400_000
+  const startOf = Date.parse(`${today}T00:00:00Z`)
+  if (Number.isNaN(startOf)) return 0
+
+  const keyAt = (offset: number): string =>
+    new Date(startOf + offset * dayMs).toISOString().slice(0, 10)
+
+  // Anchor on today when it is already done, otherwise on yesterday;
+  // a run only breaks once a whole day has passed without one.
+  let cursor = done.has(today) ? 0 : -1
+  if (!done.has(keyAt(cursor))) return 0
+
+  let streak = 0
+  while (done.has(keyAt(cursor))) {
+    streak++
+    cursor--
+  }
+  return streak
+}
+
 // ── Test / reset support ────────────────────────────────────────
 
 /** Wipe all Ear Lab progress (tests; a future settings action). */
@@ -307,4 +463,6 @@ export function resetEarLabStore(): void {
   setReadings([])
   setCalibrations([])
   setConfusions({})
+  setSprintDay(null)
+  setSprintDays([])
 }

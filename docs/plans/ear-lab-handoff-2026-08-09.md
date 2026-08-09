@@ -173,25 +173,38 @@ ear-vs-voice line), §2d (Ear Report), §3b (stop behaviour on every drill).
   timbres is unverified (plan §9.5).
 - Contour's confusion section shows counts, not rates — its answers are
   directions, not bank items, so there is no per-item denominator.
-- No page tour yet. It lands with Phase 4, and it is what will trigger the full
-  two-viewport tour walk (`/tour-check`), so budget for that.
+- No page tour yet. It lands with Phase 4. Note `AGENTS.md` now makes
+  `pnpm test:tours` a **release gate, not a per-change gate** (20+ min) — even
+  when editing tour steps, the per-PR check is only that the affected
+  `targetSelector`s resolve.
 
 ---
 
-## 7. Phase 4 — habit (starting now)
+## 7. Phase 4 — habit
 
-Per plan §8. Retention layer on top of a working measurement engine:
+Per plan §8. Retention layer on top of a working measurement engine.
 
-1. **Ear Lab page tour** — deferred through Phases 1-3 specifically so those
-   PRs would not trigger the tour walk. Per `CLAUDE.md`, a tour should cover
-   ≥80% of a page's user-visible features, and adding it means running
-   `/tour-check`.
-2. **Daily sprint** — a short fixed-length session mixing drills the Ear Report
-   says are weakest. Uses the confusion matrix that has been recording since
-   Phase 1.
-3. **Streak integration** — reuse the existing Home-tab streak and forgiveness
-   machinery rather than inventing a second one.
-4. **The Ascent Week 4 rebuilt on this engine** — Week 4 is ear training done
-   with the old exercise system; it becomes Ear Lab drills.
+**Built (2026-08-09):**
+
+1. **Daily sprint** — `src/lib/ear/sprint.ts` (pure, 14 tests) plus
+   `SprintCard.tsx` on the dashboard. Two need slots (unmeasured first, then
+   weakest) and one rotation slot keyed to the day index. Every segment shows
+   *why* it was picked.
+2. **Streak integration** — no second streak. Each drill run already calls
+   `creditEarSession`, which feeds the app-wide streak and practice minutes;
+   `completeSprint` only records the day. The card shows a sprint-day count
+   derived from that history.
+3. **Page tour** — `PAGE_TOURS[TAB_EAR_LAB]`, 8 steps, plus an entry in
+   `PAGE_TOUR_CATALOG`. Hooks are `data-tour="ear.*"` on the dashboard.
+
+**Still to do:**
+
+4. **The Ascent Week 4 rebuilt on this engine.** Week 4 ("Tuning & Ear") is
+   ear training done with the old vocal exercise system. It cannot simply
+   reference Ear Lab drills, because `PathWeek.exercises` is typed
+   `ExerciseType[]` and invariant §4.7 keeps Ear Lab drills out of that union.
+   The clean shape is a separate optional `earDrills?: string[]` on `PathWeek`,
+   populated for week 4 and rendered by the week card as links into the Ear
+   Lab — the two catalogues stay separate and the path still points at both.
 
 Phases 5 (real-song items from UVR stems) and 6 (producer pack) stay out.
