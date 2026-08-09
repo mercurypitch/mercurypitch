@@ -592,8 +592,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     room.getByRole('heading', { name: 'midnight-drums.wav' }),
   ).toBeFocused()
   const flowCanvas = room.getByRole('img', {
-    name: 'midnight-drums.wav flowing guitar fretboard',
-    exact: true,
+    name: /^midnight-drums\.wav\. Interactive 6-string guitar fretboard/,
   })
   await expect(flowCanvas).toBeVisible()
   await expect(flowCanvas).toHaveAttribute('data-camera-ready', 'true')
@@ -723,7 +722,9 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   )
   expect(microphoneRequests).toBe(0)
 
-  await room.getByRole('button', { name: 'Listening', exact: true }).click()
+  await room
+    .getByRole('button', { name: 'Turn on Listening', exact: true })
+    .click()
   await expect(room.getByRole('alert')).toContainText(
     'Unexpected microphone request',
   )
