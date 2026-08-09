@@ -4,6 +4,7 @@
 // slice-based pagination) and update semantics were previously untestable —
 // fake-indexeddb gives us a real IndexedDB so these run end-to-end.
 
+import DexieDB from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import 'fake-indexeddb/auto'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
@@ -25,6 +26,18 @@ if (
 interface Rec extends DbEntity {
   userId: string
   score: number
+}
+
+interface PianoRec extends DbEntity {
+  title: string
+  sourceKind: string
+  sourceHash?: string
+}
+
+interface MigrationRec extends DbEntity {
+  migrationKey: string
+  projectId: string
+  completedAt: string
 }
 
 describe('DexieAdapter', () => {
@@ -122,5 +135,90 @@ describe('DexieAdapter', () => {
     // The write actually committed.
     const repo = adapter.getRepository<Rec>('sessionRecords')
     expect(await repo.count({ where: { userId: 'tx' } })).toBe(1)
+  })
+
+  it('exposes strict v7 Piano project reads, upserts, and deletes', async () => {
+    const now = new Date().toISOString()
+    const project: PianoRec = {
+      id: 'project-1',
+      createdAt: now,
+      updatedAt: now,
+      title: 'Nocturne',
+      sourceKind: 'midi',
+      sourceHash: 'source-1',
+    }
+
+    await adapter.putStrict('pianoProjects', project)
+    expect(
+      await adapter.readByIdStrict<PianoRec>('pianoProjects', project.id),
+    ).toEqual(project)
+    expect(
+      await adapter.readByIndexStrict<PianoRec>(
+        'pianoProjects',
+        'sourceHash',
+        'source-1',
+      ),
+    ).toEqual([project])
+
+    await adapter.deleteByIdStrict('pianoProjects', project.id)
+    expect(
+      await adapter.readByIdStrict<PianoRec>('pianoProjects', project.id),
+    ).toBeUndefined()
+  })
+
+  it('rolls a Piano project back when its unique migration marker fails', async () => {
+    const now = new Date().toISOString()
+    const project: PianoRec = {
+      id: 'project-rollback',
+      createdAt: now,
+      updatedAt: now,
+      title: 'Rollback',
+      sourceKind: 'midi',
+      sourceHash: 'rollback-source',
+    }
+    const marker = (id: string): MigrationRec => ({
+      id,
+      createdAt: now,
+      updatedAt: now,
+      migrationKey: 'legacy-midi-v1:rollback-source',
+      projectId: project.id,
+      completedAt: now,
+    })
+
+    await expect(
+      adapter.transaction(async () => {
+        await adapter.putStrict('pianoProjects', project)
+        await adapter.addStrict('pianoProjectMigrations', marker('marker-1'))
+        await adapter.addStrict('pianoProjectMigrations', marker('marker-2'))
+      }),
+    ).rejects.toThrow()
+
+    expect(
+      await adapter.readByIdStrict<PianoRec>('pianoProjects', project.id),
+    ).toBeUndefined()
+    expect(
+      await adapter.readAllStrict<MigrationRec>('pianoProjectMigrations'),
+    ).toEqual([])
+  })
+
+  it('upgrades an existing v6 database without replacing its rows', async () => {
+    await adapter.destroy()
+    const legacy = new DexieDB('MercuryPitchDB')
+    legacy.version(6).stores({ sessionRecords: 'id, userId, endedAt' })
+    const existing: Rec = {
+      id: 'before-v7',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      userId: 'local-user',
+      score: 93,
+    }
+    await legacy.table<Rec, string>('sessionRecords').put(existing)
+    legacy.close()
+
+    adapter = new DexieAdapter()
+    expect(
+      await adapter.readByIdStrict<Rec>('sessionRecords', existing.id),
+    ).toEqual(existing)
+    expect(await adapter.readAllStrict<PianoRec>('pianoProjects')).toEqual([])
   })
 })

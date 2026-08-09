@@ -15,6 +15,8 @@ export interface SavedMidiSong {
   name: string
   bpm: number
   tracks: MidiSongTrack[]
+  /** Marks an in-memory compatibility view whose authority is IndexedDB. */
+  persistenceAuthority?: 'piano-project'
   /** Track id whose notes the player is scored against */
   scoreTrackId: string
   /** Track ids played as backing audio (not displayed or scored) */

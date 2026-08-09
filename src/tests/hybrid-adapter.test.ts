@@ -52,6 +52,8 @@ describe('HybridAdapter', () => {
       'melodyRecords',
       'sessionTemplates',
       'playlistRecords',
+      'pianoProjects',
+      'pianoProjectMigrations',
       // The worker's TABLES allowlist no longer exposes this entity (the
       // leaderboard is server-derived from sessionRecords) — it must stay
       // local-only or every access silently 404s against the cloud worker.
@@ -66,6 +68,11 @@ describe('HybridAdapter', () => {
 
   it('does not route leaderboardEntries to the cloud', () => {
     expect(CLOUD_ENTITIES.has('leaderboardEntries')).toBe(false)
+  })
+
+  it('keeps Piano projects and their migration markers device-local', () => {
+    expect(CLOUD_ENTITIES.has('pianoProjects')).toBe(false)
+    expect(CLOUD_ENTITIES.has('pianoProjectMigrations')).toBe(false)
   })
 
   it('delegates local-only transactions to the local adapter', async () => {

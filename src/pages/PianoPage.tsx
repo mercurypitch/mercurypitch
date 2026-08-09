@@ -100,6 +100,16 @@ export function PianoPage(props: PianoPageProps) {
     // The page remounts on every tab visit; the controller (and its loaded
     // song) live app-wide — don't clobber them with the first library melody.
     skipAutoLoad: () => selectedSongName() !== '',
+    prepareImportedMidi: async (file, options) => {
+      const { importPianoProjectForLegacy } =
+        await import('@/features/piano-project/import-piano-project-for-legacy')
+      return importPianoProjectForLegacy(file, options)
+    },
+    persistMidiSelection: async (song) => {
+      const { persistPianoCompatibilitySelection } =
+        await import('@/features/piano-project/import-piano-project-for-legacy')
+      await persistPianoCompatibilitySelection(song)
+    },
   })
 
   const dropZone = useFileDropZone({

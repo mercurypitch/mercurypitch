@@ -6,7 +6,7 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal, onMount } from 'solid-js'
+import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { defaultScoreTrack, parseMidiSong } from '@/lib/midi-song'
 import { getAllMelodies } from '@/stores/melody-store'
@@ -51,6 +51,22 @@ export interface MidiSongPickerOptions<T> {
    * the controller already holds content so the remount doesn't clobber it.
    */
   skipAutoLoad?: () => boolean
+  /**
+   * Optional intent-time importer for hosts with a canonical song store.
+   * The callback owns parsing and persistence; its SavedMidiSong-shaped
+   * result is an in-memory compatibility view and is never written to the
+   * legacy localStorage catalogue by this picker.
+   */
+  prepareImportedMidi?: (
+    file: File,
+    options: { signal: AbortSignal },
+  ) => Promise<SavedMidiSong | null>
+  /**
+   * Optional host-owned selection persistence. Canonical Piano hosts use this
+   * for both project and migrated legacy songs; callers that omit it retain
+   * the shared legacy localStorage behaviour.
+   */
+  persistMidiSelection?: (song: SavedMidiSong) => void | Promise<void>
 }
 
 export interface MidiSongPicker {
@@ -90,6 +106,17 @@ export function useMidiSongPicker<T>(
   const [pendingBackingIds, setPendingBackingIds] = createSignal<Set<string>>(
     new Set(),
   )
+  let injectedImportSequence = 0
+  let activeInjectedImport:
+    | { sequence: number; abortController: AbortController }
+    | undefined
+
+  const cancelInjectedImport = (): void => {
+    activeInjectedImport?.abortController.abort()
+    activeInjectedImport = undefined
+  }
+
+  onCleanup(cancelInjectedImport)
 
   const melodies = createMemo(() => {
     try {
@@ -166,17 +193,32 @@ export function useMidiSongPicker<T>(
     setTrackModalSong(song)
   }
 
+  const persistSongSelection = (song: SavedMidiSong): void => {
+    const hostPersistence = opts.persistMidiSelection
+    if (hostPersistence === undefined) {
+      updateMidiSongSelection(song.id, song.scoreTrackId, song.backingTrackIds)
+      return
+    }
+    try {
+      void Promise.resolve(hostPersistence(song)).catch((error: unknown) => {
+        setImportStatus(`Track choice not saved: ${String(error)}`)
+      })
+    } catch (error) {
+      setImportStatus(`Track choice not saved: ${String(error)}`)
+    }
+  }
+
   const applyTrackSelection = () => {
     const song = trackModalSong()
     if (!song) return
     const scoreId = pendingScoreId()
     const backingIds = [...pendingBackingIds()].filter((id) => id !== scoreId)
-    updateMidiSongSelection(song.id, scoreId, backingIds)
     const updated: SavedMidiSong = {
       ...song,
       scoreTrackId: scoreId,
       backingTrackIds: backingIds,
     }
+    persistSongSelection(updated)
     setTrackModalSong(null)
     setIsModalOpen(false)
     loadSavedSong(updated, true)
@@ -192,43 +234,83 @@ export function useMidiSongPicker<T>(
     newBacking.delete(trackId)
 
     const backingTrackIds = [...newBacking]
-    updateMidiSongSelection(song.id, trackId, backingTrackIds)
-
     const updated: SavedMidiSong = {
       ...song,
       scoreTrackId: trackId,
       backingTrackIds,
     }
+    persistSongSelection(updated)
     loadSavedSong(updated, true)
   }
 
   const importMidiFile = async (file: File) => {
+    const injectedPreparer = opts.prepareImportedMidi
+    let injectedImport:
+      | { sequence: number; abortController: AbortController }
+      | undefined
+
+    if (injectedPreparer !== undefined) {
+      cancelInjectedImport()
+      injectedImport = {
+        sequence: ++injectedImportSequence,
+        abortController: new AbortController(),
+      }
+      activeInjectedImport = injectedImport
+    }
+
+    const isCurrentInjectedImport = (): boolean =>
+      injectedImport === undefined ||
+      (activeInjectedImport?.sequence === injectedImport.sequence &&
+        !injectedImport.abortController.signal.aborted)
+
     try {
       setImportStatus('Parsing...')
-      const buffer = await file.arrayBuffer()
-      const data = new Uint8Array(buffer)
-      const song = parseMidiSong(data)
+      let saved: SavedMidiSong | null
 
-      if (!song) {
+      if (injectedPreparer !== undefined && injectedImport !== undefined) {
+        saved = await injectedPreparer(file, {
+          signal: injectedImport.abortController.signal,
+        })
+      } else {
+        const buffer = await file.arrayBuffer()
+        const data = new Uint8Array(buffer)
+        const song = parseMidiSong(data)
+
+        if (!song) {
+          setImportStatus('No notes found in MIDI file')
+          return
+        }
+
+        const name = file.name.replace(/\.(mid|midi)$/i, '')
+        const score = defaultScoreTrack(song)
+        const backingIds = song.tracks
+          .filter((t) => t.id !== score.id)
+          .map((t) => t.id)
+        saved = saveMidiSong(name, song, score.id, backingIds)
+      }
+
+      if (!isCurrentInjectedImport()) return
+      if (saved === null) {
         setImportStatus('No notes found in MIDI file')
         return
       }
 
-      const name = file.name.replace(/\.(mid|midi)$/i, '')
-      const score = defaultScoreTrack(song)
-      const backingIds = song.tracks
-        .filter((t) => t.id !== score.id)
-        .map((t) => t.id)
-      const saved = saveMidiSong(name, song, score.id, backingIds)
-
-      if (song.tracks.length > 1) {
+      if (saved.tracks.length > 1) {
         // Let the user pick which track to practice before loading
         openTrackModal(saved)
       } else {
         loadSavedSong(saved)
       }
     } catch (err) {
+      if (!isCurrentInjectedImport()) return
       setImportStatus(`Import failed: ${String(err)}`)
+    } finally {
+      if (
+        injectedImport !== undefined &&
+        activeInjectedImport?.sequence === injectedImport.sequence
+      ) {
+        activeInjectedImport = undefined
+      }
     }
   }
 

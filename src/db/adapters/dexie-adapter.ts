@@ -60,6 +60,12 @@ class DexieDatabase extends DexieDB {
     this.version(6).stores({
       uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
     })
+    // v7: canonical Piano projects and non-destructive legacy-import markers.
+    // Both stores are intentionally local-only and absent from CLOUD_ENTITIES.
+    this.version(7).stores({
+      pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
+      pianoProjectMigrations: 'id, &migrationKey, completedAt',
+    })
   }
 }
 
@@ -280,6 +286,14 @@ export class DexieAdapter implements DatabaseAdapter {
     return this.db.table<T, string>(entityName).toArray()
   }
 
+  /** Strict primary-key read that distinguishes missing rows from DB errors. */
+  readByIdStrict<T extends DbEntity>(
+    entityName: string,
+    id: string,
+  ): Promise<T | undefined> {
+    return this.db.table<T, string>(entityName).get(id)
+  }
+
   /** Strict indexed read that preserves IndexedDB failures for the caller. */
   readByIndexStrict<T extends DbEntity>(
     entityName: string,
@@ -317,6 +331,29 @@ export class DexieAdapter implements DatabaseAdapter {
       .where(indexName)
       .equals([...value])
       .toArray()
+  }
+
+  /** Add a caller-owned local row and preserve uniqueness failures. */
+  async addStrict<T extends DbEntity>(
+    entityName: string,
+    entity: T,
+  ): Promise<T> {
+    await this.db.table<T, string>(entityName).add(entity)
+    return entity
+  }
+
+  /** Insert or replace a caller-owned local row without rewriting identity. */
+  async putStrict<T extends DbEntity>(
+    entityName: string,
+    entity: T,
+  ): Promise<T> {
+    await this.db.table<T, string>(entityName).put(entity)
+    return entity
+  }
+
+  /** Delete one local row while preserving IndexedDB failures for the caller. */
+  deleteByIdStrict(entityName: string, id: string): Promise<void> {
+    return this.db.table(entityName).delete(id)
   }
 
   async transaction<R>(fn: (db: DatabaseAdapter) => Promise<R>): Promise<R> {

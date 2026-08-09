@@ -412,6 +412,23 @@ export interface PlaylistRecord extends DbEntity {
   melodyIds: string // JSON array of melody IDs
 }
 
+// ── Piano Projects (device-local canonical project library) ────────
+
+/** Indexed wrapper around a structured-cloneable, feature-owned project. */
+export interface PianoProjectRecord<TProject = unknown> extends DbEntity {
+  sourceKind: string
+  sourceHash: string
+  project: TProject
+}
+
+/** Atomic completion marker for one non-destructive legacy project import. */
+export interface PianoProjectMigrationRecord extends DbEntity {
+  migrationKey: string
+  projectId: string
+  sourceHash: string
+  completedAt: string
+}
+
 // ── UVR Sessions & Stem Blobs ────────────────────────────────────
 
 export interface UvrSessionRecord extends DbEntity {
