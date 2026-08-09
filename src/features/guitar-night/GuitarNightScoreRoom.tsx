@@ -7,9 +7,11 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
-import { Ear, Mic, Pause, Play, Volume2 } from '@/components/icons'
+import { Ear, Mic, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, } from '@/components/icons'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import type { LoopSpan } from '@/lib/guitar/loop-span'
+import { quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
@@ -43,8 +45,25 @@ function formatBeat(beat: number): string {
 
 const COUNT_IN_CHOICES = [0, 2, 4, 8]
 
+/** Whether the marks on screen differ from the loop already in the scheduler. */
+export function scoreLoopPendingRestart(
+  marked: LoopSpan | null,
+  running: LoopSpan | null,
+  takeActive: boolean,
+): boolean {
+  if (!takeActive) return false
+  const scheduledMarks = marked === null ? null : quantizeSpanToBeats(marked)
+  if (running === null) return scheduledMarks !== null
+  if (scheduledMarks === null) return true
+  return (
+    running.start !== scheduledMarks.start || running.end !== scheduledMarks.end
+  )
+}
+
 export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let roomHeading!: HTMLHeadingElement
+  let sessionDetails!: HTMLDetailsElement
+  let sessionSummary!: HTMLElement
   // The tab room counts in beats, not seconds: a tempo change should move the
   // same bars, not a different span of the score.
   const scoreBeats = createMemo(() =>
@@ -61,15 +80,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     loop: loop.span,
     instrument: () => props.tuning?.().instrument ?? 'guitar',
   })
-  // A loop is scheduled into the click at start, so marks moved mid-take take
-  // effect on the next one. Say so rather than looking ignored.
-  const loopPendingRestart = createMemo(() => {
-    const marked = loop.span()
-    const running = room.runningLoop()
-    if (marked === null || room.status() === 'quiet') return false
-    if (running === null) return true
-    return running.start !== marked.start || running.end !== marked.end
-  })
+  const displayedReference = createMemo(
+    () => room.displayReference() ?? props.reference(),
+  )
   const listening = useGuitarListeningController({
     activateAudio: room.activateAudio,
     getAudioGraph: room.getAudioGraph,
@@ -77,16 +90,27 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const isRunning = createMemo(
     () => room.status() === 'count-in' || room.status() === 'playing',
   )
+  const takeIsActive = createMemo(
+    () => room.status() === 'starting' || isRunning(),
+  )
+  // A loop is scheduled into the click at start, so marks moved mid-take take
+  // effect on the next one. Say so rather than looking ignored.
+  const loopPendingRestart = createMemo(() =>
+    scoreLoopPendingRestart(loop.span(), room.runningLoop(), takeIsActive()),
+  )
+  const isCalibrating = createMemo(() => listening.status() === 'calibrating')
   const isListening = createMemo(
     () =>
-      listening.status() === 'listening' || listening.status() === 'requesting',
+      listening.status() === 'listening' ||
+      listening.status() === 'requesting' ||
+      isCalibrating(),
   )
 
   const stage: GuitarPerformanceStageSource = {
-    title: () => props.reference().title,
-    notes: () => props.reference().notes,
+    title: () => displayedReference().title,
+    notes: () => displayedReference().notes,
     timeline: {
-      positionSeconds: room.positionSeconds,
+      positionSeconds: room.displayPositionSeconds,
       durationSeconds: room.durationSeconds,
       playheadBeat: room.playheadBeat,
       tempoBpm: room.tempoBpm,
@@ -98,7 +122,29 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       listening.stop()
       return
     }
+    // The score voice is pitched audio. Letting the microphone listen to it
+    // would make the room appear to hear the player when it heard itself.
+    if (takeIsActive() || room.status() === 'complete') room.stop()
     void listening.start()
+  }
+
+  const togglePlayback = (): void => {
+    if (isCalibrating()) return
+    if (!takeIsActive() && isListening()) listening.stop()
+    if (!takeIsActive()) sessionDetails.open = false
+    room.toggle()
+  }
+
+  const changeInstrument = (instrument: StringedInstrument): void => {
+    if (takeIsActive()) return
+    if (room.status() === 'complete') room.stop()
+    props.onInstrument?.(instrument)
+  }
+
+  const changeStringCount = (count: number): void => {
+    if (takeIsActive()) return
+    if (room.status() === 'complete') room.stop()
+    props.onStringCount?.(count)
   }
 
   const leaveRoom = (): void => {
@@ -111,8 +157,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     roomHeading.focus({ preventScroll: true })
     onCleanup(
       installSpacePlaybackToggle({
-        toggle: room.toggle,
-        enabled: () => room.status() !== 'starting',
+        toggle: togglePlayback,
+        enabled: () => room.status() !== 'starting' && !isCalibrating(),
       }),
     )
   })
@@ -128,65 +174,205 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         <div>
           <p class={styles.eyebrow}>
             Tab rehearsal ·{' '}
-            {props.reference().tracks.length > 1
-              ? props.reference().trackName
+            {displayedReference().tracks.length > 1
+              ? displayedReference().trackName
               : 'this device'}
           </p>
-          <h1 ref={roomHeading} tabindex="-1" title={props.reference().title}>
-            {props.reference().title}
+          <h1
+            ref={roomHeading}
+            tabindex="-1"
+            title={displayedReference().title}
+          >
+            {displayedReference().title}
           </h1>
         </div>
         <div class={styles.roomHeadingMeta}>
           <span class={styles.trackCount}>
-            {props.reference().notes.length} notes ·{' '}
+            {displayedReference().notes.length} notes ·{' '}
             {Math.round(room.durationBeats())} beats
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
-            <button
-              type="button"
-              classList={{ [styles.listeningActive]: isListening() }}
-              aria-pressed={isListening()}
-              onClick={toggleListening}
+            <details
+              ref={sessionDetails}
+              class={styles.scoreSession}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape') return
+                event.preventDefault()
+                event.stopPropagation()
+                event.currentTarget.open = false
+                queueMicrotask(() => sessionSummary.focus())
+              }}
             >
-              <span aria-hidden="true">
-                <Mic />
-              </span>
-              <strong>
-                {listening.status() === 'requesting'
-                  ? 'Opening input'
-                  : 'Listening'}
-              </strong>
-            </button>
+              <summary
+                ref={sessionSummary}
+                aria-label={`${isCalibrating() ? 'Calibrating input' : isListening() ? 'Listening is on' : 'Session controls'}`}
+              >
+                <span aria-hidden="true">
+                  <SlidersHorizontal />
+                </span>
+                <strong>
+                  {isCalibrating()
+                    ? 'Calibrating'
+                    : isListening()
+                      ? 'Listening'
+                      : 'Session'}
+                </strong>
+              </summary>
+              <div class={styles.scoreSessionPanel}>
+                <header>
+                  <div>
+                    <strong>Session</strong>
+                    <small>
+                      {takeIsActive()
+                        ? 'Sound settings are held until this take stops.'
+                        : 'Set up the next count-in.'}
+                    </small>
+                  </div>
+                </header>
+
+                <button
+                  type="button"
+                  class={styles.sessionListening}
+                  classList={{ [styles.listeningActive]: isListening() }}
+                  aria-pressed={isListening()}
+                  aria-label={
+                    listening.status() === 'requesting'
+                      ? 'Cancel opening input'
+                      : isCalibrating()
+                        ? 'Stop calibration'
+                        : isListening()
+                          ? 'Stop Listening'
+                          : 'Turn on Listening'
+                  }
+                  onClick={toggleListening}
+                >
+                  <span aria-hidden="true">
+                    <Mic />
+                  </span>
+                  <span>
+                    <strong>
+                      {listening.status() === 'requesting'
+                        ? 'Opening input'
+                        : isCalibrating()
+                          ? 'Calibrating'
+                          : isListening()
+                            ? 'Listening is on'
+                            : 'Turn on Listening'}
+                    </strong>
+                    <small>Show the note this device hears.</small>
+                  </span>
+                </button>
+
+                <Show when={listening.status() !== 'off'}>
+                  <GuitarNightInputHealth
+                    listening={isListening}
+                    calibrating={() => listening.status() === 'calibrating'}
+                    health={listening.health}
+                    timingSource={listening.timingSource}
+                    latencyMs={listening.latencyMs}
+                    onCalibrate={() => void listening.calibrate()}
+                  />
+                </Show>
+
+                <div class={styles.scoreSessionSettings}>
+                  <label class={styles.countInSelect}>
+                    <span aria-hidden="true">
+                      <Ear />
+                    </span>
+                    <strong>Count-in</strong>
+                    <select
+                      aria-label="Count-in beats"
+                      value={room.countInBeats()}
+                      disabled={takeIsActive()}
+                      onChange={(event) =>
+                        room.setCountInBeats(Number(event.currentTarget.value))
+                      }
+                    >
+                      <For each={COUNT_IN_CHOICES}>
+                        {(beats) => (
+                          <option value={beats}>
+                            {beats === 0 ? 'None' : `${beats} beats`}
+                          </option>
+                        )}
+                      </For>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class={styles.hearScoreToggle}
+                    aria-pressed={room.hearScore()}
+                    disabled={takeIsActive()}
+                    classList={{ [styles.hearScoreActive]: room.hearScore() }}
+                    onClick={() => room.setHearScore((hearing) => !hearing)}
+                  >
+                    <span aria-hidden="true">
+                      <Volume2 />
+                    </span>
+                    <span>
+                      <strong>
+                        {room.hearScore() ? 'Tab sounds' : 'Tab silent'}
+                      </strong>
+                      <small>
+                        {room.hearScore()
+                          ? 'Hear the written part.'
+                          : 'Click only.'}
+                      </small>
+                    </span>
+                  </button>
+                </div>
+
+                <div class={styles.scoreSessionLoop}>
+                  <div>
+                    <strong>Loop a phrase</strong>
+                    <small>
+                      Mark A and B at the playhead. Whole beats keep the click
+                      steady.
+                    </small>
+                  </div>
+                  <GuitarNightLoopControls
+                    span={loop.span()}
+                    pending={loop.isPending()}
+                    hasStart={loop.markA() !== null}
+                    hasEnd={loop.markB() !== null}
+                    format={formatBeat}
+                    onMarkStart={() => loop.markStart(room.playheadBeat() ?? 0)}
+                    onMarkEnd={() =>
+                      loop.markEnd(room.playheadBeat() ?? scoreBeats())
+                    }
+                    onClear={loop.clear}
+                  />
+                  <Show when={loopPendingRestart()}>
+                    <small class={styles.scoreSessionNotice} role="status">
+                      Loop changes begin on the next count-in.
+                    </small>
+                  </Show>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
 
       <GuitarNightStage
         source={stage}
-        tuning={props.tuning}
-        onInstrument={props.onInstrument}
-        onStringCount={props.onStringCount}
+        tuning={() => displayedReference().tuning}
+        onInstrument={
+          props.onInstrument === undefined ? undefined : changeInstrument
+        }
+        onStringCount={
+          props.onStringCount === undefined ? undefined : changeStringCount
+        }
+        instrumentSetupDisabled={takeIsActive}
         guideLabel={() =>
-          props.reference().tracks.length > 1
-            ? `${props.reference().title} · ${props.reference().trackName}`
-            : props.reference().title
+          displayedReference().tracks.length > 1
+            ? `${displayedReference().title} · ${displayedReference().trackName}`
+            : displayedReference().title
         }
         active={() => true}
         listening={isListening}
         heardNote={listening.currentNote}
         heardClarity={listening.clarity}
       />
-
-      <Show when={listening.status() !== 'off'}>
-        <GuitarNightInputHealth
-          listening={isListening}
-          calibrating={() => listening.status() === 'calibrating'}
-          health={listening.health}
-          timingSource={listening.timingSource}
-          latencyMs={listening.latencyMs}
-          onCalibrate={() => void listening.calibrate()}
-        />
-      </Show>
 
       <Show when={listening.error()}>
         {(message) => (
@@ -207,28 +393,18 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         <div class={styles.transportIdentity}>
           <span>
             {loopPendingRestart()
-              ? 'The click is already scheduled — this loop starts on the next count-in.'
-              : 'This tab keeps its own clock. No recording is attached, so nothing has to line up with one.'}
+              ? 'Session changes are ready for the next count-in.'
+              : 'Authored score clock · no recording attached'}
           </span>
-          <GuitarNightLoopControls
-            span={loop.span()}
-            pending={loop.isPending()}
-            hasStart={loop.markA() !== null}
-            hasEnd={loop.markB() !== null}
-            format={formatBeat}
-            onMarkStart={() => loop.markStart(room.playheadBeat() ?? 0)}
-            onMarkEnd={() => loop.markEnd(room.playheadBeat() ?? scoreBeats())}
-            onClear={loop.clear}
-          />
         </div>
         <div class={styles.timeRail}>
-          <span>{formatTime(room.positionSeconds())}</span>
+          <span>{formatTime(room.displayPositionSeconds())}</span>
           {/* No scrubbing: the click is the timeline, and seeking a live
               count-in would desynchronise the beat it schedules. */}
           <progress
             class={styles.songProgress}
             max={Math.max(1, room.durationSeconds())}
-            value={room.positionSeconds()}
+            value={room.displayPositionSeconds()}
             aria-label="Score position"
           />
           <span>{formatTime(room.durationSeconds())}</span>
@@ -240,8 +416,8 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             type="button"
             aria-label={isRunning() ? 'Stop the click' : 'Start the count-in'}
             title={isRunning() ? 'Stop the click' : 'Start the count-in'}
-            disabled={room.status() === 'starting'}
-            onClick={room.toggle}
+            disabled={room.status() === 'starting' || isCalibrating()}
+            onClick={togglePlayback}
           >
             <span aria-hidden="true">{isRunning() ? <Pause /> : <Play />}</span>
           </button>
@@ -249,7 +425,9 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             <button
               type="button"
               aria-label={`Slow down from ${room.tempoBpm()} BPM`}
-              disabled={room.tempoBpm() <= SCORE_ROOM_MIN_TEMPO}
+              disabled={
+                takeIsActive() || room.tempoBpm() <= SCORE_ROOM_MIN_TEMPO
+              }
               onClick={() => room.setTempoBpm(room.tempoBpm() - 4)}
             >
               <span aria-hidden="true">−</span>
@@ -261,52 +439,35 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
             <button
               type="button"
               aria-label={`Speed up from ${room.tempoBpm()} BPM`}
-              disabled={room.tempoBpm() >= SCORE_ROOM_MAX_TEMPO}
+              disabled={
+                takeIsActive() || room.tempoBpm() >= SCORE_ROOM_MAX_TEMPO
+              }
               onClick={() => room.setTempoBpm(room.tempoBpm() + 4)}
             >
               <span aria-hidden="true">+</span>
             </button>
           </div>
-          <label class={styles.countInSelect}>
-            <span class={styles.visuallyHidden}>Count-in beats</span>
-            <span aria-hidden="true">
-              <Ear />
-            </span>
-            <select
-              aria-label="Count-in beats"
-              value={room.countInBeats()}
-              onChange={(event) =>
-                room.setCountInBeats(Number(event.currentTarget.value))
-              }
-            >
-              <For each={COUNT_IN_CHOICES}>
-                {(beats) => (
-                  <option value={beats}>
-                    {beats === 0 ? 'No count-in' : `${beats} beats`}
-                  </option>
-                )}
-              </For>
-            </select>
-          </label>
-          <button
-            type="button"
-            class={styles.hearScoreToggle}
-            aria-pressed={room.hearScore()}
-            classList={{ [styles.hearScoreActive]: room.hearScore() }}
-            onClick={() => room.setHearScore((hearing) => !hearing)}
-          >
-            <span aria-hidden="true">
-              <Volume2 />
-            </span>
-            <strong>{room.hearScore() ? 'Tab sounds' : 'Tab silent'}</strong>
-          </button>
         </div>
       </div>
 
       <div class={styles.roomFooter}>
-        <button type="button" onClick={leaveRoom}>
-          Songs
-        </button>
+        <div class={styles.roomFooterActions}>
+          <button type="button" onClick={leaveRoom}>
+            Songs
+          </button>
+          <Show when={room.status() === 'complete'}>
+            <button
+              type="button"
+              class={styles.replayTake}
+              onClick={togglePlayback}
+            >
+              <span aria-hidden="true">
+                <RotateCcw />
+              </span>
+              {loop.span() === null ? 'Replay' : 'Rehearse loop'}
+            </button>
+          </Show>
+        </div>
         <p>
           <span aria-hidden="true" />
           <strong role="status" aria-live="polite" aria-atomic="true">
@@ -315,7 +476,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               : room.status() === 'playing'
                 ? 'Click is running'
                 : room.status() === 'complete'
-                  ? 'Score complete'
+                  ? 'Take complete'
                   : room.status() === 'starting'
                     ? 'Opening the room clock'
                     : 'Ready when you are'}
@@ -323,7 +484,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           <small>
             {room.status() === 'quiet'
               ? 'Press Play or Space to start the count-in'
-              : `${formatTime(room.positionSeconds())} of ${formatTime(room.durationSeconds())}`}
+              : `${formatTime(room.displayPositionSeconds())} of ${formatTime(room.durationSeconds())}`}
           </small>
         </p>
       </div>

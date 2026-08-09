@@ -2,7 +2,7 @@
 // ============================================================
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal, For, lazy, Show, Suspense } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -26,6 +26,8 @@ interface GuitarNightStageProps {
   /** Both handlers together enable the instrument picker over the rows. */
   onInstrument?: (instrument: StringedInstrument) => void
   onStringCount?: (count: number) => void
+  /** Keep the displayed take stable while its score and voice are scheduled. */
+  instrumentSetupDisabled?: Accessor<boolean>
   active: Accessor<boolean>
   listening?: Accessor<boolean>
   heardNote?: Accessor<string | null>
@@ -58,6 +60,26 @@ export interface TabWindowEntry {
   offsetPercent: number
   isActive: boolean
   isPast: boolean
+}
+
+/**
+ * Rest the visual window just before the score's first authored event. The
+ * room has not started and no time is claimed; this is a still preview that
+ * makes a long intro read as intentional instead of an empty renderer.
+ */
+export function guidePreviewBeat(
+  notes: readonly GuitarNote[],
+  playheadBeat: number | null,
+): number | null {
+  if (playheadBeat !== null) return playheadBeat
+  const first = notes.reduce<number | null>(
+    (earliest, note) =>
+      earliest === null || note.startBeat < earliest
+        ? note.startBeat
+        : earliest,
+    null,
+  )
+  return first === null ? null : first - 2.5
 }
 
 /**
@@ -96,6 +118,7 @@ export function tabWindowEntries(
  */
 function InstrumentPicker(props: {
   tuning: InstrumentTuning
+  disabled: boolean
   onInstrument(instrument: StringedInstrument): void
   onStringCount(count: number): void
 }) {
@@ -115,6 +138,7 @@ function InstrumentPicker(props: {
                   props.tuning.instrument === choice.id,
               }}
               aria-pressed={props.tuning.instrument === choice.id}
+              disabled={props.disabled}
               onClick={() => props.onInstrument(choice.id)}
             >
               {choice.label}
@@ -126,6 +150,7 @@ function InstrumentPicker(props: {
         <span class={styles.visuallyHidden}>Strings</span>
         <select
           value={props.tuning.stringCount}
+          disabled={props.disabled}
           onChange={(event) =>
             props.onStringCount(Number(event.currentTarget.value))
           }
@@ -155,6 +180,7 @@ function noteAtPlayhead(
 }
 
 export function GuitarNightStage(props: GuitarNightStageProps) {
+  let instrumentDetails: HTMLDetailsElement | undefined
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
@@ -163,16 +189,39 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     () => `${tuning().stringCount}-string ${tuning().instrument}`,
   )
   const notes = createMemo(() => [...props.source.notes()])
+  const actualPlayheadBeat = createMemo(() =>
+    props.source.timeline.playheadBeat(),
+  )
+  const visualPlayheadBeat = createMemo(() =>
+    guidePreviewBeat(notes(), actualPlayheadBeat()),
+  )
+  const firstGuideNote = createMemo(() =>
+    notes().reduce<GuitarNote | null>(
+      (earliest, note) =>
+        earliest === null || note.startBeat < earliest.startBeat
+          ? note
+          : earliest,
+      null,
+    ),
+  )
   const activeNote = createMemo(() =>
-    noteAtPlayhead(notes(), props.source.timeline.playheadBeat()),
+    noteAtPlayhead(notes(), actualPlayheadBeat()),
   )
   const hasGuide = createMemo(() => notes().length > 0)
   const visibleTabNotes = createMemo(() =>
-    tabWindowEntries(notes(), props.source.timeline.playheadBeat()),
+    tabWindowEntries(notes(), visualPlayheadBeat()),
   )
   const canRetune = createMemo(
     () => props.onInstrument !== undefined && props.onStringCount !== undefined,
   )
+  const instrumentSetupDisabled = createMemo(
+    () => props.instrumentSetupDisabled?.() ?? false,
+  )
+  createEffect(() => {
+    if (instrumentSetupDisabled() && instrumentDetails?.open) {
+      instrumentDetails.open = false
+    }
+  })
   const isListening = createMemo(() => props.listening?.() ?? false)
   const heardNote = createMemo(() => props.heardNote?.() ?? null)
   const heardCopy = createMemo(() => {
@@ -184,9 +233,24 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   })
   const canvasSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. ${notes().length} guided notes approach a ${instrumentLabel()} fretboard.`
+      ? `${props.source.title()}. ${notes().length} guided notes approach a ${instrumentLabel()} fretboard. ${firstGuideNote() === null ? '' : `The first note is ${firstGuideNote()!.noteName}, ${tuning().labels[firstGuideNote()!.stringIndex] ?? `string ${firstGuideNote()!.stringIndex + 1}`}, ${firstGuideNote()!.fret === 0 ? 'open' : `fret ${firstGuideNote()!.fret}`}.`}`
       : `${props.source.title()}. Interactive ${instrumentLabel()} fretboard; no song tab is attached.`,
   )
+  const visualSource: GuitarPerformanceStageSource = {
+    title: props.source.title,
+    notes: props.source.notes,
+    timeline: {
+      ...props.source.timeline,
+      playheadBeat: visualPlayheadBeat,
+    },
+  }
+  const readyGuideCopy = createMemo(() => {
+    const note = firstGuideNote()
+    if (note === null) return props.guideLabel?.() ?? 'Follow the next note'
+    const stringLabel = tuning().labels[note.stringIndex]
+    const position = note.fret === 0 ? 'open' : `fret ${note.fret}`
+    return `First note · ${note.noteName}${stringLabel === undefined ? '' : ` on ${stringLabel}`} · ${position}`
+  })
 
   return (
     <section
@@ -208,7 +272,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           <strong>
             {heardCopy() ??
               (hasGuide()
-                ? (props.guideLabel?.() ?? 'Follow the next note into the neck')
+                ? actualPlayheadBeat() === null
+                  ? readyGuideCopy()
+                  : (props.guideLabel?.() ??
+                    'Follow the next note into the neck')
                 : 'Your fretboard is ready')}
           </strong>
         </div>
@@ -216,11 +283,28 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           {/* The instrument names the rows in every view, so it belongs beside
               the view switch rather than inside one of them. */}
           <Show when={canRetune()}>
-            <InstrumentPicker
-              tuning={tuning()}
-              onInstrument={(next) => props.onInstrument?.(next)}
-              onStringCount={(count) => props.onStringCount?.(count)}
-            />
+            <details
+              ref={instrumentDetails}
+              class={styles.stageSetup}
+              classList={{
+                [styles.stageSetupDisabled]: instrumentSetupDisabled(),
+              }}
+            >
+              <summary
+                aria-disabled={instrumentSetupDisabled()}
+                onClick={(event) => {
+                  if (instrumentSetupDisabled()) event.preventDefault()
+                }}
+              >
+                {tuning().stringCount}-string {tuning().instrument}
+              </summary>
+              <InstrumentPicker
+                tuning={tuning()}
+                disabled={instrumentSetupDisabled()}
+                onInstrument={(next) => props.onInstrument?.(next)}
+                onStringCount={(count) => props.onStringCount?.(count)}
+              />
+            </details>
           </Show>
           <div class={styles.stageModes} aria-label="Stage view">
             <For each={['flow', 'tab', 'neck'] as GuitarNightStageMode[]}>
@@ -254,7 +338,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             }
           >
             <Guitar3DStage
-              source={props.source}
+              source={visualSource}
               tuning={tuning}
               visibleBeatWindow={() => 8}
               showNoteLabels={() => true}
@@ -262,14 +346,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               isActive={() => props.active() && mode() === 'flow'}
               display={() => VELVET_DISPLAY}
               showGizmo={() => false}
-              ariaLabel={() =>
-                `${props.source.title()} flowing guitar fretboard`
-              }
+              ariaLabel={canvasSummary}
               fallbackText={canvasSummary}
               borderRadius={() => '0'}
             />
           </Suspense>
-          <p class={styles.stageGestureHint} aria-hidden="true">
+          <p class={styles.stageGestureHint}>
             Drag to change the view · scroll to move closer
           </p>
         </Show>
