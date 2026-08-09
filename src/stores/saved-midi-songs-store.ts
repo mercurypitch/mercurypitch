@@ -8,12 +8,14 @@
 // the guitar and piano practice tabs.
 
 import { createSignal } from 'solid-js'
-import type { MidiSong, MidiSongTrack } from '@/lib/midi-song'
+import type { MidiSong, MidiSongTrack, MidiTempoChange } from '@/lib/midi-song'
 
 export interface SavedMidiSong {
   id: string
   name: string
   bpm: number
+  /** Authored tempo events, retained so rehearsal timing survives persistence. */
+  tempoChanges?: MidiTempoChange[]
   tracks: MidiSongTrack[]
   /** Marks an in-memory compatibility view whose authority is IndexedDB. */
   persistenceAuthority?: 'piano-project'
@@ -63,6 +65,7 @@ export function saveMidiSong(
     id: `gsong-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
     bpm: song.bpm,
+    tempoChanges: song.tempoChanges,
     tracks: song.tracks,
     scoreTrackId,
     backingTrackIds,

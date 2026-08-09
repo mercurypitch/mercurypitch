@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { createBeatClock, defaultScoreTrack, parseMidiSong, } from '@/lib/midi-song'
+import { createBeatClock, createSecondsToBeatClock, defaultScoreTrack, parseMidiSong, } from '@/lib/midi-song'
 
 // ── Binary MIDI builders ───────────────────────────────────────
 
@@ -260,6 +260,14 @@ describe('tempo map', () => {
     expect(clock(8)).toBeCloseTo(3, 6)
   })
 
+  it('converts elapsed seconds back through the whole map', () => {
+    const clock = createSecondsToBeatClock(twoTempoSong())
+    expect(clock(0)).toBeCloseTo(0, 6)
+    expect(clock(1)).toBeCloseTo(2, 6)
+    expect(clock(2)).toBeCloseTo(4, 6)
+    expect(clock(3)).toBeCloseTo(8, 6)
+  })
+
   it('runs at the song tempo when no map was recorded', () => {
     // What a Guitar Pro import or a song saved before the field looks like.
     const clock = createBeatClock({ bpm: 60, tracks: [] })
@@ -272,6 +280,18 @@ describe('tempo map', () => {
       tempoChanges: [{ beat: 4, usPerBeat: 250000 }],
       tracks: [],
     })
+    expect(clock(4)).toBeCloseTo(2, 6)
+    expect(clock(8)).toBeCloseTo(3, 6)
+  })
+
+  it('keeps the SMF default tempo before a parsed delayed first event', () => {
+    const song = parseMidiSong(
+      buildMidi([...setTempoAt(4 * 480, 250000), ...quarterNote(0, 60, 0)]),
+    )
+
+    expect(song?.bpm).toBe(120)
+    expect(song?.tempoChanges).toEqual([{ beat: 4, usPerBeat: 250000 }])
+    const clock = createBeatClock(song!)
     expect(clock(4)).toBeCloseTo(2, 6)
     expect(clock(8)).toBeCloseTo(3, 6)
   })

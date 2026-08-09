@@ -11,7 +11,7 @@
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, liftIntoTuningRange, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
-import type { MidiSongNote } from '@/lib/midi-song'
+import type { MidiSongNote, MidiTempoChange } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
 import type { GuitarNightStemKind } from './song-port'
@@ -28,6 +28,8 @@ export interface GuitarNightReferenceSource {
   id: string
   name: string
   bpm: number
+  /** Every authored tempo event, when the imported source retained a map. */
+  tempoChanges?: readonly MidiTempoChange[]
   tracks: readonly GuitarNightReferenceSourceTrack[]
   /** The track this source was last scored against. */
   scoreTrackId: string
@@ -60,6 +62,10 @@ export interface GuitarNightReference {
   trackId: string
   trackName: string
   tempoBpm: number
+  /** Authored only: tempo events in the score's beat time. */
+  tempoChanges?: readonly MidiTempoChange[]
+  /** Measured only: the backing session whose stem produced these notes. */
+  backingSessionId?: string
   /** The instrument these notes were placed on — the rows the stage draws. */
   tuning: InstrumentTuning
   notes: readonly GuitarNote[]
@@ -227,6 +233,7 @@ export function openGuitarNightReference(
       trackId: track.id,
       trackName: track.name,
       tempoBpm,
+      tempoChanges: source.tempoChanges,
       tuning,
       notes: placed.notes,
       outOfRangeNotes: placed.outOfRange,
@@ -303,6 +310,7 @@ export function measuredReferenceFromTranscription(
     trackId: input.stemKind,
     trackName: input.stemLabel,
     tempoBpm: MEASURED_REFERENCE_TEMPO,
+    backingSessionId: input.sessionId,
     tuning,
     coverage: input.transcription.coverage,
     liftedOctaves,
@@ -316,6 +324,22 @@ export function measuredReferenceFromTranscription(
       },
     ],
   }
+}
+
+/** Return measured evidence only when it belongs to the recording in the room. */
+export function measuredReferenceForBacking(
+  reference: GuitarNightReference | null,
+  sessionId: string | null,
+): GuitarNightReference | null {
+  if (
+    reference === null ||
+    reference.kind !== 'measured' ||
+    sessionId === null ||
+    reference.backingSessionId !== sessionId
+  ) {
+    return null
+  }
+  return reference
 }
 
 export interface GuitarNightTranscriptionPort {

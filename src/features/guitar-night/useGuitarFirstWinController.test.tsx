@@ -62,7 +62,7 @@ describe('useGuitarFirstWinController', () => {
         })
 
         void controller.startGroove().then(() => {
-          harness.getCallbacks()?.onBeat?.(0, 'exercise')
+          harness.getCallbacks()?.onBeat?.(0, 'exercise', 0)
           expect(controller.registerHit('keyboard')).toBe(true)
           expect(
             controller.progress().bestAbsoluteTimingMsByStep['open-low-e'],
