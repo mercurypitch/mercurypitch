@@ -61,4 +61,27 @@ describe('launch entry documents', () => {
     expect(document).toContain('Karaoke Night stages')
     expect(document).toContain('vocal range and pitch accuracy')
   })
+
+  it('builds Piano Night from a dedicated noindex pilot document', () => {
+    const document = repoHtml('piano-night.html')
+    const vite = repoFile('vite.config.ts')
+    const serviceWorker = repoFile('src/sw.ts')
+    const sitemap = repoFile('public/sitemap.xml')
+
+    expect(document.title).toBe('Piano Night — MercuryPitch')
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://mercurypitch.com/piano-night')
+    expect(
+      document.querySelector('meta[name="robots"]')?.getAttribute('content'),
+    ).toBe('noindex, nofollow')
+    expect(
+      document.querySelector('script[type="module"]')?.getAttribute('src'),
+    ).toBe('/src/features/piano-night/main.tsx')
+    expect(vite).toContain("PIANO_NIGHT_PATHS = new Set(['/piano-night'])")
+    expect(vite).toContain("pianoNight: resolve(__dirname, 'piano-night.html')")
+    expect(serviceWorker).toContain("'/piano-night'")
+    expect(serviceWorker).toContain("'/piano-night.html'")
+    expect(sitemap).not.toContain('mercurypitch.com/piano-night')
+  })
 })

@@ -11,6 +11,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import { PianoKeys } from '@/components/icons'
 import { DesktopHint } from '@/components/mobile/DesktopHint'
 import { PauseIcon, PlayIcon } from '@/components/mobile/icons'
 import { MicSparkleIcon } from '@/components/mobile/icons'
@@ -20,6 +21,8 @@ import { TransportBar } from '@/components/mobile/TransportBar'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
+import launchStyles from '@/features/piano-night/PianoNightLaunch.module.css'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { haptics } from '@/lib/haptics'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { showNotification } from '@/stores'
@@ -216,6 +219,20 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
         close={() => setOptionsOpen(false)}
         ariaLabel="Practice options"
       >
+        <OptionSection label="Piano Night">
+          <OptionRow label="Performance room">
+            <a
+              class={launchStyles.mobileLink}
+              href={PIANO_NIGHT_PATH}
+              aria-label="Open Piano Night performance room"
+              data-testid="open-piano-night"
+            >
+              <PianoKeys />
+              Open room
+            </a>
+          </OptionRow>
+        </OptionSection>
+
         <OptionSection label="Playback">
           <OptionRow label={`Tempo ${Math.round(fn.currentSongBpm())} BPM`}>
             <input

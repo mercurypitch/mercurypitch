@@ -274,6 +274,26 @@ export const Music: Component = () => (
   </svg>
 )
 
+// Piano keys — shared by the app practice context and Piano Night surfaces.
+export const PianoKeys: Component<{ size?: number; class?: string }> = (
+  props,
+) => (
+  <svg
+    class={props.class}
+    viewBox="0 0 24 24"
+    width={props.size ?? 24}
+    height={props.size ?? 24}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.6"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M8 5v9M12 5v9M16 5v9" stroke-width="1.3" />
+  </svg>
+)
+
 // Sliders Horizontal Icon
 export const SlidersHorizontal: Component = () => (
   <svg

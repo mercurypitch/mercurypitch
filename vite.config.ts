@@ -41,15 +41,16 @@ try {
 }
 
 // Production has real HTML entries for Voice Mirror, the vocal-range test,
-// Karaoke Night and Guitar Night. Dev and preview servers need equivalent
-// clean-path rewrites; the tone-deaf legacy entry is a redirect because this
-// product measures pitch matching and cannot diagnose amusia
+// Karaoke Night, Guitar Night and Piano Night. Dev and preview servers need
+// equivalent clean-path rewrites. The tone-deaf legacy entry is a redirect
+// because this product measures pitch matching and cannot diagnose amusia
 // (public/_redirects handles prod).
 const MIRROR_PATHS = new Set(['/mirror'])
 const VOCAL_RANGE_PATHS = new Set(['/vocal-range-test'])
 const TONE_DEAF_PATH = '/tone-deaf-test'
 const KARAOKE_PATHS = new Set(['/karaoke-night', '/karaoke'])
 const GUITAR_NIGHT_PATHS = new Set(['/guitar-night'])
+const PIANO_NIGHT_PATHS = new Set(['/piano-night'])
 // Jam has no standalone mini-app: /jam boots the studio on the Jam tab. It
 // exists so the feature has a real URL a crawler can fetch — see jam.html.
 const JAM_PATHS = new Set(['/jam', '/jam-rooms'])
@@ -95,6 +96,7 @@ function standaloneEntryRewritePlugin() {
         else if (VOCAL_RANGE_PATHS.has(path)) req.url = '/vocal-range-test.html'
         else if (KARAOKE_PATHS.has(path)) req.url = '/karaoke.html'
         else if (GUITAR_NIGHT_PATHS.has(path)) req.url = '/guitar-night.html'
+        else if (PIANO_NIGHT_PATHS.has(path)) req.url = '/piano-night.html'
         else if (JAM_PATHS.has(path)) req.url = '/jam.html'
         else if (GLASS_PATHS.has(path)) req.url = '/glass.html'
       }
@@ -319,6 +321,7 @@ export default defineConfig(({ command, mode }) => {
           karaoke: resolve(__dirname, 'karaoke.html'),
           jam: resolve(__dirname, 'jam.html'),
           guitarNight: resolve(__dirname, 'guitar-night.html'),
+          pianoNight: resolve(__dirname, 'piano-night.html'),
           glass: resolve(__dirname, 'glass.html'),
         },
         output: {
@@ -343,6 +346,12 @@ export default defineConfig(({ command, mode }) => {
             // chunk and make standalone song pickers download the app UI.
             if (id.includes('/src/lib/audio-upload-contract.'))
               return 'audio-upload-contract'
+            // These dependency-free UI leaves are shared by the app and
+            // standalone rooms. If Rollup co-locates either one with
+            // LibraryModal, a standalone first paint inherits the complete
+            // app library graph (stores, IndexedDB and media code).
+            if (id.includes('/src/components/icons.')) return 'shared-icons'
+            if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
               // A dependency reached ONLY through `await import(...)` still

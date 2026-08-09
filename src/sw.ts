@@ -90,6 +90,9 @@ const STANDALONE_DOCUMENT_PATHS = new Set([
   // here for the same reason the others do — it was simply missed.
   '/guitar-night',
   '/guitar-night.html',
+  // Piano Night is a standalone performance room with its own document.
+  '/piano-night',
+  '/piano-night.html',
   // Jam is the one entry that boots the SHARED studio rather than a mini-app,
   // so the shell would at least be the right product. It still belongs here:
   // the shell is cached under '/', which carries no '#/jam', so offline the
