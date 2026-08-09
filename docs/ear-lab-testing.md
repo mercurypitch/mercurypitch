@@ -171,4 +171,5 @@ calibration since longer gaps make a task genuinely easier.
 
 | Date | Device / audio path | Latency (3 runs) | Sing-mode verdict | Notes |
 | --- | --- | --- | --- | --- |
+| 2026-08-09 | desktop (Arch) | 274 ms ± 1.2 | _pending_ | Drills themselves reported fine. Latency reads ~124 ms high against `main`'s `MicLatencyWizard` (~150 ms, same audio path) — known bug, diagnosed in [`plans/ear-lab-handoff-2026-08-09.md`](plans/ear-lab-handoff-2026-08-09.md) §3. Not a device fault; do not re-run chasing it. |
 | _fill in_ | | | | |
