@@ -1,6 +1,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, lazy, on, Show, Suspense } from 'solid-js'
 import { FallingNotesCanvas } from '@/components/FallingNotesCanvas'
+import { PianoKeys } from '@/components/icons'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { PianoMobileStage } from '@/components/mobile/PianoMobileStage'
 import { PianoControlBar } from '@/components/piano/PianoControlBar'
@@ -10,11 +11,11 @@ import { MidiSongStatusBar } from '@/components/shared/status-bar/MidiSongStatus
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
+import { fallingNotesToMelodyItems, melodyItemsToFallingNotes, midiSongNotesToFallingNotes, } from '@/features/piano/legacy/piano-song-adapter'
+import launchStyles from '@/features/piano-night/PianoNightLaunch.module.css'
+import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
-import type { MidiSongNote } from '@/lib/midi-song'
-import { midiToNoteName } from '@/lib/note-utils'
-import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { isNarrow } from '@/lib/use-viewport'
@@ -24,35 +25,12 @@ import { selectedSongName } from '@/stores/falling-notes-store'
 import { melodyStore } from '@/stores/melody-store'
 import { pianoSheetView, setPianoSheetView } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
-import type { MelodyItem } from '@/types'
 
 const SheetMusicView = lazy(async () =>
   import('@/components/SheetMusicView').then((m) => ({
     default: m.SheetMusicView,
   })),
 )
-
-function melodyToFallingNotes(items: MelodyItem[]): FallingNote[] {
-  return items.map((item, i) => ({
-    id: item.id ?? i,
-    midi: item.note.midi,
-    name: item.note.name,
-    startBeat: item.startBeat,
-    duration: item.duration,
-    targetFreq: item.note.freq,
-  }))
-}
-
-function midiNotesToFallingNotes(notes: MidiSongNote[]): FallingNote[] {
-  return notes.map((n, i) => ({
-    id: i,
-    midi: n.midi,
-    name: midiToNoteName(n.midi),
-    startBeat: n.startBeat,
-    duration: n.duration,
-    targetFreq: midiToFreq(n.midi),
-  }))
-}
 
 type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
@@ -106,15 +84,15 @@ export function PianoPage(props: PianoPageProps) {
     ),
   )
   useLibraryMelodySelection(melodyStore.getCurrentMelody, (melody) => {
-    const notes = melodyToFallingNotes(melody.items)
+    const notes = melodyItemsToFallingNotes(melody.items)
     fallingNotes.loadSong(notes, melody.name, melody.bpm, [], [], null)
   })
   const picker = useMidiSongPicker<FallingNote>({
     currentSong: () => fallingNotes.currentSong(),
-    fromMelodyItems: melodyToFallingNotes,
-    fromScoreNotes: midiNotesToFallingNotes,
+    fromMelodyItems: melodyItemsToFallingNotes,
+    fromScoreNotes: midiSongNotesToFallingNotes,
     fromBackingNotes: (notes, trackId) =>
-      midiNotesToFallingNotes(notes).map((n) => ({ ...n, trackId })),
+      midiSongNotesToFallingNotes(notes).map((note) => ({ ...note, trackId })),
     onSongLoaded: (items, name, bpm, backing, muted, song) =>
       fallingNotes.loadSong(items, name, bpm, backing, muted, song),
     onScoreTrackChange: (items, name, bpm, backing, muted, song) =>
@@ -161,24 +139,8 @@ export function PianoPage(props: PianoPageProps) {
     />
   )
 
-  const sheetMelody = createMemo<MelodyItem[]>(() =>
-    fallingNotes
-      .songNotes()
-      .filter((item) => item.isBacking !== true)
-      .map((item) => {
-        const { name, octave } = midiToNote(item.midi)
-        return {
-          id: item.id,
-          note: {
-            midi: item.midi,
-            name,
-            octave,
-            freq: item.targetFreq,
-          },
-          startBeat: item.startBeat,
-          duration: item.duration,
-        }
-      }),
+  const sheetMelody = createMemo(() =>
+    fallingNotesToMelodyItems(fallingNotes.songNotes()),
   )
 
   const renderMicHint = (top: string) => (
@@ -275,6 +237,20 @@ export function PianoPage(props: PianoPageProps) {
           loopEnabled={props.loopEnabled}
           onMoveLoopA={props.onMoveLoopA}
           onMoveLoopB={props.onMoveLoopB}
+          extraActions={
+            <a
+              class={`${barStyles.chipBtn} ${launchStyles.desktopLink}`}
+              href={PIANO_NIGHT_PATH}
+              title="Open Piano Night — the new Performance Horizon room"
+              data-tour="piano-night-launch"
+              data-testid="open-piano-night"
+            >
+              <span class={launchStyles.nightGlyph} aria-hidden="true">
+                <PianoKeys />
+              </span>
+              <span class={barStyles.chipLabel}>Piano Night</span>
+            </a>
+          }
         />
         <PracticeViewToolbar
           context="Piano guide"

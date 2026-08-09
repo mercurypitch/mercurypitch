@@ -1142,6 +1142,15 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     viewport: 'desktop',
   },
   {
+    title: 'Open Piano Night',
+    description:
+      'Open the dedicated Piano Night performance room from here. The current Piano guide stays available while the new room is introduced.',
+    targetSelector: '[data-tour="piano-night-launch"]',
+    placement: 'bottom',
+    requiredTab: TAB_PIANO,
+    viewport: 'desktop',
+  },
+  {
     title: 'Play the falling notes',
     description:
       'Notes fall toward the keyboard — sing or play them in time. Your pitch (via mic) is matched against each note for scoring, and you can tap the on-screen keys too.',
@@ -1218,7 +1227,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Practice options',
     description:
-      'Tempo, speed, play mode, zoom and MIDI input live in this sheet — tap to open it any time.',
+      'Open Piano Night from this sheet, alongside tempo, speed, play mode, zoom and MIDI input.',
     targetSelector: '[data-tour="piano-options"]',
     placement: 'top',
     requiredTab: TAB_PIANO,

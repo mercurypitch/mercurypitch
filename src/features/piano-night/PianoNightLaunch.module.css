@@ -1,0 +1,69 @@
+/* Piano Night launch affordances bridge the legacy tab and standalone room. */
+
+.desktopLink {
+  position: relative;
+  min-height: 30px;
+  border-color: color-mix(in srgb, #b58a50 58%, transparent);
+  color: color-mix(in srgb, #d6b778 88%, var(--text-primary));
+  background: color-mix(in srgb, #b58a50 10%, transparent);
+  box-shadow: inset 0 1px color-mix(in srgb, white 5%, transparent);
+}
+
+.desktopLink::after {
+  width: 5px;
+  height: 5px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: #69c4dc;
+  box-shadow: 0 0 8px color-mix(in srgb, #69c4dc 55%, transparent);
+  content: '';
+}
+
+.desktopLink:hover {
+  border-color: #d6b778;
+  color: var(--text-primary);
+  background: color-mix(in srgb, #b58a50 18%, transparent);
+}
+
+.nightGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nightGlyph svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mobileLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, #b58a50 58%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, #d6b778 88%, var(--text-primary));
+  background: color-mix(in srgb, #b58a50 10%, transparent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mobileLink:hover {
+  border-color: #d6b778;
+  color: var(--text-primary);
+  background: color-mix(in srgb, #b58a50 18%, transparent);
+}
+
+.mobileLink svg {
+  width: 17px;
+  height: 17px;
+}
+
+.desktopLink:focus-visible,
+.mobileLink:focus-visible {
+  outline: 2px solid #d6b778;
+  outline-offset: 2px;
+}

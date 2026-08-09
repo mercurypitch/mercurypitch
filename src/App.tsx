@@ -11,7 +11,7 @@ import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
-import { Drum, Music, MusicBoard, MusicNote, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
+import { Drum, Music, MusicBoard, MusicNote, PianoKeys, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
 import KeyboardShortcutOverlay from '@/components/KeyboardShortcutOverlay'
 import { LibraryModal } from '@/components/LibraryModal'
 import { MicHandoffPrompt } from '@/components/MicHandoffPrompt'
@@ -372,22 +372,6 @@ function filterMelodyForPractice(
 // Instrument glyphs for the header practice-context pill (Piano / Guitar).
 // Guitar path mirrors the nav-tab icon for continuity; the character avatar is
 // used instead on the Singing tab.
-const PianoGlyph = () => (
-  <svg
-    class="header-melody-glyph"
-    viewBox="0 0 24 24"
-    width="18"
-    height="18"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.6"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="3" y="5" width="18" height="14" rx="2" />
-    <path d="M8 5v9M12 5v9M16 5v9" stroke-width="1.3" />
-  </svg>
-)
 const GuitarGlyph = () => (
   <svg
     class="header-melody-glyph"
@@ -2850,7 +2834,11 @@ const AppShell: Component<AppProps> = (props) => {
                     <Show
                       when={ctx.tab === TAB_SINGING}
                       fallback={
-                        ctx.tab === TAB_PIANO ? <PianoGlyph /> : <GuitarGlyph />
+                        ctx.tab === TAB_PIANO ? (
+                          <PianoKeys class="header-melody-glyph" size={18} />
+                        ) : (
+                          <GuitarGlyph />
+                        )
                       }
                     >
                       <img

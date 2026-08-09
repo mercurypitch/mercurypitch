@@ -28,6 +28,7 @@
 // or change the row's shape and re-measure, then move this number.
 
 import { describe, expect, it } from 'vitest'
+import { TAB_PIANO } from '@/features/tabs/constants'
 import { PAGE_TOURS, WALKTHROUGH_STEPS } from '@/stores/app-store'
 
 /** Marks that fit one line on a 320px phone beside the count readout. */
@@ -66,5 +67,18 @@ describe('tour progress row', () => {
           `most ${MARK_BUDGET} on a 320px phone`,
       ).toBeLessThanOrEqual(MARK_BUDGET)
     }
+  })
+
+  it('keeps the standalone Piano Night launcher discoverable', () => {
+    expect(PAGE_TOURS[TAB_PIANO]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Open Piano Night',
+          targetSelector: '[data-tour="piano-night-launch"]',
+          requiredTab: TAB_PIANO,
+          viewport: 'desktop',
+        }),
+      ]),
+    )
   })
 })
