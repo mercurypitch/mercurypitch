@@ -197,14 +197,18 @@ Per plan §8. Retention layer on top of a working measurement engine.
 3. **Page tour** — `PAGE_TOURS[TAB_EAR_LAB]`, 8 steps, plus an entry in
    `PAGE_TOUR_CATALOG`. Hooks are `data-tour="ear.*"` on the dashboard.
 
-**Still to do:**
+4. **The Ascent Week 4** — a new optional `earDrills?: string[]` on `PathWeek`,
+   kept separate from `exercises` because that array is typed `ExerciseType[]`
+   and invariant §4.7 keeps Ear Lab drills out of that union. Week 4 points at
+   Hairline, Home and Leap; the week card renders them as their own chips and
+   `startEarDrill()` (in `ui-store`, mirroring `startExercise`) opens the drill
+   itself rather than dropping you on the dashboard. Guarded by
+   `src/tests/path-ear-drills.test.ts`.
 
-4. **The Ascent Week 4 rebuilt on this engine.** Week 4 ("Tuning & Ear") is
-   ear training done with the old vocal exercise system. It cannot simply
-   reference Ear Lab drills, because `PathWeek.exercises` is typed
-   `ExerciseType[]` and invariant §4.7 keeps Ear Lab drills out of that union.
-   The clean shape is a separate optional `earDrills?: string[]` on `PathWeek`,
-   populated for week 4 and rendered by the week card as links into the Ear
-   Lab — the two catalogues stay separate and the path still points at both.
+Phase 4 is therefore complete, pending the hardware pass
+(`docs/ear-lab-testing.md` §2e-§2g). Phases 5 (real-song items from UVR stems)
+and 6 (producer pack) stay out.
 
-Phases 5 (real-song items from UVR stems) and 6 (producer pack) stay out.
+**Where Phase 5 would start:** `SPRINT_DRILL_IDS` in `src/lib/ear/sprint.ts` is
+the list of drills that have a view — it is what both the sprint and the path
+test treat as "playable", so a new drill joins the habit loop by landing there.

@@ -13,7 +13,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { DEFAULT_TAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
+import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
@@ -422,6 +422,24 @@ export function startExercise(
     pattern: opts?.pattern,
   })
   setActiveTab(TAB_EXERCISES)
+}
+
+/**
+ * An Ear Lab drill someone asked for from elsewhere in the app (The
+ * Ascent's ear week, for one). The Ear Lab page consumes and clears
+ * it on arrival.
+ *
+ * Deliberately a drill *id* rather than an `ExerciseType`: the Ear
+ * Lab owns its own catalogue and its drills are kept out of the vocal
+ * exercise union, so the two progression systems cannot tangle.
+ */
+export const [pendingEarDrill, setPendingEarDrill] = createSignal<
+  string | null
+>(null)
+
+export function startEarDrill(drillId: string): void {
+  setPendingEarDrill(drillId)
+  setActiveTab(TAB_EAR_LAB)
 }
 
 // ── Session Celebration ──────────────────────────────────────

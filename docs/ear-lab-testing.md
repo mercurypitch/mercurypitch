@@ -118,6 +118,53 @@ Three button drills, 12 rounds each, all sharing one engine.
 6. Phone: the heatmap scrolls horizontally inside its own box; the page
    itself must not scroll sideways.
 
+## 2e. The Daily Sprint — NEW in Phase 4
+
+The habit loop. Everything here is local and same-day, so the quickest
+way through it is to just play the three drills it names.
+
+1. On the dashboard, find **Today's sprint** above the drill cards. It
+   should list **three** drills, each with a reason chip — on a fresh
+   profile all three read **Never measured**.
+2. Check the reasons are honest: after you have readings for everything,
+   two slots should say **Your weakest** and exactly one **Keeping it
+   fresh**. The weakest two must match the lowest faculty numbers in the
+   readout above.
+3. Press **Start** on one segment — it should open that drill. Finish the
+   run, come back, and that row should be ticked and dimmed.
+4. Now open a sprint drill **from its own card lower down** instead of
+   from the sprint. Finishing it must still tick the sprint row: the
+   sprint names what to practise, it does not own the only door in.
+5. Finish all three. The subtitle should switch to "Done for today" and a
+   **day count badge** should appear top-right.
+6. Reload the page — the ticks and the badge must survive.
+7. Check the streak is not double-counted: your practice-minutes total
+   should rise by roughly the time you actually spent, not twice that.
+   (Each drill credits its own run; closing the sprint credits nothing.)
+8. Rotation check (optional, needs patience or a clock change): the
+   third slot should differ from one day to the next even when your two
+   weakest drills do not change.
+
+## 2f. The Ear Lab tour — NEW in Phase 4
+
+1. Open the Guide modal and find **Ear Lab** in the page-tour list.
+2. Run it. Eight steps: the column, the index, the faculties, today's
+   sprint, Calibration, the drills, timing calibration, and the
+   no-percent rationale.
+3. Every step must actually spotlight something — no blank highlights,
+   no steps that scroll to nothing.
+4. Repeat once on a phone viewport.
+
+## 2g. The Ascent, Week 4 — NEW in Phase 4
+
+1. Open **Path** → **Week 4 (Tuning & Ear)**.
+2. Among the drill chips there should now be three **Ear Lab ·** chips:
+   Hairline, Home and Leap, visually distinct from the singing chips.
+3. Tap one: it should jump straight to the Ear Lab **and open that
+   drill**, not just the dashboard.
+4. Press Back to the dashboard, then switch tabs away and return — you
+   should land on the dashboard, not be bounced into the drill again.
+
 ## 3. Phase 1 regression (quick pass)
 
 1. **Hairline practice** — one run: lands near your previous readings,

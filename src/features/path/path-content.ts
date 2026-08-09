@@ -56,6 +56,15 @@ export interface PathWeek {
   goals: string[]
   /** In-app drills this week's daily sessions favour. */
   exercises: ExerciseType[]
+  /**
+   * Ear Lab drill ids this week also points at (`src/lib/ear/drills.ts`).
+   *
+   * Kept separate from `exercises` on purpose: the Ear Lab owns its own
+   * catalogue and its drills are deliberately not members of the vocal
+   * `ExerciseType` union, so the two progression systems stay untangled.
+   * The week card renders these as their own chips.
+   */
+  earDrills?: string[]
   /** Authored pitch-loop patterns launched in the Zen practice stage. */
   zenExercises?: string[]
   /** Warm-up pattern the guided warmup should use this week. */
@@ -177,13 +186,14 @@ export const ASCENT_WEEKS: PathWeek[] = [
     title: 'Tuning & Ear',
     subtitle: 'Ear Training',
     focus:
-      'Train the ear that steers the voice. Hear an interval, then sing it back true — scale degrees, fifths and echoes, tuned against a drone.',
+      'Train the ear that steers the voice. Hear an interval, then sing it back true — scale degrees, fifths and echoes, tuned against a drone. The Ear Lab measures the same hearing in cents, so this is the week you can watch the number move.',
     coachNote:
       'Your voice can only sing as true as your ear can hear. Listen all the way to the note, then let your voice match what you heard.',
     goals: [
       'Sing back intervals on the first try',
       'Hold your line against a drone',
       'Echo short phrases accurately',
+      'Take an Ear Lab Calibration at both ends of the week',
     ],
     exercises: [
       EXERCISE_INTERVAL_TRAINER,
@@ -191,6 +201,10 @@ export const ASCENT_WEEKS: PathWeek[] = [
       EXERCISE_DRONE_INTONATION,
       EXERCISE_MIRROR_MELODY,
     ],
+    // The measured half of the week: Hairline is intonation in cents,
+    // Home is the functional hearing the singing drills lean on, and
+    // Leap is the interval vocabulary behind both.
+    earDrills: ['hairline', 'home', 'leap'],
     zenExercises: ['major-scale-ascending'],
     warmupPattern: 'ascending-scale',
     resources: [

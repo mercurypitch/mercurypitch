@@ -6,7 +6,7 @@
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { createEffect, createSignal, Show } from 'solid-js'
 import { ContourDrill } from '@/features/ear-lab/ContourDrill'
 import type { EarLabView } from '@/features/ear-lab/EarLabDashboard'
 import { EarLabDashboard } from '@/features/ear-lab/EarLabDashboard'
@@ -16,10 +16,32 @@ import { HairlineDrill } from '@/features/ear-lab/HairlineDrill'
 import { HomeDrill } from '@/features/ear-lab/HomeDrill'
 import { LeapDrill } from '@/features/ear-lab/LeapDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
+import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
+
+/** Drill ids do not all match their view names ('the-grid' → 'grid'). */
+const VIEW_FOR_DRILL: Record<string, EarLabView> = {
+  hairline: 'hairline',
+  home: 'home',
+  'the-grid': 'grid',
+  leap: 'leap',
+  stack: 'stack',
+  contour: 'contour',
+}
 
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
   const back = () => setView('dashboard')
+
+  // A drill asked for from elsewhere (The Ascent's ear week). Cleared
+  // as it is consumed, so coming back to the tab later lands on the
+  // dashboard rather than replaying the same request.
+  createEffect(() => {
+    const requested = pendingEarDrill()
+    if (requested === null) return
+    const target = VIEW_FOR_DRILL[requested]
+    if (target) setView(target)
+    setPendingEarDrill(null)
+  })
 
   return (
     <div id="ear-lab-page">
