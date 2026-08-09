@@ -31,7 +31,7 @@ import { INDEX_MAX, scoreReading } from '@/lib/ear/mercury-index'
 import type { StaircaseState, ThresholdEstimate } from '@/lib/ear/staircase'
 import { createStaircase, recordTrial, thresholdOf } from '@/lib/ear/staircase'
 import { REVEAL_TIMING } from '@/lib/ear/timing'
-import { completeCalibrationRun, creditEarSession, recordThresholdReading, } from '@/stores/ear-lab-store'
+import { completeCalibrationRun, creditEarSession, markSprintSegmentDone, recordThresholdReading, } from '@/stores/ear-lab-store'
 
 export type ThresholdRunMode = 'practice' | 'calibration'
 
@@ -219,6 +219,10 @@ export function useThresholdRun(
     }
 
     creditEarSession(elapsed)
+    // A drill played anywhere counts toward today's sprint — the
+    // sprint names what to practise, it does not own the only door
+    // into it. Idempotent, so a second run cannot double-book.
+    markSprintSegmentDone(drill.id)
     setPhase('done')
   }
 

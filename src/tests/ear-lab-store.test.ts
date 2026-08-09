@@ -5,7 +5,8 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
-import { calibrationHistory, completeCalibrationRun, earConfusions, earPlayerRating, latestCalibration, latestThresholdReading, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, thresholdHistory, } from '@/stores/ear-lab-store'
+import { SPRINT_DRILL_IDS } from '@/lib/ear/sprint'
+import { calibrationHistory, completeCalibrationRun, completeSprint, earConfusions, earPlayerRating, isSprintComplete, latestCalibration, latestThresholdReading, markSprintSegmentDone, practiceIndexEstimate, recordIdentificationAnswer, recordThresholdReading, resetEarLabStore, sprintCandidates, sprintHistory, sprintProgress, sprintStreak, thresholdHistory, todaysSprint, } from '@/stores/ear-lab-store'
 
 function answerHome(correct: boolean, expected = 'deg-4', answered = 'deg-5') {
   return recordIdentificationAnswer({
@@ -137,5 +138,99 @@ describe('calibration runs', () => {
     ])
     expect(run.parts.function).toBeGreaterThanOrEqual(0)
     expect(run.parts.resolution).toBeGreaterThan(0)
+  })
+})
+
+/** Same day arithmetic the streak uses: a date label, shifted. */
+function shiftDay(key: string, days: number): string {
+  return new Date(Date.parse(`${key}T00:00:00Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10)
+}
+
+describe('sprint candidates', () => {
+  it('offers every runnable drill, all unmeasured at the start', () => {
+    const candidates = sprintCandidates()
+    expect(candidates.map((c) => c.drillId)).toEqual([...SPRINT_DRILL_IDS])
+    expect(candidates.every((c) => c.score === null)).toBe(true)
+  })
+
+  it('scores a threshold drill once it has a reading', () => {
+    recordThresholdReading({
+      drillId: 'hairline',
+      value: 9,
+      spread: 2,
+      tracks: 1,
+      source: 'practice',
+    })
+    const hairline = sprintCandidates().find((c) => c.drillId === 'hairline')
+    expect(hairline?.kind).toBe('threshold')
+    expect(hairline?.score).toBeGreaterThan(0)
+  })
+
+  it('treats a provisional rating as unmeasured, not as a low score', () => {
+    // One answer is a guess the Elo has not settled; ranking it as
+    // "never measured" is what sends the sprint back to it.
+    answerHome(true)
+    expect(earPlayerRating('home').attempts).toBeLessThan(PROVISIONAL_ATTEMPTS)
+    expect(
+      sprintCandidates().find((c) => c.drillId === 'home')?.score,
+    ).toBeNull()
+  })
+})
+
+describe("today's sprint", () => {
+  it('plans distinct drills and never more than the segment cap', () => {
+    const plan = todaysSprint()
+    expect(plan.length).toBeGreaterThan(0)
+    expect(plan.length).toBeLessThanOrEqual(3)
+    const ids = plan.map((s) => s.drillId)
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const id of ids) expect(SPRINT_DRILL_IDS).toContain(id)
+  })
+
+  it('starts empty and books segments once each', () => {
+    expect(sprintProgress().done).toEqual([])
+    markSprintSegmentDone('hairline')
+    markSprintSegmentDone('hairline')
+    expect(sprintProgress().done).toEqual(['hairline'])
+    markSprintSegmentDone('home')
+    expect(sprintProgress().done).toEqual(['hairline', 'home'])
+  })
+})
+
+describe('finishing a sprint', () => {
+  it('marks the day complete and remembers it', () => {
+    expect(isSprintComplete()).toBe(false)
+    const closed = completeSprint()
+    expect(closed.completedAt).not.toBeNull()
+    expect(isSprintComplete()).toBe(true)
+    expect(sprintHistory()).toEqual([sprintProgress().day])
+  })
+
+  it('cannot be closed twice in a day', () => {
+    const first = completeSprint()
+    const again = completeSprint()
+    expect(again.completedAt).toBe(first.completedAt)
+    expect(sprintHistory()).toHaveLength(1)
+  })
+
+  it('counts one day once it is done', () => {
+    expect(sprintStreak()).toBe(0)
+    completeSprint()
+    expect(sprintStreak()).toBe(1)
+  })
+
+  it('does not read as broken before today is played', () => {
+    completeSprint()
+    const today = sprintProgress().day
+    // Tomorrow morning, yesterday's run still anchors the streak.
+    expect(sprintStreak(shiftDay(today, 1))).toBe(1)
+  })
+
+  it('breaks once a whole day passes with no sprint', () => {
+    completeSprint()
+    const today = sprintProgress().day
+    expect(sprintStreak(shiftDay(today, 2))).toBe(0)
   })
 })

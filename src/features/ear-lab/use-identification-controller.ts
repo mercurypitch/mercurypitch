@@ -18,7 +18,7 @@ import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
 import { REVEAL_TIMING } from '@/lib/ear/timing'
-import { creditEarSession, earItemStates, earPlayerRating, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
 
 export type IdentificationPhase =
   | 'idle'
@@ -175,6 +175,7 @@ export function useIdentificationController(
       outcomes: [...outcomes],
     })
     creditEarSession(performance.now() - startedAt)
+    markSprintSegmentDone(drill.id)
     setPhase('done')
   }
 

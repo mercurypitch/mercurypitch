@@ -16,6 +16,7 @@ import { calibrationHistory, earPlayerRating, latestCalibration, latestThreshold
 import styles from './EarLabDashboard.module.css'
 import { LatencyWizard } from './LatencyWizard'
 import { MercuryColumn } from './MercuryColumn'
+import { SprintCard } from './SprintCard'
 
 export type EarLabView =
   | 'dashboard'
@@ -180,7 +181,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         <p>Your ear, measured — in units that cannot flatter you.</p>
       </header>
 
-      <section class={styles.hero}>
+      <section class={styles.hero} data-tour="ear.column">
         <MercuryColumn
           calibrated={calibrated()?.index ?? null}
           estimate={estimate().value}
@@ -192,7 +193,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         />
 
         <div class={styles.heroSide}>
-          <div class={styles.indexBlock}>
+          <div class={styles.indexBlock} data-tour="ear.index">
             <span class={styles.indexLabel}>Mercury Index</span>
             <Show
               when={calibrated()}
@@ -221,7 +222,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             </Show>
           </div>
 
-          <ul class={styles.facultyList}>
+          <ul class={styles.facultyList} data-tour="ear.faculties">
             <For each={FACULTY_ORDER}>
               {(faculty) => (
                 <li class={styles.facultyRow}>
@@ -241,7 +242,7 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
             </For>
           </ul>
 
-          <div class={styles.heroActions}>
+          <div class={styles.heroActions} data-tour="ear.actions">
             <button
               type="button"
               class={styles.calibrateBtn}
@@ -265,7 +266,9 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         </div>
       </section>
 
-      <section class={styles.drills}>
+      <SprintCard onNavigate={props.onNavigate} />
+
+      <section class={styles.drills} data-tour="ear.drills">
         <For each={DRILL_CARDS}>
           {(card) => (
             <article class={styles.drillCard}>
@@ -293,11 +296,11 @@ export function EarLabDashboard(props: EarLabDashboardProps): JSX.Element {
         </For>
       </section>
 
-      <section class={styles.drills}>
+      <section class={styles.drills} data-tour="ear.latency">
         <LatencyWizard />
       </section>
 
-      <section class={styles.rulers}>
+      <section class={styles.rulers} data-tour="ear.rulers">
         <h4>Why there is no percent here</h4>
         <p>
           Adaptive drills hold everyone near 75% correct forever, so a score can

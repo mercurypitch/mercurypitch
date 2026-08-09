@@ -23,7 +23,7 @@ import type { HomeDegree } from '@/lib/ear/item-bank'
 import { cadenceChordMidis, HOME_CHOICES, HOME_DRILL_ID, HOME_SING_DRILL_ID, homeItemId, homeItemState, pickHomeItem, probeMidi, roveRootMidi, } from '@/lib/ear/item-bank'
 import { HOME_TIMING, REVEAL_TIMING } from '@/lib/ear/timing'
 import { midiToFreq } from '@/lib/scale-data'
-import { creditEarSession, earItemStates, earPlayerRating, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
+import { creditEarSession, earItemStates, earPlayerRating, markSprintSegmentDone, recordIdentificationAnswer, } from '@/stores/ear-lab-store'
 
 export type HomePhase =
   | 'idle'
@@ -346,6 +346,9 @@ export function useHomeController(
       outcomes: [...outcomes],
     })
     creditEarSession(performance.now() - startedAt)
+    // Always the tap id: the sprint schedules the drill, not the way
+    // you chose to answer it, and singing your answers is still Home.
+    markSprintSegmentDone(HOME_DRILL_ID)
     setPhase('done')
   }
 
