@@ -23,8 +23,8 @@ import styles from './GuitarNightApp.module.css'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightPreparationPort } from './preparation-port'
-import type { GuitarNightReferencePort } from './reference-port'
-import { REFERENCE_FILE_ACCEPT } from './reference-port'
+import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
+import { measuredReferenceForBacking, REFERENCE_FILE_ACCEPT, } from './reference-port'
 import { readGuitarNightSession } from './session-link'
 import type { GuitarNightSongPort } from './song-port'
 import { useGuitarFirstWinController } from './useGuitarFirstWinController'
@@ -51,6 +51,7 @@ type EntryView = 'choices' | 'first-win' | 'song' | 'room' | 'score-room'
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
+  loadTranscriptionPort?: () => Promise<GuitarNightTranscriptionPort>
   loadSongPort?: () => Promise<GuitarNightSongPort>
   loadPreparationPort?: () => Promise<GuitarNightPreparationPort>
   loadBandPreparationPort?: () => Promise<GuitarNightBandPreparationPort>
@@ -139,6 +140,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     { validator: isBackdropId },
   )
   const backdrop = createMemo(() => resolveBackdrop(backdropId()))
+  const [venueMenuOpen, setVenueMenuOpen] = createSignal(false)
   const initialSessionId = readGuitarNightSession()
   const [view, setView] = createSignal<EntryView>(
     initialSessionId === null ? 'choices' : 'song',
@@ -153,6 +155,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   let detailHeading: HTMLHeadingElement | undefined
   let songInput: HTMLInputElement | undefined
   let referenceInput: HTMLInputElement | undefined
+  let venueMenuContainer: HTMLDivElement | undefined
+  let venueMenuButton: HTMLButtonElement | undefined
+
+  const closeVenueMenuAndRestoreFocus = (): void => {
+    setVenueMenuOpen(false)
+    queueMicrotask(() => venueMenuButton?.focus())
+  }
 
   const createConfiguredBackingTransport = (): GuitarBackingTransport => {
     const configuredFactory = props.createBackingTransport
@@ -191,6 +200,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         ? loadDefaultGuitarNightReferencePort()
         : configuredLoader()
     },
+    loadTranscriptionPort: props.loadTranscriptionPort,
   })
   const attachedReference = referenceController.reference
   const unavailableReference = createMemo(() => {
@@ -208,7 +218,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const attached = attachedReference()
     return attached !== null && attached.kind === 'authored' ? attached : null
   })
-  const measuredReference = createMemo(() => {
+  const attachedMeasuredReference = createMemo(() => {
     const attached = attachedReference()
     return attached !== null && attached.kind === 'measured' ? attached : null
   })
@@ -262,6 +272,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     const state = songController.selectionState()
     return state.kind === 'ready' ? state.lease : null
   })
+  const measuredReference = createMemo(() =>
+    measuredReferenceForBacking(
+      attachedMeasuredReference(),
+      activeBacking()?.sessionId ?? null,
+    ),
+  )
   const unavailableSelection = createMemo(() => {
     const state = songController.selectionState()
     return state.kind === 'unavailable' ? state : null
@@ -492,6 +508,22 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     setView('song')
   })
 
+  // Measured evidence belongs to one exact recording. Once another backing is
+  // staged, remove the stale guide rather than showing it as "this stem" or
+  // carrying it into the new room.
+  createEffect(() => {
+    const attached = attachedMeasuredReference()
+    const backing = activeBacking()
+    if (
+      attached === null ||
+      backing === null ||
+      attached.backingSessionId === backing.sessionId
+    ) {
+      return
+    }
+    referenceController.detach()
+  })
+
   // Removing the tab from under the tab room leaves nothing to rehearse.
   createEffect(() => {
     if (view() !== 'score-room' || authoredReference() !== null) return
@@ -500,6 +532,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
   onMount(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && venueMenuOpen()) {
+        closeVenueMenuAndRestoreFocus()
+        return
+      }
       if (view() !== 'first-win' || event.code !== 'Space' || event.repeat) {
         return
       }
@@ -515,8 +551,23 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       event.preventDefault()
       addPreviewHit('keyboard')
     }
+    const closeVenueMenuOnOutside = (event: PointerEvent): void => {
+      const target = event.target
+      if (
+        !venueMenuOpen() ||
+        !(target instanceof Node) ||
+        venueMenuContainer?.contains(target)
+      ) {
+        return
+      }
+      setVenueMenuOpen(false)
+    }
     window.addEventListener('keydown', onKeyDown)
-    onCleanup(() => window.removeEventListener('keydown', onKeyDown))
+    window.addEventListener('pointerdown', closeVenueMenuOnOutside)
+    onCleanup(() => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('pointerdown', closeVenueMenuOnOutside)
+    })
   })
 
   const roomStatus = () => {
@@ -586,29 +637,48 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         <span class={styles.topbarTitle}>Guitar Night</span>
         <span class={styles.roomName}>{backdrop().name}</span>
 
-        <div class={styles.topbarActions}>
-          <label class={styles.roomSelect}>
-            <span class={styles.visuallyHidden}>Room</span>
-            <select
-              value={backdrop().id}
-              title={backdrop().detail}
-              onChange={(event) => setBackdropId(event.currentTarget.value)}
-            >
-              <For each={GUITAR_NIGHT_BACKDROPS}>
-                {(room) => (
-                  <option value={room.id} title={room.detail}>
-                    {room.name}
-                  </option>
-                )}
-              </For>
-            </select>
-          </label>
-          <a class={styles.studioLink} href="/#/guitar">
-            Full studio
-          </a>
-          <Suspense>
-            <GuitarNightAccount />
-          </Suspense>
+        <div ref={venueMenuContainer} class={styles.topbarActions}>
+          <button
+            ref={venueMenuButton}
+            type="button"
+            class={styles.venueMenuButton}
+            aria-expanded={venueMenuOpen()}
+            aria-controls="guitar-night-venue-menu"
+            onClick={() => setVenueMenuOpen((open) => !open)}
+          >
+            Room
+          </button>
+          <div
+            id="guitar-night-venue-menu"
+            class={styles.venueMenu}
+            classList={{ [styles.venueMenuOpen]: venueMenuOpen() }}
+          >
+            <label class={styles.roomSelect}>
+              <span class={styles.visuallyHidden}>Room</span>
+              <select
+                value={backdrop().id}
+                title={backdrop().detail}
+                onChange={(event) => {
+                  setBackdropId(event.currentTarget.value)
+                  closeVenueMenuAndRestoreFocus()
+                }}
+              >
+                <For each={GUITAR_NIGHT_BACKDROPS}>
+                  {(room) => (
+                    <option value={room.id} title={room.detail}>
+                      {room.name}
+                    </option>
+                  )}
+                </For>
+              </select>
+            </label>
+            <a class={styles.studioLink} href="/#/guitar">
+              Full studio
+            </a>
+            <Suspense>
+              <GuitarNightAccount />
+            </Suspense>
+          </div>
         </div>
       </div>
 
@@ -1530,6 +1600,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         type="file"
         accept={REFERENCE_FILE_ACCEPT}
         onChange={chooseReferenceFile}
+        tabindex="-1"
       />
 
       <input

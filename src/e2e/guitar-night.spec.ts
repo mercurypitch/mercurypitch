@@ -382,6 +382,15 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
       viewportMetrics.innerHeight - 1,
     )
 
+    const roomMenu = page.getByRole('button', { name: 'Room', exact: true })
+    await roomMenu.click()
+    await expect(roomMenu).toHaveAttribute('aria-expanded', 'true')
+    await page
+      .getByRole('combobox', { name: 'Room', exact: true })
+      .press('Escape')
+    await expect(roomMenu).toHaveAttribute('aria-expanded', 'false')
+    await expect(roomMenu).toBeFocused()
+
     const buttons = page
       .getByTestId('guitar-night-entry-actions')
       .getByRole('button')

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightPreparationPort, GuitarNightPreparationResult, } from '@/features/guitar-night/preparation-port'
+import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from '@/features/guitar-night/reference-port'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, } from '@/features/guitar-night/song-port'
 
 function deferred<T>(): {
@@ -387,6 +388,109 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       await screen.findByText(
         'The available band parts are staged without a separate guitar track.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('detaches measured notes when a different backing session is staged', async () => {
+    const songs = [
+      {
+        sessionId: 'session-a',
+        title: 'Session A.wav',
+        createdAt: Date.UTC(2026, 7, 6),
+      },
+      {
+        sessionId: 'session-b',
+        title: 'Session B.wav',
+        createdAt: Date.UTC(2026, 7, 5),
+      },
+    ]
+    const songPort: GuitarNightSongPort = {
+      initialize: vi.fn(async () => undefined),
+      completedSongs: () => songs,
+      openSession: vi.fn(async (sessionId) => ({
+        ok: true as const,
+        lease: {
+          sessionId,
+          title: `${sessionId}.wav`,
+          stems: [
+            {
+              kind: 'bass' as const,
+              url: `blob:${sessionId}:bass`,
+              sizeBytes: 100,
+            },
+          ],
+          defaultMix: {
+            kind: 'parts' as const,
+            audible: ['bass' as const],
+            muted: [],
+          },
+          release: vi.fn(),
+        },
+      })),
+    }
+    const referencePort: GuitarNightReferencePort = {
+      listReferences: () => [],
+      openReference: () => ({ ok: false, code: 'not-found' }),
+      suggestInstrument: () => null,
+      rememberTrack: vi.fn(),
+      importReference: vi.fn(async () => {
+        throw new Error('Not used in this test')
+      }),
+    }
+    const transcribeStem = vi.fn(async () => ({
+      coverage: 0.9,
+      analysedSeconds: 1,
+      notes: [
+        {
+          midi: 40,
+          noteName: 'E2',
+          startSeconds: 0,
+          durationSeconds: 0.5,
+          confidence: 0.9,
+        },
+      ],
+    }))
+    const transcriptionPort: GuitarNightTranscriptionPort = { transcribeStem }
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(songPort)}
+        loadReferencePort={() => Promise.resolve(referencePort)}
+        loadTranscriptionPort={() => Promise.resolve(transcriptionPort)}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Session A\.wav/ }),
+    )
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Transcribe the bass line',
+      }),
+    )
+
+    expect(
+      await screen.findByText('Bass line transcribed from this recording'),
+    ).toBeInTheDocument()
+    expect(transcribeStem).toHaveBeenCalledWith(
+      'blob:session-a:bass',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Session B\.wav/ }))
+
+    await waitFor(() =>
+      expect(window.location.search).toBe('?session=session-b'),
+    )
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Bass line transcribed from this recording'),
+      ).not.toBeInTheDocument(),
+    )
+    expect(
+      screen.getByText(
+        'No tabs on this device yet. Open a Guitar Pro or MIDI file to follow real notes — without one the stage stays in honest free play.',
       ),
     ).toBeInTheDocument()
   })

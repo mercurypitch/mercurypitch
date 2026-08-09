@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { TAB_PLAYHEAD_RATIO, tabWindowEntries } from './GuitarNightStage'
+import { guidePreviewBeat, TAB_PLAYHEAD_RATIO, tabWindowEntries, } from './GuitarNightStage'
 
 function note(startBeat: number, fret = 0): GuitarNote {
   return {
@@ -68,5 +68,23 @@ describe('tabWindowEntries', () => {
 
     expect(visible).toHaveLength(1)
     expect(visible[0].isActive).toBe(true)
+  })
+})
+
+describe('guidePreviewBeat', () => {
+  it('rests just before a late first note instead of showing an empty runway', () => {
+    expect(guidePreviewBeat([note(40), note(44)], null)).toBe(37.5)
+  })
+
+  it('keeps beat-zero notes in front of the visual now-line on a phone', () => {
+    expect(guidePreviewBeat([note(0), note(4)], null)).toBe(-2.5)
+  })
+
+  it('never replaces the live musical playhead', () => {
+    expect(guidePreviewBeat([note(40)], 12.5)).toBe(12.5)
+  })
+
+  it('has no preview without authored notes', () => {
+    expect(guidePreviewBeat([], null)).toBeNull()
   })
 })

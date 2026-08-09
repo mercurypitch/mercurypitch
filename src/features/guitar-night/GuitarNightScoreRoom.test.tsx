@@ -1,10 +1,11 @@
 // The tab room must open silent, on the tab's own terms, with no recording.
 // ============================================================
 
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
+import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 
 const VELVET_RIFF: GuitarNightReference = {
@@ -74,5 +75,77 @@ describe('GuitarNightScoreRoom', () => {
     ))
 
     expect(screen.queryByLabelText('Instrument shown')).toBeNull()
+  })
+
+  it('returns focus to Session when Escape closes its controls', async () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const summary = screen.getByLabelText('Session controls')
+    fireEvent.click(summary)
+    const countIn = screen.getByLabelText('Count-in beats')
+    countIn.focus()
+
+    fireEvent.keyDown(countIn, { key: 'Escape' })
+    await Promise.resolve()
+
+    expect(summary.closest('details')?.open).toBe(false)
+    expect(document.activeElement).toBe(summary)
+  })
+})
+
+describe('scoreLoopPendingRestart', () => {
+  it('compares the whole-beat loop the scheduler actually receives', () => {
+    expect(
+      scoreLoopPendingRestart(
+        { start: 1.2, end: 4.8 },
+        { start: 1, end: 5 },
+        true,
+      ),
+    ).toBe(false)
+  })
+
+  it('reports clearing an already scheduled loop as a next-take change', () => {
+    expect(scoreLoopPendingRestart(null, { start: 1, end: 5 }, true)).toBe(true)
+    expect(scoreLoopPendingRestart(null, { start: 1, end: 5 }, false)).toBe(
+      false,
+    )
+  })
+})
+
+describe('scheduled score setup', () => {
+  it('keeps instrument controls visible but inert during a pinned take', () => {
+    render(() => (
+      <GuitarNightStage
+        source={{
+          title: () => VELVET_RIFF.title,
+          notes: () => VELVET_RIFF.notes,
+          timeline: {
+            positionSeconds: () => 0,
+            durationSeconds: () => 1,
+            playheadBeat: () => null,
+            tempoBpm: () => 90,
+          },
+        }}
+        tuning={() => DEFAULT_GUITAR_TUNING}
+        onInstrument={vi.fn()}
+        onStringCount={vi.fn()}
+        instrumentSetupDisabled={() => true}
+        active={() => true}
+        initialMode="tab"
+      />
+    ))
+
+    const setup = screen.getByText('6-string guitar')
+    expect(setup.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(setup)
+    expect(setup.closest('details')?.open).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'Guitar', hidden: true }),
+    ).toBeDisabled()
+    expect(
+      screen.getByLabelText('Strings', { selector: 'select' }),
+    ).toBeDisabled()
   })
 })

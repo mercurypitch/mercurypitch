@@ -191,6 +191,16 @@
   margin-left: auto;
 }
 
+.venueMenu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.venueMenuButton {
+  display: none;
+}
+
 .roomSelect {
   display: inline-flex;
   align-items: center;
@@ -199,7 +209,7 @@
 .roomSelect select,
 .studioLink,
 .accountChip {
-  min-height: 2rem;
+  min-height: var(--touch-target);
   padding: 0.3rem 0.7rem;
   border: 1px solid rgba(216, 200, 175, 0.18);
   border-radius: 999px;
@@ -1022,7 +1032,8 @@
   gap: 0.4rem;
 }
 
-.roomTools button {
+.roomTools > button,
+.scoreSession > summary {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
@@ -1035,13 +1046,15 @@
   cursor: pointer;
 }
 
-.roomTools button:hover {
+.roomTools > button:hover,
+.scoreSession > summary:hover {
   color: var(--ivory);
   border-color: rgba(224, 164, 93, 0.28);
   background: rgba(224, 164, 93, 0.07);
 }
 
-.roomTools button > span {
+.roomTools > button > span,
+.scoreSession > summary > span {
   display: grid;
   place-items: center;
 }
@@ -1051,12 +1064,13 @@
   height: 0.9rem;
 }
 
-.roomTools strong {
+.roomTools > button strong,
+.scoreSession > summary strong {
   font-size: 0.66rem;
   font-weight: 700;
 }
 
-.roomTools small {
+.roomTools > button small {
   display: grid;
   place-items: center;
   min-width: 1.15rem;
@@ -1068,15 +1082,187 @@
   font-variant-numeric: tabular-nums;
 }
 
-.roomTools .listeningActive {
+.roomTools > .listeningActive,
+.scoreSession .sessionListening.listeningActive {
   color: #dffaf5;
   border-color: rgba(106, 202, 189, 0.42);
   background: rgba(106, 202, 189, 0.12);
   box-shadow: 0 0 1.25rem rgba(106, 202, 189, 0.08);
 }
 
-.roomTools .listeningActive > span {
+.roomTools > .listeningActive > span,
+.scoreSession .sessionListening.listeningActive > span:first-child {
   filter: drop-shadow(0 0 0.35rem rgba(106, 202, 189, 0.65));
+}
+
+/* One compact session layer keeps setup available without shrinking the stage.
+   It opens over the room, so the musical surface remains the dominant plane. */
+.scoreSession {
+  position: relative;
+  z-index: 12;
+}
+
+.scoreSession > summary {
+  min-width: 6.4rem;
+  list-style: none;
+}
+
+.scoreSession > summary::-webkit-details-marker {
+  display: none;
+}
+
+.scoreSession[open] > summary {
+  color: #17100a;
+  border-color: rgba(243, 195, 155, 0.7);
+  background: var(--amber-bright);
+}
+
+.scoreSessionPanel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: grid;
+  width: min(23rem, calc(100vw - 2rem));
+  max-height: min(72vh, 34rem);
+  gap: 0.8rem;
+  padding: 0.9rem;
+  overflow: auto;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 0.72rem;
+  color: var(--ivory);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 42%),
+    rgba(12, 9, 7, 0.97);
+  box-shadow:
+    0 1.2rem 4rem rgba(0, 0, 0, 0.5),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.scoreSessionPanel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(244, 234, 219, 0.09);
+}
+
+.scoreSessionPanel > header > div,
+.scoreSessionLoop > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.scoreSessionPanel > header strong,
+.scoreSessionLoop > div strong {
+  color: #f4eadb;
+  font-size: 0.76rem;
+}
+
+.scoreSessionPanel > header small,
+.scoreSessionLoop > div small {
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.sessionListening {
+  display: grid;
+  grid-template-columns: var(--touch-target) 1fr;
+  align-items: center;
+  min-height: 3.35rem;
+  padding: 0.35rem 0.65rem 0.35rem 0.3rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.55rem;
+  color: rgba(244, 234, 219, 0.75);
+  background: rgba(244, 234, 219, 0.035);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sessionListening > span:first-child {
+  display: grid;
+  place-items: center;
+}
+
+.sessionListening > span:last-child,
+.hearScoreToggle > span:last-child {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.sessionListening strong,
+.scoreSessionSettings strong {
+  font-size: 0.7rem;
+}
+
+.sessionListening small,
+.scoreSessionSettings small {
+  color: rgba(244, 234, 219, 0.52);
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+
+.scoreSessionSettings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.scoreSessionSettings .countInSelect,
+.scoreSessionSettings .hearScoreToggle {
+  display: grid;
+  grid-template-columns: 1rem 1fr;
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 0.08rem 0.48rem;
+  min-height: 3.4rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.11);
+  border-radius: 0.55rem;
+  background: rgba(244, 234, 219, 0.03);
+}
+
+.scoreSessionSettings .countInSelect > span,
+.scoreSessionSettings .hearScoreToggle > span:first-child {
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.scoreSessionSettings .countInSelect select {
+  min-width: 0;
+  min-height: 1.4rem;
+  padding: 0;
+  border: 0;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  font-size: 0.58rem;
+}
+
+.scoreSessionSettings button:disabled,
+.scoreSessionSettings select:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.scoreSessionLoop {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.09);
+}
+
+.scoreSessionLoop .loopControls {
+  margin-top: 0;
+}
+
+.scoreSessionNotice {
+  color: #f3c39b;
+  font-size: 0.59rem;
+  line-height: 1.4;
 }
 
 .performanceStage {
@@ -1517,6 +1703,59 @@
   min-width: 0;
 }
 
+/* Instrument setup is available in place without competing with the stage.
+   Opening it overlays the room; the fretboard never gives up space. */
+.stageSetup {
+  position: relative;
+  flex: none;
+  pointer-events: auto;
+}
+
+.stageSetup summary {
+  display: grid;
+  place-items: center;
+  min-height: var(--touch-target);
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(244, 234, 219, 0.09);
+  border-radius: 0.5rem;
+  color: rgba(244, 234, 219, 0.7);
+  background: rgba(7, 6, 5, 0.72);
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  font-size: 0.66rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.stageSetup summary::-webkit-details-marker {
+  display: none;
+}
+
+.stageSetup[open] summary {
+  color: #17100a;
+  background: var(--amber-bright);
+}
+
+.stageSetupDisabled summary,
+.stageSetupDisabled[open] summary {
+  color: rgba(244, 234, 219, 0.42);
+  background: rgba(7, 6, 5, 0.58);
+  cursor: not-allowed;
+}
+
+.stageSetupDisabled .stageInstrument {
+  opacity: 0.48;
+}
+
+.stageSetup .stageInstrument {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: max-content;
+}
+
 /* One engraved plate, matching the view switch beside it. */
 .stageInstrument {
   display: flex;
@@ -1539,7 +1778,8 @@
 }
 
 .stageInstrumentKind button {
-  min-height: 1.6rem;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: 0.18rem 0.62rem;
   border: 0;
   border-radius: 999px;
@@ -1558,7 +1798,7 @@
 }
 
 .stageInstrument select {
-  min-height: 1.6rem;
+  min-height: var(--touch-target);
   padding: 0.15rem 0.35rem;
   border: 1px solid rgba(216, 200, 175, 0.16);
   border-radius: 0.4rem;
@@ -1832,8 +2072,10 @@
 /* The tab room shows position without offering a scrub: seeking a live
    count-in would desynchronise the beats it has already scheduled. */
 .timeRail .songProgress {
-  height: 3px;
+  height: 5px;
   margin-top: 0;
+  background: rgba(244, 234, 219, 0.16);
+  box-shadow: 0 0 0 1px rgba(244, 234, 219, 0.025);
 }
 
 .timeRail input,
@@ -1918,7 +2160,8 @@
 
 .transportControls button,
 .channelStrip button,
-.roomFooter > button {
+.roomFooter > button,
+.roomFooterActions button {
   min-width: var(--touch-target);
   min-height: var(--touch-target);
   border: 0;
@@ -2057,8 +2300,8 @@
 }
 
 .loopControls button {
-  min-width: 1.7rem;
-  min-height: 1.7rem;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: 0.1rem 0.45rem;
   border: 1px solid rgba(216, 200, 175, 0.18);
   border-radius: 0.4rem;
@@ -2105,7 +2348,7 @@
 }
 
 .countInSelect select {
-  min-height: 2.1rem;
+  min-height: var(--touch-target);
   padding: 0.25rem 0.5rem;
   border: 1px solid rgba(216, 200, 175, 0.18);
   border-radius: 0.45rem;
@@ -2206,6 +2449,47 @@
   background: rgba(244, 234, 219, 0.05);
 }
 
+.roomFooterActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.roomFooterActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 0.42rem;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.roomFooterActions button:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.05);
+}
+
+.roomFooterActions .replayTake {
+  color: #1a1109;
+  background: var(--amber-bright);
+  font-weight: 750;
+}
+
+.roomFooterActions .replayTake:hover {
+  color: #1a1109;
+  background: #f7c98a;
+}
+
+.replayTake svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
 .roomFooter p {
   display: grid;
   grid-template-columns: auto auto;
@@ -2293,7 +2577,9 @@
 
 .app button:focus-visible,
 .app a:focus-visible,
-.app input:focus-visible {
+.app input:focus-visible,
+.app select:focus-visible,
+.app summary:focus-visible {
   outline: 3px solid var(--amber-bright);
   outline-offset: 3px;
 }
@@ -2404,11 +2690,65 @@
   }
 
   .roomName {
-    max-width: 10rem;
-    font-size: 0.64rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
+  }
+
+  .topbarActions {
+    position: relative;
+    order: initial;
+    width: auto;
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .venueMenuButton {
+    display: grid;
+    place-items: center;
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(216, 200, 175, 0.18);
+    border-radius: 999px;
+    color: rgba(244, 234, 219, 0.78);
+    background: rgba(7, 6, 5, 0.58);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .venueMenu {
+    position: absolute;
+    z-index: 12;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    display: none;
+    grid-template-columns: 1fr;
+    min-width: 11rem;
+    padding: 0.45rem;
+    border: 1px solid rgba(244, 234, 219, 0.12);
+    border-radius: 0.7rem;
+    background: rgba(10, 8, 7, 0.96);
+    box-shadow: 0 0.9rem 2.8rem rgba(0, 0, 0, 0.38);
+  }
+
+  .venueMenuOpen {
+    display: grid;
+  }
+
+  .venueMenu .roomSelect,
+  .venueMenu .roomSelect select,
+  .venueMenu .studioLink,
+  .venueMenu .accountChip,
+  .venueMenu .accountChipWrap {
+    width: 100%;
+  }
+
+  .venueMenu .roomSelect select,
+  .venueMenu .studioLink,
+  .venueMenu .accountChip {
+    justify-content: flex-start;
+    min-height: var(--touch-target);
+    border-radius: 0.48rem;
   }
 
   .main {
@@ -2713,23 +3053,6 @@
     display: none;
   }
 
-  /* Venue chrome takes the second topbar row: three chips will not share one
-     line with the brand on a phone, and squeezing them makes each untappable. */
-  .topbarActions {
-    order: 3;
-    width: 100%;
-    justify-content: flex-start;
-    margin-top: 0.35rem;
-    margin-left: 0;
-  }
-
-  .roomSelect select,
-  .studioLink,
-  .accountChip {
-    min-height: var(--touch-target);
-    padding-inline: 0.85rem;
-  }
-
   /* A rehearsal room is used with a guitar in hand: every control in it stays
      a real target, whatever it looks like on a desktop. */
   .stageInstrument {
@@ -2770,7 +3093,7 @@
     overflow: hidden;
   }
 
-  .entryPanel h1 {
+  .entryPanel:not(.entryPanelRoom) h1 {
     font-size: 3rem;
   }
 }
