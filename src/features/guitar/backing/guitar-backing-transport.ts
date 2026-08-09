@@ -63,6 +63,7 @@ export interface GuitarBackingTransport {
   getCurrentTime(): number
   getDuration(): number
   getPlaybackRate(): number
+  getMasterVolume(): number
   getTrackStates(): readonly GuitarBackingTrackState[]
   getError(): string | null
   subscribe(listener: () => void): () => void
@@ -823,6 +824,7 @@ export function createGuitarBackingTransport(
     getCurrentTime: currentTime,
     getDuration: () => duration,
     getPlaybackRate: () => playbackRate,
+    getMasterVolume: () => masterPosition,
     getTrackStates: () => trackStates.map((state) => ({ ...state })),
     getError: () => error,
     subscribe(listener) {

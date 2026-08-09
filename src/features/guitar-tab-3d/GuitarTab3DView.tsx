@@ -9,8 +9,9 @@
 // TabRenderer interface.
 
 import type { Accessor } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, createUniqueId, onCleanup, onMount, Show, } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
+import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
@@ -23,6 +24,8 @@ import { Tab3DInputMonitor } from './ui/Tab3DInputMonitor'
 
 const ORBIT_SENS = 0.008 // radians per pixel dragged
 const ZOOM_SENS = 0.0012 // per wheel delta unit
+const KEYBOARD_CAMERA_STEP = 24
+const KEYBOARD_ZOOM_STEP = 180
 
 export interface GuitarTab3DViewProps {
   fallingNotes: Accessor<readonly GuitarNote[]>
@@ -52,6 +55,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   let canvas: HTMLCanvasElement | undefined
   let renderer: TabRenderer | null = null
   let rafId = 0
+  const cameraInstructionsId = createUniqueId()
   const [camera, setCamera] = createSignal<CameraState>(DEFAULT_CAMERA)
   const [interactive, setInteractive] = createSignal(false)
 
@@ -158,6 +162,59 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     const targetYaw = alreadyThere ? nearest + Math.PI : nearest
     // Travel the shortest arc from the current yaw instead of jumping wraps.
     animateCamera({ ...c, yaw: c.yaw + yawDelta(targetYaw, c.yaw), pitch: 0 })
+  }
+
+  const handleCameraKeyDown = (event: KeyboardEvent) => {
+    if (
+      event.target !== event.currentTarget ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
+      return
+    }
+
+    let handled = true
+    switch (event.key) {
+      case 'ArrowLeft':
+        if (event.shiftKey) pan(-KEYBOARD_CAMERA_STEP, 0)
+        else orbit(-KEYBOARD_CAMERA_STEP, 0)
+        break
+      case 'ArrowRight':
+        if (event.shiftKey) pan(KEYBOARD_CAMERA_STEP, 0)
+        else orbit(KEYBOARD_CAMERA_STEP, 0)
+        break
+      case 'ArrowUp':
+        if (event.shiftKey) pan(0, -KEYBOARD_CAMERA_STEP)
+        else orbit(0, -KEYBOARD_CAMERA_STEP)
+        break
+      case 'ArrowDown':
+        if (event.shiftKey) pan(0, KEYBOARD_CAMERA_STEP)
+        else orbit(0, KEYBOARD_CAMERA_STEP)
+        break
+      case '+':
+      case '=':
+      case 'Add':
+        zoom(-KEYBOARD_ZOOM_STEP)
+        break
+      case '-':
+      case '_':
+      case 'Subtract':
+        zoom(KEYBOARD_ZOOM_STEP)
+        break
+      case 'Home':
+      case '0':
+      case 'r':
+      case 'R':
+        resetCamera()
+        break
+      default:
+        handled = false
+    }
+
+    if (!handled) return
+    event.preventDefault()
+    event.stopPropagation()
   }
 
   const buildScene = (): TabScene => {
@@ -329,7 +386,13 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
   return (
     <div
-      class="gp-tab3d-container"
+      class={`gp-tab3d-container ${styles.keyboardViewport}`}
+      role="group"
+      aria-label="3D fretboard view controls"
+      aria-roledescription="interactive 3D fretboard"
+      aria-describedby={cameraInstructionsId}
+      tabIndex={0}
+      onKeyDown={handleCameraKeyDown}
       style={{
         position: 'relative',
         width: '100%',
@@ -341,6 +404,10 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         overflow: 'hidden',
       }}
     >
+      <span id={cameraInstructionsId} class={styles.visuallyHidden}>
+        Use the arrow keys to orbit the view, Shift plus the arrow keys to pan,
+        plus or minus to zoom, and R, zero, or Home to reset it.
+      </span>
       <canvas
         ref={canvas}
         role="img"

@@ -207,6 +207,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         : configuredLoader()
     },
   })
+  // The song detail always renders the tab shelf beside the prepared-song
+  // selection. Route restoration can enter this view without calling the
+  // explicit "Load a song" action, so the shelf must follow the view itself.
+  createEffect(() => {
+    if (view() === 'song') referenceController.initialize()
+  })
   const attachedReference = referenceController.reference
   const unavailableReference = createMemo(() => {
     const current = referenceController.state()

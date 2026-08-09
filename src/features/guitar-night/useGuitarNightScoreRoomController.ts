@@ -11,7 +11,7 @@
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarRoomBand, GuitarRoomBandNote, } from '@/features/guitar/backing/guitar-room-band'
-import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
+import { createGuitarRoomBand, GUITAR_ROOM_BAND_MAX_TEMPO_BPM, resolveBandLoop, resolveBandStartBeat, resolveGuitarRoomBandTempoBpm, } from '@/features/guitar/backing/guitar-room-band'
 import type { StringedInstrument } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
 import { quantizeSpanToBeats } from '@/lib/guitar/loop-span'
@@ -24,6 +24,7 @@ export type GuitarNightScoreRoomStatus =
   | 'starting'
   | 'count-in'
   | 'playing'
+  | 'paused'
   | 'complete'
   | 'error'
 
@@ -148,6 +149,7 @@ export function useGuitarNightScoreRoomController(
   const [status, setStatus] = createSignal<GuitarNightScoreRoomStatus>('quiet')
   const [countInRemaining, setCountInRemaining] = createSignal(0)
   const [positionSeconds, setPositionSeconds] = createSignal(0)
+  const [parkedBeat, setParkedBeat] = createSignal(0)
   const [configuredCountInBeats, setCountInBeatsSignal] = createSignal(4)
   const [tempoOverride, setTempoOverride] = createSignal<number | null>(null)
   const [error, setError] = createSignal<string | null>(null)
@@ -204,15 +206,17 @@ export function useGuitarNightScoreRoomController(
   const scoreTempo = createMemo(
     () => runningTake()?.scoreTempoBpm ?? configuredScoreTempo(),
   )
-  const takeIsActive = createMemo(
+  const takePinsSetup = createMemo(
     () =>
-      status() === 'starting' ||
-      status() === 'count-in' ||
-      status() === 'playing',
+      runningTake() !== null &&
+      (status() === 'starting' ||
+        status() === 'count-in' ||
+        status() === 'playing' ||
+        status() === 'paused'),
   )
   const tempoBpm = createMemo(
     () =>
-      (takeIsActive() ? runningTake()?.tempoBpm : undefined) ??
+      (takePinsSetup() ? runningTake()?.tempoBpm : undefined) ??
       configuredTempoBpm(),
   )
   const durationBeats = createMemo(
@@ -229,12 +233,12 @@ export function useGuitarNightScoreRoomController(
   })
   const countInBeats = createMemo(
     () =>
-      (takeIsActive() ? runningTake()?.countInBeats : undefined) ??
+      (takePinsSetup() ? runningTake()?.countInBeats : undefined) ??
       configuredCountInBeats(),
   )
   const hearScore = createMemo(
     () =>
-      (takeIsActive() ? runningTake()?.hearScore : undefined) ??
+      (takePinsSetup() ? runningTake()?.hearScore : undefined) ??
       configuredHearScore(),
   )
   const runningLoop = createMemo(() => runningTake()?.loop ?? null)
@@ -245,6 +249,7 @@ export function useGuitarNightScoreRoomController(
   })
   const playheadBeat = createMemo(() => {
     if (status() === 'quiet') return null
+    if (status() === 'paused' || status() === 'complete') return parkedBeat()
     const run = runningTake()
     return scorePlayheadBeat(
       positionSeconds(),
@@ -267,20 +272,24 @@ export function useGuitarNightScoreRoomController(
     frame = 0
   }
 
+  /** Sample the score position from the band's audio clock. */
+  const readAudioClock = (): void => {
+    const context = band.getAudioGraph()?.context
+    if (context === undefined || originSeconds === null) return
+    const elapsed = Math.max(0, context.currentTime - originSeconds)
+    const run = runningTake()
+    setPositionSeconds(
+      run !== null && run.loop === null
+        ? Math.min(elapsed, run.durationSeconds)
+        : elapsed,
+    )
+  }
+
   /** Read the band's audio clock every frame. The clock is the authority. */
   const followAudioClock = (): void => {
     stopFrames()
     const tick = (): void => {
-      const context = band.getAudioGraph()?.context
-      if (context !== undefined && originSeconds !== null) {
-        const elapsed = Math.max(0, context.currentTime - originSeconds)
-        const run = runningTake()
-        setPositionSeconds(
-          run !== null && run.loop === null
-            ? Math.min(elapsed, run.durationSeconds)
-            : elapsed,
-        )
-      }
+      readAudioClock()
       frame = requestFrame(tick)
     }
     frame = requestFrame(tick)
@@ -295,15 +304,13 @@ export function useGuitarNightScoreRoomController(
     setStatus('quiet')
     setCountInRemaining(0)
     setPositionSeconds(0)
+    setParkedBeat(0)
   }
 
-  const start = async (): Promise<boolean> => {
+  const buildRun = (): GuitarNightScoreRoomRunConfiguration | null => {
     const reference = options.reference()
-    if (reference === null || reference.notes.length === 0) return false
+    if (reference === null || reference.notes.length === 0) return null
 
-    // Read every mutable accessor before crossing the async audio boundary.
-    // Once scheduled, this object is the complete truth for the take; edits
-    // configure the next take without rewriting the one already sounding.
     const scoreTempoForRun = configuredScoreTempo()
     const tempoForRun = configuredTempoBpm()
     const tempoChangesForRun = scaleScoreTempoChanges(
@@ -322,7 +329,7 @@ export function useGuitarNightScoreRoomController(
     const durationBeatsForRun = scoreDurationBeats(reference)
     const exerciseBeatsForRun = Math.max(1, Math.ceil(durationBeatsForRun))
     const loopForRun = resolveBandLoop(scheduledLoop(), exerciseBeatsForRun)
-    const run: GuitarNightScoreRoomRunConfiguration = {
+    return {
       reference,
       scoreTempoBpm: scoreTempoForRun,
       tempoBpm: tempoForRun,
@@ -338,6 +345,19 @@ export function useGuitarNightScoreRoomController(
       melody: scoreToBandMelody(reference),
       melodyVariant: configuredMelodyVariant(),
     }
+  }
+
+  const launch = async (
+    run: GuitarNightScoreRoomRunConfiguration,
+    requestedStartBeat: number,
+    launchCountInBeats: number,
+  ): Promise<boolean> => {
+    const startBeat = resolveBandStartBeat(
+      requestedStartBeat,
+      run.durationBeats,
+      run.loop,
+    )
+    const countInForLaunch = Math.max(0, Math.floor(launchCountInBeats))
 
     startGeneration += 1
     const generation = startGeneration
@@ -345,17 +365,19 @@ export function useGuitarNightScoreRoomController(
     band.stop()
     originSeconds = null
     setError(null)
-    setPositionSeconds(0)
+    setPositionSeconds(run.beatToSeconds(startBeat))
+    setParkedBeat(startBeat)
     setRunningTake(run)
-    setCountInRemaining(run.countInBeats)
+    setCountInRemaining(countInForLaunch)
     setStatus('starting')
 
     try {
       await band.start({
         tempoBpm: run.tempoBpm,
         tempoChanges: run.tempoChanges,
-        countInBeats: run.countInBeats,
+        countInBeats: countInForLaunch,
         exerciseBeats: run.exerciseBeats,
+        startBeat,
         durationBeats: run.durationBeats,
         loop: run.loop,
         // A tab room rehearses a written part, so it ticks rather than
@@ -363,20 +385,21 @@ export function useGuitarNightScoreRoomController(
         feel: 'click',
         melody: run.hearScore ? run.melody : [],
         melodyVariant: run.melodyVariant,
-        onBeat: (beatIndex, phase, scheduledAtSeconds) => {
+        onExerciseStart: (exerciseStartBeat, scheduledAtSeconds) => {
+          if (generation !== startGeneration) return
+          originSeconds =
+            scheduledAtSeconds - run.beatToSeconds(exerciseStartBeat)
+          followAudioClock()
+          setStatus('playing')
+          setCountInRemaining(0)
+        },
+        onBeat: (beatIndex, phase) => {
           if (generation !== startGeneration) return
           if (phase === 'count-in') {
             setStatus('count-in')
-            setCountInRemaining(Math.max(1, run.countInBeats - beatIndex))
+            setCountInRemaining(Math.max(1, countInForLaunch - beatIndex))
             return
           }
-          if (beatIndex === 0 && originSeconds === null) {
-            // Beat one's scheduled audio time remains true even when the main
-            // thread delivers this callback late under rendering work.
-            originSeconds = scheduledAtSeconds
-            followAudioClock()
-          }
-          setStatus('playing')
           setCountInRemaining(0)
         },
         onComplete: () => {
@@ -384,6 +407,7 @@ export function useGuitarNightScoreRoomController(
           stopFrames()
           setStatus('complete')
           setPositionSeconds(run.durationSeconds)
+          setParkedBeat(run.durationBeats)
         },
       })
       return generation === startGeneration
@@ -399,16 +423,103 @@ export function useGuitarNightScoreRoomController(
     }
   }
 
-  const toggle = (): void => {
+  const pause = (): void => {
     if (
-      status() === 'quiet' ||
-      status() === 'complete' ||
-      status() === 'error'
+      status() !== 'starting' &&
+      status() !== 'count-in' &&
+      status() !== 'playing'
     ) {
-      void start()
       return
     }
-    stop()
+    readAudioClock()
+    const run = runningTake()
+    if (run !== null) {
+      const parkedBeat = Math.min(
+        run.durationBeats,
+        Math.max(
+          0,
+          scorePlayheadBeat(
+            positionSeconds(),
+            run.loop,
+            run.beatToSeconds,
+            run.secondsToBeat,
+          ),
+        ),
+      )
+      setParkedBeat(parkedBeat)
+      setPositionSeconds(run.beatToSeconds(parkedBeat))
+    }
+    startGeneration += 1
+    stopFrames()
+    band.stop()
+    originSeconds = null
+    setCountInRemaining(0)
+    setStatus('paused')
+  }
+
+  /** Park the playhead exactly where the rail points, without opening audio. */
+  const seekSeconds = (value: number): void => {
+    pause()
+    const run = runningTake()
+    const reference = run?.reference ?? options.reference()
+    if (reference === null || reference.notes.length === 0) return
+    const beatToSeconds = run?.beatToSeconds ?? configuredBeatToSeconds()
+    const secondsToBeat = run?.secondsToBeat ?? configuredSecondsToBeat()
+    const scoreBeats = run?.durationBeats ?? scoreDurationBeats(reference)
+    const scoreSeconds = run?.durationSeconds ?? beatToSeconds(scoreBeats)
+    const exerciseBeats =
+      run?.exerciseBeats ?? Math.max(1, Math.ceil(scoreBeats))
+    const activeLoop =
+      run?.loop ?? resolveBandLoop(scheduledLoop(), exerciseBeats)
+    const requestedSeconds = Number.isFinite(value) ? value : 0
+    const clampedSeconds = Math.min(scoreSeconds, Math.max(0, requestedSeconds))
+    const requestedBeat = Math.min(
+      scoreBeats,
+      Math.max(0, secondsToBeat(clampedSeconds)),
+    )
+    const targetBeat = resolveBandStartBeat(
+      requestedBeat,
+      scoreBeats,
+      activeLoop,
+    )
+    setError(null)
+    setParkedBeat(targetBeat)
+    setPositionSeconds(beatToSeconds(targetBeat))
+    setCountInRemaining(0)
+    setStatus(
+      activeLoop === null && requestedBeat >= scoreBeats
+        ? 'complete'
+        : 'paused',
+    )
+  }
+
+  const start = async (): Promise<boolean> => {
+    const pausedRun = status() === 'paused' ? runningTake() : null
+    const run = pausedRun ?? buildRun()
+    if (run === null) return false
+
+    if (status() === 'paused') {
+      return launch(
+        run,
+        parkedBeat(),
+        pausedRun === null ? run.countInBeats : 0,
+      )
+    }
+
+    const replayStart = status() === 'complete' ? (run.loop?.start ?? 0) : 0
+    return launch(run, replayStart, run.countInBeats)
+  }
+
+  const toggle = (): void => {
+    if (
+      status() === 'starting' ||
+      status() === 'count-in' ||
+      status() === 'playing'
+    ) {
+      pause()
+      return
+    }
+    void start()
   }
 
   const setTempoBpm = (value: number): void => {
@@ -418,10 +529,16 @@ export function useGuitarNightScoreRoomController(
         Math.max(SCORE_ROOM_MIN_TEMPO, Math.round(value)),
       ),
     )
+    if (runningTake() === null && status() === 'paused') {
+      setPositionSeconds(configuredBeatToSeconds()(parkedBeat()))
+    }
   }
 
   const resetTempo = (): void => {
     setTempoOverride(null)
+    if (runningTake() === null && status() === 'paused') {
+      setPositionSeconds(configuredBeatToSeconds()(parkedBeat()))
+    }
   }
 
   const setCountInBeats = (value: number): void => {
@@ -439,6 +556,8 @@ export function useGuitarNightScoreRoomController(
   return {
     /** The loop this take is actually running, null until one is scheduled. */
     runningLoop,
+    /** Setup stays editable for a parked pre-play seek, but not a paused take. */
+    setupLocked: takePinsSetup,
     /** Open the room's audio without scheduling a beat — for microphone input. */
     activateAudio: async (): Promise<boolean> =>
       (await band.activate()) !== null,
@@ -457,8 +576,10 @@ export function useGuitarNightScoreRoomController(
     scoreTempo,
     countInBeats,
     start,
+    pause,
     stop,
     toggle,
+    seekSeconds,
     setTempoBpm,
     resetTempo,
     setCountInBeats,

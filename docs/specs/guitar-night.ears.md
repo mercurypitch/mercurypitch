@@ -93,6 +93,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   activity, reference/backing identifiers, loop, view, and non-sensitive mix
   preferences; it shall never auto-start audio, microphone, MIDI, count-in,
   analysis, or timers.
+- **REQ-GN-ROUTE-008 — Direct song restoration:** WHEN a valid prepared-song
+  URL opens directly into song detail, the visible local tab library shall
+  initialize without requiring a Back or Load-a-song round trip and without
+  starting audio or capture.
 
 ## Runtime, transport, and cleanup — `GN-RUNTIME-*`
 
@@ -159,6 +163,16 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   inspect every such channel and analyze the strongest intact channel rather
   than assume the instrument is present on channel one or attenuate it through
   channel averaging.
+- **REQ-GN-RUNTIME-015 — Exact score transport:** WHEN the player points,
+  drags, or uses the keyboard on an authored-score timeline, the room shall
+  park at that exact fractional beat through the complete tempo map without
+  opening audio. WHEN an active take is paused or scrubbed, the scheduler shall
+  silence its lookahead immediately and resume once from the parked position
+  on the same audio context, without replaying past note attacks or adding a
+  second count-in. A parked pre-play position shall not lock setup controls.
+- **REQ-GN-RUNTIME-016 — Control-state truth:** WHEN a route-owned transport
+  survives room navigation, every visible transport control shall be restored
+  from that transport's current state rather than from a presentation default.
 
 ## Configurable first win — `GN-FIRST-*`
 

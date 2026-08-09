@@ -159,11 +159,14 @@ review until that PR is merged.
 - The score-only room keeps Play and tempo visible while count-in, guide sound,
   Listening and loop setup live in one restrained Session overlay. Before Play,
   the stage rests just ahead of the first authored note so a long intro reads as
-  intentional rather than broken. The progress rail has a visible resting
-  state, instrument and loop controls keep 44px targets, and a completed take
-  offers Replay or Rehearse loop without opening an analysis dashboard. On a
-  phone, room, Studio and account utilities collapse behind one Room control so
-  the instrument keeps the viewport.
+  intentional rather than broken. The score rail supports exact pointer, touch,
+  and keyboard seeking through the authored tempo map. An idle seek remains
+  silent and leaves setup editable; pausing an actual take pins its sound and
+  resumes on the same audio context without another count-in. Instrument and
+  loop controls keep 44px targets, and a completed take offers Replay or
+  Rehearse loop without opening an analysis dashboard. On a phone, room, Studio
+  and account utilities collapse behind one Room control so the instrument
+  keeps the viewport.
 - Jam Doctor is an on-demand overlay/sheet rather than normal-flow content, so
   opening it never collapses the instrument. Desktop, tablet, and phone
   regressions keep the stage and pedalboard in the first viewport, preserve

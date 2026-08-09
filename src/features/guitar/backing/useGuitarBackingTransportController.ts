@@ -30,6 +30,9 @@ export function useGuitarBackingTransportController(
   const [playbackRate, setPlaybackRateSignal] = createSignal(
     transport.getPlaybackRate(),
   )
+  const [masterVolume, setMasterVolumeSignal] = createSignal(
+    transport.getMasterVolume(),
+  )
   const [tracks, setTracks] = createSignal<readonly GuitarBackingTrackState[]>(
     transport.getTrackStates(),
   )
@@ -58,6 +61,7 @@ export function useGuitarBackingTransportController(
     setPositionSeconds(transport.getCurrentTime())
     setDurationSeconds(transport.getDuration())
     setPlaybackRateSignal(transport.getPlaybackRate())
+    setMasterVolumeSignal(transport.getMasterVolume())
     setTracks(transport.getTrackStates())
     setError(transport.getError())
     if (nextStatus === 'playing' && frame === null) {
@@ -135,6 +139,7 @@ export function useGuitarBackingTransportController(
     positionSeconds,
     durationSeconds,
     playbackRate,
+    masterVolume,
     tracks,
     error,
     configure,

@@ -40,6 +40,8 @@ export interface GuitarRoomBandStartOptions {
   tempoChanges?: readonly MidiTempoChange[]
   countInBeats: number
   exerciseBeats: number
+  /** Exact authored beat where this run begins. Defaults to beat zero. */
+  startBeat?: number
   /** Exact score length; defaults to the whole-beat scheduling horizon. */
   durationBeats?: number
   /**
@@ -64,7 +66,10 @@ export interface GuitarRoomBandStartOptions {
     phase: GuitarRoomBandBeatPhase,
     scheduledAtSeconds: number,
   ): void
-  onComplete?(): void
+  /** Exact score epoch, including when a run starts between metronome beats. */
+  onExerciseStart?(startBeat: number, scheduledAtSeconds: number): void
+  /** Exact scheduled end on the band's AudioContext clock. */
+  onComplete?(scheduledAtSeconds: number): void
 }
 
 export interface GuitarRoomBandStartResult {
@@ -120,6 +125,26 @@ export function resolveBandLoop(
   const end = Math.min(exerciseBeats, Math.floor(loop.end))
   if (start >= exerciseBeats || end - start < 1) return null
   return { start, end }
+}
+
+/**
+ * Clamp a requested score position and fold positions beyond B into the loop.
+ * The controller and scheduler share this rule so the parked playhead cannot
+ * disagree with the first sound after Resume.
+ */
+export function resolveBandStartBeat(
+  requestedBeat: number | undefined,
+  durationBeats: number,
+  loop: LoopSpan | null,
+): number {
+  const finiteDuration = Number.isFinite(durationBeats)
+    ? Math.max(0, durationBeats)
+    : 0
+  const clamped = Math.min(
+    finiteDuration,
+    Number.isFinite(requestedBeat) ? Math.max(0, requestedBeat ?? 0) : 0,
+  )
+  return loop === null ? clamped : foldIntoLoop(clamped, loop)
 }
 
 /** The exact tempo range every room using this scheduler can rely on. */
@@ -281,22 +306,43 @@ export function createGuitarRoomBand(
           )
         : exerciseBeats
       const loop = resolveBandLoop(startOptions.loop, exerciseBeats)
+      const startBeat = resolveBandStartBeat(
+        startOptions.startBeat,
+        durationBeats,
+        loop,
+      )
       const feel = startOptions.feel ?? 'groove'
       const notesByBeat = groupNotesByBeat(startOptions.melody ?? [])
       const melodyVariant = startOptions.melodyVariant ?? 'electric'
-      const totalBeats = countInBeats + exerciseBeats
       const firstBeatAt = currentGraph.context.currentTime + 0.09
       const firstExerciseAt = firstBeatAt + countInBeats * openingBeatSeconds
       const firstBeatAtMs = performance.now() + 90
-      const expectedHitTimesMs = Array.from(
-        { length: exerciseBeats },
-        (_, index) =>
-          firstBeatAtMs +
-          countInBeats * openingBeatSeconds * 1000 +
-          beatToSeconds(index) * 1000,
-      )
-      let nextBeat = 0
-      let nextBeatAt = firstBeatAt
+      const firstExerciseAtMs =
+        firstBeatAtMs + countInBeats * openingBeatSeconds * 1000
+      const expectedHitTimesMs: number[] = []
+      let expectedBeat = Math.ceil(startBeat)
+      while (loop === null && expectedBeat < exerciseBeats) {
+        expectedHitTimesMs.push(
+          firstExerciseAtMs +
+            (beatToSeconds(expectedBeat) - beatToSeconds(startBeat)) * 1000,
+        )
+        expectedBeat += 1
+      }
+
+      let nextCountInBeat = 0
+      let nextCountInAt = firstBeatAt
+      let nextExerciseBeat = Math.ceil(startBeat)
+      let nextExerciseAt =
+        firstExerciseAt +
+        beatToSeconds(nextExerciseBeat) -
+        beatToSeconds(startBeat)
+      if (loop !== null && nextExerciseBeat >= loop.end) {
+        nextExerciseBeat = loop.start
+        nextExerciseAt =
+          firstExerciseAt + beatToSeconds(loop.end) - beatToSeconds(startBeat)
+      }
+      let exerciseStartScheduled = false
+      let partialNotesScheduled = Number.isInteger(startBeat)
       let completionScheduled = false
 
       const scheduleUiCallback = (at: number, callback: () => void): void => {
@@ -311,29 +357,78 @@ export function createGuitarRoomBand(
         callbackTimers.add(timer)
       }
 
-      const schedule = (): void => {
-        while (loop !== null || nextBeat < totalBeats) {
-          const at = nextBeatAt
-          if (at > currentGraph.context.currentTime + scheduleAheadSeconds) {
-            break
+      const soundBucket = (
+        exerciseIndex: number,
+        at: number,
+        earliestStartBeat = exerciseIndex,
+      ): void => {
+        for (const note of notesByBeat.get(Math.floor(exerciseIndex)) ?? []) {
+          if (
+            note.startBeat < earliestStartBeat ||
+            (loop === null && note.startBeat >= durationBeats)
+          ) {
+            continue
           }
-          const scheduledBeat = nextBeat
-          const phase: GuitarRoomBandBeatPhase =
-            scheduledBeat < countInBeats ? 'count-in' : 'exercise'
-          // The slot index only ever grows; a loop folds it back onto the
-          // beats being repeated, so the pulse never pauses to restart.
-          const exerciseIndex = foldIntoLoop(scheduledBeat - countInBeats, loop)
-          if (phase === 'count-in') {
-            triggerDrumVoice(
-              'sidestick',
-              currentGraph.context,
-              at,
-              nextBeat === countInBeats - 1 ? 0.9 : 0.68,
-              drumsOutput,
-            )
-          } else if (feel === 'click') {
-            // Downbeat accented, everything else the same tick. Nothing here
-            // suggests a backbeat the score has not asked for.
+          const noteAt =
+            at + beatToSeconds(note.startBeat) - beatToSeconds(exerciseIndex)
+          const noteDurationSeconds =
+            beatToSeconds(note.startBeat + note.durationBeats) -
+            beatToSeconds(note.startBeat)
+          soundNote(
+            currentGraph,
+            guideOutput,
+            note,
+            noteAt,
+            noteDurationSeconds,
+            melodyVariant,
+          )
+        }
+      }
+
+      const schedule = (): void => {
+        const horizon = currentGraph.context.currentTime + scheduleAheadSeconds
+        while (nextCountInBeat < countInBeats && nextCountInAt <= horizon) {
+          const scheduledBeat = nextCountInBeat
+          const at = nextCountInAt
+          triggerDrumVoice(
+            'sidestick',
+            currentGraph.context,
+            at,
+            scheduledBeat === countInBeats - 1 ? 0.9 : 0.68,
+            drumsOutput,
+          )
+          scheduleUiCallback(at, () =>
+            startOptions.onBeat?.(scheduledBeat, 'count-in', at),
+          )
+          nextCountInBeat += 1
+          nextCountInAt += openingBeatSeconds
+        }
+
+        if (nextCountInBeat < countInBeats) return
+
+        if (!exerciseStartScheduled && firstExerciseAt <= horizon) {
+          exerciseStartScheduled = true
+          scheduleUiCallback(firstExerciseAt, () =>
+            startOptions.onExerciseStart?.(startBeat, firstExerciseAt),
+          )
+        }
+
+        if (
+          !partialNotesScheduled &&
+          firstExerciseAt <= horizon &&
+          startBeat < durationBeats
+        ) {
+          partialNotesScheduled = true
+          soundBucket(startBeat, firstExerciseAt, startBeat)
+        }
+
+        while (
+          (loop !== null || nextExerciseBeat < exerciseBeats) &&
+          nextExerciseAt <= horizon
+        ) {
+          const exerciseIndex = nextExerciseBeat
+          const at = nextExerciseAt
+          if (feel === 'click') {
             triggerDrumVoice(
               'sidestick',
               currentGraph.context,
@@ -360,49 +455,37 @@ export function createGuitarRoomBand(
             }
           }
 
-          if (phase === 'exercise') {
-            for (const note of notesByBeat.get(exerciseIndex) ?? []) {
-              // Fractional positions inside the beat are kept: an eighth is
-              // half a beat late, and quantising it to the beat would teach
-              // the wrong rhythm.
-              const noteAt =
-                at +
-                beatToSeconds(note.startBeat) -
-                beatToSeconds(exerciseIndex)
-              const noteDurationSeconds =
-                beatToSeconds(note.startBeat + note.durationBeats) -
-                beatToSeconds(note.startBeat)
-              soundNote(
-                currentGraph,
-                guideOutput,
-                note,
-                noteAt,
-                noteDurationSeconds,
-                melodyVariant,
-              )
-            }
-          }
+          soundBucket(exerciseIndex, at)
           scheduleUiCallback(at, () =>
-            startOptions.onBeat?.(
-              phase === 'count-in' ? scheduledBeat : exerciseIndex,
-              phase,
-              at,
-            ),
+            startOptions.onBeat?.(exerciseIndex, 'exercise', at),
           )
-          const beatDurationSeconds =
-            phase === 'count-in'
-              ? openingBeatSeconds
-              : beatToSeconds(exerciseIndex + 1) - beatToSeconds(exerciseIndex)
-          nextBeat += 1
-          nextBeatAt += beatDurationSeconds
+
+          if (loop !== null && exerciseIndex + 1 >= loop.end) {
+            nextExerciseAt +=
+              beatToSeconds(loop.end) - beatToSeconds(exerciseIndex)
+            nextExerciseBeat = loop.start
+          } else {
+            nextExerciseAt +=
+              beatToSeconds(exerciseIndex + 1) - beatToSeconds(exerciseIndex)
+            nextExerciseBeat += 1
+          }
         }
 
-        if (loop === null && nextBeat >= totalBeats && !completionScheduled) {
+        if (
+          loop === null &&
+          nextExerciseBeat >= exerciseBeats &&
+          !completionScheduled
+        ) {
           completionScheduled = true
           if (interval !== null) window.clearInterval(interval)
           interval = null
-          const completeAt = firstExerciseAt + beatToSeconds(durationBeats)
-          scheduleUiCallback(completeAt, () => startOptions.onComplete?.())
+          const completeAt =
+            firstExerciseAt +
+            beatToSeconds(durationBeats) -
+            beatToSeconds(startBeat)
+          scheduleUiCallback(completeAt, () =>
+            startOptions.onComplete?.(completeAt),
+          )
         }
       }
 

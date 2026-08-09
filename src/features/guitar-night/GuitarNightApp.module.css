@@ -2059,23 +2059,16 @@
   gap: 0.7rem;
 }
 
-.timeRail span {
+.timeRail span,
+.timeRail output {
   color: rgba(244, 234, 219, 0.58);
   font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
 }
 
-.timeRail span:last-child {
+.timeRail span:last-child,
+.timeRail output:last-child {
   text-align: right;
-}
-
-/* The tab room shows position without offering a scrub: seeking a live
-   count-in would desynchronise the beats it has already scheduled. */
-.timeRail .songProgress {
-  height: 5px;
-  margin-top: 0;
-  background: rgba(244, 234, 219, 0.16);
-  box-shadow: 0 0 0 1px rgba(244, 234, 219, 0.025);
 }
 
 .timeRail input,

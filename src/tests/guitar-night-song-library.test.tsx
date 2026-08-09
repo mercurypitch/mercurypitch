@@ -134,6 +134,7 @@ function fakeBackingTransport() {
           []),
       ),
     getPlaybackRate: () => playbackRate,
+    getMasterVolume: () => 0.78,
     getTrackStates: () => trackStates,
     getError: () => null,
     subscribe(listener) {
@@ -776,6 +777,42 @@ describe('GuitarNightApp prepared songs', () => {
       screen.queryByRole('button', { name: /Song 06\.wav/ }),
     ).not.toBeInTheDocument()
     expect(screen.getByText('6 of 12 on this device')).toBeInTheDocument()
+  })
+
+  it('opens the tab library when a prepared song is restored from the URL', async () => {
+    window.history.replaceState(null, '', '/guitar-night?session=session-01')
+    const referencePort: GuitarNightReferencePort = {
+      listReferences: () => [
+        {
+          songId: 'saved-score',
+          title: 'Saved Score',
+          trackCount: 1,
+          importedAt: Date.UTC(2026, 7, 6),
+        },
+      ],
+      openReference: () => ({ ok: false, code: 'not-found' }),
+      suggestInstrument: () => null,
+      rememberTrack: vi.fn(),
+      importReference: vi.fn(async () => {
+        throw new Error('Not used in this test')
+      }),
+    }
+    const loadReferencePort = vi.fn(async () => referencePort)
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(libraryPort(1))}
+        loadReferencePort={loadReferencePort}
+      />
+    ))
+
+    expect(
+      await screen.findByRole('button', { name: /Saved Score/ }),
+    ).toBeInTheDocument()
+    expect(loadReferencePort).toHaveBeenCalledTimes(1)
+    expect(
+      screen.queryByText('Opening your tab library…'),
+    ).not.toBeInTheDocument()
   })
 
   it('counts only the rows a press actually reveals, not the raw page step', async () => {

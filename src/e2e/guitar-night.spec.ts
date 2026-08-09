@@ -273,6 +273,43 @@ async function seedCompletedFullBandSong(
   )
 }
 
+async function seedAuthoredGuitarScore(
+  page: import('@playwright/test').Page,
+  songId: string,
+): Promise<void> {
+  await page.addInitScript((seededSongId) => {
+    const notes = Array.from({ length: 16 }, (_, index) => ({
+      midi: index % 2 === 0 ? 64 : 67,
+      startBeat: index,
+      duration: 1,
+      stringIndex: 0,
+      fret: index % 2 === 0 ? 0 : 3,
+    }))
+    localStorage.setItem(
+      'pitchperfect_guitar_songs',
+      JSON.stringify([
+        {
+          id: seededSongId,
+          name: 'Velvet pointer study',
+          bpm: 120,
+          tracks: [
+            {
+              id: 'track-lead',
+              name: 'Lead guitar',
+              instrumentName: 'Clean Guitar',
+              noteCount: notes.length,
+              notes,
+            },
+          ],
+          scoreTrackId: 'track-lead',
+          backingTrackIds: [],
+          importedAt: Date.now(),
+        },
+      ]),
+    )
+  }, songId)
+}
+
 async function instrumentMicrophoneRequests(
   page: import('@playwright/test').Page,
 ) {
@@ -518,6 +555,87 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
         .__guitarNightMicCalls,
   )
   expect(microphoneRequests).toBe(0)
+})
+
+test('scrubs, pauses, and resumes an authored score with a real pointer @smoke', async ({
+  page,
+}) => {
+  const songId = `guitar-night-score-${Date.now()}`
+  await instrumentAudioContext(page)
+  await seedAuthoredGuitarScore(page, songId)
+  await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+    waitUntil: 'domcontentloaded',
+  })
+
+  await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Rehearse the tab', exact: true })
+    .click()
+
+  const room = page.getByTestId('guitar-night-score-room')
+  const slider = room.getByRole('slider', {
+    name: 'Score position',
+    exact: true,
+  })
+  const elapsed = room.getByLabel('Elapsed score time')
+  await expect(slider).toBeVisible()
+  await slider.focus()
+  await slider.press('Home')
+  await slider.press('ArrowRight')
+  await expect(slider).toHaveValue('0.125')
+  await expect(slider).toHaveAttribute('aria-valuetext', /beat 1\.25$/)
+
+  const rail = await slider.boundingBox()
+  expect(rail).not.toBeNull()
+  const y = (rail?.y ?? 0) + (rail?.height ?? 0) / 2
+
+  await page.mouse.click((rail?.x ?? 0) + (rail?.width ?? 0) * 0.75, y)
+  await expect(elapsed).toHaveText('0:06')
+
+  await page.mouse.move((rail?.x ?? 0) + (rail?.width ?? 0) * 0.75, y)
+  await page.mouse.down()
+  await page.mouse.move((rail?.x ?? 0) + (rail?.width ?? 0) * 0.25, y, {
+    steps: 8,
+  })
+  await page.mouse.up()
+  await expect(elapsed).toHaveText('0:02')
+
+  await room.getByLabel('Session controls').click()
+  await room.getByLabel('Count-in beats').selectOption('0')
+  await room.getByLabel('Session controls').click()
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  await room
+    .getByRole('button', { name: 'Start from here', exact: true })
+    .click()
+  await expect(elapsed).toHaveText('0:03', { timeout: 2_500 })
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(1)
+  await room.getByRole('button', { name: 'Pause score', exact: true }).click()
+  const pausedAt = await elapsed.textContent()
+  await page.waitForTimeout(700)
+  await expect(elapsed).toHaveText(pausedAt ?? '')
+
+  await room.getByRole('button', { name: 'Resume score', exact: true }).click()
+  await expect(elapsed).not.toHaveText(pausedAt ?? '', { timeout: 2_500 })
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(1)
 })
 
 test('enters a silent prepared-song room, plays, pauses, and seeks with a real pointer @smoke', async ({

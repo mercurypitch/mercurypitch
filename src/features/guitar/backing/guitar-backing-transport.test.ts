@@ -252,6 +252,21 @@ describe('createGuitarBackingTransport', () => {
     unsubscribe()
   })
 
+  it('keeps the canonical master position available across room mounts', () => {
+    const harness = audioHarness()
+
+    expect(harness.transport.getMasterVolume()).toBe(0.78)
+
+    harness.transport.setMasterVolume(0.31)
+    expect(harness.transport.getMasterVolume()).toBe(0.31)
+
+    harness.transport.configure(session('same-route-new-room'))
+    expect(harness.transport.getMasterVolume()).toBe(0.31)
+
+    harness.transport.setMasterVolume(2)
+    expect(harness.transport.getMasterVolume()).toBe(1)
+  })
+
   it('creates and resumes one context, then sample-aligns every stem', async () => {
     const harness = audioHarness()
     const durations = [12, 10]

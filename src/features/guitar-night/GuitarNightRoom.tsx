@@ -450,7 +450,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               min="0"
               max="1"
               step="0.01"
-              value="0.78"
+              value={props.transport.masterVolume()}
               aria-label="Backing volume"
               onInput={changeVolume}
             />

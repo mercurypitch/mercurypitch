@@ -354,7 +354,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             />
           </Suspense>
           <p class={styles.stageGestureHint}>
-            Drag to change the view · scroll to move closer
+            Drag / arrows to orbit · scroll / + − to zoom · R resets
           </p>
         </Show>
 
