@@ -4,20 +4,32 @@
 import { devices, expect, test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
 
+const TWO_TRACK_MIDI = Buffer.from([
+  0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x02, 0x01,
+  0xe0, 0x4d, 0x54, 0x72, 0x6b, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x90, 0x3c, 0x64,
+  0x83, 0x60, 0x80, 0x3c, 0x20, 0x00, 0xff, 0x2f, 0x00, 0x4d, 0x54, 0x72, 0x6b,
+  0x00, 0x00, 0x00, 0x0d, 0x00, 0x91, 0x40, 0x5a, 0x83, 0x60, 0x81, 0x40, 0x20,
+  0x00, 0xff, 0x2f, 0x00,
+])
+
 async function instrumentFirstPaint(
   page: import('@playwright/test').Page,
 ): Promise<void> {
   await page.addInitScript(() => {
     const trackedWindow = window as unknown as {
       __pianoNightAudioContexts: number
+      __pianoNightDatabaseOpens: number
       __pianoNightMidiRequests: number
       __pianoNightMicRequests: number
+      __pianoNightWorkers: number
       AudioContext?: typeof AudioContext
       webkitAudioContext?: typeof AudioContext
     }
     trackedWindow.__pianoNightAudioContexts = 0
+    trackedWindow.__pianoNightDatabaseOpens = 0
     trackedWindow.__pianoNightMidiRequests = 0
     trackedWindow.__pianoNightMicRequests = 0
+    trackedWindow.__pianoNightWorkers = 0
 
     const NativeAudioContext =
       trackedWindow.AudioContext ?? trackedWindow.webkitAudioContext
@@ -31,6 +43,22 @@ async function instrumentFirstPaint(
       trackedWindow.AudioContext = TrackedAudioContext
       trackedWindow.webkitAudioContext = TrackedAudioContext
     }
+
+    const NativeWorker = window.Worker
+    window.Worker = new Proxy(NativeWorker, {
+      construct(target, args, newTarget) {
+        trackedWindow.__pianoNightWorkers += 1
+        return Reflect.construct(target, args, newTarget)
+      },
+    })
+
+    const nativeDatabaseOpen = indexedDB.open.bind(indexedDB)
+    indexedDB.open = ((name: string, version?: number) => {
+      trackedWindow.__pianoNightDatabaseOpens += 1
+      return version === undefined
+        ? nativeDatabaseOpen(name)
+        : nativeDatabaseOpen(name, version)
+    }) as IDBFactory['open']
 
     Object.defineProperty(navigator, 'requestMIDIAccess', {
       configurable: true,
@@ -81,16 +109,26 @@ test('loads the standalone Performance Horizon silently @smoke', async ({
   const firstPaintCalls = await page.evaluate(() => {
     const trackedWindow = window as unknown as {
       __pianoNightAudioContexts: number
+      __pianoNightDatabaseOpens: number
       __pianoNightMidiRequests: number
       __pianoNightMicRequests: number
+      __pianoNightWorkers: number
     }
     return {
       audio: trackedWindow.__pianoNightAudioContexts,
+      database: trackedWindow.__pianoNightDatabaseOpens,
       midi: trackedWindow.__pianoNightMidiRequests,
       mic: trackedWindow.__pianoNightMicRequests,
+      workers: trackedWindow.__pianoNightWorkers,
     }
   })
-  expect(firstPaintCalls).toEqual({ audio: 0, midi: 0, mic: 0 })
+  expect(firstPaintCalls).toEqual({
+    audio: 0,
+    database: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
 
   const loadedResources = await page.evaluate(() =>
     performance
@@ -100,7 +138,7 @@ test('loads the standalone Performance Horizon silently @smoke', async ({
   )
   expect(
     loadedResources.filter((name) =>
-      /\/(?:library|local-song-library|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
+      /\/(?:library|local-song-library|piano-library|piano-project|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
         name,
       ),
     ),
@@ -131,6 +169,120 @@ test('opens from the current desktop Piano tab @smoke', async ({ page }) => {
   await launcher.click()
   await expect(page).toHaveURL(/\/piano-night$/)
   await expect(page.getByTestId('piano-night-shell')).toBeVisible()
+})
+
+test('imports and persists a canonical Piano project in the browser @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE: boolean }).E2E_TEST_MODE = true
+    localStorage.setItem('pitchperfect_onboarding_done', '1')
+    localStorage.setItem('pitchperfect_focus_mode', 'false')
+    localStorage.removeItem('pitchperfect_guitar_songs')
+  })
+
+  await page.goto('/#/piano')
+  await dismissOverlays(page)
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Import MIDI' }).click()
+  const fileChooser = await fileChooserPromise
+  await fileChooser.setFiles({
+    name: 'worker-fixture.mid',
+    mimeType: 'audio/midi',
+    buffer: TWO_TRACK_MIDI,
+  })
+
+  const trackChooser = page.getByRole('heading', {
+    name: 'Choose Tracks — worker-fixture',
+  })
+  await expect(trackChooser).toBeVisible()
+  const trackModal = trackChooser.locator('..').locator('..')
+  await trackModal.getByRole('radio').nth(1).check()
+  await trackModal.getByRole('checkbox').nth(0).check()
+  await trackModal.getByRole('button', { name: 'Load Song' }).click()
+
+  const statusBar = page.getByTestId('fn-song-status-bar')
+  await expect(statusBar).toContainText('Loaded: worker-fixture')
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<{
+            backingTrackIds: string[]
+            count: number
+            fileName: string | null
+            scoreTrackId: string | null
+            sourceKind: string | null
+            trackCount: number
+          }>((resolve, reject) => {
+            const open = indexedDB.open('MercuryPitchDB')
+            open.onerror = () => reject(open.error)
+            open.onsuccess = () => {
+              const database = open.result
+              const transaction = database.transaction(
+                'pianoProjects',
+                'readonly',
+              )
+              const request = transaction.objectStore('pianoProjects').getAll()
+              request.onerror = () => reject(request.error)
+              request.onsuccess = () => {
+                const records = request.result as Array<{
+                  project?: {
+                    backingTrackIds?: unknown[]
+                    scoreTrackId?: unknown
+                    source?: { fileName?: unknown; kind?: unknown }
+                    tracks?: unknown[]
+                  }
+                  sourceKind?: unknown
+                }>
+                const record = records[0]
+                resolve({
+                  backingTrackIds: Array.isArray(
+                    record?.project?.backingTrackIds,
+                  )
+                    ? record.project.backingTrackIds.filter(
+                        (value): value is string => typeof value === 'string',
+                      )
+                    : [],
+                  count: records.length,
+                  fileName:
+                    typeof record?.project?.source?.fileName === 'string'
+                      ? record.project.source.fileName
+                      : null,
+                  scoreTrackId:
+                    typeof record?.project?.scoreTrackId === 'string'
+                      ? record.project.scoreTrackId
+                      : null,
+                  sourceKind:
+                    typeof record?.sourceKind === 'string'
+                      ? record.sourceKind
+                      : null,
+                  trackCount: Array.isArray(record?.project?.tracks)
+                    ? record.project.tracks.length
+                    : 0,
+                })
+                database.close()
+              }
+            }
+          }),
+      ),
+    )
+    .toEqual({
+      backingTrackIds: ['smf-t0-c0'],
+      count: 1,
+      fileName: 'worker-fixture.mid',
+      scoreTrackId: 'smf-t1-c1',
+      sourceKind: 'midi',
+      trackCount: 2,
+    })
+
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_guitar_songs'),
+    ),
+  ).toBeNull()
 })
 
 test('recomposes for a phone without overflow or duplicate Play @smoke', async ({

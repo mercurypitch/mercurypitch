@@ -126,6 +126,8 @@ export type {
   MelodyRecord,
   SessionTemplate,
   PlaylistRecord,
+  PianoProjectRecord,
+  PianoProjectMigrationRecord,
   SessionGroupRecord,
   KaraokePlaylistRecord,
   KaraokePlaylistItem,
