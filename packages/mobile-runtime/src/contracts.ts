@@ -120,3 +120,173 @@ export interface LocalNotificationsPort {
     listener: LocalNotificationActionListener,
   ): Promise<LocalNotificationListenerHandle>
 }
+
+// ------------------------------------------------------------
+// Purchases
+// ------------------------------------------------------------
+//
+// Store vocabulary stops here. Products name their own entitlements and
+// receive plain plans, snapshots and outcomes, so no application module has
+// to import a billing SDK or reason about one store's error codes.
+
+/** Billing shapes a product can price differently. */
+export type PurchasePlanKind = 'monthly' | 'yearly' | 'lifetime' | 'other'
+
+declare const PURCHASE_PLAN_HANDLE: unique symbol
+
+/**
+ * Adapter-owned reference to the store package a plan was built from. Pass a
+ * plan back to `purchase` unchanged; never construct one.
+ */
+export type PurchasePlanHandle = {
+  readonly [PURCHASE_PLAN_HANDLE]: true
+}
+
+export interface PurchasePlan {
+  /** Package identifier as configured in the store dashboard. */
+  readonly id: string
+  readonly kind: PurchasePlanKind
+  readonly offeringId: string
+  readonly productId: string
+  readonly title: string
+  readonly description: string
+  /** Price already formatted for the customer's storefront locale. */
+  readonly priceText: string
+  readonly currencyCode: string
+  readonly handle: PurchasePlanHandle
+}
+
+export interface PurchaseOffering {
+  readonly id: string
+  readonly description: string
+  readonly plans: readonly PurchasePlan[]
+}
+
+export interface PurchaseOfferings {
+  readonly current?: PurchaseOffering
+  readonly all: readonly PurchaseOffering[]
+}
+
+export type EntitlementPeriodKind =
+  | 'normal'
+  | 'intro'
+  | 'trial'
+  | 'prepaid'
+  | 'unknown'
+
+export interface EntitlementStatus {
+  readonly id: string
+  readonly active: boolean
+  readonly willRenew: boolean
+  readonly periodKind: EntitlementPeriodKind
+  readonly productId: string
+  readonly store: string
+  readonly isSandbox: boolean
+  /** Null for a lifetime entitlement, which never expires. */
+  readonly expiresAt: Date | null
+  /** Set once the customer turns off renewal; access usually continues. */
+  readonly unsubscribeDetectedAt: Date | null
+  /** Set while the store cannot charge; access usually continues for a grace period. */
+  readonly billingIssueDetectedAt: Date | null
+}
+
+export interface CustomerSnapshot {
+  readonly appUserId: string
+  /** True while the customer has never been identified by the product. */
+  readonly anonymous: boolean
+  readonly entitlements: Readonly<Record<string, EntitlementStatus>>
+  readonly activeEntitlementIds: readonly string[]
+  /** Store-hosted subscription management page, when the store publishes one. */
+  readonly managementUrl: string | null
+}
+
+/**
+ * A purchase that ends without an entitlement is not a failure. Cancellation
+ * is the customer's decision, and a pending payment resolves outside the app.
+ */
+export type PurchaseOutcome =
+  | {
+      readonly kind: 'purchased'
+      readonly customer: CustomerSnapshot
+      readonly productId: string
+    }
+  | { readonly kind: 'cancelled' }
+  | { readonly kind: 'pending' }
+
+export type PurchaseFailureReason =
+  /** The running platform has no store. */
+  | 'unavailable'
+  | 'network'
+  | 'store-problem'
+  | 'not-allowed'
+  | 'product-unavailable'
+  | 'already-owned'
+  /** The app's own store or dashboard setup is wrong. */
+  | 'configuration'
+  | 'unknown'
+
+export class PurchasesFailure extends Error {
+  readonly reason: PurchaseFailureReason
+
+  constructor(
+    reason: PurchaseFailureReason,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options)
+    this.name = 'PurchasesFailure'
+    this.reason = reason
+  }
+}
+
+export type CustomerListener = (
+  customer: CustomerSnapshot,
+) => void | Promise<void>
+
+export interface PurchasesListenerHandle {
+  remove(): Promise<void>
+}
+
+export interface PurchasesPort {
+  /** False on platforms without a store; every other call then fails fast. */
+  readonly available: boolean
+  /** Idempotent. Safe to call on every app start and before any read. */
+  initialize(): Promise<void>
+  /** Cached unless `refresh` asks the store for current state. */
+  getCustomer(options?: {
+    readonly refresh?: boolean
+  }): Promise<CustomerSnapshot>
+  getOfferings(): Promise<PurchaseOfferings>
+  purchase(plan: PurchasePlan): Promise<PurchaseOutcome>
+  restore(): Promise<CustomerSnapshot>
+  /** Fires whenever the store or backend revises entitlements. */
+  addCustomerListener(
+    listener: CustomerListener,
+  ): Promise<PurchasesListenerHandle>
+  logIn(appUserId: string): Promise<CustomerSnapshot>
+  logOut(): Promise<CustomerSnapshot>
+}
+
+export type PaywallOutcome =
+  | 'purchased'
+  | 'restored'
+  | 'cancelled'
+  /** The required entitlement was already active, so nothing was shown. */
+  | 'not-presented'
+  | 'error'
+
+export interface PaywallRequest {
+  /** Defaults to the offering the dashboard marks as current. */
+  readonly offeringId?: string
+  /** Show the paywall only while this entitlement is inactive. */
+  readonly requiredEntitlementId?: string
+  /** Full screen on both platforms instead of an iOS sheet. */
+  readonly fullScreen?: boolean
+}
+
+export interface PaywallPort {
+  readonly available: boolean
+  present(request?: PaywallRequest): Promise<PaywallOutcome>
+  /** Store-native subscription management, cancellation and refund flows. */
+  presentCustomerCenter(): Promise<void>
+}

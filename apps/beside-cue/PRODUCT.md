@@ -24,7 +24,10 @@ Beside Cue helps someone notice an unhelpful pull and begin one tiny action they
   without removing the active cue.
 - Choosing the B-side records one local outcome. **Not now** is neutral.
 - Progress shows today's and the trailing seven days' B-side choices without streaks or failure states.
-- Cue content and history remain on-device. No account, ads, analytics, payments, or cloud sync.
+- Cue content and history remain on-device. No account, ads, analytics, or cloud sync.
+- An optional **BeSideCue Pro** purchase supports the work. It gates nothing:
+  every part of the cue loop stays free, and the app never asks for a purchase
+  outside Settings. Entitlements are held by the store, not by this device.
 - The app is not treatment, diagnosis, abstinence monitoring, or a medical device.
 
 ## Initial implementation slice

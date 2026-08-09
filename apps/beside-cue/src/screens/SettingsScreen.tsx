@@ -1,8 +1,11 @@
+import type { JSX } from 'solid-js'
 import { createSignal, For } from 'solid-js'
 import type { DailyCuePreset } from '@/app-config'
 import { AppHeader } from '@/components/AppHeader'
 
 interface SettingsScreenProps {
+  /** Purchase surface, supplied by the shell so this screen stays store-free. */
+  proSection?: JSX.Element
   paused: boolean
   resetArmed: boolean
   dailyCuePresets: readonly DailyCuePreset[]
@@ -168,6 +171,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
           </svg>
         </button>
       </section>
+      {props.proSection}
       <section class="settings-group" aria-labelledby="privacy-settings-title">
         <h2 id="privacy-settings-title">Local data</h2>
         <div class="privacy-note">

@@ -204,6 +204,12 @@ importers:
       '@irchiinnuss/mobile-runtime':
         specifier: workspace:*
         version: link:../../packages/mobile-runtime
+      '@revenuecat/purchases-capacitor':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)
+      '@revenuecat/purchases-capacitor-ui':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)(@revenuecat/purchases-capacitor@13.4.0(@capacitor/core@8.5.0))
       solid-js:
         specifier: ^1.9.12
         version: 1.9.13
@@ -214,6 +220,9 @@ importers:
       '@capacitor/cli':
         specifier: ^8.5.0
         version: 8.5.0
+      '@capacitor/ios':
+        specifier: ^8.5.0
+        version: 8.5.0(@capacitor/core@8.5.0)
       '@solidjs/testing-library':
         specifier: ^0.8.0
         version: 0.8.10(solid-js@1.9.13)
@@ -274,6 +283,12 @@ importers:
       '@capacitor/local-notifications':
         specifier: ^8.2.1
         version: 8.2.1(@capacitor/core@8.5.0)
+      '@revenuecat/purchases-capacitor':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)
+      '@revenuecat/purchases-capacitor-ui':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)(@revenuecat/purchases-capacitor@13.4.0(@capacitor/core@8.5.0))
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -875,6 +890,11 @@ packages:
     resolution: {integrity: sha512-c2hZzRR5Fk1tbTvhG1jhh2XBAf3EhnIerMIb2sl7Mt41Gxx1fhBJFDa0/BI1IbY4loVepyyuqNC9820/GZuoWQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/ios@8.5.0':
+    resolution: {integrity: sha512-7k1TfohJu5BzRXc1F3g04Q8QQ0fyQgms6h1AvhnHb04VaNr9EdHOx03hL8O+OigEKMQnyJd1ZOjTPPNHCqL5Yw==}
+    peerDependencies:
+      '@capacitor/core': ^8.5.0
 
   '@capacitor/local-notifications@8.2.1':
     resolution: {integrity: sha512-Bkim+MGl7UrDTjDferV4ECq0aWciTsa0k15+MX2jnx2PeWgEPvlBy5yrqzBlwEZPrtHFUvPVxPi5V66MPGHkAw==}
@@ -1895,6 +1915,20 @@ packages:
 
   '@protobufjs/utf8@1.1.1':
     resolution: {integrity: sha512-oOAWABowe8EAbMyWKM0tYDKi8Yaox52D+HWZhAIJqQXbqe0xI/GV7FhLWqlEKreMkfDjshR5FKgi3mnle0h6Eg==}
+
+  '@revenuecat/purchases-capacitor-ui@13.4.0':
+    resolution: {integrity: sha512-7/Fri62Tjv0FJAJoBzdApfRY5vhUzRvbGmziV2d2AKPVYfovI3dOUP+dEdxZ/2Bj+A3z3emGGvMMxPyU5bd47g==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+      '@revenuecat/purchases-capacitor': 13.4.0
+
+  '@revenuecat/purchases-capacitor@13.4.0':
+    resolution: {integrity: sha512-0tGITx+M286w8Am7+zf1bfSDIbc7w1RhS7ROsdjUkmY+ksy43gmqpckWOEs85e8AwKTfxl14P9IrIEW4/YwiUQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@revenuecat/purchases-typescript-internal-esm@18.29.0':
+    resolution: {integrity: sha512-lXCvBaOf9QXHyi+UZgqdxn+ihveW2z4my1iYYj+Cb52U/HjTLHSBeuj2C/y0BU3PwKR3P34dW2kCFXfwTt0aKg==}
 
   '@rollup/plugin-babel@6.1.0':
     resolution: {integrity: sha512-dFZNuFD2YRcoomP4oYf+DvQNSUA9ih+A3vUqopQx5EdtPGo3WBnQcI/S8pwpz91UsGfL0HsMSOlaMld8HrbubA==}
@@ -5085,18 +5119,6 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.20.1:
-    resolution: {integrity: sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
     engines: {node: '>=10.0.0'}
@@ -5966,6 +5988,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.0
 
+  '@capacitor/ios@8.5.0(@capacitor/core@8.5.0)':
+    dependencies:
+      '@capacitor/core': 8.5.0
+
   '@capacitor/local-notifications@8.2.1(@capacitor/core@8.5.0)':
     dependencies:
       '@capacitor/core': 8.5.0
@@ -6708,6 +6734,19 @@ snapshots:
   '@protobufjs/pool@1.1.0': {}
 
   '@protobufjs/utf8@1.1.1': {}
+
+  '@revenuecat/purchases-capacitor-ui@13.4.0(@capacitor/core@8.5.0)(@revenuecat/purchases-capacitor@13.4.0(@capacitor/core@8.5.0))':
+    dependencies:
+      '@capacitor/core': 8.5.0
+      '@revenuecat/purchases-capacitor': 13.4.0(@capacitor/core@8.5.0)
+      '@revenuecat/purchases-typescript-internal-esm': 18.29.0
+
+  '@revenuecat/purchases-capacitor@13.4.0(@capacitor/core@8.5.0)':
+    dependencies:
+      '@capacitor/core': 8.5.0
+      '@revenuecat/purchases-typescript-internal-esm': 18.29.0
+
+  '@revenuecat/purchases-typescript-internal-esm@18.29.0': {}
 
   '@rollup/plugin-babel@6.1.0(@babel/core@7.29.0)(@types/babel__core@7.20.5)(rollup@4.60.4)':
     dependencies:
@@ -8468,7 +8507,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.20.1
+      ws: 8.21.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -8623,8 +8662,8 @@ snapshots:
 
   magicast@0.5.3:
     dependencies:
-      '@babel/parser': 7.29.3
-      '@babel/types': 7.29.0
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
       source-map-js: 1.2.1
 
   make-dir@2.1.0:
@@ -10159,8 +10198,6 @@ snapshots:
 
   wrappy@1.0.2:
     optional: true
-
-  ws@8.20.1: {}
 
   ws@8.21.0: {}
 
