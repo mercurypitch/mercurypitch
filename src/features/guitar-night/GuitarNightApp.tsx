@@ -31,7 +31,7 @@ import { useGuitarFirstWinController } from './useGuitarFirstWinController'
 import { guitarNightBandPreparationMessage, loadDefaultGuitarNightBandPreparationPort, useGuitarNightBandPreparationController, } from './useGuitarNightBandPreparationController'
 import { guitarNightPreparationMessage, loadDefaultGuitarNightPreparationPort, useGuitarNightPreparationController, } from './useGuitarNightPreparationController'
 import type { GuitarNightReferenceState } from './useGuitarNightReferenceController'
-import { loadDefaultGuitarNightReferencePort, useGuitarNightReferenceController, } from './useGuitarNightReferenceController'
+import { loadDefaultGuitarNightReferencePort, loadDefaultGuitarNightTranscriptionPort, useGuitarNightReferenceController, } from './useGuitarNightReferenceController'
 import type { GuitarNightSelectionState } from './useGuitarNightSongController'
 import { loadDefaultGuitarNightSongPort, useGuitarNightSongController, } from './useGuitarNightSongController'
 
@@ -200,7 +200,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         ? loadDefaultGuitarNightReferencePort()
         : configuredLoader()
     },
-    loadTranscriptionPort: props.loadTranscriptionPort,
+    loadTranscriptionPort: () => {
+      const configuredLoader = props.loadTranscriptionPort
+      return configuredLoader === undefined
+        ? loadDefaultGuitarNightTranscriptionPort()
+        : configuredLoader()
+    },
   })
   const attachedReference = referenceController.reference
   const unavailableReference = createMemo(() => {
@@ -556,7 +561,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       if (
         !venueMenuOpen() ||
         !(target instanceof Node) ||
-        venueMenuContainer?.contains(target)
+        venueMenuContainer?.contains(target) === true
       ) {
         return
       }

@@ -218,7 +218,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     () => props.instrumentSetupDisabled?.() ?? false,
   )
   createEffect(() => {
-    if (instrumentSetupDisabled() && instrumentDetails?.open) {
+    if (instrumentSetupDisabled() && instrumentDetails?.open === true) {
       instrumentDetails.open = false
     }
   })
@@ -237,11 +237,13 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       : `${props.source.title()}. Interactive ${instrumentLabel()} fretboard; no song tab is attached.`,
   )
   const visualSource: GuitarPerformanceStageSource = {
-    title: props.source.title,
-    notes: props.source.notes,
+    title: () => props.source.title(),
+    notes: () => props.source.notes(),
     timeline: {
-      ...props.source.timeline,
+      positionSeconds: () => props.source.timeline.positionSeconds(),
+      durationSeconds: () => props.source.timeline.durationSeconds(),
       playheadBeat: visualPlayheadBeat,
+      tempoBpm: () => props.source.timeline.tempoBpm(),
     },
   }
   const readyGuideCopy = createMemo(() => {

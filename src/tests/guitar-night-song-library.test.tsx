@@ -408,26 +408,28 @@ describe('GuitarNightApp prepared songs', () => {
     const songPort: GuitarNightSongPort = {
       initialize: vi.fn(async () => undefined),
       completedSongs: () => songs,
-      openSession: vi.fn(async (sessionId) => ({
-        ok: true as const,
-        lease: {
-          sessionId,
-          title: `${sessionId}.wav`,
-          stems: [
-            {
-              kind: 'bass' as const,
-              url: `blob:${sessionId}:bass`,
-              sizeBytes: 100,
+      openSession: vi.fn(
+        async (sessionId: string): Promise<GuitarNightOpenBackingResult> => ({
+          ok: true,
+          lease: {
+            sessionId,
+            title: `${sessionId}.wav`,
+            stems: [
+              {
+                kind: 'bass',
+                url: `blob:${sessionId}:bass`,
+                sizeBytes: 100,
+              },
+            ],
+            defaultMix: {
+              kind: 'parts',
+              audible: ['bass'],
+              muted: [],
             },
-          ],
-          defaultMix: {
-            kind: 'parts' as const,
-            audible: ['bass' as const],
-            muted: [],
+            release: vi.fn(),
           },
-          release: vi.fn(),
-        },
-      })),
+        }),
+      ),
     }
     const referencePort: GuitarNightReferencePort = {
       listReferences: () => [],
