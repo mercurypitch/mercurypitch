@@ -63,6 +63,28 @@ describe('scoreAgainstTruth', () => {
     expect(score.missed).toBe(0)
   })
 
+  it('prefers an exact pitch when simultaneous reference notes tie on time', () => {
+    const truth = [note(40, 0), note(47, 0)]
+    const score = scoreAgainstTruth([note(47, 0)], truth, 0.12)
+
+    expect(score.exact).toBe(1)
+    expect(score.octaveOff).toBe(0)
+    expect(score.wrongPitch).toBe(0)
+    expect(score.shadowed).toBe(0)
+    expect(score.missed).toBe(1)
+    expect(score.notes[0]?.truthMidi).toBe(47)
+  })
+
+  it('prefers an octave match over another simultaneous pitch', () => {
+    const truth = [note(45, 0), note(52, 0)]
+    const score = scoreAgainstTruth([note(40, 0)], truth, 0.12)
+
+    expect(score.exact).toBe(0)
+    expect(score.octaveOff).toBe(1)
+    expect(score.wrongPitch).toBe(0)
+    expect(score.notes[0]?.truthMidi).toBe(52)
+  })
+
   it('follows a shift no single global offset could fit', () => {
     // The tab is half a second late for the first two windows and three
     // seconds late after that. One offset gets at most part of it right;

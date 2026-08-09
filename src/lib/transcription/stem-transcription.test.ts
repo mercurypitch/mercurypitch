@@ -53,6 +53,39 @@ describe('transcribeFrames', () => {
     expect(result.notes.map((note) => note.midi)).toEqual([40, 45])
   })
 
+  it('keeps a held downward octave visit when the line returns', () => {
+    const noteLength = 50
+    const result = transcribeFrames(
+      [
+        ...steady(52, noteLength),
+        ...steady(40, noteLength, noteLength * PROFILE.stepSeconds),
+        ...steady(52, noteLength, noteLength * PROFILE.stepSeconds * 2),
+      ],
+      PROFILE,
+    )
+
+    expect(result.notes.map((note) => note.midi)).toEqual([52, 40, 52])
+  })
+
+  it('still repairs a short isolated octave visit in the shipping path', () => {
+    const firstLength = 10
+    const slipLength = 3
+    const result = transcribeFrames(
+      [
+        ...steady(52, firstLength),
+        ...steady(40, slipLength, firstLength * PROFILE.stepSeconds),
+        ...steady(
+          52,
+          firstLength,
+          (firstLength + slipLength) * PROFILE.stepSeconds,
+        ),
+      ],
+      PROFILE,
+    )
+
+    expect(result.notes.map((note) => note.midi)).toEqual([52, 52, 52])
+  })
+
   it('splits on a silent gap between notes', () => {
     const result = transcribeFrames(
       [...steady(40, 6), ...steady(40, 6, 3)],
@@ -103,6 +136,20 @@ describe('repairOctaveSlips', () => {
     expect(repairOctaveSlips(line, PROFILE)).toEqual([
       40, 40, 40, 40, 40, 40, 40,
     ])
+  })
+
+  it('pulls a lone downward octave slip back onto the line', () => {
+    const line = [52, 52, 52, 52, 40, 52, 52]
+
+    expect(repairOctaveSlips(line, PROFILE)).toEqual([
+      52, 52, 52, 52, 52, 52, 52,
+    ])
+  })
+
+  it('keeps a sustained downward octave transition', () => {
+    const line = [52, 52, 52, 52, 40, 40, 40, 40]
+
+    expect(repairOctaveSlips(line, PROFILE)).toEqual(line)
   })
 
   it('leaves a genuine leap alone', () => {

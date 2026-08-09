@@ -357,4 +357,44 @@ describe('useGuitarNightReferenceController', () => {
     expect(observed.signal?.aborted).toBe(true)
     expect(controller.reference()?.kind).toBe('authored')
   })
+
+  it('does not let a cancelled run clear the next run progress', async () => {
+    const { port } = fakePort()
+    const first = Promise.withResolvers<{
+      coverage: number
+      analysedSeconds: number
+      notes: []
+    }>()
+    const second = Promise.withResolvers<{
+      coverage: number
+      analysedSeconds: number
+      notes: []
+    }>()
+    const transcribeStem = vi
+      .fn()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    const controller = mountWithTranscription(port, transcribeStem)
+    const input = {
+      sessionId: 'session-room',
+      stemKind: 'bass' as const,
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    }
+
+    const firstRun = controller.followStem(input)
+    await waitFor(() => expect(transcribeStem).toHaveBeenCalledTimes(1))
+    controller.cancelFollowStem()
+    const secondRun = controller.followStem(input)
+    await waitFor(() => expect(transcribeStem).toHaveBeenCalledTimes(2))
+
+    first.resolve({ coverage: 0, analysedSeconds: 1, notes: [] })
+    await firstRun
+
+    expect(controller.transcribeProgress()).toBe(0)
+
+    second.resolve({ coverage: 0, analysedSeconds: 1, notes: [] })
+    await secondRun
+    expect(controller.transcribeProgress()).toBeNull()
+  })
 })

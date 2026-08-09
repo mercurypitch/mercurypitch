@@ -48,7 +48,7 @@ export function GuitarNightInputHealth(props: GuitarNightInputHealthProps) {
 
       <p class={styles.inputHealthTiming}>
         {props.timingSource() === 'audio-clock'
-          ? 'Attacks are timed on the audio clock, so spacing is exact.'
+          ? 'Attacks use the audio clock for precise spacing.'
           : 'Attacks are timed on the display loop here, so spacing is approximate.'}
       </p>
 

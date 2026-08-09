@@ -350,8 +350,14 @@ export function useGuitarNightReferenceController(
           : 'That stem could not be read.',
       )
     } finally {
-      if (transcribeAbort === abort) transcribeAbort = null
-      if (!disposed) setTranscribeProgress(null)
+      // A cancelled transcriber is allowed to settle after its replacement has
+      // started. Only the run that still owns this slot may clear its progress;
+      // otherwise the stale finally makes the live run look idle and permits a
+      // duplicate measurement to start on top of it.
+      if (transcribeAbort === abort) {
+        transcribeAbort = null
+        if (!disposed) setTranscribeProgress(null)
+      }
     }
   }
 

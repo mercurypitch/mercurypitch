@@ -42,6 +42,8 @@ export async function connectGuitarInputWorklet(
       numberOfInputs: 1,
       numberOfOutputs: 1,
       outputChannelCount: [1],
+      channelCountMode: 'max',
+      channelInterpretation: 'discrete',
     })
     node.port.onmessage = (event: MessageEvent<GuitarInputWorkletMessage>) => {
       onMessage(event.data)

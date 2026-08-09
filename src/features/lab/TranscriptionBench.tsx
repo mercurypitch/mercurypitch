@@ -7,8 +7,8 @@
 // coloured against a tab, if one is loaded, so the errors are visible rather
 // than averaged into a percentage.
 //
-// It runs `transcribeStemUrl`, the same entry point the app uses, and scores
-// with `transcription-score.ts`, the same arithmetic as
+// It runs `transcribeStem`, the same worker-first entry point the app uses,
+// and scores with `transcription-score.ts`, the same arithmetic as
 // `node scripts/transcribe-bench.mjs`. Neither is reimplemented here: a bench
 // that measures its own copy of the algorithm measures nothing.
 //
@@ -25,7 +25,8 @@ import { midiToNote } from '@/lib/scale-data'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
 import type { StemTranscription, TranscriptionPitchSource, TranscriptionProfile, } from '@/lib/transcription/stem-transcription'
-import { BASS_SWIFT_TRANSCRIPTION_PROFILE, BASS_TRANSCRIPTION_PROFILE, transcribeStemUrl, } from '@/lib/transcription/stem-transcription'
+import { BASS_SWIFT_TRANSCRIPTION_PROFILE, BASS_TRANSCRIPTION_PROFILE, } from '@/lib/transcription/stem-transcription'
+import { transcribeStem } from '@/lib/transcription/stem-transcription-client'
 import type { NoteVerdict, ScorableNote, } from '@/lib/transcription/transcription-score'
 import { pickReferenceTrack, scoreAgainstTruth, WINDOW_SECONDS, } from '@/lib/transcription/transcription-score'
 import type { MelodyItem } from '@/types'
@@ -356,7 +357,7 @@ export const TranscriptionBench: Component = () => {
     const url = URL.createObjectURL(file)
     const startedAt = performance.now()
     try {
-      const transcription = await transcribeStemUrl(url, {
+      const transcription = await transcribeStem(url, {
         profile: profile(),
         signal: controller.signal,
         onProgress: setProgress,

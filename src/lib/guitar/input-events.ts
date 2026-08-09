@@ -87,7 +87,9 @@ export function playedAt(capturedAt: number, latencySeconds: number): number {
 /**
  * Attach a pitch to the attack it belongs to, if any does. Returns the list
  * unchanged when the reading arrived too late to be that strike's, or when the
- * strike already has a clearer reading than this one.
+ * strike already has a clearer reading of the same note. A different note may
+ * be the detector settling after a previously ringing string, so it corrects
+ * the provisional reading even at lower clarity.
  */
 export function attachPitchToLatestAttack(
   events: readonly GuitarInputEvent[],
@@ -100,7 +102,11 @@ export function attachPitchToLatestAttack(
   if (Math.abs(atSeconds - latest.at) * 1000 > PITCH_ATTACH_WINDOW_MS) {
     return events
   }
-  if (latest.pitch !== null && latest.pitch.clarity >= pitch.clarity) {
+  if (
+    latest.pitch !== null &&
+    latest.pitch.midi === pitch.midi &&
+    latest.pitch.clarity >= pitch.clarity
+  ) {
     return events
   }
   const updated = [...events]

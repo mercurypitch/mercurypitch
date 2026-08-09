@@ -101,9 +101,12 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     () => reference()?.tempoBpm ?? null,
   )
   const isPlaying = createMemo(() => props.transport.status() === 'playing')
+  const isCalibrating = createMemo(() => listening.status() === 'calibrating')
   const isListening = createMemo(
     () =>
-      listening.status() === 'listening' || listening.status() === 'requesting',
+      listening.status() === 'listening' ||
+      listening.status() === 'requesting' ||
+      isCalibrating(),
   )
   const duration = createMemo(() =>
     Math.max(0, performance.transport.timeline.durationSeconds()),
@@ -152,6 +155,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       props.transport.pause()
       return
     }
+    if (isCalibrating()) return
     if (isListening()) listening.stop()
     void performance.transport.play()
   }
@@ -187,7 +191,8 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
-        enabled: () => props.transport.status() !== 'loading',
+        enabled: () =>
+          props.transport.status() !== 'loading' && !isCalibrating(),
       }),
     )
   })
@@ -222,6 +227,15 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               type="button"
               classList={{ [styles.listeningActive]: isListening() }}
               aria-pressed={isListening()}
+              aria-label={
+                listening.status() === 'requesting'
+                  ? 'Cancel opening input'
+                  : isCalibrating()
+                    ? 'Stop calibration'
+                    : isListening()
+                      ? 'Stop Listening'
+                      : 'Turn on Listening'
+              }
               disabled={props.transport.status() === 'loading'}
               onClick={toggleListening}
             >
@@ -231,7 +245,9 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
               <strong>
                 {listening.status() === 'requesting'
                   ? 'Opening input'
-                  : 'Listening'}
+                  : isCalibrating()
+                    ? 'Calibrating'
+                    : 'Listening'}
               </strong>
             </button>
             <button
@@ -387,7 +403,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             type="button"
             aria-label={playLabel(props.transport.status())}
             title={playLabel(props.transport.status())}
-            disabled={props.transport.status() === 'loading'}
+            disabled={props.transport.status() === 'loading' || isCalibrating()}
             onClick={togglePlayback}
           >
             <span aria-hidden="true">{isPlaying() ? <Pause /> : <Play />}</span>

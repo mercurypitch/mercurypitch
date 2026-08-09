@@ -212,7 +212,8 @@ export interface TranscriptionScore {
  * Pass one finds a per-window offset, exactly as before. Pass two matches
  * GLOBALLY: every heard note is moved onto the reference clock by its window's
  * offset, candidate pairs within tolerance are collected, and pairs are taken
- * closest-first with each note — heard and reference — used once.
+ * closest-first with each note — heard and reference — used once. Equal-time
+ * candidates prefer exact pitch, then an octave match, before another pitch.
  *
  * Matching inside each window was tried and had two failure modes, one per
  * choice of bookkeeping. With a per-window used-set, overlapping truth windows
@@ -285,6 +286,8 @@ export function scoreAgainstTruth(
     truthIndex: number
     gap: number
     errorMs: number
+    /** Exact pitch first, then the right pitch class, then another pitch. */
+    pitchPriority: 0 | 1 | 2
   }
   const pairs: Pair[] = []
   // Truth notes sorted by time with original indices, so each heard note scans
@@ -320,10 +323,22 @@ export function scoreAgainstTruth(
         truthIndex: candidate.index,
         gap: Math.abs(delta),
         errorMs: delta * 1000,
+        pitchPriority:
+          candidate.note.midi === heard.midi
+            ? 0
+            : Math.abs(candidate.note.midi - heard.midi) % 12 === 0
+              ? 1
+              : 2,
       })
     }
   })
-  pairs.sort((left, right) => left.gap - right.gap)
+  pairs.sort(
+    (left, right) =>
+      left.gap - right.gap ||
+      left.pitchPriority - right.pitchPriority ||
+      left.heardIndex - right.heardIndex ||
+      left.truthIndex - right.truthIndex,
+  )
 
   const matchOfHeard = new Map<number, Pair>()
   const usedTruth = new Set<number>()

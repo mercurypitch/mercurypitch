@@ -45,13 +45,23 @@ describe('attachPitchToLatestAttack', () => {
     expect(attachPitchToLatestAttack(events, pitch(64, 0.8), 2.4)).toBe(events)
   })
 
-  it('keeps the clearer of two readings for the same strike', () => {
+  it('keeps the clearer of two readings for the same note', () => {
     const first = attachPitchToLatestAttack([attack(2)], pitch(64, 0.9), 2.01)
-    const second = attachPitchToLatestAttack(first, pitch(67, 0.5), 2.05)
+    const second = attachPitchToLatestAttack(first, pitch(64, 0.5), 2.05)
     expect(second[0]?.pitch?.midi).toBe(64)
+    expect(second[0]?.pitch?.clarity).toBe(0.9)
+  })
 
-    const better = attachPitchToLatestAttack(first, pitch(67, 0.95), 2.05)
-    expect(better[0]?.pitch?.midi).toBe(67)
+  it('corrects a clearer ringing note when the new strike settles elsewhere', () => {
+    const ringing = attachPitchToLatestAttack(
+      [attack(2)],
+      pitch(64, 0.95),
+      2.01,
+    )
+    const corrected = attachPitchToLatestAttack(ringing, pitch(67, 0.62), 2.05)
+
+    expect(corrected[0]?.pitch?.midi).toBe(67)
+    expect(corrected[0]?.pitch?.clarity).toBe(0.62)
   })
 
   it('has nothing to attach a reading to before the first strike', () => {
