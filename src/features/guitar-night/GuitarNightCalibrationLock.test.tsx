@@ -29,6 +29,7 @@ const listening = vi.hoisted(() => ({
 
 const scoreRoom = vi.hoisted(() => ({
   status: vi.fn(() => 'quiet'),
+  setupLocked: vi.fn(() => false),
   countInRemaining: vi.fn(() => 0),
   positionSeconds: vi.fn(() => 0),
   displayPositionSeconds: vi.fn(() => 0),
@@ -110,6 +111,7 @@ function createTransport(): GuitarBackingTransportController {
     positionSeconds: () => 0,
     durationSeconds: () => 60,
     playbackRate: () => 1,
+    masterVolume: () => 0.78,
     tracks: () => [],
     error: () => null,
     configure: vi.fn(),

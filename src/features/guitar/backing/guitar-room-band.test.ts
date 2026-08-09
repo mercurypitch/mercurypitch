@@ -183,6 +183,109 @@ describe('createGuitarRoomBand', () => {
     await band.dispose()
   })
 
+  it('starts from a parked authored beat without replaying the score prefix', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const onBeat = vi.fn()
+    const onComplete = vi.fn()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    const result = await band.start({
+      tempoBpm: 120,
+      tempoChanges: [
+        { beat: 0, usPerBeat: 500000 },
+        { beat: 2, usPerBeat: 1000000 },
+      ],
+      countInBeats: 0,
+      exerciseBeats: 4,
+      durationBeats: 4,
+      startBeat: 2,
+      feel: 'click',
+      onBeat,
+      onComplete,
+    })
+    await vi.advanceTimersByTimeAsync(2_150)
+
+    expect(onBeat.mock.calls.map((call) => call[0])).toEqual([2, 3])
+    expect(onBeat.mock.calls.map((call) => call[2])).toEqual([5.09, 6.09])
+    expect(result.expectedHitTimesMs).toEqual([90, 1090])
+    expect(onComplete).toHaveBeenCalledOnce()
+
+    await band.dispose()
+  })
+
+  it('starts between mapped beats without replaying past attacks', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const onExerciseStart = vi.fn()
+    const onBeat = vi.fn()
+    const onComplete = vi.fn()
+    guitarVoices.createGuitarVoice.mockImplementation(() => ({
+      gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
+      oscillators: [],
+      lfos: [],
+      lfoGains: [],
+      hasCustomEnvelope: true,
+      dispose: vi.fn(),
+    }))
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    const result = await band.start({
+      tempoBpm: 120,
+      tempoChanges: [
+        { beat: 0, usPerBeat: 500000 },
+        { beat: 2, usPerBeat: 1000000 },
+      ],
+      countInBeats: 0,
+      exerciseBeats: 4,
+      durationBeats: 4,
+      startBeat: 2.4,
+      feel: 'click',
+      melody: [
+        { midi: 63, startBeat: 2.25, durationBeats: 0.25 },
+        { midi: 64, startBeat: 2.4, durationBeats: 0.25 },
+        { midi: 65, startBeat: 2.75, durationBeats: 0.25 },
+        { midi: 67, startBeat: 3, durationBeats: 0.5 },
+      ],
+      onExerciseStart,
+      onBeat,
+      onComplete,
+    })
+
+    await vi.advanceTimersByTimeAsync(80)
+    expect(onExerciseStart).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(20)
+    expect(onExerciseStart).toHaveBeenCalledWith(2.4, 5.09)
+    expect(result.expectedHitTimesMs).toHaveLength(1)
+    expect(result.expectedHitTimesMs[0]).toBeCloseTo(690, 6)
+    const voiceStarts = guitarVoices.createGuitarVoice.mock.calls.map(
+      (call) => call[4],
+    )
+    expect(voiceStarts).toHaveLength(3)
+    expect(voiceStarts[0]).toBeCloseTo(5.09, 6)
+    expect(voiceStarts[1]).toBeCloseTo(5.44, 6)
+    expect(voiceStarts[2]).toBeCloseTo(5.69, 6)
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(onBeat).toHaveBeenCalledWith(3, 'exercise', expect.any(Number))
+    expect(onBeat.mock.calls[0]?.[2]).toBeCloseTo(5.69, 6)
+    expect(onComplete).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(onComplete).toHaveBeenCalledOnce()
+
+    await band.dispose()
+  })
+
   it('repeats mapped beat and note durations through a tempo-changing loop', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

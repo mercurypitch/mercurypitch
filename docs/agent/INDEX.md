@@ -77,7 +77,7 @@ These are the rules that break things when ignored.
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.2k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `guitar-night` | [useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 7.5k | The score room rehearses an authored tab on its own clock, with no separated song. |
+| `guitar-night` | [useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 7.7k | The score room rehearses an authored tab on its own clock, with no separated song. |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.5k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
@@ -89,8 +89,8 @@ These are the rules that break things when ignored.
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 2.5k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `piano` | [piano-input-state.ts](../../src/features/piano/input/piano-input-state.ts) | 2.4k | Piano input state — polyphonic note and pedal authority MIDI keyboards and touch surfaces feed the same normalized event stream. |
 | `piano-night` | [piano-night-demo-project.ts](../../src/features/piano-night/piano-night-demo-project.ts) | 2.2k | Piano Night prepared project — one truthful first-party score for silent entry The bundled study is canonical PianoProject data rather th... |
+| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 2.1k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 2.1k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
-| `guitar` | [guitar-backing-transport.ts](../../src/features/guitar/backing/guitar-backing-transport.ts) | 2.0k | Guitar backing transport keeps separated stems on one route-owned Web Audio clock. |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 1.9k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.6k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 1.5k | The resolved routine, stored whole: generated routines can be length-scaled (and shared routines aren't in the registry at all), so the i... |

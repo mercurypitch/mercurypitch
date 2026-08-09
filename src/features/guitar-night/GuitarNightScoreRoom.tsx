@@ -40,7 +40,11 @@ function formatTime(seconds: number): string {
 
 /** Beats are counted from one on screen, the way a player counts them. */
 function formatBeat(beat: number): string {
-  return `beat ${Math.round(beat) + 1}`
+  const countedBeat = Math.max(0, beat) + 1
+  const label = Number.isInteger(countedBeat)
+    ? String(countedBeat)
+    : countedBeat.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `beat ${label}`
 }
 
 const COUNT_IN_CHOICES = [0, 2, 4, 8]
@@ -90,9 +94,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const isRunning = createMemo(
     () => room.status() === 'count-in' || room.status() === 'playing',
   )
-  const takeIsActive = createMemo(
-    () => room.status() === 'starting' || isRunning(),
-  )
+  const takeIsActive = createMemo(() => room.setupLocked())
   // A loop is scheduled into the click at start, so marks moved mid-take take
   // effect on the next one. Say so rather than looking ignored.
   const loopPendingRestart = createMemo(() =>
@@ -105,6 +107,20 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       listening.status() === 'requesting' ||
       isCalibrating(),
   )
+  const playbackLabel = createMemo(() => {
+    if (room.status() === 'starting') return 'Opening the room clock'
+    if (isRunning()) return 'Pause score'
+    if (room.status() === 'paused') {
+      return room.setupLocked() ? 'Resume score' : 'Start from here'
+    }
+    if (room.status() === 'complete') {
+      return loop.span() === null ? 'Replay score' : 'Rehearse loop'
+    }
+    return 'Start the count-in'
+  })
+  let scrubbing = false
+  let resumeAfterScrub = false
+  let keyboardScrubbing = false
 
   const stage: GuitarPerformanceStageSource = {
     title: () => displayedReference().title,
@@ -133,6 +149,51 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     if (!takeIsActive() && isListening()) listening.stop()
     if (!takeIsActive()) sessionDetails.open = false
     room.toggle()
+  }
+
+  const beginScrub = (): void => {
+    if (scrubbing) return
+    scrubbing = true
+    resumeAfterScrub =
+      room.status() === 'starting' ||
+      room.status() === 'count-in' ||
+      room.status() === 'playing'
+    room.pause()
+  }
+
+  const previewScrub = (event: InputEvent): void => {
+    beginScrub()
+    room.seekSeconds(Number((event.currentTarget as HTMLInputElement).value))
+  }
+
+  const finishScrub = (): void => {
+    if (!scrubbing) return
+    const shouldResume = resumeAfterScrub
+    scrubbing = false
+    resumeAfterScrub = false
+    if (shouldResume) void room.start()
+  }
+
+  const isSeekKey = (key: string): boolean =>
+    key === 'ArrowLeft' ||
+    key === 'ArrowRight' ||
+    key === 'ArrowUp' ||
+    key === 'ArrowDown' ||
+    key === 'Home' ||
+    key === 'End' ||
+    key === 'PageUp' ||
+    key === 'PageDown'
+
+  const beginKeyboardScrub = (event: KeyboardEvent): void => {
+    if (!isSeekKey(event.key)) return
+    keyboardScrubbing = true
+    beginScrub()
+  }
+
+  const finishKeyboardScrub = (event: KeyboardEvent): void => {
+    if (!isSeekKey(event.key)) return
+    keyboardScrubbing = false
+    finishScrub()
   }
 
   const changeInstrument = (instrument: StringedInstrument): void => {
@@ -398,24 +459,45 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           </span>
         </div>
         <div class={styles.timeRail}>
-          <span>{formatTime(room.displayPositionSeconds())}</span>
-          {/* No scrubbing: the click is the timeline, and seeking a live
-              count-in would desynchronise the beat it schedules. */}
-          <progress
-            class={styles.songProgress}
-            max={Math.max(1, room.durationSeconds())}
+          <output aria-label="Elapsed score time">
+            {formatTime(room.displayPositionSeconds())}
+          </output>
+          <input
+            type="range"
+            min="0"
+            max={room.durationSeconds() > 0 ? room.durationSeconds() : 1}
+            step={Math.max(0.05, 15 / room.tempoBpm())}
             value={room.displayPositionSeconds()}
             aria-label="Score position"
+            aria-valuetext={`${formatTime(room.displayPositionSeconds())} of ${formatTime(room.durationSeconds())} · ${formatBeat(room.playheadBeat() ?? 0)}`}
+            onPointerDown={() => {
+              keyboardScrubbing = false
+              beginScrub()
+            }}
+            onPointerUp={finishScrub}
+            onPointerCancel={finishScrub}
+            onKeyDown={beginKeyboardScrub}
+            onKeyUp={finishKeyboardScrub}
+            onInput={previewScrub}
+            onChange={() => {
+              if (!keyboardScrubbing) finishScrub()
+            }}
+            onBlur={() => {
+              keyboardScrubbing = false
+              finishScrub()
+            }}
           />
-          <span>{formatTime(room.durationSeconds())}</span>
+          <output aria-label="Score duration">
+            {formatTime(room.durationSeconds())}
+          </output>
         </div>
 
         <div class={styles.transportControls}>
           <button
             class={styles.playControl}
             type="button"
-            aria-label={isRunning() ? 'Stop the click' : 'Start the count-in'}
-            title={isRunning() ? 'Stop the click' : 'Start the count-in'}
+            aria-label={playbackLabel()}
+            title={playbackLabel()}
             disabled={room.status() === 'starting' || isCalibrating()}
             onClick={togglePlayback}
           >
@@ -475,11 +557,13 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               ? `Counting in · ${room.countInRemaining()}`
               : room.status() === 'playing'
                 ? 'Click is running'
-                : room.status() === 'complete'
-                  ? 'Take complete'
-                  : room.status() === 'starting'
-                    ? 'Opening the room clock'
-                    : 'Ready when you are'}
+                : room.status() === 'paused'
+                  ? `${room.setupLocked() ? 'Paused' : 'Set'} · ${formatBeat(room.playheadBeat() ?? 0)}`
+                  : room.status() === 'complete'
+                    ? 'Take complete'
+                    : room.status() === 'starting'
+                      ? 'Opening the room clock'
+                      : 'Ready when you are'}
           </strong>
           <small>
             {room.status() === 'quiet'

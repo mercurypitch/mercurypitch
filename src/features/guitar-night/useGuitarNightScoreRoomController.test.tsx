@@ -145,7 +145,7 @@ describe('useGuitarNightScoreRoomController', () => {
       // Beat one was scheduled at 10. A delayed main-thread callback must not
       // redefine that audio-clock origin as the later delivery time.
       clock.currentTime = 10.4
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
       expect(room.status()).toBe('playing')
 
       // Two seconds of audio clock at 90 BPM is three beats — whatever the
@@ -207,7 +207,7 @@ describe('useGuitarNightScoreRoomController', () => {
       getOptions()?.onBeat?.(0, 'count-in', 9.5)
       expect(room.countInRemaining()).toBe(2)
       clock.currentTime = 10.3
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
       clock.currentTime = 11
       frames.pump()
       expect(room.positionSeconds()).toBeCloseTo(1, 5)
@@ -293,11 +293,183 @@ describe('useGuitarNightScoreRoomController', () => {
         { beat: 2, usPerBeat: 2000000 },
       ])
       clock.currentTime = 10
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
       clock.currentTime = 12.5
       frames.pump()
       // Two one-second beats, then half of the next two-second beat.
       expect(room.playheadBeat()).toBeCloseTo(2.25, 5)
+      dispose()
+    })
+  })
+
+  it('parks a seek on the authored beat map and resumes from that beat', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tempoBpm: 120,
+            tempoChanges: [
+              { beat: 0, usPerBeat: 500000 },
+              { beat: 2, usPerBeat: 1000000 },
+            ],
+          }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      // 2.4 seconds is beat 3.4 in this map. A rehearsal seek must preserve
+      // that exact position instead of replaying the start of beat 3.
+      room.seekSeconds(2.4)
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(3.4, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(2.4, 5)
+      expect(room.setupLocked()).toBe(false)
+
+      await room.start()
+      expect(getOptions()?.startBeat).toBeCloseTo(3.4, 5)
+      expect(getOptions()?.countInBeats).toBe(4)
+
+      getOptions()?.onExerciseStart?.(3.4, 10)
+      clock.currentTime = 10.5
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(3.9, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(2.9, 5)
+      dispose()
+    })
+  })
+
+  it('keeps a quiet seek configurable and reprojects its beat after a tempo change', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tempoBpm: 120,
+            tempoChanges: [
+              { beat: 0, usPerBeat: 500000 },
+              { beat: 2, usPerBeat: 1000000 },
+            ],
+          }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      room.seekSeconds(2.4)
+      expect(room.playheadBeat()).toBeCloseTo(3.4, 5)
+      expect(room.setupLocked()).toBe(false)
+      expect(band.start).not.toHaveBeenCalled()
+      expect(band.activate).not.toHaveBeenCalled()
+
+      room.setTempoBpm(60)
+      room.setCountInBeats(0)
+      expect(room.playheadBeat()).toBeCloseTo(3.4, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(4.8, 5)
+
+      await room.start()
+      expect(getOptions()?.startBeat).toBeCloseTo(3.4, 5)
+      expect(getOptions()?.tempoBpm).toBe(60)
+      expect(getOptions()?.countInBeats).toBe(0)
+      expect(room.setupLocked()).toBe(true)
+      dispose()
+    })
+  })
+
+  it('pauses at the exact audio position and resumes without another count-in', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onExerciseStart?.(0, 10)
+      clock.currentTime = 11
+      frames.pump()
+
+      room.pause()
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+      expect(room.displayPositionSeconds()).toBeCloseTo(1, 5)
+
+      clock.currentTime = 20
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+
+      await room.start()
+      expect(getOptions()?.startBeat).toBeCloseTo(1.5, 5)
+      expect(getOptions()?.countInBeats).toBe(0)
+      dispose()
+    })
+  })
+
+  it('keeps a late audio activation from reviving a scrubbed run', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const frames = frameHarness()
+      let finishStart: (() => void) | undefined
+      band.start = vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finishStart = () => resolve({ expectedHitTimesMs: [] })
+          }),
+      )
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      const opening = room.start()
+      expect(room.status()).toBe('starting')
+      room.seekSeconds(1)
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+
+      finishStart?.()
+      await expect(opening).resolves.toBe(false)
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+      dispose()
+    })
+  })
+
+  it('can seek away from the end and Stop releases the parked take', async () => {
+    await createRoot(async (dispose) => {
+      const { band } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      room.seekSeconds(999)
+      expect(room.status()).toBe('complete')
+      expect(room.playheadBeat()).toBe(4)
+      expect(room.setupLocked()).toBe(false)
+
+      room.seekSeconds(1)
+      expect(room.status()).toBe('paused')
+      expect(room.playheadBeat()).toBeCloseTo(1.5, 5)
+      await room.start()
+      expect(room.setupLocked()).toBe(true)
+
+      room.stop()
+      expect(room.status()).toBe('quiet')
+      expect(room.playheadBeat()).toBeNull()
+      expect(room.positionSeconds()).toBe(0)
+      expect(room.setupLocked()).toBe(false)
       dispose()
     })
   })
@@ -344,7 +516,7 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(getOptions()?.loop).toEqual({ start: 1, end: 3 })
       expect(room.runningLoop()).toEqual({ start: 1, end: 3 })
 
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
       // Three beats of elapsed clock is one beat past B, so the playhead reads
       // beat 1 again — the same fold the scheduler applied.
       clock.currentTime = 10 + 3 * (60 / 90)
@@ -380,7 +552,7 @@ describe('useGuitarNightScoreRoomController', () => {
       })
 
       await room.start()
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
 
       // A is at 0.5 s and B is at 2 s. At B the scheduler returns to A.
       clock.currentTime = 12
@@ -396,6 +568,45 @@ describe('useGuitarNightScoreRoomController', () => {
       clock.currentTime = 13.5
       frames.pump()
       expect(room.playheadBeat()).toBeCloseTo(1, 5)
+      dispose()
+    })
+  })
+
+  it('resumes a fractional position inside a mapped loop without changing its clock', async () => {
+    await createRoot(async (dispose) => {
+      const { band, clock, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: () =>
+          reference({
+            tempoBpm: 120,
+            tempoChanges: [
+              { beat: 0, usPerBeat: 500000 },
+              { beat: 2, usPerBeat: 1000000 },
+            ],
+          }),
+        loop: () => ({ start: 1, end: 3 }),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      room.seekSeconds(1.4)
+      expect(room.playheadBeat()).toBeCloseTo(2.4, 5)
+      await room.start()
+      expect(getOptions()?.startBeat).toBeCloseTo(2.4, 5)
+      getOptions()?.onExerciseStart?.(2.4, 10)
+
+      clock.currentTime = 10.6
+      frames.pump()
+      expect(room.playheadBeat()).toBeCloseTo(1, 5)
+
+      clock.currentTime = 10.8
+      room.pause()
+      expect(room.playheadBeat()).toBeCloseTo(1.4, 5)
+      await room.start()
+      expect(getOptions()?.startBeat).toBeCloseTo(1.4, 5)
+      expect(getOptions()?.countInBeats).toBe(0)
       dispose()
     })
   })
@@ -475,7 +686,7 @@ describe('useGuitarNightScoreRoomController', () => {
         cancelFrame: frames.cancelFrame,
       })
       await room.start()
-      getOptions()?.onBeat?.(0, 'exercise', 10)
+      getOptions()?.onExerciseStart?.(0, 10)
       clock.currentTime = 11
       frames.pump()
       expect(room.positionSeconds()).toBeCloseTo(1, 5)

@@ -18,7 +18,7 @@ interface GuitarNightLoopControllerOptions {
   /**
    * Move the playhead back to A. The host owns what that costs. Omitted by a
    * host whose clock already folds itself — the tab room schedules the loop
-   * into the click, so there is nothing left to seek.
+   * into the click, so loop wrapping never asks this controller to seek.
    */
   onWrap?: (start: number) => void
 }
