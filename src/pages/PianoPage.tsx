@@ -12,6 +12,7 @@ import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
 import type { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { fallingNotesToMelodyItems, melodyItemsToFallingNotes, midiSongNotesToFallingNotes, } from '@/features/piano/legacy/piano-song-adapter'
+import type { PianoPerformanceRuntime } from '@/features/piano/runtime/piano-performance-contract'
 import launchStyles from '@/features/piano-night/PianoNightLaunch.module.css'
 import { PIANO_NIGHT_PATH } from '@/features/piano-night/route'
 import { useLibraryMelodySelection } from '@/features/practice/useLibraryMelodySelection'
@@ -36,9 +37,8 @@ type FallingNotesController = ReturnType<typeof useFallingNotesController>
 
 interface PianoPageProps {
   fallingNotes: FallingNotesController
-  /** Derived in AppShell (also consumed by the playback wiring), threaded in. */
-  isPlaying: Accessor<boolean>
-  isPaused: Accessor<boolean>
+  /** Route-neutral facade over the App-owned falling-notes runtime. */
+  performance: PianoPerformanceRuntime
   /** Shared volume signal (used across tabs), owned by AppShell. */
   volume: Accessor<number>
   onVolumeChange: (vol: number) => void
@@ -64,6 +64,17 @@ export function PianoPage(props: PianoPageProps) {
   // changes), so the reactive-prop warning is a false positive here.
   // eslint-disable-next-line solid/reactivity
   const fallingNotes = props.fallingNotes
+  // The adapter is constructed once beside the stable App-owned controller.
+  // eslint-disable-next-line solid/reactivity
+  const performance = props.performance
+  const performanceIsPlaying = (): boolean =>
+    performance.transport.phase() === 'playing'
+  const performanceIsActive = (): boolean => {
+    const phase = performance.transport.phase()
+    return phase === 'playing' || phase === 'count-in'
+  }
+  const performanceIsPaused = (): boolean =>
+    performance.transport.phase() === 'paused'
 
   // Mic feedback: "can't hear you" / "too quiet" while playing the game.
   const micInsights = useMicInsights({
@@ -127,7 +138,7 @@ export function PianoPage(props: PianoPageProps) {
     <FallingNotesCanvas
       songNotes={fallingNotes.songNotes}
       gameState={fallingNotes.gameState}
-      playheadBeat={fallingNotes.playheadBeat}
+      playheadBeat={performance.transport.timeline.playheadBeat}
       hitResults={fallingNotes.hitResults}
       combo={fallingNotes.combo}
       score={fallingNotes.score}
@@ -139,7 +150,10 @@ export function PianoPage(props: PianoPageProps) {
       visibleBeatWindow={fallingNotes.visibleBeatWindow}
       midiHeldNotes={fallingNotes.midiHeldNotes}
       onClickPianoOn={fallingNotes.clickPianoNoteOn}
+      onClickPianoMove={fallingNotes.clickPianoNoteMove}
       onClickPianoOff={fallingNotes.clickPianoNoteOff}
+      onClickPianoCancel={fallingNotes.cancelClickPianoNote}
+      onReleaseAllClickPianoNotes={fallingNotes.releaseAllClickPianoNotes}
       clickPianoEnabled={fallingNotes.clickPianoEnabled}
       loopA={props.loopA}
       loopB={props.loopB}
@@ -214,8 +228,9 @@ export function PianoPage(props: PianoPageProps) {
       fallback={
         <PianoMobileStage
           fallingNotes={fallingNotes}
+          performance={performance}
           picker={picker}
-          onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+          onSeek={props.onSeek ?? performance.transport.seekToBeat}
           volume={props.volume}
           onVolumeChange={props.onVolumeChange}
           renderCanvas={renderFallingCanvas}
@@ -236,12 +251,12 @@ export function PianoPage(props: PianoPageProps) {
           onToggleMute={fallingNotes.toggleTrackMute}
           visibleTrackIds={fallingNotes.visibleTrackIds}
           onToggleVisibility={fallingNotes.toggleTrackVisibility}
-          playheadBeat={fallingNotes.playheadBeat}
-          totalBeats={fallingNotes.totalBeats}
-          songBpm={fallingNotes.currentSongBpm}
-          onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+          playheadBeat={performance.transport.timeline.playheadBeat}
+          totalBeats={performance.transport.timeline.totalBeats}
+          songBpm={performance.transport.timeline.tempoBpm}
+          onSeek={props.onSeek ?? performance.transport.seekToBeat}
           songName={selectedSongName}
-          isPlaying={() => fallingNotes.gameState() === 'playing'}
+          isPlaying={performanceIsPlaying}
           loopA={props.loopA}
           loopB={props.loopB}
           loopEnabled={props.loopEnabled}
@@ -295,9 +310,9 @@ export function PianoPage(props: PianoPageProps) {
                     melody={sheetMelody}
                     musicKey={keyName}
                     scaleType={scaleType}
-                    currentBeat={fallingNotes.playheadBeat}
-                    isPlaying={() => fallingNotes.gameState() === 'playing'}
-                    onSeek={props.onSeek ?? fallingNotes.seekToBeat}
+                    currentBeat={performance.transport.timeline.playheadBeat}
+                    isPlaying={performanceIsPlaying}
+                    onSeek={props.onSeek ?? performance.transport.seekToBeat}
                   />
                 </Suspense>
               </div>
@@ -311,18 +326,12 @@ export function PianoPage(props: PianoPageProps) {
             defaultDock="top"
           >
             <PianoControlBar
-              isPlaying={props.isPlaying}
-              isPaused={props.isPaused}
-              onPlay={() => {
-                // Fresh user-triggered Play resets cycle counter.
-                if (fallingNotes.gameState() !== 'paused') {
-                  fallingNotes.setPianoCurrentCycle(1)
-                }
-                void fallingNotes.startGame()
-              }}
-              onPause={fallingNotes.pauseGame}
-              onResume={fallingNotes.resumeGame}
-              onStop={fallingNotes.resetGame}
+              isPlaying={performanceIsActive}
+              isPaused={performanceIsPaused}
+              onPlay={() => void performance.transport.play()}
+              onPause={performance.transport.pause}
+              onResume={() => void performance.transport.play()}
+              onStop={performance.transport.stop}
               playMode={() =>
                 fallingNotes.pianoPlayMode() === 'repeat'
                   ? PLAYBACK_MODE_REPEAT
@@ -343,10 +352,10 @@ export function PianoPage(props: PianoPageProps) {
               countInBeat={() => fallingNotes.countInBeat()}
               volume={props.volume}
               onVolumeChange={props.onVolumeChange}
-              speed={fallingNotes.speed}
-              onSpeedChange={fallingNotes.setSpeed}
-              bpm={fallingNotes.currentSongBpm}
-              onBpmChange={fallingNotes.setBpm}
+              speed={performance.transport.speed}
+              onSpeedChange={performance.transport.setSpeed}
+              bpm={performance.transport.timeline.tempoBpm}
+              onBpmChange={performance.transport.setTempoBpm}
               micActive={fallingNotes.isMicActive}
               onMicToggle={() => {
                 if (fallingNotes.isMicActive()) {
@@ -369,6 +378,11 @@ export function PianoPage(props: PianoPageProps) {
                 } else {
                   void fallingNotes.midiConnect()
                 }
+              }}
+              midiDevices={fallingNotes.midiDevices}
+              selectedMidiInputId={fallingNotes.selectedMidiInputId}
+              onMidiDeviceChange={(inputId) => {
+                fallingNotes.selectMidiInput(inputId)
               }}
               showNoteLabels={fallingNotes.showNoteLabels}
               onToggleNoteLabels={fallingNotes.toggleNoteLabels}

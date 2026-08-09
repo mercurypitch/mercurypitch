@@ -1,4 +1,4 @@
-# Piano Night Phase 1A — EARS Requirements
+# Piano Night foundations — EARS Requirements
 
 Approved requirements for the first production slice of the standalone Piano
 Night experience at `/piano-night`. Phase 1A selects the Performance Horizon
@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** approved Phase 1A target contract; implementation in progress.
+**Status:** Phase 1A and Slice 2 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -224,3 +224,96 @@ interface.
 | `PN-STAGE`, `PN-TRUTH`     | Standalone component tests for composition, empty/preview states, and silent mount                   |
 | `PN-ROOM`                  | Asset-response, responsive-source, missing-image, and no-premium assertions                          |
 | `PN-A11Y`, `PN-RESPONSIVE` | Desktop/mobile browser smoke, keyboard/focus checks, reduced-motion check, and overflow measurements |
+
+## Slice 2 — route-neutral transport and input
+
+Slice 2 builds reusable runtime seams and adopts them behind the existing
+`/#/piano` experience. It does not cut the standalone Piano Night shell over
+to real playback; that remains a later slice. The Phase 1A exclusions above
+describe the first visual slice and remain historically accurate.
+
+### Audio-clock transport — `PN-TRANSPORT-*`
+
+- **REQ-PN-TRANSPORT-001 — Silent construction:** Creating a route-neutral
+  Piano transport shall not create or resume an `AudioContext`; only an
+  explicit Play request may activate audio.
+- **REQ-PN-TRANSPORT-002 — One clock:** WHILE playback is active, the
+  transport shall derive its beat position from one injected audio clock and
+  shall not advance a competing RAF, interval, or wall-clock timeline.
+- **REQ-PN-TRANSPORT-003 — Stable pause:** WHEN Pause is requested, the
+  transport shall snapshot its audio-clock-derived beat and subsequent reads
+  shall remain stable until Play, Seek, or Stop.
+- **REQ-PN-TRANSPORT-004 — Continuity:** WHEN tempo or speed changes during
+  playback, the transport shall rebase its audio-clock origin so the current
+  beat does not jump.
+- **REQ-PN-TRANSPORT-005 — Bounded seek:** WHEN a seek is requested, the
+  target shall be clamped to the score duration and shall become the origin
+  for subsequent playback.
+- **REQ-PN-TRANSPORT-006 — Completion:** WHEN the audio clock reaches the
+  score duration, the transport shall clamp at the final beat and enter the
+  complete phase.
+- **REQ-PN-TRANSPORT-007 — Lifetime safety:** WHEN a transport is disposed,
+  pending activation shall not revive it and subsequent commands shall not
+  create audio resources.
+
+### Normalized performance input — `PN-INPUT-*`
+
+- **REQ-PN-INPUT-001 — Polyphonic identity:** Piano input shall normalize
+  simultaneous note-on and note-off activity without collapsing distinct
+  source, device, channel, pointer, pitch, or velocity identity.
+- **REQ-PN-INPUT-002 — Sustain:** WHILE sustain (CC64) is down, releasing a
+  key shall remove it from physically held notes but retain it among sounding
+  notes until sustain is released or its source is cleared.
+- **REQ-PN-INPUT-003 — Sostenuto:** WHEN sostenuto (CC66) is pressed, only
+  notes physically held at that transition shall be latched; later notes
+  shall not join that latch.
+- **REQ-PN-INPUT-004 — Soft pedal:** WHILE soft pedal (CC67) is down, the
+  normalized pedal state shall expose that fact without rewriting the
+  player's source velocity.
+- **REQ-PN-INPUT-005 — Safety messages:** WHEN an input source disconnects,
+  changes selection, receives all-sound-off, or is disposed, every note and
+  pedal it owns shall be released deterministically. Channel all-notes-off
+  shall release physical keys while respecting active pedals; reset-controllers
+  shall clear pedal latches and then release eligible notes.
+- **REQ-PN-INPUT-006 — Touch pointers:** Each on-screen key pointer shall own
+  an independent note lifecycle; pointer movement may change its pitch, and
+  pointer-up, pointer-cancel, lost capture, or pinch takeover shall release
+  only the notes owned by the affected pointer or gesture.
+- **REQ-PN-INPUT-007 — Explicit MIDI permission:** The Web MIDI port shall
+  request access only after an explicit Connect action and shall remain
+  silent and permission-free at construction.
+- **REQ-PN-INPUT-008 — MIDI device selection:** WHERE multiple MIDI inputs
+  are available, exactly one selected input shall publish performance
+  messages; selection and hot-plug changes shall detach stale listeners and
+  release their state.
+- **REQ-PN-INPUT-009 — Channel messages:** The MIDI port shall normalize
+  note-on, velocity-zero note-off, note-off, CC64, CC66, CC67, and channel
+  all-notes-off, all-sound-off, and reset-controllers messages while ignoring
+  unsupported traffic.
+
+### Legacy adoption — `PN-COMPAT-*`
+
+- **REQ-PN-COMPAT-001 — Production adapter:** The current Piano page shall
+  consume its timeline and transport actions through the legacy Piano
+  performance adapter; that adapter shall delegate to the existing
+  falling-notes owner rather than create a clock.
+- **REQ-PN-COMPAT-002 — One input owner:** The current falling-notes
+  controller shall adapt normalized MIDI and touch activity into its existing
+  pitch, scoring, and key-highlight surfaces without retaining a second MIDI
+  owner.
+- **REQ-PN-COMPAT-003 — Chord scoring:** WHERE MIDI or touch input is active,
+  every currently sounding normalized pitch shall be eligible for scoring;
+  the compatibility `currentPitch` surface may still expose one primary note.
+- **REQ-PN-COMPAT-004 — Visible continuity:** Adopting the runtime seams shall
+  preserve existing song loading, loop, seek-then-play, count-in, repeat,
+  scoring, microphone, playback, responsive composition, and tour selectors.
+- **REQ-PN-COMPAT-005 — Audio activation:** Existing Piano Play shall use the
+  shared user-gesture audio activation path before starting playback.
+
+### Slice 2 verification map
+
+| Requirement area | Minimum evidence                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `PN-TRANSPORT`   | Deterministic injected-clock tests for silent construction, play/pause/seek, tempo/speed continuity, completion, and disposal |
+| `PN-INPUT`       | Normalized input and Web MIDI port fixtures, including dense-chord/pedal soak, device selection, hot-plug, panic, and cleanup |
+| `PN-COMPAT`      | Legacy-adapter production wiring, focused existing playback regressions, and a real-pointer Piano key and scrub browser smoke |

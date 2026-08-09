@@ -15,6 +15,7 @@ import { IconClock, IconLabels, IconMidi, IconOnce, IconPause, IconPlay, IconRep
 import { LoopControls } from '@/components/shared/control-bar/LoopControls'
 import { NumberStepper } from '@/components/shared/control-bar/NumberStepper'
 import { SafeSelect } from '@/components/shared/SafeSelect'
+import type { WebMidiInputDevice } from '@/features/piano/input/web-midi-input-port'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, } from '@/features/tabs/constants'
 import type { PlaybackMode } from '@/types'
 import { SlidersHorizontal } from '../icons'
@@ -43,6 +44,9 @@ interface PianoControlBarProps {
   onMicToggle: () => void
   midiConnected: () => boolean
   onMidiToggle: () => void
+  midiDevices: () => readonly WebMidiInputDevice[]
+  selectedMidiInputId: () => string | null
+  onMidiDeviceChange: (inputId: string | null) => void
   showNoteLabels: () => boolean
   onToggleNoteLabels: () => void
   zoomPercent: () => number
@@ -255,6 +259,26 @@ export const PianoControlBar: Component<PianoControlBarProps> = (props) => {
         </button>
 
         <div class={styles.moreGroup}>
+          <Show when={props.midiDevices().length > 0}>
+            <div class={styles.field}>
+              <IconMidi />
+              <SafeSelect
+                id="piano-midi-input-select"
+                class={styles.select}
+                value={props.selectedMidiInputId() ?? ''}
+                aria-label="MIDI input device"
+                onChange={(event) =>
+                  props.onMidiDeviceChange(event.currentTarget.value || null)
+                }
+              >
+                <option value="">No MIDI input</option>
+                <For each={props.midiDevices()}>
+                  {(device) => <option value={device.id}>{device.name}</option>}
+                </For>
+              </SafeSelect>
+            </div>
+          </Show>
+
           {/* Tempo */}
           <div class={styles.field} data-testid="tempo-group">
             <IconClock />

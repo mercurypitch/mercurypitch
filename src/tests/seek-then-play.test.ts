@@ -6,7 +6,7 @@
 // ============================================================
 
 import { createRoot } from 'solid-js'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { useGuitarPracticeController } from '@/features/guitar-practice/useGuitarPracticeController'
 import type { AudioEngine } from '@/lib/audio-engine'
@@ -18,6 +18,7 @@ const mockAudioEngine = () =>
   ({
     init: () => Promise.resolve(),
     resume: () => Promise.resolve(),
+    getAudioContext: () => null,
     getSampleRate: () => 44100,
     getBufferSize: () => 2048,
     getTimeData: () => new Float32Array(2048),
@@ -56,6 +57,14 @@ const pianoNotes: FallingNote[] = Array.from({ length: 16 }, (_, i) => ({
 // piano controller and is verified live in the browser instead.
 
 describe('piano: seek while stopped then play', () => {
+  beforeEach(() => {
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('startGame begins at the seeked beat instead of 0', async () => {
     await createRoot(async (dispose) => {
       setCountIn(0)
