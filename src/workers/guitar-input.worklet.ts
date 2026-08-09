@@ -12,8 +12,8 @@
 // comparable to anything the band scheduled.
 //
 // The detector itself lives in src/lib/guitar/attack-detector.ts and is tested
-// there against real waveforms. This file is the shell that feeds it, and is
-// kept deliberately thin, because nothing in here can be unit-tested.
+// there against real waveforms. This file is the deliberately thin shell that
+// feeds it.
 
 import { createAttackDetector } from '@/lib/guitar/attack-detector'
 import { createNoiseFloorFollower } from '@/lib/guitar/input-events'
@@ -48,11 +48,38 @@ class GuitarInputProcessor extends AudioWorkletProcessor {
   private quantaSinceLevel = 0
   private levelPeak = 0
 
+  /**
+   * Follow the loudest input channel for this render quantum.
+   *
+   * Averaging is unsafe for interfaces: a guitar on input two would be halved
+   * by an empty input one, and polarity-opposed stereo channels could cancel
+   * entirely. Selecting one intact waveform preserves both attack level and
+   * phase without allocating on the audio thread.
+   */
+  private selectInputChannel(
+    channels: readonly Float32Array[],
+  ): Float32Array | null {
+    let selected: Float32Array | null = null
+    let selectedPeak = -1
+    for (const channel of channels) {
+      if (channel.length === 0) continue
+      let peak = 0
+      for (let index = 0; index < channel.length; index += 1) {
+        const level = Math.abs(channel[index] ?? 0)
+        if (level > peak) peak = level
+      }
+      if (peak <= selectedPeak) continue
+      selected = channel
+      selectedPeak = peak
+    }
+    return selected
+  }
+
   process(inputs: Float32Array[][]): boolean {
-    const channel = inputs[0]?.[0]
+    const channel = this.selectInputChannel(inputs[0] ?? [])
     // No input block at all means the graph has nothing upstream yet. Staying
     // alive is right: the microphone may still be arriving.
-    if (channel === undefined || channel.length === 0) return true
+    if (channel === null) return true
 
     for (const attack of this.detector.process(channel)) {
       this.port.postMessage({

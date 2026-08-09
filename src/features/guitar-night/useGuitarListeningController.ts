@@ -35,6 +35,9 @@ import { micLatencyMs, micLatencySec, setMicLatencyMs, } from '@/stores/mic-late
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
 const ANALYSER_SIZE = 2048
+// Longer than the sample detector's 45 ms refractory period and several frame
+// callbacks, while still admitting sixteenth notes at common practice tempos.
+const COARSE_RESTRIKE_DEBOUNCE_SECONDS = 0.08
 
 /** What to say about a run that produced no number. */
 const CALIBRATION_FAILURES: Record<LatencyFailure, string> = {
@@ -181,10 +184,24 @@ function peakOf(samples: Float32Array): number {
   return peak
 }
 
+interface ScheduledCalibrationClick {
+  cancel(): void
+}
+
 /** A short bright tick, loud enough for the room to hear itself play it. */
-function scheduleCalibrationClick(context: AudioContext, at: number): void {
+function scheduleCalibrationClick(
+  context: AudioContext,
+  at: number,
+): ScheduledCalibrationClick {
   const oscillator = context.createOscillator()
   const gain = context.createGain()
+  let connected = true
+  const disconnect = (): void => {
+    if (!connected) return
+    connected = false
+    oscillator.disconnect()
+    gain.disconnect()
+  }
   oscillator.type = 'square'
   oscillator.frequency.value = 1400
   gain.gain.setValueAtTime(0.0001, at)
@@ -192,8 +209,19 @@ function scheduleCalibrationClick(context: AudioContext, at: number): void {
   gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.012)
   oscillator.connect(gain)
   gain.connect(context.destination)
+  oscillator.onended = disconnect
   oscillator.start(at)
   oscillator.stop(at + 0.03)
+  return {
+    cancel() {
+      try {
+        oscillator.stop()
+      } catch {
+        // A click that already ended is already silent; it still disconnects.
+      }
+      disconnect()
+    },
+  }
 }
 
 export function useGuitarListeningController(
@@ -220,6 +248,9 @@ export function useGuitarListeningController(
   let frame = 0
   let generation = 0
   let heldMidi: number | null = null
+  let lastCoarseAttackAt: number | null = null
+  let lastCoarseAttackMidi: number | null = null
+  let cancelCalibrationRun: (() => void) | null = null
   // While a calibration run is going, attacks are evidence about the route,
   // not about the player, and must not land in the take.
   let calibrationHits: number[] | null = null
@@ -229,6 +260,8 @@ export function useGuitarListeningController(
   }
 
   const stopNodes = (): void => {
+    cancelCalibrationRun?.()
+    cancelCalibrationRun = null
     if (frame !== 0) cancelAnimationFrame(frame)
     frame = 0
     tap?.dispose()
@@ -238,6 +271,8 @@ export function useGuitarListeningController(
     source = null
     analyser = null
     heldMidi = null
+    lastCoarseAttackAt = null
+    lastCoarseAttackMidi = null
     calibrationHits = null
   }
 
@@ -391,22 +426,42 @@ export function useGuitarListeningController(
               clarity: detected.clarity,
             }
             const at = playedAt(capturedAt, micLatencySec())
-            const attached = attachPitchToLatestAttack(events(), pitch, at)
-            if (attached !== events()) {
-              setEvents(attached)
+            const coarseAttack =
+              tap === null &&
+              onset &&
+              (lastCoarseAttackAt === null ||
+                lastCoarseAttackMidi !== midi ||
+                at - lastCoarseAttackAt >= COARSE_RESTRIKE_DEBOUNCE_SECONDS)
+            if (coarseAttack) {
               heldMidi = midi
-            } else if (heldMidi !== midi) {
-              // A note the strike path never claimed: either a legato move, or
-              // a pick the coarse path has to stand in for.
-              heldMidi = midi
+              lastCoarseAttackAt = at
+              lastCoarseAttackMidi = midi
               pushEvent({
-                kind: tap === null && onset ? 'attack' : 'pitch-change',
+                kind: 'attack',
                 source: 'microphone',
                 at,
                 capturedAt,
                 level: amplitude,
                 pitch,
               })
+            } else {
+              const attached = attachPitchToLatestAttack(events(), pitch, at)
+              if (attached !== events()) {
+                setEvents(attached)
+                heldMidi = midi
+              } else if (heldMidi !== midi) {
+                // A note the strike path never claimed: either a legato move, or
+                // a pitch change that arrived without a fresh coarse onset.
+                heldMidi = midi
+                pushEvent({
+                  kind: 'pitch-change',
+                  source: 'microphone',
+                  at,
+                  capturedAt,
+                  level: amplitude,
+                  pitch,
+                })
+              }
             }
           }
         } else {
@@ -460,14 +515,33 @@ export function useGuitarListeningController(
       LATENCY_CLICK_COUNT,
       LATENCY_CLICK_INTERVAL_SEC,
     )
-    for (const at of clickTimes) scheduleCalibrationClick(context, at)
+    const clicks = clickTimes.map((at) => scheduleCalibrationClick(context, at))
 
     const runSeconds =
       LATENCY_LEAD_IN_SEC + LATENCY_CLICK_COUNT * LATENCY_CLICK_INTERVAL_SEC
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, Math.round(runSeconds * 1000) + 400)
+    const completed = await new Promise<boolean>((resolve) => {
+      let settled = false
+      let timeout = 0
+
+      function cancel(): void {
+        finish(false)
+      }
+
+      function finish(didComplete: boolean): void {
+        if (settled) return
+        settled = true
+        window.clearTimeout(timeout)
+        for (const click of clicks) click.cancel()
+        if (cancelCalibrationRun === cancel) cancelCalibrationRun = null
+        resolve(didComplete)
+      }
+      cancelCalibrationRun = cancel
+      timeout = window.setTimeout(
+        () => finish(true),
+        Math.round(runSeconds * 1000) + 400,
+      )
     })
-    if (currentGeneration !== generation) return false
+    if (!completed || currentGeneration !== generation) return false
     calibrationHits = null
     setStatus('listening')
 

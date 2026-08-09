@@ -218,6 +218,8 @@ export interface StemTranscription {
 const OCTAVE_HISTORY = 8
 /** Only repair a slip when the shift is a decisive improvement, so a real leap survives. */
 const OCTAVE_REPAIR_MARGIN = 6
+/** A note this much longer than the blip floor is evidence of a played note. */
+const OCTAVE_SUSTAINED_DURATION_MULTIPLIER = 4
 
 function median(values: readonly number[]): number {
   if (values.length === 0) return 0
@@ -229,18 +231,28 @@ function median(values: readonly number[]): number {
 }
 
 /**
- * Pull an octave slip back onto the line's own register. Candidates are the
- * detected pitch and its neighbouring octaves; the closest to the recent median
- * wins, but only when it beats the detected pitch by a decisive margin.
+ * Pull an isolated octave slip back onto the line's own register. Candidates
+ * are the detected pitch and its neighbouring octaves; the closest to the
+ * recent median wins only when the following notes return to that register.
+ *
+ * The look-ahead is what separates a detector hiccup from a real transition.
+ * A short, one-note excursion surrounded by the old register is repaired,
+ * while a new register that continues — or a note held well past the blip
+ * floor — stays exactly where it was played. A causal-only smoother cannot
+ * make that distinction and silently erases every genuine downward octave
+ * change.
  */
 export function repairOctaveSlips(
   midiSequence: readonly number[],
   profile: TranscriptionProfile,
+  durationsSeconds: readonly number[] = [],
 ): number[] {
   const repaired: number[] = []
   const recent: number[] = []
 
-  for (const midi of midiSequence) {
+  for (let index = 0; index < midiSequence.length; index += 1) {
+    const midi = midiSequence[index]
+    if (midi === undefined) continue
     if (recent.length === 0) {
       repaired.push(midi)
       recent.push(midi)
@@ -260,7 +272,26 @@ export function repairOctaveSlips(
       midi,
     )
     const improvement = Math.abs(midi - center) - Math.abs(best - center)
-    const chosen = improvement > OCTAVE_REPAIR_MARGIN ? best : midi
+    const future = midiSequence.slice(index + 1, index + 1 + OCTAVE_HISTORY)
+    const futureCenter = median(future)
+    const returnsToRecentRegister =
+      future.length > 0 &&
+      Math.abs(best - futureCenter) < Math.abs(midi - futureCenter)
+    const priorRaw = midiSequence.slice(Math.max(0, index - 2), index)
+    const priorRawCenter = median(priorRaw)
+    const establishedNewRegister =
+      priorRaw.length > 0 &&
+      Math.abs(midi - priorRawCenter) < Math.abs(best - priorRawCenter)
+    const sustainedDuration =
+      (durationsSeconds[index] ?? 0) >=
+      profile.minDurationSeconds * OCTAVE_SUSTAINED_DURATION_MULTIPLIER
+    const chosen =
+      improvement > OCTAVE_REPAIR_MARGIN &&
+      !sustainedDuration &&
+      !establishedNewRegister &&
+      (returnsToRecentRegister || future.length === 0)
+        ? best
+        : midi
 
     repaired.push(chosen)
     recent.push(chosen)
@@ -501,6 +532,7 @@ export function transcribeFrames(
   const repaired = repairOctaveSlips(
     sustained.map((group) => Math.round(median(group.midiValues))),
     profile,
+    sustained.map((group) => group.endSeconds - group.startSeconds),
   )
 
   const notes = sustained.map((group, index) => {

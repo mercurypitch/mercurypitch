@@ -90,6 +90,12 @@ function parseArgs(argv) {
   if (options.audio.length === 0) {
     throw new Error('Give at least one audio file to transcribe.')
   }
+  if (
+    options.seconds !== null &&
+    (!Number.isFinite(options.seconds) || options.seconds <= 0)
+  ) {
+    throw new Error('--seconds takes a positive number.')
+  }
   return options
 }
 
@@ -231,7 +237,7 @@ function buildReport(label, result, profile, scored, heard, truth, truthTrack) {
   const lines = [
     `# Transcription bench — ${label}`,
     '',
-    `Audio: ${result.durationSeconds.toFixed(1)} s at ${result.sampleRate} Hz analysis rate.`,
+    `Audio: ${result.durationSeconds.toFixed(1)} s at ${result.sampleRate} Hz analysis rate; analysed ${result.analysedSeconds.toFixed(1)} s.`,
     `Took ${(result.elapsedMs / 1000).toFixed(1)} s.`,
     '',
     '## Profile',
@@ -366,9 +372,19 @@ async function main() {
         `\nTranscribing ${basename(audioPath)} with ${options.source}…`,
       )
       const result = await page.evaluate(
-        ([fsUrl, source, profileOverrides]) =>
-          window.transcribeBench.transcribe(fsUrl, source, profileOverrides),
-        [`${url}/@fs${audioPath}`, options.source, options.profile],
+        ([fsUrl, source, profileOverrides, maxSeconds]) =>
+          window.transcribeBench.transcribe(
+            fsUrl,
+            source,
+            profileOverrides,
+            maxSeconds,
+          ),
+        [
+          `${url}/@fs${audioPath}`,
+          options.source,
+          options.profile,
+          options.seconds,
+        ],
       )
 
       const notes =

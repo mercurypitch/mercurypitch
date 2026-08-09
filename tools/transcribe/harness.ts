@@ -62,6 +62,7 @@ declare global {
         url: string,
         source?: TranscriptionPitchSource,
         profileOverrides?: Partial<TranscriptionProfile>,
+        maxSeconds?: number | null,
       ): Promise<BenchTranscribeResult>
       readTab(url: string, fileName: string): Promise<MidiSong>
       ready: true
@@ -76,7 +77,12 @@ async function fetchBytes(url: string): Promise<ArrayBuffer> {
 }
 
 window.transcribeBench = {
-  async transcribe(url, source = 'yin', profileOverrides = {}) {
+  async transcribe(
+    url,
+    source = 'yin',
+    profileOverrides = {},
+    maxSeconds = null,
+  ) {
     // The base profile carries the settings a source cannot work without —
     // SwiftF0's 16 kHz rate above all — so picking a source has to pick a base
     // rather than patch one field of the other's.
@@ -87,9 +93,26 @@ window.transcribeBench = {
     const profile: TranscriptionProfile = { ...base, ...profileOverrides }
     const bytes = await fetchBytes(url)
     const decoded = await decodeBytes(bytes, profile.analysisSampleRate)
+    if (
+      maxSeconds !== null &&
+      (!Number.isFinite(maxSeconds) || maxSeconds <= 0)
+    ) {
+      throw new Error('The analysis duration must be a positive number.')
+    }
+    // Decoding still has to read the encoded container, but pitch analysis is
+    // the expensive step. Bound the samples before YIN or SwiftF0 sees them so
+    // `--seconds` changes the work performed, not merely the reported notes.
+    const sampleLimit =
+      maxSeconds === null
+        ? decoded.samples.length
+        : Math.min(
+            decoded.samples.length,
+            Math.floor(maxSeconds * decoded.sampleRate),
+          )
+    const analysisSamples = decoded.samples.subarray(0, sampleLimit)
     const startedAt = performance.now()
     const transcription = await transcribeStemSamples(
-      decoded.samples,
+      analysisSamples,
       decoded.sampleRate,
       { profile },
     )
