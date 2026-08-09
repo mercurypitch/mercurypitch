@@ -3,7 +3,7 @@
 
 import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
-import type { GuitarRoomBand, GuitarRoomBandStartOptions, } from '@/features/guitar/backing/guitar-room-band'
+import type { GuitarRoomBand, GuitarRoomBandStartOptions, GuitarRoomBandStartResult, } from '@/features/guitar/backing/guitar-room-band'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarNightReference } from './reference-port'
 import { scaleScoreTempoChanges, scoreDurationBeats, scoreToBandMelody, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
@@ -219,7 +219,7 @@ describe('useGuitarNightScoreRoomController', () => {
       frames.pump()
       expect(room.positionSeconds()).toBe(2)
 
-      getOptions()?.onComplete?.()
+      getOptions()?.onComplete?.(12)
       expect(room.positionSeconds()).toBe(2)
       expect(room.durationSeconds()).toBe(2)
       // The completed take keeps its timeline, while setup now describes the
@@ -418,7 +418,7 @@ describe('useGuitarNightScoreRoomController', () => {
       let finishStart: (() => void) | undefined
       band.start = vi.fn(
         () =>
-          new Promise((resolve) => {
+          new Promise<GuitarRoomBandStartResult>((resolve) => {
             finishStart = () => resolve({ expectedHitTimesMs: [] })
           }),
       )
