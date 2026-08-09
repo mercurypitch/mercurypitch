@@ -28,6 +28,7 @@ import { AccountSuspendedError, accountSuspendedResponse, handleUserSuspension, 
 import { getPerksForUser } from './perks'
 import { handlePremiumBackgroundAdminRequest } from './premium-background-admin'
 import { handlePremiumBackgroundRequest } from './premium-backgrounds'
+import { handleScoreVisibility } from './score-visibility'
 import { resolveSupporterFeatureAccess } from './supporter-feature-access'
 import type { TableDef } from './tables'
 import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
@@ -912,7 +913,7 @@ async function handleLeaderboard(
     binds.push(auth?.userId ?? '')
   }
   clauses.push(
-    's."userId" IN (SELECT "id" FROM "users" WHERE "suspendedAt" IS NULL)',
+    's."userId" IN (SELECT "id" FROM "users" WHERE "suspendedAt" IS NULL AND "leaderboardExcludedAt" IS NULL)',
   )
   const where = clauses.length ? ` WHERE ${clauses.join(' AND ')}` : ''
 
@@ -1294,6 +1295,11 @@ async function computeWeeklyBoard(
      WHERE s."weeklyChallengeId" = ?
        AND s."userId" IN (
          SELECT "id" FROM "users" WHERE "suspendedAt" IS NULL
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM weeklyChallengeScoreRetractions r
+          WHERE r.weeklyChallengeId = s."weeklyChallengeId"
+            AND r.userId = s."userId"
        )
      GROUP BY s."userId"
      ORDER BY best DESC`,
@@ -1873,6 +1879,15 @@ async function handleRequest(
       request,
       env,
       respond,
+      await isAdmin(request, env),
+    )
+  }
+
+  if (url.pathname === '/api/admin/score-visibility') {
+    return handleScoreVisibility(
+      request,
+      env,
+      respondNoStore,
       await isAdmin(request, env),
     )
   }
