@@ -24,9 +24,12 @@ Authored and measured reference adapters, the score-only rehearsal room,
 shared A/B loop ownership, timestamped AudioWorklet attacks, and route-local
 latency calibration are implemented on open PR
 [#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remain in
-review until that PR is merged. The authored-score-to-recording alignment,
-phrase-aware Jam Doctor, full input-performance evidence gate, major 3D
-upgrade, and legacy runtime cutover remain target work.
+review until that PR is merged. The same PR now records those attacks in one
+bounded, memory-only take with stable identity, exact or explicitly coarse
+clock provenance, and a pinned latency snapshot. The
+authored-score-to-recording alignment, phrase-aware Jam Doctor, full
+input-performance evidence gate, major 3D upgrade, and legacy runtime cutover
+remain target work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -173,6 +176,21 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **REQ-GN-RUNTIME-016 — Control-state truth:** WHEN a route-owned transport
   survives room navigation, every visible transport control shall be restored
   from that transport's current state rather than from a presentation default.
+- **REQ-GN-RUNTIME-017 — Pinned input take:** WHEN assessed Listening begins,
+  Guitar Night shall create one bounded, memory-only take anchored to the
+  route's audio clock. That take shall pin its sample rate, attack-clock
+  precision, latency correction, latency provenance, and known uncertainty;
+  later calibration or device-setting changes shall not retime evidence already
+  admitted to it.
+- **REQ-GN-RUNTIME-018 — Traceable input events:** Every event admitted to an
+  input take shall have a stable identity, raw and latency-compensated
+  transport-relative frames, and either the exact AudioWorklet frame or an
+  explicit coarse frame-loop observation window. A late pitch result may
+  replace the provisional metadata for the same event but shall not append a
+  duplicate or change either clock. Evidence before the take or after its end
+  shall be excluded; bounded truncation shall be recorded. Stop shall complete
+  the take, while failed activation or disposal shall cancel it. Guitar Night
+  shall neither retain raw input audio nor persist Capture v0 takes.
 
 ## Configurable first win — `GN-FIRST-*`
 

@@ -11,11 +11,17 @@ function attack(
   clarity = 0.8,
 ): GuitarInputEvent {
   return {
+    id: `event-${atSeconds}`,
     kind: 'attack',
     source: 'microphone',
     at: atSeconds,
     capturedAt: atSeconds + 0.04,
     level: 0.08,
+    clock: {
+      kind: 'audio-worklet',
+      atFrame: Math.round((atSeconds + 0.04) * 48_000),
+      sampleRate: 48_000,
+    },
     pitch: midi === null ? null : { midi, noteName: 'E2', cents: 0, clarity },
   }
 }
@@ -112,5 +118,25 @@ describe('summarizeGuitarListeningEvidence', () => {
     expect(observations.some((entry) => entry.label === 'Median clarity')).toBe(
       false,
     )
+  })
+
+  it('labels bounded evidence as a recent window rather than the whole take', () => {
+    const observations = summarizeGuitarListeningEvidence(
+      [attack(1, 40), attack(1.5, 43)],
+      9,
+    )
+
+    expect(observations.slice(0, 2)).toEqual([
+      {
+        label: 'Take window',
+        value: 'Latest 2',
+        detail: '9 earlier events have left this memory-only review window.',
+      },
+      {
+        label: 'Recent attacks',
+        value: '2',
+        detail: 'Fresh note attacks in the retained review window.',
+      },
+    ])
   })
 })

@@ -3,6 +3,7 @@
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GuitarInputWorkletMessage } from '@/lib/guitar/input-events'
 import { useGuitarListeningController } from './useGuitarListeningController'
 
 const dependencies = vi.hoisted(() => ({
@@ -17,7 +18,9 @@ const dependencies = vi.hoisted(() => ({
     octave: number
     cents: number
   }>,
-  setLatency: vi.fn(),
+  emitWorklet: null as ((message: GuitarInputWorkletMessage) => void) | null,
+  latencyMs: 0,
+  setLatency: vi.fn<(milliseconds: number) => void>(),
 }))
 
 vi.mock('@/lib/guitar/guitar-input-node', () => ({
@@ -52,8 +55,8 @@ vi.mock('@/lib/pitch-detector', () => ({
 }))
 
 vi.mock('@/stores/mic-latency-store', () => ({
-  micLatencyMs: () => 0,
-  micLatencySec: () => 0,
+  micLatencyMs: () => dependencies.latencyMs,
+  micLatencySec: () => dependencies.latencyMs / 1000,
   setMicLatencyMs: dependencies.setLatency,
 }))
 
@@ -185,9 +188,21 @@ describe('useGuitarListeningController', () => {
     vi.clearAllMocks()
     dependencies.detections = []
     dependencies.workletTap = null
+    dependencies.emitWorklet = null
+    dependencies.latencyMs = 0
+    dependencies.setLatency.mockImplementation((milliseconds: number) => {
+      dependencies.latencyMs = milliseconds
+    })
     dependencies.acquire.mockResolvedValue({})
     dependencies.connectWorklet.mockImplementation(
-      async () => dependencies.workletTap,
+      async (
+        _context: AudioContext,
+        _source: AudioNode,
+        onMessage: (message: GuitarInputWorkletMessage) => void,
+      ) => {
+        dependencies.emitWorklet = onMessage
+        return dependencies.workletTap
+      },
     )
   })
 
@@ -224,6 +239,156 @@ describe('useGuitarListeningController', () => {
       expect(
         controller.events().filter((event) => event.kind === 'attack'),
       ).toHaveLength(2)
+    })
+  })
+
+  it('keeps one pinned latency and enriches an exact attack in place', async () => {
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    dependencies.latencyMs = 40
+    dependencies.detections = [E4]
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.2,
+      })
+
+      const provisional = controller.events()[0]
+      expect(provisional?.clock).toEqual({
+        kind: 'audio-worklet',
+        atFrame: 4_800,
+        sampleRate: 48_000,
+      })
+      expect(provisional?.at).toBeCloseTo(0.06, 6)
+      expect(provisional?.rawTransportFrame).toBe(4_800)
+      expect(provisional?.compensatedTransportFrame).toBe(2_880)
+
+      dependencies.latencyMs = 180
+      frames.run(0.13)
+
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.id).toBe(provisional?.id)
+      expect(controller.events()[0]?.pitch?.midi).toBe(64)
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 24_000,
+        level: 0.25,
+      })
+      expect(controller.events()[1]?.at).toBeCloseTo(0.46, 6)
+      expect(controller.take()?.clock.latency).toEqual({
+        seconds: 0.04,
+        frames: 1_920,
+        provenance: 'stored-round-trip',
+        uncertaintySeconds: null,
+      })
+
+      Object.assign(audio.context, { currentTime: 0.75 })
+      controller.stop()
+      expect(controller.take()?.lifecycle).toBe('completed')
+      expect(controller.take()?.durationFrames).toBe(36_000)
+      expect(controller.events()).toHaveLength(2)
+      expect(controller.timingSource()).toBe('audio-clock')
+    })
+  })
+
+  it('keeps calibration returns out of the active take', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      const calibration = controller.calibrate()
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.25,
+      })
+      expect(controller.events()).toEqual([])
+
+      controller.stop()
+      await expect(calibration).resolves.toBe(false)
+    })
+  })
+
+  it('starts a clean take with the newly calibrated latency', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      const previousTakeId = controller.take()?.id
+      const calibration = controller.calibrate()
+
+      for (let click = 0; click < 8; click += 1) {
+        const returnAt = 1 + click * 0.75 + 0.08
+        dependencies.emitWorklet?.({
+          type: 'attack',
+          atFrame: Math.round(returnAt * 48_000),
+          level: 0.25,
+        })
+      }
+      Object.assign(audio.context, { currentTime: 7.4 })
+      await vi.runAllTimersAsync()
+
+      await expect(calibration).resolves.toBe(true)
+      expect(dependencies.setLatency).toHaveBeenCalledWith(80)
+      expect(controller.take()?.id).not.toBe(previousTakeId)
+      expect(controller.take()?.clock.latency).toEqual({
+        seconds: 0.08,
+        frames: 3_840,
+        provenance: 'stored-round-trip',
+        uncertaintySeconds: null,
+      })
+      expect(controller.events()).toEqual([])
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(7.6 * 48_000),
+        level: 0.2,
+      })
+      expect(controller.events()[0]?.rawTransportFrame).toBe(9_600)
+      expect(controller.events()[0]?.compensatedTransportFrame).toBe(5_760)
+    })
+  })
+
+  it('rotates Clear take without turning Listening off', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.2,
+      })
+      const firstEventId = controller.events()[0]?.id
+
+      Object.assign(audio.context, { currentTime: 0.25 })
+      controller.clearTake()
+      expect(controller.status()).toBe('listening')
+      expect(controller.events()).toEqual([])
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 14_400,
+        level: 0.24,
+      })
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.id).not.toBe(firstEventId)
+      expect(controller.events()[0]?.rawTransportFrame).toBe(2_400)
+      expect(controller.events()[0]?.compensatedTransportFrame).toBe(2_400)
     })
   })
 

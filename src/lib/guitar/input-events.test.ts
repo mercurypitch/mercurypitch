@@ -10,11 +10,17 @@ function attack(
   pitch: GuitarInputPitch | null = null,
 ): GuitarInputEvent {
   return {
+    id: `attack-${at}`,
     kind: 'attack',
     source: 'microphone',
     at,
     capturedAt: at + 0.04,
     level: 0.4,
+    clock: {
+      kind: 'audio-worklet',
+      atFrame: Math.round((at + 0.04) * 48_000),
+      sampleRate: 48_000,
+    },
     pitch,
   }
 }

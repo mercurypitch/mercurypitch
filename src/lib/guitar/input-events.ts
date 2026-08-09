@@ -28,6 +28,9 @@ export type GuitarInputSource = 'microphone' | 'midi' | 'interface'
  */
 export type GuitarInputEventKind = 'attack' | 'pitch-change'
 
+/** The primary attack clock selected for a take. */
+export type GuitarInputTimingSource = 'audio-clock' | 'frame-loop'
+
 /** Pitch, once the slower analysis path has identified it. */
 export interface GuitarInputPitch {
   midi: number
@@ -36,7 +39,38 @@ export interface GuitarInputPitch {
   clarity: number
 }
 
+/**
+ * Raw evidence for where an event's time came from. Worklet attacks keep the
+ * exact audio frame and rate. The fallback names both the main-thread
+ * observation and the analyser window it describes, so coarse evidence can
+ * never be mistaken for a sample-exact strike.
+ */
+export type GuitarInputClockProvenance =
+  | {
+      kind: 'audio-worklet'
+      atFrame: number
+      sampleRate: number
+    }
+  | {
+      kind: 'frame-loop'
+      observedAt: number
+      windowStartAt: number
+      sampleRate: number
+      windowFrames: number
+    }
+
+/** Event-shaped input before a take assigns identity and compensated time. */
+export interface GuitarInputCapture {
+  kind: GuitarInputEventKind
+  source: GuitarInputSource
+  level: number
+  pitch: GuitarInputPitch | null
+  clock: GuitarInputClockProvenance
+}
+
 export interface GuitarInputEvent {
+  /** Stable for this event throughout provisional and enriched updates. */
+  id: string
   kind: GuitarInputEventKind
   source: GuitarInputSource
   /** Audio-clock seconds, latency removed: when the string was struck. */
@@ -45,6 +79,8 @@ export interface GuitarInputEvent {
   capturedAt: number
   /** Signal level at the strike, roughly 0..1. */
   level: number
+  /** The untouched clock evidence used to derive both time fields. */
+  clock: GuitarInputClockProvenance
   /**
    * What note it turned out to be. Null while unknown — an attack is timed
    * before it is identified, and pretending otherwise would mean either
