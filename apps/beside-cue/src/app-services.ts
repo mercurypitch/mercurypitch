@@ -3,11 +3,14 @@ import type { ResettableBesideCueRepository } from './infrastructure/indexed-db-
 import { createIndexedDbBesideCueRepository } from './infrastructure/indexed-db-repository'
 import type { BesideCuePlatform } from './infrastructure/mobile-runtime'
 import { createBesideCueMobileRuntime, getBesideCuePlatform, } from './infrastructure/mobile-runtime'
+import type { PurchasesSetup } from './purchases/revenuecat-config'
+import { resolvePurchasesSetup } from './purchases/revenuecat-config'
 
 export interface BesideCueAppServices {
   readonly repository: ResettableBesideCueRepository
   readonly runtime: Promise<MobileRuntime>
   readonly platform: BesideCuePlatform
+  readonly purchases: PurchasesSetup
   readonly now: () => Date
   readonly createId: () => string
 }
@@ -23,10 +26,14 @@ function createLocalId(): string {
 }
 
 export function createDefaultAppServices(): BesideCueAppServices {
+  const platform = getBesideCuePlatform()
+  const purchases = resolvePurchasesSetup(platform, import.meta.env)
+
   return {
     repository: createIndexedDbBesideCueRepository(),
-    runtime: createBesideCueMobileRuntime(),
-    platform: getBesideCuePlatform(),
+    runtime: createBesideCueMobileRuntime(purchases.config),
+    platform,
+    purchases,
     now: () => new Date(),
     createId: createLocalId,
   }

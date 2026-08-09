@@ -48,6 +48,7 @@ function createTestServices(
   options: {
     readonly runtime?: MobileRuntime
     readonly platform?: BesideCueAppServices['platform']
+    readonly purchases?: BesideCueAppServices['purchases']
   } = {},
 ): BesideCueAppServices {
   let nextId = 0
@@ -57,6 +58,10 @@ function createTestServices(
       options.runtime ?? createMobileRuntimeProbe().runtime,
     ),
     platform: options.platform ?? 'web',
+    purchases: options.purchases ?? {
+      entitlementId: 'BeSideCue Pro',
+      problem: 'Purchases need the Android or iOS app.',
+    },
     now: () => new Date('2026-08-06T10:00:00'),
     createId: () => `test-${String((nextId += 1))}`,
   }

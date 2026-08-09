@@ -26,6 +26,14 @@
       "types": "./src/capacitor/local-notifications.ts",
       "import": "./src/capacitor/local-notifications.ts"
     },
+    "./capacitor/purchases": {
+      "types": "./src/capacitor/purchases.ts",
+      "import": "./src/capacitor/purchases.ts"
+    },
+    "./capacitor/purchases-ui": {
+      "types": "./src/capacitor/purchases-ui.ts",
+      "import": "./src/capacitor/purchases-ui.ts"
+    },
     "./testing": {
       "types": "./src/testing.ts",
       "import": "./src/testing.ts"
@@ -39,7 +47,9 @@
   "peerDependencies": {
     "@capacitor/core": "^8.5.0",
     "@capacitor/haptics": "^8.0.2",
-    "@capacitor/local-notifications": "^8.2.1"
+    "@capacitor/local-notifications": "^8.2.1",
+    "@revenuecat/purchases-capacitor": "^13.4.0",
+    "@revenuecat/purchases-capacitor-ui": "^13.4.0"
   },
   "peerDependenciesMeta": {
     "@capacitor/core": {
@@ -50,12 +60,20 @@
     },
     "@capacitor/local-notifications": {
       "optional": true
+    },
+    "@revenuecat/purchases-capacitor": {
+      "optional": true
+    },
+    "@revenuecat/purchases-capacitor-ui": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@capacitor/core": "^8.5.0",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/local-notifications": "^8.2.1",
+    "@revenuecat/purchases-capacitor": "^13.4.0",
+    "@revenuecat/purchases-capacitor-ui": "^13.4.0",
     "typescript": "^5.6.0",
     "vitest": "^4.1.5"
   }

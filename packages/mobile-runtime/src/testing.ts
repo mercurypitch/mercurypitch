@@ -2,9 +2,10 @@
 // Mobile runtime test probe — framework-free device capability recording
 // ============================================================
 
-import type { HapticImpactStyle, HapticNotificationType, LocalNotificationAction, LocalNotificationActionListener, LocalNotificationChannel, LocalNotificationRequest, NotificationId, NotificationPermissionState, } from './contracts'
+import type { CustomerListener, CustomerSnapshot, EntitlementStatus, HapticImpactStyle, HapticNotificationType, LocalNotificationAction, LocalNotificationActionListener, LocalNotificationChannel, LocalNotificationRequest, NotificationId, NotificationPermissionState, PaywallOutcome, PaywallRequest, PurchaseOfferings, PurchaseOutcome, PurchasePlan, } from './contracts'
 import type { MobileRuntime } from './runtime'
 import { createMobileRuntime } from './runtime'
+import { createUnavailablePaywallPort, createUnavailablePurchasesPort, } from './unavailable-purchases'
 
 type AsyncHook<T> = (value: T) => void | Promise<void>
 
@@ -15,6 +16,17 @@ export interface MobileRuntimeProbeOptions {
   readonly onSchedule?: AsyncHook<readonly LocalNotificationRequest[]>
   readonly onCancel?: AsyncHook<readonly NotificationId[]>
   readonly onRemoveDelivered?: AsyncHook<readonly NotificationId[]>
+  /** Defaults to true. Set false to exercise a product's store-free path. */
+  readonly purchasesAvailable?: boolean
+  readonly customer?: CustomerSnapshot
+  readonly offerings?: PurchaseOfferings
+  readonly onPurchase?: (
+    plan: PurchasePlan,
+  ) => PurchaseOutcome | Promise<PurchaseOutcome>
+  readonly onRestore?: () => CustomerSnapshot | Promise<CustomerSnapshot>
+  readonly onPaywall?: (
+    request: PaywallRequest,
+  ) => PaywallOutcome | Promise<PaywallOutcome>
 }
 
 export interface MobileRuntimeProbeCalls {
@@ -26,12 +38,66 @@ export interface MobileRuntimeProbeCalls {
   readonly removedDelivered: readonly (readonly NotificationId[])[]
   readonly permissionChecks: number
   readonly permissionRequests: number
+  readonly purchaseInitializations: number
+  readonly customerReads: number
+  readonly customerRefreshes: number
+  readonly offeringReads: number
+  readonly purchased: readonly PurchasePlan[]
+  readonly restores: number
+  readonly paywalls: readonly PaywallRequest[]
+  readonly customerCenterOpens: number
 }
 
 export interface MobileRuntimeProbe {
   readonly runtime: MobileRuntime
   readonly calls: MobileRuntimeProbeCalls
   emitNotificationAction(action: LocalNotificationAction): Promise<void>
+  /** Replaces the current customer and notifies every purchase listener. */
+  emitCustomer(customer: CustomerSnapshot): Promise<void>
+}
+
+export interface EntitlementSnapshotOptions extends Partial<
+  Omit<EntitlementStatus, 'id' | 'active'>
+> {
+  readonly id: string
+  readonly active?: boolean
+}
+
+export function createEntitlementStatus(
+  options: EntitlementSnapshotOptions,
+): EntitlementStatus {
+  return {
+    id: options.id,
+    active: options.active ?? true,
+    willRenew: options.willRenew ?? true,
+    periodKind: options.periodKind ?? 'normal',
+    productId: options.productId ?? `${options.id}.product`,
+    store: options.store ?? 'PLAY_STORE',
+    isSandbox: options.isSandbox ?? true,
+    expiresAt: options.expiresAt ?? null,
+    unsubscribeDetectedAt: options.unsubscribeDetectedAt ?? null,
+    billingIssueDetectedAt: options.billingIssueDetectedAt ?? null,
+  }
+}
+
+/** Builds a customer holding exactly the entitlements named, all active. */
+export function createCustomerSnapshot(
+  entitlementIds: readonly string[] = [],
+  overrides: Partial<CustomerSnapshot> = {},
+): CustomerSnapshot {
+  const entitlements: Record<string, EntitlementStatus> = {}
+  for (const id of entitlementIds) {
+    entitlements[id] = createEntitlementStatus({ id })
+  }
+
+  return {
+    appUserId: '$RCAnonymousID:probe',
+    anonymous: true,
+    entitlements,
+    activeEntitlementIds: entitlementIds,
+    managementUrl: null,
+    ...overrides,
+  }
 }
 
 function copyChannel(
@@ -82,10 +148,28 @@ export function createMobileRuntimeProbe(
     removedDelivered: [] as NotificationId[][],
     permissionChecks: 0,
     permissionRequests: 0,
+    purchaseInitializations: 0,
+    customerReads: 0,
+    customerRefreshes: 0,
+    offeringReads: 0,
+    purchased: [] as PurchasePlan[],
+    restores: 0,
+    paywalls: [] as PaywallRequest[],
+    customerCenterOpens: 0,
   }
   const actionListeners = new Set<LocalNotificationActionListener>()
+  const customerListeners = new Set<CustomerListener>()
   const permission = options.permission ?? 'unsupported'
   const requestedPermission = options.requestedPermission ?? permission
+  const purchasesAvailable = options.purchasesAvailable ?? true
+  let customer = options.customer ?? createCustomerSnapshot()
+
+  async function notifyCustomerListeners(): Promise<void> {
+    const snapshot = customer
+    await Promise.all(
+      [...customerListeners].map((listener) => listener(snapshot)),
+    )
+  }
 
   const runtime = createMobileRuntime({
     haptics: {
@@ -134,6 +218,71 @@ export function createMobileRuntimeProbe(
         }
       },
     },
+    purchases: purchasesAvailable
+      ? {
+          available: true,
+          async initialize() {
+            calls.purchaseInitializations += 1
+          },
+          async getCustomer(customerOptions = {}) {
+            calls.customerReads += 1
+            if (customerOptions.refresh === true) calls.customerRefreshes += 1
+            return customer
+          },
+          async getOfferings() {
+            calls.offeringReads += 1
+            return options.offerings ?? { all: [] }
+          },
+          async purchase(plan) {
+            calls.purchased.push(plan)
+            const outcome = (await options.onPurchase?.(plan)) ?? {
+              kind: 'purchased' as const,
+              customer,
+              productId: plan.productId,
+            }
+            if (outcome.kind === 'purchased') {
+              customer = outcome.customer
+              await notifyCustomerListeners()
+            }
+            return outcome
+          },
+          async restore() {
+            calls.restores += 1
+            const restored = await options.onRestore?.()
+            if (restored !== undefined) {
+              customer = restored
+              await notifyCustomerListeners()
+            }
+            return customer
+          },
+          async addCustomerListener(listener) {
+            customerListeners.add(listener)
+            return {
+              async remove() {
+                customerListeners.delete(listener)
+              },
+            }
+          },
+          async logIn() {
+            return customer
+          },
+          async logOut() {
+            return customer
+          },
+        }
+      : createUnavailablePurchasesPort(),
+    paywall: purchasesAvailable
+      ? {
+          available: true,
+          async present(request = {}) {
+            calls.paywalls.push({ ...request })
+            return (await options.onPaywall?.(request)) ?? 'cancelled'
+          },
+          async presentCustomerCenter() {
+            calls.customerCenterOpens += 1
+          },
+        }
+      : createUnavailablePaywallPort(),
   })
 
   return {
@@ -144,6 +293,10 @@ export function createMobileRuntimeProbe(
       await Promise.all(
         [...actionListeners].map((listener) => listener(snapshot)),
       )
+    },
+    async emitCustomer(next) {
+      customer = next
+      await notifyCustomerListeners()
     },
   }
 }

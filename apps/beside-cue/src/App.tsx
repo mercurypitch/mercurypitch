@@ -8,7 +8,10 @@ import type { BesideCueAppServices } from './app-services'
 import { createDefaultAppServices } from './app-services'
 import type { MainView } from './components/BottomNav'
 import { BrandMark } from './components/BrandMark'
+import { ProSection } from './components/ProSection'
 import type { PullOption } from './content'
+import { createProAccess } from './purchases/pro-access'
+import { PRO_DISPLAY_NAME } from './purchases/revenuecat-config'
 import type { DailyCueCoordinator, DailyCueReconcileResult, } from './scheduling/daily-cue-coordinator'
 import { createDailyCueCoordinator } from './scheduling/daily-cue-coordinator'
 import type { DailyCueNotificationPayload } from './scheduling/daily-cue-plan'
@@ -124,6 +127,13 @@ export function App(props: AppProps) {
   const [scheduleMessage, setScheduleMessage] = createSignal<string>()
   const [scheduleError, setScheduleError] = createSignal<string>()
   const [today, setToday] = createSignal(localDate(new Date()))
+  const proAccess = createMemo(() => {
+    const appServices = services()
+    return createProAccess({
+      runtime: appServices.runtime,
+      setup: appServices.purchases,
+    })
+  })
 
   let dailyCueCoordinator!: DailyCueCoordinator
   let latestState = initialState
@@ -803,6 +813,7 @@ export function App(props: AppProps) {
       appServices.runtime,
       appServices.platform,
     )
+    void proAccess().start()
     listenForDailyCues(appServices, appConfig)
     refreshLocalDay(appServices)
     visibilityListener = () => {
@@ -823,6 +834,7 @@ export function App(props: AppProps) {
     if (notificationListener !== undefined) {
       void notificationListener.remove()
     }
+    void proAccess().dispose()
   })
 
   return (
@@ -958,6 +970,22 @@ export function App(props: AppProps) {
 
       {screen() === 'settings' && cue() !== undefined ? (
         <SettingsScreen
+          proSection={
+            <ProSection
+              name={PRO_DISPLAY_NAME}
+              available={proAccess().available()}
+              status={proAccess().status()}
+              isPro={proAccess().isPro()}
+              entitlement={proAccess().entitlement()}
+              busy={proAccess().busy()}
+              notice={proAccess().notice()}
+              error={proAccess().error()}
+              locale={appState().settings.locale}
+              onUpgrade={() => void proAccess().openPaywall()}
+              onManage={() => void proAccess().openCustomerCenter()}
+              onRestore={() => void proAccess().restore()}
+            />
+          }
           paused={cue()?.status === 'paused'}
           resetArmed={resetArmed()}
           dailyCuePresets={config().dailyCue.presets}

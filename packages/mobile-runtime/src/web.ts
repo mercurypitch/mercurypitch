@@ -9,6 +9,7 @@
 import type { HapticImpactStyle, HapticNotificationType, HapticsPort, LocalNotificationActionListener, LocalNotificationChannel, LocalNotificationListenerHandle, LocalNotificationRequest, LocalNotificationsPort, NotificationId, NotificationPermissionState, } from './contracts'
 import type { MobileRuntime } from './runtime'
 import { createMobileRuntime } from './runtime'
+import { createUnavailablePaywallPort, createUnavailablePurchasesPort, } from './unavailable-purchases'
 import { validateNotificationBatch, validateNotificationIds, } from './validation'
 
 const MAX_TIMER_DELAY_MS = 2_147_483_647
@@ -283,5 +284,7 @@ export function createWebMobileRuntime(
   return createMobileRuntime({
     haptics: createWebHapticsPort(vibrationTarget),
     localNotifications: createWebLocalNotificationsPort(options),
+    purchases: createUnavailablePurchasesPort(),
+    paywall: createUnavailablePaywallPort(),
   })
 }
