@@ -48,6 +48,11 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 
 ## Current integrated slice
 
+The reference, score-room, shared-loop, transcription, and input-event work in
+this section is implemented on open PR
+[#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remains in
+review until that PR is merged.
+
 - Selecting a supported local MP3, WAV, or FLAC file starts the existing
   durable on-device separation workflow from Guitar Night. The heavy
   preparation adapter remains outside the first-paint path and loads only
@@ -80,20 +85,28 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   the legacy Guitar tab is attachable here and the chosen part is remembered in
   both. Multi-track files expose their playable parts; a part with no notes is
   never offered.
-- The stage shows authored notes only. Tempo, tracks and Guitar Pro fingering
-  are attached because the saved representation really carries them; meter,
-  sections, tuning and capo are not claimed. MIDI notes without authored
-  fingering are placed by the shared helper.
-- Score beat time is derived from the canonical audio clock, never from render
-  frames, and only while a reference supplies a usable tempo — otherwise the
-  stage reports free play. A slowed take slows the score with it, and seeking
-  moves both together.
+- The stage shows only traceable reference notes: authored score events or
+  confidence-bearing measured events bound to the active recording. Authored
+  tempo maps, tracks and Guitar Pro fingering are attached because the saved
+  representation really carries them; meter, sections, source tuning and capo
+  are not claimed. MIDI notes without authored fingering are placed by the
+  shared helper.
+- Authored score beat time is derived from the tab room's canonical audio
+  clock, never from render frames. Beat-to-seconds and seconds-to-beat mapping
+  both use the complete persisted tempo map; changing the opening tempo scales
+  the whole map instead of flattening it. The take snapshots its tempo, map,
+  count-in, guide sound, melody and loop until Stop, so an already scheduled
+  click cannot drift away from the visible score. Without a usable reference,
+  the stage reports free play.
 - A reference is either authored or measured. Authored notes come from a file
   and carry a real musical tempo. Measured notes are heard in one separated
   stem: they are evidence about this recording, already on its timeline, so they
   need no alignment step and are never presented as a tab or given a BPM
   readout. A measured reference states which stem it came from and how much of
   that stem produced confident notes.
+- A measured reference also retains the exact backing-session identity that
+  produced it. Staging a different recording detaches that evidence rather than
+  carrying a truthful result onto the wrong song.
 - Only the bass stem is offered for measurement. It is effectively monophonic,
   which is the case pitch detection handles. The guitar stem holds however many
   guitars the mix contained and is often chordal, so it is not claimed.
@@ -143,6 +156,14 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   `Neck` provide quieter alternate views. A song without an attached score
   exposes a nullable beat, says no tab is attached, and remains a useful
   free-play fretboard instead of deriving a fake beat from elapsed seconds.
+- The score-only room keeps Play and tempo visible while count-in, guide sound,
+  Listening and loop setup live in one restrained Session overlay. Before Play,
+  the stage rests just ahead of the first authored note so a long intro reads as
+  intentional rather than broken. The progress rail has a visible resting
+  state, instrument and loop controls keep 44px targets, and a completed take
+  offers Replay or Rehearse loop without opening an analysis dashboard. On a
+  phone, room, Studio and account utilities collapse behind one Room control so
+  the instrument keeps the viewport.
 - Jam Doctor is an on-demand overlay/sheet rather than normal-flow content, so
   opening it never collapses the instrument. Desktop, tablet, and phone
   regressions keep the stage and pedalboard in the first viewport, preserve
@@ -154,6 +175,14 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   median detector clarity, attack-spacing variation, and detected pitch range.
   It stores no audio and makes no phrase, string, fret, or quality claim that
   the evidence cannot support.
+- Timestamped attacks are captured in an AudioWorklet and anchored to the
+  shared audio clock; every non-empty input channel is inspected and the
+  strongest intact channel is analyzed rather than assuming the guitar is on
+  channel one or averaging channels that may cancel. The coarse fallback
+  identifies itself and preserves same-pitch restrikes without turning detector
+  settling into a second note. Latency calibration is exclusive with playback
+  and assessed Listening, is cancellable, and removes its scheduled clicks and
+  temporary evidence when stopped or disposed.
 
 ## Copy contract
 
@@ -172,15 +201,16 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Extend the proved shared performance surface into an explicit runtime
-   lifecycle/transport adapter beneath the remaining legacy Guitar controls,
-   without changing their current presentation.
-2. Attach local tab/score references to prepared songs so Flow, Tab, and Neck
-   can follow verified song notes and beat ranges instead of free-play motion.
-3. Add A/B loop ownership to the shared session clock, followed by richer room
-   drums and generated bass behind the existing buses.
-4. Move high-rate pitch/onset analysis behind an AudioWorklet or worker seam,
-   then validate latency and rapid-articulation accuracy against named guitar
-   fixtures before publishing speed or quality claims.
-5. Add phrase-aware evidence and take history to Jam Doctor without retaining
-   raw audio or turning the room into an analysis dashboard.
+1. Finish the fast-input evidence gate with named guitar fixtures, real-device
+   browser checks, latency distributions, and explicit microphone, direct
+   interface and MIDI adapters before publishing speed or quality claims.
+2. Add phrase-aware evidence, post-take review and one-action recovery to Jam
+   Doctor without retaining raw audio or turning the room into an analytics
+   dashboard.
+3. Upgrade the shared 3D instrument with readable techniques, calm camera
+   presets, reduced-effects behavior and measured mobile performance.
+4. Extend the configurable first win into a beginner progression, then add the
+   professional band presets, drummer controls and take history.
+5. Complete the required prototype-fidelity and mobile art-direction pass, then
+   move the proved runtime lifecycle beneath the remaining legacy Guitar
+   controls before an owner-approved cutover.

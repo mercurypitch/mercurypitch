@@ -20,6 +20,14 @@ assessed listening pauses pitched backing. A distinct guitar stem defaults
 muted, while two-stem fallback copy states that guitar remains in the
 accompaniment.
 
+Authored and measured reference adapters, the score-only rehearsal room,
+shared A/B loop ownership, timestamped AudioWorklet attacks, and route-local
+latency calibration are implemented on open PR
+[#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remain in
+review until that PR is merged. The authored-score-to-recording alignment,
+phrase-aware Jam Doctor, full input-performance evidence gate, major 3D
+upgrade, and legacy runtime cutover remain target work.
+
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
 Karaoke Night infrastructure.
@@ -124,6 +132,33 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   shall preserve the visible song position while handing off to a
   pitch-preserving playback path; changing speed before Play shall not create
   or activate audio.
+- **REQ-GN-RUNTIME-010 — Complete authored tempo map:** WHEN an imported score
+  supplies tempo changes, Guitar Night shall preserve them through local song
+  persistence and shall use the same complete map for beat-to-seconds,
+  seconds-to-beat, click, guide, playhead, note duration, and take completion.
+  WHEN the player changes the opening tempo, every authored tempo segment shall
+  scale by the same ratio rather than flattening to one tempo.
+- **REQ-GN-RUNTIME-011 — Immutable active take:** WHEN a score-room count-in
+  starts, its tempo and tempo map, count-in length, guide-sound choice, melody,
+  duration, instrument voice, and loop shall remain fixed until that take stops
+  or completes. A configuration change made during a scheduled take shall be
+  identified as applying to the next count-in and shall not move the active
+  clock.
+- **REQ-GN-RUNTIME-012 — Measured-reference ownership:** WHEN notes are
+  measured from a separated stem, the reference shall retain the exact backing
+  session that produced them. IF a different backing is staged, THEN Guitar
+  Night shall detach that measured reference rather than display it against the
+  new recording.
+- **REQ-GN-RUNTIME-013 — Calibration isolation:** WHILE route-latency
+  calibration is active, playback and assessed Listening shall not start, and
+  calibration attacks shall not enter the player's take. WHEN calibration is
+  cancelled, superseded, stopped, or disposed, its scheduled clicks, temporary
+  nodes, timeout, and captured evidence shall be released.
+- **REQ-GN-RUNTIME-014 — Complete input-channel analysis:** WHERE a browser or
+  interface exposes more than one non-empty input channel, onset analysis shall
+  inspect every such channel and analyze the strongest intact channel rather
+  than assume the instrument is present on channel one or attenuate it through
+  channel averaging.
 
 ## Configurable first win — `GN-FIRST-*`
 
