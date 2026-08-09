@@ -2,7 +2,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
-import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -191,6 +191,30 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         stroke-linejoin="round"
       >
         <path d="M6.2 7.8v8.4M3.4 9.6v4.8M17.8 7.8v8.4M20.6 9.6v4.8M6.2 12h11.6" />
+      </svg>
+    ),
+  },
+  [TAB_EAR_LAB]: {
+    id: 'tab-ear-lab',
+    ariaLabel: 'Ear Lab',
+    // Thermometer with a scale tick — the Mercury Column in
+    // miniature: a calibrated instrument, not a game.
+    icon: () => (
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        class={styles.tabIcon}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.9"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10 4a2 2 0 0 1 4 0v9.3a4.5 4.5 0 1 1-4 0Z" />
+        <circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none" />
+        <line x1="12" y1="15.4" x2="12" y2="9" />
+        <line x1="16.5" y1="7.5" x2="19" y2="7.5" />
       </svg>
     ),
   },

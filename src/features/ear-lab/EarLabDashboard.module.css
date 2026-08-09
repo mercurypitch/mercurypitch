@@ -1,0 +1,250 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.header h2 {
+  font-size: var(--text-xl);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: var(--text-body);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) 1fr;
+  gap: var(--spacing-2xl);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  align-items: center;
+}
+
+.heroSide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.indexBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.indexLabel {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.indexValue {
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, #e6edf4, #9fb2c8 55%, #6e8199);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.indexEmpty {
+  font-size: var(--text-lg);
+  color: var(--text-muted);
+}
+
+.estimateLine {
+  color: var(--accent);
+  font-size: var(--text-body);
+  border-bottom: 1px dashed var(--accent);
+  align-self: flex-start;
+  padding-bottom: 1px;
+}
+
+.deltaUp {
+  color: var(--green);
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.deltaDown {
+  color: var(--red);
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.facultyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md) var(--spacing-2xl);
+}
+
+.facultyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spacing-md);
+  font-size: var(--text-body);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--spacing-sm);
+}
+
+.facultyName {
+  color: var(--text-secondary);
+}
+
+.facultyValue {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.unmeasured {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
+.heroActions {
+  display: flex;
+  gap: var(--spacing-lg);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reportBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--text-body);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.reportBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.calibrateBtn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.calibrateBtn:hover {
+  background: var(--accent-hover);
+}
+
+.calibrateNote {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.drills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--spacing-xl);
+}
+
+.drillCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.drillCard h3 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.drillCard p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.drillStats {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.drillStartBtn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-xl);
+  cursor: pointer;
+  font-size: var(--text-body);
+  align-self: flex-start;
+  transition: var(--transition-fast);
+}
+
+.drillStartBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.rulers {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.rulers h4 {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--text-md);
+}
+
+.rulers p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .heroSide {
+    width: 100%;
+  }
+
+  .facultyList {
+    grid-template-columns: 1fr;
+  }
+}

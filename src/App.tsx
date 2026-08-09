@@ -225,7 +225,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -253,6 +253,7 @@ import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
+import { EarLabPage } from '@/pages/EarLabPage'
 import { ExercisesPage } from '@/pages/ExercisesPage'
 import { GuitarPage } from '@/pages/GuitarPage'
 import HomePage from '@/pages/HomePage'
@@ -3589,6 +3590,12 @@ const AppShell: Component<AppProps> = (props) => {
                       })
                     }
                   />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_EAR_LAB}>
+                <TabErrorBoundary tabName={tabLabel(TAB_EAR_LAB)}>
+                  <EarLabPage />
                 </TabErrorBoundary>
               </Show>
 
