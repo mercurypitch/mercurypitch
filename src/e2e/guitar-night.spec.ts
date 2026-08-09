@@ -588,13 +588,18 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   const rail = await slider.boundingBox()
   expect(rail).not.toBeNull()
   const y = (rail?.y ?? 0) + (rail?.height ?? 0) / 2
+  // Chromium maps a native range across the thumb-centre travel, not the
+  // input's full border box. Aim inside that real 16 px travel so quarter
+  // positions stay exact on both local and CI viewport widths.
+  const railX = (fraction: number): number =>
+    (rail?.x ?? 0) + 8 + ((rail?.width ?? 0) - 16) * fraction
 
-  await page.mouse.click((rail?.x ?? 0) + (rail?.width ?? 0) * 0.75, y)
+  await page.mouse.click(railX(0.75), y)
   await expect(elapsed).toHaveText('0:06')
 
-  await page.mouse.move((rail?.x ?? 0) + (rail?.width ?? 0) * 0.75, y)
+  await page.mouse.move(railX(0.75), y)
   await page.mouse.down()
-  await page.mouse.move((rail?.x ?? 0) + (rail?.width ?? 0) * 0.25, y, {
+  await page.mouse.move(railX(0.25), y, {
     steps: 8,
   })
   await page.mouse.up()
