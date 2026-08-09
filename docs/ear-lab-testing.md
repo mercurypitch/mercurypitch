@@ -80,7 +80,7 @@ scheduled sample-accurately on the audio clock).
    rhythm-heavy music. Same staircase feel as Hairline: mistakes lengthen
    the run.
 4. Sanity check: at the opening offset (80 ms) the nudge should be
-   *obvious*. If even those feel random, flag it — that points at audio
+   _obvious_. If even those feel random, flag it — that points at audio
    scheduling, not your ear.
 5. Watch the six dots pulse: they must light in a perfectly even rhythm
    regardless of which click was displaced. If the dots visibly reveal the
@@ -109,8 +109,8 @@ Three button drills, 12 rounds each, all sharing one engine.
 2. **Thresholds over time**: sparklines for Hairline and The Grid. The
    line should RISE as your readings fall (it is plotted inverted on
    purpose — rising must mean improving). Check the "best" figure.
-3. **Confusion maps**: one section per drill. Expect sentences like *"You
-   answer Fa (4) as Sol (5) on 33% of attempts"* and a heatmap where rows
+3. **Confusion maps**: one section per drill. Expect sentences like _"You
+   answer Fa (4) as Sol (5) on 33% of attempts"_ and a heatmap where rows
    are what played and columns are what you answered.
 4. Deliberately miss the same degree the same way 3-4 times in Home, then
    re-open the report — that pair should top the list.
@@ -187,8 +187,8 @@ playing, then the question came back. Worth re-checking on every drill.
 2. Expect: audio cuts within a beat, the end card appears, and **nothing
    comes back** — no returning question, no further sounds.
 3. Press **Back** mid-run on one drill too: same silence.
-4. A stopped *practice* run should still show a reading (marked
-   "Provisional" if short). A stopped *calibration* must show "nothing was
+4. A stopped _practice_ run should still show a reading (marked
+   "Provisional" if short). A stopped _calibration_ must show "nothing was
    marked" and leave the column untouched.
 
 ## 3c. Pacing — the one file to tune
@@ -216,7 +216,7 @@ calibration since longer gaps make a task genuinely easier.
 
 ## Run log
 
-| Date | Device / audio path | Latency (3 runs) | Sing-mode verdict | Notes |
-| --- | --- | --- | --- | --- |
-| 2026-08-09 | desktop (Arch) | 274 ms ± 1.2 | _pending_ | Drills themselves reported fine. Latency reads ~124 ms high against `main`'s `MicLatencyWizard` (~150 ms, same audio path) — known bug, diagnosed in [`plans/ear-lab-handoff-2026-08-09.md`](plans/ear-lab-handoff-2026-08-09.md) §3. Not a device fault; do not re-run chasing it. |
-| _fill in_ | | | | |
+| Date       | Device / audio path | Latency (3 runs) | Sing-mode verdict | Notes                                                                                                                                                                                                                                                                               |
+| ---------- | ------------------- | ---------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-09 | desktop (Arch)      | 274 ms ± 1.2     | _pending_         | Drills themselves reported fine. Latency reads ~124 ms high against `main`'s `MicLatencyWizard` (~150 ms, same audio path) — known bug, diagnosed in [`plans/ear-lab-handoff-2026-08-09.md`](plans/ear-lab-handoff-2026-08-09.md) §3. Not a device fault; do not re-run chasing it. |
+| _fill in_  |                     |                  |                   |                                                                                                                                                                                                                                                                                     |
