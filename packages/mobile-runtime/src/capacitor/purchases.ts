@@ -8,7 +8,7 @@
 // payment sheet gets a cancelled outcome, never a thrown error.
 
 import type { CustomerInfo, PurchasesEntitlementInfo, PurchasesOffering, PurchasesPackage, } from '@revenuecat/purchases-capacitor'
-import { LOG_LEVEL, PACKAGE_TYPE, Purchases,PURCHASES_ERROR_CODE,  } from '@revenuecat/purchases-capacitor'
+import { LOG_LEVEL, PACKAGE_TYPE, Purchases, PURCHASES_ERROR_CODE, } from '@revenuecat/purchases-capacitor'
 import type { CustomerListener, CustomerSnapshot, EntitlementPeriodKind, EntitlementStatus, PurchaseFailureReason, PurchaseOffering, PurchaseOutcome, PurchasePlan, PurchasePlanHandle, PurchasePlanKind, PurchasesListenerHandle, PurchasesPort, } from '../contracts'
 import { PurchasesFailure } from '../contracts'
 
