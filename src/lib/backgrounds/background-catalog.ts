@@ -1,12 +1,18 @@
 // ============================================================
-// Background catalog — one typed registry for Karaoke and Jam environments
+// Background catalog — one typed registry for every performance environment
 // ============================================================
 //
-// Supporter sources are opaque protected keys, never public asset URLs. A
-// future loader resolves those keys through the authenticated background
+// Supporter sources are opaque protected keys, never public asset URLs. The
+// shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
 
-export type BackgroundSurface = 'karaoke' | 'jam'
+export type BackgroundSurface = 'karaoke' | 'jam' | 'piano'
+
+export function isBackgroundSurface(
+  value: unknown,
+): value is BackgroundSurface {
+  return value === 'karaoke' || value === 'jam' || value === 'piano'
+}
 
 export const CURRENT_FREE_BACKGROUND_IDS = [
   'karaoke-theatre',
@@ -14,6 +20,8 @@ export const CURRENT_FREE_BACKGROUND_IDS = [
   'room-singer',
   'room-guitar',
   'room-keys',
+  'piano-afterglow',
+  'piano-morning-conservatory',
 ] as const
 
 /** Existing 5K masters awaiting protected app delivery. */
@@ -32,6 +40,10 @@ export const NEW_EDITION_BACKGROUND_IDS = [
   'neon-velvet-room',
   'midnight-rain-room',
   'mercury-archive',
+  'piano-velvet-recital',
+  'piano-aurora-loft',
+  'piano-midnight-rain',
+  'piano-mercury-archive',
 ] as const
 
 /** Every supporter background may also be granted permanently by this id. */
@@ -45,6 +57,7 @@ export type BackgroundPerkId = (typeof BACKGROUND_PERK_IDS)[number]
 export type BackgroundId = FreeBackgroundId | BackgroundPerkId
 
 export type BackgroundDelivery = 'shipped' | 'master-ready' | 'planned'
+export type BackgroundTreatment = 'dark' | 'light'
 
 export type BackgroundEdition =
   | 'core'
@@ -88,21 +101,28 @@ export interface BackgroundDefinition {
   id: BackgroundId
   surface: BackgroundSurface
   label: string
+  description?: string
   edition: BackgroundEdition
   delivery: BackgroundDelivery
   access: BackgroundAccessRule
   assetSource: BackgroundAssetSource
   /** Normalized focal point used by future cover/crop renderers. */
   focalPoint: { x: number; y: number }
+  /** Defaults to dark; authored light rooms opt into warmer foreground grades. */
+  treatment?: BackgroundTreatment
 }
 
 const publicSource = (
   landscape: string,
   landscape2x?: string,
+  portrait?: string,
+  portrait2x?: string,
 ): PublicBackgroundSource => ({
   kind: 'public',
   landscape,
   ...(landscape2x === undefined ? {} : { landscape2x }),
+  ...(portrait === undefined ? {} : { portrait }),
+  ...(portrait2x === undefined ? {} : { portrait2x }),
 })
 
 const protectedSource = (
@@ -178,6 +198,37 @@ export const BACKGROUND_CATALOG = [
     access: { kind: 'free' },
     assetSource: publicSource('/jam/room-keys.webp', '/jam/room-keys-4k.webp'),
     focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-afterglow',
+    surface: 'piano',
+    label: 'Afterglow Studio',
+    description: 'Blue-hour focus around a concert grand',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/piano-night/afterglow-studio-landscape.webp',
+      undefined,
+      '/piano-night/afterglow-studio-portrait.webp',
+    ),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-morning-conservatory',
+    surface: 'piano',
+    label: 'Morning Conservatory',
+    description: 'Warm daylight for an unhurried practice session',
+    edition: 'core',
+    delivery: 'shipped',
+    access: { kind: 'free' },
+    assetSource: publicSource(
+      '/piano-night/morning-conservatory-landscape.webp',
+      undefined,
+      '/piano-night/morning-conservatory-portrait.webp',
+    ),
+    focalPoint: { x: 0.52, y: 0.46 },
+    treatment: 'light',
   },
   {
     id: 'golden-stage',
@@ -279,11 +330,52 @@ export const BACKGROUND_CATALOG = [
     assetSource: protectedSource('jam', 'mercury-archive'),
     focalPoint: { x: 0.5, y: 0.5 },
   },
+  {
+    id: 'piano-velvet-recital',
+    surface: 'piano',
+    label: 'Velvet Recital',
+    edition: 'neon-velvet',
+    delivery: 'planned',
+    access: supporterAccess('piano-velvet-recital'),
+    assetSource: protectedSource('piano', 'piano-velvet-recital'),
+    focalPoint: { x: 0.5, y: 0.48 },
+  },
+  {
+    id: 'piano-aurora-loft',
+    surface: 'piano',
+    label: 'Aurora Piano Loft',
+    edition: 'aurora',
+    delivery: 'planned',
+    access: supporterAccess('piano-aurora-loft'),
+    assetSource: protectedSource('piano', 'piano-aurora-loft'),
+    focalPoint: { x: 0.52, y: 0.48 },
+  },
+  {
+    id: 'piano-midnight-rain',
+    surface: 'piano',
+    label: 'Midnight Rain Room',
+    edition: 'midnight-rain',
+    delivery: 'planned',
+    access: supporterAccess('piano-midnight-rain'),
+    assetSource: protectedSource('piano', 'piano-midnight-rain'),
+    focalPoint: { x: 0.5, y: 0.5 },
+  },
+  {
+    id: 'piano-mercury-archive',
+    surface: 'piano',
+    label: 'Mercury Piano Archive',
+    edition: 'mercury-archive',
+    delivery: 'planned',
+    access: supporterAccess('piano-mercury-archive'),
+    assetSource: protectedSource('piano', 'piano-mercury-archive'),
+    focalPoint: { x: 0.5, y: 0.48 },
+  },
 ] as const satisfies readonly BackgroundDefinition[]
 
 export const DEFAULT_BACKGROUND_IDS = {
   karaoke: 'karaoke-theatre',
   jam: 'room-stage',
+  piano: 'piano-afterglow',
 } as const satisfies Record<BackgroundSurface, FreeBackgroundId>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(

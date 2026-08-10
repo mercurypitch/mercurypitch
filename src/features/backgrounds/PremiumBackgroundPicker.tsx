@@ -10,11 +10,11 @@ import type { Accessor, Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { CheckSmall, Lock, StageCurtains, X } from '@/components/icons'
+import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
 import { BackgroundRequestError, loadProtectedBackgroundObjectUrl, } from '@/lib/backgrounds/background-runtime'
 import type { BackgroundSurfaceController, RuntimeBackgroundOption, } from '@/lib/backgrounds/background-surface'
 import { useScrollLock } from '@/lib/use-scroll-lock'
 import { isNarrow } from '@/lib/use-viewport'
-import { invalidatePremiumBackgroundAccess } from '@/stores/background-store'
 import styles from './PremiumBackgroundPicker.module.css'
 
 interface PremiumBackgroundPickerProps {
@@ -22,6 +22,8 @@ interface PremiumBackgroundPickerProps {
   label?: string
   class?: string
   iconOnly?: boolean
+  /** Render only the reusable gallery body inside an owning drawer/panel. */
+  embedded?: boolean
   selectedId?: Accessor<RuntimeBackgroundOption['id']>
   onSelect?: (option: RuntimeBackgroundOption) => boolean | Promise<boolean>
   busy?: Accessor<boolean>
@@ -32,6 +34,39 @@ interface BackgroundArtworkProps {
   option: RuntimeBackgroundOption
   controller: BackgroundSurfaceController
 }
+
+const PICKER_COPY = {
+  karaoke: {
+    trigger: 'Choose karaoke stage background',
+    dialog: 'Choose your karaoke stage',
+    heading: 'Choose your stage',
+    description: 'Included stages and supporter editions, ready when you sing.',
+    busy: 'Preparing your stage…',
+  },
+  jam: {
+    trigger: 'Choose jam room background',
+    dialog: 'Choose your jam room',
+    heading: 'Choose your room',
+    description: 'Included rooms and supporter editions for your jam session.',
+    busy: 'Preparing your room…',
+  },
+  piano: {
+    trigger: 'Choose Piano Night room background',
+    dialog: 'Choose your Piano Night room',
+    heading: 'Choose your room',
+    description: 'Included rooms and supporter editions for Piano Night.',
+    busy: 'Preparing your room…',
+  },
+} as const satisfies Record<
+  BackgroundSurface,
+  {
+    trigger: string
+    dialog: string
+    heading: string
+    description: string
+    busy: string
+  }
+>
 
 /** Holds the counted body-scroll lock for exactly as long as it is mounted —
  *  `useScrollLock` locks for a component's lifetime, so the conditional lock
@@ -75,6 +110,7 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
     }
 
     const asset = option.premiumAsset
+    const invalidateAccess = props.controller.invalidateAccess
     const request = new AbortController()
     let ownedUrl: string | null = null
     void loadProtectedBackgroundObjectUrl(asset, {
@@ -93,7 +129,7 @@ function BackgroundArtwork(props: BackgroundArtworkProps) {
       .catch((error: unknown) => {
         if (request.signal.aborted) return
         if (invalidatesAccess(error)) {
-          invalidatePremiumBackgroundAccess(asset.id, error.status)
+          invalidateAccess(asset.id, error.status)
         }
         setFailed(true)
         setUrl(null)
@@ -137,6 +173,7 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
   const [selectionError, setSelectionError] = createSignal<string | null>(null)
   let trigger: HTMLButtonElement | undefined
   let panel: HTMLDivElement | undefined
+  const copy = () => PICKER_COPY[props.controller.surface]
 
   const close = (restoreFocus = false) => {
     setOpen(false)
@@ -162,7 +199,7 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
   }
 
   createEffect(() => {
-    if (!open()) return
+    if (!open() || props.embedded === true) return
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target
       if (!(target instanceof Node)) return
@@ -226,7 +263,7 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
         props.onSelect === undefined
           ? props.controller.select(option.id)
           : await props.onSelect(option)
-      if (accepted) close(true)
+      if (accepted && props.embedded !== true) close(true)
     } catch {
       setSelectionError('That background could not be selected. Try again.')
     } finally {
@@ -238,143 +275,160 @@ export function PremiumBackgroundPicker(props: PremiumBackgroundPickerProps) {
     props.controller.options().filter((option) => option.access === 'locked')
       .length
 
-  return (
-    <div class={`${styles.root} ${props.class ?? ''}`}>
-      <button
-        ref={trigger}
-        type="button"
-        class={styles.trigger}
-        classList={{
-          [styles.triggerOpen]: open(),
-          [styles.triggerIconOnly]: props.iconOnly === true,
-        }}
-        aria-label={`Choose ${props.controller.surface === 'karaoke' ? 'karaoke stage' : 'jam room'} background`}
-        aria-haspopup="dialog"
-        aria-expanded={open()}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <StageCurtains size={16} />
-        <span classList={{ [styles.visuallyHidden]: props.iconOnly === true }}>
-          {props.label ?? 'Stage'}
-        </span>
-      </button>
+  const GalleryPanel: Component<{ embedded: boolean }> = (panelProps) => (
+    <div
+      ref={panel}
+      class={styles.panel}
+      classList={{ [styles.panelEmbedded]: panelProps.embedded }}
+      role={panelProps.embedded ? 'region' : 'dialog'}
+      aria-modal={panelProps.embedded ? undefined : 'false'}
+      aria-label={copy().dialog}
+      aria-busy={busy()}
+      style={
+        panelProps.embedded
+          ? undefined
+          : {
+              top: `${panelPosition().top}px`,
+              left: `${panelPosition().left}px`,
+            }
+      }
+    >
+      <Show when={!panelProps.embedded}>
+        <div class={styles.panelHead}>
+          <div>
+            <h2>{copy().heading}</h2>
+            <p>{copy().description}</p>
+          </div>
+          <button
+            type="button"
+            class={styles.close}
+            aria-label="Close background picker"
+            onClick={() => close(true)}
+          >
+            <X />
+          </button>
+        </div>
+      </Show>
 
-      <Show when={open()}>
-        <Portal>
-          {/* Phones get a real drawer: a scrim behind it so the page cannot
+      <div class={styles.gallery} aria-label="Available backgrounds">
+        <For each={props.controller.options()}>
+          {(option) => {
+            const selected = () =>
+              selectedId() === option.id && option.access !== 'locked'
+            return (
+              <button
+                type="button"
+                class={styles.card}
+                classList={{
+                  [styles.cardSelected]: selected(),
+                  [styles.cardLocked]: option.access === 'locked',
+                }}
+                aria-pressed={selected()}
+                aria-disabled={option.access === 'locked'}
+                disabled={busy() && !selected()}
+                onClick={() => void handleSelect(option)}
+              >
+                <BackgroundArtwork
+                  option={option}
+                  controller={props.controller}
+                />
+                <span class={styles.cardCopy}>
+                  <span class={styles.cardTitleRow}>
+                    <strong>{option.label}</strong>
+                    <Show when={selected()}>
+                      <span class={styles.selectedMark}>
+                        <CheckSmall size={13} /> Selected
+                      </span>
+                    </Show>
+                  </span>
+                  <span class={styles.cardDescription}>
+                    {option.description}
+                  </span>
+                  <span class={styles.accessLabel}>
+                    {option.access === 'free'
+                      ? 'Included'
+                      : option.access === 'unlocked'
+                        ? 'Unlocked'
+                        : 'Supporter edition'}
+                  </span>
+                </span>
+              </button>
+            )
+          }}
+        </For>
+      </div>
+
+      <Show when={props.controller.loading() || busy()}>
+        <p class={styles.status} role="status">
+          {copy().busy}
+        </p>
+      </Show>
+      <Show when={visibleError()} keyed>
+        {(message) => (
+          <p class={styles.status} role="status">
+            {message}
+          </p>
+        )}
+      </Show>
+      <Show when={lockedCount() > 0}>
+        <div class={styles.supporterFoot}>
+          <span>
+            {lockedCount()} supporter{' '}
+            {lockedCount() === 1 ? 'edition' : 'editions'} in this gallery
+          </span>
+          <a href="/#/settings/credits">Explore supporter perks</a>
+        </div>
+      </Show>
+    </div>
+  )
+
+  return (
+    <div
+      class={`${styles.root} ${props.class ?? ''}`}
+      classList={{ [styles.rootEmbedded]: props.embedded === true }}
+    >
+      <Show when={props.embedded !== true}>
+        <button
+          ref={trigger}
+          type="button"
+          class={styles.trigger}
+          classList={{
+            [styles.triggerOpen]: open(),
+            [styles.triggerIconOnly]: props.iconOnly === true,
+          }}
+          aria-label={copy().trigger}
+          aria-haspopup="dialog"
+          aria-expanded={open()}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <StageCurtains size={16} />
+          <span
+            classList={{ [styles.visuallyHidden]: props.iconOnly === true }}
+          >
+            {props.label ?? 'Stage'}
+          </span>
+        </button>
+      </Show>
+
+      <Show
+        when={props.embedded === true}
+        fallback={
+          <Show when={open()}>
+            <Portal>
+              {/* Phones get a real drawer: a scrim behind it so the page cannot
               scroll (or be tapped) underneath, which is what turned an
               accidental drag into a dismissal. The existing outside-
               pointerdown handler closes it. */}
-          <Show when={isNarrow()}>
-            <div class={styles.scrim} aria-hidden="true" />
-            <DrawerScrollLock />
+              <Show when={isNarrow()}>
+                <div class={styles.scrim} aria-hidden="true" />
+                <DrawerScrollLock />
+              </Show>
+              <GalleryPanel embedded={false} />
+            </Portal>
           </Show>
-          <div
-            ref={panel}
-            class={styles.panel}
-            role="dialog"
-            aria-modal="false"
-            aria-label={
-              props.controller.surface === 'karaoke'
-                ? 'Choose your karaoke stage'
-                : 'Choose your jam room'
-            }
-            aria-busy={busy()}
-            style={{
-              top: `${panelPosition().top}px`,
-              left: `${panelPosition().left}px`,
-            }}
-          >
-            <div class={styles.panelHead}>
-              <div>
-                <h2>
-                  {props.controller.surface === 'karaoke'
-                    ? 'Choose your stage'
-                    : 'Choose your room'}
-                </h2>
-                <p>Free scenes and supporter editions, ready when you sing.</p>
-              </div>
-              <button
-                type="button"
-                class={styles.close}
-                aria-label="Close background picker"
-                onClick={() => close(true)}
-              >
-                <X />
-              </button>
-            </div>
-
-            <div class={styles.gallery} aria-label="Available backgrounds">
-              <For each={props.controller.options()}>
-                {(option) => {
-                  const selected = () =>
-                    selectedId() === option.id && option.access !== 'locked'
-                  return (
-                    <button
-                      type="button"
-                      class={styles.card}
-                      classList={{
-                        [styles.cardSelected]: selected(),
-                        [styles.cardLocked]: option.access === 'locked',
-                      }}
-                      aria-pressed={selected()}
-                      aria-disabled={option.access === 'locked'}
-                      disabled={busy() && !selected()}
-                      onClick={() => void handleSelect(option)}
-                    >
-                      <BackgroundArtwork
-                        option={option}
-                        controller={props.controller}
-                      />
-                      <span class={styles.cardCopy}>
-                        <span class={styles.cardTitleRow}>
-                          <strong>{option.label}</strong>
-                          <Show when={selected()}>
-                            <span class={styles.selectedMark}>
-                              <CheckSmall size={13} /> Selected
-                            </span>
-                          </Show>
-                        </span>
-                        <span class={styles.cardDescription}>
-                          {option.description}
-                        </span>
-                        <span class={styles.accessLabel}>
-                          {option.access === 'free'
-                            ? 'Included'
-                            : option.access === 'unlocked'
-                              ? 'Unlocked'
-                              : 'Supporter edition'}
-                        </span>
-                      </span>
-                    </button>
-                  )
-                }}
-              </For>
-            </div>
-
-            <Show when={props.controller.loading() || busy()}>
-              <p class={styles.status} role="status">
-                Preparing your stage…
-              </p>
-            </Show>
-            <Show when={visibleError()} keyed>
-              {(message) => (
-                <p class={styles.status} role="status">
-                  {message}
-                </p>
-              )}
-            </Show>
-            <Show when={lockedCount() > 0}>
-              <div class={styles.supporterFoot}>
-                <span>
-                  {lockedCount()} supporter{' '}
-                  {lockedCount() === 1 ? 'edition' : 'editions'} in this gallery
-                </span>
-                <a href="/#/settings/credits">Explore supporter perks</a>
-              </div>
-            </Show>
-          </div>
-        </Portal>
+        }
+      >
+        <GalleryPanel embedded={true} />
       </Show>
     </div>
   )

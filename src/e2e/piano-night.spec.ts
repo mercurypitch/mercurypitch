@@ -149,6 +149,39 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   expect(pageErrors).toEqual([])
 })
 
+test('persists a free Piano room without crossing into sound state @smoke', async ({
+  page,
+}) => {
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Room' }).click()
+  await page.getByRole('button', { name: /Morning Conservatory/ }).click()
+
+  await expect(page.getByTestId('piano-night-shell')).toHaveAttribute(
+    'data-room',
+    'piano-morning-conservatory',
+  )
+  await expect(page.getByTestId('piano-night-shell')).toHaveAttribute(
+    'data-room-treatment',
+    'light',
+  )
+  await expect(page.getByRole('status').last()).toContainText(
+    'Instrument sound unchanged.',
+  )
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem('pitchperfect_piano_background'),
+      ),
+    )
+    .toBe('piano-morning-conservatory')
+
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await expect(page.getByTestId('piano-night-shell')).toHaveAttribute(
+    'data-room',
+    'piano-morning-conservatory',
+  )
+})
+
 test('plays a key and seeks the prepared project with a real pointer @smoke', async ({
   page,
 }) => {
@@ -378,6 +411,15 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
         waitUntil: 'domcontentloaded',
       })
       expect(response?.ok()).toBe(true)
+
+      const roomImage = await page
+        .getByTestId('piano-night-room-art')
+        .evaluate((element) => getComputedStyle(element).backgroundImage)
+      expect(roomImage).toContain(
+        viewport.height > viewport.width
+          ? 'afterglow-studio-portrait.webp'
+          : 'afterglow-studio-landscape.webp',
+      )
 
       const metrics = await page.evaluate(() => ({
         clientHeight: document.documentElement.clientHeight,

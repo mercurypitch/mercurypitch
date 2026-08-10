@@ -1,22 +1,22 @@
 // ============================================================
-// Background surface controller — one resolved image for every Karaoke/Jam view
+// Background surface controller — one resolved image for every performance view
 // ============================================================
 //
 // A controller owns the selected private object URL and exposes stable CSS
-// variables to every renderer. Global Karaoke and Jam controllers are
-// reference-counted so desktop, standalone and portalled Zen views share the
-// same decoded URL instead of fetching and flashing independently.
+// variables to every renderer. Global controllers are reference-counted so
+// desktop, standalone and portalled views share one decoded URL instead of
+// fetching and flashing independently.
 
 import type { Accessor, JSX } from 'solid-js'
 import { createComputed, createMemo, createRoot, createSignal, onCleanup, onMount, } from 'solid-js'
-import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from '@/stores/background-store'
-import { premiumBackgroundCatalogState, premiumBackgroundCatalogStore, } from '@/stores/background-store'
-import type { BackgroundSelectionStorage } from './background-access'
-import { persistBackgroundId, readPersistedBackgroundId, } from './background-access'
-import type { BackgroundDefinition, BackgroundId, BackgroundSurface, PublicBackgroundSource, } from './background-catalog'
+import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, BackgroundTreatment, PublicBackgroundSource, } from './background-catalog'
 import { defaultBackground, getBackgroundDefinition, listBackgrounds, } from './background-catalog'
-import type { PremiumBackgroundAsset, ProtectedBackgroundRequest, } from './background-runtime'
+import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from './background-catalog-store'
+import { premiumBackgroundCatalogState, premiumBackgroundCatalogStore, } from './background-catalog-store'
+import type { PremiumBackgroundAsset, PremiumBackgroundVariantName, ProtectedBackgroundRequest, } from './background-runtime'
 import { BackgroundRequestError, loadProtectedBackgroundObjectUrl, } from './background-runtime'
+import type { BackgroundSelectionStorage } from './background-selection'
+import { persistBackgroundId, readPersistedBackgroundId, } from './background-selection'
 
 export type RuntimeBackgroundAccess = 'free' | 'unlocked' | 'locked'
 
@@ -27,6 +27,7 @@ export interface RuntimeBackgroundOption {
   description: string
   edition: BackgroundDefinition['edition']
   focalPoint: BackgroundDefinition['focalPoint']
+  treatment: BackgroundTreatment
   access: RuntimeBackgroundAccess
   publicUrl: string | null
   premiumAsset: PremiumBackgroundAsset | null
@@ -36,9 +37,13 @@ export interface ResolvedBackground {
   id: BackgroundId
   url: string
   focalPoint: BackgroundDefinition['focalPoint']
+  treatment: BackgroundTreatment
   source: 'public' | 'protected'
   version: number | null
+  variant: PremiumBackgroundVariantName | null
 }
+
+export type BackgroundOrientation = 'landscape' | 'portrait'
 
 export type BackgroundCssVariables = JSX.CSSProperties & {
   '--mp-stage-image': string
@@ -57,6 +62,7 @@ export interface BackgroundSurfaceController {
   error: Accessor<string | null>
   select: (id: BackgroundId) => boolean
   refresh: () => Promise<void>
+  invalidateAccess: (id: BackgroundPerkId, status?: number) => void
   retain: () => () => void
   dispose: () => void
 }
@@ -65,6 +71,7 @@ export interface BackgroundSurfaceControllerOptions {
   catalogStore?: PremiumBackgroundCatalogStore
   storage?: BackgroundSelectionStorage | null
   pixelRatio?: () => number
+  orientation?: () => BackgroundOrientation
   loadProtected?: (
     asset: PremiumBackgroundAsset,
     request?: ProtectedBackgroundRequest,
@@ -75,10 +82,39 @@ export interface BackgroundSurfaceControllerOptions {
 function publicBackgroundUrl(
   source: PublicBackgroundSource,
   pixelRatio: number,
+  orientation: BackgroundOrientation,
 ): string {
+  if (orientation === 'portrait' && source.portrait !== undefined) {
+    return pixelRatio >= 1.5 && source.portrait2x !== undefined
+      ? source.portrait2x
+      : source.portrait
+  }
   return pixelRatio >= 1.5 && source.landscape2x !== undefined
     ? source.landscape2x
     : source.landscape
+}
+
+function browserOrientation(): BackgroundOrientation {
+  if (typeof window === 'undefined') return 'landscape'
+  return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
+}
+
+function premiumVariant(
+  asset: PremiumBackgroundAsset,
+  pixelRatio: number,
+  orientation: BackgroundOrientation,
+): PremiumBackgroundVariantName {
+  const available = new Set(asset.variants.map((variant) => variant.name))
+  const preferred: readonly PremiumBackgroundVariantName[] =
+    orientation === 'portrait'
+      ? ['portrait-2k', 'landscape-2k', 'landscape-4k']
+      : pixelRatio >= 1.5
+        ? ['landscape-4k', 'landscape-2k', 'portrait-2k']
+        : ['landscape-2k', 'landscape-4k', 'portrait-2k']
+  return (
+    preferred.find((variant) => available.has(variant)) ??
+    asset.variants[0].name
+  )
 }
 
 function isPublicFreeBackground(
@@ -115,6 +151,7 @@ export function listRuntimeBackgrounds(
   pixelRatio: number = typeof window === 'undefined'
     ? 1
     : window.devicePixelRatio,
+  orientation: BackgroundOrientation = browserOrientation(),
 ): readonly RuntimeBackgroundOption[] {
   const free = listBackgrounds(surface)
     .filter(isPublicFreeBackground)
@@ -122,11 +159,16 @@ export function listRuntimeBackgrounds(
       id: background.id,
       surface,
       label: background.label,
-      description: descriptionFor(background),
+      description: background.description ?? descriptionFor(background),
       edition: background.edition,
       focalPoint: background.focalPoint,
+      treatment: background.treatment ?? 'dark',
       access: 'free' as const,
-      publicUrl: publicBackgroundUrl(background.assetSource, pixelRatio),
+      publicUrl: publicBackgroundUrl(
+        background.assetSource,
+        pixelRatio,
+        orientation,
+      ),
       premiumAsset: null,
     }))
 
@@ -146,6 +188,7 @@ export function listRuntimeBackgrounds(
             : descriptionFor(background),
         edition: background.edition,
         focalPoint: background.focalPoint,
+        treatment: background.treatment ?? 'dark',
         access: unlocked.has(asset.id) ? 'unlocked' : 'locked',
         publicUrl: null,
         premiumAsset: asset,
@@ -174,6 +217,7 @@ export function runtimeBackgroundById(
 function freeResolved(
   surface: BackgroundSurface,
   pixelRatio: number,
+  orientation: BackgroundOrientation,
 ): ResolvedBackground {
   const background = defaultBackground(surface)
   if (background.assetSource.kind !== 'public') {
@@ -181,10 +225,12 @@ function freeResolved(
   }
   return {
     id: background.id,
-    url: publicBackgroundUrl(background.assetSource, pixelRatio),
+    url: publicBackgroundUrl(background.assetSource, pixelRatio, orientation),
     focalPoint: background.focalPoint,
+    treatment: background.treatment ?? 'dark',
     source: 'public',
     version: null,
+    variant: null,
   }
 }
 
@@ -212,12 +258,13 @@ export function createBackgroundSurfaceController(
     const pixelRatio =
       options.pixelRatio ??
       (() => (typeof window === 'undefined' ? 1 : window.devicePixelRatio))
+    const orientation = options.orientation ?? browserOrientation
     const loadProtected =
       options.loadProtected ?? loadProtectedBackgroundObjectUrl
     const revokeObjectURL =
       options.revokeObjectURL ?? ((url: string) => URL.revokeObjectURL(url))
     const stored = readPersistedBackgroundId(surface, options.storage)
-    const fallback = freeResolved(surface, pixelRatio())
+    const fallback = freeResolved(surface, pixelRatio(), orientation())
     const [requestedId, setRequestedId] = createSignal<BackgroundId>(
       stored ?? fallback.id,
     )
@@ -226,15 +273,27 @@ export function createBackgroundSurfaceController(
     const [loading, setLoading] = createSignal(false)
     const [error, setError] = createSignal<string | null>(null)
     const [active, setActive] = createSignal(false)
+    const [viewportRevision, setViewportRevision] = createSignal(0)
 
     let retainCount = 0
     let releaseCatalog: (() => void) | null = null
     let loadGeneration = 0
     let activeLoad: AbortController | null = null
+    let activeLoadTarget: {
+      id: BackgroundPerkId
+      version: number
+      variant: PremiumBackgroundVariantName
+    } | null = null
 
-    const optionsList = createMemo(() =>
-      listRuntimeBackgrounds(surface, catalogStore.state(), pixelRatio()),
-    )
+    const optionsList = createMemo(() => {
+      viewportRevision()
+      return listRuntimeBackgrounds(
+        surface,
+        catalogStore.state(),
+        pixelRatio(),
+        orientation(),
+      )
+    })
 
     const releaseResolvedUrl = (background: ResolvedBackground) => {
       if (background.source === 'protected') revokeObjectURL(background.url)
@@ -252,9 +311,10 @@ export function createBackgroundSurfaceController(
     const useFallback = () => {
       activeLoad?.abort()
       activeLoad = null
+      activeLoadTarget = null
       loadGeneration += 1
       setLoading(false)
-      const next = freeResolved(surface, pixelRatio())
+      const next = freeResolved(surface, pixelRatio(), orientation())
       if (
         currentResolved.id !== next.id ||
         currentResolved.url !== next.url ||
@@ -273,13 +333,18 @@ export function createBackgroundSurfaceController(
 
       const choice = optionsList().find((option) => option.id === id)
       if (choice === undefined || choice.access === 'locked') {
-        setError(choice?.access === 'locked' ? 'This stage is locked.' : null)
+        setError(
+          choice?.access === 'locked'
+            ? `This ${surface === 'karaoke' ? 'stage' : 'room'} is locked.`
+            : null,
+        )
         useFallback()
         return
       }
       if (choice.access === 'free' && choice.publicUrl !== null) {
         activeLoad?.abort()
         activeLoad = null
+        activeLoadTarget = null
         loadGeneration += 1
         setLoading(false)
         setError(null)
@@ -289,8 +354,10 @@ export function createBackgroundSurfaceController(
             id: choice.id,
             url: choice.publicUrl,
             focalPoint: choice.focalPoint,
+            treatment: choice.treatment,
             source: 'public',
             version: null,
+            variant: null,
           })
         }
         return
@@ -301,25 +368,40 @@ export function createBackgroundSurfaceController(
         useFallback()
         return
       }
+      const variant = premiumVariant(asset, pixelRatio(), orientation())
       const current = currentResolved
       if (
         current.id === asset.id &&
         current.source === 'protected' &&
-        current.version === asset.activeVersion
+        current.version === asset.activeVersion &&
+        current.variant === variant
       ) {
         setLoading(false)
         setError(null)
+        return
+      }
+      if (
+        activeLoad !== null &&
+        activeLoadTarget?.id === asset.id &&
+        activeLoadTarget.version === asset.activeVersion &&
+        activeLoadTarget.variant === variant
+      ) {
         return
       }
 
       activeLoad?.abort()
       const request = new AbortController()
       activeLoad = request
+      activeLoadTarget = {
+        id: asset.id,
+        version: asset.activeVersion,
+        variant,
+      }
       const generation = ++loadGeneration
       setLoading(true)
       setError(null)
       void loadProtected(asset, {
-        variant: 'landscape-2k',
+        variant,
         version: asset.activeVersion,
         signal: request.signal,
       })
@@ -336,16 +418,20 @@ export function createBackgroundSurfaceController(
             id: asset.id,
             url,
             focalPoint: choice.focalPoint,
+            treatment: choice.treatment,
             source: 'protected',
             version: asset.activeVersion,
+            variant,
           })
           activeLoad = null
+          activeLoadTarget = null
           setLoading(false)
           setError(null)
         })
         .catch((loadError: unknown) => {
           if (request.signal.aborted || generation !== loadGeneration) return
           activeLoad = null
+          activeLoadTarget = null
           setLoading(false)
           if (
             loadError instanceof BackgroundRequestError &&
@@ -356,7 +442,7 @@ export function createBackgroundSurfaceController(
           setError(
             loadError instanceof BackgroundRequestError
               ? loadError.message
-              : 'That stage image could not be opened.',
+              : `That ${surface === 'karaoke' ? 'stage' : 'room'} image could not be opened.`,
           )
           useFallback()
         })
@@ -374,6 +460,10 @@ export function createBackgroundSurfaceController(
       retainCount += 1
       if (retainCount === 1) {
         releaseCatalog = catalogStore.retain()
+        setViewportRevision((revision) => revision + 1)
+        if (typeof window !== 'undefined') {
+          window.addEventListener('resize', handleViewportChange)
+        }
         setActive(true)
       }
       let released = false
@@ -383,9 +473,16 @@ export function createBackgroundSurfaceController(
         retainCount = Math.max(0, retainCount - 1)
         if (retainCount !== 0) return
         setActive(false)
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('resize', handleViewportChange)
+        }
         releaseCatalog?.()
         releaseCatalog = null
       }
+    }
+
+    const handleViewportChange = () => {
+      setViewportRevision((revision) => revision + 1)
     }
 
     const resolvedStyle = createMemo(() => cssVariables(resolved()))
@@ -400,6 +497,7 @@ export function createBackgroundSurfaceController(
       error,
       select,
       refresh: catalogStore.refresh,
+      invalidateAccess: catalogStore.invalidate,
       retain,
       dispose: () => {
         retainCount = 0
@@ -407,6 +505,10 @@ export function createBackgroundSurfaceController(
         releaseCatalog = null
         activeLoad?.abort()
         activeLoad = null
+        activeLoadTarget = null
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('resize', handleViewportChange)
+        }
         releaseResolvedUrl(currentResolved)
         disposeRoot()
       },
@@ -417,6 +519,7 @@ export function createBackgroundSurfaceController(
 const SURFACE_CONTROLLERS = {
   karaoke: createBackgroundSurfaceController('karaoke'),
   jam: createBackgroundSurfaceController('jam'),
+  piano: createBackgroundSurfaceController('piano'),
 } as const satisfies Record<BackgroundSurface, BackgroundSurfaceController>
 
 export function backgroundSurfaceController(

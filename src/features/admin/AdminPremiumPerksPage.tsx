@@ -17,7 +17,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, Match, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { AlertTriangle, CheckCircle, FileUpload, Plus, RotateCcw, Trash2, UserPlus, } from '@/components/icons'
-import type { BackgroundPerkId } from '@/lib/backgrounds/background-catalog'
+import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import type { SupporterFeaturePerkId } from '@/lib/supporter-feature-catalog'
 import { useConfirm } from '@/lib/use-confirm'
 import styles from './AdminPremiumPerksPage.module.css'
@@ -31,6 +31,7 @@ interface AdminPremiumPerksPageProps {
 
 type LoadState = 'loading' | 'ready' | 'failed'
 type Workspace = 'backgrounds' | 'groups' | 'passes'
+type BackgroundSurfaceFilter = 'all' | BackgroundSurface
 type PreviewRevision = 'published' | 'draft'
 type PreviewState = 'idle' | 'loading' | 'ready' | 'failed'
 type PassState = 'active' | 'expired' | 'revoked'
@@ -40,6 +41,11 @@ interface LifecycleBand {
   id: PremiumBackgroundLifecycle
   label: string
   description: string
+}
+
+interface BackgroundSurfaceFilterOption {
+  id: BackgroundSurfaceFilter
+  label: string
 }
 
 const LIFECYCLE_BANDS: readonly LifecycleBand[] = [
@@ -60,6 +66,13 @@ const LIFECYCLE_BANDS: readonly LifecycleBand[] = [
     description: 'Kept for restoration, but unavailable for new selection.',
   },
 ] as const
+
+const BACKGROUND_SURFACE_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'karaoke', label: 'Karaoke' },
+  { id: 'jam', label: 'Jam' },
+  { id: 'piano', label: 'Piano Night' },
+] as const satisfies readonly BackgroundSurfaceFilterOption[]
 
 const EMPTY_GROUP_DRAFT: SupporterGroupDraft = {
   name: '',
@@ -106,6 +119,21 @@ function lifecycleLabel(lifecycle: PremiumBackgroundLifecycle): string {
   }
 }
 
+function backgroundSurfaceLabel(surface: BackgroundSurface): string {
+  switch (surface) {
+    case 'karaoke':
+      return 'Karaoke'
+    case 'jam':
+      return 'Jam'
+    case 'piano':
+      return 'Piano Night'
+  }
+}
+
+function backgroundSurfaceFilterLabel(filter: BackgroundSurfaceFilter): string {
+  return filter === 'all' ? 'All' : backgroundSurfaceLabel(filter)
+}
+
 function passState(
   capability: AdminPremiumCapability,
   now = Date.now(),
@@ -136,6 +164,8 @@ export function AdminPremiumPerksPage(
   const [error, setError] = createSignal('')
   const [notice, setNotice] = createSignal('')
   const [workspace, setWorkspace] = createSignal<Workspace>('backgrounds')
+  const [backgroundSurfaceFilter, setBackgroundSurfaceFilter] =
+    createSignal<BackgroundSurfaceFilter>('all')
   const [busyAction, setBusyAction] = createSignal('')
   const [selectedBackgroundId, setSelectedBackgroundId] =
     createSignal<BackgroundPerkId | null>(null)
@@ -170,6 +200,12 @@ export function AdminPremiumPerksPage(
   let previewObjectUrl: string | null = null
 
   const backgrounds = createMemo(() => snapshot()?.backgrounds ?? [])
+  const filteredBackgrounds = createMemo(() => {
+    const filter = backgroundSurfaceFilter()
+    return filter === 'all'
+      ? backgrounds()
+      : backgrounds().filter((background) => background.surface === filter)
+  })
   const groups = createMemo(() => snapshot()?.groups ?? [])
   const featurePerks = createMemo(() => snapshot()?.featurePerks ?? [])
   const capabilities = createMemo(() => snapshot()?.capabilities ?? [])
@@ -195,6 +231,15 @@ export function AdminPremiumPerksPage(
   })
   const endedPassCount = createMemo(
     () => capabilities().length - activePassCount(),
+  )
+  const invalidPassCount = createMemo(
+    () =>
+      capabilities().filter((capability) => {
+        const background = backgrounds().find(
+          (item) => item.id === capability.backgroundId,
+        )
+        return background === undefined || background.surface !== 'jam'
+      }).length,
   )
   const selectedBackground = createMemo(
     () =>
@@ -310,9 +355,14 @@ export function AdminPremiumPerksPage(
   /* eslint-disable solid/reactivity */
   const selectInitialRows = (next: PremiumPerksSnapshot): void => {
     const currentBackground = selectedBackgroundId()
+    const surface = backgroundSurfaceFilter()
+    const visibleBackgrounds =
+      surface === 'all'
+        ? next.backgrounds
+        : next.backgrounds.filter((item) => item.surface === surface)
     const selected =
-      next.backgrounds.find((item) => item.id === currentBackground) ??
-      next.backgrounds[0]
+      visibleBackgrounds.find((item) => item.id === currentBackground) ??
+      visibleBackgrounds[0]
     const selectionChanged = selected?.id !== currentBackground
     if (selectionChanged) {
       setSelectedBackgroundId(selected?.id ?? null)
@@ -463,6 +513,68 @@ export function AdminPremiumPerksPage(
         'The files have not been uploaded. Changing backgrounds will clear them from this form.',
       confirmLabel: 'Discard files',
       onConfirm: () => performChooseBackground(id),
+    })
+  }
+
+  const performChooseSurfaceFilter = (
+    filter: BackgroundSurfaceFilter,
+  ): void => {
+    const visibleBackgrounds =
+      filter === 'all'
+        ? backgrounds()
+        : backgrounds().filter((background) => background.surface === filter)
+    const currentBackground = selectedBackgroundId()
+
+    setBackgroundSurfaceFilter(filter)
+    if (
+      currentBackground !== null &&
+      visibleBackgrounds.some(
+        (background) => background.id === currentBackground,
+      )
+    ) {
+      return
+    }
+
+    const nextBackground = visibleBackgrounds[0]
+    if (nextBackground !== undefined) {
+      performChooseBackground(nextBackground.id)
+      return
+    }
+
+    setSelectedBackgroundId(null)
+    setUploadFiles({})
+    setPreviewRevision('published')
+    setPreviewVariant('landscape-2k')
+  }
+
+  const requestChooseSurfaceFilter = (
+    filter: BackgroundSurfaceFilter,
+  ): void => {
+    if (filter === backgroundSurfaceFilter()) return
+
+    const visibleBackgrounds =
+      filter === 'all'
+        ? backgrounds()
+        : backgrounds().filter((background) => background.surface === filter)
+    const currentBackground = selectedBackgroundId()
+    const selectionChanges =
+      currentBackground === null
+        ? visibleBackgrounds.length > 0
+        : !visibleBackgrounds.some(
+            (background) => background.id === currentBackground,
+          )
+
+    if (!selectionChanges || Object.keys(uploadFiles()).length === 0) {
+      performChooseSurfaceFilter(filter)
+      return
+    }
+
+    confirm.request({
+      title: 'Discard selected upload files?',
+      message:
+        'The files have not been uploaded. Changing backgrounds will clear them from this form.',
+      confirmLabel: 'Discard files',
+      onConfirm: () => performChooseSurfaceFilter(filter),
     })
   }
 
@@ -790,9 +902,9 @@ export function AdminPremiumPerksPage(
       (item) => item.id === capability.backgroundId,
     )
     confirm.request({
-      title: `Revoke ${background?.label ?? capability.backgroundId} room pass?`,
+      title: `Revoke ${background?.label ?? capability.backgroundId} Jam room pass?`,
       message: `Room ${capability.roomId} will stop receiving this protected background through this pass. This does not remove the supporter’s underlying entitlement.`,
-      confirmLabel: 'Revoke room pass',
+      confirmLabel: 'Revoke Jam room pass',
       onConfirm: () => {
         if (busyAction() !== '') return
         setBusyAction(`revoke-pass:${capability.id}`)
@@ -812,7 +924,7 @@ export function AdminPremiumPerksPage(
               ? current
               : { ...current, capabilities: result.value },
           )
-          setNotice('Room pass revoked and the capability list refreshed.')
+          setNotice('Jam room pass revoked and the capability list refreshed.')
         })
       },
     })
@@ -859,7 +971,7 @@ export function AdminPremiumPerksPage(
             classList={{ [styles.tabActive]: workspace() === 'passes' }}
             onClick={() => setWorkspace('passes')}
           >
-            Room passes
+            Jam room passes
           </button>
         </div>
         <div class={styles.targetStrip}>
@@ -914,7 +1026,7 @@ export function AdminPremiumPerksPage(
             <div>
               <strong>Loading premium perks</strong>
               <small>
-                Checking revisions, supporter groups and active room passes.
+                Checking revisions, supporter groups and active Jam room passes.
               </small>
             </div>
           </div>
@@ -945,11 +1057,13 @@ export function AdminPremiumPerksPage(
                     <div class={styles.passesHeading}>
                       <div>
                         <span class={styles.kindBadge}>Protected delivery</span>
-                        <h3>Room passes</h3>
+                        <h3>Jam room passes</h3>
                         <p>
-                          Short-lived grants issued when a supporter shares a
-                          premium background with a Jam Room. Active passes are
-                          listed first; refresh reads the owner ledger again.
+                          Short-lived grants issued only when a supporter shares
+                          protected Jam art with a Jam Room. Karaoke and Piano
+                          Night backgrounds stay outside this delivery path.
+                          Active passes are listed first; refresh reads the
+                          owner ledger again.
                         </p>
                       </div>
                       <dl class={styles.passStats}>
@@ -963,16 +1077,32 @@ export function AdminPremiumPerksPage(
                         </div>
                       </dl>
                     </div>
+                    <Show when={invalidPassCount() > 0}>
+                      <div class={styles.passIntegrity} role="alert">
+                        <AlertTriangle />
+                        <span>
+                          <strong>
+                            {invalidPassCount()}{' '}
+                            {invalidPassCount() === 1
+                              ? 'pass is'
+                              : 'passes are'}{' '}
+                            outside the Jam-only boundary.
+                          </strong>{' '}
+                          Review each affected ledger entry and investigate the
+                          issuing path before sharing this room again.
+                        </span>
+                      </div>
+                    </Show>
                     <Show
                       when={orderedCapabilities().length > 0}
                       fallback={
                         <div class={styles.emptyState}>
                           <CheckCircle />
-                          <h3>No room passes issued</h3>
+                          <h3>No Jam room passes issued</h3>
                           <p>
                             The ledger is clear in this environment. Passes
                             appear here after a supporter shares protected art
-                            with a room.
+                            with a Jam Room.
                           </p>
                         </div>
                       }
@@ -980,7 +1110,7 @@ export function AdminPremiumPerksPage(
                       <div
                         class={styles.passTable}
                         role="table"
-                        aria-label="Premium background room passes"
+                        aria-label="Premium Jam background room passes"
                       >
                         <div class={styles.passTableHeader} role="row">
                           <span role="columnheader">Background</span>
@@ -995,10 +1125,19 @@ export function AdminPremiumPerksPage(
                             const background = backgrounds().find(
                               (item) => item.id === capability.backgroundId,
                             )
+                            const integrityIssue =
+                              background === undefined
+                                ? 'Unknown background identity cannot be verified for Jam delivery'
+                                : background.surface !== 'jam'
+                                  ? `${backgroundSurfaceLabel(background.surface)} backgrounds cannot receive Jam room passes`
+                                  : null
                             return (
                               <div
                                 class={styles.passRow}
                                 data-state={status()}
+                                data-integrity={
+                                  integrityIssue === null ? 'valid' : 'invalid'
+                                }
                                 role="row"
                               >
                                 <div class={styles.passAsset} role="cell">
@@ -1007,9 +1146,15 @@ export function AdminPremiumPerksPage(
                                     {background?.label ??
                                       capability.backgroundId}
                                   </strong>
-                                  <small>
-                                    {capability.backgroundId} · v
-                                    {capability.version}
+                                  <small
+                                    classList={{
+                                      [styles.passIntegrityText]:
+                                        integrityIssue !== null,
+                                    }}
+                                    title={integrityIssue ?? undefined}
+                                  >
+                                    {integrityIssue ??
+                                      `${capability.backgroundId} · v${capability.version}`}
                                   </small>
                                 </div>
                                 <div class={styles.passIdentity} role="cell">
@@ -1303,8 +1448,11 @@ export function AdminPremiumPerksPage(
                                                 backgroundId}
                                             </strong>
                                             <small>
-                                              {background()?.surface ??
-                                                'unknown'}{' '}
+                                              {background() === undefined
+                                                ? 'Unknown surface'
+                                                : backgroundSurfaceLabel(
+                                                    background()!.surface,
+                                                  )}{' '}
                                               ·{' '}
                                               {background() === undefined
                                                 ? 'Unavailable'
@@ -1358,7 +1506,10 @@ export function AdminPremiumPerksPage(
                                     <For each={assignableBackgrounds()}>
                                       {(background) => (
                                         <option value={background.id}>
-                                          {background.label}
+                                          {backgroundSurfaceLabel(
+                                            background.surface,
+                                          )}{' '}
+                                          — {background.label}
                                         </option>
                                       )}
                                     </For>
@@ -1539,15 +1690,54 @@ export function AdminPremiumPerksPage(
                 class={styles.library}
                 aria-label="Background lifecycle library"
               >
+                <div class={styles.surfaceFilter}>
+                  <div class={styles.surfaceFilterCopy}>
+                    <strong>Surface</strong>
+                    <span>
+                      Scope this lifecycle view without changing supporter
+                      assignments.
+                    </span>
+                  </div>
+                  <div
+                    class={styles.surfaceFilterControls}
+                    role="group"
+                    aria-label="Filter backgrounds by surface"
+                  >
+                    <For each={BACKGROUND_SURFACE_FILTERS}>
+                      {(option) => (
+                        <button
+                          type="button"
+                          aria-pressed={backgroundSurfaceFilter() === option.id}
+                          onClick={() => requestChooseSurfaceFilter(option.id)}
+                        >
+                          <span>{option.label}</span>
+                          <small>
+                            {option.id === 'all'
+                              ? backgrounds().length
+                              : backgrounds().filter(
+                                  (background) =>
+                                    background.surface === option.id,
+                                ).length}
+                          </small>
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </div>
                 <Show
-                  when={backgrounds().length > 0}
+                  when={filteredBackgrounds().length > 0}
                   fallback={
                     <div class={styles.emptyState}>
                       <FileUpload />
-                      <h3>No background records</h3>
+                      <h3>
+                        {backgroundSurfaceFilter() === 'all'
+                          ? 'No background records'
+                          : `No ${backgroundSurfaceFilterLabel(backgroundSurfaceFilter())} backgrounds`}
+                      </h3>
                       <p>
-                        This environment has not returned any allowlisted
-                        premium background records.
+                        {backgroundSurfaceFilter() === 'all'
+                          ? 'This environment has not returned any allowlisted premium background records.'
+                          : `This environment has not returned any allowlisted ${backgroundSurfaceFilterLabel(backgroundSurfaceFilter())} premium background records.`}
                       </p>
                     </div>
                   }
@@ -1555,7 +1745,7 @@ export function AdminPremiumPerksPage(
                   <For each={LIFECYCLE_BANDS}>
                     {(band) => {
                       const rows = () =>
-                        backgrounds().filter(
+                        filteredBackgrounds().filter(
                           (item) => item.lifecycle === band.id,
                         )
                       return (
@@ -1602,8 +1792,10 @@ export function AdminPremiumPerksPage(
                                       <span class={styles.rowCopy}>
                                         <strong>{background.label}</strong>
                                         <small>
-                                          {background.surface} ·{' '}
-                                          {background.edition}
+                                          {backgroundSurfaceLabel(
+                                            background.surface,
+                                          )}{' '}
+                                          · {background.edition}
                                         </small>
                                       </span>
                                       <span class={styles.rowVersions}>
@@ -1660,7 +1852,8 @@ export function AdminPremiumPerksPage(
                           </span>
                           <h3>{background().label}</h3>
                           <p>
-                            {background().surface} · {background().edition}
+                            {backgroundSurfaceLabel(background().surface)} ·{' '}
+                            {background().edition}
                           </p>
                         </div>
                         <div class={styles.headingActions}>

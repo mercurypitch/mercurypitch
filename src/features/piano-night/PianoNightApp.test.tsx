@@ -118,6 +118,7 @@ let originalMatchMedia: PropertyDescriptor | undefined
 let originalRequestMidiAccess: PropertyDescriptor | undefined
 
 beforeEach(() => {
+  localStorage.clear()
   audioContext = new FakeAudioContext()
   createAudioContext = vi.fn(function AudioContextConstructor() {
     return audioContext
@@ -192,7 +193,7 @@ describe('PianoNightApp', () => {
     render(() => <PianoNightApp />)
 
     const shell = screen.getByTestId('piano-night-shell')
-    expect(shell).toHaveAttribute('data-room', 'afterglow-studio')
+    expect(shell).toHaveAttribute('data-room', 'piano-afterglow')
     expect(
       screen.getAllByText('Afterglow Study in E-flat').length,
     ).toBeGreaterThan(0)
@@ -440,7 +441,7 @@ describe('PianoNightApp', () => {
     expect(createWorker).not.toHaveBeenCalled()
   })
 
-  it('keeps free-room choice visual-only and retains the legacy Piano link', () => {
+  it('persists a Piano room choice without changing sound and retains the legacy link', () => {
     render(() => <PianoNightApp />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Room' }))
@@ -454,14 +455,19 @@ describe('PianoNightApp', () => {
     expect(roomButton).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('piano-night-shell')).toHaveAttribute(
       'data-room',
-      'morning-conservatory',
+      'piano-morning-conservatory',
     )
     expect(screen.getByTestId('piano-night-shell')).toHaveAttribute(
       'data-room-treatment',
       'light',
     )
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Morning Conservatory selected. Instrument sound unchanged.',
+    expect(
+      screen.getByText(
+        'Morning Conservatory selected. Instrument sound unchanged.',
+      ),
+    ).toBeInTheDocument()
+    expect(localStorage.getItem('pitchperfect_piano_background')).toBe(
+      'piano-morning-conservatory',
     )
     expectSilentBrowserBoundary()
 

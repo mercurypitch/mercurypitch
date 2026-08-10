@@ -357,6 +357,36 @@ export default defineConfig(({ command, mode }) => {
             // turns those chunks into static Piano Night dependencies.
             if (id.includes('/src/lib/note-utils.')) return 'note-utils'
             if (id.includes('/src/lib/audio-unlock.')) return 'audio-unlock'
+            // Piano Night consumes the shared background controller and picker
+            // without booting the App-owned library/store graph. Keep every
+            // route-neutral background leaf together, while deliberately
+            // excluding background-access (it owns billing/perk resolution).
+            if (
+              /\/src\/lib\/backgrounds\/background-(catalog(?:-store)?|runtime|selection|surface)\./.test(
+                id,
+              )
+            ) {
+              return 'background-runtime'
+            }
+            if (
+              id.includes('/src/features/backgrounds/PremiumBackgroundPicker.')
+            ) {
+              return 'background-picker'
+            }
+            // These shared UI leaves are tiny, but their main-app importers can
+            // otherwise cause Rollup to file them under advanced/library and
+            // make that payload a static dependency of the standalone room.
+            if (id.includes('/src/lib/use-scroll-lock.')) return 'scroll-lock'
+            if (id.includes('/src/lib/use-viewport.')) return 'viewport'
+            // Background catalog refresh needs only the auth revision signal
+            // and API base. Isolate those leaves before the broad pitch-core
+            // rule below so the standalone controller does not inherit it.
+            if (
+              id.includes('/src/db/services/user-service.') ||
+              id.includes('/src/lib/defaults.')
+            ) {
+              return 'runtime-config'
+            }
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
               // A dependency reached ONLY through `await import(...)` still

@@ -50,8 +50,10 @@ function resolveFreeFallback(useRoomHash: boolean): ResolvedBackground {
     id: definition.id,
     url: publicUrl(definition.assetSource),
     focalPoint: definition.focalPoint,
+    treatment: definition.treatment ?? 'dark',
     source: 'public',
     version: null,
+    variant: null,
   }
 }
 
@@ -141,8 +143,10 @@ export function useJamRoomBackground(): JamRoomBackgroundController {
           id: option.id,
           url: option.publicUrl,
           focalPoint: option.focalPoint,
+          treatment: option.treatment,
           source: 'public',
           version: null,
+          variant: null,
         })
       }
       return
@@ -229,8 +233,10 @@ export function useJamRoomBackground(): JamRoomBackgroundController {
             id: backgroundId,
             url,
             focalPoint,
+            treatment: option.treatment,
             source: 'protected',
             version,
+            variant: 'landscape-2k',
           })
           setLoading(false)
           setError(null)

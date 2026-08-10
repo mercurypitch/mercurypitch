@@ -53,6 +53,10 @@ const FORBIDDEN_CHUNK_NAMES = [
     pattern: /(?:^|\/)index-[^/]+\.js$/,
   },
   {
+    label: 'heavy main application chunk',
+    pattern: /(?:^|\/)(?:advanced|library|pitch-core)-[^/]+\.js$/,
+  },
+  {
     label: 'VexFlow chunk',
     pattern: /(?:^|\/)vendor-vexflow-[^/]+\.js$/i,
   },

@@ -6,7 +6,7 @@
 // supplies an R2 key: resolving the complete key here prevents traversal and
 // keeps bucket layout independent from UI URLs.
 
-import type { BackgroundPerkId } from '../../../src/lib/backgrounds/background-catalog'
+import type { BackgroundPerkId, BackgroundSurface, } from '../../../src/lib/backgrounds/background-catalog'
 import { BACKGROUND_PERK_IDS } from '../../../src/lib/backgrounds/background-catalog'
 
 export const PREMIUM_BACKGROUND_IDS = BACKGROUND_PERK_IDS
@@ -22,9 +22,7 @@ export const PREMIUM_BACKGROUND_VARIANTS = [
 export type PremiumBackgroundVariant =
   (typeof PREMIUM_BACKGROUND_VARIANTS)[number]
 
-type PremiumBackgroundSurface = 'jam' | 'karaoke'
-
-const SURFACE_BY_ID: Record<PremiumBackgroundId, PremiumBackgroundSurface> = {
+const SURFACE_BY_ID: Record<PremiumBackgroundId, BackgroundSurface> = {
   'golden-stage': 'jam',
   'golden-singer': 'jam',
   'aurora-loft': 'jam',
@@ -35,6 +33,10 @@ const SURFACE_BY_ID: Record<PremiumBackgroundId, PremiumBackgroundSurface> = {
   'neon-velvet-room': 'jam',
   'midnight-rain-room': 'jam',
   'mercury-archive': 'jam',
+  'piano-velvet-recital': 'piano',
+  'piano-aurora-loft': 'piano',
+  'piano-midnight-rain': 'piano',
+  'piano-mercury-archive': 'piano',
 }
 
 function includes<const T extends readonly string[]>(

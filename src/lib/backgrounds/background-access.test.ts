@@ -242,6 +242,24 @@ describe('background selection', () => {
     ).toBe('room-stage')
   })
 
+  it('isolates Piano preference and fallback from Karaoke and Jam', () => {
+    const storage = memoryStorage()
+    expect(
+      persistBackgroundId('piano', 'piano-morning-conservatory', storage),
+    ).toBe(true)
+    expect(readPersistedBackgroundId('piano', storage)).toBe(
+      'piano-morning-conservatory',
+    )
+    expect(readPersistedBackgroundId('jam', storage)).toBeNull()
+    expect(persistBackgroundId('piano', 'room-keys', storage)).toBe(false)
+    expect(
+      resolveBackgroundSelection('piano', 'room-keys', NO_BACKGROUND_ACCESS).id,
+    ).toBe('piano-afterglow')
+    expect(BACKGROUND_SELECTION_KEYS.piano).toBe(
+      'pitchperfect_piano_background',
+    )
+  })
+
   it('rejects a persisted id from the wrong surface', () => {
     const storage = memoryStorage()
     storage.setItem(BACKGROUND_SELECTION_KEYS.jam, 'karaoke-theatre')

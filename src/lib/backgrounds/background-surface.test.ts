@@ -4,10 +4,10 @@
 
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from '@/stores/background-store'
-import type { BackgroundSelectionStorage } from './background-access'
-import type { PremiumBackgroundAsset } from './background-runtime'
+import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from './background-catalog-store'
+import type { PremiumBackgroundAsset, ProtectedBackgroundRequest, } from './background-runtime'
 import { BackgroundRequestError } from './background-runtime'
+import type { BackgroundSelectionStorage } from './background-selection'
 import { createBackgroundSurfaceController } from './background-surface'
 
 const SHA = 'b'.repeat(64)
@@ -27,6 +27,39 @@ function asset(
         width: 2048,
         height: 1152,
         byteSize: 900,
+        sha256: SHA,
+      },
+    ],
+  }
+}
+
+function pianoAsset(): PremiumBackgroundAsset {
+  return {
+    id: 'piano-velvet-recital',
+    title: 'Velvet Recital',
+    description: 'A private piano room',
+    surface: 'piano',
+    activeVersion: 3,
+    variants: [
+      {
+        name: 'landscape-2k',
+        width: 2048,
+        height: 1152,
+        byteSize: 900,
+        sha256: SHA,
+      },
+      {
+        name: 'landscape-4k',
+        width: 3840,
+        height: 2160,
+        byteSize: 1_800,
+        sha256: SHA,
+      },
+      {
+        name: 'portrait-2k',
+        width: 1152,
+        height: 2048,
+        byteSize: 950,
         sha256: SHA,
       },
     ],
@@ -217,6 +250,155 @@ describe('background selection persistence', () => {
     )
 
     release()
+    controller.dispose()
+  })
+})
+
+describe('responsive Piano rooms', () => {
+  it('resamples a viewport that changed while the controller had no retainers', () => {
+    let orientation: 'portrait' | 'landscape' = 'portrait'
+    const catalog = fakeStore(state([], []))
+    const controller = createBackgroundSurfaceController('piano', {
+      catalogStore: catalog.store,
+      storage: memoryStorage(),
+      pixelRatio: () => 2,
+      orientation: () => orientation,
+      loadProtected: vi.fn(),
+      revokeObjectURL: vi.fn(),
+    })
+    const releasePortrait = controller.retain()
+
+    expect(controller.select('piano-morning-conservatory')).toBe(true)
+    expect(controller.resolved().url).toBe(
+      '/piano-night/morning-conservatory-portrait.webp',
+    )
+    releasePortrait()
+
+    orientation = 'landscape'
+    const releaseLandscape = controller.retain()
+    expect(controller.resolved().url).toBe(
+      '/piano-night/morning-conservatory-landscape.webp',
+    )
+
+    releaseLandscape()
+    controller.dispose()
+  })
+
+  it('selects authored public portrait art and returns to landscape on rotation', () => {
+    const [orientation, setOrientation] = createSignal<
+      'portrait' | 'landscape'
+    >('portrait')
+    const catalog = fakeStore(state([], []))
+    const controller = createBackgroundSurfaceController('piano', {
+      catalogStore: catalog.store,
+      storage: memoryStorage(),
+      pixelRatio: () => 2,
+      orientation,
+      loadProtected: vi.fn(),
+      revokeObjectURL: vi.fn(),
+    })
+    const release = controller.retain()
+
+    expect(controller.resolved()).toMatchObject({
+      id: 'piano-afterglow',
+      url: '/piano-night/afterglow-studio-portrait.webp',
+      treatment: 'dark',
+    })
+    expect(controller.select('piano-morning-conservatory')).toBe(true)
+    expect(controller.resolved()).toMatchObject({
+      url: '/piano-night/morning-conservatory-portrait.webp',
+      treatment: 'light',
+    })
+
+    setOrientation('landscape')
+    expect(controller.resolved().url).toBe(
+      '/piano-night/morning-conservatory-landscape.webp',
+    )
+
+    release()
+    controller.dispose()
+  })
+
+  it('keeps an identical protected variant load alive across resize noise', async () => {
+    const velvet = pianoAsset()
+    const catalog = fakeStore(state([velvet], ['piano-velvet-recital']))
+    const pending = deferred<string>()
+    const requests: ProtectedBackgroundRequest[] = []
+    const loadProtected = vi.fn(
+      (
+        _asset: PremiumBackgroundAsset,
+        request?: ProtectedBackgroundRequest,
+      ) => {
+        if (request !== undefined) requests.push(request)
+        return pending.promise
+      },
+    )
+    const controller = createBackgroundSurfaceController('piano', {
+      catalogStore: catalog.store,
+      storage: memoryStorage(),
+      pixelRatio: () => 2,
+      orientation: () => 'portrait',
+      loadProtected,
+      revokeObjectURL: vi.fn(),
+    })
+    const release = controller.retain()
+
+    try {
+      expect(controller.select('piano-velvet-recital')).toBe(true)
+      expect(loadProtected).toHaveBeenCalledTimes(1)
+
+      window.dispatchEvent(new Event('resize'))
+
+      expect(loadProtected).toHaveBeenCalledTimes(1)
+      expect(requests[0]?.signal?.aborted).toBe(false)
+
+      pending.resolve('blob:portrait-2k')
+      await vi.waitFor(() =>
+        expect(controller.resolved().url).toBe('blob:portrait-2k'),
+      )
+    } finally {
+      release()
+      controller.dispose()
+    }
+  })
+
+  it('reloads the protected responsive variant and revokes the old object URL', async () => {
+    const velvet = pianoAsset()
+    const [orientation, setOrientation] = createSignal<
+      'portrait' | 'landscape'
+    >('portrait')
+    const catalog = fakeStore(state([velvet], ['piano-velvet-recital']))
+    const loadProtected = vi.fn(
+      async (
+        _asset: PremiumBackgroundAsset,
+        request?: ProtectedBackgroundRequest,
+      ) => `blob:${request?.variant}`,
+    )
+    const revokeObjectURL = vi.fn()
+    const controller = createBackgroundSurfaceController('piano', {
+      catalogStore: catalog.store,
+      storage: memoryStorage(),
+      pixelRatio: () => 2,
+      orientation,
+      loadProtected,
+      revokeObjectURL,
+    })
+    const release = controller.retain()
+
+    expect(controller.select('piano-velvet-recital')).toBe(true)
+    await vi.waitFor(() =>
+      expect(controller.resolved().url).toBe('blob:portrait-2k'),
+    )
+    expect(controller.resolved().variant).toBe('portrait-2k')
+
+    setOrientation('landscape')
+    await vi.waitFor(() =>
+      expect(controller.resolved().url).toBe('blob:landscape-4k'),
+    )
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:portrait-2k')
+
+    release()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:landscape-4k')
     controller.dispose()
   })
 })

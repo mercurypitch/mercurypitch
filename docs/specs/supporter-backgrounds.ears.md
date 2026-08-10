@@ -1,15 +1,20 @@
 # Supporter Backgrounds — EARS Requirements
 
-Requirements for the shared Karaoke Night and Jam Rooms background catalog,
-supporter access evidence, and persisted selection behavior.
+Requirements for the shared Karaoke Night, Jam Rooms, and Piano Night
+background catalog, supporter access evidence, and persisted selection
+behavior.
 
 **Source:** `src/lib/backgrounds/background-catalog.ts`,
 `src/lib/backgrounds/background-access.ts`,
+`src/lib/backgrounds/background-selection.ts`,
+`src/lib/backgrounds/background-runtime.ts`,
+`src/lib/backgrounds/background-surface.ts`,
 `workers/db-worker/src/premium-backgrounds.ts`,
 `workers/db-worker/src/premium-background-access.ts`,
 `workers/db-worker/src/premium-background-admin.ts`,
 `workers/db-worker/src/background-capabilities.ts`,
 `workers/db-worker/migrations/0018_premium_background_studio.sql`,
+`workers/db-worker/migrations/0023_piano_background_surface.sql`,
 `workers/jam-worker/src/host-verification.ts`,
 `workers/jam-worker/src/room-ownership.ts`,
 `workers/jam-worker/src/signaling-intent.ts`,
@@ -17,10 +22,14 @@ supporter access evidence, and persisted selection behavior.
 **Tests:** `src/lib/backgrounds/background-catalog.test.ts`,
 `src/lib/backgrounds/background-access.test.ts` (`BG-CAT-*`, `BG-ACCESS-*`,
 `BG-SELECT-*`, `BG-JAM-*`),
+`src/lib/backgrounds/background-selection.test.ts`,
+`src/lib/backgrounds/background-runtime.test.ts`,
+`src/lib/backgrounds/background-surface.test.ts`,
 `src/tests/billing-service-validation.test.ts`,
 `workers/db-worker/src/auth.test.ts`,
 `workers/db-worker/src/premium-background-admin.test.ts`,
 `workers/db-worker/src/premium-backgrounds.test.ts`,
+`workers/db-worker/node-tests/premium-background-migration.test.ts`,
 `workers/jam-worker/src/host-verification.test.ts`,
 `workers/jam-worker/src/room-ownership.test.ts`,
 `workers/jam-worker/src/signaling-intent.test.ts`,
@@ -31,7 +40,8 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 ## Catalog — `BG-CAT-*`
 
-- **BG-CAT-1** — The system shall define Karaoke Night and Jam Rooms backgrounds in one typed catalog.
+- **BG-CAT-1** — The system shall define Karaoke Night, Jam Rooms, and Piano
+  Night backgrounds in one typed catalog.
 - **BG-CAT-2** — The catalog shall include every currently shipped free background, the existing `golden-stage`, `golden-singer`, and `aurora-loft` masters, and the reserved Mercury Editions identifiers.
 - **BG-CAT-3** — The catalog shall distinguish shipped, master-ready, and planned backgrounds.
 - **BG-CAT-4** — Every supporter background shall use an opaque protected source key and shall not contain a public asset URL.
@@ -41,7 +51,11 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   without an R2 object key.
 - **BG-CAT-7** — The environment-local main D1 database shall own premium
   asset lifecycle and revision state; static catalog definitions shall remain
-  the allowlist for known identifiers and their Karaoke or Jam surface.
+  the allowlist for known identifiers and their Karaoke, Jam, or Piano
+  surface.
+- **BG-CAT-8** — Reusing artwork across surfaces shall require a distinct
+  stable identifier, revision, and immutable object path; the system shall not
+  reclassify an existing asset to another surface.
 
 ## Server-evidenced access — `BG-ACCESS-*`
 
@@ -85,6 +99,9 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-SELECT-6** — WHILE the standalone Karaoke Night shell owns the stage
   controls, its embedded Stem Mixer shall suppress its own stage picker and
   transparency control so the stage has one control surface.
+- **BG-SELECT-7** — Piano Night shall persist only a known Piano identifier
+  under `pitchperfect_piano_background`; restore shall revalidate current
+  access and shall never read the Karaoke or Jam preference as Piano access.
 
 ## Jam host synchronization seam — `BG-JAM-*`
 
@@ -99,7 +116,8 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   shall require the capability and room in request headers, the exact version
   in the query, and require every signed scope to match the request.
 - **BG-JAM-7** — IF a guest capability is missing, malformed, tampered, expired, scoped to another background, or scoped to another room, THEN the system shall reject it before reading R2.
-- **BG-JAM-8** — The system shall not mint a Jam guest capability for a Karaoke-only background.
+- **BG-JAM-8** — The system shall neither mint nor honor a Jam guest
+  capability for any non-Jam background.
 - **BG-JAM-9** — The system shall limit capability minting to 30 requests per authenticated user per minute and shall return `429` with `Retry-After` after that budget is exhausted.
 - **BG-JAM-10** — WHEN a Jam Room becomes empty, the system shall persist its grace-period deadline and schedule a Durable Object alarm; WHEN that deadline expires, the system shall reject the owner proof even after eviction and clear its in-memory owner id, owner name, and owner token as well as deleting stored room state.
 - **BG-JAM-11** — The system shall limit protected background byte reads to 120 requests per authenticated user per minute, or per source IP for guest capabilities, and shall return `429` with `Retry-After` before another R2 read.
@@ -179,6 +197,18 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 - **BG-STUDIO-14** — Admin draft previews shall be admin-authenticated,
   `private, no-store`, and resolved server-side without exposing an R2 key or
   public preview URL.
+- **BG-STUDIO-15** — The Studio background library shall filter all three
+  surfaces with human-readable Karaoke, Jam, and Piano Night labels while
+  supporter-group assignment remains cross-surface.
+- **BG-STUDIO-16** — Before any lifecycle mutation or R2 access, the system
+  shall require the stored surface to agree with the static identifier
+  allowlist and shall reject attempts to mutate an asset's surface.
+- **BG-STUDIO-17** — Piano revisions shall use the same fixed
+  `landscape-2k`, `landscape-4k`, and `portrait-2k` protected variant contract
+  and shall not become runtime-visible before explicit publication.
+- **BG-STUDIO-18** — The Piano-surface migration shall preserve every asset,
+  revision, variant, group assignment, capability, active-revision pointer,
+  and lifecycle index, and shall leave foreign-key integrity clean.
 
 ## Jam guest-delivery HTTP contract
 

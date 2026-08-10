@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slice 2 implemented; Slice 3 in progress.
+**Status:** Phase 1A and Slices 2–4 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -430,3 +430,66 @@ Nocturne-only room behavior inside `/piano-night`.
 | `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage               |
 | `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions             |
 | `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions |
+
+## Slice 4 — shared Piano background surface
+
+Slice 4 adopts the shared protected-background architecture without adopting
+main-App state. It supersedes `REQ-PN-FREE-ROOM-003` and
+`REQ-PN-FREE-ROOM-005`. It also supersedes the protected-background exclusion
+in `REQ-PN-ROUTE-004` and `REQ-PN-SESSION-005` only for the route-neutral
+background catalog, delivery, and picker modules; every other standalone
+bundle boundary remains in force.
+
+### Piano background lifecycle — `PN-BACKGROUND-*`
+
+- **REQ-PN-BACKGROUND-001 — Distinct surface:** Piano Night shall be a third
+  typed background surface with `piano-afterglow` as its shipped public free
+  default and shall not reuse a Karaoke or Jam identity.
+- **REQ-PN-BACKGROUND-002 — Free-room continuity:** The shared catalog shall
+  preserve Afterglow Studio and Morning Conservatory landscape, portrait,
+  focal-point, and authored contrast behavior from Slice 3.
+- **REQ-PN-BACKGROUND-003 — Sonic separation:** Changing a Piano room shall
+  update only room art and contrast treatment; it shall not change the synth,
+  mix, ambience, project, transport, or input state.
+- **REQ-PN-BACKGROUND-004 — Device preference:** WHEN a room is selected, the
+  client shall persist only its known Piano identifier under
+  `pitchperfect_piano_background`; WHEN restored, current server evidence
+  shall revalidate its access.
+- **REQ-PN-BACKGROUND-005 — Safe locked metadata:** WHILE a published Piano
+  supporter edition is locked, the picker may show its safe catalog metadata
+  but shall not request, decode, or expose protected image bytes.
+- **REQ-PN-BACKGROUND-006 — Protected lifetime:** WHILE a Piano supporter
+  edition is unlocked, protected bytes shall use authenticated private,
+  no-store delivery and a short-lived object URL that is revoked on variant
+  change, room switch, final release, or disposal.
+- **REQ-PN-BACKGROUND-007 — Failure fallback:** IF catalog, authorization,
+  network, decoding, or variant delivery fails, THEN the stage shall retain
+  its shipped free room, readable controls, and all musical state.
+- **REQ-PN-BACKGROUND-008 — Responsive variants:** WHEN viewport orientation
+  or density changes, the controller shall prefer authored portrait art on a
+  portrait viewport and 2K or 4K landscape art otherwise, with a safe
+  available-variant fallback, focal point, and contrast treatment.
+- **REQ-PN-BACKGROUND-009 — No Jam delegation:** Piano Night shall never
+  request, store, mint, or redeem a Jam guest background capability.
+- **REQ-PN-BACKGROUND-010 — One owner:** One route-retained shared controller
+  shall own the resolved room and protected object URL; the stage shall not
+  create a competing protected fetch owner.
+- **REQ-PN-BACKGROUND-011 — Silent metadata mount:** The safe metadata catalog
+  may refresh when Piano Night mounts, but mount shall remain audio-, MIDI-,
+  microphone-, IndexedDB-, and Worker-silent.
+- **REQ-PN-BACKGROUND-012 — Accessible room gallery:** The Room tab shall use
+  Piano-specific accessible copy and an inline gallery within its existing
+  drawer, preserving desktop focus containment and compact-sheet reachability.
+- **REQ-PN-BACKGROUND-013 — Publication truth:** Stable Piano premium
+  identities may exist in D1 and Studio before artwork is published; they
+  shall not appear in the runtime catalog or be described as shipped until a
+  complete revision is explicitly published.
+
+### Slice 4 verification map
+
+| Requirement area          | Minimum evidence                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `PN-BACKGROUND-001`–`004` | Catalog, selection-key, cross-surface fallback, persistence, and visual-only component tests                                         |
+| `PN-BACKGROUND-005`–`010` | Runtime/controller/picker tests for locked fetch suppression, responsive variants, decode/authorization fallback, and URL revocation |
+| `PN-BACKGROUND-011`–`012` | Silent-mount component test, drawer focus coverage, standalone build audit, and desktop/mobile browser smoke                         |
+| `PN-BACKGROUND-013`       | Empty/populated D1 migration tests plus Worker catalog, byte-delivery, Studio, and non-Jam capability tests                          |

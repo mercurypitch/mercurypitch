@@ -9,12 +9,13 @@
 import type { JSX } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { ChevronLeft, Headphones, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, SlidersHorizontal, WaveformBars, X, } from '@/components/icons'
+import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
+import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
+import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
-import type { PianoNightFreeRoomId } from './piano-night-rooms'
-import { DEFAULT_PIANO_NIGHT_FREE_ROOM_ID, getPianoNightFreeRoom, PIANO_NIGHT_FREE_ROOMS, } from './piano-night-rooms'
 import { PianoKeyHorizon } from './PianoKeyHorizon'
 import styles from './PianoNightApp.module.css'
 import type { PianoNightPerformanceView } from './PianoNightStageViews'
@@ -153,10 +154,8 @@ function formatClock(beat: number, tempoBpm: number): string {
 
 export function PianoNightApp(): JSX.Element {
   const controller = usePianoNightController()
+  const background = useBackgroundSurfaceController('piano')
   const [view, setView] = createSignal<PianoNightPerformanceView>('fall')
-  const [roomId, setRoomId] = createSignal<PianoNightFreeRoomId>(
-    DEFAULT_PIANO_NIGHT_FREE_ROOM_ID,
-  )
   const [drawerOpen, setDrawerOpen] = createSignal(false)
   const [drawerSection, setDrawerSection] =
     createSignal<DrawerSection>('session')
@@ -180,7 +179,12 @@ export function PianoNightApp(): JSX.Element {
     return index === -1 ? PIANO_NIGHT_PHRASES.length - 1 : index
   }
   const phrase = (): PianoNightPhrase => PIANO_NIGHT_PHRASES[phraseIndex()]
-  const room = () => getPianoNightFreeRoom(roomId())
+  const roomLabel = (): string =>
+    background
+      .options()
+      .find((option) => option.id === background.resolved().id)?.label ??
+    getBackgroundDefinition(background.resolved().id)?.label ??
+    'Piano room'
   const isPlaying = (): boolean => controller.transport.phase() === 'playing'
   const isLoading = (): boolean => controller.transport.phase() === 'loading'
   const blockingModal = (): boolean => drawerOpen() && !compactSheets()
@@ -376,8 +380,8 @@ export function PianoNightApp(): JSX.Element {
       class={styles.shell}
       classList={{ [styles.playing]: isPlaying() }}
       data-view={view()}
-      data-room={room().id}
-      data-room-treatment={room().treatment}
+      data-room={background.resolved().id}
+      data-room-treatment={background.resolved().treatment}
       data-testid="piano-night-shell"
     >
       <a
@@ -450,10 +454,12 @@ export function PianoNightApp(): JSX.Element {
         data-testid="piano-night-stage"
         inert={blockingModal()}
       >
-        <picture class={styles.roomPlate} aria-hidden="true">
-          <source media="(max-width: 680px)" srcset={room().portraitUrl} />
-          <img src={room().landscapeUrl} alt="" />
-        </picture>
+        <div
+          class={styles.roomPlate}
+          style={background.resolvedStyle()}
+          aria-hidden="true"
+          data-testid="piano-night-room-art"
+        />
         <div class={styles.roomGrade} aria-hidden="true" />
 
         <div class={styles.sessionHud} aria-label="Piano Night session status">
@@ -468,7 +474,7 @@ export function PianoNightApp(): JSX.Element {
           <div class={styles.sessionPiece}>
             <strong>{controller.stage.title}</strong>
             <span>
-              {phrase().range} · {room().label}
+              {phrase().range} · {roomLabel()}
             </span>
           </div>
           <div class={`${styles.sessionMetric} ${styles.timeMetric}`}>
@@ -895,47 +901,27 @@ export function PianoNightApp(): JSX.Element {
             role="tabpanel"
             aria-labelledby="piano-night-tab-room"
           >
-            <span class={styles.drawerKicker}>Free rooms</span>
+            <span class={styles.drawerKicker}>Piano Night rooms</span>
             <h2>Choose the light around the instrument.</h2>
             <p>
               Room art is visual only. It never changes the synth, mix, or
-              ambience, and this pilot stores no account preference.
+              ambience. Your choice stays on this device and access is checked
+              again whenever Piano Night opens.
             </p>
-            <div class={styles.roomGrid}>
-              <For each={PIANO_NIGHT_FREE_ROOMS}>
-                {(candidate) => (
-                  <button
-                    class={styles.roomSwatch}
-                    classList={{
-                      [styles.roomSelected]: roomId() === candidate.id,
-                    }}
-                    type="button"
-                    aria-pressed={roomId() === candidate.id}
-                    onClick={() => {
-                      setRoomId(candidate.id)
-                      announce(
-                        `${candidate.label} selected. Instrument sound unchanged.`,
-                      )
-                    }}
-                  >
-                    <span
-                      style={{
-                        'background-image': `url(${candidate.landscapeUrl})`,
-                      }}
-                    />
-                    <div>
-                      <strong>{candidate.label}</strong>
-                      <small>
-                        {candidate.treatment === 'light'
-                          ? 'Morning practice'
-                          : 'Evening session'}
-                      </small>
-                    </div>
-                    <i>{roomId() === candidate.id ? 'Selected' : 'Free'}</i>
-                  </button>
-                )}
-              </For>
-            </div>
+            <PremiumBackgroundPicker
+              class={styles.roomPicker}
+              controller={background}
+              embedded
+              onSelect={(option) => {
+                const accepted = background.select(option.id)
+                if (accepted) {
+                  announce(
+                    `${option.label} selected. Instrument sound unchanged.`,
+                  )
+                }
+                return accepted
+              }}
+            />
           </section>
         </Show>
       </aside>
