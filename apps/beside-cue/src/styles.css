@@ -1470,6 +1470,96 @@ svg {
   margin-top: 1rem;
 }
 
+/* Development-only stand-in for the native paywall and Customer Center. It is
+   deliberately styled as its own surface, and labelled, so it is never mistaken
+   for the real store sheet. */
+.mock-store {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: rgb(36 25 19 / 55%);
+  place-items: center;
+}
+
+.mock-store__panel {
+  display: grid;
+  width: min(100%, 26rem);
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper-light);
+  box-shadow: 0.35rem 0.45rem 0 var(--ink);
+}
+
+.mock-store__badge {
+  margin: 0;
+  color: var(--orange-dark);
+  font-family: var(--font-label);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mock-store__panel h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.mock-store__plans {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mock-store__plan {
+  display: grid;
+  width: 100%;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--custard);
+  color: var(--ink);
+  cursor: pointer;
+  grid-template-columns: 1fr auto;
+  text-align: left;
+}
+
+.mock-store__plan:hover {
+  background: var(--paper-deep);
+}
+
+.mock-store__plan-title {
+  font-family: var(--font-label);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mock-store__plan-price {
+  font-weight: 700;
+  text-align: right;
+}
+
+.mock-store__plan-note {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.mock-store__actions {
+  display: grid;
+  gap: 0.6rem;
+}
+
 .settings-row {
   display: grid;
   width: 100%;

@@ -1,0 +1,328 @@
+name: Beside Cue Mobile
+
+# Native builds for the Beside Cue Capacitor shell. Every pull request that
+# touches the app produces an installable Android APK, so a change can be tried
+# on a real device before it merges. A `beside-cue-v*` tag additionally produces
+# the release artifacts that go to the stores.
+#
+# Beside Cue versions independently of MercuryPitch, so this deliberately does
+# not use the `v*` tags that ship the web app to production.
+#
+# Signing is opt-in. Without the secrets the release builds still run and still
+# prove the app compiles — they are simply unsigned, and the store-upload
+# artifacts are skipped rather than failing the run.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/beside-cue/**'
+      - 'packages/beside-cue-core/**'
+      - 'packages/mobile-runtime/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/beside-cue-mobile.yml'
+  push:
+    tags: ['beside-cue-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beside-cue-mobile-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Secrets cannot be read inside `if:`, so their presence is resolved once
+      # here into a plain boolean the steps below can branch on.
+      HAS_UPLOAD_KEY: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 != '' }}
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/beside-cue-v') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+
+          # `beside-cue-v0.2.1` -> versionName 0.2.1. Play rejects a re-used
+          # versionCode, and the run number is the only value here that is
+          # guaranteed to increase, so it is the code regardless of the tag.
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            name="${REF_NAME#beside-cue-v}"
+          else
+            name="0.0.0-pr${{ github.event.pull_request.number || 0 }}"
+          fi
+
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Build web assets
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+
+      - name: Synchronize Android project
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
+
+      - name: Decode upload keystore
+        if: env.HAS_UPLOAD_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          # Never echo the path contents; only confirm the decode produced a file.
+          test -s "$RUNNER_TEMP/upload.jks"
+
+      - name: Test, lint, and package debug
+        working-directory: apps/beside-cue/android
+        run: ./gradlew test lint assembleDebug :app:assembleDebugAndroidTest --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-debug-apk
+          path: apps/beside-cue/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload lint and unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-android-reports
+          path: |
+            apps/beside-cue/android/app/build/reports/
+            apps/beside-cue/android/app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build release bundle and APK
+        env:
+          BESIDE_CUE_VERSION_CODE: ${{ steps.version.outputs.code }}
+          BESIDE_CUE_VERSION_NAME: ${{ steps.version.outputs.name }}
+          BESIDE_CUE_KEYSTORE_FILE: ${{ env.HAS_UPLOAD_KEY == 'true' && format('{0}/upload.jks', runner.temp) || '' }}
+          BESIDE_CUE_KEYSTORE_PASSWORD: ${{ secrets.BESIDE_CUE_KEYSTORE_PASSWORD }}
+          BESIDE_CUE_KEY_ALIAS: ${{ secrets.BESIDE_CUE_KEY_ALIAS }}
+          BESIDE_CUE_KEY_PASSWORD: ${{ secrets.BESIDE_CUE_KEY_PASSWORD }}
+        working-directory: apps/beside-cue/android
+        run: ./gradlew bundleRelease assembleRelease --no-daemon
+
+      - name: Upload release artifacts
+        if: env.IS_RELEASE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-android-release
+          path: |
+            apps/beside-cue/android/app/build/outputs/bundle/release/app-release*.aab
+            apps/beside-cue/android/app/build/outputs/apk/release/app-release*.apk
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report signing state
+        if: always()
+        shell: bash
+        run: |
+          if [[ "$HAS_UPLOAD_KEY" == "true" ]]; then
+            echo "Release artifacts are signed with the upload key." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No BESIDE_CUE_KEYSTORE_BASE64 secret: release artifacts are UNSIGNED and cannot be uploaded to Play." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  ios:
+    name: iOS
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HAS_SIGNING: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 != '' && secrets.APPLE_PROVISIONING_PROFILE_BASE64 != '' }}
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/beside-cue-v') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.12.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web assets
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+
+      - name: Synchronize iOS project
+        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
+
+      # Always runs, with or without signing. This is the check that the app and
+      # the RevenueCat pods actually compile for iOS; the signed archive below
+      # only adds distribution on top of it.
+      - name: Build for simulator
+        working-directory: apps/beside-cue/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-ios-simulator
+          path: ${{ runner.temp }}/DerivedData/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Import signing certificate
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          # A throwaway keychain keeps the runner's login keychain untouched and
+          # dies with the runner, so the private key never outlives the job.
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(uuidgen)"
+
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$keychain"
+          security list-keychain -d user -s "$keychain" login.keychain-db
+          # Lets codesign use the key without an interactive prompt.
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+          profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profiles"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/beside-cue.mobileprovision"
+
+      - name: Archive and export IPA
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
+        working-directory: apps/beside-cue/ios/App
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          PROFILE_NAME: ${{ secrets.APPLE_PROVISIONING_PROFILE_NAME }}
+          # `release-testing` is Xcode 15+ for what used to be called ad-hoc:
+          # installable on devices registered to the profile. Use
+          # `app-store-connect` once TestFlight is the distribution route.
+          EXPORT_METHOD: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
+          MARKETING_VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          version="${MARKETING_VERSION#beside-cue-v}"
+
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            MARKETING_VERSION="$version" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            archive
+
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${EXPORT_METHOD}</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.irchiinnuss.besidecue</key><string>${PROFILE_NAME}</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export"
+
+      - name: Upload IPA
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-ios-release
+          path: ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Report signing state
+        if: always()
+        shell: bash
+        run: |
+          if [[ "$HAS_SIGNING" == "true" ]]; then
+            echo "iOS signing secrets present." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No Apple signing secrets: simulator build only, no installable IPA." >> "$GITHUB_STEP_SUMMARY"
+          fi

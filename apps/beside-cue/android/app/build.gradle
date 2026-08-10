@@ -1,5 +1,17 @@
 apply plugin: 'com.android.application'
 
+// Release signing and Play version numbers arrive from outside Git: CI decodes
+// the upload keystore to a file and exports these. A developer machine has none
+// of them, so a local release build still succeeds — it is simply unsigned,
+// which is what `pnpm beside-cue:android` has always produced.
+//
+// This is the *upload* key, not the app signing key. Play App Signing keeps the
+// app signing key and re-signs every upload, so losing this one is recoverable.
+def uploadKeystore = System.getenv("BESIDE_CUE_KEYSTORE_FILE")
+def hasUploadKey = uploadKeystore != null && !uploadKeystore.isEmpty() && file(uploadKeystore).exists()
+def releaseVersionCode = System.getenv("BESIDE_CUE_VERSION_CODE")
+def releaseVersionName = System.getenv("BESIDE_CUE_VERSION_NAME")
+
 android {
     namespace = "com.irchiinnuss.besidecue"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +19,10 @@ android {
         applicationId "com.irchiinnuss.besidecue"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0"
+        // Play rejects a re-used versionCode, so a release build takes the
+        // monotonic value CI derives from the tag.
+        versionCode releaseVersionCode ? releaseVersionCode.toInteger() : 1
+        versionName releaseVersionName ?: "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +30,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasUploadKey) {
+            release {
+                storeFile file(uploadKeystore)
+                storePassword System.getenv("BESIDE_CUE_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("BESIDE_CUE_KEY_ALIAS")
+                keyPassword System.getenv("BESIDE_CUE_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasUploadKey) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
