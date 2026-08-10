@@ -1,6 +1,6 @@
 # Beside Cue app
 
-Standalone SolidJS application and Android Capacitor shell for Beside Cue.
+Standalone SolidJS application and Android/iOS Capacitor shells for Beside Cue.
 
 ## Package boundaries
 
@@ -28,12 +28,13 @@ pnpm beside-cue:build
 pnpm beside-cue:android
 ```
 
-`com.irchiinnuss.besidecue` is provisional until the Play Console application is created. Treat it as permanent once that happens.
+`com.irchiinnuss.besidecue` is registered in Play Console, so it is permanent.
+Changing it now would mean a new listing.
 
 Android builds require Java 21 and Android SDK 36. The app supports Android 8
 (API 26) and newer so its discreet, non-vibrating notification channel is
-available consistently. Release bundles remain unsigned until a Play upload
-key is supplied outside Git.
+available consistently. Release bundles are unsigned until the upload key
+secrets are set — see [Release builds](#release-builds).
 
 `MainActivity` uses `launchMode="singleTop"`. RevenueCat requires `standard`
 or `singleTop` on the activity that starts a purchase; with `singleTask`,
@@ -77,17 +78,156 @@ Identifiers live in one file, `src/purchases/revenuecat-config.ts`.
 5. **Customer Center** — enable it to give subscribers cancellation, plan
    changes and refund requests without leaving the app.
 
+### Checking the Pro loop in a browser
+
+RevenueCat's Capacitor plugin has no web implementation, so a browser build
+normally reduces the Pro surface to "Purchases need the Android or iOS app." A
+development build can put a fake store behind the same ports instead:
+
+```sh
+pnpm beside-cue:dev
+# then open http://localhost:5173/?mockPurchases
+```
+
+`VITE_MOCK_PURCHASES=1` does the same without the query parameter. The fake
+store publishes the same three plans, and its overlay stands in for the native
+paywall and Customer Center, so the whole loop is walkable: unlock, the renewal
+note, turning off renewal, a billing problem, expiry, and restore. A purchase
+survives a reload.
+
+This proves the interface and the entitlement state machine. It proves nothing
+about RevenueCat — only a device does that. It cannot switch on outside a
+development build: the check requires `import.meta.env.DEV`, and the fake store
+is absent from a production bundle.
+
 ### Verifying on a device
 
-Run `pnpm beside-cue:android` on a machine with the Android SDK, open
-Settings, and check that the paywall presents, a Test Store purchase flips Pro
-on, Customer Center opens, **Restore purchases** works, and the entitlement
-survives a force-quit.
+Run `pnpm beside-cue:android` on a machine with the Android SDK and a phone
+attached, or sideload the `beside-cue-debug-apk` artifact from any pull
+request. Open Settings and check that the paywall presents, a Test Store
+purchase flips Pro on, Customer Center opens, **Restore purchases** works, and
+the entitlement survives a force-quit.
 
-### iOS
+`pnpm beside-cue:android` needs `ANDROID_HOME` pointing at an SDK with
+platform 36, and `JAVA_HOME` pointing at a JDK 21. A newer JDK fails in
+`JdkImageTransform`, and passing `gradlew --version` does not rule that out.
 
-`@capacitor/ios` is a dependency, but the `ios/` project is not in the
-repository — generating it needs macOS. On a Mac: `pnpm build` then
-`pnpm exec cap add ios`, set `VITE_REVENUECAT_IOS_KEY`, and enable the In-App
-Purchase capability in Xcode. No TypeScript changes are needed; every purchase
-path is already platform-neutral.
+## Release builds
+
+`.github/workflows/beside-cue-mobile.yml` owns both native builds. Beside Cue
+versions independently of MercuryPitch, so it uses `beside-cue-v*` tags rather
+than the `v*` tags that deploy the web app.
+
+| Trigger                       | Produces                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| Pull request touching the app | `beside-cue-debug-apk`, an iOS simulator build, lint and unit test reports       |
+| `beside-cue-v*` tag           | The above, plus a release AAB and APK, and an IPA when Apple secrets are present |
+
+Artifacts are on the workflow run's summary page. `beside-cue-v0.2.0` gives
+`versionName` 0.2.0; `versionCode` is the workflow run number, because Play
+rejects a re-used one and only the run number is guaranteed to increase.
+
+Signing is opt-in. Without the secrets the release builds still run and still
+prove the app compiles — they are simply unsigned.
+
+### Android upload key
+
+Play App Signing means Google holds the _app signing_ key and re-signs every
+upload. What is created here is the _upload_ key, which only proves an upload
+came from you. Losing it is recoverable through Play Console support; it is not
+the key that would strand the app.
+
+```sh
+keytool -genkeypair -v \
+  -keystore beside-cue-upload.jks \
+  -alias beside-cue-upload \
+  -storetype PKCS12 \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Read its fingerprints, to compare against what Play Console shows under
+**Test and release → App integrity → App signing**:
+
+```sh
+keytool -list -v -keystore beside-cue-upload.jks -alias beside-cue-upload
+```
+
+If Play Console is still asking for an upload certificate, export one and
+upload it there:
+
+```sh
+keytool -export -rfc -keystore beside-cue-upload.jks \
+  -alias beside-cue-upload -file upload-certificate.pem
+```
+
+Then add four repository secrets under **Settings → Secrets and variables →
+Actions**:
+
+| Secret                         | Value                                                                |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `BESIDE_CUE_KEYSTORE_BASE64`   | `base64 -w0 beside-cue-upload.jks`                                   |
+| `BESIDE_CUE_KEYSTORE_PASSWORD` | The store password from `keytool`                                    |
+| `BESIDE_CUE_KEY_ALIAS`         | `beside-cue-upload`                                                  |
+| `BESIDE_CUE_KEY_PASSWORD`      | The key password (same as the store password unless you set another) |
+
+Keep `beside-cue-upload.jks` and both passwords in a password manager. The
+keystore must never enter Git — `.gitignore` does not know about it, so it only
+stays out by living outside the repository.
+
+### Apple signing
+
+An Apple Developer Program membership is required for anything installable on a
+device; without it the workflow still compiles the app for the simulator. None
+of this needs a Mac.
+
+1. **Register the App ID** at developer.apple.com → Certificates, Identifiers &
+   Profiles → Identifiers → **+** → App IDs → App, with bundle ID
+   `com.irchiinnuss.besidecue`. Enable **In-App Purchase**.
+2. **Make a signing request** locally:
+
+   ```sh
+   openssl genrsa -out ios_distribution.key 2048
+   openssl req -new -key ios_distribution.key -out ios_distribution.csr \
+     -subj "/emailAddress=you@example.com/CN=Beside Cue/C=HR"
+   ```
+
+3. **Create the certificate** — Certificates → **+** → Apple Distribution,
+   upload the `.csr`, download `distribution.cer`, then convert it:
+
+   ```sh
+   openssl x509 -inform DER -in distribution.cer -out distribution.pem
+   openssl pkcs12 -export -legacy \
+     -inkey ios_distribution.key -in distribution.pem \
+     -out distribution.p12
+   ```
+
+   `-legacy` matters: without it OpenSSL 3 writes a bundle the macOS keychain
+   refuses to import, and the CI failure does not say why.
+
+4. **Register the test device.** For an ad-hoc build the iPhone's UDID must be
+   listed under Devices. On Linux, `libimobiledevice` reads it over USB:
+   `idevice_id -l`.
+5. **Create the provisioning profile** — Profiles → **+** → Ad Hoc for device
+   testing, or App Store for TestFlight. Pick the App ID, the certificate, and
+   the devices, then download the `.mobileprovision`.
+
+Add the secrets:
+
+| Secret                              | Value                                             |
+| ----------------------------------- | ------------------------------------------------- |
+| `APPLE_CERTIFICATE_P12_BASE64`      | `base64 -w0 distribution.p12`                     |
+| `APPLE_CERTIFICATE_PASSWORD`        | The export password from step 3                   |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | `base64 -w0 *.mobileprovision`                    |
+| `APPLE_PROVISIONING_PROFILE_NAME`   | The profile's name, exactly as Apple shows it     |
+| `APPLE_TEAM_ID`                     | The ten-character Team ID from Membership details |
+
+The export method defaults to `release-testing` (what Xcode used to call
+ad-hoc). Set the repository _variable_ `BESIDE_CUE_IOS_EXPORT_METHOD` to
+`app-store-connect` when TestFlight becomes the route.
+
+### iOS project
+
+`ios/` is generated and committed. Capacitor 8 wires plugins through Swift
+Package Manager rather than CocoaPods, so `cap add ios` and `cap sync ios` both
+run on Linux — only compiling needs macOS, which CI provides. `Package.swift`
+is regenerated by `cap sync`, so its pnpm store paths are never hand-edited.

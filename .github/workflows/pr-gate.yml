@@ -212,31 +212,6 @@ jobs:
         # Invoke Vite directly so the single app build does not repeat tsc.
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
-      - name: Validate Gradle wrapper
-        if: steps.scope.outputs.beside == 'true'
-        uses: gradle/actions/wrapper-validation@v4
-
-      - name: Set up Java
-        if: steps.scope.outputs.beside == 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-
-      - name: Set up Android SDK
-        if: steps.scope.outputs.beside == 'true'
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        if: steps.scope.outputs.beside == 'true'
-        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
-
-      - name: Synchronize Beside Cue Android project
-        if: steps.scope.outputs.beside == 'true'
-        run: pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
-
-      - name: Test, lint, and package Beside Cue Android
-        if: steps.scope.outputs.beside == 'true'
-        working-directory: apps/beside-cue/android
-        run: ./gradlew test lint assembleDebug :app:assembleDebugAndroidTest bundleRelease --no-daemon
+      # The Android and iOS native builds live in beside-cue-mobile.yml, which
+      # runs the same Gradle gate and additionally publishes an installable APK
+      # per pull request. Keeping them here too would build Android twice.

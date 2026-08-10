@@ -8,6 +8,7 @@ import type { BesideCueAppServices } from './app-services'
 import { createDefaultAppServices } from './app-services'
 import type { MainView } from './components/BottomNav'
 import { BrandMark } from './components/BrandMark'
+import { MockPurchaseOverlay } from './components/MockPurchaseOverlay'
 import { ProSection } from './components/ProSection'
 import type { PullOption } from './content'
 import { createProAccess } from './purchases/pro-access'
@@ -1012,6 +1013,21 @@ export function App(props: AppProps) {
           </div>
         )}
       </Show>
+
+      {/* Solid's JSX keeps the component reference past constant folding, so
+          this markup does reach a production bundle — inert, because nothing
+          outside a development build ever sets `mockPurchaseRequest`. The fake
+          store behind it is dropped; only the empty shell remains. */}
+      {import.meta.env.DEV ? (
+        <Show when={services().mockPurchaseRequest}>
+          {(mockRequest) => (
+            <MockPurchaseOverlay
+              request={mockRequest()}
+              name={PRO_DISPLAY_NAME}
+            />
+          )}
+        </Show>
+      ) : null}
     </>
   )
 }
