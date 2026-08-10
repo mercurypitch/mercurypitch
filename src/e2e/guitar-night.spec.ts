@@ -794,11 +794,18 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await expect(
     room.getByRole('heading', { name: 'midnight-drums.wav' }),
   ).toBeFocused()
-  const flowCanvas = room.getByRole('img', {
-    name: /^midnight-drums\.wav\. Interactive 6-string guitar fretboard/,
-  })
+  const flowCanvas = room.locator('canvas[data-tab-presentation]')
   await expect(flowCanvas).toBeVisible()
+  await expect(
+    room.getByRole('img', {
+      name: /midnight-drums\.wav\. Interactive 6-string guitar string runway/,
+    }),
+  ).toBeVisible()
   await expect(flowCanvas).toHaveAttribute('data-camera-ready', 'true')
+  await expect(flowCanvas).toHaveAttribute(
+    'data-tab-presentation',
+    'string-highway',
+  )
   await flowCanvas.scrollIntoViewIfNeeded()
   const initialYaw = await flowCanvas.getAttribute('data-camera-yaw')
   const canvasBox = await flowCanvas.boundingBox()
@@ -817,12 +824,39 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await expect
     .poll(() => flowCanvas.getAttribute('data-camera-yaw'))
     .not.toBe(initialYaw)
+  const orbitedYaw = await flowCanvas.getAttribute('data-camera-yaw')
+  const orbitedRadius = await flowCanvas.getAttribute('data-camera-radius')
+
+  await room.getByRole('button', { name: 'Grid', exact: true }).click()
+  await expect(flowCanvas).toHaveAttribute('data-tab-presentation', 'fret-axis')
+  await expect(
+    room.getByRole('img', {
+      name: /midnight-drums\.wav\. Interactive 6-string guitar fretboard grid/,
+    }),
+  ).toBeVisible()
+  await expect(flowCanvas).toHaveAttribute('data-camera-yaw', orbitedYaw ?? '')
+  await expect(flowCanvas).toHaveAttribute(
+    'data-camera-radius',
+    orbitedRadius ?? '',
+  )
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem('guitar-night-flow-presentation-v1'),
+    ),
+  ).toBe('fret-axis')
+
+  await room.getByRole('button', { name: 'Highway', exact: true }).click()
+  await expect(flowCanvas).toHaveAttribute(
+    'data-tab-presentation',
+    'string-highway',
+  )
+  await expect(flowCanvas).toHaveAttribute('data-camera-yaw', orbitedYaw ?? '')
 
   await room.getByRole('button', { name: 'Neck', exact: true }).click()
   await expect(room.locator('[data-stage-mode="neck"]')).toBeVisible()
   await room.getByRole('button', { name: 'Tab', exact: true }).click()
   await expect(room.locator('[data-stage-mode="tab"]')).toBeVisible()
-  await room.getByRole('button', { name: 'Flow', exact: true }).click()
+  await room.getByRole('button', { name: 'Highway', exact: true }).click()
   await expect(room.locator('[data-stage-mode="flow"]')).toBeVisible()
   await room.getByRole('button', { name: 'Slow down from 1.00×' }).click()
   await expect(
@@ -871,6 +905,19 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await expect
     .poll(async () => Number(await songPosition.inputValue()))
     .toBeGreaterThan(0)
+  const playingPosition = Number(await songPosition.inputValue())
+
+  await room.getByRole('button', { name: 'Grid', exact: true }).click()
+  await expect(
+    room.getByRole('button', { name: 'Pause backing', exact: true }),
+  ).toBeVisible()
+  await expect
+    .poll(async () => Number(await songPosition.inputValue()))
+    .toBeGreaterThanOrEqual(playingPosition)
+  await room.getByRole('button', { name: 'Highway', exact: true }).click()
+  await expect(
+    room.getByRole('button', { name: 'Pause backing', exact: true }),
+  ).toBeVisible()
 
   const sliderBox = await songPosition.boundingBox()
   expect(sliderBox).not.toBeNull()

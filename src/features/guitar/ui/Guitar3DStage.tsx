@@ -5,7 +5,7 @@ import type { Accessor } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
-import type { TabScene } from '@/features/guitar-tab-3d/renderer/TabRenderer'
+import type { TabPresentation, TabScene, } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { Tab3DControls } from '@/features/guitar-tab-3d/ui/Tab3DHud'
 
 export interface Guitar3DStageProps {
@@ -16,6 +16,7 @@ export interface Guitar3DStageProps {
   isActive: Accessor<boolean>
   controls?: Tab3DControls
   display?: Accessor<TabScene['display']>
+  presentation?: Accessor<TabPresentation>
   showGizmo?: Accessor<boolean>
   ariaLabel?: Accessor<string>
   fallbackText?: Accessor<string>
@@ -37,6 +38,7 @@ export function Guitar3DStage(props: Guitar3DStageProps) {
       isActive={props.isActive}
       controls={props.controls}
       display={props.display}
+      presentation={props.presentation}
       showGizmo={props.showGizmo}
       ariaLabel={props.ariaLabel}
       fallbackText={props.fallbackText}

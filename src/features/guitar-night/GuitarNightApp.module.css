@@ -2297,7 +2297,7 @@
 
 .stageModes {
   display: inline-grid;
-  grid-template-columns: repeat(3, minmax(3.4rem, 1fr));
+  grid-template-columns: repeat(4, minmax(3.35rem, 1fr));
   flex: none;
   padding: 0.2rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
@@ -2322,7 +2322,7 @@
   cursor: pointer;
 }
 
-.stageModes button:hover {
+.stageModes button:not(.stageModeActive):hover {
   color: var(--ivory);
   background: rgba(244, 234, 219, 0.04);
 }
@@ -3768,6 +3768,27 @@
     left: max(0.45rem, var(--safe-left));
     min-height: var(--touch-target);
     padding: 0;
+    align-items: flex-start;
+  }
+
+  .stageHeader > div:first-child {
+    position: absolute;
+    top: calc(var(--touch-target) + 0.45rem);
+    left: 0;
+    max-width: min(12rem, 46vw);
+    padding: 0.35rem 0.5rem;
+  }
+
+  .stageHeaderTools {
+    width: 100%;
+  }
+
+  .firstWinRoom .stageHeader > div:first-child {
+    display: none;
+  }
+
+  .performanceStage[data-signal='free-play'] .stageHeader > div:first-child {
+    display: none;
   }
 
   .stageHeader strong {
@@ -3775,7 +3796,7 @@
   }
 
   .stageModes {
-    grid-template-columns: repeat(3, minmax(2.9rem, 1fr));
+    grid-template-columns: repeat(4, minmax(2.75rem, 1fr));
   }
 
   .stageModes button {

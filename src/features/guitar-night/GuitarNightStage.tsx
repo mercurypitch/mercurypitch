@@ -5,10 +5,12 @@ import type { Accessor, JSX } from 'solid-js'
 import { children, createEffect, createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
+import type { TabPresentation } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, } from '@/lib/guitar/instrument-tuning'
+import { createPersistedSignal } from '@/lib/storage'
 import styles from './GuitarNightApp.module.css'
 
 const Guitar3DStage = lazy(async () => {
@@ -17,6 +19,10 @@ const Guitar3DStage = lazy(async () => {
 })
 
 export type GuitarNightStageMode = 'flow' | 'tab' | 'neck'
+type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck'
+
+export const GUITAR_NIGHT_FLOW_PRESENTATION_KEY =
+  'guitar-night-flow-presentation-v1'
 
 interface GuitarNightStageProps {
   source: GuitarPerformanceStageSource
@@ -54,6 +60,16 @@ const STRING_COUNT_CHOICES = Array.from(
   { length: MAX_STRING_COUNT - MIN_STRING_COUNT + 1 },
   (_, index) => MIN_STRING_COUNT + index,
 )
+
+const STAGE_VIEW_CHOICES: readonly {
+  id: GuitarNightStageView
+  label: string
+}[] = [
+  { id: 'highway', label: 'Highway' },
+  { id: 'grid', label: 'Grid' },
+  { id: 'tab', label: 'Tab' },
+  { id: 'neck', label: 'Neck' },
+]
 
 /** Tab shows the same span of music as Flow, so switching view keeps context. */
 const TAB_WINDOW_BEATS = 8
@@ -214,6 +230,28 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
+  const [flowPresentation, setFlowPresentation] =
+    createPersistedSignal<TabPresentation>(
+      GUITAR_NIGHT_FLOW_PRESENTATION_KEY,
+      'string-highway',
+      {
+        validator: (value): value is TabPresentation =>
+          value === 'string-highway' || value === 'fret-axis',
+      },
+    )
+  const activeView = createMemo<GuitarNightStageView>(() => {
+    const currentMode = mode()
+    if (currentMode !== 'flow') return currentMode
+    return flowPresentation() === 'string-highway' ? 'highway' : 'grid'
+  })
+  const selectView = (view: GuitarNightStageView) => {
+    if (view === 'highway' || view === 'grid') {
+      setFlowPresentation(view === 'highway' ? 'string-highway' : 'fret-axis')
+      setMode('flow')
+      return
+    }
+    setMode(view)
+  }
   const tuning = createMemo(() => props.tuning?.() ?? DEFAULT_GUITAR_TUNING)
   const instrumentLabel = createMemo(
     () => `${tuning().stringCount}-string ${tuning().instrument}`,
@@ -272,10 +310,15 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     const confidence = Math.round((props.heardClarity?.() ?? 0) * 100)
     return `${note} · ${confidence}% clear`
   })
-  const canvasSummary = createMemo(() =>
+  const flowSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. ${notes().length} guided notes approach a ${instrumentLabel()} fretboard. ${firstGuideNote() === null ? '' : `The first note is ${firstGuideNote()!.noteName}, ${tuning().labels[firstGuideNote()!.stringIndex] ?? `string ${firstGuideNote()!.stringIndex + 1}`}, ${firstGuideNote()!.fret === 0 ? 'open' : `fret ${firstGuideNote()!.fret}`}.`}`
-      : `${props.source.title()}. Interactive ${instrumentLabel()} fretboard; no song tab is attached.`,
+      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${firstGuideNote() === null ? '' : `The first note is ${firstGuideNote()!.noteName}, ${tuning().labels[firstGuideNote()!.stringIndex] ?? `string ${firstGuideNote()!.stringIndex + 1}`}, ${firstGuideNote()!.fret === 0 ? 'open' : `fret ${firstGuideNote()!.fret}`}.`}`
+      : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached.`,
+  )
+  const tabSummary = createMemo(() =>
+    hasGuide()
+      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets.`
+      : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached.`,
   )
   const visualSource: GuitarPerformanceStageSource = {
     title: () => props.source.title(),
@@ -325,6 +368,18 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                 : 'Your fretboard is ready')}
           </strong>
         </div>
+        <span
+          class={styles.visuallyHidden}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {isListening()
+            ? heardNote() === null
+              ? 'Listening for a clean note'
+              : `Heard ${heardNote()}`
+            : ''}
+        </span>
         <div class={styles.stageHeaderTools}>
           {/* The instrument names the rows in every view, so it belongs beside
               the view switch rather than inside one of them. */}
@@ -353,19 +408,17 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             </details>
           </Show>
           <div class={styles.stageModes} role="group" aria-label="Stage view">
-            <For each={['flow', 'tab', 'neck'] as GuitarNightStageMode[]}>
-              {(candidate) => (
+            <For each={STAGE_VIEW_CHOICES}>
+              {(choice) => (
                 <button
                   type="button"
-                  classList={{ [styles.stageModeActive]: mode() === candidate }}
-                  aria-pressed={mode() === candidate}
-                  onClick={() => setMode(candidate)}
+                  classList={{
+                    [styles.stageModeActive]: activeView() === choice.id,
+                  }}
+                  aria-pressed={activeView() === choice.id}
+                  onClick={() => selectView(choice.id)}
                 >
-                  {candidate === 'flow'
-                    ? 'Flow'
-                    : candidate === 'tab'
-                      ? 'Tab'
-                      : 'Neck'}
+                  {choice.label}
                 </button>
               )}
             </For>
@@ -373,7 +426,11 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         </div>
       </header>
 
-      <div class={styles.stageViewport} data-stage-mode={mode()}>
+      <div
+        class={styles.stageViewport}
+        data-stage-mode={mode()}
+        data-flow-presentation={flowPresentation()}
+      >
         <Show when={mode() === 'flow'}>
           <Suspense
             fallback={
@@ -391,9 +448,10 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               showFretboard={() => true}
               isActive={() => props.active() && mode() === 'flow'}
               display={() => VELVET_DISPLAY}
+              presentation={flowPresentation}
               showGizmo={() => false}
-              ariaLabel={canvasSummary}
-              fallbackText={canvasSummary}
+              ariaLabel={flowSummary}
+              fallbackText={flowSummary}
               borderRadius={() => '0'}
               cameraPreset={cameraPreset}
             />
@@ -417,7 +475,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
             <div
               class={styles.stageTabLanes}
               role="img"
-              aria-label={canvasSummary()}
+              aria-label={tabSummary()}
             >
               <div
                 class={styles.stageTabPlayhead}

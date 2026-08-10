@@ -154,13 +154,17 @@ review until that PR is merged.
   legacy Guitar tab and Guitar Night now consume the host-neutral
   `Guitar3DStage` and performance timeline/source contract. The renderer scene
   conversion is a pure tested boundary; legacy controls remain unchanged.
-  `Flow` adapts that renderer to a translucent Velvet palette and direct
-  mouse/touch camera while the rehearsal room remains visible. Guitar Night
-  supplies its own responsive entry/Reset framing, larger next target and
-  truthful `NOW` rail without changing the legacy renderer defaults; `Tab` and
-  `Neck` provide quieter alternate views. A song without an attached score
-  exposes a nullable beat, says no tab is attached, and remains a useful
-  free-play fretboard instead of deriving a fake beat from elapsed seconds.
+  `Highway` adapts that renderer to a six-string-style runway with fret numbers
+  inside the targets; `Grid` preserves the original fret-axis composition.
+  Both are projections of the same scene and remain in one mounted canvas, so
+  switching keeps camera, score, playback and input state intact. The player's
+  choice is stored locally. Guitar Night supplies its own translucent Velvet
+  palette, direct mouse/touch camera, responsive entry/Reset framing, larger
+  next target and truthful `NOW` rail without changing the legacy renderer
+  defaults; `Tab` and `Neck` provide quieter alternate views. A song without an
+  attached score exposes a nullable beat, says no tab is attached, and remains
+  a useful free-play fretboard instead of deriving a fake beat from elapsed
+  seconds.
 - The score-only room keeps Play and tempo visible while count-in, guide sound,
   Listening and loop setup live in one restrained Session overlay. Before Play,
   the stage rests just ahead of the first authored note so a long intro reads as
@@ -212,9 +216,8 @@ subordinate to the crop until the source receives a final retouch.
 1. Finish the fast-input evidence gate with named guitar fixtures, real-device
    browser checks, latency distributions, and explicit microphone, direct
    interface and MIDI adapters before publishing speed or quality claims.
-2. Add an opt-in Guitar Night six-string highway presentation, with frets
-   encoded in targets, readable techniques, reduced-effects behavior and
-   measured mobile performance; keep the legacy fret-axis composition intact.
+2. Extend the shipped string highway with readable technique marks,
+   reduced-effects behavior and measured real-device mobile performance.
 3. Extend the configurable first win into a beginner progression, then add the
    professional band presets, drummer controls and take history.
 4. Complete authored-score-to-recording alignment plus release and
