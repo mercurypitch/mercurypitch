@@ -3,7 +3,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Ear, Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
+import { Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
@@ -12,7 +12,8 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
-import { GuitarNightInputHealth } from './GuitarNightInputHealth'
+import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
+import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
@@ -88,6 +89,7 @@ function statusCopy(status: GuitarBackingTransportStatus): string {
 
 export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
+  let doctorTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const listening = useGuitarListeningController({
     activateAudio: () => props.transport.activate(),
@@ -129,6 +131,35 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   const rateLabel = createMemo(
     () => `${performance.transport.playbackRate().toFixed(2)}×`,
   )
+  const doctorView = createMemo<GuitarNightDoctorView | null>(() => {
+    const take = listening.take()
+    if (take?.lifecycle !== 'completed') return null
+    const attacks = take.events.filter(
+      (event) => event.kind === 'attack',
+    ).length
+    const observations = listening.observations()
+    const hasEvidence = take.events.length > 0
+    return {
+      anchorLabel: `Free play · ${formatTime((take.durationFrames ?? 0) / take.clock.sampleRate)}`,
+      headline: hasEvidence
+        ? attacks === 1
+          ? 'One fresh note start came through.'
+          : `${attacks} fresh note starts came through.`
+        : 'No notes heard.',
+      detail: hasEvidence
+        ? 'This is a signal-only take. Attach an authored tab for beat and note-start comparison.'
+        : 'Try a short phrase again. Move closer, use a direct input, or quieten the room if the meter stays low.',
+      evidence: observations.map((observation) => ({ ...observation })),
+      unavailableReasons: [
+        'No authored phrase was attached, so note accuracy and beat timing were not scored.',
+        'Sustain and pitch stability need continuous note evidence.',
+      ],
+      recoveryLabel: 'Listen to another take',
+      recoveryDetail: 'The room stays quiet while this device listens.',
+      privacyCopy:
+        'Measured from this take on this device. Audio is not saved.',
+    }
+  })
 
   // The loop lives in seconds of the recording, so it survives a speed change:
   // the same bars come round again whatever rate they are played at.
@@ -165,6 +196,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       listening.stop()
       return
     }
+    if (isPlaying()) props.transport.pause()
+    void listening.start()
+  }
+
+  const recoverFromDoctor = (): void => {
+    setDoctorOpen(false)
+    listening.clearTake()
     if (isPlaying()) props.transport.pause()
     void listening.start()
   }
@@ -250,20 +288,6 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     : 'Listening'}
               </strong>
             </button>
-            <button
-              type="button"
-              aria-expanded={doctorOpen()}
-              aria-controls="guitar-night-doctor"
-              onClick={() => setDoctorOpen((open) => !open)}
-            >
-              <span aria-hidden="true">
-                <Ear />
-              </span>
-              <strong>Jam Doctor</strong>
-              <Show when={listening.events().length > 0}>
-                <small>{listening.events().length}</small>
-              </Show>
-            </button>
           </div>
         </div>
       </div>
@@ -284,63 +308,39 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         listening={isListening}
         heardNote={listening.currentNote}
         heardClarity={listening.clarity}
-      />
-
-      <Show when={doctorOpen()}>
-        <aside
-          class={styles.doctorPanel}
-          id="guitar-night-doctor"
-          aria-labelledby="guitar-night-doctor-title"
-        >
-          <div class={styles.doctorHeading}>
-            <div>
-              <span>Jam Doctor</span>
-              <strong id="guitar-night-doctor-title">
-                {listening.events().length > 0
-                  ? 'What this take reveals'
-                  : 'No take yet'}
-              </strong>
-            </div>
-            <Show when={listening.events().length > 0}>
-              <button type="button" onClick={listening.clearTake}>
-                Clear take
-              </button>
+        overlay={
+          <>
+            <Show when={!doctorOpen() && doctorView()}>
+              {(view) => (
+                <GuitarNightDoctorCue
+                  view={view()}
+                  expanded={false}
+                  controlsId="guitar-night-doctor"
+                  buttonRef={(element) => {
+                    doctorTrigger = element
+                  }}
+                  onOpen={() => setDoctorOpen(true)}
+                />
+              )}
             </Show>
-          </div>
-          <Show
-            when={listening.observations().length > 0}
-            fallback={
-              <p>
-                Turn on Listening and play a few clean attacks. Headphones or an
-                instrument input keep the reading focused on your guitar.
-              </p>
-            }
-          >
-            <dl class={styles.doctorObservations}>
-              <For each={listening.observations()}>
-                {(observation) => (
-                  <div>
-                    <dt>{observation.label}</dt>
-                    <dd>{observation.value}</dd>
-                    <small>{observation.detail}</small>
-                  </div>
-                )}
-              </For>
-            </dl>
-            <p class={styles.doctorPrivacy}>
-              Measured from this take on this device. Audio is not saved.
-            </p>
-          </Show>
-          <GuitarNightInputHealth
-            listening={isListening}
-            calibrating={() => listening.status() === 'calibrating'}
-            health={listening.health}
-            timingSource={listening.timingSource}
-            latencyMs={listening.latencyMs}
-            onCalibrate={() => void listening.calibrate()}
-          />
-        </aside>
-      </Show>
+            <GuitarNightJamDoctor
+              id="guitar-night-doctor"
+              open={doctorOpen()}
+              view={doctorView()}
+              recording={listening.take()?.lifecycle === 'recording'}
+              liveEventCount={listening.events().length}
+              returnFocus={() => doctorTrigger ?? null}
+              fallbackFocus={() => roomHeading}
+              onClose={() => setDoctorOpen(false)}
+              onClear={() => {
+                listening.clearTake()
+                setDoctorOpen(false)
+              }}
+              onRecover={recoverFromDoctor}
+            />
+          </>
+        }
+      />
 
       <Show when={listening.error()}>
         {(message) => (

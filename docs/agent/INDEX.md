@@ -77,7 +77,7 @@ These are the rules that break things when ignored.
 | `stem-mixer` | [useStemMixerLyricsController.ts](../../src/features/stem-mixer/useStemMixerLyricsController.ts) | 12.2k | StemMixer Lyrics Controller — lyrics/LRC gen/blocks state + actions |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 12.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 10.3k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
-| `guitar-night` | [useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 7.9k | The score room rehearses an authored tab on its own clock, with no separated song. |
+| `guitar-night` | [useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 9.1k | The score room rehearses an authored tab on its own clock, with no separated song. |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 5.5k | Voice Mirror — the guided 3-task flow (spec §2). |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
@@ -120,7 +120,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 5.7k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
-| `guitar` | [guitar-synth.ts](../../src/lib/guitar/guitar-synth.ts) | 2.3k | Guitar Synthesis — Karplus-Strong physical modeling + bass |
+| `guitar` | [guitar-phrase-review.ts](../../src/lib/guitar/guitar-phrase-review.ts) | 3.7k | Guitar phrase review — evidence-bounded comparison of one take with one pinned score range. |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 2.1k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.1k | Voice Mirror — pure metrics over F0 frame streams. |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
@@ -181,10 +181,10 @@ These are the rules that break things when ignored.
 | [walkthrough-store.ts](../../src/stores/walkthrough-store.ts) | 200 | Walkthrough Store — Track completed walkthroughs |
 | [exercise-history-store.ts](../../src/stores/exercise-history-store.ts) | 150 | Exercise History Store — completed-run log and per-exercise stats `recordExerciseResult` is the single funnel every exercise calls on fin... |
 | [falling-notes-store.ts](../../src/stores/falling-notes-store.ts) | 150 | Falling Notes Store — Game state for Synthesia-style piano practice |
+| [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 150 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [practice-timer-store.ts](../../src/stores/practice-timer-store.ts) | 150 | Practice Timer Store — the voice-rest clock Off by default. |
 | [console-store.ts](../../src/stores/console-store.ts) | 100 | Console Store — in-app console log capture for the debug overlay Mirrors console output into a ring buffer the ConsoleLog panel renders,... |
 | [index.ts](../../src/stores/index.ts) | 100 | Stores barrel export |
-| [mic-latency-store.ts](../../src/stores/mic-latency-store.ts) | 100 | Mic Latency Store — the measured round trip, per input device Per device on purpose: a USB interface and a laptop's built-in mic differ b... |
 | [pane-layout-store.ts](../../src/stores/pane-layout-store.ts) | 100 | Pane Layout Store — Multi-pane layout persistence |
 | [saved-midi-songs-store.ts](../../src/stores/saved-midi-songs-store.ts) | 100 | Saved MIDI Songs Store — imported MIDI songs (localStorage) Imported MIDI files for guitar/piano practice are kept in a shared store so t... |
 | [background-store.ts](../../src/stores/background-store.ts) | 50 | Premium background store compatibility facade The account-safe catalog store is route-neutral so standalone surfaces can use it without i... |

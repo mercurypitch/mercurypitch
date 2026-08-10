@@ -27,9 +27,9 @@ latency calibration are implemented on open PR
 review until that PR is merged. The same PR now records those attacks in one
 bounded, memory-only take with stable identity, exact or explicitly coarse
 clock provenance, and a pinned latency snapshot. The
-authored-score-to-recording alignment, phrase-aware Jam Doctor, full
-input-performance evidence gate, major 3D upgrade, and legacy runtime cutover
-remain target work.
+authored-score-to-recording alignment, release and continuous-pitch evidence,
+fast-passage fixture validation, the major 3D upgrade, and legacy runtime
+cutover remain target work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -191,6 +191,64 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   shall be excluded; bounded truncation shall be recorded. Stop shall complete
   the take, while failed activation or disposal shall cancel it. Guitar Night
   shall neither retain raw input audio nor persist Capture v0 takes.
+
+## Phrase review and Jam Doctor — `GN-DOCTOR-*`
+
+- **REQ-GN-DOCTOR-001 — Explicit review range:** WHEN a player requests a
+  score-room review, Guitar Night shall assess the quantized A/B range when one
+  exists; otherwise it shall name and assess one bounded four-beat range at or
+  after the parked playhead. It shall run that range once and shall not blend
+  loop repetitions into one take.
+- **REQ-GN-DOCTOR-002 — Quiet assessed run:** WHEN a score-room review starts,
+  its count-in shall remain audible, while the authored voice and exercise
+  pulse shall remain silent. Score callbacks and the visible playhead shall
+  continue on the same clock without making the room's own audio microphone
+  evidence.
+- **REQ-GN-DOCTOR-003 — Exact phrase boundary:** The assessed take shall pin the
+  reference, track, complete tempo map, range, tempo, sample rate, and exact
+  scheduled AudioContext start and end. Count-in evidence shall be excluded;
+  the pitch-enrichment window may drain after the scheduled end, but completion
+  shall retain the scheduler's exact end and the range shall remain half-open
+  `[A, B)`.
+- **REQ-GN-DOCTOR-004 — Evidence-gated measurements:** Jam Doctor shall expose
+  timing consistency only from sufficient matched sample-exact attacks;
+  absolute early or late timing only from a stored calibration with known,
+  sufficiently narrow uncertainty; and pitch relationship only from
+  clarity-qualified, monophonic aligned events. Every available metric shall
+  retain the event and target identities that support it in memory.
+- **REQ-GN-DOCTOR-005 — Honest unavailable states:** IF a take is silent,
+  partial, truncated, coarse-clock, uncalibrated, variably calibrated, noisy,
+  clipping, polyphonic, too sparse, or too fast for the validated microphone
+  path, THEN the affected metric shall be unavailable with a concrete reason.
+  Attack completeness, sustain, pitch center, and pitch stability shall remain
+  unavailable until articulation, release, or continuous-pitch evidence exists.
+- **REQ-GN-DOCTOR-006 — Minimal live state:** WHILE Listening is active, the
+  stage shall show only the live heard-note and input-health state. A completed
+  take shall announce one compact `Take ready` cue and shall not open its full
+  review automatically.
+- **REQ-GN-DOCTOR-007 — One-action recovery:** Every completed phrase review
+  shall identify one primary issue or supported success and one direct action.
+  Replay, slowdown, shorter-range, and range-selection actions shall restage the
+  exact promised range; calibration recovery shall complete calibration before
+  returning to the same review range.
+- **REQ-GN-DOCTOR-008 — Stage-owned sheet:** Opening or closing Jam Doctor shall
+  not change stage dimensions, transport state, playhead, loop, microphone
+  ownership, or AudioContext count. Desktop shall use a fixed stage faceplate;
+  mobile shall use a bounded bottom sheet. Escape shall close the sheet and
+  return focus to its trigger.
+- **REQ-GN-DOCTOR-009 — Compact local history:** Guitar Night may persist at
+  most eight canonical scalar summaries containing range, tempo, evidence
+  quality, provenance, counts, and available metric values. It shall not
+  persist raw microphone audio, full input events, event IDs, or target IDs.
+- **REQ-GN-DOCTOR-010 — Compatible comparison:** A/B take comparison shall be
+  available only for complete, non-truncated takes of the same reference,
+  track, exact range, tempo, playback rate, target count, clock provenance, and
+  compatible evidence quality. Incompatible or unchanged summaries shall not
+  produce a comparison claim.
+- **REQ-GN-DOCTOR-011 — Free-play truth:** WHERE no authored range is attached,
+  Jam Doctor may summarize signal-only facts such as heard note starts, clarity,
+  and range, but shall state that beat and authored-note comparison was not
+  performed.
 
 ## Configurable first win — `GN-FIRST-*`
 
