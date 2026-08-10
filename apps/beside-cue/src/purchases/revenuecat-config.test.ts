@@ -28,6 +28,50 @@ describe('purchases setup', () => {
     expect(setup.problem).toMatch(/release build/iu)
   })
 
+  it('lets a debug artifact opt back into the Test Store', () => {
+    // A native build always has DEV false, so this flag is the only way an
+    // installable debug APK can reach a store at all before Play has products.
+    const setup = resolvePurchasesSetup('android', {
+      DEV: false,
+      VITE_REVENUECAT_ALLOW_TEST_STORE: '1',
+    })
+
+    expect(setup.config?.apiKey).toMatch(/^test_/u)
+    expect(setup.config?.logLevel).toBe('debug')
+  })
+
+  it('accepts an explicit Test Store key when the debug flag is set', () => {
+    const setup = resolvePurchasesSetup('android', {
+      DEV: false,
+      VITE_REVENUECAT_ALLOW_TEST_STORE: '1',
+      VITE_REVENUECAT_ANDROID_KEY: 'test_QQigLtGKqfRKFJNzgOlaVwUQUtP',
+    })
+
+    expect(setup.config?.apiKey).toMatch(/^test_/u)
+  })
+
+  it('ignores any value other than 1 for the debug flag', () => {
+    // Guards against a stray "true"/"0" in CI quietly enabling the Test Store.
+    for (const value of ['0', 'true', 'yes', '']) {
+      const setup = resolvePurchasesSetup('android', {
+        DEV: false,
+        VITE_REVENUECAT_ALLOW_TEST_STORE: value,
+      })
+
+      expect(setup.config).toBeUndefined()
+    }
+  })
+
+  it('prefers a real store key over the Test Store fallback', () => {
+    const setup = resolvePurchasesSetup('android', {
+      DEV: false,
+      VITE_REVENUECAT_ALLOW_TEST_STORE: '1',
+      VITE_REVENUECAT_ANDROID_KEY: 'goog_android',
+    })
+
+    expect(setup.config?.apiKey).toBe('goog_android')
+  })
+
   it('reports a release build that was given no key at all', () => {
     const setup = resolvePurchasesSetup('android', { DEV: false })
 

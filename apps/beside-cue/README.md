@@ -52,12 +52,18 @@ rather than an integration.
 
 ### Configuration
 
-Copy `.env.example` to `.env.local` and fill in what you need. Development
-builds with no key fall back to the RevenueCat **Test Store** key, which lets
-you exercise the whole purchase flow without Play Console or App Store Connect
-products. That key is refused in release builds — the SDK aborts an app that
-configures one — so a release build without `VITE_REVENUECAT_ANDROID_KEY`
-ships with purchases switched off and says so in Settings instead of crashing.
+Copy `.env.example` to `.env.local` and fill in what you need. A build with no
+key falls back to the RevenueCat **Test Store** key, which exercises the whole
+purchase flow without Play Console or App Store Connect products. That key is
+refused in release builds — the SDK aborts an app that configures one — so a
+release build without `VITE_REVENUECAT_ANDROID_KEY` ships with purchases
+switched off and says so in Settings instead of crashing.
+
+`import.meta.env.DEV` is **false in every native build**: `cap sync` copies the
+output of `vite build`, so a debug APK carries a production web bundle. Nothing
+in the web layer can tell a debug artifact from a release one, which is why
+`VITE_REVENUECAT_ALLOW_TEST_STORE=1` exists — it says so from outside. Set it
+for anything you sideload; never for anything you upload to a store.
 
 Identifiers live in one file, `src/purchases/revenuecat-config.ts`.
 
@@ -102,11 +108,25 @@ is absent from a production bundle.
 
 ### Verifying on a device
 
-Run `pnpm beside-cue:android` on a machine with the Android SDK and a phone
-attached, or sideload the `beside-cue-debug-apk` artifact from any pull
-request. Open Settings and check that the paywall presents, a Test Store
-purchase flips Pro on, Customer Center opens, **Restore purchases** works, and
-the entitlement survives a force-quit.
+Sideload the `beside-cue-debug-apk` artifact from any pull request. It is built
+against the Test Store, so the whole loop works on a phone with no Play products
+and no Play installation: check that the paywall presents, a purchase flips Pro
+on, Customer Center opens, **Restore purchases** works, and the entitlement
+survives a force-quit.
+
+A **sideloaded build cannot reach Play Billing** — Play only serves an app it
+installed itself. Testing against real products therefore has to wait for an
+internal testing release, which is why the debug artifact uses the Test Store
+instead.
+
+Locally, the same thing with a device attached:
+
+```sh
+VITE_REVENUECAT_ANDROID_KEY= VITE_REVENUECAT_ALLOW_TEST_STORE=1 pnpm beside-cue:android
+```
+
+The empty key matters when `.env.local` holds a real `goog_` one — otherwise the
+build reaches for Play and finds nothing.
 
 `pnpm beside-cue:android` needs `ANDROID_HOME` pointing at an SDK with
 platform 36, and `JAVA_HOME` pointing at a JDK 21. A newer JDK fails in
@@ -129,6 +149,13 @@ rejects a re-used one and only the run number is guaranteed to increase.
 
 Signing is opt-in. Without the secrets the release builds still run and still
 prove the app compiles — they are simply unsigned.
+
+Each job builds the web assets **twice**, because the two artifacts need
+opposite store configuration: the debug/simulator build takes
+`VITE_REVENUECAT_ALLOW_TEST_STORE=1` so it is testable off-store, and the
+release build is rebuilt with the real key from
+`secrets.VITE_REVENUECAT_ANDROID_KEY` (or `VITE_REVENUECAT_IOS_KEY`). Shipping
+the first configuration in a release binary would make the SDK abort on launch.
 
 ### Android upload key
 

@@ -3,10 +3,19 @@
 // ============================================================
 //
 // A RevenueCat `test_` key targets the Test Store, and the SDK deliberately
-// refuses to run one in a release build. The dev fallback below therefore
-// applies only to development builds; a release build must supply real store
+// refuses to run one in a release build. A release build must supply real store
 // keys through the environment or it ships without purchases rather than
 // crashing on launch.
+//
+// `import.meta.env.DEV` is false in every native build — `cap sync` copies the
+// output of `vite build`, so a debug APK carries a production web bundle. That
+// left the Test Store reachable only in a browser, where the plugin has no
+// implementation at all. `VITE_REVENUECAT_ALLOW_TEST_STORE=1` is the way to say
+// "this artifact is a debug build" from outside, which is the one thing the web
+// layer cannot work out for itself.
+//
+// It must never be set for a build that goes to a store. Doing so ships a
+// `test_` key in a release binary, and the SDK aborts the app on launch.
 
 import type { PurchasesLogLevel } from '@irchiinnuss/mobile-runtime/capacitor'
 import type { BesideCuePlatform } from '@/infrastructure/mobile-runtime'
@@ -45,6 +54,8 @@ export interface PurchasesEnvironment {
   readonly VITE_REVENUECAT_IOS_KEY?: string
   readonly VITE_REVENUECAT_ENTITLEMENT_ID?: string
   readonly VITE_REVENUECAT_OFFERING_ID?: string
+  /** `'1'` marks a debug artifact, permitting the Test Store. Never in a release. */
+  readonly VITE_REVENUECAT_ALLOW_TEST_STORE?: string
   readonly DEV?: boolean
 }
 
@@ -83,9 +94,11 @@ export function resolvePurchasesSetup(
   }
 
   const development = env.DEV === true
+  const testStoreAllowed =
+    development || env.VITE_REVENUECAT_ALLOW_TEST_STORE === '1'
   const configuredKey = platformKey(platform, env)
   const apiKey =
-    configuredKey ?? (development ? DEV_FALLBACK_API_KEY : undefined)
+    configuredKey ?? (testStoreAllowed ? DEV_FALLBACK_API_KEY : undefined)
 
   if (apiKey === undefined) {
     return {
@@ -94,7 +107,7 @@ export function resolvePurchasesSetup(
     }
   }
 
-  if (apiKey.startsWith(TEST_STORE_KEY_PREFIX) && !development) {
+  if (apiKey.startsWith(TEST_STORE_KEY_PREFIX) && !testStoreAllowed) {
     // The SDK aborts the app rather than run a Test Store key in release.
     return {
       ...base,
@@ -107,7 +120,7 @@ export function resolvePurchasesSetup(
     ...base,
     config: {
       apiKey,
-      logLevel: development ? 'debug' : 'warn',
+      logLevel: testStoreAllowed ? 'debug' : 'warn',
     },
   }
 }

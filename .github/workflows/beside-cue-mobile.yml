@@ -99,7 +99,14 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
 
-      - name: Build web assets
+      # The debug APK is the artifact people sideload, and a sideloaded build
+      # cannot reach Play Billing at all — Play only serves an app it installed
+      # itself. So this one is built against the RevenueCat Test Store, which
+      # needs no Play products and works on any device. The release build below
+      # gets the real store key instead.
+      - name: Build web assets for the debug APK
+        env:
+          VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
       - name: Synchronize Android project
@@ -137,6 +144,17 @@ jobs:
             apps/beside-cue/android/app/build/test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+      # Rebuilt without the Test Store flag and with the real store key: the
+      # SDK aborts an app that configures a `test_` key in a release binary.
+      # The debug APK has already been packaged and uploaded by this point.
+      - name: Rebuild web assets for release
+        env:
+          VITE_REVENUECAT_ANDROID_KEY: ${{ secrets.VITE_REVENUECAT_ANDROID_KEY }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync android
 
       - name: Build release bundle and APK
         env:
@@ -196,7 +214,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build web assets
+      # Same reasoning as the Android job: the simulator build is for testing,
+      # so it gets the Test Store rather than no store at all.
+      - name: Build web assets for the simulator
+        env:
+          VITE_REVENUECAT_ALLOW_TEST_STORE: '1'
         run: pnpm --filter @irchiinnuss/beside-cue-app exec vite build
 
       - name: Synchronize iOS project
@@ -257,6 +279,17 @@ jobs:
           profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$profiles"
           printf '%s' "$PROFILE_BASE64" | base64 --decode > "$profiles/beside-cue.mobileprovision"
+
+      # Without this the IPA would carry the Test Store key from the simulator
+      # build, and the SDK aborts a release binary that configures one.
+      - name: Rebuild web assets for release
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
+        env:
+          VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+          pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
 
       - name: Archive and export IPA
         if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
