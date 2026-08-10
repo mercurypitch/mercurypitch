@@ -3,10 +3,12 @@
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuitarTab3DView } from './GuitarTab3DView'
 import type { CameraState } from './renderer/camera'
 import { DEFAULT_CAMERA } from './renderer/camera'
+import type { TabPresentation } from './renderer/TabRenderer'
 
 const renderer = vi.hoisted(() => ({
   mount: vi.fn(),
@@ -47,7 +49,7 @@ describe('GuitarTab3DView keyboard camera', () => {
     renderView()
 
     const controls = screen.getByRole('group', {
-      name: '3D fretboard view controls',
+      name: '3D performance view controls',
     })
     const canvas = screen.getByRole('img', {
       name: 'Practice phrase fretboard',
@@ -93,13 +95,14 @@ describe('GuitarTab3DView keyboard camera', () => {
       'data-camera-radius',
       DEFAULT_CAMERA.radius.toFixed(4),
     )
+    expect(canvas).toHaveAttribute('data-tab-presentation', 'fret-axis')
   })
 
   it('leaves keys from nested controls and playback shortcuts alone', () => {
     renderView(true)
 
     const controls = screen.getByRole('group', {
-      name: '3D fretboard view controls',
+      name: '3D performance view controls',
     })
     const canvas = screen.getByRole('img', {
       name: 'Practice phrase fretboard',
@@ -134,7 +137,7 @@ describe('GuitarTab3DView keyboard camera', () => {
     ))
 
     const controls = screen.getByRole('group', {
-      name: '3D fretboard view controls',
+      name: '3D performance view controls',
     })
     const canvas = screen.getByRole('img')
     expect(canvas).toHaveAttribute('data-camera-yaw', preset.yaw.toFixed(4))
@@ -162,5 +165,39 @@ describe('GuitarTab3DView keyboard camera', () => {
       'data-camera-radius',
       preset.radius.toFixed(4),
     )
+  })
+
+  it('switches presentation without remounting or moving the camera', () => {
+    const [presentation, setPresentation] =
+      createSignal<TabPresentation>('string-highway')
+    render(() => (
+      <>
+        <button type="button" onClick={() => setPresentation('fret-axis')}>
+          Use grid
+        </button>
+        <GuitarTab3DView
+          fallingNotes={() => []}
+          playheadBeat={() => 0}
+          visibleBeatWindow={() => 8}
+          showNoteLabels={() => false}
+          showFretboard={() => true}
+          isActive={() => true}
+          showGizmo={() => false}
+          presentation={presentation}
+        />
+      </>
+    ))
+
+    const canvas = screen.getByRole('img')
+    const initialYaw = canvas.getAttribute('data-camera-yaw')
+    const initialRadius = canvas.getAttribute('data-camera-radius')
+    expect(canvas).toHaveAttribute('data-tab-presentation', 'string-highway')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Use grid' }))
+
+    expect(canvas).toHaveAttribute('data-tab-presentation', 'fret-axis')
+    expect(canvas).toHaveAttribute('data-camera-yaw', initialYaw)
+    expect(canvas).toHaveAttribute('data-camera-radius', initialRadius)
+    expect(renderer.mount).toHaveBeenCalledTimes(1)
   })
 })

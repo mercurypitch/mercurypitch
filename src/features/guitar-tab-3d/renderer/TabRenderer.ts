@@ -48,6 +48,9 @@ export const VELVET_DISPLAY: DisplaySettings = {
   theme: 'velvet',
 }
 
+/** The same musical scene can be projected as a fret grid or string lanes. */
+export type TabPresentation = 'fret-axis' | 'string-highway'
+
 /** A single note to render, derived from the guitar engine's falling notes. */
 export interface TabSceneNote {
   stringIndex: number
@@ -98,6 +101,7 @@ export interface TabScene {
   /** The player's detected input note on the neck, or null. */
   detected: TabDetected | null
   display: DisplaySettings
+  presentation: TabPresentation
 }
 
 export interface TabRenderer {

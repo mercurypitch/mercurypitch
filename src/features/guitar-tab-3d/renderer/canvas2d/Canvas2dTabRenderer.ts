@@ -1,12 +1,11 @@
 // ============================================================
-// Canvas2dTabRenderer — upright fretboard in front, highway behind
+// Canvas2dTabRenderer — shared fret-grid and string-highway projection
 // ============================================================
 //
-// A real perspective camera (wgpu-matrix). The fretboard is an UPRIGHT wall on
-// the Z=0 plane (X=frets, Y=strings) standing in front of the viewer; the
-// highway recedes UP-and-back behind it (the Y=0 floor going to −Z, to a
-// vanishing point). Notes fly through the air down their (string, fret) line
-// and land exactly on their cell on the fretboard — Rocksmith/ToneLib/Tabizera.
+// A real perspective camera (wgpu-matrix). Grid keeps the original upright
+// fretboard at Z=0; Highway maps the strings across a continuous runway and
+// encodes frets inside each target. Both share timing, notes, feedback, camera,
+// and the receding beat plane.
 //
 // Readability layer: imminent notes are emphasised (glow + size, far ones fade),
 // simultaneous notes are bound by a chord spine, each note flashes a ring on its
@@ -21,14 +20,9 @@ import { beatsToDepth } from '../projection'
 import type { TabRenderer, TabScene, TabSceneNote } from '../TabRenderer'
 import { colorForString, labelInk, lighten, withAlpha } from './color'
 import { cellKey, cellNoteName, isDoubleFretMarker, isFretMarker, } from './FretboardStrip'
+import { TAB_FLOOR_DEPTH as FLOOR_DEPTH, TAB_LANE_HEIGHT as LANE_HEIGHT, TAB_WALL_BOTTOM as Y_BOTTOM, TAB_WALL_TOP as WALL_TOP, tabConvergedX, tabFlightPoint, tabFretStringY, tabFretX, tabStringLaneX, tabTransverseWorldSpan, } from './highway-geometry'
 
 // ── Scene constants (world units) ──────────────────────────
-const WALL_HW = 6 // fretboard half-width in X
-const Y_BOTTOM = 0 // wall bottom (low-E side / nut line)
-const WALL_TOP = 3.5 // wall top (high-e side)
-const FLOOR_DEPTH = 44 // highway depth: Z 0 (at the wall) → −44 (far)
-const STR_MARGIN = 0.3 // string inset from wall top/bottom
-const FRET_MARGIN = 0.4 // fret-0/last inset from wall sides
 
 // ── Camera (orbit; defaults reproduce the verified fixed view) ─────
 const UP: [number, number, number] = [0, 1, 0]
@@ -43,6 +37,7 @@ const FLASH_OUT = 0.3 // and fades out this many beats after
 const CHORD_TOL = 0.0625 // notes within 1/16 beat = a chord
 const BEATS_PER_BAR = 4 // for downbeat emphasis (assume 4/4)
 const HIT_FLASH_MS = 500 // scored-hit ring fade duration
+const PORTRAIT_HIGHWAY_FAR_SCALE = 0.45
 
 interface Projected {
   x: number
@@ -120,32 +115,88 @@ export class Canvas2dTabRenderer implements TabRenderer {
   }
 
   private fretX(f: number, maxFret: number): number {
-    const a = -WALL_HW + FRET_MARGIN
-    const b = WALL_HW - FRET_MARGIN
-    return a + (maxFret > 0 ? f / maxFret : 0.5) * (b - a)
+    return tabFretX(f, maxFret)
   }
 
   private stringY(s: number, n: number): number {
-    const top = WALL_TOP - STR_MARGIN
-    const bottom = Y_BOTTOM + STR_MARGIN
-    return top - (n > 1 ? s / (n - 1) : 0.5) * (top - bottom)
+    return tabFretStringY(s, n)
   }
 
-  /** A note flies straight down its (string, fret) line: Z=−t·depth → 0. */
+  /** Project a note through the selected visual geometry without changing time. */
   private notePos(
+    scene: TabScene,
     s: number,
     f: number,
     t: number,
     n: number,
     maxFret: number,
   ): [number, number, number] {
-    return [this.fretX(f, maxFret), this.stringY(s, n), -t * FLOOR_DEPTH]
+    const point = tabFlightPoint(
+      scene.presentation,
+      s,
+      f,
+      t,
+      n,
+      maxFret,
+      scene.display.leftHanded,
+    )
+    point[0] = this.depthAdjustedX(scene, point[0], t)
+    return point
   }
 
-  /** On-screen width (px) of one fret cell at a world point. */
-  private cellPx(x: number, y: number, z: number, maxFret: number): number {
-    const cellW = this.fretX(1, maxFret) - this.fretX(0, maxFret)
-    return Math.abs(this.project(x + cellW, y, z).x - this.project(x, y, z).x)
+  private depthAdjustedX(
+    scene: TabScene,
+    x: number,
+    depthRatio: number,
+  ): number {
+    if (
+      scene.presentation !== 'string-highway' ||
+      this.cssWidth > 720 ||
+      this.cssHeight <= this.cssWidth
+    ) {
+      return x
+    }
+    return tabConvergedX(x, depthRatio, PORTRAIT_HIGHWAY_FAR_SCALE)
+  }
+
+  private reducedMotion(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+  }
+
+  /** Projected spacing across the active fret cells or string lanes. */
+  private targetSpanPx(
+    scene: TabScene,
+    stringIndex: number,
+    fret: number,
+    depthRatio: number,
+    stringCount: number,
+    maxFret: number,
+  ): number {
+    const [x, y, z] = this.notePos(
+      scene,
+      stringIndex,
+      fret,
+      depthRatio,
+      stringCount,
+      maxFret,
+    )
+    let span = tabTransverseWorldSpan(
+      scene.presentation,
+      stringIndex,
+      fret,
+      stringCount,
+      maxFret,
+    )
+    if (scene.presentation === 'string-highway') {
+      span = Math.abs(this.depthAdjustedX(scene, span, depthRatio))
+    }
+    return Math.abs(
+      this.project(x + span / 2, y, z).x - this.project(x - span / 2, y, z).x,
+    )
   }
 
   private line(
@@ -198,17 +249,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     }
 
-    this.drawHighway(ctx, scene, maxFret)
+    this.drawHighway(ctx, scene, N, maxFret)
     if (scene.showFretboard) {
-      this.drawFretboard(
-        ctx,
-        scene,
-        N,
-        maxFret,
-        nextKey,
-        bucketKey,
-        upcomingCells,
-      )
+      if (scene.presentation === 'string-highway') {
+        this.drawStringLanding(ctx, scene, N)
+      } else {
+        this.drawFretboard(ctx, scene, N, maxFret, upcomingCells)
+      }
+      this.drawTargetFeedback(ctx, scene, N, maxFret, nextKey, bucketKey)
       this.drawHits(ctx, scene, N, maxFret)
       this.drawDetected(ctx, scene, N, maxFret)
     }
@@ -254,16 +302,74 @@ export class Canvas2dTabRenderer implements TabRenderer {
   private drawHighway(
     ctx: CanvasRenderingContext2D,
     scene: TabScene,
+    n: number,
     maxFret: number,
   ): void {
     const velvet = scene.display.theme === 'velvet'
     const laneColor = velvet ? 'rgba(224,164,93,0.16)' : 'rgba(120,150,220,0.1)'
-    for (let f = 0; f <= maxFret; f++) {
-      const x = this.fretX(f, maxFret)
-      this.line(ctx, x, 0, 0, x, 0, -FLOOR_DEPTH, laneColor, 1)
+    const isStringHighway = scene.presentation === 'string-highway'
+    const floorY = isStringHighway ? LANE_HEIGHT : Y_BOTTOM
+    const left = isStringHighway
+      ? tabStringLaneX(0, n, false)
+      : this.fretX(0, maxFret)
+    const right = isStringHighway
+      ? tabStringLaneX(n - 1, n, false)
+      : this.fretX(maxFret, maxFret)
+
+    if (isStringHighway) {
+      const nearLeft = this.project(left - 0.45, floorY - 0.04, 0)
+      const nearRight = this.project(right + 0.45, floorY - 0.04, 0)
+      const farRight = this.project(
+        this.depthAdjustedX(scene, right + 0.45, 1),
+        floorY - 0.04,
+        -FLOOR_DEPTH,
+      )
+      const farLeft = this.project(
+        this.depthAdjustedX(scene, left - 0.45, 1),
+        floorY - 0.04,
+        -FLOOR_DEPTH,
+      )
+      if (
+        [nearLeft, nearRight, farRight, farLeft].every(
+          (point) => point.w > NEAR,
+        )
+      ) {
+        const runway = ctx.createLinearGradient(0, farLeft.y, 0, nearLeft.y)
+        runway.addColorStop(0, 'rgba(26, 22, 18, 0.08)')
+        runway.addColorStop(1, 'rgba(31, 24, 19, 0.54)')
+        ctx.beginPath()
+        ctx.moveTo(nearLeft.x, nearLeft.y)
+        ctx.lineTo(nearRight.x, nearRight.y)
+        ctx.lineTo(farRight.x, farRight.y)
+        ctx.lineTo(farLeft.x, farLeft.y)
+        ctx.closePath()
+        ctx.fillStyle = runway
+        ctx.fill()
+      }
+      for (let stringIndex = 0; stringIndex < n; stringIndex += 1) {
+        const x = tabStringLaneX(stringIndex, n, scene.display.leftHanded)
+        const stringColor = colorForString(
+          scene.display.stringColors,
+          stringIndex,
+        )
+        this.line(
+          ctx,
+          x,
+          floorY,
+          0,
+          this.depthAdjustedX(scene, x, 1),
+          floorY,
+          -FLOOR_DEPTH,
+          velvet ? withAlpha(lighten(stringColor, 0.56), 0.38) : laneColor,
+          1 + ((n - 1 - stringIndex) / Math.max(1, n - 1)) * 0.85,
+        )
+      }
+    } else {
+      for (let f = 0; f <= maxFret; f++) {
+        const x = this.fretX(f, maxFret)
+        this.line(ctx, x, floorY, 0, x, floorY, -FLOOR_DEPTH, laneColor, 1)
+      }
     }
-    const left = this.fretX(0, maxFret)
-    const right = this.fretX(maxFret, maxFret)
     const beatWindow = Math.max(1, scene.visibleBeatWindow)
     const startBeat = Math.ceil(scene.playheadBeat)
     for (
@@ -274,15 +380,17 @@ export class Canvas2dTabRenderer implements TabRenderer {
       const t = beatsToDepth(beat - scene.playheadBeat, beatWindow)
       if (t < 0 || t > 1) continue
       const z = -t * FLOOR_DEPTH
+      const beatLeft = this.depthAdjustedX(scene, left, t)
+      const beatRight = this.depthAdjustedX(scene, right, t)
       const downbeat =
         ((beat % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR === 0
       this.line(
         ctx,
-        left,
-        0,
+        beatLeft,
+        floorY,
         z,
-        right,
-        0,
+        beatRight,
+        floorY,
         z,
         downbeat
           ? velvet
@@ -299,18 +407,22 @@ export class Canvas2dTabRenderer implements TabRenderer {
       this.line(
         ctx,
         left,
-        Y_BOTTOM,
+        floorY,
         0,
         right,
-        Y_BOTTOM,
+        floorY,
         0,
         'rgba(242,201,143,0.86)',
         3,
       )
-      const now = this.project(right, Y_BOTTOM, 0)
+      const now = this.project(
+        isStringHighway ? (left + right) / 2 : right,
+        floorY,
+        0,
+      )
       if (now.w > NEAR) {
         ctx.font = '700 10px ui-sans-serif, system-ui, sans-serif'
-        ctx.textAlign = 'right'
+        ctx.textAlign = isStringHighway ? 'center' : 'right'
         ctx.textBaseline = 'bottom'
         ctx.fillStyle = 'rgba(242,201,143,0.9)'
         ctx.fillText('NOW', now.x, now.y - 7)
@@ -324,8 +436,6 @@ export class Canvas2dTabRenderer implements TabRenderer {
     scene: TabScene,
     n: number,
     maxFret: number,
-    nextKey: number | null,
-    bucketKey: (b: number) => number,
     upcomingCells: ReadonlySet<string>,
   ): void {
     // Fret wires (vertical).
@@ -402,66 +512,6 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     }
 
-    // Next-event anchor pulse — exactly one "play THIS next" cue.
-    if (nextKey !== null) {
-      const pulse = 0.4 + 0.3 * Math.sin(scene.playheadBeat * Math.PI * 2)
-      for (const note of scene.notes) {
-        if (note.isBacking) continue
-        if (bucketKey(note.startBeat) !== nextKey) continue
-        const x = this.fretX(note.fret, maxFret)
-        const y = this.stringY(note.stringIndex, n)
-        const p = this.project(x, y, 0)
-        if (p.w <= NEAR) continue
-        // Keep the target ring focused on the fret cell (~60% of its width) so
-        // it doesn't crowd/touch the neighbouring fret wires when many notes
-        // are on screen.
-        const r = Math.max(
-          scene.display.theme === 'velvet' ? 18 : 5,
-          this.cellPx(x, y, 0, maxFret) *
-            (scene.display.theme === 'velvet' ? 0.38 : 0.3),
-        )
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
-        ctx.strokeStyle = withAlpha(
-          colorForString(scene.display.stringColors, note.stringIndex),
-          pulse,
-        )
-        ctx.lineWidth = 2
-        ctx.stroke()
-      }
-    }
-
-    // Strike flash — additive ring + core as each note lands.
-    ctx.save()
-    ctx.globalCompositeOperation = 'lighter'
-    for (const note of scene.notes) {
-      if (note.isBacking) continue
-      const d = scene.playheadBeat - note.startBeat
-      if (d < -FLASH_IN || d > FLASH_OUT) continue
-      const x = this.fretX(note.fret, maxFret)
-      const y = this.stringY(note.stringIndex, n)
-      const p = this.project(x, y, 0)
-      if (p.w <= NEAR) continue
-      const color = colorForString(scene.display.stringColors, note.stringIndex)
-      const baseR = Math.max(6, this.cellPx(x, y, 0, maxFret) * 0.42)
-      const prog = clamp01((d + FLASH_IN) / (FLASH_OUT + FLASH_IN))
-      // Core (bright at the moment of contact).
-      const coreA = 1 - clamp01((d + FLASH_IN) / 0.2)
-      if (coreA > 0) {
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, baseR, 0, Math.PI * 2)
-        ctx.fillStyle = withAlpha(color, 0.85 * coreA)
-        ctx.fill()
-      }
-      // Expanding ring.
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, baseR * (1 + prog * 1.8), 0, Math.PI * 2)
-      ctx.strokeStyle = withAlpha(color, 0.7 * (1 - prog))
-      ctx.lineWidth = 2
-      ctx.stroke()
-    }
-    ctx.restore()
-
     // Fret numbers below the nut line.
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -476,6 +526,127 @@ export class Canvas2dTabRenderer implements TabRenderer {
       ctx.font = `${isFretMarker(f) ? '600 ' : ''}11px ui-sans-serif, system-ui, sans-serif`
       ctx.fillText(String(f), p.x, p.y)
     }
+  }
+
+  /** Quiet labels at the arrival rail keep string identity visible in Flow. */
+  private drawStringLanding(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    n: number,
+  ): void {
+    for (let stringIndex = 0; stringIndex < n; stringIndex += 1) {
+      const x = tabStringLaneX(stringIndex, n, scene.display.leftHanded)
+      const p = this.project(x, LANE_HEIGHT, 0)
+      if (p.w <= NEAR) continue
+      const color = colorForString(scene.display.stringColors, stringIndex)
+      ctx.font = '600 10px ui-sans-serif, system-ui, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
+      ctx.fillStyle = withAlpha(lighten(color, 0.46), 0.78)
+      ctx.fillText(
+        cellNoteName(scene.openMidi[stringIndex] ?? 40, 0),
+        p.x,
+        p.y + 9,
+      )
+    }
+  }
+
+  /** Shared next-note and strike feedback follows whichever geometry is active. */
+  private drawTargetFeedback(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    n: number,
+    maxFret: number,
+    nextKey: number | null,
+    bucketKey: (beat: number) => number,
+  ): void {
+    if (nextKey !== null) {
+      const pulse = this.reducedMotion()
+        ? 0.64
+        : 0.4 + 0.3 * Math.sin(scene.playheadBeat * Math.PI * 2)
+      for (const note of scene.notes) {
+        if (note.isBacking || bucketKey(note.startBeat) !== nextKey) continue
+        const [x, y, z] = this.notePos(
+          scene,
+          note.stringIndex,
+          note.fret,
+          0,
+          n,
+          maxFret,
+        )
+        const p = this.project(x, y, z)
+        if (p.w <= NEAR) continue
+        const span = this.targetSpanPx(
+          scene,
+          note.stringIndex,
+          note.fret,
+          0,
+          n,
+          maxFret,
+        )
+        const uncappedRadius = Math.max(
+          scene.display.theme === 'velvet' ? 18 : 5,
+          span * (scene.display.theme === 'velvet' ? 0.38 : 0.3),
+        )
+        const r =
+          scene.presentation === 'string-highway'
+            ? Math.min(32, uncappedRadius)
+            : uncappedRadius
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
+        ctx.strokeStyle = withAlpha(
+          colorForString(scene.display.stringColors, note.stringIndex),
+          pulse,
+        )
+        ctx.lineWidth = 2
+        ctx.stroke()
+      }
+    }
+
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+    for (const note of scene.notes) {
+      if (note.isBacking) continue
+      const distance = scene.playheadBeat - note.startBeat
+      if (distance < -FLASH_IN || distance > FLASH_OUT) continue
+      const [x, y, z] = this.notePos(
+        scene,
+        note.stringIndex,
+        note.fret,
+        0,
+        n,
+        maxFret,
+      )
+      const p = this.project(x, y, z)
+      if (p.w <= NEAR) continue
+      const color = colorForString(scene.display.stringColors, note.stringIndex)
+      const span = this.targetSpanPx(
+        scene,
+        note.stringIndex,
+        note.fret,
+        0,
+        n,
+        maxFret,
+      )
+      const baseR =
+        scene.presentation === 'string-highway'
+          ? Math.min(30, Math.max(6, span * 0.3))
+          : Math.max(6, span * 0.42)
+      const progress = clamp01((distance + FLASH_IN) / (FLASH_OUT + FLASH_IN))
+      const coreAlpha = 1 - clamp01((distance + FLASH_IN) / 0.2)
+      if (coreAlpha > 0) {
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, baseR, 0, Math.PI * 2)
+        ctx.fillStyle = withAlpha(color, 0.85 * coreAlpha)
+        ctx.fill()
+      }
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, baseR * (1 + progress * 1.8), 0, Math.PI * 2)
+      ctx.strokeStyle = withAlpha(color, 0.7 * (1 - progress))
+      ctx.lineWidth = 2
+      ctx.stroke()
+    }
+    ctx.restore()
   }
 
   // Bind simultaneous main-track notes with a translucent "strum" spine.
@@ -501,6 +672,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
       const pts = members
         .map((m) => {
           const [x, y, z] = this.notePos(
+            scene,
             m.note.stringIndex,
             m.note.fret,
             Math.max(t, 0),
@@ -510,7 +682,9 @@ export class Canvas2dTabRenderer implements TabRenderer {
           return this.project(x, y, z)
         })
         .filter((p) => p.w > NEAR)
-        .sort((a, b) => a.y - b.y)
+        .sort((a, b) =>
+          scene.presentation === 'string-highway' ? a.x - b.x : a.y - b.y,
+        )
       if (pts.length < 2) continue
       ctx.beginPath()
       ctx.moveTo(pts[0].x, pts[0].y)
@@ -541,6 +715,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
       scene.display.theme === 'velvet' && isNext ? '#f2c98f' : stringColor
     const headT = Math.max(t0, -0.03)
     const [hx, hy, hz] = this.notePos(
+      scene,
       note.stringIndex,
       note.fret,
       headT,
@@ -549,12 +724,23 @@ export class Canvas2dTabRenderer implements TabRenderer {
     )
     const head = this.project(hx, hy, hz)
     if (head.w <= NEAR) return
-    const cell = this.cellPx(hx, hy, hz, maxFret)
+    const cell = this.targetSpanPx(
+      scene,
+      note.stringIndex,
+      note.fret,
+      headT,
+      n,
+      maxFret,
+    )
 
     // Backing notes: quiet hollow ghost dots (clearly "not yours to play").
     if (note.isBacking) {
       ctx.beginPath()
-      ctx.arc(head.x, head.y, Math.max(2, cell * 0.16), 0, Math.PI * 2)
+      const radius =
+        scene.presentation === 'string-highway'
+          ? Math.min(8, Math.max(2, cell * 0.12))
+          : Math.max(2, cell * 0.16)
+      ctx.arc(head.x, head.y, radius, 0, Math.PI * 2)
       ctx.strokeStyle = withAlpha(color, 0.32)
       ctx.lineWidth = 1.5
       ctx.stroke()
@@ -571,6 +757,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     if (t1 - t0 > 0.04) {
       const tEnd = Math.min(t1, 1)
       const [tx, ty, tz] = this.notePos(
+        scene,
         note.stringIndex,
         note.fret,
         tEnd,
@@ -583,20 +770,24 @@ export class Canvas2dTabRenderer implements TabRenderer {
         ctx.moveTo(head.x, head.y)
         ctx.lineTo(tail.x, tail.y)
         ctx.strokeStyle = withAlpha(color, 0.3 * alpha)
-        ctx.lineWidth = Math.max(2, cell * 0.32)
+        ctx.lineWidth =
+          scene.presentation === 'string-highway'
+            ? Math.min(12, Math.max(2, cell * 0.11))
+            : Math.max(2, cell * 0.32)
         ctx.lineCap = 'round'
         ctx.stroke()
       }
     }
 
-    const nextTargetFloor =
-      scene.display.theme === 'velvet' && isNext
-        ? Math.min(42, Math.max(34, this.cssWidth * 0.065))
-        : 5
-    const w = Math.max(
-      nextTargetFloor,
-      cell * 0.82 * (1 + near * 0.12) * (isNext ? 1.12 : 1),
-    )
+    const w =
+      scene.presentation === 'string-highway'
+        ? this.stringHighwayTargetWidth(cell, near, isNext)
+        : Math.max(
+            scene.display.theme === 'velvet' && isNext
+              ? Math.min(42, Math.max(34, this.cssWidth * 0.065))
+              : 5,
+            cell * 0.82 * (1 + near * 0.12) * (isNext ? 1.12 : 1),
+          )
     const h = w * 0.66
     ctx.save()
     if (near > 0) {
@@ -628,7 +819,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
       Math.min(scene.display.theme === 'velvet' && isNext ? 16 : 13, w * 0.5),
     )
     if (fontPx >= 8 && far === 0) {
-      const label = scene.showNoteLabels ? note.noteName : String(note.fret)
+      const label =
+        scene.presentation === 'string-highway' || !scene.showNoteLabels
+          ? String(note.fret)
+          : note.noteName
       ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -638,6 +832,24 @@ export class Canvas2dTabRenderer implements TabRenderer {
       ctx.fillStyle = labelInk(color)
       ctx.fillText(label, head.x, head.y)
     }
+  }
+
+  /** Let targets breathe while guaranteeing dense 8-string chords never touch. */
+  private stringHighwayTargetWidth(
+    laneSpacing: number,
+    near: number,
+    isNext: boolean,
+  ): number {
+    const overlapSafeMaximum = Math.max(7, laneSpacing * 0.78)
+    const desired = laneSpacing * 0.58 * (1 + near * 0.08) * (isNext ? 1.08 : 1)
+    const nextTargetFloor = isNext
+      ? Math.min(42, Math.max(34, this.cssWidth * 0.065))
+      : 7
+    return Math.min(
+      overlapSafeMaximum,
+      isNext ? 56 : 44,
+      Math.max(nextTargetFloor, desired),
+    )
   }
 
   // Scored-hit feedback: an expanding ring + core on the cell, coloured by
@@ -656,9 +868,15 @@ export class Canvas2dTabRenderer implements TabRenderer {
       const age = now - h.at
       if (age < 0 || age > HIT_FLASH_MS) continue
       const k = 1 - age / HIT_FLASH_MS
-      const x = this.fretX(h.fret, maxFret)
-      const y = this.stringY(h.stringIndex, n)
-      const p = this.project(x, y, 0)
+      const [x, y, z] = this.notePos(
+        scene,
+        h.stringIndex,
+        h.fret,
+        0,
+        n,
+        maxFret,
+      )
+      const p = this.project(x, y, z)
       if (p.w <= NEAR) continue
       const color =
         h.timing === 'perfect'
@@ -666,7 +884,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
           : h.timing === 'great'
             ? '#4ade80'
             : '#eab308'
-      const baseR = Math.max(7, this.cellPx(x, y, 0, maxFret) * 0.5)
+      const uncappedRadius = Math.max(
+        7,
+        this.targetSpanPx(scene, h.stringIndex, h.fret, 0, n, maxFret) * 0.5,
+      )
+      const baseR =
+        scene.presentation === 'string-highway'
+          ? Math.min(36, uncappedRadius)
+          : uncappedRadius
       ctx.beginPath()
       ctx.arc(p.x, p.y, baseR * (1 + (1 - k) * 1.6), 0, Math.PI * 2)
       ctx.strokeStyle = withAlpha(color, 0.85 * k)
@@ -690,12 +915,27 @@ export class Canvas2dTabRenderer implements TabRenderer {
   ): void {
     const d = scene.detected
     if (d === null) return
-    const x = this.fretX(d.fret, maxFret)
-    const y = this.stringY(d.stringIndex, n)
-    const p = this.project(x, y, 0)
+    const inferredPosition =
+      scene.presentation === 'string-highway' && !d.matchesTarget
+        ? ([0, LANE_HEIGHT, 0] as const)
+        : this.notePos(scene, d.stringIndex, d.fret, 0, n, maxFret)
+    const p = this.project(
+      inferredPosition[0],
+      inferredPosition[1],
+      inferredPosition[2],
+    )
     if (p.w <= NEAR) return
-    const r = Math.max(8, this.cellPx(x, y, 0, maxFret) * 0.55)
-    const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 180)
+    const uncappedRadius = Math.max(
+      8,
+      this.targetSpanPx(scene, d.stringIndex, d.fret, 0, n, maxFret) * 0.55,
+    )
+    const r =
+      scene.presentation === 'string-highway'
+        ? Math.min(36, uncappedRadius)
+        : uncappedRadius
+    const pulse = this.reducedMotion()
+      ? 0.82
+      : 0.6 + 0.4 * Math.sin(performance.now() / 180)
     const color = d.matchesTarget ? '#22c55e' : '#e8ecf5'
     const alpha = Math.min(1, 0.4 + d.clarity * 0.6) * pulse
     ctx.beginPath()

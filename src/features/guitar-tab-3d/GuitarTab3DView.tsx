@@ -15,7 +15,7 @@ import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
-import type { TabRenderer, TabScene } from './renderer/TabRenderer'
+import type { TabPresentation, TabRenderer, TabScene, } from './renderer/TabRenderer'
 import { createTabRenderer } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
 import type { Tab3DControls } from './ui/Tab3DHud'
@@ -40,6 +40,8 @@ export interface GuitarTab3DViewProps {
   controls?: Tab3DControls
   /** Surface-owned display settings; legacy Guitar defaults remain unchanged. */
   display?: Accessor<TabScene['display']>
+  /** Change only the spatial projection; the renderer and camera stay mounted. */
+  presentation?: Accessor<TabPresentation>
   /** Override the legacy navigation gizmo without requiring the legacy HUD. */
   showGizmo?: Accessor<boolean>
   /** Accessible canvas name and fallback summary owned by the host surface. */
@@ -247,6 +249,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
       display: props.display?.(),
+      presentation: props.presentation?.(),
       tuning: props.tuning?.(),
       feedback:
         ctrls === undefined
@@ -409,8 +412,8 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     <div
       class={`gp-tab3d-container ${styles.keyboardViewport}`}
       role="group"
-      aria-label="3D fretboard view controls"
-      aria-roledescription="interactive 3D fretboard"
+      aria-label="3D performance view controls"
+      aria-roledescription="interactive performance view"
       aria-describedby={cameraInstructionsId}
       tabIndex={0}
       onKeyDown={handleCameraKeyDown}
@@ -434,6 +437,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         role="img"
         aria-label={props.ariaLabel?.() ?? 'Interactive guitar tab fretboard'}
         data-camera-ready={interactive()}
+        data-tab-presentation={props.presentation?.() ?? 'fret-axis'}
         data-camera-yaw={camera().yaw.toFixed(4)}
         data-camera-radius={camera().radius.toFixed(4)}
         data-camera-target-x={camera().target[0].toFixed(4)}

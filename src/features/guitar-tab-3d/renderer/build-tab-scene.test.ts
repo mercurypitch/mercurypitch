@@ -36,6 +36,32 @@ describe('buildTabScene', () => {
     expect(scene.notes[1]).toMatchObject({ stringIndex: 6, fret: 0 })
     expect(scene.visibleBeatWindow).toBe(1)
     expect(scene.display).toBe(VELVET_DISPLAY)
+    expect(scene.presentation).toBe('fret-axis')
+  })
+
+  it('changes only presentation when the host selects the string highway', () => {
+    const options = {
+      notes: [note(), note({ id: 'next', stringIndex: 2, fret: 7 })],
+      playheadBeat: 1,
+      visibleBeatWindow: 8,
+      showNoteLabels: true,
+      showFretboard: true,
+      now: 1_000,
+      feedback: {
+        detectedMidi: 64,
+        detectedClarity: 0.82,
+        showUserNotes: true,
+        hitResults: [],
+      },
+    } as const
+    const grid = buildTabScene(options)
+    const highway = buildTabScene({
+      ...options,
+      presentation: 'string-highway',
+    })
+
+    expect(highway.presentation).toBe('string-highway')
+    expect({ ...highway, presentation: grid.presentation }).toEqual(grid)
   })
 
   it('draws a four-string bass as four strings when the host declares it', () => {

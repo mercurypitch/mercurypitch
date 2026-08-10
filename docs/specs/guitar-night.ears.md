@@ -10,15 +10,16 @@ legacy cutover still pending. The Velvet Rehearsal entry, configurable first
 win, durable local-song preparation, exact lightweight stem hydration,
 two-stem-to-full-band upgrade, synchronized buffered/streamed transport,
 pitch-preserving practice speed, shared output buses, a full-viewport
-Flow/Tab/Neck stage, explicit local Listening, and evidence-only Jam Doctor are
-integrated. The legacy tab and standalone room now share the host-neutral 3D
-performance source and pure renderer-scene boundary; the broader runtime
-lifecycle cutover remains pending. Entry, preparation, staging, room handoff,
-and speed changes before Play remain silent. Playback, count-in, and
-microphone capture each begin only from their explicit player actions;
-assessed listening pauses pitched backing. A distinct guitar stem defaults
-muted, while two-stem fallback copy states that guitar remains in the
-accompaniment.
+Highway/Grid/Tab/Neck stage, explicit local Listening, and evidence-only Jam
+Doctor are integrated. The legacy tab and standalone room now share the
+host-neutral 3D performance source and pure renderer-scene boundary. Guitar
+Night can project that one scene as string lanes or the original fret grid
+without remounting it; the broader runtime lifecycle cutover remains pending.
+Entry, preparation, staging, room handoff, and speed changes before Play remain
+silent. Playback, count-in, and microphone capture each begin only from their
+explicit player actions; assessed listening pauses pitched backing. A distinct
+guitar stem defaults muted, while two-stem fallback copy states that guitar
+remains in the accompaniment.
 
 Authored and measured reference adapters, the score-only rehearsal room,
 shared A/B loop ownership, timestamped AudioWorklet attacks, route-local
@@ -29,8 +30,8 @@ review until that PR is merged. The same PR now records those attacks in one
 bounded, memory-only take with stable identity, exact or explicitly coarse
 clock provenance, and a pinned latency snapshot. The
 authored-score-to-recording alignment, release and continuous-pitch evidence,
-fast-passage fixture validation, an opt-in six-string highway composition,
-and legacy runtime cutover remain target work.
+fast-passage fixture validation, technique notation, real-device highway
+performance validation, and legacy runtime cutover remain target work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -132,8 +133,8 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   disposed, it shall close only its route-owned context and workers; the
   legacy host shall not close the main app's shared engine.
 - **REQ-GN-RUNTIME-008 — Responsive persistence:** WHEN the viewport,
-  orientation, room, sheet, or Flow/Tab/Neck view changes, the active runtime
-  and transport shall survive without restarting audio or capture.
+  orientation, room, sheet, or Highway/Grid/Tab/Neck view changes, the active
+  runtime and transport shall survive without restarting audio or capture.
 - **REQ-GN-RUNTIME-009 — Pitch-preserving practice speed:** WHEN playback
   speed differs from `1×`, separated stems shall remain synchronized and keep
   their musical pitch. WHEN speed changes during buffered playback, the room
@@ -475,9 +476,9 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   legacy 3D HUD to remain visible.
 - **REQ-GN-STAGE-005 — Mobile stage:** On narrow viewports, the standalone
   stage shall use `100dvh`, account for top and bottom safe-area insets, and
-  keep Flow/Tab/Neck as the visual priority. Primary controls shall be at least
-  44 by 44 CSS pixels, and secondary controls shall use safe-area-aware sheets
-  without horizontal discovery scrolling.
+  keep Highway/Grid/Tab/Neck as the visual priority. Primary controls shall be
+  at least 44 by 44 CSS pixels, and secondary controls shall use
+  safe-area-aware sheets without horizontal discovery scrolling.
 - **REQ-GN-STAGE-006 — Accessible feedback:** Target, detected input,
   confidence, and judgment shall be distinguishable without colour alone, and
   canvas/3D output shall expose an accessible name and meaningful fallback
@@ -491,19 +492,27 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   inside the bounded first viewport at supported desktop and phone sizes.
 - **REQ-GN-STAGE-009 — Truthful score time:** IF a verified tab or score is not
   attached, THEN the shared performance source shall expose no beat or tempo;
-  Flow, Tab, and Neck shall remain useful in an explicit free-play state and
-  shall not infer score time from backing seconds.
+  Highway, Grid, Tab, and Neck shall remain useful in an explicit free-play
+  state and shall not infer score time from backing seconds.
 - **REQ-GN-STAGE-010 — Stage-first control disclosure:** WHILE a backing or
   score room is open, song identity, Back, the primary transport, and
-  Flow/Tab/Neck shall remain immediately available. Band channels, loop marks,
-  count-in, guide sound, and other setup shall use bounded stage-owned sheets
-  rather than permanent rows that reduce the instrument. Those sheets shall
-  overlay without changing stage dimensions and remain usable in portrait and
-  short landscape viewports.
+  Highway/Grid/Tab/Neck shall remain immediately available. Band channels,
+  loop marks, count-in, guide sound, and other setup shall use bounded
+  stage-owned sheets rather than permanent rows that reduce the instrument.
+  Those sheets shall overlay without changing stage dimensions and remain
+  usable in portrait and short landscape viewports.
 - **REQ-GN-STAGE-011 — Surface-owned 3D framing:** Guitar Night may supply a
   responsive starting and Reset camera, Velvet target scale, and arrival rail
   through the shared 3D adapter. Without those host overrides, the legacy
   Guitar renderer shall retain its existing camera and display defaults.
+- **REQ-GN-STAGE-012 — Selectable shared projections:** Guitar Night shall
+  default to `Highway`, mapping one visible lane to each declared instrument
+  string and encoding fret position inside each target. `Grid` shall preserve
+  the existing fret-axis projection. Switching either direction shall reuse
+  the same mounted renderer, scene, camera, score, transport, and input state;
+  the selected projection shall persist locally. The legacy Guitar host shall
+  continue to default to `Grid` unless it explicitly opts into another
+  projection.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 

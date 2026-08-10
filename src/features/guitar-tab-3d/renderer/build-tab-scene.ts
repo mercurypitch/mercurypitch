@@ -4,7 +4,7 @@
 import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import type { TabDetected, TabScene } from './TabRenderer'
+import type { TabDetected, TabPresentation, TabScene } from './TabRenderer'
 import { DEFAULT_DISPLAY } from './TabRenderer'
 
 const MIN_STRING_COUNT = 6
@@ -24,6 +24,8 @@ export interface BuildTabSceneOptions {
   showNoteLabels: boolean
   showFretboard: boolean
   display?: TabScene['display']
+  /** Visual projection only; timing, score, input, and feedback stay shared. */
+  presentation?: TabPresentation
   feedback?: TabSceneFeedback
   /**
    * The instrument the notes were placed on, when the host knows it. Without
@@ -122,5 +124,6 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
     hits,
     detected,
     display: options.display ?? DEFAULT_DISPLAY,
+    presentation: options.presentation ?? 'fret-axis',
   }
 }
