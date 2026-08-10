@@ -8,6 +8,7 @@
 // in a request header avoids leaking the bearer token through URLs/referrers.
 
 import type { PremiumBackgroundId } from './premium-background-catalog'
+import { isJamPremiumBackgroundId } from './premium-background-catalog'
 
 const CAPABILITY_AUDIENCE = 'jam-premium-background'
 const CAPABILITY_PREFIX = 'mpbg2'
@@ -83,6 +84,7 @@ export async function mintBackgroundCapability(
   nowMs = Date.now(),
 ): Promise<MintedBackgroundCapability> {
   if (
+    !isJamPremiumBackgroundId(scope.backgroundId) ||
     !UUID_RE.test(scope.capabilityId) ||
     !JAM_ROOM_ID_RE.test(scope.roomId) ||
     !Number.isInteger(scope.version) ||
@@ -129,6 +131,7 @@ export async function verifyBackgroundCapability(
   nowMs = Date.now(),
 ): Promise<VerifiedBackgroundCapability | null> {
   if (
+    !isJamPremiumBackgroundId(expectedBackgroundId) ||
     token.length > 2048 ||
     !JAM_ROOM_ID_RE.test(expectedRoomId) ||
     !Number.isInteger(expectedVersion) ||

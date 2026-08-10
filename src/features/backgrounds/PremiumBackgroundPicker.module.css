@@ -3,6 +3,11 @@
   flex: none;
 }
 
+.rootEmbedded {
+  display: block;
+  width: 100%;
+}
+
 .trigger {
   display: inline-flex;
   min-height: 34px;
@@ -85,6 +90,58 @@
   background: rgba(15, 8, 25, 0.98);
   color: #f4ecff;
   box-shadow: 0 18px 48px rgba(3, 1, 8, 0.52);
+}
+
+.panelEmbedded {
+  position: static;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--ivory, #f2eadf);
+  background: transparent;
+  box-shadow: none;
+}
+
+.panelEmbedded .gallery {
+  grid-template-columns: 1fr;
+}
+
+.panelEmbedded .card {
+  border-color: rgb(224 207 180 / 14%);
+  background: rgb(255 255 255 / 3%);
+}
+
+.panelEmbedded .card:hover:not(.cardLocked) {
+  border-color: rgb(214 183 120 / 54%);
+  background: rgb(181 138 80 / 8%);
+}
+
+.panelEmbedded .cardSelected {
+  border-color: rgb(214 183 120 / 78%);
+  background: rgb(181 138 80 / 12%);
+}
+
+.panelEmbedded .cardTitleRow strong {
+  color: var(--ivory-strong, #fffaf1);
+}
+
+.panelEmbedded .cardDescription,
+.panelEmbedded .status {
+  color: #c2b9ad;
+}
+
+.panelEmbedded .selectedMark,
+.panelEmbedded .accessLabel,
+.panelEmbedded .supporterFoot a {
+  color: var(--brass-soft, #d6b778);
+}
+
+.panelEmbedded .supporterFoot {
+  border-top-color: rgb(224 207 180 / 14%);
+  color: #a99f92;
 }
 
 .panelHead {

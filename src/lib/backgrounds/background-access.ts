@@ -13,6 +13,15 @@ import type { SupporterFeaturePerkId } from '../supporter-feature-catalog'
 import { isSupporterFeaturePerkId } from '../supporter-feature-catalog'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, } from './background-catalog'
 import { BACKGROUND_CATALOG, DEFAULT_BACKGROUND_IDS, defaultBackground, getBackgroundDefinition, isBackgroundId, isBackgroundPerkId, } from './background-catalog'
+import type { BackgroundSelectionStorage as SelectionStorage } from './background-selection'
+import { readPersistedBackgroundId } from './background-selection'
+
+export type { BackgroundSelectionStorage } from './background-selection'
+export {
+  BACKGROUND_SELECTION_KEYS,
+  persistBackgroundId,
+  readPersistedBackgroundId,
+} from './background-selection'
 
 export type AccessVerification = 'verified' | 'unavailable'
 
@@ -37,16 +46,6 @@ export const NO_BACKGROUND_ACCESS: BackgroundAccessState = {
     supporter: 'unavailable',
     explicitPerks: 'unavailable',
   },
-}
-
-export const BACKGROUND_SELECTION_KEYS = {
-  karaoke: 'pitchperfect_karaoke_background',
-  jam: 'pitchperfect_jam_background',
-} as const satisfies Record<BackgroundSurface, string>
-
-export interface BackgroundSelectionStorage {
-  getItem(key: string): string | null
-  setItem(key: string, value: string): void
 }
 
 function apiBase(base?: string): string {
@@ -185,50 +184,10 @@ export function resolveSharedBackgroundSelection(
   return requested
 }
 
-function browserStorage(): BackgroundSelectionStorage | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage
-  } catch {
-    return null
-  }
-}
-
-export function readPersistedBackgroundId(
-  surface: BackgroundSurface,
-  storage: BackgroundSelectionStorage | null | undefined = undefined,
-): BackgroundId | null {
-  const target = storage === undefined ? browserStorage() : storage
-  if (target === null) return null
-  try {
-    const stored = target.getItem(BACKGROUND_SELECTION_KEYS[surface])
-    const definition = getBackgroundDefinition(stored)
-    return definition?.surface === surface ? definition.id : null
-  } catch {
-    return null
-  }
-}
-
-/** Persist preference only; callers must still resolve access on every read. */
-export function persistBackgroundId(
-  surface: BackgroundSurface,
-  id: unknown,
-  storage: BackgroundSelectionStorage | null | undefined = undefined,
-): boolean {
-  const target = storage === undefined ? browserStorage() : storage
-  const definition = getBackgroundDefinition(id)
-  if (target === null || definition?.surface !== surface) return false
-  try {
-    target.setItem(BACKGROUND_SELECTION_KEYS[surface], definition.id)
-    return true
-  } catch {
-    return false
-  }
-}
-
 export function resolvePersistedBackgroundSelection(
   surface: BackgroundSurface,
   access: BackgroundAccessState,
-  storage: BackgroundSelectionStorage | null | undefined = undefined,
+  storage: SelectionStorage | null | undefined = undefined,
 ): BackgroundDefinition {
   return resolveBackgroundSelection(
     surface,

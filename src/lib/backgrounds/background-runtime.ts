@@ -10,7 +10,7 @@
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { BackgroundPerkId, BackgroundSurface } from './background-catalog'
-import { getBackgroundDefinition, isBackgroundPerkId, } from './background-catalog'
+import { getBackgroundDefinition, isBackgroundPerkId, isBackgroundSurface, } from './background-catalog'
 
 export const PREMIUM_BACKGROUND_VARIANTS = [
   'landscape-2k',
@@ -144,7 +144,7 @@ function parseAsset(value: unknown): PremiumBackgroundAsset | null {
   if (
     definition === null ||
     definition.access.kind !== 'supporter' ||
-    (value.surface !== 'karaoke' && value.surface !== 'jam') ||
+    !isBackgroundSurface(value.surface) ||
     definition.surface !== value.surface ||
     typeof value.title !== 'string' ||
     value.title.trim() === '' ||
@@ -230,7 +230,7 @@ export async function fetchPremiumBackgroundCatalog(
   if (!response.ok) {
     throw new BackgroundRequestError(
       response.status,
-      'The stage catalog is unavailable.',
+      'The background catalog is unavailable.',
     )
   }
   return parsePremiumBackgroundCatalog(await response.json())
@@ -265,7 +265,7 @@ async function decodeImage(
     }
     image.onerror = () => {
       signal?.removeEventListener('abort', abort)
-      reject(new Error('The stage image could not be decoded.'))
+      reject(new Error('The background image could not be decoded.'))
     }
     signal?.addEventListener('abort', abort, { once: true })
     image.src = objectUrl
@@ -280,15 +280,22 @@ export async function loadProtectedBackgroundObjectUrl(
   asset: PremiumBackgroundAsset,
   request: ProtectedBackgroundRequest = {},
 ): Promise<string> {
+  const subject = asset.surface === 'karaoke' ? 'stage' : 'room'
   const base = apiBase(request.base)
   if (base === null) {
-    throw new BackgroundRequestError(503, 'Private stage delivery is offline.')
+    throw new BackgroundRequestError(
+      503,
+      `Private ${subject} delivery is offline.`,
+    )
   }
 
   const version = request.version ?? asset.activeVersion
   const variant = request.variant ?? 'landscape-2k'
   if (!asset.variants.some((entry) => entry.name === variant)) {
-    throw new BackgroundRequestError(404, 'That stage size is unavailable.')
+    throw new BackgroundRequestError(
+      404,
+      `That ${subject} size is unavailable.`,
+    )
   }
 
   const headers: Record<string, string> =
@@ -308,8 +315,8 @@ export async function loadProtectedBackgroundObjectUrl(
     throw new BackgroundRequestError(
       response.status,
       response.status === 401 || response.status === 403
-        ? 'This stage is no longer unlocked.'
-        : 'This stage image is unavailable.',
+        ? `This ${subject} is no longer unlocked.`
+        : `This ${subject} image is unavailable.`,
     )
   }
 
@@ -317,7 +324,7 @@ export async function loadProtectedBackgroundObjectUrl(
   if (!blob.type.startsWith('image/')) {
     throw new BackgroundRequestError(
       502,
-      'The stage response was not an image.',
+      `The ${subject} response was not an image.`,
     )
   }
 

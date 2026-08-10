@@ -92,6 +92,37 @@ const background = (
   ...over,
 })
 
+const pianoBackground = (
+  over: Partial<AdminPremiumBackground> = {},
+): AdminPremiumBackground =>
+  background({
+    id: 'piano-velvet-recital',
+    label: 'Velvet Recital',
+    description: 'A candlelit recital room for Piano Night.',
+    surface: 'piano',
+    edition: 'velvet-recital',
+    publishedRevisionId: 'piano-revision-1',
+    draftRevisionId: 'piano-revision-2',
+    assignedGroupIds: [],
+    versions: [
+      {
+        id: 'piano-revision-1',
+        version: 1,
+        status: 'published',
+        variants,
+        createdAt: '2026-08-04T10:00:00.000Z',
+      },
+      {
+        id: 'piano-revision-2',
+        version: 2,
+        status: 'draft',
+        variants,
+        createdAt: '2026-08-05T10:00:00.000Z',
+      },
+    ],
+    ...over,
+  })
+
 const group = (over: Partial<SupporterGroup> = {}): SupporterGroup => ({
   id: 'active-supporters',
   slug: 'active-supporters',
@@ -218,6 +249,152 @@ describe('AdminPremiumPerksPage', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('filters the lifecycle library by human-readable surface names', async () => {
+    const karaokeBackground = background({
+      id: 'aurora-stage',
+      label: 'Aurora Stage',
+      surface: 'karaoke',
+      edition: 'aurora',
+      assignedGroupIds: [],
+    })
+    serviceMocks.loadPremiumPerks.mockResolvedValue({
+      ok: true,
+      value: snapshot({
+        backgrounds: [background(), karaokeBackground, pianoBackground()],
+      }),
+    })
+    render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
+
+    const filters = await screen.findByRole('group', {
+      name: 'Filter backgrounds by surface',
+    })
+    expect(
+      within(filters).getByRole('button', { name: /^All\b/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      within(filters).getByRole('button', { name: /^Karaoke\b/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(filters).getByRole('button', { name: /^Jam\b/ }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      within(filters).getByRole('button', { name: /^Piano Night\b/ }),
+    )
+
+    const library = screen.getByLabelText('Background lifecycle library')
+    expect(
+      within(library).getByRole('button', { name: /^Velvet Recital\b/ }),
+    ).toHaveAttribute('aria-current', 'true')
+    expect(
+      within(library).queryByRole('button', { name: /^Golden Stage\b/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(screen.getByLabelText('Selected background editor')).getByText(
+        'Piano Night · velvet-recital',
+      ),
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(serviceMocks.loadBackgroundVariantPreview).toHaveBeenCalledWith(
+        'owner-key',
+        'piano-velvet-recital',
+        'piano-revision-2',
+        'landscape-2k',
+      ),
+    )
+
+    fireEvent.click(within(filters).getByRole('button', { name: /^All\b/ }))
+    expect(
+      within(library).getByRole('button', { name: /^Golden Stage\b/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(library).getByRole('button', { name: /^Aurora Stage\b/ }),
+    ).toBeInTheDocument()
+  })
+
+  it('confirms before a surface filter discards staged uploads', async () => {
+    const onDirtyChange = vi.fn()
+    serviceMocks.loadPremiumPerks.mockResolvedValue({
+      ok: true,
+      value: snapshot({ backgrounds: [background(), pianoBackground()] }),
+    })
+    render(() => (
+      <AdminPremiumPerksPage
+        adminKey="owner-key"
+        onDirtyChange={onDirtyChange}
+      />
+    ))
+
+    const filters = await screen.findByRole('group', {
+      name: 'Filter backgrounds by surface',
+    })
+    const file = new File(['webp'], 'golden-stage.webp', {
+      type: 'image/webp',
+    })
+    fireEvent.change(screen.getAllByLabelText('Choose WebP')[0]!, {
+      target: { files: [file] },
+    })
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true))
+
+    const pianoFilter = within(filters).getByRole('button', {
+      name: /^Piano Night\b/,
+    })
+    fireEvent.click(pianoFilter)
+
+    expect(
+      screen.getByText('Discard selected upload files?'),
+    ).toBeInTheDocument()
+    expect(pianoFilter).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      within(screen.getByLabelText('Background lifecycle library')).getByRole(
+        'button',
+        { name: /^Golden Stage\b/ },
+      ),
+    ).toHaveAttribute('aria-current', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard files' }))
+
+    await waitFor(() =>
+      expect(pianoFilter).toHaveAttribute('aria-pressed', 'true'),
+    )
+    expect(
+      within(screen.getByLabelText('Background lifecycle library')).getByRole(
+        'button',
+        { name: /^Velvet Recital\b/ },
+      ),
+    ).toHaveAttribute('aria-current', 'true')
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false))
+  })
+
+  it('explains when a selected surface has no premium backgrounds', async () => {
+    render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
+
+    const filters = await screen.findByRole('group', {
+      name: 'Filter backgrounds by surface',
+    })
+    fireEvent.click(
+      within(filters).getByRole('button', { name: /^Piano Night\b/ }),
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'No Piano Night backgrounds' }),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByLabelText('Selected background editor')).getByRole(
+        'heading',
+        { name: 'Select a background' },
+      ),
+    ).toBeInTheDocument()
+
+    fireEvent.click(within(filters).getByRole('button', { name: /^All\b/ }))
+    expect(
+      within(screen.getByLabelText('Background lifecycle library')).getByRole(
+        'button',
+        { name: /^Golden Stage\b/ },
+      ),
+    ).toHaveAttribute('aria-current', 'true')
+  })
+
   it('assigns Lab access to a manual supporter group', async () => {
     const manualGroup = group({
       id: 'founders',
@@ -296,7 +473,14 @@ describe('AdminPremiumPerksPage', () => {
     serviceMocks.loadPremiumPerks.mockResolvedValue({
       ok: true,
       value: snapshot({
-        backgrounds: [background({ assignedGroupIds: [] })],
+        backgrounds: [
+          background({ assignedGroupIds: [] }),
+          pianoBackground({
+            lifecycle: 'published',
+            draftVersion: null,
+            draftRevisionId: null,
+          }),
+        ],
         groups: [
           group({
             id: 'launch-patrons',
@@ -317,7 +501,10 @@ describe('AdminPremiumPerksPage', () => {
 
     expect(screen.getByLabelText('Shipped background')).toBeEnabled()
     expect(
-      screen.getByRole('option', { name: 'Golden Stage' }),
+      screen.getByRole('option', { name: 'Jam — Golden Stage' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'Piano Night — Velvet Recital' }),
     ).toBeInTheDocument()
   })
 
@@ -346,7 +533,7 @@ describe('AdminPremiumPerksPage', () => {
     render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
 
     await screen.findByText('Draft revisions')
-    fireEvent.click(screen.getByRole('tab', { name: 'Room passes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Jam room passes' }))
     expect(screen.getByText('room-sunrise-session')).toBeInTheDocument()
 
     fireEvent.click(
@@ -358,7 +545,7 @@ describe('AdminPremiumPerksPage', () => {
       serviceMocks.revokePremiumBackgroundCapability,
     ).not.toHaveBeenCalled()
     const actions = screen.getAllByRole('button', {
-      name: 'Revoke room pass',
+      name: 'Revoke Jam room pass',
     })
     fireEvent.click(actions.at(-1)!)
 
@@ -369,7 +556,7 @@ describe('AdminPremiumPerksPage', () => {
     )
     expect(
       await screen.findByText(
-        'Room pass revoked and the capability list refreshed.',
+        'Jam room pass revoked and the capability list refreshed.',
       ),
     ).toBeInTheDocument()
     expect(screen.getAllByText('revoked').length).toBeGreaterThan(0)
@@ -387,7 +574,7 @@ describe('AdminPremiumPerksPage', () => {
     render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
 
     await vi.advanceTimersByTimeAsync(0)
-    fireEvent.click(screen.getByRole('tab', { name: 'Room passes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Jam room passes' }))
     expect(
       screen.getByRole('button', {
         name: 'Revoke Golden Stage pass for room room-sunrise-session',
@@ -402,6 +589,34 @@ describe('AdminPremiumPerksPage', () => {
       }),
     ).not.toBeInTheDocument()
     expect(screen.getAllByText('expired').length).toBeGreaterThan(0)
+  })
+
+  it('flags passes that cross the Jam-only background boundary', async () => {
+    serviceMocks.loadPremiumPerks.mockResolvedValue({
+      ok: true,
+      value: snapshot({
+        backgrounds: [pianoBackground()],
+        capabilities: [capability({ backgroundId: 'piano-velvet-recital' })],
+      }),
+    })
+    render(() => <AdminPremiumPerksPage adminKey="owner-key" />)
+
+    await screen.findByText('Draft revisions')
+    fireEvent.click(screen.getByRole('tab', { name: 'Jam room passes' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '1 pass is outside the Jam-only boundary',
+    )
+    expect(
+      screen.getByText(
+        'Piano Night backgrounds cannot receive Jam room passes',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'Revoke Velvet Recital pass for room room-sunrise-session',
+      }),
+    ).toBeEnabled()
   })
 
   it('renders a useful recovery state when the admin API fails', async () => {

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, } from './background-catalog'
 
 describe('background catalog', () => {
-  it('registers every current free Karaoke and Jam scene as shipped', () => {
+  it('registers every current free performance scene as shipped', () => {
     expect(
       BACKGROUND_CATALOG.filter(
         (background) => background.access.kind === 'free',
@@ -41,6 +41,10 @@ describe('background catalog', () => {
       expect(background.assetSource.kind).toBe('protected')
       if (background.access.kind === 'supporter') {
         expect(background.access.explicitPerkId).toBe(background.id)
+        expect(background.assetSource).toEqual({
+          kind: 'protected',
+          key: `backgrounds/${background.surface}/${background.id}`,
+        })
       }
     }
   })
@@ -60,14 +64,44 @@ describe('background catalog', () => {
       'neon-velvet-stage',
       'midnight-rain-stage',
     ])
+    expect(listBackgrounds('piano').map((background) => background.id)).toEqual(
+      ['piano-afterglow', 'piano-morning-conservatory'],
+    )
+    expect(
+      listBackgrounds('piano', { includeUnshipped: true }).map(
+        (background) => background.id,
+      ),
+    ).toEqual([
+      'piano-afterglow',
+      'piano-morning-conservatory',
+      'piano-velvet-recital',
+      'piano-aurora-loft',
+      'piano-midnight-rain',
+      'piano-mercury-archive',
+    ])
   })
 
-  it('defines a shipped free fallback for both surfaces', () => {
-    for (const surface of ['karaoke', 'jam'] as const) {
+  it('defines a shipped free fallback for all three surfaces', () => {
+    for (const surface of ['karaoke', 'jam', 'piano'] as const) {
       const fallback = defaultBackground(surface)
       expect(fallback.surface).toBe(surface)
       expect(fallback.delivery).toBe('shipped')
       expect(fallback.access.kind).toBe('free')
     }
+  })
+
+  it('keeps Piano responsive artwork and contrast treatment in the shared catalog', () => {
+    const afterglow = getBackgroundDefinition('piano-afterglow')
+    const morning = getBackgroundDefinition('piano-morning-conservatory')
+    expect(afterglow?.assetSource).toMatchObject({
+      kind: 'public',
+      portrait: '/piano-night/afterglow-studio-portrait.webp',
+    })
+    expect(morning?.assetSource).toMatchObject({
+      kind: 'public',
+      portrait: '/piano-night/morning-conservatory-portrait.webp',
+    })
+    expect(afterglow?.treatment ?? 'dark').toBe('dark')
+    expect(morning?.treatment).toBe('light')
   })
 })

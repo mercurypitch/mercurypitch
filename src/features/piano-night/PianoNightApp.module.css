@@ -183,15 +183,11 @@
 .roomPlate {
   z-index: -3;
   display: block;
+  background-color: #07090b;
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, center center);
+  background-size: cover;
   transform: scale(1.012);
-}
-
-.roomPlate img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
 }
 
 .roomGrade {
@@ -1405,25 +1401,10 @@
   text-align: left;
 }
 
-.roomGrid {
-  display: grid;
-  gap: 10px;
+.roomPicker {
+  display: block;
+  width: 100%;
   margin-top: 24px;
-}
-
-.roomGrid .roomSwatch {
-  margin-top: 0;
-  cursor: pointer;
-}
-
-.roomGrid .roomSwatch:hover {
-  border-color: rgb(214 183 120 / 54%);
-  background: rgb(181 138 80 / 8%);
-}
-
-.roomGrid .roomSelected {
-  border-color: var(--brass);
-  background: rgb(181 138 80 / 12%);
 }
 
 .previewRow:disabled {
@@ -1747,10 +1728,6 @@
   .shell {
     --keybed-height: 112px;
     --fallboard-height: 70px;
-  }
-
-  .roomPlate img {
-    object-position: center 42%;
   }
 
   .roomGrade {

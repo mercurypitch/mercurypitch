@@ -4,23 +4,31 @@
 
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createPremiumBackgroundCatalogStore } from '@/stores/background-store'
+import { createPremiumBackgroundCatalogStore } from './background-catalog-store'
 import type { PremiumBackgroundCatalogResponse } from './background-runtime'
 import { loadProtectedBackgroundObjectUrl, parsePremiumBackgroundCatalog, } from './background-runtime'
 
 const SHA = 'a'.repeat(64)
 
 function catalog(
-  id: 'golden-hour-stage' | 'aurora-stage' = 'golden-hour-stage',
+  id:
+    | 'golden-hour-stage'
+    | 'aurora-stage'
+    | 'piano-velvet-recital' = 'golden-hour-stage',
 ): PremiumBackgroundCatalogResponse {
+  const piano = id === 'piano-velvet-recital'
   return {
     assets: [
       {
         id,
         title:
-          id === 'golden-hour-stage' ? 'Golden Hour Stage' : 'Aurora Stage',
+          id === 'golden-hour-stage'
+            ? 'Golden Hour Stage'
+            : piano
+              ? 'Velvet Recital'
+              : 'Aurora Stage',
         description: 'A private edition',
-        surface: 'karaoke',
+        surface: piano ? 'piano' : 'karaoke',
         activeVersion: 2,
         variants: [
           {
@@ -81,6 +89,17 @@ describe('parsePremiumBackgroundCatalog', () => {
       'golden-hour-stage',
     ])
     expect(parsed?.access.backgroundIds).toEqual(['golden-hour-stage'])
+  })
+
+  it('accepts a known Piano asset only under its compiled Piano surface', () => {
+    const piano = catalog('piano-velvet-recital')
+    expect(parsePremiumBackgroundCatalog(piano)?.assets).toEqual(piano.assets)
+    expect(
+      parsePremiumBackgroundCatalog({
+        ...piano,
+        assets: [{ ...piano.assets[0], surface: 'jam' }],
+      })?.assets,
+    ).toEqual([])
   })
 })
 

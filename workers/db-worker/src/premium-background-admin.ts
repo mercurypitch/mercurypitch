@@ -7,6 +7,7 @@
 // runtime catalog. Group changes and every other mutation share one audit
 // ledger in the environment-local main database.
 
+import type { BackgroundSurface } from '../../../src/lib/backgrounds/background-catalog'
 import { getBackgroundDefinition, isBackgroundPerkId, } from '../../../src/lib/backgrounds/background-catalog'
 import type { SupporterFeaturePerkId } from '../../../src/lib/supporter-feature-catalog'
 import { isSupporterFeaturePerkId } from '../../../src/lib/supporter-feature-catalog'
@@ -32,7 +33,7 @@ interface AssetRow {
   id: string
   retiredAt: string | null
   status: 'active' | 'retired'
-  surface: 'karaoke' | 'jam'
+  surface: BackgroundSurface
   title: string
   updatedAt: string
 }
@@ -192,6 +193,18 @@ function publicVariant(row: VariantRow) {
   }
 }
 
+function assetMatchesCatalogSurface(asset: {
+  id: string
+  surface: unknown
+}): boolean {
+  if (!isBackgroundPerkId(asset.id)) return false
+  const definition = getBackgroundDefinition(asset.id)
+  return (
+    definition?.access.kind === 'supporter' &&
+    definition.surface === asset.surface
+  )
+}
+
 async function listAdminAssets(
   env: Env,
   respond: JsonResponder,
@@ -234,18 +247,20 @@ async function listAdminAssets(
     revisionsByAsset.set(revision.backgroundId, revisions)
   }
   return respond({
-    assets: (assetsResult.results ?? []).map((asset) => ({
-      activeRevisionId: asset.activeRevisionId,
-      createdAt: asset.createdAt,
-      description: asset.description,
-      id: asset.id,
-      retiredAt: asset.retiredAt,
-      revisions: revisionsByAsset.get(asset.id) ?? [],
-      status: asset.status,
-      surface: asset.surface,
-      title: asset.title,
-      updatedAt: asset.updatedAt,
-    })),
+    assets: (assetsResult.results ?? [])
+      .filter(assetMatchesCatalogSurface)
+      .map((asset) => ({
+        activeRevisionId: asset.activeRevisionId,
+        createdAt: asset.createdAt,
+        description: asset.description,
+        id: asset.id,
+        retiredAt: asset.retiredAt,
+        revisions: revisionsByAsset.get(asset.id) ?? [],
+        status: asset.status,
+        surface: asset.surface,
+        title: asset.title,
+        updatedAt: asset.updatedAt,
+      })),
   })
 }
 
@@ -424,6 +439,12 @@ async function updateAssetMetadata(
   const body = await readJsonObject(request)
   if (body === null)
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  if (body.surface !== undefined) {
+    return respond(
+      { error: 'Background surface is immutable' },
+      { status: 400 },
+    )
+  }
   const title =
     body.title === undefined
       ? undefined
@@ -446,6 +467,9 @@ async function updateAssetMetadata(
     .first<AssetRow>()
   if (current === null)
     return respond({ error: 'Background not found' }, { status: 404 })
+  if (!assetMatchesCatalogSurface(current)) {
+    return respond({ error: 'Background not found' }, { status: 404 })
+  }
   const now = new Date().toISOString()
   const nextTitle = title ?? current.title
   const nextDescription = description ?? current.description
@@ -482,11 +506,11 @@ async function createDraftRevision(
   respond: JsonResponder,
 ): Promise<Response> {
   const asset = await env.DB.prepare(
-    'SELECT id FROM premiumBackgroundAssets WHERE id = ?1 LIMIT 1',
+    'SELECT id, surface FROM premiumBackgroundAssets WHERE id = ?1 LIMIT 1',
   )
     .bind(backgroundId)
-    .first<{ id: string }>()
-  if (asset === null)
+    .first<{ id: string; surface: unknown }>()
+  if (asset === null || !assetMatchesCatalogSurface(asset))
     return respond({ error: 'Background not found' }, { status: 404 })
   const existingDraft = await env.DB.prepare(
     `SELECT id, version FROM premiumBackgroundRevisions
@@ -576,6 +600,9 @@ async function findDraftVariantContext(
       version: number
     }>()
   if (row === null) return null
+  if (!assetMatchesCatalogSurface({ id: backgroundId, surface: row.surface })) {
+    return null
+  }
   return {
     asset: {
       activeRevisionId: row.activeRevisionId,
@@ -745,15 +772,19 @@ async function getAdminVariant(
   context: PremiumBackgroundAdminContext,
 ): Promise<Response> {
   const row = await env.DB.prepare(
-    `SELECT v.*
+    `SELECT v.*, a.surface AS assetSurface
        FROM premiumBackgroundVariants v
        JOIN premiumBackgroundRevisions r ON r.id = v.revisionId
+       JOIN premiumBackgroundAssets a ON a.id = r.backgroundId
       WHERE r.backgroundId = ?1 AND r.id = ?2 AND v.variant = ?3
       LIMIT 1`,
   )
     .bind(backgroundId, revisionId, variant)
-    .first<VariantRow>()
-  if (row === null) {
+    .first<VariantRow & { assetSurface: unknown }>()
+  if (
+    row === null ||
+    !assetMatchesCatalogSurface({ id: backgroundId, surface: row.assetSurface })
+  ) {
     return context.respond({ error: 'Variant not found' }, { status: 404 })
   }
   const bucket = env.PREMIUM_BACKGROUNDS_BUCKET
@@ -880,6 +911,9 @@ async function publishRevision(
     >()
   if (asset === null)
     return respond({ error: 'Draft revision not found' }, { status: 404 })
+  if (!assetMatchesCatalogSurface(asset)) {
+    return respond({ error: 'Draft revision not found' }, { status: 404 })
+  }
   if (asset.status !== 'active') {
     return respond(
       { error: 'Restore the background before publishing a revision' },
@@ -1075,6 +1109,9 @@ async function changeRetiredState(
     .first<AssetRow>()
   if (asset === null)
     return respond({ error: 'Background not found' }, { status: 404 })
+  if (!assetMatchesCatalogSurface(asset)) {
+    return respond({ error: 'Background not found' }, { status: 404 })
+  }
   if (!retire && asset.activeRevisionId === null) {
     return respond(
       { error: 'Publish a complete revision before restoring this background' },
@@ -1634,11 +1671,11 @@ async function changeGroupPerk(
     return respond({ error: 'Supporter group not found' }, { status: 404 })
   }
   const asset = await env.DB.prepare(
-    'SELECT id FROM premiumBackgroundAssets WHERE id = ?1 LIMIT 1',
+    'SELECT id, surface FROM premiumBackgroundAssets WHERE id = ?1 LIMIT 1',
   )
     .bind(backgroundId)
-    .first<{ id: string }>()
-  if (asset === null)
+    .first<{ id: string; surface: unknown }>()
+  if (asset === null || !assetMatchesCatalogSurface(asset))
     return respond({ error: 'Background not found' }, { status: 404 })
   const now = new Date().toISOString()
   const statements: D1PreparedStatement[] = []

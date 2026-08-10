@@ -120,6 +120,33 @@ describe('Premium Background Studio admin boundary', () => {
     expect(await response?.json()).toEqual({ error: 'Admin key required' })
   })
 
+  it('rejects an asset surface mutation before consulting D1', async () => {
+    const touched = () => {
+      throw new Error('An immutable surface mutation touched D1')
+    }
+    const env = { DB: { prepare: touched } } as unknown as Env
+    const request = new Request(
+      'https://api.test/api/admin/premium-backgrounds/piano-aurora-loft',
+      {
+        body: JSON.stringify({ surface: 'jam', title: 'Wrong room' }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+      },
+    )
+
+    const response = await handlePremiumBackgroundAdminRequest(
+      request,
+      env,
+      new URL(request.url),
+      adminContext(),
+    )
+
+    expect(response?.status).toBe(400)
+    expect(await response?.json()).toEqual({
+      error: 'Background surface is immutable',
+    })
+  })
+
   it('does not delete R2 when a draft-variant delete loses a publish race', async () => {
     const deletedKeys: string[] = []
     class Statement {
@@ -199,7 +226,7 @@ describe('Premium Background Studio admin boundary', () => {
             activeRevisionId: 'published-revision',
             id: 'draft-revision',
             lifecycle: 'draft',
-            surface: 'jam',
+            surface: 'piano',
             version: 2,
           } as T
         }
@@ -233,7 +260,7 @@ describe('Premium Background Studio admin boundary', () => {
       PREMIUM_BACKGROUNDS_BUCKET: bucket,
     } as unknown as Env
     const request = new Request(
-      'https://api.test/api/admin/premium-backgrounds/golden-stage/revisions/draft-revision/variants/landscape-2k/content',
+      'https://api.test/api/admin/premium-backgrounds/piano-aurora-loft/revisions/draft-revision/variants/landscape-2k/content',
       {
         body: vp8x(2048, 1152),
         headers: { 'Content-Type': 'image/webp' },
@@ -250,8 +277,63 @@ describe('Premium Background Studio admin boundary', () => {
 
     expect(response?.status).toBe(409)
     expect(uploadedKeys).toHaveLength(1)
+    expect(uploadedKeys[0]).toMatch(
+      /^backgrounds\/v2\/piano\/piano-aurora-loft\/v2\/landscape-2k\/[0-9a-f-]+\.webp$/,
+    )
     expect(deletedKeys).toEqual(uploadedKeys)
     expect(batchedSql[1]).toContain('WHERE changes() = 1')
+  })
+
+  it('rejects a stored cross-surface Piano draft before touching R2', async () => {
+    let bucketTouched = false
+    class Statement {
+      constructor(readonly sql: string) {}
+      bind(): Statement {
+        return this
+      }
+      async first<T>(): Promise<T | null> {
+        if (this.sql.startsWith('SELECT a.activeRevisionId')) {
+          return {
+            activeRevisionId: null,
+            id: 'draft-revision',
+            lifecycle: 'draft',
+            surface: 'jam',
+            version: 1,
+          } as T
+        }
+        throw new Error(`Unhandled first: ${this.sql}`)
+      }
+    }
+    const env = {
+      DB: {
+        prepare: (sql: string) =>
+          new Statement(sql.replace(/\s+/g, ' ').trim()),
+      },
+      PREMIUM_BACKGROUNDS_BUCKET: {
+        put: async () => {
+          bucketTouched = true
+          return null
+        },
+      },
+    } as unknown as Env
+    const request = new Request(
+      'https://api.test/api/admin/premium-backgrounds/piano-aurora-loft/revisions/draft-revision/variants/landscape-2k/content',
+      {
+        body: vp8x(2048, 1152),
+        headers: { 'Content-Type': 'image/webp' },
+        method: 'PUT',
+      },
+    )
+
+    const response = await handlePremiumBackgroundAdminRequest(
+      request,
+      env,
+      new URL(request.url),
+      adminContext(),
+    )
+
+    expect(response?.status).toBe(404)
+    expect(bucketTouched).toBe(false)
   })
 
   it('fails a publish that loses a retirement race and gates every transition on active state', async () => {
@@ -492,8 +574,10 @@ describe('Premium Background Studio admin boundary', () => {
         if (this.sql.startsWith('SELECT id FROM users')) {
           return { id: 'user-1' } as T
         }
-        if (this.sql.startsWith('SELECT id FROM premiumBackgroundAssets')) {
-          return { id: 'golden-stage' } as T
+        if (
+          this.sql.startsWith('SELECT id, surface FROM premiumBackgroundAssets')
+        ) {
+          return { id: 'golden-stage', surface: 'jam' } as T
         }
         throw new Error(`Unhandled first: ${this.sql}`)
       }

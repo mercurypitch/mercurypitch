@@ -217,7 +217,7 @@ interface FakeAsset {
   id: string
   revisionId: string
   status: 'active' | 'retired'
-  surface: 'jam' | 'karaoke'
+  surface: 'jam' | 'karaoke' | 'piano'
   variants: Map<string, FakeVariant>
   version: number
 }
@@ -594,6 +594,46 @@ describe('GET /api/premium-backgrounds/:id', () => {
     expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff')
   })
 
+  it('serves an exact published Piano revision to an active supporter', async () => {
+    const f = fixture()
+    f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    const key = 'backgrounds/v1/piano/piano-aurora-loft/portrait-2k.webp'
+    f.bucket.objects.set(key, new TextEncoder().encode('piano-room-webp'))
+
+    const response = await call(
+      f.env,
+      '/api/premium-backgrounds/piano-aurora-loft?variant=portrait-2k&version=1',
+      ALICE,
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('piano-room-webp')
+    expect(f.bucket.reads).toEqual([key])
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it('fails closed when a stored Piano asset claims another surface', async () => {
+    const f = fixture()
+    f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    f.main.assets.get('piano-aurora-loft')!.surface = 'jam'
+
+    const catalog = await call(f.env, '/api/premium-backgrounds/catalog', ALICE)
+    const catalogJson = (await catalog.json()) as {
+      assets: Array<{ id: string }>
+    }
+    const image = await call(
+      f.env,
+      '/api/premium-backgrounds/piano-aurora-loft?version=1',
+      ALICE,
+    )
+
+    expect(
+      catalogJson.assets.some((asset) => asset.id === 'piano-aurora-loft'),
+    ).toBe(false)
+    expect(image.status).toBe(404)
+    expect(f.bucket.reads).toEqual([])
+  })
+
   it('serves one background through its matching permanent perk grant', async () => {
     const f = fixture()
     f.perks.grants.set('alice@example.test', ['mercury-archive'])
@@ -907,21 +947,59 @@ describe('Jam Room premium background capabilities', () => {
     expect(f.jam.calls).toEqual([])
   })
 
-  it('does not delegate a Karaoke-only background into a Jam Room', async () => {
+  it.each(['aurora-stage', 'piano-aurora-loft'] as const)(
+    'does not delegate the non-Jam background %s into a Jam Room',
+    async (backgroundId) => {
+      const f = fixture()
+      f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+
+      const response = await call(
+        f.env,
+        `/api/premium-backgrounds/${backgroundId}/capability`,
+        ALICE,
+        'POST',
+        { body: { ownerToken: OWNER_TOKEN, roomId: ROOM_ID } },
+      )
+
+      expect(response.status).toBe(404)
+      expect(f.main.reads).toBe(0)
+      expect(f.jam.calls).toEqual([])
+    },
+  )
+
+  it('rejects a Piano capability scope before signing', async () => {
+    await expect(
+      mintBackgroundCapability(
+        {
+          backgroundId: 'piano-aurora-loft',
+          capabilityId: workerCrypto.randomUUID(),
+          roomId: ROOM_ID,
+          version: 1,
+        },
+        CAPABILITY_SECRET,
+      ),
+    ).rejects.toThrow('Invalid background capability scope')
+  })
+
+  it('does not honor Jam guest credentials for a Piano background', async () => {
     const f = fixture()
-    f.main.supporterExpiry.set('alice', '2099-01-01T00:00:00.000Z')
+    const capability = await issueCapability(f)
 
     const response = await call(
       f.env,
-      '/api/premium-backgrounds/aurora-stage/capability',
-      ALICE,
-      'POST',
-      { body: { ownerToken: OWNER_TOKEN, roomId: ROOM_ID } },
+      '/api/premium-backgrounds/piano-aurora-loft?version=1',
+      null,
+      'GET',
+      {
+        headers: {
+          'X-Jam-Background-Capability': capability.token,
+          'X-Jam-Room-Id': ROOM_ID,
+        },
+      },
     )
 
-    expect(response.status).toBe(404)
-    expect(f.main.reads).toBe(0)
-    expect(f.jam.calls).toEqual([])
+    expect(response.status).toBe(403)
+    expect(f.bucket.reads).toEqual([])
   })
 
   it('serves the selected Jam background to a guest with a matching capability', async () => {

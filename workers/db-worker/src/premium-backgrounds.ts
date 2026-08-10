@@ -344,6 +344,12 @@ async function verifyGuestCapability(
   if (token === null || roomId === null || !JAM_ROOM_ID_RE.test(roomId)) {
     return 'invalid'
   }
+  if (
+    revision.surface !== 'jam' ||
+    !isJamPremiumBackgroundId(revision.backgroundId)
+  ) {
+    return 'invalid'
+  }
   if (!hasSecureCapabilitySecret(env.BACKGROUND_CAPABILITY_SECRET)) {
     return 'unavailable'
   }

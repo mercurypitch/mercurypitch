@@ -293,6 +293,86 @@
   gap: 18px;
 }
 
+.surfaceFilter {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.surfaceFilterCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.surfaceFilterCopy strong {
+  color: var(--text-primary, #f4f7fb);
+  font-size: 0.78rem;
+}
+
+.surfaceFilterCopy span {
+  color: var(--text-muted, #8c96a7);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.surfaceFilterControls {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--bg-card, #121821);
+}
+
+.surfaceFilterControls button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted, #8c96a7);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 680;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.surfaceFilterControls button:hover,
+.surfaceFilterControls button[aria-pressed='true'] {
+  color: var(--text-primary, #f4f7fb);
+}
+
+.surfaceFilterControls button[aria-pressed='true'] {
+  background: color-mix(
+    in srgb,
+    var(--accent, #8b8eff) 16%,
+    var(--bg-card, #121821)
+  );
+}
+
+.surfaceFilterControls small {
+  min-width: 18px;
+  display: inline-grid;
+  place-items: center;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .lifecycleBand {
   min-width: 0;
 }
@@ -912,6 +992,31 @@
   line-height: 1.5;
 }
 
+.passIntegrity {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning, #e3b341) 42%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--warning, #e3b341) 8%, transparent);
+  color: color-mix(in srgb, var(--warning, #e3b341) 80%, #fff);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.passIntegrity svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 2px;
+}
+
+.passIntegrity strong {
+  color: var(--text-primary, #f4f7fb);
+}
+
 .passStats {
   display: flex;
   gap: 8px;
@@ -970,6 +1075,10 @@
 .passRow {
   min-height: 70px;
   border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+}
+
+.passRow[data-integrity='invalid'] {
+  background: color-mix(in srgb, var(--warning, #e3b341) 5%, transparent);
 }
 
 .passTableHeader + .passRow {
@@ -1033,6 +1142,13 @@
   white-space: nowrap;
 }
 
+.passAsset .passIntegrityText {
+  overflow: visible;
+  color: color-mix(in srgb, var(--warning, #e3b341) 82%, #fff);
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .passTiming {
   font-variant-numeric: tabular-nums;
 }
@@ -1056,6 +1172,7 @@
 
 .workspaceTabs button:focus-visible,
 .revisionToggle button:focus-visible,
+.surfaceFilterControls button:focus-visible,
 .refreshButton:focus-visible,
 .backgroundRow:focus-visible,
 .secondaryButton:focus-visible,
@@ -1166,6 +1283,16 @@
   .workspaceTabs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .surfaceFilter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .surfaceFilterControls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .passesHeading {

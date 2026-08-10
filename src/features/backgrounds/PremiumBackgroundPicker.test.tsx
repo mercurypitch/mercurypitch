@@ -2,7 +2,7 @@
 // Premium background picker tests
 // ============================================================
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { PremiumBackgroundAsset } from '@/lib/backgrounds/background-runtime'
 import { loadProtectedBackgroundObjectUrl } from '@/lib/backgrounds/background-runtime'
@@ -51,6 +51,7 @@ function pickerOptions(): RuntimeBackgroundOption[] {
       description: 'Included stage',
       edition: 'core',
       focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
       access: 'free',
       publicUrl: '/karaoke-night-stage.webp',
       premiumAsset: null,
@@ -62,6 +63,7 @@ function pickerOptions(): RuntimeBackgroundOption[] {
       description: 'Unlocked stage',
       edition: 'golden-hour',
       focalPoint: { x: 0.5, y: 0.45 },
+      treatment: 'dark',
       access: 'unlocked',
       publicUrl: null,
       premiumAsset: premiumAsset('golden-hour-stage'),
@@ -73,6 +75,7 @@ function pickerOptions(): RuntimeBackgroundOption[] {
       description: 'Locked stage',
       edition: 'aurora',
       focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
       access: 'locked',
       publicUrl: null,
       premiumAsset: premiumAsset('aurora-stage'),
@@ -88,8 +91,10 @@ function fakeController(): BackgroundSurfaceController {
       id: 'karaoke-theatre',
       url: '/karaoke-night-stage.webp',
       focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
       source: 'public',
       version: null,
+      variant: null,
     }),
     resolvedStyle: () => ({
       '--mp-stage-image': 'url("/karaoke-night-stage.webp")',
@@ -102,8 +107,53 @@ function fakeController(): BackgroundSurfaceController {
     error: () => null,
     select: vi.fn(() => true),
     refresh: async () => undefined,
+    invalidateAccess: vi.fn(),
     retain: () => vi.fn(),
     dispose: vi.fn(),
+  }
+}
+
+function pianoController(): BackgroundSurfaceController {
+  const base = fakeController()
+  return {
+    ...base,
+    surface: 'piano',
+    requestedId: () => 'piano-afterglow',
+    resolved: () => ({
+      id: 'piano-afterglow',
+      url: '/piano-night/afterglow-studio-landscape.webp',
+      focalPoint: { x: 0.5, y: 0.5 },
+      treatment: 'dark',
+      source: 'public',
+      version: null,
+      variant: null,
+    }),
+    options: () => [
+      {
+        id: 'piano-afterglow',
+        surface: 'piano',
+        label: 'Afterglow Studio',
+        description: 'Blue-hour focus around a concert grand',
+        edition: 'core',
+        focalPoint: { x: 0.5, y: 0.5 },
+        treatment: 'dark',
+        access: 'free',
+        publicUrl: '/piano-night/afterglow-studio-landscape.webp',
+        premiumAsset: null,
+      },
+      {
+        id: 'piano-morning-conservatory',
+        surface: 'piano',
+        label: 'Morning Conservatory',
+        description: 'Warm daylight for an unhurried practice session',
+        edition: 'core',
+        focalPoint: { x: 0.52, y: 0.46 },
+        treatment: 'light',
+        access: 'free',
+        publicUrl: '/piano-night/morning-conservatory-landscape.webp',
+        premiumAsset: null,
+      },
+    ],
   }
 }
 
@@ -194,5 +244,34 @@ describe('PremiumBackgroundPicker', () => {
     expect(
       screen.getByRole('link', { name: 'Explore supporter perks' }),
     ).toHaveAttribute('href', '/#/settings/credits')
+  })
+
+  it('uses Piano Night copy and supports an owning drawer without a nested dialog', () => {
+    const controller = pianoController()
+    const { unmount } = render(() => (
+      <PremiumBackgroundPicker controller={controller} />
+    ))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Choose Piano Night room background',
+      }),
+    )
+    expect(
+      screen.getByRole('dialog', { name: 'Choose your Piano Night room' }),
+    ).toHaveTextContent(
+      'Included rooms and supporter editions for Piano Night.',
+    )
+    unmount()
+
+    render(() => <PremiumBackgroundPicker controller={controller} embedded />)
+    const gallery = screen.getByRole('region', {
+      name: 'Choose your Piano Night room',
+    })
+    expect(within(gallery).queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Choose Piano Night room background',
+      }),
+    ).not.toBeInTheDocument()
   })
 })
