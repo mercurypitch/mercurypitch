@@ -49,22 +49,34 @@ function reference(
 
 /** A band whose clock the test drives, so no real audio is ever opened. */
 function bandHarness() {
-  const clock = { currentTime: 10 }
+  const clock = { currentTime: 10, sampleRate: 48000 }
   const graph = { context: clock } as unknown as ReturnType<
     GuitarRoomBand['getAudioGraph']
   >
   let options: GuitarRoomBandStartOptions | null = null
+  let result: GuitarRoomBandStartResult = {
+    expectedHitTimesMs: [],
+    exerciseStartedAtSeconds: null,
+    completedAtSeconds: null,
+  }
   const band: GuitarRoomBand = {
     start: vi.fn(async (startOptions) => {
       options = startOptions
-      return { expectedHitTimesMs: [] }
+      return result
     }),
     activate: vi.fn(async () => graph),
     stop: vi.fn(),
     getAudioGraph: () => graph,
     dispose: vi.fn(async () => undefined),
   }
-  return { band, clock, getOptions: () => options }
+  return {
+    band,
+    clock,
+    getOptions: () => options,
+    setResult: (next: GuitarRoomBandStartResult) => {
+      result = next
+    },
+  }
 }
 
 /** Frames only refresh the signal; the test pumps them by hand. */
@@ -100,6 +112,93 @@ describe('scoreDurationBeats', () => {
 })
 
 describe('useGuitarNightScoreRoomController', () => {
+  it('pins and schedules one silent assessed range on exact audio boundaries', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions, setResult } = bandHarness()
+      const frames = frameHarness()
+      const [currentReference, setCurrentReference] = createSignal(
+        reference({
+          tempoBpm: 120,
+          tempoChanges: [
+            { beat: 0, usPerBeat: 500000 },
+            { beat: 2, usPerBeat: 1000000 },
+          ],
+        }),
+      )
+      setResult({
+        expectedHitTimesMs: [],
+        exerciseStartedAtSeconds: 12.25,
+        completedAtSeconds: 14.25,
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: currentReference,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      const boundary = await room.startAssessment({ start: 1.5, end: 3.25 })
+
+      expect(getOptions()).toMatchObject({
+        countInBeats: 4,
+        startBeat: 1.5,
+        durationBeats: 3.25,
+        loop: null,
+        melody: [],
+        exercisePulse: false,
+      })
+      expect(boundary).toMatchObject({
+        range: { start: 1.5, end: 3.25 },
+        tempoBpm: 120,
+        scoreTempoBpm: 120,
+        sampleRate: 48000,
+        startedAtSeconds: 12.25,
+        completedAtSeconds: 14.25,
+      })
+      expect(boundary?.beatToSeconds(3.25)).toBeCloseTo(2.25, 5)
+
+      const replacementReference = reference({ title: 'A different score' })
+      setCurrentReference(replacementReference)
+      expect(boundary?.reference.title).toBe('Velvet Riff')
+      expect(boundary?.reference).not.toBe(replacementReference)
+
+      getOptions()?.onComplete?.(14.25)
+      expect(room.status()).toBe('complete')
+      expect(room.playheadBeat()).toBe(3.25)
+      expect(room.displayPositionSeconds()).toBeCloseTo(2.25, 5)
+      dispose()
+    })
+  })
+
+  it('abandons an interrupted assessment instead of resuming it as a full take', async () => {
+    await createRoot(async (dispose) => {
+      const { band, getOptions, setResult } = bandHarness()
+      const frames = frameHarness()
+      setResult({
+        expectedHitTimesMs: [],
+        exerciseStartedAtSeconds: 11,
+        completedAtSeconds: 13,
+      })
+      const room = useGuitarNightScoreRoomController({
+        reference: () => reference(),
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.startAssessment({ start: 1, end: 3 })
+      getOptions()?.onExerciseStart?.(1, 11)
+      room.pause()
+
+      expect(room.status()).toBe('paused')
+      expect(room.setupLocked()).toBe(false)
+      await room.start()
+      expect(getOptions()?.exercisePulse).toBe(true)
+      expect(getOptions()?.melody).toHaveLength(2)
+      dispose()
+    })
+  })
+
   it('stays silent until asked, then counts in before the score', async () => {
     await createRoot(async (dispose) => {
       const { band, getOptions } = bandHarness()
@@ -419,7 +518,12 @@ describe('useGuitarNightScoreRoomController', () => {
       band.start = vi.fn(
         () =>
           new Promise<GuitarRoomBandStartResult>((resolve) => {
-            finishStart = () => resolve({ expectedHitTimesMs: [] })
+            finishStart = () =>
+              resolve({
+                expectedHitTimesMs: [],
+                exerciseStartedAtSeconds: null,
+                completedAtSeconds: null,
+              })
           }),
       )
       const room = useGuitarNightScoreRoomController({
@@ -470,6 +574,37 @@ describe('useGuitarNightScoreRoomController', () => {
       expect(room.playheadBeat()).toBeNull()
       expect(room.positionSeconds()).toBe(0)
       expect(room.setupLocked()).toBe(false)
+      dispose()
+    })
+  })
+
+  it('turns a completed-take seek into a configurable run', async () => {
+    await createRoot(async (dispose) => {
+      const [currentReference, setCurrentReference] = createSignal(reference())
+      const { band, getOptions } = bandHarness()
+      const frames = frameHarness()
+      const room = useGuitarNightScoreRoomController({
+        reference: currentReference,
+        createBand: () => band,
+        requestFrame: frames.requestFrame,
+        cancelFrame: frames.cancelFrame,
+      })
+
+      await room.start()
+      getOptions()?.onComplete?.(getOptions()?.durationBeats ?? 4)
+      expect(room.status()).toBe('complete')
+
+      setCurrentReference(reference({ title: 'Next score' }))
+      room.setTempoBpm(72)
+      room.setCountInBeats(2)
+      room.seekSeconds(1)
+
+      expect(room.status()).toBe('paused')
+      expect(room.setupLocked()).toBe(false)
+      expect(room.displayReference()?.title).toBe('Next score')
+
+      await room.start()
+      expect(getOptions()).toMatchObject({ tempoBpm: 72, countInBeats: 2 })
       dispose()
     })
   })

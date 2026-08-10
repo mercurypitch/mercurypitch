@@ -25,14 +25,14 @@ import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
 import type { GuitarTakeEvent, GuitarTakeRecorder, GuitarTakeSnapshot, } from '@/lib/guitar/guitar-take-recorder'
 import { createGuitarTakeRecorder } from '@/lib/guitar/guitar-take-recorder'
 import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealthReading, GuitarInputTimingSource, } from '@/lib/guitar/input-events'
-import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, playedAt, } from '@/lib/guitar/input-events'
+import { attachPitchToLatestAttack, createNoiseFloorFollower, describeInputHealth, frameToSeconds, PITCH_ATTACH_WINDOW_MS, playedAt, } from '@/lib/guitar/input-events'
 import type { LatencyFailure } from '@/lib/mic-latency'
 import { LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { buildClickSchedule } from '@/lib/tap-calibration'
-import { micLatencyMs, setMicLatencyMs } from '@/stores/mic-latency-store'
+import { micLatencyMs, micLatencySpreadMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
 
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
@@ -274,7 +274,12 @@ export function useGuitarListeningController(
   let takeRecorder: GuitarTakeRecorder | null = null
   let takeContext: AudioContext | null = null
   let takeLatencySeconds = 0
+  let takeStartedAtSeconds = 0
+  let scheduledTakeEndSeconds: number | null = null
+  let completionTimer = 0
+  let completionGeneration = 0
   let takeSequence = 0
+  let takeBeforeRecording: GuitarTakeSnapshot | null = null
   // While a calibration run is going, attacks are evidence about the route,
   // not about the player, and must not land in the take.
   let calibrationHits: number[] | null = null
@@ -286,21 +291,24 @@ export function useGuitarListeningController(
   const beginTake = (
     context: AudioContext,
     attackTimingSource: GuitarTimingSource,
+    startedAtSeconds = context.currentTime,
   ): void => {
     takeRecorder?.cancel()
     takeSequence += 1
     const latencyMs = micLatencyMs()
+    const latencySpreadMs = micLatencySpreadMs()
     takeLatencySeconds = latencyMs / 1000
+    takeStartedAtSeconds = startedAtSeconds
+    scheduledTakeEndSeconds = null
     takeRecorder = createGuitarTakeRecorder({
       takeId: `${CONSUMER_ID}-${takeSequence}`,
-      startedAtSeconds: context.currentTime,
+      startedAtSeconds,
       sampleRate: context.sampleRate,
       latency: {
         seconds: takeLatencySeconds,
         provenance: latencyMs > 0 ? 'stored-round-trip' : 'none',
-        // The existing calibration stores only one rounded result. Until it
-        // retains dispersion, claiming a confidence band would invent data.
-        uncertaintySeconds: null,
+        uncertaintySeconds:
+          latencySpreadMs === null ? null : latencySpreadMs / 1000,
       },
       attackTimingSource,
       maxEvents: MAX_EVENTS,
@@ -314,15 +322,21 @@ export function useGuitarListeningController(
     takeRecorder = null
     takeContext = null
     takeLatencySeconds = 0
+    takeStartedAtSeconds = 0
+    scheduledTakeEndSeconds = null
+    takeBeforeRecording = null
     setTake(null)
   }
 
-  const completeTake = (): void => {
+  const completeTake = (endedAtSeconds?: number): void => {
     if (takeRecorder === null || takeContext === null) return
-    setTake(takeRecorder.complete(takeContext.currentTime))
+    setTake(takeRecorder.complete(endedAtSeconds ?? takeContext.currentTime))
     takeRecorder = null
     takeContext = null
     takeLatencySeconds = 0
+    takeStartedAtSeconds = 0
+    scheduledTakeEndSeconds = null
+    takeBeforeRecording = null
   }
 
   const pushEvent = (capture: GuitarInputCapture): void => {
@@ -331,7 +345,25 @@ export function useGuitarListeningController(
     if (recorder.append(capture) !== null) publishTake()
   }
 
+  const observeTakeHealth = (
+    reading: GuitarInputHealthReading,
+    atSeconds: number,
+  ): void => {
+    const recorder = takeRecorder
+    if (
+      recorder === null ||
+      atSeconds < takeStartedAtSeconds ||
+      (scheduledTakeEndSeconds !== null && atSeconds >= scheduledTakeEndSeconds)
+    ) {
+      return
+    }
+    recorder.observeHealth(reading.state)
+  }
+
   const stopNodes = (): void => {
+    completionGeneration += 1
+    if (completionTimer !== 0) window.clearTimeout(completionTimer)
+    completionTimer = 0
     cancelCalibrationRun?.()
     cancelCalibrationRun = null
     if (frame !== 0) cancelAnimationFrame(frame)
@@ -361,6 +393,93 @@ export function useGuitarListeningController(
     setTimingSource('frame-loop')
   }
 
+  /** Abort an unopened assessment and restore the last finished review. */
+  const cancel = (): void => {
+    generation += 1
+    takeRecorder?.cancel()
+    takeRecorder = null
+    takeContext = null
+    takeLatencySeconds = 0
+    takeStartedAtSeconds = 0
+    scheduledTakeEndSeconds = null
+    setTake(takeBeforeRecording)
+    takeBeforeRecording = null
+    stopNodes()
+    micManager.release(CONSUMER_ID)
+    setStatus('off')
+    setCurrentNote(null)
+    setDetectedMidi(null)
+    setClarity(0)
+    setHealth(null)
+    setTimingSource('frame-loop')
+  }
+
+  /**
+   * Re-anchor the live input to an exact scheduled score boundary. The start
+   * may be in the near future; the recorder will discard count-in evidence.
+   */
+  const armTakeAt = (startedAtSeconds: number): boolean => {
+    if (
+      takeContext === null ||
+      !Number.isFinite(startedAtSeconds) ||
+      startedAtSeconds < 0 ||
+      status() !== 'listening'
+    ) {
+      return false
+    }
+    completionGeneration += 1
+    if (completionTimer !== 0) window.clearTimeout(completionTimer)
+    completionTimer = 0
+    beginTake(takeContext, liveTimingSource(), startedAtSeconds)
+    return true
+  }
+
+  /**
+   * Keep analysis alive just long enough to attach the final pitch reading,
+   * then close the take at the scheduler's exact end rather than at callback
+   * delivery time.
+   */
+  const completeTakeAt = (endedAtSeconds: number): boolean => {
+    const context = takeContext
+    if (
+      context === null ||
+      takeRecorder === null ||
+      !Number.isFinite(endedAtSeconds) ||
+      endedAtSeconds < takeStartedAtSeconds
+    ) {
+      return false
+    }
+    if (completionTimer !== 0) window.clearTimeout(completionTimer)
+    scheduledTakeEndSeconds = endedAtSeconds
+    const currentGeneration = generation
+    const currentCompletion = ++completionGeneration
+    const settleSeconds = (PITCH_ATTACH_WINDOW_MS + 30) / 1000
+    const delayMs = Math.max(
+      0,
+      (endedAtSeconds + settleSeconds - context.currentTime) * 1000,
+    )
+    completionTimer = window.setTimeout(() => {
+      completionTimer = 0
+      if (
+        currentGeneration !== generation ||
+        currentCompletion !== completionGeneration
+      ) {
+        return
+      }
+      generation += 1
+      completeTake(endedAtSeconds)
+      stopNodes()
+      micManager.release(CONSUMER_ID)
+      setStatus('off')
+      setCurrentNote(null)
+      setDetectedMidi(null)
+      setClarity(0)
+      setHealth(null)
+      setTimingSource('frame-loop')
+    }, delayMs)
+    return true
+  }
+
   // Watchdog registration (repo rule: every mic surface registers): the
   // room's Listening chip reads this status — a confirmed icon-on with no
   // live track heals through the surface's own stop path.
@@ -380,7 +499,7 @@ export function useGuitarListeningController(
     if (status() !== 'off' && status() !== 'error') return true
     generation += 1
     const currentGeneration = generation
-    cancelTake()
+    const previousTake = take()
     stopNodes()
     setError(null)
     setStatus('requesting')
@@ -418,7 +537,15 @@ export function useGuitarListeningController(
       tap = await connectGuitarInputWorklet(context, nextSource, (message) => {
         if (currentGeneration !== generation) return
         if (message.type === 'level') {
-          setHealth(describeInputHealth(message.peak, message.noiseFloor))
+          const reading = describeInputHealth(message.peak, message.noiseFloor)
+          setHealth(reading)
+          observeTakeHealth(
+            reading,
+            playedAt(
+              frameToSeconds(message.atFrame, context.sampleRate),
+              takeLatencySeconds,
+            ),
+          )
           return
         }
         const capturedAt = frameToSeconds(message.atFrame, context.sampleRate)
@@ -439,13 +566,14 @@ export function useGuitarListeningController(
         })
       })
       if (currentGeneration !== generation) {
-        cancelTake()
         stopNodes()
         micManager.release(CONSUMER_ID)
         return false
       }
       const nextTimingSource = tap === null ? 'frame-loop' : 'audio-clock'
       setTimingSource(nextTimingSource)
+      takeBeforeRecording =
+        previousTake?.lifecycle === 'completed' ? previousTake : null
       beginTake(context, nextTimingSource)
 
       const samples = new Float32Array(nextAnalyser.fftSize)
@@ -484,7 +612,9 @@ export function useGuitarListeningController(
             peak,
             Math.max(0.001, now - lastFrameAt),
           )
-          setHealth(describeInputHealth(peak, floor))
+          const reading = describeInputHealth(peak, floor)
+          setHealth(reading)
+          observeTakeHealth(reading, playedAt(now, takeLatencySeconds))
         }
         lastFrameAt = now
 
@@ -576,7 +706,14 @@ export function useGuitarListeningController(
       return true
     } catch (caught) {
       if (currentGeneration !== generation) return false
-      cancelTake()
+      takeRecorder?.cancel()
+      takeRecorder = null
+      takeContext = null
+      takeLatencySeconds = 0
+      takeStartedAtSeconds = 0
+      scheduledTakeEndSeconds = null
+      takeBeforeRecording = null
+      setTake(previousTake)
       stopNodes()
       micManager.release(CONSUMER_ID)
       const message =
@@ -653,7 +790,7 @@ export function useGuitarListeningController(
       setError(CALIBRATION_FAILURES[result.failure ?? 'not-heard'])
       return false
     }
-    setMicLatencyMs(result.latencyMs)
+    setMicLatencyMeasurement(result.latencyMs, result.spreadMs)
     // A calibration changes the meaning of player time. Start a clean take at
     // this exact audio-clock position so no result window can mix the old and
     // new correction while the UI already describes the new route value.
@@ -696,6 +833,9 @@ export function useGuitarListeningController(
     health,
     start,
     stop,
+    cancel,
+    armTakeAt,
+    completeTakeAt,
     calibrate,
     clearTake,
   }

@@ -6,7 +6,7 @@
 // latency and primary timing source are copied at start so a calibration or
 // device change cannot rewrite the meaning of evidence already in flight.
 
-import type { GuitarInputCapture, GuitarInputEvent, GuitarInputTimingSource, } from './input-events'
+import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealth, GuitarInputTimingSource, } from './input-events'
 
 export type GuitarTakeLifecycle = 'recording' | 'completed' | 'cancelled'
 
@@ -52,6 +52,11 @@ export interface GuitarTakeSnapshot {
   filteredAfterEnd: number
   truncated: boolean
   droppedEventCount: number
+  /** Aggregated states only; no samples or raw input ever enter the take. */
+  inputHealth: {
+    readings: number
+    states: Readonly<Record<GuitarInputHealth, number>>
+  }
 }
 
 export interface GuitarTakeRecorderOptions {
@@ -65,6 +70,7 @@ export interface GuitarTakeRecorderOptions {
 
 export interface GuitarTakeRecorder {
   append(capture: GuitarInputCapture): GuitarTakeEvent | null
+  observeHealth(state: GuitarInputHealth): void
   /** Replace metadata for one retained event without changing identity/time. */
   replace(
     eventId: string,
@@ -76,6 +82,17 @@ export interface GuitarTakeRecorder {
 }
 
 const DEFAULT_MAX_EVENTS = 256
+
+function emptyHealthStates(): Record<GuitarInputHealth, number> {
+  return {
+    silent: 0,
+    quiet: 0,
+    good: 0,
+    hot: 0,
+    clipping: 0,
+    noisy: 0,
+  }
+}
 
 function assertFiniteNonNegative(value: number, label: string): void {
   if (!Number.isFinite(value) || value < 0) {
@@ -166,6 +183,8 @@ export function createGuitarTakeRecorder(
   let filteredAfterEnd = 0
   let droppedEventCount = 0
   let nextEvent = 1
+  let healthReadings = 0
+  const healthStates = emptyHealthStates()
 
   const snapshot = (): GuitarTakeSnapshot => ({
     id: takeId,
@@ -181,7 +200,17 @@ export function createGuitarTakeRecorder(
     filteredAfterEnd,
     truncated: droppedEventCount > 0,
     droppedEventCount,
+    inputHealth: {
+      readings: healthReadings,
+      states: { ...healthStates },
+    },
   })
+
+  const observeHealth = (state: GuitarInputHealth): void => {
+    if (lifecycle !== 'recording') return
+    healthReadings += 1
+    healthStates[state] += 1
+  }
 
   const append = (capture: GuitarInputCapture): GuitarTakeEvent | null => {
     if (lifecycle !== 'recording') return null
@@ -262,7 +291,7 @@ export function createGuitarTakeRecorder(
       Math.round(endedAtSeconds * sampleRate) - startedAtFrame,
     )
     const retained = events.filter(
-      (event) => event.compensatedTransportFrame <= (durationFrames ?? 0),
+      (event) => event.compensatedTransportFrame < (durationFrames ?? 0),
     )
     filteredAfterEnd += events.length - retained.length
     events = retained
@@ -278,5 +307,5 @@ export function createGuitarTakeRecorder(
     return snapshot()
   }
 
-  return { append, replace, complete, cancel, snapshot }
+  return { append, observeHealth, replace, complete, cancel, snapshot }
 }

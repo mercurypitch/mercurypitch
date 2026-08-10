@@ -54,6 +54,12 @@ export interface GuitarRoomBandStartOptions {
   /** Defaults to the drum groove, which is what the play-along room wants. */
   feel?: GuitarRoomBandFeel
   /**
+   * Keep the count-in audible while leaving the exercise itself silent. This
+   * is the assessed-microphone path: sounding a click into an open microphone
+   * would turn the room's own pulse into player evidence.
+   */
+  exercisePulse?: boolean
+  /**
    * Sound the score itself, not only time. Without this a tab room shows notes
    * falling and plays something unrelated underneath, which is the opposite of
    * rehearsing a part.
@@ -74,6 +80,10 @@ export interface GuitarRoomBandStartOptions {
 
 export interface GuitarRoomBandStartResult {
   expectedHitTimesMs: readonly number[]
+  /** Exact scheduled start on the band's AudioContext clock. */
+  exerciseStartedAtSeconds: number | null
+  /** Exact scheduled end; null for a cancelled or intentionally looping run. */
+  completedAtSeconds: number | null
 }
 
 export interface GuitarRoomBand {
@@ -280,7 +290,11 @@ export function createGuitarRoomBand(
       const currentGraph = ensureGraph()
       await activateContext(currentGraph.context)
       if (currentGeneration !== generation) {
-        return { expectedHitTimesMs: [] }
+        return {
+          expectedHitTimesMs: [],
+          exerciseStartedAtSeconds: null,
+          completedAtSeconds: null,
+        }
       }
 
       const guideOutput = currentGraph.context.createGain()
@@ -316,12 +330,18 @@ export function createGuitarRoomBand(
       const melodyVariant = startOptions.melodyVariant ?? 'electric'
       const firstBeatAt = currentGraph.context.currentTime + 0.09
       const firstExerciseAt = firstBeatAt + countInBeats * openingBeatSeconds
+      const completedAt =
+        loop === null
+          ? firstExerciseAt +
+            beatToSeconds(durationBeats) -
+            beatToSeconds(startBeat)
+          : null
       const firstBeatAtMs = performance.now() + 90
       const firstExerciseAtMs =
         firstBeatAtMs + countInBeats * openingBeatSeconds * 1000
       const expectedHitTimesMs: number[] = []
       let expectedBeat = Math.ceil(startBeat)
-      while (loop === null && expectedBeat < exerciseBeats) {
+      while (loop === null && expectedBeat < durationBeats) {
         expectedHitTimesMs.push(
           firstExerciseAtMs +
             (beatToSeconds(expectedBeat) - beatToSeconds(startBeat)) * 1000,
@@ -423,12 +443,15 @@ export function createGuitarRoomBand(
         }
 
         while (
-          (loop !== null || nextExerciseBeat < exerciseBeats) &&
+          (loop !== null || nextExerciseBeat < durationBeats) &&
           nextExerciseAt <= horizon
         ) {
           const exerciseIndex = nextExerciseBeat
           const at = nextExerciseAt
-          if (feel === 'click') {
+          if (startOptions.exercisePulse === false) {
+            // The scheduled beat callback still advances the visual score.
+            // Only the room's own audible pulse is withheld from the input.
+          } else if (feel === 'click') {
             triggerDrumVoice(
               'sidestick',
               currentGraph.context,
@@ -473,19 +496,17 @@ export function createGuitarRoomBand(
 
         if (
           loop === null &&
-          nextExerciseBeat >= exerciseBeats &&
+          nextExerciseBeat >= durationBeats &&
           !completionScheduled
         ) {
           completionScheduled = true
           if (interval !== null) window.clearInterval(interval)
           interval = null
-          const completeAt =
-            firstExerciseAt +
-            beatToSeconds(durationBeats) -
-            beatToSeconds(startBeat)
-          scheduleUiCallback(completeAt, () =>
-            startOptions.onComplete?.(completeAt),
-          )
+          if (completedAt !== null) {
+            scheduleUiCallback(completedAt, () =>
+              startOptions.onComplete?.(completedAt),
+            )
+          }
         }
       }
 
@@ -493,7 +514,11 @@ export function createGuitarRoomBand(
       if (!completionScheduled) {
         interval = window.setInterval(schedule, schedulerIntervalMs)
       }
-      return { expectedHitTimesMs }
+      return {
+        expectedHitTimesMs,
+        exerciseStartedAtSeconds: firstExerciseAt,
+        completedAtSeconds: completedAt,
+      }
     },
     stop,
     getAudioGraph: () => graph,

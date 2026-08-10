@@ -114,6 +114,19 @@ describe('useGuitarNightLoopController', () => {
     })
   })
 
+  it('restages an exact review range as one atomic recovery action', () => {
+    createRoot((dispose) => {
+      const loop = useGuitarNightLoopController({ limit: () => 16 })
+
+      expect(loop.setSpan({ start: 4, end: 8 })).toBe(true)
+      expect(loop.span()).toEqual({ start: 4, end: 8 })
+
+      expect(loop.setSpan({ start: 20, end: 20 })).toBe(false)
+      expect(loop.span()).toEqual({ start: 4, end: 8 })
+      dispose()
+    })
+  })
+
   it('ignores a mark taken from an unusable playhead', () => {
     createRoot((dispose) => {
       const loop = useGuitarNightLoopController({ limit: () => 60 })
