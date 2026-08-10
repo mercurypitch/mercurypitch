@@ -455,6 +455,86 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
   }
 })
 
+test('keeps the first-win stage dominant across phone orientations @smoke', async ({
+  browser,
+}) => {
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    ...devices['iPhone 12'],
+    baseURL,
+    viewport: { width: 390, height: 844 },
+  })
+  const page = await context.newPage()
+
+  const expectStageFirstLayout = async (
+    minimumStageRatio: number,
+    cameraRadius: string,
+  ): Promise<void> => {
+    const metrics = await page.evaluate(() => {
+      const stage = document.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-stage"]',
+      )
+      const deck = document.querySelector<HTMLElement>(
+        '[data-testid="guitar-night-first-win-deck"]',
+      )
+      const stageBounds = stage?.getBoundingClientRect()
+      const deckBounds = deck?.getBoundingClientRect()
+      return {
+        deckBottom: deckBounds?.bottom ?? Infinity,
+        innerHeight: window.innerHeight,
+        innerWidth: window.innerWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        stageHeight: stageBounds?.height ?? 0,
+        stageWidth: stageBounds?.width ?? 0,
+      }
+    })
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.innerWidth + 2)
+    expect(metrics.deckBottom).toBeLessThanOrEqual(metrics.innerHeight + 1)
+    expect(metrics.stageWidth).toBeGreaterThanOrEqual(metrics.innerWidth - 2)
+    expect(metrics.stageHeight).toBeGreaterThanOrEqual(
+      metrics.innerHeight * minimumStageRatio,
+    )
+    await expect(
+      page.locator('[data-testid="guitar-night-stage"] canvas'),
+    ).toHaveAttribute('data-camera-radius', cameraRadius)
+  }
+
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await expect(page.getByTestId('guitar-night-first-win')).toBeVisible()
+    await expectStageFirstLayout(0.55, '32.0000')
+
+    const firstWinButtons = page
+      .getByTestId('guitar-night-first-win')
+      .getByRole('button')
+    for (let index = 0; index < (await firstWinButtons.count()); index += 1) {
+      const bounds = await firstWinButtons.nth(index).boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds?.width).toBeGreaterThanOrEqual(44)
+      expect(bounds?.height).toBeGreaterThanOrEqual(44)
+    }
+
+    await page.setViewportSize({ width: 844, height: 390 })
+    await expectStageFirstLayout(0.55, '21.0000')
+
+    for (const viewport of [
+      { width: 720, height: 450, camera: '32.0000' },
+      { width: 1024, height: 600, camera: '21.0000' },
+      { width: 1440, height: 900, camera: '21.0000' },
+    ]) {
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      })
+      await expectStageFirstLayout(0.55, viewport.camera)
+    }
+  } finally {
+    await context.close()
+  }
+})
+
 test('keeps the song actions reachable in a short desktop viewport @smoke', async ({
   page,
 }) => {
@@ -705,7 +785,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     fullRoomLayout.viewportWidth * 0.98,
   )
   expect(fullRoomLayout.stageHeight).toBeGreaterThanOrEqual(
-    fullRoomLayout.viewportHeight * 0.35,
+    fullRoomLayout.viewportHeight * 0.6,
   )
   expect(fullRoomLayout.deckBottom).toBeLessThanOrEqual(
     fullRoomLayout.viewportHeight + 1,
@@ -810,7 +890,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await page.waitForTimeout(250)
   expect(Number(await songPosition.inputValue())).toBeCloseTo(pausedPosition, 1)
 
-  await room.getByRole('button', { name: 'Songs', exact: true }).click()
+  await room.getByRole('button', { name: 'Back to Songs', exact: true }).click()
   const resumeSong = page.getByRole('button', { name: /midnight-drums\.wav/ })
   await expect(resumeSong).toContainText('Resume')
   await resumeSong.click()
@@ -887,7 +967,7 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
     const mobileStage = await stage.boundingBox()
     expect(mobileStage).not.toBeNull()
     expect(mobileStage?.width).toBeGreaterThanOrEqual(388)
-    expect(mobileStage?.height).toBeGreaterThanOrEqual(844 * 0.35)
+    expect(mobileStage?.height).toBeGreaterThanOrEqual(844 * 0.65)
     await expect(
       room.getByRole('button', { name: 'Play backing', exact: true }),
     ).toBeVisible()
@@ -903,7 +983,7 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
       viewportMetrics.clientWidth + 2,
     )
 
-    const controls = room.locator('button, input[type="range"]')
+    const controls = room.locator('button:visible, input[type="range"]:visible')
     expect(await controls.count()).toBeGreaterThanOrEqual(4)
     for (let index = 0; index < (await controls.count()); index += 1) {
       const control = controls.nth(index)
@@ -917,6 +997,21 @@ test('keeps the prepared-song room controls touchable without phone overflow @sm
         viewportMetrics.clientWidth,
       )
     }
+
+    await page.setViewportSize({ width: 320, height: 568 })
+    const narrowMetrics = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(narrowMetrics.scrollWidth).toBeLessThanOrEqual(
+      narrowMetrics.clientWidth + 2,
+    )
+    await expect(
+      room.getByRole('button', { name: 'Play backing', exact: true }),
+    ).toBeVisible()
+    await expect(
+      room.getByRole('slider', { name: 'Backing volume', exact: true }),
+    ).toBeVisible()
   } finally {
     await context.close()
   }
@@ -943,8 +1038,17 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
     await page.getByRole('button', { name: 'Enter room', exact: true }).click()
 
     const room = page.getByTestId('guitar-night-room')
+    const bandControls = room.locator(
+      'summary[aria-label^="Band and loop controls"]',
+    )
+    await bandControls.click()
     const channels = room.locator('[aria-label="Backing tracks"] button')
     await expect(channels).toHaveCount(6)
+    await channels.first().focus()
+    await page.keyboard.press('Escape')
+    await expect(bandControls).toBeFocused()
+    await expect(bandControls.locator('..')).not.toHaveAttribute('open', '')
+    await bandControls.click()
 
     const layout = await room.evaluate((element) => {
       const panel = element.getBoundingClientRect()
@@ -1007,7 +1111,7 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
       phoneLayout.stripClientWidth + 1,
     )
     expect(phoneLayout.deckBottom).toBeLessThanOrEqual(845)
-    expect(phoneLayout.stageHeight).toBeGreaterThanOrEqual(844 * 0.35)
+    expect(phoneLayout.stageHeight).toBeGreaterThanOrEqual(844 * 0.65)
   } finally {
     await context.close()
   }

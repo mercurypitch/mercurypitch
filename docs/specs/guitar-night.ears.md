@@ -21,15 +21,16 @@ muted, while two-stem fallback copy states that guitar remains in the
 accompaniment.
 
 Authored and measured reference adapters, the score-only rehearsal room,
-shared A/B loop ownership, timestamped AudioWorklet attacks, and route-local
-latency calibration are implemented on open PR
+shared A/B loop ownership, timestamped AudioWorklet attacks, route-local
+latency calibration, the stage-first beginner lesson, and the responsive
+Velvet camera/target treatment are implemented on open PR
 [#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remain in
 review until that PR is merged. The same PR now records those attacks in one
 bounded, memory-only take with stable identity, exact or explicitly coarse
 clock provenance, and a pinned latency snapshot. The
 authored-score-to-recording alignment, release and continuous-pitch evidence,
-fast-passage fixture validation, the major 3D upgrade, and legacy runtime
-cutover remain target work.
+fast-passage fixture validation, an opt-in six-string highway composition,
+and legacy runtime cutover remain target work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -383,6 +384,13 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   step. WHEN the schema or flow version is incompatible, a named migration
   shall run or step progress shall restart safely while retaining player
   tuning, handedness, tab familiarity, and prior completion history.
+- **REQ-GN-FIRST-015 — Stage-first lesson:** WHILE the first-win exercise is
+  open, its 3D instrument shall own the flexible viewport; the short reading
+  explanation shall overlay that stage, and progress plus the primary musical
+  actions shall live in one bounded bottom deck. Opening intro adjustments
+  shall not resize the instrument or introduce a nested document scroller.
+  Flow shall show fret numbers for this tab lesson, and each accepted untimed
+  fallback hit shall visibly advance to the next configured target.
 
 ## Initial Songs play-along — `GN-SONG-*`
 
@@ -485,6 +493,17 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   attached, THEN the shared performance source shall expose no beat or tempo;
   Flow, Tab, and Neck shall remain useful in an explicit free-play state and
   shall not infer score time from backing seconds.
+- **REQ-GN-STAGE-010 — Stage-first control disclosure:** WHILE a backing or
+  score room is open, song identity, Back, the primary transport, and
+  Flow/Tab/Neck shall remain immediately available. Band channels, loop marks,
+  count-in, guide sound, and other setup shall use bounded stage-owned sheets
+  rather than permanent rows that reduce the instrument. Those sheets shall
+  overlay without changing stage dimensions and remain usable in portrait and
+  short landscape viewports.
+- **REQ-GN-STAGE-011 — Surface-owned 3D framing:** Guitar Night may supply a
+  responsive starting and Reset camera, Velvet target scale, and arrival rail
+  through the shared 3D adapter. Without those host overrides, the legacy
+  Guitar renderer shall retain its existing camera and display defaults.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 

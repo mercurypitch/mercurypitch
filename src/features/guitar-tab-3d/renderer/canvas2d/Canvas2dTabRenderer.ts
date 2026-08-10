@@ -239,9 +239,9 @@ export class Canvas2dTabRenderer implements TabRenderer {
     if (scene.display.theme === 'velvet') {
       // The room owns the photographic world. Keep the highway legible while
       // allowing that environment to breathe through the canvas.
-      grad.addColorStop(0, 'rgba(9, 8, 6, 0.5)')
-      grad.addColorStop(0.62, 'rgba(23, 17, 13, 0.68)')
-      grad.addColorStop(1, 'rgba(13, 11, 9, 0.82)')
+      grad.addColorStop(0, 'rgba(9, 8, 6, 0.18)')
+      grad.addColorStop(0.62, 'rgba(23, 17, 13, 0.3)')
+      grad.addColorStop(1, 'rgba(13, 11, 9, 0.5)')
     } else {
       grad.addColorStop(0, '#05050a')
       grad.addColorStop(1, '#0e0e17')
@@ -257,9 +257,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     maxFret: number,
   ): void {
     const velvet = scene.display.theme === 'velvet'
-    const laneColor = velvet
-      ? 'rgba(224,164,93,0.105)'
-      : 'rgba(120,150,220,0.1)'
+    const laneColor = velvet ? 'rgba(224,164,93,0.16)' : 'rgba(120,150,220,0.1)'
     for (let f = 0; f <= maxFret; f++) {
       const x = this.fretX(f, maxFret)
       this.line(ctx, x, 0, 0, x, 0, -FLOOR_DEPTH, laneColor, 1)
@@ -288,13 +286,35 @@ export class Canvas2dTabRenderer implements TabRenderer {
         z,
         downbeat
           ? velvet
-            ? 'rgba(106,202,189,0.24)'
+            ? 'rgba(106,202,189,0.32)'
             : 'rgba(140,170,235,0.22)'
           : velvet
-            ? 'rgba(224,164,93,0.07)'
+            ? 'rgba(224,164,93,0.1)'
             : 'rgba(120,150,220,0.07)',
         downbeat ? 2 : 1,
       )
+    }
+
+    if (velvet) {
+      this.line(
+        ctx,
+        left,
+        Y_BOTTOM,
+        0,
+        right,
+        Y_BOTTOM,
+        0,
+        'rgba(242,201,143,0.86)',
+        3,
+      )
+      const now = this.project(right, Y_BOTTOM, 0)
+      if (now.w > NEAR) {
+        ctx.font = '700 10px ui-sans-serif, system-ui, sans-serif'
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'bottom'
+        ctx.fillStyle = 'rgba(242,201,143,0.9)'
+        ctx.fillText('NOW', now.x, now.y - 7)
+      }
     }
   }
 
@@ -395,7 +415,11 @@ export class Canvas2dTabRenderer implements TabRenderer {
         // Keep the target ring focused on the fret cell (~60% of its width) so
         // it doesn't crowd/touch the neighbouring fret wires when many notes
         // are on screen.
-        const r = Math.max(5, this.cellPx(x, y, 0, maxFret) * 0.3)
+        const r = Math.max(
+          scene.display.theme === 'velvet' ? 18 : 5,
+          this.cellPx(x, y, 0, maxFret) *
+            (scene.display.theme === 'velvet' ? 0.38 : 0.3),
+        )
         ctx.beginPath()
         ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
         ctx.strokeStyle = withAlpha(
@@ -445,7 +469,9 @@ export class Canvas2dTabRenderer implements TabRenderer {
       const p = this.project(this.fretX(f, maxFret), Y_BOTTOM - 0.3, 0)
       if (p.w <= NEAR) continue
       ctx.fillStyle = isFretMarker(f)
-        ? 'rgba(120,170,255,0.9)'
+        ? scene.display.theme === 'velvet'
+          ? 'rgba(242,201,143,0.9)'
+          : 'rgba(120,170,255,0.9)'
         : 'rgba(255,255,255,0.4)'
       ctx.font = `${isFretMarker(f) ? '600 ' : ''}11px ui-sans-serif, system-ui, sans-serif`
       ctx.fillText(String(f), p.x, p.y)
@@ -507,7 +533,12 @@ export class Canvas2dTabRenderer implements TabRenderer {
     beatWindow: number,
     isNext: boolean,
   ): void {
-    const color = colorForString(scene.display.stringColors, note.stringIndex)
+    const stringColor = colorForString(
+      scene.display.stringColors,
+      note.stringIndex,
+    )
+    const color =
+      scene.display.theme === 'velvet' && isNext ? '#f2c98f' : stringColor
     const headT = Math.max(t0, -0.03)
     const [hx, hy, hz] = this.notePos(
       note.stringIndex,
@@ -558,7 +589,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     }
 
-    const w = Math.max(5, cell * 0.82 * (1 + near * 0.12) * (isNext ? 1.12 : 1))
+    const nextTargetFloor =
+      scene.display.theme === 'velvet' && isNext
+        ? Math.min(42, Math.max(34, this.cssWidth * 0.065))
+        : 5
+    const w = Math.max(
+      nextTargetFloor,
+      cell * 0.82 * (1 + near * 0.12) * (isNext ? 1.12 : 1),
+    )
     const h = w * 0.66
     ctx.save()
     if (near > 0) {
@@ -585,7 +623,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
     ctx.restore()
 
-    const fontPx = Math.max(7, Math.min(13, w * 0.5))
+    const fontPx = Math.max(
+      7,
+      Math.min(scene.display.theme === 'velvet' && isNext ? 16 : 13, w * 0.5),
+    )
     if (fontPx >= 8 && far === 0) {
       const label = scene.showNoteLabels ? note.noteName : String(note.fret)
       ctx.font = `600 ${fontPx}px ui-sans-serif, system-ui, sans-serif`

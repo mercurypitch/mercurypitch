@@ -128,6 +128,9 @@ export function useGuitarFirstWinController(
     persist(nextProgress)
     const nextHits = Math.min(hits() + 1, config.freshHitsRequested)
     setHits(nextHits)
+    if (status() !== 'playing') {
+      setPlayheadBeat(Math.min(nextHits, Math.max(0, notes().length - 1)))
+    }
     if (nextHits >= config.freshHitsRequested) finish()
     return true
   }

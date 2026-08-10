@@ -31,6 +31,9 @@ analysis, or timer starts on entry. The room status states that it is quiet.
   and keyboard available before any listening permission. Its explicit
   count-in starts a local percussion pulse; progress and expert skip are
   versioned and stored locally.
+- The first win is a room, not a lesson card: its short tab explanation floats
+  over the shared stage, accepted free taps move the visible fret target, and
+  progress plus the two musical actions stay in one bounded bottom deck.
 - `Load a song` opens completed separation sessions already on this device or
   selects one new local audio file. A distinct durable guitar stem may be
   staged muted; a two-stem instrumental must say that guitar remains in its
@@ -117,10 +120,10 @@ review until that PR is merged.
 - A staged song exposes one explicit `Enter room` handoff. Entering remains
   silent and cuts over from the setup faceplate to a bounded `100dvh`
   workspace. The song identity becomes a compact signal bar, the photographic
-  room and 3D highway own the flexible centre, and the honest mix description,
-  time rail, speed stepper, one amber Play control, and channels form an
-  edge-to-edge pedalboard derived from the approved showcase. The live room is
-  not nested inside the entry card.
+  room and 3D highway own the flexible centre. The time rail, speed stepper,
+  volume and one amber Play control form the edge-to-edge pedalboard; honest
+  mix details, loops and channels live in the stage-owned Band sheet. The live
+  room is not nested inside the entry card.
 - The durable catalog reads a lightweight stem manifest first and hydrates
   only the selected session-and-kind rows. It does not materialize unrelated
   blobs merely to decide which room mix is available.
@@ -152,7 +155,9 @@ review until that PR is merged.
   `Guitar3DStage` and performance timeline/source contract. The renderer scene
   conversion is a pure tested boundary; legacy controls remain unchanged.
   `Flow` adapts that renderer to a translucent Velvet palette and direct
-  mouse/touch camera while the rehearsal room remains visible; `Tab` and
+  mouse/touch camera while the rehearsal room remains visible. Guitar Night
+  supplies its own responsive entry/Reset framing, larger next target and
+  truthful `NOW` rail without changing the legacy renderer defaults; `Tab` and
   `Neck` provide quieter alternate views. A song without an attached score
   exposes a nullable beat, says no tab is attached, and remains a useful
   free-play fretboard instead of deriving a fake beat from elapsed seconds.
@@ -207,13 +212,13 @@ subordinate to the crop until the source receives a final retouch.
 1. Finish the fast-input evidence gate with named guitar fixtures, real-device
    browser checks, latency distributions, and explicit microphone, direct
    interface and MIDI adapters before publishing speed or quality claims.
-2. Add phrase-aware evidence, post-take review and one-action recovery to Jam
-   Doctor without retaining raw audio or turning the room into an analytics
-   dashboard.
-3. Upgrade the shared 3D instrument with readable techniques, calm camera
-   presets, reduced-effects behavior and measured mobile performance.
-4. Extend the configurable first win into a beginner progression, then add the
+2. Add an opt-in Guitar Night six-string highway presentation, with frets
+   encoded in targets, readable techniques, reduced-effects behavior and
+   measured mobile performance; keep the legacy fret-axis composition intact.
+3. Extend the configurable first win into a beginner progression, then add the
    professional band presets, drummer controls and take history.
-5. Complete the required prototype-fidelity and mobile art-direction pass, then
-   move the proved runtime lifecycle beneath the remaining legacy Guitar
-   controls before an owner-approved cutover.
+4. Complete authored-score-to-recording alignment plus release and
+   continuous-pitch evidence before adding sustain or intonation observations.
+5. Move the proved runtime lifecycle beneath the remaining legacy Guitar
+   controls before an owner-approved cutover, then finish real-device art and
+   performance tuning.

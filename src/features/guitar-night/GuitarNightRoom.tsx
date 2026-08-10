@@ -3,7 +3,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Mic, Pause, Play, SkipBack, Volume2, VolumeX, } from '@/components/icons'
+import { ChevronLeft, Mic, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
@@ -89,6 +89,7 @@ function statusCopy(status: GuitarBackingTransportStatus): string {
 
 export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
+  let bandSummary!: HTMLElement
   let doctorTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
   const listening = useGuitarListeningController({
@@ -239,20 +240,31 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     <section
       class={styles.roomPanel}
       data-testid="guitar-night-room"
+      data-room-kind="backing"
       data-playback-mode={props.transport.loadMode() ?? 'unloaded'}
     >
       <div class={styles.panelEdge} aria-hidden="true" />
       <div class={styles.roomHeadingRow}>
-        <div>
-          <p class={styles.eyebrow}>
-            Play-along ·{' '}
-            {props.backing.defaultMix.kind === 'parts'
-              ? 'band parts'
-              : 'two-stem mix'}
-          </p>
-          <h1 ref={roomHeading} tabindex="-1" title={props.backing.title}>
-            {props.backing.title}
-          </h1>
+        <div class={styles.roomIdentity}>
+          <button
+            class={styles.roomBack}
+            type="button"
+            aria-label="Back to Songs"
+            onClick={leaveRoom}
+          >
+            <ChevronLeft />
+          </button>
+          <div>
+            <p class={styles.eyebrow}>
+              Play-along ·{' '}
+              {props.backing.defaultMix.kind === 'parts'
+                ? 'band parts'
+                : 'two-stem mix'}
+            </p>
+            <h1 ref={roomHeading} tabindex="-1" title={props.backing.title}>
+              {props.backing.title}
+            </h1>
+          </div>
         </div>
         <div class={styles.roomHeadingMeta}>
           <span class={styles.trackCount}>
@@ -261,6 +273,91 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             device
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <details
+              class={styles.scoreSession}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape') return
+                event.preventDefault()
+                event.stopPropagation()
+                event.currentTarget.open = false
+                queueMicrotask(() => bandSummary.focus())
+              }}
+            >
+              <summary
+                ref={bandSummary}
+                aria-label={`Band and loop controls, ${props.backing.stems.length} ${props.backing.stems.length === 1 ? 'track' : 'tracks'}`}
+              >
+                <span aria-hidden="true">
+                  <SlidersHorizontal />
+                </span>
+                <strong>Band</strong>
+                <small>{props.backing.stems.length}</small>
+              </summary>
+              <div
+                class={`${styles.scoreSessionPanel} ${styles.bandSessionPanel}`}
+                data-testid="guitar-night-band-panel"
+              >
+                <header>
+                  <div>
+                    <strong>Band mix</strong>
+                    <small>{mixCopy()}</small>
+                  </div>
+                </header>
+                <Show
+                  when={
+                    props.backing.defaultMix.kind === 'mixed-instrumental' &&
+                    props.onSeparateGuitar !== undefined
+                  }
+                >
+                  <button
+                    class={styles.bandUpgrade}
+                    type="button"
+                    onClick={() => props.onSeparateGuitar?.()}
+                  >
+                    <strong>Separate guitar</strong>
+                    <small>Prepare independent band controls.</small>
+                  </button>
+                </Show>
+                <div class={styles.scoreSessionLoop}>
+                  <div>
+                    <strong>Loop this passage</strong>
+                    <small>Set A and B at the current song position.</small>
+                  </div>
+                  <GuitarNightLoopControls
+                    span={loop.span()}
+                    pending={loop.isPending()}
+                    hasStart={loop.markA() !== null}
+                    hasEnd={loop.markB() !== null}
+                    format={formatTime}
+                    onMarkStart={() => loop.markStart(position())}
+                    onMarkEnd={() => loop.markEnd(position())}
+                    onClear={loop.clear}
+                  />
+                </div>
+                <div class={styles.channelStrip} aria-label="Backing tracks">
+                  <For each={props.transport.tracks()}>
+                    {(track) => (
+                      <button
+                        type="button"
+                        classList={{ [styles.channelMuted]: track.muted }}
+                        aria-pressed={!track.muted}
+                        aria-label={`${track.label} ${track.muted ? 'muted' : 'on'}`}
+                        disabled={!track.available}
+                        onClick={() =>
+                          props.transport.setTrackMuted(track.id, !track.muted)
+                        }
+                      >
+                        <span aria-hidden="true">
+                          {track.muted ? <VolumeX /> : <Volume2 />}
+                        </span>
+                        <strong>{track.label}</strong>
+                        <small>{track.muted ? 'Muted' : 'In mix'}</small>
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </div>
+            </details>
             <button
               type="button"
               classList={{ [styles.listeningActive]: isListening() }}
@@ -351,29 +448,6 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </Show>
 
       <div class={styles.transportDeck} data-testid="guitar-night-deck">
-        <div class={styles.transportIdentity}>
-          <span>{mixCopy()}</span>
-          <Show
-            when={
-              props.backing.defaultMix.kind === 'mixed-instrumental' &&
-              props.onSeparateGuitar !== undefined
-            }
-          >
-            <button type="button" onClick={() => props.onSeparateGuitar?.()}>
-              Separate guitar
-            </button>
-          </Show>
-          <GuitarNightLoopControls
-            span={loop.span()}
-            pending={loop.isPending()}
-            hasStart={loop.markA() !== null}
-            hasEnd={loop.markB() !== null}
-            format={formatTime}
-            onMarkStart={() => loop.markStart(position())}
-            onMarkEnd={() => loop.markEnd(position())}
-            onClear={loop.clear}
-          />
-        </div>
         <div class={styles.timeRail}>
           <span>{formatTime(position())}</span>
           <input
@@ -456,29 +530,6 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             />
           </label>
         </div>
-
-        <div class={styles.channelStrip} aria-label="Backing tracks">
-          <For each={props.transport.tracks()}>
-            {(track) => (
-              <button
-                type="button"
-                classList={{ [styles.channelMuted]: track.muted }}
-                aria-pressed={!track.muted}
-                aria-label={`${track.label} ${track.muted ? 'muted' : 'on'}`}
-                disabled={!track.available}
-                onClick={() =>
-                  props.transport.setTrackMuted(track.id, !track.muted)
-                }
-              >
-                <span aria-hidden="true">
-                  {track.muted ? <VolumeX /> : <Volume2 />}
-                </span>
-                <strong>{track.label}</strong>
-                <small>{track.muted ? 'Muted' : 'In mix'}</small>
-              </button>
-            )}
-          </For>
-        </div>
       </div>
 
       <Show when={props.transport.error()}>
@@ -490,9 +541,6 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       </Show>
 
       <div class={styles.roomFooter}>
-        <button type="button" onClick={leaveRoom}>
-          Songs
-        </button>
         <p>
           <span aria-hidden="true" />
           <strong role="status" aria-live="polite" aria-atomic="true">

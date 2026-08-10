@@ -7,7 +7,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { Ear, Mic, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, } from '@/components/icons'
+import { ChevronLeft, Ear, Mic, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, } from '@/components/icons'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
 import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
@@ -526,20 +526,32 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     >
       <div class={styles.panelEdge} aria-hidden="true" />
       <div class={styles.roomHeadingRow}>
-        <div>
-          <p class={styles.eyebrow}>
-            Tab rehearsal ·{' '}
-            {displayedReference().tracks.length > 1
-              ? displayedReference().trackName
-              : 'this device'}
-          </p>
-          <h1
-            ref={roomHeading}
-            tabindex="-1"
-            title={displayedReference().title}
+        <div class={styles.roomIdentity}>
+          <button
+            type="button"
+            class={styles.roomBack}
+            aria-label="Back to Songs"
+            onClick={leaveRoom}
           >
-            {displayedReference().title}
-          </h1>
+            <span aria-hidden="true">
+              <ChevronLeft />
+            </span>
+          </button>
+          <div>
+            <p class={styles.eyebrow}>
+              Tab rehearsal ·{' '}
+              {displayedReference().tracks.length > 1
+                ? displayedReference().trackName
+                : 'this device'}
+            </p>
+            <h1
+              ref={roomHeading}
+              tabindex="-1"
+              title={displayedReference().title}
+            >
+              {displayedReference().title}
+            </h1>
+          </div>
         </div>
         <div class={styles.roomHeadingMeta}>
           <span class={styles.trackCount}>
@@ -893,9 +905,6 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
 
       <div class={styles.roomFooter}>
         <div class={styles.roomFooterActions}>
-          <button type="button" onClick={leaveRoom}>
-            Songs
-          </button>
           <Show when={room.status() === 'complete'}>
             <button
               type="button"

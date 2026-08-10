@@ -4,6 +4,7 @@
 import type { Accessor } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { GuitarTab3DView } from '@/features/guitar-tab-3d/GuitarTab3DView'
+import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import type { TabScene } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { Tab3DControls } from '@/features/guitar-tab-3d/ui/Tab3DHud'
 
@@ -19,6 +20,8 @@ export interface Guitar3DStageProps {
   ariaLabel?: Accessor<string>
   fallbackText?: Accessor<string>
   borderRadius?: Accessor<string>
+  /** Host-owned starting/reset framing; absent preserves the legacy camera. */
+  cameraPreset?: Accessor<CameraState>
   /** The instrument the notes sit on. Absent leaves the neck inferred. */
   tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
 }
@@ -38,6 +41,7 @@ export function Guitar3DStage(props: Guitar3DStageProps) {
       ariaLabel={props.ariaLabel}
       fallbackText={props.fallbackText}
       borderRadius={props.borderRadius}
+      cameraPreset={props.cameraPreset}
       tuning={props.tuning}
     />
   )
