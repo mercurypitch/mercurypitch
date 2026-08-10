@@ -352,6 +352,11 @@ export default defineConfig(({ command, mode }) => {
             // app library graph (stores, IndexedDB and media code).
             if (id.includes('/src/components/icons.')) return 'shared-icons'
             if (id.includes('/src/lib/use-focus-trap.')) return 'focus-trap'
+            // These dependency-free runtime leaves are shared with the main
+            // app, but putting them into its broad pitch-core/advanced chunks
+            // turns those chunks into static Piano Night dependencies.
+            if (id.includes('/src/lib/note-utils.')) return 'note-utils'
+            if (id.includes('/src/lib/audio-unlock.')) return 'audio-unlock'
             if (id.includes('node_modules')) {
               if (id.includes('onnxruntime')) return undefined
               // A dependency reached ONLY through `await import(...)` still

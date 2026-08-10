@@ -66,9 +66,9 @@ export interface PianoLibraryServiceDependencies {
 }
 
 function sourceHash(project: PianoProject): string {
-  return project.source.kind === 'midi'
-    ? project.source.sha256
-    : project.source.sourceHash
+  if (project.source.kind === 'midi') return project.source.sha256
+  if (project.source.kind === 'legacy-midi') return project.source.sourceHash
+  return project.source.contentHash
 }
 
 function toRecord(project: PianoProject): PianoProjectRecord<PianoProject> {

@@ -5,7 +5,7 @@
 // The transport owns no animation or timer loop. Consumers sample playheadBeat
 // on their existing render loop, while AudioContext.currentTime remains the
 // sole time authority. Construction and configuration stay silent: the context
-// is created and activated synchronously from the first explicit Play intent.
+// is created synchronously from the first explicit Play or live-input intent.
 
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
@@ -23,6 +23,11 @@ export interface PianoAudioClockTransportOptions {
 
 export interface PianoAudioClockTransport extends PianoPerformanceTransport {
   error: Accessor<string | null>
+  /**
+   * Activate the route-owned audio context without starting the score or
+   * moving the playhead. Call this from live-key and MIDI-connect gestures.
+   */
+  activate(): Promise<boolean>
   getAudioContext(): AudioContext | null
   subscribe(listener: () => void): () => void
   dispose(): Promise<void>
@@ -71,6 +76,7 @@ export function createPianoAudioClockTransport(
   let startedBeat = 0
   let startedAtContextTime = 0
   let generation = 0
+  let pendingActivation: Promise<boolean> | null = null
   let pendingPlay: Promise<boolean> | null = null
   let disposed = false
 
@@ -142,6 +148,35 @@ export function createPianoAudioClockTransport(
     return created
   }
 
+  const activate = (): Promise<boolean> => {
+    if (disposed) return Promise.resolve(false)
+    if (pendingActivation !== null) return pendingActivation
+
+    let currentContext: AudioContext
+    try {
+      // Keep creation synchronous with the caller's gesture. In particular,
+      // do not move this below the async boundary in the request below.
+      currentContext = ensureContext()
+    } catch {
+      return Promise.resolve(false)
+    }
+
+    const request = (async (): Promise<boolean> => {
+      try {
+        await activateContext(currentContext)
+      } catch {
+        return false
+      }
+      return !disposed && context === currentContext
+    })()
+
+    pendingActivation = request
+    void request.finally(() => {
+      if (pendingActivation === request) pendingActivation = null
+    })
+    return request
+  }
+
   const rebasePlayingRate = (setRate: () => void): void => {
     if (currentPhase !== 'playing' || context === null) {
       setRate()
@@ -187,13 +222,8 @@ export function createPianoAudioClockTransport(
     setPhase('loading')
 
     const request = (async (): Promise<boolean> => {
-      let currentContext: AudioContext
-      try {
-        // Keep creation before the first await so this remains in the Play
-        // gesture browsers require for Web Audio activation.
-        currentContext = ensureContext()
-        await activateContext(currentContext)
-      } catch {
+      const activated = await activate()
+      if (!activated) {
         if (!disposed && requestGeneration === generation) {
           setPhase('error', AUDIO_START_ERROR)
         }
@@ -201,6 +231,8 @@ export function createPianoAudioClockTransport(
       }
 
       if (disposed || requestGeneration !== generation) return false
+      const currentContext = context
+      if (currentContext === null) return false
       const latestDuration = totalBeats()
       if (latestDuration <= 0) {
         parkedBeat = 0
@@ -241,6 +273,7 @@ export function createPianoAudioClockTransport(
       return currentError
     },
 
+    activate,
     play: beginPlay,
 
     pause() {
@@ -325,6 +358,7 @@ export function createPianoAudioClockTransport(
       if (disposed) return
       disposed = true
       generation += 1
+      pendingActivation = null
       pendingPlay = null
       parkedBeat = 0
       startedBeat = 0

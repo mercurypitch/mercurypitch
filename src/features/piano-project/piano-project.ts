@@ -27,9 +27,19 @@ export interface PianoProjectLegacyMidiSource {
   ticksPerQuarter: number
 }
 
+/** Stable identity for a first-party project shipped with MercuryPitch. */
+export interface PianoProjectBundledSource {
+  kind: 'bundled'
+  catalogId: string
+  revision: number
+  contentHash: string
+  ticksPerQuarter: number
+}
+
 export type PianoProjectSource =
   | PianoProjectMidiSource
   | PianoProjectLegacyMidiSource
+  | PianoProjectBundledSource
 
 export interface PianoProjectEventPosition {
   /** Zero-based MTrk index in the source file. */
@@ -390,7 +400,21 @@ function validateSource(value: unknown): void {
     }
     return
   }
-  invalidProject('source.kind', 'expected "midi" or "legacy-midi".')
+  if (source.kind === 'bundled') {
+    nonEmptyStringAt(source.catalogId, 'source.catalogId', 1024)
+    integerAt(source.revision, 'source.revision', 1, 0x7fffffff)
+    if (
+      typeof source.contentHash !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(source.contentHash)
+    ) {
+      invalidProject(
+        'source.contentHash',
+        'expected a lowercase SHA-256 digest.',
+      )
+    }
+    return
+  }
+  invalidProject('source.kind', 'expected "midi", "legacy-midi", or "bundled".')
 }
 
 function validateChannelEvent(

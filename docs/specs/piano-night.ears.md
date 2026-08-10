@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slice 2 implemented.
+**Status:** Phase 1A and Slice 2 implemented; Slice 3 in progress.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -317,3 +317,116 @@ describe the first visual slice and remain historically accurate.
 | `PN-TRANSPORT`   | Deterministic injected-clock tests for silent construction, play/pause/seek, tempo/speed continuity, completion, and disposal |
 | `PN-INPUT`       | Normalized input and Web MIDI port fixtures, including dense-chord/pedal soak, device selection, hot-plug, panic, and cleanup |
 | `PN-COMPAT`      | Legacy-adapter production wiring, focused existing playback regressions, and a real-pointer Piano key and scrub browser smoke |
+
+## Slice 3 — standalone free Piano Night runtime
+
+Slice 3 turns the standalone Performance Horizon pilot into a truthful free
+practice session. It composes the route-neutral project, transport, and input
+foundations without importing the current App-owned Piano runtime. The
+Phase 1A preview requirements above remain the historical contract for the
+first visual slice; the requirements below supersede preview-only copy and
+Nocturne-only room behavior inside `/piano-night`.
+
+### Prepared session — `PN-SESSION-*`
+
+- **REQ-PN-SESSION-001 — Canonical prepared project:** WHEN Piano Night opens
+  without a handoff, it shall stage one bundled, canonical Piano project whose
+  title, tempo, duration, pitches, note starts, and note lengths are the source
+  for every performance lens.
+- **REQ-PN-SESSION-002 — Store-free first paint:** Loading the prepared
+  project shall not open IndexedDB, read the legacy MIDI local-storage key,
+  create a Worker, or import the App-owned song library.
+- **REQ-PN-SESSION-003 — One live projection:** Fall, Score, Keys, the session
+  clock, and active key highlights shall project the same transport playhead
+  and project notes rather than advance independent preview timelines.
+- **REQ-PN-SESSION-004 — Honest coach boundary:** WHILE phrase analysis has no
+  measured performance evidence, coach guidance, dynamics, and pedal content
+  shall remain explicitly labelled as a practice prompt rather than a scored
+  result.
+- **REQ-PN-SESSION-005 — No future surfaces:** The standalone free session
+  shall not statically import VexFlow, the main App, a soundbank parser,
+  premium-background access, or arranger modules.
+
+### Standalone transport and sound — `PN-PLAYBACK-*`
+
+- **REQ-PN-PLAYBACK-001 — Silent mount:** Mounting the standalone runtime
+  shall not create or resume an `AudioContext`, schedule a note, start a
+  render loop, or request MIDI or microphone permission.
+- **REQ-PN-PLAYBACK-002 — Explicit activation:** WHEN the player explicitly
+  chooses Play, Connect MIDI, or presses an on-screen key, Piano Night may
+  create and resume exactly one route-owned `AudioContext`.
+  This supersedes the Play-only activation wording in `REQ-PN-TRANSPORT-001`
+  for this standalone live-input shell while preserving silent construction.
+- **REQ-PN-PLAYBACK-003 — Real transport owner:** WHEN Play succeeds, the one
+  fallboard transport shall control the shared audio-clock transport; Pause,
+  Space, tempo changes, phrase seeks, and completion shall update that same
+  owner.
+- **REQ-PN-PLAYBACK-004 — Audio-clock scheduling:** Scheduled project notes
+  shall derive their start and stop times from the transport's audio clock.
+  A presentation frame loop may sample the playhead but shall not become a
+  competing time authority.
+- **REQ-PN-PLAYBACK-005 — Bounded fallback:** The free shell shall identify
+  its built-in sound as a lightweight fallback synth, cap simultaneous
+  voices, and release scheduled and live voices on pause, seek, source
+  cleanup, visibility loss, and disposal.
+- **REQ-PN-PLAYBACK-006 — No sampled-piano claim:** The fallback synth shall
+  not be described as a sampled, licensed, premium, or imported piano and
+  shall not load soundbank or sample bytes.
+- **REQ-PN-PLAYBACK-007 — Recoverable activation:** IF audio activation fails,
+  THEN playback shall remain stopped, the interface shall name the failure
+  and recovery, and a later explicit action may retry.
+
+### Touch and MIDI input — `PN-LIVE-INPUT-*`
+
+- **REQ-PN-LIVE-INPUT-001 — Shared input authority:** Touch keys and the
+  selected Web MIDI device shall publish into one normalized Piano input
+  state; active-key and fallback-synth lifetimes shall consume its snapshots.
+- **REQ-PN-LIVE-INPUT-002 — Touch ownership:** Pointer down, movement between
+  keys, pointer up, pointer cancel, lost capture, and disposal shall preserve
+  independent pointer ownership and shall not leave a sounding voice behind.
+- **REQ-PN-LIVE-INPUT-003 — Explicit MIDI connect:** Piano Night shall expose
+  a Connect MIDI action, and only that explicit action may request Web MIDI
+  permission or select the first available input.
+- **REQ-PN-LIVE-INPUT-004 — MIDI truth:** The interface shall distinguish
+  disconnected, requesting, connected, denied, and unsupported MIDI states
+  without claiming that a keyboard is connected before the port reports it.
+- **REQ-PN-LIVE-INPUT-005 — Pedal projection:** WHERE normalized MIDI pedal
+  evidence exists, the session shall project sustain, sostenuto, and soft
+  state; without it, the UI shall show no detected pedal claim.
+- **REQ-PN-LIVE-INPUT-006 — Reachable compact controls:** AT compact widths,
+  Session, Sound, Room, and Coach shall open as attached non-modal sheets
+  above the fixed key horizon so transport and playable keys remain
+  reachable. This supersedes the compact-modal behavior in
+  `REQ-PN-A11Y-005`; desktop modal drawers retain the documented focus trap
+  and restoration behavior.
+- **REQ-PN-LIVE-INPUT-007 — Keyboard alternative:** The playable key horizon
+  shall expose one tab stop, arrow-key movement between visible keys, and an
+  explicit keyboard activation path without creating audio on focus alone.
+
+### Free rooms — `PN-FREE-ROOM-*`
+
+- **REQ-PN-FREE-ROOM-001 — Free identities:** Slice 3 shall ship Afterglow
+  Studio and Morning Conservatory as Piano-specific public room identities,
+  each with landscape and portrait WebP sources.
+- **REQ-PN-FREE-ROOM-002 — Explicit visual selection:** Changing the selected
+  free room shall update only the visual plate and contrast treatment; it
+  shall not change the project, transport, input, synth, mix, or ambience.
+- **REQ-PN-FREE-ROOM-003 — Default and persistence boundary:** Afterglow
+  Studio shall be the prepared-session default. Slice 3 shall keep selection
+  route-local and shall not imply account, cloud, entitlement, or protected
+  preference persistence.
+- **REQ-PN-FREE-ROOM-004 — Light-room legibility:** Morning Conservatory shall
+  use an authored warm contrast treatment so controls and musical state remain
+  readable without forcing the dark-room grade onto the image.
+- **REQ-PN-FREE-ROOM-005 — No premium catalog:** The free room sheet shall not
+  render locked cards, supporter badges, protected URLs, or a premium
+  background picker.
+
+### Slice 3 verification map
+
+| Requirement area | Minimum evidence                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `PN-SESSION`     | Canonical-project projection unit tests, silent standalone mount assertions, and built entry import audit          |
+| `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage               |
+| `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions             |
+| `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions |
