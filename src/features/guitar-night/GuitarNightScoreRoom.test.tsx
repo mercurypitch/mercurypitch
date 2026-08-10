@@ -4,7 +4,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, } from '@/lib/guitar/instrument-tuning'
-import { GuitarNightScoreRoom, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
+import { GuitarNightScoreRoom, scoreAssessmentRange, scoreLoopPendingRestart, } from './GuitarNightScoreRoom'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 
@@ -92,6 +92,46 @@ describe('GuitarNightScoreRoom', () => {
 
     expect(summary.closest('details')?.open).toBe(false)
     expect(document.activeElement).toBe(summary)
+  })
+
+  it('keeps phrase review inside the compact Session layer', () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    fireEvent.click(screen.getByLabelText('Session controls'))
+    expect(
+      screen.getByRole('button', {
+        name: 'Review beat 1 for 1 beat',
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Count in, then play the next written range without the guide.',
+      ),
+    ).toBeTruthy()
+  })
+})
+
+describe('scoreAssessmentRange', () => {
+  it('uses quantized A/B marks as the explicit one-pass range', () => {
+    expect(
+      scoreAssessmentRange({ start: 1.2, end: 5.7 }, 0, 12, [0, 4, 8]),
+    ).toEqual({ start: 1, end: 6 })
+  })
+
+  it('starts a four-beat range at the next authored note', () => {
+    expect(scoreAssessmentRange(null, 2.4, 12, [0, 4.5, 9])).toEqual({
+      start: 4,
+      end: 8,
+    })
+  })
+
+  it('backs up from the score end instead of creating a zero-length review', () => {
+    expect(scoreAssessmentRange(null, 7.95, 8, [0, 4])).toEqual({
+      start: 4,
+      end: 8,
+    })
   })
 })
 

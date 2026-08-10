@@ -6,20 +6,25 @@
 // only evidence on screen is the score itself and this device's own clock.
 
 import type { Accessor } from 'solid-js'
-import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Ear, Mic, Pause, Play, RotateCcw, SlidersHorizontal, Volume2, } from '@/components/icons'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
+import { compareGuitarDoctorWithHistory, loadGuitarDoctorHistory, saveGuitarDoctorHistory, } from '@/lib/guitar/guitar-doctor-history'
+import { createGuitarPhraseAssessmentWindow, reviewGuitarPhrase, } from '@/lib/guitar/guitar-phrase-review'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import type { LoopSpan } from '@/lib/guitar/loop-span'
-import { quantizeSpanToBeats } from '@/lib/guitar/loop-span'
+import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
+import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
+import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightReference } from './reference-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
+import type { GuitarNightScoreAssessmentBoundary } from './useGuitarNightScoreRoomController'
 import { SCORE_ROOM_MAX_TEMPO, SCORE_ROOM_MIN_TEMPO, useGuitarNightScoreRoomController, } from './useGuitarNightScoreRoomController'
 
 interface GuitarNightScoreRoomProps {
@@ -47,6 +52,13 @@ function formatBeat(beat: number): string {
   return `beat ${label}`
 }
 
+function compactBeatLength(beats: number): string {
+  const value = Number.isInteger(beats)
+    ? String(beats)
+    : beats.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `${value} ${beats === 1 ? 'beat' : 'beats'}`
+}
+
 const COUNT_IN_CHOICES = [0, 2, 4, 8]
 
 /** Whether the marks on screen differ from the loop already in the scheduler. */
@@ -64,10 +76,48 @@ export function scoreLoopPendingRestart(
   )
 }
 
+/** Pick a named, bounded phrase without pretending the score has sections. */
+export function scoreAssessmentRange(
+  marked: LoopSpan | null,
+  playheadBeat: number | null,
+  durationBeats: number,
+  noteStarts: readonly number[],
+): LoopSpan | null {
+  if (!(durationBeats > 0)) return null
+  if (marked !== null) {
+    const quantized = quantizeSpanToBeats(marked)
+    return normalizeLoopSpan(quantized.start, quantized.end, durationBeats)
+  }
+
+  const parked = Math.min(durationBeats, Math.max(0, playheadBeat ?? 0))
+  const nextNote = [...noteStarts]
+    .filter((beat) => Number.isFinite(beat) && beat >= parked)
+    .sort((left, right) => left - right)[0]
+  let start = Math.floor(nextNote ?? parked)
+  let end = Math.min(durationBeats, start + 4)
+  const intendedLength = Math.min(4, durationBeats)
+  if (end - start < intendedLength) {
+    end = durationBeats
+    start = Math.max(0, end - intendedLength)
+  }
+  return normalizeLoopSpan(start, end, durationBeats)
+}
+
 export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   let roomHeading!: HTMLHeadingElement
   let sessionDetails!: HTMLDetailsElement
   let sessionSummary!: HTMLElement
+  let doctorTrigger: HTMLButtonElement | undefined
+  let disposed = false
+  const [doctorOpen, setDoctorOpen] = createSignal(false)
+  const [doctorRecoveryActive, setDoctorRecoveryActive] = createSignal(false)
+  const [assessmentPending, setAssessmentPending] = createSignal(false)
+  const [assessmentComparison, setAssessmentComparison] = createSignal<string>()
+  const [assessmentBoundary, setAssessmentBoundary] =
+    createSignal<GuitarNightScoreAssessmentBoundary | null>(null)
+  const [assessmentWindow, setAssessmentWindow] = createSignal<ReturnType<
+    typeof createGuitarPhraseAssessmentWindow
+  > | null>(null)
   // The tab room counts in beats, not seconds: a tempo change should move the
   // same bars, not a different span of the score.
   const scoreBeats = createMemo(() =>
@@ -91,10 +141,92 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     activateAudio: room.activateAudio,
     getAudioGraph: room.getAudioGraph,
   })
+  const selectedAssessmentRange = createMemo(() =>
+    scoreAssessmentRange(
+      loop.span(),
+      room.playheadBeat(),
+      scoreBeats(),
+      props.reference().notes.map((note) => note.startBeat),
+    ),
+  )
+  const phraseReview = createMemo(() => {
+    const window = assessmentWindow()
+    const take = listening.take()
+    if (
+      window === null ||
+      take?.lifecycle !== 'completed' ||
+      take.id !== window.takeId
+    ) {
+      return null
+    }
+    return reviewGuitarPhrase({
+      window,
+      take,
+      inputHealth: retainedTakeHealth(take),
+    })
+  })
+  const doctorView = createMemo(() => {
+    const review = phraseReview()
+    const boundary = assessmentBoundary()
+    if (review === null || boundary === null) return null
+    return guitarPhraseDoctorView(
+      review,
+      boundary.tempoBpm,
+      assessmentComparison(),
+    )
+  })
   const isRunning = createMemo(
     () => room.status() === 'count-in' || room.status() === 'playing',
   )
   const takeIsActive = createMemo(() => room.setupLocked())
+  const assessmentCaptureActive = createMemo(() => {
+    const window = assessmentWindow()
+    const take = listening.take()
+    return (
+      window !== null &&
+      take?.lifecycle === 'recording' &&
+      take.id === window.takeId
+    )
+  })
+  let savedReviewTakeId: string | null = null
+  createEffect(() => {
+    const review = phraseReview()
+    const boundary = assessmentBoundary()
+    const take = listening.take()
+    const window = assessmentWindow()
+    if (
+      review === null ||
+      boundary === null ||
+      take === null ||
+      window === null ||
+      savedReviewTakeId === review.takeId
+    ) {
+      return
+    }
+    savedReviewTakeId = review.takeId
+    try {
+      const storage = globalThis.localStorage
+      const history = loadGuitarDoctorHistory(storage)
+      const summary = saveGuitarDoctorHistory(storage, review, {
+        tempoBpm: boundary.tempoBpm,
+        playbackRate: 1,
+        completed:
+          take.lifecycle === 'completed' &&
+          (take.durationFrames ?? 0) >= window.durationFrames,
+        nonTruncated: !take.truncated,
+        sampleRate: take.clock.sampleRate,
+        attackPrecision: take.clock.attack.precision,
+        latencyProvenance: take.clock.latency.provenance,
+      })
+      setAssessmentComparison(
+        summary === null
+          ? undefined
+          : (compareGuitarDoctorWithHistory(history, summary) ?? undefined),
+      )
+    } catch {
+      setAssessmentComparison(undefined)
+    }
+  })
   // A loop is scheduled into the click at start, so marks moved mid-take take
   // effect on the next one. Say so rather than looking ignored.
   const loopPendingRestart = createMemo(() =>
@@ -111,12 +243,20 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     if (room.status() === 'starting') return 'Opening the room clock'
     if (isRunning()) return 'Pause score'
     if (room.status() === 'paused') {
+      if (loopPendingRestart()) return 'Start updated loop'
       return room.setupLocked() ? 'Resume score' : 'Start from here'
     }
     if (room.status() === 'complete') {
       return loop.span() === null ? 'Replay score' : 'Rehearse loop'
     }
     return 'Start the count-in'
+  })
+  const assessmentActionLabel = createMemo(() => {
+    const range = selectedAssessmentRange()
+    if (assessmentPending()) return 'Opening the phrase review'
+    if (range === null) return 'No phrase available to review'
+    const length = range.end - range.start
+    return `Review ${formatBeat(range.start)} for ${compactBeatLength(length)}`
   })
   let scrubbing = false
   let resumeAfterScrub = false
@@ -133,8 +273,77 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     },
   }
 
+  const beginAssessment = async (
+    requestedRange: LoopSpan | null = selectedAssessmentRange(),
+  ): Promise<boolean> => {
+    const range = requestedRange
+    if (range === null || assessmentPending() || isCalibrating()) return false
+
+    setAssessmentPending(true)
+    setDoctorOpen(false)
+    sessionDetails.open = false
+    try {
+      const inputReady =
+        listening.status() === 'listening' || (await listening.start())
+      if (!inputReady || disposed) return false
+
+      const boundary = await room.startAssessment(range)
+      if (boundary === null || disposed) {
+        listening.cancel()
+        return false
+      }
+      if (!listening.armTakeAt(boundary.startedAtSeconds)) {
+        room.stop()
+        listening.cancel()
+        return false
+      }
+      const take = listening.take()
+      if (take === null) {
+        room.stop()
+        listening.cancel()
+        return false
+      }
+      const window = createGuitarPhraseAssessmentWindow({
+        id: boundary.id,
+        takeId: take.id,
+        referenceId: boundary.reference.songId,
+        trackId: boundary.reference.trackId,
+        range: {
+          startBeat: boundary.range.start,
+          endBeat: boundary.range.end,
+        },
+        startedAtSeconds: boundary.startedAtSeconds,
+        sampleRate: boundary.sampleRate,
+        beatToSeconds: boundary.beatToSeconds,
+        targets: boundary.reference.notes.map((note) => ({
+          id: note.id,
+          midi: note.midi,
+          startBeat: note.startBeat,
+        })),
+      })
+      if (!listening.completeTakeAt(boundary.completedAtSeconds)) {
+        room.stop()
+        listening.cancel()
+        return false
+      }
+      setAssessmentComparison(undefined)
+      setAssessmentBoundary(boundary)
+      setAssessmentWindow(window)
+      return true
+    } finally {
+      if (!disposed) setAssessmentPending(false)
+    }
+  }
+
+  const finishAssessmentEarly = (): boolean => {
+    if (!assessmentCaptureActive()) return false
+    listening.stop()
+    return true
+  }
+
   const toggleListening = (): void => {
     if (isListening()) {
+      if (assessmentCaptureActive()) room.pause()
       listening.stop()
       return
     }
@@ -146,6 +355,24 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
 
   const togglePlayback = (): void => {
     if (isCalibrating()) return
+    if (assessmentCaptureActive()) {
+      const transportWasActive =
+        room.status() === 'starting' ||
+        room.status() === 'count-in' ||
+        room.status() === 'playing'
+      listening.stop()
+      if (transportWasActive) {
+        room.pause()
+        return
+      }
+    }
+    if (room.status() === 'paused' && loopPendingRestart()) {
+      if (isListening()) listening.stop()
+      sessionDetails.open = false
+      room.stop()
+      void room.start()
+      return
+    }
     if (!takeIsActive() && isListening()) listening.stop()
     if (!takeIsActive()) sessionDetails.open = false
     room.toggle()
@@ -154,11 +381,74 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
   const beginScrub = (): void => {
     if (scrubbing) return
     scrubbing = true
+    const reviewing = assessmentCaptureActive()
     resumeAfterScrub =
-      room.status() === 'starting' ||
-      room.status() === 'count-in' ||
-      room.status() === 'playing'
+      !reviewing &&
+      (room.status() === 'starting' ||
+        room.status() === 'count-in' ||
+        room.status() === 'playing')
+    if (reviewing) finishAssessmentEarly()
     room.pause()
+  }
+
+  const recoverFromDoctor = async (): Promise<void> => {
+    const review = phraseReview()
+    const boundary = assessmentBoundary()
+    if (review === null) return
+    setDoctorRecoveryActive(true)
+    setDoctorOpen(false)
+
+    try {
+      let range: LoopSpan = {
+        start: review.recovery.range.startBeat,
+        end: review.recovery.range.endBeat,
+      }
+      if (review.recovery.kind === 'choose-range') {
+        range =
+          scoreAssessmentRange(
+            null,
+            review.range.endBeat,
+            scoreBeats(),
+            props.reference().notes.map((note) => note.startBeat),
+          ) ?? range
+      }
+      loop.setSpan(range)
+
+      room.setCountInBeats(
+        review.recovery.kind === 'replay'
+          ? review.recovery.countInBeats
+          : (boundary?.countInBeats ?? room.countInBeats()),
+      )
+      if (review.recovery.kind === 'slow-down') {
+        room.setTempoBpm(
+          (boundary?.tempoBpm ?? room.tempoBpm()) * review.recovery.tempoScale,
+        )
+      }
+      if (review.recovery.kind === 'calibrate') {
+        const opened =
+          listening.status() === 'listening' || (await listening.start())
+        if (!opened || disposed) {
+          if (!disposed) setDoctorOpen(true)
+          return
+        }
+        if (!(await listening.calibrate())) {
+          listening.cancel()
+          if (!disposed) setDoctorOpen(true)
+          return
+        }
+      }
+      await beginAssessment(range)
+    } finally {
+      if (!disposed) setDoctorRecoveryActive(false)
+    }
+  }
+
+  const clearReview = (): void => {
+    listening.clearTake()
+    setAssessmentWindow(null)
+    setAssessmentBoundary(null)
+    setAssessmentComparison(undefined)
+    setDoctorOpen(false)
   }
 
   const previewScrub = (event: InputEvent): void => {
@@ -213,6 +503,10 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     room.stop()
     props.onSongs()
   }
+
+  onCleanup(() => {
+    disposed = true
+  })
 
   onMount(() => {
     roomHeading.focus({ preventScroll: true })
@@ -335,6 +629,32 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   />
                 </Show>
 
+                <button
+                  type="button"
+                  class={styles.scoreAssessmentAction}
+                  aria-label={assessmentActionLabel()}
+                  disabled={
+                    selectedAssessmentRange() === null ||
+                    assessmentPending() ||
+                    takeIsActive() ||
+                    isCalibrating() ||
+                    listening.status() === 'requesting'
+                  }
+                  onClick={() => void beginAssessment()}
+                >
+                  <span aria-hidden="true">
+                    <Ear />
+                  </span>
+                  <span>
+                    <strong>{assessmentActionLabel()}</strong>
+                    <small>
+                      {loop.span() === null
+                        ? 'Count in, then play the next written range without the guide.'
+                        : 'Count in, then play your A/B range once without the guide.'}
+                    </small>
+                  </span>
+                </button>
+
                 <div class={styles.scoreSessionSettings}>
                   <label class={styles.countInSelect}>
                     <span aria-hidden="true">
@@ -433,6 +753,43 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         listening={isListening}
         heardNote={listening.currentNote}
         heardClarity={listening.clarity}
+        overlay={
+          <>
+            <Show when={!doctorOpen() && doctorView()}>
+              {(view) => (
+                <GuitarNightDoctorCue
+                  view={view()}
+                  expanded={false}
+                  controlsId="guitar-night-score-doctor"
+                  buttonRef={(element) => {
+                    doctorTrigger = element
+                  }}
+                  onOpen={() => {
+                    setDoctorRecoveryActive(false)
+                    setDoctorOpen(true)
+                  }}
+                />
+              )}
+            </Show>
+            <GuitarNightJamDoctor
+              id="guitar-night-score-doctor"
+              open={doctorOpen()}
+              view={doctorView()}
+              recording={assessmentCaptureActive()}
+              liveEventCount={listening.events().length}
+              returnFocus={() =>
+                doctorRecoveryActive() ? roomHeading : (doctorTrigger ?? null)
+              }
+              fallbackFocus={() => roomHeading}
+              onClose={() => {
+                setDoctorRecoveryActive(false)
+                setDoctorOpen(false)
+              }}
+              onClear={clearReview}
+              onRecover={() => void recoverFromDoctor()}
+            />
+          </>
+        }
       />
 
       <Show when={listening.error()}>
@@ -453,9 +810,11 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
       <div class={styles.transportDeck} data-testid="guitar-night-score-deck">
         <div class={styles.transportIdentity}>
           <span>
-            {loopPendingRestart()
-              ? 'Session changes are ready for the next count-in.'
-              : 'Authored score clock · no recording attached'}
+            {assessmentCaptureActive()
+              ? 'Phrase review · count-in audible, rehearsal range silent'
+              : loopPendingRestart()
+                ? 'Session changes are ready for the next count-in.'
+                : 'Authored score clock · no recording attached'}
           </span>
         </div>
         <div class={styles.timeRail}>
@@ -554,13 +913,17 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           <span aria-hidden="true" />
           <strong role="status" aria-live="polite" aria-atomic="true">
             {room.status() === 'count-in'
-              ? `Counting in · ${room.countInRemaining()}`
+              ? `${assessmentCaptureActive() ? 'Review count-in' : 'Counting in'} · ${room.countInRemaining()}`
               : room.status() === 'playing'
-                ? 'Click is running'
+                ? assessmentCaptureActive()
+                  ? 'Listening to this phrase'
+                  : 'Click is running'
                 : room.status() === 'paused'
                   ? `${room.setupLocked() ? 'Paused' : 'Set'} · ${formatBeat(room.playheadBeat() ?? 0)}`
                   : room.status() === 'complete'
-                    ? 'Take complete'
+                    ? doctorView() !== null
+                      ? 'Take ready to review'
+                      : 'Take complete'
                     : room.status() === 'starting'
                       ? 'Opening the room clock'
                       : 'Ready when you are'}

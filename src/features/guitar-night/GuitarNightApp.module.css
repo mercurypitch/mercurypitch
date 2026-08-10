@@ -1206,6 +1206,67 @@
   line-height: 1.35;
 }
 
+.scoreAssessmentAction {
+  display: grid;
+  grid-template-columns: var(--touch-target) minmax(0, 1fr);
+  align-items: center;
+  min-height: 3.75rem;
+  padding: 0.42rem 0.7rem 0.42rem 0.32rem;
+  border: 1px solid rgba(106, 202, 189, 0.24);
+  border-radius: 0.62rem;
+  color: #e8f6f3;
+  background:
+    linear-gradient(110deg, rgba(106, 202, 189, 0.1), transparent 62%),
+    rgba(244, 234, 219, 0.035);
+  text-align: left;
+  cursor: pointer;
+}
+
+.scoreAssessmentAction:hover:not(:disabled) {
+  border-color: rgba(106, 202, 189, 0.46);
+  background:
+    linear-gradient(110deg, rgba(106, 202, 189, 0.15), transparent 62%),
+    rgba(244, 234, 219, 0.05);
+}
+
+.scoreAssessmentAction:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+.scoreAssessmentAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.scoreAssessmentAction > span:first-child {
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+}
+
+.scoreAssessmentAction > span:first-child svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.scoreAssessmentAction > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 0.14rem;
+}
+
+.scoreAssessmentAction strong {
+  color: #eef8f5;
+  font-size: 0.7rem;
+}
+
+.scoreAssessmentAction small {
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
 .scoreSessionSettings {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1281,117 +1342,505 @@
     inset 0 -2rem 5rem rgba(0, 0, 0, 0.24);
 }
 
-.doctorPanel {
+/* Jam Doctor belongs to the stage, but never participates in its flex sizing.
+   The instrument keeps the same rectangle whether the cue, review, or neither
+   is mounted. */
+.stageOverlay {
   position: absolute;
-  z-index: 8;
-  top: 4.55rem;
-  right: max(0.9rem, var(--safe-right));
-  display: grid;
-  gap: 0.75rem;
-  width: min(34rem, calc(100% - 1.8rem));
-  max-height: calc(100% - 10rem);
-  margin: 0;
-  padding: 0.75rem 0.85rem;
-  overflow-y: auto;
-  border: 1px solid rgba(106, 202, 189, 0.18);
-  border-radius: 0.62rem;
-  background:
-    linear-gradient(100deg, rgba(106, 202, 189, 0.05), transparent 55%),
-    rgba(8, 10, 9, 0.95);
-  box-shadow:
-    inset 0 1px rgba(255, 255, 255, 0.025),
-    0 1.2rem 4rem rgba(0, 0, 0, 0.46);
+  z-index: 7;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.doctorHeading {
+.doctorCue {
+  position: absolute;
+  right: auto;
+  bottom: 0.8rem;
+  left: max(0.85rem, var(--safe-left));
+  width: min(27rem, calc(100% - 1.7rem));
+  pointer-events: auto;
+}
+
+.doctorCue > button {
+  display: grid;
+  grid-template-columns: 2.45rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 3.75rem;
+  padding: 0.55rem 0.75rem 0.55rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 0.7rem;
+  color: var(--ivory);
+  background: rgba(9, 9, 8, 0.9);
+  box-shadow: 0 0.9rem 2.5rem rgba(0, 0, 0, 0.34);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+  backdrop-filter: blur(16px) saturate(1.08);
+  text-align: left;
+  cursor: pointer;
+}
+
+.doctorCue > button:hover {
+  border-color: rgba(106, 202, 189, 0.34);
+  background: rgba(13, 16, 14, 0.94);
+}
+
+.doctorCueIcon {
+  display: grid;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 50%;
+  color: #10211e;
+  background: var(--teal);
+  box-shadow: 0 0.45rem 1.2rem rgba(106, 202, 189, 0.2);
+}
+
+.doctorCueIcon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.doctorCueCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.doctorCueCopy small {
+  color: var(--teal);
+  font-size: 0.55rem;
+  font-weight: 760;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.doctorCueCopy strong {
+  color: #f5eadb;
+  font-size: 0.7rem;
+}
+
+.doctorCueCopy > span {
+  overflow: hidden;
+  color: rgba(244, 234, 219, 0.68);
+  font-size: 0.61rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctorCue > button > b {
+  color: #dff7f2;
+  font-size: 0.64rem;
+  font-weight: 740;
+}
+
+.doctorBackdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 5, 4, 0.12), rgba(5, 5, 4, 0.34));
+  pointer-events: auto;
+}
+
+.doctorSheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, 44%);
+  min-width: 20rem;
+  overflow: hidden;
+  border-left: 1px solid rgba(244, 234, 219, 0.12);
+  color: var(--ivory);
+  background:
+    radial-gradient(
+      circle at 15% 10%,
+      rgba(106, 202, 189, 0.07),
+      transparent 34%
+    ),
+    rgba(10, 10, 9, 0.96);
+  box-shadow: -1.4rem 0 4rem rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+}
+
+.doctorSheetHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex: none;
+  min-height: 4rem;
+  padding: 0.55rem max(0.7rem, var(--safe-right)) 0.55rem 1rem;
+  border-bottom: 1px solid rgba(244, 234, 219, 0.1);
 }
 
-.doctorHeading > div {
+.doctorSheetHeader > div {
   display: grid;
-  gap: 0.08rem;
+  min-width: 0;
+  gap: 0.12rem;
 }
 
-.doctorHeading span {
+.doctorSheetHeader span {
   color: var(--teal);
-  font-size: 0.57rem;
-  font-weight: 750;
-  letter-spacing: 0.13em;
+  font-size: 0.56rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.doctorHeading strong {
-  color: rgba(244, 234, 219, 0.86);
-  font-size: 0.76rem;
+.doctorSheetHeader strong {
+  overflow: hidden;
+  color: rgba(244, 234, 219, 0.66);
+  font-size: 0.65rem;
+  font-weight: 620;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.doctorHeading button {
-  min-height: var(--touch-target);
-  padding: 0.45rem 0.7rem;
+.doctorClose {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
   border: 0;
-  border-radius: 0.4rem;
-  color: rgba(244, 234, 219, 0.58);
-  background: transparent;
-  font-size: 0.64rem;
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.68);
+  background: rgba(244, 234, 219, 0.05);
   cursor: pointer;
 }
 
-.doctorHeading button:hover {
+.doctorClose:hover {
   color: var(--ivory);
-  background: rgba(244, 234, 219, 0.05);
+  background: rgba(244, 234, 219, 0.1);
 }
 
-.doctorPanel > p {
+.doctorClose svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.doctorBody {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1rem max(1rem, var(--safe-right)) 1rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.doctorInsight,
+.doctorEmpty {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.doctorInsight > span,
+.doctorEmpty > span {
+  color: var(--amber-bright);
+  font-size: 0.57rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doctorInsight h2,
+.doctorEmpty h2 {
+  max-width: 13ch;
+  margin: 0;
+  color: #f6ecdd;
+  font-family:
+    'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.doctorInsight p,
+.doctorEmpty p {
   max-width: 68ch;
   margin: 0;
-  color: rgba(244, 234, 219, 0.58);
+  color: rgba(244, 234, 219, 0.7);
   font-size: 0.68rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-.doctorObservations {
+.doctorComparison {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 0.5rem;
-  margin: 0;
+  grid-template-columns: auto 1fr;
+  gap: 0.16rem 0.55rem;
+  margin: 1rem 0 0;
+  padding: 0.8rem 0;
+  border-top: 1px solid rgba(244, 234, 219, 0.1);
+  border-bottom: 1px solid rgba(244, 234, 219, 0.1);
+  color: rgba(244, 234, 219, 0.68);
+  font-size: 0.62rem;
+  line-height: 1.45;
 }
 
-.doctorObservations > div {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.08rem 0.5rem;
-  padding: 0.6rem 0.68rem;
-  border: 1px solid rgba(106, 202, 189, 0.16);
-  border-radius: 0.4rem;
-  background: rgba(244, 234, 219, 0.025);
+.doctorComparison > span {
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0.35rem 0.8rem rgba(106, 202, 189, 0.26);
 }
 
-.doctorObservations dt {
-  color: rgba(244, 234, 219, 0.6);
+.doctorComparison strong {
+  color: #e8f6f3;
   font-size: 0.62rem;
 }
 
-.doctorObservations dd {
+.doctorEvidence {
+  display: grid;
+  margin: 1rem 0 0;
+  border-top: 1px solid rgba(244, 234, 219, 0.1);
+  border-bottom: 1px solid rgba(244, 234, 219, 0.1);
+}
+
+.doctorEvidence > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.12rem 0.7rem;
+  padding: 0.68rem 0;
+}
+
+.doctorEvidence > div + div {
+  border-top: 1px solid rgba(244, 234, 219, 0.07);
+}
+
+.doctorEvidence dt {
+  color: rgba(244, 234, 219, 0.62);
+  font-size: 0.62rem;
+}
+
+.doctorEvidence dd {
   margin: 0;
   color: #e8f6f3;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 720;
   font-variant-numeric: tabular-nums;
 }
 
-.doctorObservations small {
+.doctorEvidence small {
   grid-column: 1 / -1;
-  color: rgba(244, 234, 219, 0.62);
+  color: rgba(244, 234, 219, 0.52);
   font-size: 0.56rem;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.doctorPanel > .doctorPrivacy {
-  color: rgba(244, 234, 219, 0.62);
+.doctorUnavailable {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 1rem;
+}
+
+.doctorUnavailable > strong {
+  color: rgba(244, 234, 219, 0.72);
+  font-size: 0.63rem;
+}
+
+.doctorUnavailable ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding-left: 1rem;
+  color: rgba(244, 234, 219, 0.56);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.doctorSheet .doctorPrivacy {
+  margin: auto 0 0;
+  padding-top: 1rem;
+  color: rgba(244, 234, 219, 0.5);
+  font-size: 0.56rem;
+  line-height: 1.45;
+}
+
+.doctorFooter {
+  margin-top: 0.8rem;
+  padding-top: 0.2rem;
+}
+
+.doctorActions {
+  display: grid;
+  flex: none;
+  gap: 0.35rem;
+  padding: 0.75rem max(1rem, var(--safe-right)) 0.9rem 1rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.1);
+  background: rgba(8, 8, 7, 0.86);
+}
+
+.doctorRecovery {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.68rem 0.8rem;
+  border: 0;
+  border-radius: 0.65rem;
+  color: #17120e;
+  background: var(--ivory);
+  text-align: left;
+  cursor: pointer;
+}
+
+.doctorRecovery:hover {
+  background: #fffaf1;
+}
+
+.doctorRecovery > span {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.doctorRecovery strong {
+  font-size: 0.68rem;
+}
+
+.doctorRecovery small {
+  color: #5f564b;
   font-size: 0.57rem;
+}
+
+.doctorClear {
+  justify-self: start;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 0.42rem;
+  color: rgba(244, 234, 219, 0.58);
+  background: transparent;
+  font-size: 0.61rem;
+  cursor: pointer;
+}
+
+.doctorClear:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.05);
+}
+
+.doctorCue > button:focus-visible,
+.doctorClose:focus-visible,
+.doctorRecovery:focus-visible,
+.doctorClear:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .doctorCue {
+    right: max(0.55rem, var(--safe-right));
+    bottom: 0.55rem;
+    left: max(0.55rem, var(--safe-left));
+    width: auto;
+  }
+
+  .doctorCue > button {
+    grid-template-columns: 2.45rem minmax(0, 1fr) auto;
+    min-height: 4rem;
+  }
+
+  .doctorCueCopy > span {
+    max-width: 54vw;
+  }
+
+  .doctorSheet {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    min-width: 0;
+    max-height: min(70%, 32rem);
+    border-top: 1px solid rgba(244, 234, 219, 0.14);
+    border-left: 0;
+    border-radius: 0.85rem 0.85rem 0 0;
+    box-shadow: 0 -1.4rem 4rem rgba(0, 0, 0, 0.5);
+  }
+
+  .doctorSheetHeader {
+    min-height: 3.7rem;
+    padding-left: max(0.85rem, var(--safe-left));
+    padding-right: max(0.55rem, var(--safe-right));
+  }
+
+  .doctorBody {
+    padding-right: max(0.85rem, var(--safe-right));
+    padding-left: max(0.85rem, var(--safe-left));
+  }
+
+  .doctorInsight h2,
+  .doctorEmpty h2 {
+    max-width: 19ch;
+    font-size: 1.55rem;
+  }
+
+  .doctorCueCopy > span,
+  .doctorEvidence dt,
+  .doctorEvidence small,
+  .doctorUnavailable > strong,
+  .doctorUnavailable ul,
+  .doctorSheet .doctorPrivacy,
+  .doctorRecovery small {
+    font-size: 0.68rem;
+  }
+
+  .doctorInsight p,
+  .doctorEmpty p,
+  .doctorEvidence dd,
+  .doctorRecovery strong {
+    font-size: 0.72rem;
+  }
+
+  .doctorActions {
+    padding-right: max(0.85rem, var(--safe-right));
+    padding-bottom: max(0.75rem, var(--safe-bottom));
+    padding-left: max(0.85rem, var(--safe-left));
+  }
+}
+
+@media (max-height: 540px) {
+  .doctorSheet {
+    top: 0;
+    bottom: 0;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .doctorSheetHeader {
+    min-height: 3.2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .doctorBody {
+    min-height: 4.5rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .doctorActions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: max(0.5rem, var(--safe-bottom));
+  }
+
+  .doctorClear {
+    justify-self: stretch;
+  }
 }
 
 /* Hearing the tab itself, rather than only time passing under it. */
@@ -2882,22 +3331,6 @@
   .performanceStage {
     flex: 1 1 auto;
     margin: 0;
-  }
-
-  .doctorPanel {
-    position: absolute;
-    top: auto;
-    right: max(0.45rem, var(--safe-right));
-    bottom: max(0.45rem, var(--safe-bottom));
-    left: max(0.45rem, var(--safe-left));
-    width: auto;
-    max-height: min(66%, 31rem);
-    padding: 0.8rem;
-    border-radius: 0.72rem;
-  }
-
-  .doctorObservations {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inputHealthLatency button,

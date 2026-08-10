@@ -16,6 +16,7 @@ const listening = vi.hoisted(() => ({
   currentNote: vi.fn(() => null),
   detectedMidi: vi.fn(() => null),
   clarity: vi.fn(() => 0),
+  take: vi.fn(() => null),
   events: vi.fn(() => []),
   observations: vi.fn(() => []),
   timingSource: vi.fn(() => 'audio-clock'),
@@ -23,6 +24,9 @@ const listening = vi.hoisted(() => ({
   health: vi.fn(() => null),
   start: vi.fn(async () => true),
   stop: vi.fn(),
+  cancel: vi.fn(),
+  armTakeAt: vi.fn(() => false),
+  completeTakeAt: vi.fn(() => false),
   calibrate: vi.fn(async () => false),
   clearTake: vi.fn(),
 }))

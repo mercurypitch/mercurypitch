@@ -1,8 +1,8 @@
 // Guitar Night stage adapts the shared 3D renderer into quiet Flow, Tab, and Neck views.
 // ============================================================
 
-import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
+import { children, createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
@@ -33,6 +33,8 @@ interface GuitarNightStageProps {
   heardNote?: Accessor<string | null>
   heardClarity?: Accessor<number>
   initialMode?: GuitarNightStageMode
+  /** Host-owned cues and sheets sit over the instrument without entering layout. */
+  overlay?: JSX.Element
 }
 
 const FRET_LABELS = Array.from({ length: 13 }, (_, index) => index)
@@ -181,6 +183,7 @@ function noteAtPlayhead(
 
 export function GuitarNightStage(props: GuitarNightStageProps) {
   let instrumentDetails: HTMLDetailsElement | undefined
+  const overlay = children(() => props.overlay)
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
@@ -308,7 +311,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               />
             </details>
           </Show>
-          <div class={styles.stageModes} aria-label="Stage view">
+          <div class={styles.stageModes} role="group" aria-label="Stage view">
             <For each={['flow', 'tab', 'neck'] as GuitarNightStageMode[]}>
               {(candidate) => (
                 <button
@@ -443,6 +446,12 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           </div>
         </Show>
       </div>
+
+      <Show when={overlay()}>
+        {(resolvedOverlay) => (
+          <div class={styles.stageOverlay}>{resolvedOverlay()}</div>
+        )}
+      </Show>
     </section>
   )
 }
