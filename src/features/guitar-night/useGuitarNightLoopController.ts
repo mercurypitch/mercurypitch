@@ -59,6 +59,15 @@ export function useGuitarNightLoopController(
     setMarkB(null)
   }
 
+  /** Replace both marks as one recovery action, or leave them unchanged. */
+  const setSpan = (next: LoopSpan): boolean => {
+    const normalized = normalizeLoopSpan(next.start, next.end, options.limit())
+    if (normalized === null) return false
+    setMarkA(normalized.start)
+    setMarkB(normalized.end)
+    return true
+  }
+
   /**
    * Offer the current playhead to the loop. Returns true when the host was
    * asked to wrap, so a caller driving this from a frame loop can skip the rest
@@ -82,6 +91,7 @@ export function useGuitarNightLoopController(
     markStart,
     markEnd,
     clear,
+    setSpan,
     follow,
   }
 }

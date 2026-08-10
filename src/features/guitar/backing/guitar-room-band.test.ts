@@ -9,8 +9,11 @@ const guitarVoices = vi.hoisted(() => ({
   createBassVoice: vi.fn(),
   createGuitarVoice: vi.fn(),
 }))
+const drumVoices = vi.hoisted(() => ({
+  triggerDrumVoice: vi.fn(),
+}))
 
-vi.mock('@/lib/drum-voices', () => ({ triggerDrumVoice: vi.fn() }))
+vi.mock('@/lib/drum-voices', () => drumVoices)
 vi.mock('@/lib/guitar/guitar-synth', () => guitarVoices)
 
 function fakeAudioNode() {
@@ -215,6 +218,80 @@ describe('createGuitarRoomBand', () => {
     expect(onBeat.mock.calls.map((call) => call[2])).toEqual([5.09, 6.09])
     expect(result.expectedHitTimesMs).toEqual([90, 1090])
     expect(onComplete).toHaveBeenCalledOnce()
+
+    await band.dispose()
+  })
+
+  it('reports the exact scheduled score start and fractional end', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const onExerciseStart = vi.fn()
+    const onBeat = vi.fn()
+    const onComplete = vi.fn()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    const result = await band.start({
+      tempoBpm: 120,
+      countInBeats: 2,
+      exerciseBeats: 12,
+      startBeat: 1,
+      durationBeats: 3.5,
+      feel: 'click',
+      onBeat,
+      onExerciseStart,
+      onComplete,
+    })
+
+    expect(result.exerciseStartedAtSeconds).toBeCloseTo(6.09, 6)
+    expect(result.completedAtSeconds).toBeCloseTo(7.34, 6)
+    await vi.advanceTimersByTimeAsync(2_400)
+    expect(onExerciseStart).toHaveBeenCalledWith(1, 6.09)
+    expect(onBeat.mock.calls.map((call) => call[0])).toEqual([0, 1, 1, 2, 3])
+    expect(onComplete).toHaveBeenCalledWith(7.34)
+
+    await band.dispose()
+  })
+
+  it('keeps the count-in audible while a silent exercise pulse advances callbacks', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const context = fakeAudioContext()
+    const onBeat = vi.fn()
+    const band = createGuitarRoomBand({
+      contextFactory: () => context,
+      activateContext: async () => undefined,
+      scheduleAheadSeconds: 4,
+    })
+
+    const result = await band.start({
+      tempoBpm: 120,
+      countInBeats: 2,
+      exerciseBeats: 2,
+      durationBeats: 2,
+      feel: 'click',
+      exercisePulse: false,
+      onBeat,
+    })
+
+    expect(drumVoices.triggerDrumVoice).toHaveBeenCalledTimes(2)
+    expect(
+      drumVoices.triggerDrumVoice.mock.calls.map((call) => call[0]),
+    ).toEqual(['sidestick', 'sidestick'])
+    expect(result.exerciseStartedAtSeconds).toBeCloseTo(6.09, 6)
+    expect(result.completedAtSeconds).toBeCloseTo(7.09, 6)
+
+    await vi.advanceTimersByTimeAsync(1_700)
+    expect(onBeat.mock.calls.map((call) => [call[0], call[1]])).toEqual([
+      [0, 'count-in'],
+      [1, 'count-in'],
+      [0, 'exercise'],
+      [1, 'exercise'],
+    ])
 
     await band.dispose()
   })

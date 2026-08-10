@@ -20,7 +20,9 @@ const dependencies = vi.hoisted(() => ({
   }>,
   emitWorklet: null as ((message: GuitarInputWorkletMessage) => void) | null,
   latencyMs: 0,
-  setLatency: vi.fn<(milliseconds: number) => void>(),
+  latencySpreadMs: null as number | null,
+  setLatencyMeasurement:
+    vi.fn<(milliseconds: number, spreadMs: number | null) => void>(),
 }))
 
 vi.mock('@/lib/guitar/guitar-input-node', () => ({
@@ -57,7 +59,8 @@ vi.mock('@/lib/pitch-detector', () => ({
 vi.mock('@/stores/mic-latency-store', () => ({
   micLatencyMs: () => dependencies.latencyMs,
   micLatencySec: () => dependencies.latencyMs / 1000,
-  setMicLatencyMs: dependencies.setLatency,
+  micLatencySpreadMs: () => dependencies.latencySpreadMs,
+  setMicLatencyMeasurement: dependencies.setLatencyMeasurement,
 }))
 
 interface FakeOscillator {
@@ -190,9 +193,13 @@ describe('useGuitarListeningController', () => {
     dependencies.workletTap = null
     dependencies.emitWorklet = null
     dependencies.latencyMs = 0
-    dependencies.setLatency.mockImplementation((milliseconds: number) => {
-      dependencies.latencyMs = milliseconds
-    })
+    dependencies.latencySpreadMs = null
+    dependencies.setLatencyMeasurement.mockImplementation(
+      (milliseconds: number, spreadMs: number | null) => {
+        dependencies.latencyMs = milliseconds
+        dependencies.latencySpreadMs = spreadMs
+      },
+    )
     dependencies.acquire.mockResolvedValue({})
     dependencies.connectWorklet.mockImplementation(
       async (
@@ -296,6 +303,150 @@ describe('useGuitarListeningController', () => {
     })
   })
 
+  it('arms at a future score boundary and excludes count-in attacks', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.armTakeAt(1)).toBe(true)
+
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(0.8 * 48_000),
+        level: 0.2,
+      })
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(1.1 * 48_000),
+        level: 0.24,
+      })
+
+      expect(controller.take()?.clock.startedAtFrame).toBe(48_000)
+      expect(controller.take()?.filteredBeforeStart).toBe(1)
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.rawTransportFrame).toBe(4_800)
+    })
+  })
+
+  it('retains the final pitch enrichment and completes at the scheduled boundary', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+    dependencies.detections = [E4]
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.armTakeAt(1)).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(1.95 * 48_000),
+        level: 0.25,
+      })
+
+      Object.assign(audio.context, { currentTime: 2 })
+      expect(controller.completeTakeAt(2)).toBe(true)
+      frames.run(2.01)
+      await vi.advanceTimersByTimeAsync(120)
+
+      expect(controller.status()).toBe('off')
+      expect(controller.take()?.lifecycle).toBe('completed')
+      expect(controller.take()?.durationFrames).toBe(48_000)
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.pitch?.midi).toBe(64)
+    })
+  })
+
+  it('does not let an old scheduled completion overwrite a newly armed take', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.armTakeAt(1)).toBe(true)
+      expect(controller.completeTakeAt(2)).toBe(true)
+      const scheduledTakeId = controller.take()?.id
+
+      expect(controller.armTakeAt(3)).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: Math.round(3.1 * 48_000),
+        level: 0.22,
+      })
+      await vi.runAllTimersAsync()
+
+      expect(controller.status()).toBe('listening')
+      expect(controller.take()?.id).not.toBe(scheduledTakeId)
+      expect(controller.take()?.lifecycle).toBe('recording')
+      expect(controller.events()).toHaveLength(1)
+      expect(controller.events()[0]?.rawTransportFrame).toBe(4_800)
+    })
+  })
+
+  it('preserves the completed review when reopening the microphone fails', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.2,
+      })
+      Object.assign(audio.context, { currentTime: 0.5 })
+      controller.stop()
+      const completed = controller.take()
+      expect(completed?.lifecycle).toBe('completed')
+
+      dependencies.acquire.mockRejectedValueOnce(new Error('Permission denied'))
+      expect(await controller.start()).toBe(false)
+
+      expect(controller.take()).toEqual(completed)
+      expect(controller.status()).toBe('error')
+      expect(controller.error()).toBe('Permission denied')
+    })
+  })
+
+  it('restores the completed review when a failed calibration is cancelled', async () => {
+    vi.useFakeTimers()
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.2,
+      })
+      Object.assign(audio.context, { currentTime: 0.5 })
+      controller.stop()
+      const completed = controller.take()
+      expect(completed?.lifecycle).toBe('completed')
+
+      expect(await controller.start()).toBe(true)
+      const calibration = controller.calibrate()
+      Object.assign(audio.context, { currentTime: 7.4 })
+      await vi.runAllTimersAsync()
+
+      await expect(calibration).resolves.toBe(false)
+      expect(controller.status()).toBe('listening')
+      expect(controller.take()?.lifecycle).toBe('recording')
+
+      controller.cancel()
+      expect(controller.status()).toBe('off')
+      expect(controller.take()).toEqual(completed)
+      expect(controller.error()).toContain('clicks never came back')
+    })
+  })
+
   it('keeps calibration returns out of the active take', async () => {
     vi.useFakeTimers()
     const audio = createAudioHarness()
@@ -341,13 +492,13 @@ describe('useGuitarListeningController', () => {
       await vi.runAllTimersAsync()
 
       await expect(calibration).resolves.toBe(true)
-      expect(dependencies.setLatency).toHaveBeenCalledWith(80)
+      expect(dependencies.setLatencyMeasurement).toHaveBeenCalledWith(80, 0)
       expect(controller.take()?.id).not.toBe(previousTakeId)
       expect(controller.take()?.clock.latency).toEqual({
         seconds: 0.08,
         frames: 3_840,
         provenance: 'stored-round-trip',
-        uncertaintySeconds: null,
+        uncertaintySeconds: 0,
       })
       expect(controller.events()).toEqual([])
 

@@ -26,7 +26,7 @@ import type { LatencyResult } from '@/lib/mic-latency'
 import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { buildClickSchedule } from '@/lib/tap-calibration'
-import { clearMicLatency, micLatencyMs, setMicLatencyMs, } from '@/stores/mic-latency-store'
+import { clearMicLatency, micLatencyMs, setMicLatencyMeasurement, } from '@/stores/mic-latency-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './MicLatencyWizard.module.css'
 
@@ -195,9 +195,10 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
   }
 
   const apply = (): void => {
-    const measured = result()?.latencyMs
+    const measurement = result()
+    const measured = measurement?.latencyMs
     if (measured == null) return
-    setMicLatencyMs(measured)
+    setMicLatencyMeasurement(measured, measurement?.spreadMs ?? null)
     showNotification(
       `Microphone latency set to ${measured} ms for this input.`,
       'success',

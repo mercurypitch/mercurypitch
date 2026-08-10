@@ -220,6 +220,7 @@ describe('createGuitarTakeRecorder', () => {
 
     expect(take.append(exactCapture(10.02))).toBeNull()
     expect(take.append(exactCapture(10.5))).not.toBeNull()
+    expect(take.append(exactCapture(12.04))).not.toBeNull()
     expect(take.append(exactCapture(12.2))).not.toBeNull()
 
     const completed = take.complete(12)
@@ -227,7 +228,7 @@ describe('createGuitarTakeRecorder', () => {
     expect(completed.durationFrames).toBe(96_000)
     expect(completed.events).toHaveLength(1)
     expect(completed.filteredBeforeStart).toBe(1)
-    expect(completed.filteredAfterEnd).toBe(1)
+    expect(completed.filteredAfterEnd).toBe(2)
     expect(take.append(exactCapture(11))).toBeNull()
   })
 
@@ -244,6 +245,44 @@ describe('createGuitarTakeRecorder', () => {
     ])
     expect(snapshot.truncated).toBe(true)
     expect(snapshot.droppedEventCount).toBe(1)
+  })
+
+  it('aggregates a fixed set of health states only inside its own take', () => {
+    const take = recorder()
+
+    take.observeHealth('good')
+    take.observeHealth('noisy')
+    take.observeHealth('good')
+    take.observeHealth('clipping')
+
+    expect(take.snapshot().inputHealth).toEqual({
+      readings: 4,
+      states: {
+        silent: 0,
+        quiet: 0,
+        good: 2,
+        hot: 0,
+        clipping: 1,
+        noisy: 1,
+      },
+    })
+
+    take.complete(11)
+    take.observeHealth('noisy')
+    expect(take.snapshot().inputHealth.readings).toBe(4)
+
+    const nextTake = recorder({ takeId: 'take-2' })
+    expect(nextTake.snapshot().inputHealth).toEqual({
+      readings: 0,
+      states: {
+        silent: 0,
+        quiet: 0,
+        good: 0,
+        hot: 0,
+        clipping: 0,
+        noisy: 0,
+      },
+    })
   })
 
   it('refuses an unbounded event limit', () => {

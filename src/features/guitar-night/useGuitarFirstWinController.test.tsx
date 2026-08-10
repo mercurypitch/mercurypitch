@@ -12,7 +12,11 @@ function createBandHarness(expectedHitTimesMs = [1_000, 1_500, 2_000, 2_500]) {
   const band: GuitarRoomBand = {
     start: vi.fn(async (options) => {
       callbacks = options
-      return { expectedHitTimesMs }
+      return {
+        expectedHitTimesMs,
+        exerciseStartedAtSeconds: null,
+        completedAtSeconds: null,
+      }
     }),
     activate: vi.fn(async () => null),
     stop: vi.fn(),
