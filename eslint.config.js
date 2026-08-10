@@ -44,6 +44,7 @@ export default defineConfig(
           allowDefaultProject: [
             '*.js',
             '*.mjs',
+            'scripts/assert-piano-night-bundle.mjs',
             'scripts/pr-prepare.mjs',
             'scripts/pr-prepare.test.mjs',
           ],
@@ -283,11 +284,15 @@ export default defineConfig(
       ],
     },
   },
-  // The PR helper is a Node.js script. Type-aware browser rules make its plain
-  // JavaScript control flow appear as `any`, so keep the normal correctness
+  // Repository Node.js scripts use plain JavaScript. Type-aware browser rules
+  // make their control flow appear as `any`, so keep the normal correctness
   // rules while declaring Node globals and disabling that TS-only check.
   {
-    files: ['scripts/pr-prepare.mjs', 'scripts/pr-prepare.test.mjs'],
+    files: [
+      'scripts/assert-piano-night-bundle.mjs',
+      'scripts/pr-prepare.mjs',
+      'scripts/pr-prepare.test.mjs',
+    ],
     languageOptions: {
       globals: {
         console: 'readonly',

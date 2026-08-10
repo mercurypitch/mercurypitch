@@ -1,4 +1,4 @@
-/* Piano Night — cinematic Performance Horizon pilot surface. */
+/* Piano Night — cinematic Performance Horizon practice surface. */
 
 :global(html),
 :global(body),
@@ -182,10 +182,16 @@
 
 .roomPlate {
   z-index: -3;
-  background-image: url('/piano-night/nocturne-studio-landscape.webp');
-  background-position: center center;
-  background-size: cover;
+  display: block;
   transform: scale(1.012);
+}
+
+.roomPlate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
 }
 
 .roomGrade {
@@ -203,6 +209,24 @@
     radial-gradient(circle at 52% 38%, transparent 25%, rgb(0 0 0 / 20%) 100%);
 }
 
+.shell[data-room-treatment='light'] .roomGrade {
+  background:
+    linear-gradient(180deg, rgb(31 23 13 / 42%) 0%, transparent 24%),
+    linear-gradient(
+      90deg,
+      rgb(30 20 10 / 35%) 0%,
+      transparent 30%,
+      transparent 68%,
+      rgb(41 26 12 / 38%) 100%
+    ),
+    linear-gradient(0deg, rgb(30 20 12 / 70%) 0%, transparent 43%),
+    radial-gradient(
+      circle at 52% 36%,
+      transparent 22%,
+      rgb(47 29 12 / 18%) 100%
+    );
+}
+
 .sessionHud {
   position: fixed;
   z-index: 35;
@@ -211,7 +235,9 @@
   display: grid;
   width: min(
     1000px,
-    calc(100vw - var(--rail-width) - var(--coach-width) - 110px)
+    calc(
+      100vw - var(--rail-width) - var(--coach-width) - max(32px, 14vw) - 52px
+    )
   );
   min-width: 720px;
   height: 68px;
@@ -317,6 +343,29 @@
   gap: 7px;
 }
 
+.sessionTrace > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.sessionTrace input {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: ew-resize;
+  opacity: 0;
+}
+
+.sessionTrace:has(input:focus-visible) {
+  outline: 2px solid var(--brass-soft);
+  outline-offset: -3px;
+}
+
 .sessionTrace::before {
   position: absolute;
   right: 15px;
@@ -365,6 +414,12 @@
   border: 1px solid var(--quiet);
   border-radius: 50%;
   background: transparent;
+}
+
+.inputState i[data-connected='true'] {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgb(105 196 220 / 50%);
 }
 
 .viewButton {
@@ -426,7 +481,10 @@
   border-radius: 7px;
   opacity: 0.83;
   transform: translateX(-50%);
-  will-change: transform;
+  transition:
+    top 90ms linear,
+    opacity 180ms ease-out;
+  will-change: top;
 }
 
 .fallNote::after {
@@ -438,6 +496,8 @@
 }
 
 .leftNote {
+  border: 1px solid rgb(185 238 247 / 54%);
+  border-radius: 3px;
   background: linear-gradient(
     180deg,
     rgb(105 196 220 / 76%),
@@ -447,6 +507,8 @@
 }
 
 .rightNote {
+  border: 1px solid rgb(255 203 201 / 52%);
+  border-radius: 999px;
   background: linear-gradient(
     180deg,
     rgb(235 133 135 / 80%),
@@ -455,10 +517,28 @@
   box-shadow: 0 14px 24px rgb(235 133 135 / 17%);
 }
 
-.playing .fallNote {
-  animation: noteTravel 5.4s linear infinite;
+.fallNote[data-striking='true'] {
+  opacity: 1;
+  filter: brightness(1.08);
 }
 
+.strikeGuide {
+  position: absolute;
+  right: 0;
+  bottom: 17.5%;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(239 234 221 / 42%) 18%,
+    rgb(239 234 221 / 42%) 82%,
+    transparent
+  );
+  box-shadow: 0 5px 18px rgb(105 196 220 / 18%);
+}
+
+.projectLabel,
 .syntheticLabel {
   position: absolute;
   bottom: 14px;
@@ -501,7 +581,8 @@
 }
 
 .scoreHeading span,
-.voicingCard h1 {
+.voicingCard h1,
+.voicingCard h2 {
   font-family:
     Iowan Old Style,
     Palatino Linotype,
@@ -543,6 +624,23 @@
   stroke-width: 2;
 }
 
+.scoreLeftNote {
+  fill: #387e8d;
+  stroke: #2c6571;
+}
+
+.scoreRightNote {
+  fill: #b85c61;
+  stroke: #8d4449;
+}
+
+.scorePlayhead {
+  fill: none;
+  stroke: #ae7c3d;
+  stroke-width: 2;
+  opacity: 0.72;
+}
+
 .scoreLegend {
   padding-top: 10px;
   border-top: 1px solid rgb(55 47 39 / 20%);
@@ -566,7 +664,8 @@
   text-transform: uppercase;
 }
 
-.voicingCard h1 {
+.voicingCard h1,
+.voicingCard h2 {
   margin: 10px 0 8px;
   color: var(--ivory-strong);
   font-size: clamp(32px, 4.2vw, 58px);
@@ -616,7 +715,7 @@
   bottom: calc(var(--keybed-height) + var(--fallboard-height) + 30px);
   display: flex;
   width: var(--coach-width);
-  min-height: 460px;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -889,6 +988,8 @@
   inset: 4px 0 0;
   overflow: hidden;
   background: #0b0b0a;
+  touch-action: none;
+  user-select: none;
 }
 
 .whiteKeys {
@@ -897,9 +998,14 @@
   display: flex;
 }
 
-.whiteKeys i {
+.whiteKeys button {
   position: relative;
   flex: 1;
+  min-width: 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
   border-right: 1px solid #171614;
   border-radius: 0 0 2px 2px;
   background: linear-gradient(
@@ -914,30 +1020,17 @@
     inset 1px 0 rgb(255 255 255 / 54%);
 }
 
-.whiteKeys i[data-tone='cyan'] {
+.whiteKeys button.keyActive {
   background: linear-gradient(
     92deg,
-    #9ebbc0,
-    #caeef3 32%,
-    #edf9f8 76%,
-    #8baeb4
+    #96b7bc,
+    #c5e8eb 32%,
+    #e8f6f3 76%,
+    #84a7ac
   );
   box-shadow:
-    0 -18px 30px rgb(105 196 220 / 22%),
+    0 -18px 30px rgb(105 196 220 / 30%),
     inset 0 -8px 11px rgb(49 93 103 / 20%);
-}
-
-.whiteKeys i[data-tone='coral'] {
-  background: linear-gradient(
-    92deg,
-    #bd8b89,
-    #efc0ba 32%,
-    #f8ded7 76%,
-    #aa7474
-  );
-  box-shadow:
-    0 -18px 30px rgb(235 133 135 / 22%),
-    inset 0 -8px 11px rgb(98 47 49 / 20%);
 }
 
 .blackKeys {
@@ -946,22 +1039,31 @@
   pointer-events: none;
 }
 
-.blackKeys i {
+.blackKeys button {
   position: absolute;
   z-index: 2;
   top: 0;
   width: max(8px, 1.12%);
   height: 61%;
+  padding: 0;
   border: 1px solid #020202;
   border-radius: 0 0 3px 3px;
   background: linear-gradient(100deg, #050505, #252421 56%, #050505);
   box-shadow:
     1px 5px 5px rgb(0 0 0 / 62%),
     inset 0 -7px 7px rgb(255 255 255 / 4%);
+  pointer-events: auto;
   transform: translateX(-50%);
 }
 
-.playing .whiteKeys i[data-tone]::after {
+.blackKeys button.keyActive {
+  background: linear-gradient(100deg, #14272b, #4c8f9b 56%, #0b1112);
+  box-shadow:
+    1px 5px 5px rgb(0 0 0 / 62%),
+    0 -8px 24px rgb(105 196 220 / 34%);
+}
+
+.whiteKeys button.keyActive::after {
   position: absolute;
   top: -7px;
   right: 16%;
@@ -975,8 +1077,8 @@
   opacity: 0.8;
 }
 
-.playing .whiteKeys i[data-tone='coral']::after {
-  color: var(--coral);
+.keyboardRange {
+  display: none;
 }
 
 .fallboard {
@@ -1021,6 +1123,12 @@
 .transport button:hover {
   color: var(--ivory-strong);
   background: rgb(255 255 255 / 5%);
+}
+
+.transport button:disabled {
+  color: #716a62;
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .transport svg {
@@ -1297,6 +1405,27 @@
   text-align: left;
 }
 
+.roomGrid {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.roomGrid .roomSwatch {
+  margin-top: 0;
+  cursor: pointer;
+}
+
+.roomGrid .roomSwatch:hover {
+  border-color: rgb(214 183 120 / 54%);
+  background: rgb(181 138 80 / 8%);
+}
+
+.roomGrid .roomSelected {
+  border-color: var(--brass);
+  background: rgb(181 138 80 / 12%);
+}
+
 .previewRow:disabled {
   cursor: not-allowed;
   opacity: 0.72;
@@ -1316,14 +1445,97 @@
   margin-right: 12px;
   border: 1px solid rgb(181 138 80 / 44%);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 68% 40%, #c08f52 0 4%, transparent 5%),
-    linear-gradient(145deg, #071b28 0 48%, #3c2115 49% 100%);
+  background-position: center;
+  background-size: cover;
   box-shadow: inset 0 0 14px rgb(0 0 0 / 44%);
 }
 
 .roomSwatch > div {
   flex: 1;
+}
+
+.midiActions {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.actionButton,
+.textButton {
+  min-height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.actionButton {
+  border: 1px solid rgb(181 138 80 / 58%);
+  color: var(--ivory-strong);
+  background: rgb(181 138 80 / 13%);
+}
+
+.actionButton:hover {
+  border-color: var(--brass-soft);
+  background: rgb(181 138 80 / 20%);
+}
+
+.actionButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.textButton {
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+}
+
+.textButton:hover {
+  color: var(--ivory-strong);
+  background: rgb(255 255 255 / 4%);
+}
+
+.midiSelect {
+  display: grid;
+  gap: 7px;
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.midiSelect select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ivory);
+  background: #0c0f12;
+}
+
+.runtimeError {
+  padding: 11px 12px;
+  border: 1px solid rgb(235 133 135 / 42%);
+  border-radius: 10px;
+  color: #ffd7d4;
+  background: rgb(113 39 43 / 22%);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.soundStatus {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0 14px;
+  border-top: 1px solid rgb(224 207 180 / 11%);
+  border-bottom: 1px solid rgb(224 207 180 / 11%);
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.soundStatus strong {
+  color: var(--ivory);
+  font-size: 12px;
 }
 
 .srOnly {
@@ -1336,16 +1548,6 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-@keyframes noteTravel {
-  from {
-    transform: translate3d(-50%, 0, 0);
-  }
-
-  to {
-    transform: translate3d(-50%, calc(100vh - 250px), 0);
-  }
 }
 
 @media (max-width: 1380px) {
@@ -1380,9 +1582,9 @@
 
   .coach {
     z-index: 72;
-    top: 0;
+    top: 84px;
     right: 0;
-    bottom: 0;
+    bottom: calc(var(--keybed-height) + var(--fallboard-height));
     width: min(360px, calc(100vw - 36px));
     min-height: 0;
     border-top: 0;
@@ -1396,6 +1598,10 @@
     transition:
       transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
       opacity 220ms ease-out;
+  }
+
+  .drawer {
+    bottom: calc(var(--keybed-height) + var(--fallboard-height));
   }
 
   .coachOpen {
@@ -1519,11 +1725,17 @@
   }
 
   .coach {
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    bottom: calc(
+      64px + var(--keybed-height) + var(--fallboard-height) +
+        env(safe-area-inset-bottom)
+    );
   }
 
   .drawer {
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    bottom: calc(
+      64px + var(--keybed-height) + var(--fallboard-height) +
+        env(safe-area-inset-bottom)
+    );
   }
 
   .scorePaper {
@@ -1537,9 +1749,8 @@
     --fallboard-height: 70px;
   }
 
-  .roomPlate {
-    background-image: url('/piano-night/nocturne-studio-portrait.webp');
-    background-position: center 42%;
+  .roomPlate img {
+    object-position: center 42%;
   }
 
   .roomGrade {
@@ -1601,10 +1812,6 @@
     width: 18px;
   }
 
-  .fallNote:nth-of-type(-n + 3) {
-    display: none;
-  }
-
   .coachPeek {
     right: 10px;
     min-width: 98px;
@@ -1651,7 +1858,8 @@
     padding: 26px 24px;
   }
 
-  .voicingCard h1 {
+  .voicingCard h1,
+  .voicingCard h2 {
     font-size: 35px;
   }
 
@@ -1668,7 +1876,10 @@
   .drawer {
     top: auto;
     width: 100%;
-    max-height: calc(100dvh - 74px - env(safe-area-inset-bottom));
+    max-height: calc(
+      100dvh - 76px - 64px - var(--keybed-height) - var(--fallboard-height) -
+        env(safe-area-inset-bottom)
+    );
     border-top: 1px solid var(--line);
     border-left: 0;
     border-radius: 18px 18px 0 0;
@@ -1681,12 +1892,83 @@
     transform: translateY(0);
   }
 
+  .drawerTopline,
+  .drawerTabs {
+    position: sticky;
+    z-index: 2;
+    background: #090b0e;
+  }
+
+  .drawerTopline {
+    top: 0;
+  }
+
+  .drawerTabs {
+    top: 88px;
+  }
+
   .drawerPanel {
     padding: 30px 22px 40px;
   }
 
   .drawerPanel h2 {
     font-size: 28px;
+  }
+
+  .whiteKeys button[data-in-range='false'],
+  .blackKeys button[data-in-range='false'] {
+    display: none;
+  }
+
+  .blackKeys button {
+    width: 5.2%;
+  }
+
+  .keyboardRange {
+    position: absolute;
+    z-index: 7;
+    top: 9px;
+    right: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .keyboardRange button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid rgb(224 207 180 / 32%);
+    border-radius: 50%;
+    color: var(--ivory-strong);
+    background: rgb(5 7 9 / 82%);
+    box-shadow: 0 8px 18px rgb(0 0 0 / 24%);
+    pointer-events: auto;
+  }
+
+  .keyboardRange button:last-child svg {
+    transform: rotate(180deg);
+  }
+
+  .keyboardRange button:disabled {
+    opacity: 0.34;
+  }
+
+  .keyboardRange svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .keyboardRange span {
+    padding: 4px 8px;
+    border-radius: 7px;
+    color: #ddd5c9;
+    background: rgb(5 7 9 / 76%);
+    font-size: 9px;
   }
 }
 
@@ -1708,7 +1990,7 @@
     );
   }
 
-  .whiteKeys i:nth-child(3n) {
+  .whiteKeys button:nth-child(3n) {
     background-color: #e8e1d6;
   }
 }
@@ -1721,7 +2003,7 @@
     transition: none;
   }
 
-  .playing .fallNote {
-    animation: none;
+  .fallNote {
+    transition: none;
   }
 }

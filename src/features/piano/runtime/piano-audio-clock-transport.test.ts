@@ -83,6 +83,46 @@ describe('createPianoAudioClockTransport', () => {
     expect(instance.transport.phase()).toBe('ready')
   })
 
+  it('activates one context synchronously without moving transport state', async () => {
+    const activation = deferred<undefined>()
+    const instance = harness({ activation: () => activation.promise })
+
+    const first = instance.transport.activate()
+    const second = instance.transport.activate()
+
+    expect(instance.contextFactory).toHaveBeenCalledOnce()
+    expect(instance.activateContext).toHaveBeenCalledOnce()
+    expect(first).toBe(second)
+    expect(instance.transport.getAudioContext()).toBe(instance.context)
+    expect(instance.transport.phase()).toBe('ready')
+    expect(instance.transport.timeline.playheadBeat()).toBe(0)
+
+    instance.context.currentTime = 18
+    activation.resolve(undefined)
+    await expect(first).resolves.toBe(true)
+    await expect(second).resolves.toBe(true)
+    expect(instance.transport.phase()).toBe('ready')
+    expect(instance.transport.timeline.playheadBeat()).toBe(0)
+  })
+
+  it('keeps activation failure out of the playback phase and permits retry', async () => {
+    let attempts = 0
+    const instance = harness({
+      activation: async () => {
+        attempts += 1
+        if (attempts === 1) throw new Error('blocked')
+      },
+    })
+
+    await expect(instance.transport.activate()).resolves.toBe(false)
+    expect(instance.transport.phase()).toBe('ready')
+    expect(instance.transport.timeline.playheadBeat()).toBe(0)
+
+    await expect(instance.transport.activate()).resolves.toBe(true)
+    expect(instance.contextFactory).toHaveBeenCalledOnce()
+    expect(instance.transport.phase()).toBe('ready')
+  })
+
   it('creates and activates one context on Play, then derives beats from it', async () => {
     const instance = harness({ tempoBpm: 90, speed: 0.5 })
 

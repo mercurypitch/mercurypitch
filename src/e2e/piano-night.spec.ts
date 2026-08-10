@@ -1,4 +1,4 @@
-// Piano Night smoke coverage protects the standalone route and responsive pilot shell.
+// Piano Night smoke coverage protects the standalone prepared-project room.
 // ============================================================
 
 import { devices, expect, test } from '@playwright/test'
@@ -79,7 +79,7 @@ async function instrumentFirstPaint(
   })
 }
 
-test('loads the standalone Performance Horizon silently @smoke', async ({
+test('loads the prepared standalone room with a silent first paint @smoke', async ({
   page,
 }) => {
   const pageErrors: Error[] = []
@@ -95,11 +95,13 @@ test('loads the standalone Performance Horizon silently @smoke', async ({
   await expect(page.getByTestId('piano-night-shell')).toBeVisible()
   await expect(page.locator('#app-tabs')).toHaveCount(0)
   await expect(
-    page.getByText('No project loaded · Nocturne Studio'),
+    page.getByText('Afterglow Study in E-flat').first(),
   ).toBeVisible()
+  await expect(page.getByText('Prepared project performance')).toBeVisible()
+  await expect(page.getByText('bars 1–4 · Afterglow Studio')).toBeVisible()
   await expect(page.getByTestId('piano-night-keyboard')).toBeVisible()
   await expect(
-    page.getByTestId('piano-night-keyboard').locator('i'),
+    page.getByTestId('piano-night-keyboard').locator('button[data-midi]'),
   ).toHaveCount(88)
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
     'content',
@@ -138,16 +140,82 @@ test('loads the standalone Performance Horizon silently @smoke', async ({
   )
   expect(
     loadedResources.filter((name) =>
-      /\/(?:library|local-song-library|piano-library|piano-project|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
+      /\/(?:library|local-song-library|piano-library|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
         name,
       ),
     ),
   ).toEqual([])
 
-  const play = page.getByTestId('piano-night-play')
-  await play.click()
-  await expect(play).toHaveAttribute('aria-pressed', 'true')
-  await expect(play).toHaveAccessibleName('Pause visual note preview')
+  expect(pageErrors).toEqual([])
+})
+
+test('plays a key and seeks the prepared project with a real pointer @smoke', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await instrumentFirstPaint(page)
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+
+  const seek = page.getByRole('slider', {
+    name: 'Seek prepared piano project',
+  })
+  await expect(seek).toBeVisible()
+  const seekBox = await seek.boundingBox()
+  if (seekBox === null) throw new Error('Piano Night seek has no bounding box')
+  const beforeSeek = Number(await seek.inputValue())
+
+  await page.mouse.move(
+    seekBox.x + seekBox.width * 0.15,
+    seekBox.y + seekBox.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    seekBox.x + seekBox.width * 0.64,
+    seekBox.y + seekBox.height / 2,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+
+  await expect
+    .poll(async () => Number(await seek.inputValue()))
+    .toBeGreaterThan(beforeSeek)
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __pianoNightAudioContexts: number })
+          .__pianoNightAudioContexts,
+    ),
+  ).toBe(0)
+
+  const middleC = page.getByRole('button', { name: 'Play C4' })
+  await expect(middleC).toBeVisible()
+  const keyBox = await middleC.boundingBox()
+  if (keyBox === null) throw new Error('Middle C has no bounding box')
+
+  await page.mouse.move(
+    keyBox.x + keyBox.width / 2,
+    keyBox.y + keyBox.height * 0.82,
+  )
+  await page.mouse.down()
+  try {
+    await expect(middleC).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('status')).toContainText(
+      'Playing 60 from the touch keyboard.',
+    )
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { __pianoNightAudioContexts: number })
+              .__pianoNightAudioContexts,
+        ),
+      )
+      .toBe(1)
+  } finally {
+    await page.mouse.up()
+  }
+  await expect(middleC).toHaveAttribute('aria-pressed', 'false')
   expect(pageErrors).toEqual([])
 })
 
@@ -285,62 +353,111 @@ test('imports and persists a canonical Piano project in the browser @smoke', asy
   ).toBeNull()
 })
 
-test('recomposes for a phone without overflow or duplicate Play @smoke', async ({
-  browser,
-}) => {
-  const baseURL = test.info().project.use.baseURL
-  const context = await browser.newContext({
-    ...devices['iPhone 12'],
-    baseURL,
-    viewport: { width: 390, height: 844 },
+const RESPONSIVE_VIEWPORTS = [
+  { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet', width: 1024, height: 768 },
+  { name: 'short desktop', width: 1440, height: 720 },
+  { name: 'desktop', width: 1440, height: 900 },
+] as const
+
+for (const viewport of RESPONSIVE_VIEWPORTS) {
+  test(`recomposes the standalone room for a ${viewport.name} @smoke`, async ({
+    browser,
+  }) => {
+    const baseURL = test.info().project.use.baseURL
+    const context = await browser.newContext({
+      ...(viewport.name === 'phone' ? devices['iPhone 12'] : {}),
+      baseURL,
+      viewport: { width: viewport.width, height: viewport.height },
+    })
+    const page = await context.newPage()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
+    try {
+      const response = await page.goto('/piano-night', {
+        waitUntil: 'domcontentloaded',
+      })
+      expect(response?.ok()).toBe(true)
+
+      const metrics = await page.evaluate(() => ({
+        clientHeight: document.documentElement.clientHeight,
+        clientWidth: document.documentElement.clientWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        scrollWidth: document.documentElement.scrollWidth,
+      }))
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
+      expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 2)
+      await expect(page.getByTestId('piano-night-play')).toHaveCount(1)
+      await expect(
+        page.getByTestId('piano-night-keyboard').locator('button[data-midi]'),
+      ).toHaveCount(88)
+
+      const hud = page.getByLabel('Piano Night session status')
+      const hudBox = await hud.boundingBox()
+      const viewBox = await hud
+        .getByRole('button', { name: /Change performance view/ })
+        .boundingBox()
+      expect(viewBox?.y).toBeGreaterThanOrEqual(hudBox?.y ?? 0)
+      expect((viewBox?.y ?? 0) + (viewBox?.height ?? 0)).toBeLessThanOrEqual(
+        (hudBox?.y ?? 0) + (hudBox?.height ?? 0) + 1,
+      )
+
+      const playBox = await page.getByTestId('piano-night-play').boundingBox()
+      expect(playBox?.width).toBeGreaterThanOrEqual(44)
+      expect(playBox?.height).toBeGreaterThanOrEqual(44)
+
+      if (viewport.width <= 680) {
+        const range = page.getByLabel('Touch keyboard range')
+        await expect(range).toBeVisible()
+        for (const button of await range.getByRole('button').all()) {
+          const target = await button.boundingBox()
+          expect(target?.width).toBeGreaterThanOrEqual(44)
+          expect(target?.height).toBeGreaterThanOrEqual(44)
+        }
+        await expect(
+          page
+            .getByTestId('piano-night-keyboard')
+            .locator('button[data-in-range="true"]'),
+        ).toHaveCount(25)
+      }
+
+      if (viewport.width <= 1180) {
+        await page.getByRole('button', { name: 'Coach', exact: true }).click()
+        const coach = page.getByRole('region', {
+          name: 'Phrase practice prompt',
+        })
+        await expect(coach).toBeVisible()
+        const coachBox = await coach.boundingBox()
+        const keyboardBox = await page
+          .getByTestId('piano-night-keyboard')
+          .boundingBox()
+        expect(
+          (coachBox?.y ?? 0) + (coachBox?.height ?? 0),
+        ).toBeLessThanOrEqual(keyboardBox?.y ?? Number.POSITIVE_INFINITY)
+        await expect(
+          coach.getByRole('button', {
+            name: 'Close phrase practice prompt',
+          }),
+        ).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(
+          page.locator('[aria-label="Phrase practice prompt"]'),
+        ).toHaveAttribute('aria-hidden', 'true')
+      } else {
+        const coach = page.getByRole('complementary', {
+          name: 'Phrase practice prompt',
+        })
+        await expect(coach).toBeVisible()
+        const coachBox = await coach.boundingBox()
+        const keyboardBox = await page
+          .getByTestId('piano-night-keyboard')
+          .boundingBox()
+        expect(
+          (coachBox?.y ?? 0) + (coachBox?.height ?? 0),
+        ).toBeLessThanOrEqual(keyboardBox?.y ?? Number.POSITIVE_INFINITY)
+      }
+    } finally {
+      await context.close()
+    }
   })
-  const page = await context.newPage()
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-
-  try {
-    const response = await page.goto('/piano-night', {
-      waitUntil: 'domcontentloaded',
-    })
-    expect(response?.ok()).toBe(true)
-
-    const metrics = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }))
-    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2)
-    await expect(page.getByTestId('piano-night-play')).toHaveCount(1)
-
-    const hud = page.getByLabel('Piano Night preview status')
-    const hudBox = await hud.boundingBox()
-    const viewBox = await hud
-      .getByRole('button', { name: /Change performance preview/ })
-      .boundingBox()
-    expect(viewBox?.y).toBeGreaterThanOrEqual(hudBox?.y ?? 0)
-    expect((viewBox?.y ?? 0) + (viewBox?.height ?? 0)).toBeLessThanOrEqual(
-      (hudBox?.y ?? 0) + (hudBox?.height ?? 0) + 1,
-    )
-
-    const playBox = await page.getByTestId('piano-night-play').boundingBox()
-    expect(playBox?.width).toBeGreaterThanOrEqual(44)
-    expect(playBox?.height).toBeGreaterThanOrEqual(44)
-
-    await page.getByRole('button', { name: 'Coach', exact: true }).click()
-    const coach = page.getByRole('dialog', {
-      name: 'Illustrative phrase coach',
-    })
-    await expect(coach).toBeVisible()
-    await expect(
-      coach.getByRole('button', { name: 'Close phrase coach' }),
-    ).toBeFocused()
-    await page.keyboard.press('Escape')
-    await expect(
-      page.locator('[aria-label="Illustrative phrase coach"]'),
-    ).toHaveAttribute('aria-hidden', 'true')
-
-    await page.getByTestId('piano-night-play').click()
-    const animatedNote = page.locator('[class*="fallNote"]').first()
-    await expect(animatedNote).toHaveCSS('animation-name', 'none')
-  } finally {
-    await context.close()
-  }
-})
+}
