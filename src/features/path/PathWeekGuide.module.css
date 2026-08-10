@@ -184,6 +184,19 @@
   background: rgba(245, 158, 11, 0.2);
 }
 
+/* Quicksilver, so an Ear Lab chip reads as measurement rather than as
+   another singing drill. */
+.earChip {
+  border-color: rgba(168, 199, 214, 0.4);
+  color: #e6f2f7;
+  background: rgba(168, 199, 214, 0.12);
+}
+
+.earChip:hover {
+  border-color: rgba(198, 225, 236, 0.66);
+  background: rgba(168, 199, 214, 0.22);
+}
+
 .chip:focus-visible,
 .cta:focus-visible,
 .resLink:focus-visible {
