@@ -157,6 +157,29 @@ release build is rebuilt with the real key from
 `secrets.VITE_REVENUECAT_ANDROID_KEY` (or `VITE_REVENUECAT_IOS_KEY`). Shipping
 the first configuration in a release binary would make the SDK abort on launch.
 
+### Debug signing
+
+Android refuses to update an installed app whose signing certificate differs,
+and it reports this as "cannot install" with no reason given. A CI runner
+generates a throwaway debug key per run, so without a shared one, every swap
+between a PR artifact and a local build needs an uninstall — which wipes the cue
+and reflection history, because both live only on the device.
+
+So debug builds use one keystore, at `~/.android/beside-cue-debug.jks` locally
+and from `BESIDE_CUE_DEBUG_KEYSTORE_BASE64` in CI. Its password is Android's
+documented debug convention, `android`, on purpose: a debug key signs nothing
+Play would accept, so nothing is protected by hiding it.
+
+With no keystore at that path the build still works, falling back to the
+toolchain's generated debug key. It simply cannot update an install made
+anywhere else. To adopt the shared key on another machine:
+
+```sh
+base64 -d < beside-cue-debug.jks.b64 > ~/.android/beside-cue-debug.jks
+```
+
+`BESIDE_CUE_DEBUG_KEYSTORE_FILE` overrides the path.
+
 ### Android upload key
 
 Play App Signing means Google holds the _app signing_ key and re-signs every

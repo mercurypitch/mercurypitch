@@ -12,6 +12,26 @@ def hasUploadKey = uploadKeystore != null && !uploadKeystore.isEmpty() && file(u
 def releaseVersionCode = System.getenv("BESIDE_CUE_VERSION_CODE")
 def releaseVersionName = System.getenv("BESIDE_CUE_VERSION_NAME")
 
+// Debug builds are signed with one keystore shared between CI and developer
+// machines. Android refuses to update an installed app whose signing
+// certificate differs, and every CI run otherwise generates a throwaway debug
+// key, so swapping between a PR artifact and a local build meant uninstalling
+// first — which wipes the cue and reflection history, since both live only on
+// the device.
+//
+// The password below is Android's documented debug-keystore convention, on
+// purpose. A debug key signs nothing Play would accept, so nothing is protected
+// by keeping it out of this file. The keystore itself still lives outside Git.
+//
+// Absent, the build falls back to whatever debug key the Android toolchain
+// generates, so a fresh clone still builds — it simply cannot update an install
+// made by a different machine.
+def debugKeystore = System.getenv("BESIDE_CUE_DEBUG_KEYSTORE_FILE")
+if (debugKeystore == null || debugKeystore.isEmpty()) {
+    debugKeystore = "${System.getProperty('user.home')}/.android/beside-cue-debug.jks"
+}
+def hasDebugKey = file(debugKeystore).exists()
+
 android {
     namespace = "com.irchiinnuss.besidecue"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -31,6 +51,16 @@ android {
         }
     }
     signingConfigs {
+        // AGP always defines `debug`, so this reconfigures it rather than
+        // adding one; `buildTypes.debug` picks it up with no further wiring.
+        if (hasDebugKey) {
+            debug {
+                storeFile file(debugKeystore)
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
         if (hasUploadKey) {
             release {
                 storeFile file(uploadKeystore)
