@@ -9,7 +9,7 @@
 // TabRenderer interface.
 
 import type { Accessor } from 'solid-js'
-import { createSignal, createUniqueId, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createSignal, createUniqueId, on, onCleanup, onMount, Show, } from 'solid-js'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
@@ -47,6 +47,8 @@ export interface GuitarTab3DViewProps {
   fallbackText?: Accessor<string>
   /** Host-owned edge treatment; the legacy stage keeps its rounded default. */
   borderRadius?: Accessor<string>
+  /** Host-owned starting/reset framing; absent preserves the legacy camera. */
+  cameraPreset?: Accessor<CameraState>
   /** The instrument the notes sit on. Absent leaves the neck inferred. */
   tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
 }
@@ -56,7 +58,9 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   let renderer: TabRenderer | null = null
   let rafId = 0
   const cameraInstructionsId = createUniqueId()
-  const [camera, setCamera] = createSignal<CameraState>(DEFAULT_CAMERA)
+  const homeCamera = (): CameraState =>
+    clampCamera(props.cameraPreset?.() ?? DEFAULT_CAMERA)
+  const [camera, setCamera] = createSignal<CameraState>(homeCamera())
   const [interactive, setInteractive] = createSignal(false)
 
   // A direct manipulation (drag/wheel/pinch) cancels any in-flight tween so
@@ -134,15 +138,32 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   // through every accumulated revolution.
   const resetCamera = () => {
     const c = camera()
+    const home = homeCamera()
     animateCamera({
-      ...DEFAULT_CAMERA,
-      yaw: c.yaw + yawDelta(DEFAULT_CAMERA.yaw, c.yaw),
+      ...home,
+      yaw: c.yaw + yawDelta(home.yaw, c.yaw),
     })
   }
 
   /** Signed shortest angular distance from b to a, in (-π, π]. */
   const yawDelta = (a: number, b: number) =>
     Math.atan2(Math.sin(a - b), Math.cos(a - b))
+
+  createEffect(
+    on(
+      () => props.cameraPreset?.(),
+      (preset) => {
+        if (preset === undefined) return
+        const current = camera()
+        const next = clampCamera(preset)
+        animateCamera({
+          ...next,
+          yaw: current.yaw + yawDelta(next.yaw, current.yaw),
+        })
+      },
+      { defer: true },
+    ),
+  )
 
   // Snap the camera to look along a world axis (gizmo axis-ball click).
   // X/Z pick the nearest side first; clicking the axis you already face flips
@@ -415,6 +436,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         data-camera-ready={interactive()}
         data-camera-yaw={camera().yaw.toFixed(4)}
         data-camera-radius={camera().radius.toFixed(4)}
+        data-camera-target-x={camera().target[0].toFixed(4)}
         style={{
           display: 'block',
           width: '100%',

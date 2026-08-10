@@ -5,6 +5,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GuitarTab3DView } from './GuitarTab3DView'
+import type { CameraState } from './renderer/camera'
 import { DEFAULT_CAMERA } from './renderer/camera'
 
 const renderer = vi.hoisted(() => ({
@@ -110,5 +111,56 @@ describe('GuitarTab3DView keyboard camera', () => {
     fireEvent.keyDown(controls, { key: ' ' })
 
     expect(canvas).toHaveAttribute('data-camera-yaw', initialYaw)
+  })
+
+  it('uses the host camera for entry and reset without changing legacy defaults', () => {
+    const preset: CameraState = {
+      yaw: 0.35,
+      pitch: 0.7,
+      radius: 32,
+      target: [1.5, 2, -12],
+    }
+    render(() => (
+      <GuitarTab3DView
+        fallingNotes={() => []}
+        playheadBeat={() => 0}
+        visibleBeatWindow={() => 8}
+        showNoteLabels={() => false}
+        showFretboard={() => true}
+        isActive={() => true}
+        showGizmo={() => false}
+        cameraPreset={() => preset}
+      />
+    ))
+
+    const controls = screen.getByRole('group', {
+      name: '3D fretboard view controls',
+    })
+    const canvas = screen.getByRole('img')
+    expect(canvas).toHaveAttribute('data-camera-yaw', preset.yaw.toFixed(4))
+    expect(canvas).toHaveAttribute(
+      'data-camera-radius',
+      preset.radius.toFixed(4),
+    )
+    expect(canvas).toHaveAttribute(
+      'data-camera-target-x',
+      preset.target[0].toFixed(4),
+    )
+
+    fireEvent.keyDown(controls, { key: 'ArrowRight' })
+    expect(canvas.getAttribute('data-camera-yaw')).not.toBe(
+      preset.yaw.toFixed(4),
+    )
+
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(performance.now() + 300)
+      return 1
+    })
+    fireEvent.keyDown(controls, { key: 'r' })
+    expect(canvas).toHaveAttribute('data-camera-yaw', preset.yaw.toFixed(4))
+    expect(canvas).toHaveAttribute(
+      'data-camera-radius',
+      preset.radius.toFixed(4),
+    )
   })
 })

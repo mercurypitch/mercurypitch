@@ -20,8 +20,8 @@ import { BACKDROP_STORAGE_KEY, DEFAULT_BACKDROP_ID, GUITAR_NIGHT_BACKDROPS, isBa
 import type { GuitarNightBandPreparationPort } from './band-preparation-port'
 import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightFirstWin } from './GuitarNightFirstWin'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
-import { GuitarNightStage } from './GuitarNightStage'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking, REFERENCE_FILE_ACCEPT, } from './reference-port'
@@ -108,7 +108,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const firstWinConfig = createMemo(() =>
     resolveGuitarFirstWinConfig(props.firstWinConfig),
   )
-  const firstWinStep = createMemo(() => firstWinConfig().exerciseSteps[0])
   const firstWinController = useGuitarFirstWinController({
     config: firstWinConfig,
   })
@@ -149,6 +148,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const isRoomView = createMemo(
     () => view() === 'room' || view() === 'score-room',
   )
+  const isStageView = createMemo(() => view() === 'first-win' || isRoomView())
   const [visitedRoomSessionId, setVisitedRoomSessionId] = createSignal<
     string | null
   >(null)
@@ -450,11 +450,6 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const addPreviewHit = (input: 'touch' | 'keyboard' = 'touch') =>
     firstWinController.registerHit(input)
 
-  const previewPassed = () =>
-    firstWinController.hits() >= firstWinConfig().passHits
-  const previewFinished = () =>
-    firstWinController.hits() >= firstWinConfig().freshHitsRequested
-
   const completionAction = () =>
     firstWinConfig().completionActions.includes('keep-jamming')
       ? 'keep-jamming'
@@ -623,7 +618,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   return (
     <div
       class={styles.app}
-      classList={{ [styles.appRoom]: isRoomView() }}
+      classList={{ [styles.appRoom]: isStageView() }}
       data-testid="guitar-night-shell"
     >
       <a class={styles.skipLink} href="#guitar-night-main">
@@ -695,7 +690,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
 
       <main
         class={styles.main}
-        classList={{ [styles.mainRoom]: isRoomView() }}
+        classList={{ [styles.mainRoom]: isStageView() }}
         id="guitar-night-main"
       >
         <div
@@ -705,7 +700,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             [styles.entryPanelLesson]: view() === 'first-win',
           }}
         >
-          <Show when={!isRoomView()}>
+          <Show when={!isStageView()}>
             <div class={styles.panelEdge} aria-hidden="true" />
           </Show>
 
@@ -763,163 +758,20 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
             </Match>
 
             <Match when={view() === 'first-win'}>
-              <p class={styles.eyebrow}>First win · one string</p>
-              <h1 ref={detailHeading} tabindex="-1">
-                Start with one string.
-              </h1>
-              <p class={styles.detailCopy}>
-                Tab has six lines. A number tells you which fret to play. A 0
-                means play the string open.
-              </p>
-
-              <GuitarNightStage
-                source={firstWinStage}
+              <GuitarNightFirstWin
+                config={firstWinConfig}
+                controller={firstWinController}
+                stage={firstWinStage}
                 active={() => view() === 'first-win'}
+                completionAction={completionAction}
+                headingRef={(element) => {
+                  detailHeading = element
+                }}
+                onHit={() => addPreviewHit('touch')}
+                onBack={returnToChoices}
+                onSkip={skipFirstWin}
+                onComplete={handleCompletion}
               />
-
-              <div class={styles.rhythmPreview}>
-                <div class={styles.previewMeta}>
-                  <span>{firstWinStep().stringLabel} · standard tuning</span>
-                  <span>{firstWinController.tempoBpm()} BPM</span>
-                </div>
-                <div
-                  class={styles.beatRow}
-                  aria-label={`${firstWinController.hits()} of ${firstWinConfig().freshHitsRequested} notes marked`}
-                >
-                  <For
-                    each={Array.from(
-                      { length: firstWinConfig().freshHitsRequested },
-                      (_, index) => index,
-                    )}
-                  >
-                    {(index) => (
-                      <span
-                        classList={{
-                          [styles.beatFilled]:
-                            index < firstWinController.hits(),
-                        }}
-                        aria-hidden="true"
-                      />
-                    )}
-                  </For>
-                </div>
-                <div class={styles.lessonControls}>
-                  <button
-                    class={styles.grooveAction}
-                    type="button"
-                    onClick={() =>
-                      firstWinController.status() === 'count-in' ||
-                      firstWinController.status() === 'playing' ||
-                      firstWinController.status() === 'starting'
-                        ? firstWinController.stopGroove()
-                        : void firstWinController.startGroove()
-                    }
-                  >
-                    {firstWinController.status() === 'count-in' ||
-                    firstWinController.status() === 'playing' ||
-                    firstWinController.status() === 'starting'
-                      ? 'Stop groove'
-                      : 'Start count-in'}
-                  </button>
-                  <button
-                    class={styles.tapAction}
-                    type="button"
-                    aria-label={`Tap each ${firstWinStep().stringLabel} note`}
-                    onClick={() => addPreviewHit('touch')}
-                    disabled={previewFinished()}
-                  >
-                    {previewFinished()
-                      ? 'First bar complete'
-                      : `Play ${firstWinStep().stringLabel} · tap or Space`}
-                  </button>
-                </div>
-                <p
-                  class={styles.lessonFeedback}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {firstWinController.lastFeedback()}
-                </p>
-                <Show when={firstWinController.hits() > 0}>
-                  <details class={styles.lessonOptions}>
-                    <summary>Adjust the intro</summary>
-                    <div>
-                      <label>
-                        <span>Tempo</span>
-                        <input
-                          type="range"
-                          min="40"
-                          max="160"
-                          step="1"
-                          value={firstWinController.tempoBpm()}
-                          aria-label="Intro tempo"
-                          onInput={(event) =>
-                            firstWinController.setTempoBpm(
-                              Number(event.currentTarget.value),
-                            )
-                          }
-                        />
-                        <strong>{firstWinController.tempoBpm()} BPM</strong>
-                      </label>
-                      <label>
-                        <span>Count-in</span>
-                        <select
-                          aria-label="Count-in beats"
-                          value={firstWinController.countInBeats()}
-                          onChange={(event) =>
-                            firstWinController.setCountInBeats(
-                              Number(event.currentTarget.value),
-                            )
-                          }
-                        >
-                          <For each={[0, 2, 4, 8]}>
-                            {(beats) => (
-                              <option value={beats}>
-                                {beats === 0 ? 'Off' : `${beats} beats`}
-                              </option>
-                            )}
-                          </For>
-                        </select>
-                      </label>
-                    </div>
-                  </details>
-                </Show>
-                <Show when={previewPassed()}>
-                  <p class={styles.smallWin} role="status">
-                    {previewFinished()
-                      ? `${firstWinConfig().freshHitsRequested} open notes. You just read your first bar of tab.`
-                      : `${firstWinConfig().passHits} notes down. Add the last note or keep going.`}
-                  </p>
-                </Show>
-              </div>
-
-              <div class={styles.detailActions}>
-                <button type="button" onClick={returnToChoices}>
-                  Back
-                </button>
-                <Show
-                  when={previewPassed()}
-                  fallback={
-                    <button
-                      class={styles.workspaceEscape}
-                      type="button"
-                      onClick={skipFirstWin}
-                    >
-                      Open Guitar workspace
-                    </button>
-                  }
-                >
-                  <button
-                    class={styles.completionAction}
-                    type="button"
-                    onClick={handleCompletion}
-                  >
-                    {completionAction() === 'load-song'
-                      ? 'Load a song'
-                      : 'Keep jamming'}
-                  </button>
-                </Show>
-              </div>
             </Match>
 
             <Match when={view() === 'song'}>
@@ -1593,7 +1445,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         </div>
       </main>
 
-      <Show when={!isRoomView()}>
+      <Show when={!isStageView()}>
         <div
           class={styles.roomStatus}
           aria-label={`Room status: ${roomStatus().title}. ${roomStatus().detail}`}

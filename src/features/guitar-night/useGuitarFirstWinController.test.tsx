@@ -45,6 +45,7 @@ describe('useGuitarFirstWinController', () => {
       expect(harness.band.start).not.toHaveBeenCalled()
       for (let hit = 0; hit < 4; hit += 1) {
         expect(controller.registerHit('touch')).toBe(true)
+        expect(controller.playheadBeat()).toBe(Math.min(hit + 1, 3))
       }
       expect(controller.status()).toBe('complete')
       expect(controller.progress().status).toBe('completed')
@@ -68,6 +69,7 @@ describe('useGuitarFirstWinController', () => {
         void controller.startGroove().then(() => {
           harness.getCallbacks()?.onBeat?.(0, 'exercise', 0)
           expect(controller.registerHit('keyboard')).toBe(true)
+          expect(controller.playheadBeat()).toBe(0)
           expect(
             controller.progress().bestAbsoluteTimingMsByStep['open-low-e'],
           ).toBe(30)

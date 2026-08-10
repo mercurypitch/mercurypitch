@@ -2,8 +2,9 @@
 // ============================================================
 
 import type { Accessor, JSX } from 'solid-js'
-import { children, createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } from 'solid-js'
+import { children, createEffect, createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
+import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
@@ -33,6 +34,8 @@ interface GuitarNightStageProps {
   heardNote?: Accessor<string | null>
   heardClarity?: Accessor<number>
   initialMode?: GuitarNightStageMode
+  /** Flow labels default to note names; beginner tab can ask for fret numbers. */
+  flowLabelMode?: 'note' | 'fret'
   /** Host-owned cues and sheets sit over the instrument without entering layout. */
   overlay?: JSX.Element
 }
@@ -56,6 +59,22 @@ const STRING_COUNT_CHOICES = Array.from(
 const TAB_WINDOW_BEATS = 8
 /** Where the now-line sits, leaving a little played history behind it. */
 export const TAB_PLAYHEAD_RATIO = 0.18
+
+/** Guitar Night owns its cinematic framing without changing the legacy tab. */
+export const GUITAR_NIGHT_CAMERA_WIDE: CameraState = {
+  yaw: 0,
+  pitch: 0.55,
+  radius: 21,
+  target: [0, -2, -12],
+}
+
+/** Portrait needs distance and a steeper view so every fret stays reachable. */
+export const GUITAR_NIGHT_CAMERA_NARROW: CameraState = {
+  yaw: 0,
+  pitch: 0.75,
+  radius: 32,
+  target: [0, 2, -12],
+}
 
 export interface TabWindowEntry {
   note: GuitarNote
@@ -184,6 +203,14 @@ function noteAtPlayhead(
 export function GuitarNightStage(props: GuitarNightStageProps) {
   let instrumentDetails: HTMLDetailsElement | undefined
   const overlay = children(() => props.overlay)
+  const narrowQuery = '(max-width: 720px)'
+  const matchesNarrowViewport = () =>
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(narrowQuery).matches
+  const [narrowViewport, setNarrowViewport] = createSignal(
+    matchesNarrowViewport(),
+  )
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
@@ -220,6 +247,17 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const instrumentSetupDisabled = createMemo(
     () => props.instrumentSetupDisabled?.() ?? false,
   )
+  const cameraPreset = createMemo(() =>
+    narrowViewport() ? GUITAR_NIGHT_CAMERA_NARROW : GUITAR_NIGHT_CAMERA_WIDE,
+  )
+  onMount(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia(narrowQuery)
+    const sync = () => setNarrowViewport(query.matches)
+    sync()
+    query.addEventListener?.('change', sync)
+    onCleanup(() => query.removeEventListener?.('change', sync))
+  })
   createEffect(() => {
     if (instrumentSetupDisabled() && instrumentDetails?.open === true) {
       instrumentDetails.open = false
@@ -262,6 +300,9 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       class={styles.performanceStage}
       aria-label="Guitar stage"
       data-testid="guitar-night-stage"
+      data-signal={
+        isListening() ? 'listening' : hasGuide() ? 'guided' : 'free-play'
+      }
     >
       <header class={styles.stageHeader}>
         <div>
@@ -346,7 +387,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               source={visualSource}
               tuning={tuning}
               visibleBeatWindow={() => 8}
-              showNoteLabels={() => true}
+              showNoteLabels={() => props.flowLabelMode !== 'fret'}
               showFretboard={() => true}
               isActive={() => props.active() && mode() === 'flow'}
               display={() => VELVET_DISPLAY}
@@ -354,11 +395,21 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               ariaLabel={canvasSummary}
               fallbackText={canvasSummary}
               borderRadius={() => '0'}
+              cameraPreset={cameraPreset}
             />
           </Suspense>
           <p class={styles.stageGestureHint}>
             Drag / arrows to orbit · scroll / + − to zoom · R resets
           </p>
+          <Show when={!hasGuide() && !isListening()}>
+            <div class={styles.stageInvitation}>
+              <span>Free play</span>
+              <strong>The room is yours.</strong>
+              <small>
+                Attach a tab or turn on Listening whenever you want a target.
+              </small>
+            </div>
+          </Show>
         </Show>
 
         <Show when={mode() === 'tab'}>
