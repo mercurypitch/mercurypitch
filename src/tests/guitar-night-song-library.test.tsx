@@ -292,7 +292,7 @@ describe('GuitarNightApp prepared songs', () => {
       await screen.findByRole('button', { name: 'Pause backing' }),
     ).toBeVisible()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Songs' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Songs' }))
     expect(backingTransport.transport.pause).toHaveBeenCalledOnce()
     const resumeSong = await screen.findByRole('button', {
       name: /Quiet Room\.wav/,
