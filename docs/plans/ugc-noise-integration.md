@@ -1,8 +1,8 @@
 # UGC distribution via Noise — integration plan
 
 **Status:** draft, nothing live. No campaign or playbook has been activated.
-**Playbook 19290 is built and paused**; §8 lists the product facts a brief
-must not get wrong, learned by getting them wrong first.
+**Playbook 19290 is built, complete and paused**; §8 lists the product facts a
+brief must not get wrong, learned by getting them wrong first.
 **Owner decision points are marked** > **DECISION** — everything else is settled.
 
 Noise (getnoise.com) is a pay-per-view UGC marketplace: creators produce short
@@ -396,9 +396,8 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 | 9 | Tag the Glass share text (§5) | agent | done |
 | 10 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
-| 12 | Get `preview_image` onto MCP-created playbooks (§10) | you | open |
-| 13 | Update a portal-created playbook over MCP, to test rendering | agent | waiting on draft |
-| 14 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
+| 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | open |
+| 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no
@@ -419,15 +418,22 @@ worked.
 
 ---
 
-## 10. Known gap — MCP-created playbooks have no preview media
+## 10. Playbook has two views in the portal — and a preview-media question
 
-Playbook 19290 was created entirely over MCP. Its content is verifiably
-present: `get_playbook_details` returns all four slides with prompts and
-captions, and the audit log records `Playbook created` (slides: 4) plus
-`Slide image added (url)` against slide 151213.
+**Not a bug.** A playbook opened from its link in the dashboard shows the
+*posts creators made from it*, which is empty before a campaign runs. The
+content lives under **Edit playbook**. Worth knowing before concluding an
+MCP-created playbook failed to save — the first read of an empty posts list
+looks exactly like a broken write.
 
-But two fields are `null` on it and populated on 18979, which was created
-through the portal:
+Playbook 19290 is verified complete: `get_playbook_details` returns all four
+slides with prompts and captions, and the audit log records `Playbook created`
+(slides: 4) plus `Slide image added (url)` against slide 151213.
+
+### The open question: `preview_image`
+
+Two fields are `null` on 19290 and populated on 18979, which was made in the
+portal:
 
 | Field | 18979 (portal) | 19290 (MCP) |
 |---|---|---|
@@ -435,24 +441,18 @@ through the portal:
 | `example_url` | a hosted `.mp4` | `null` |
 | `created_by` | a user uuid | `null` |
 
-Neither `preview_image` nor `example_url` is settable through any MCP tool —
-`save_playbook` has no parameter for them, and nothing else writes them. On
-18979 the portal set `example_url` in a **separate** update two minutes after
-creation (audit, 2026-08-09 12:43), which reads like a portal-side generation
-step that the MCP create path does not trigger.
+Neither is settable through any MCP tool, and on 18979 the portal set
+`example_url` in a **separate** update two minutes after creation (audit,
+2026-08-09 12:43) — a portal-side step the MCP create path does not trigger.
 
-That is the most likely reason a playbook can look empty in the dashboard
-while holding all of its content: the detail view appears to be built around
-the preview media rather than the slide records.
+This no longer explains anything about the dashboard, but it may still matter
+in the place that counts: **what a creator sees when browsing open offers.** A
+playbook with no preview image and no example video plausibly presents as a
+blank card next to brands that have both, and §4 established that creators
+choose which offers to take. If so this is a pickup problem, not a display
+one — the same missing field, a very different cost.
 
-**What was ruled out.** Content is present (read back after writing).
-Campaign linkage is correct (`offer_id: 15773`; the orphans 19287/19288 have
-`offer_id: null`, which is why *those* are invisible). Captions were moved
-into the slide prompt as `<hook_captions>{{…}}</hook_captions>`, byte-matching
-the format 18979 uses, in case the structured `captions` field is write-only.
-
-**Unresolved.** Whether the portal can generate preview media for a playbook
-it did not create — a re-save or a preview regeneration in the UI may be
-enough. If not, this is a question for Noise support: it makes the MCP
-authoring path unable to produce a fully-rendered playbook on its own, which
-is worth their knowing regardless.
+Worth confirming with Noise support, alongside whether the portal can generate
+preview media for a playbook it did not create. If it cannot, the workaround
+is to create playbooks in the portal and author their content over MCP, which
+keeps nearly all of the benefit.
