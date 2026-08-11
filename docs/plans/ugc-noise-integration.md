@@ -157,6 +157,36 @@ https://mercurypitch.com/mirror?utm_source=noise&utm_medium=ugc&utm_campaign=voi
 Keep `utm_source=noise` fixed so all Noise traffic is separable in one filter.
 Vary `utm_content` per playbook to compare briefs against each other.
 
+### Which surface carries which link
+
+There are **three** places a URL reaches a viewer, and they must not share a
+tag. Conflating them is the easiest way to make this channel look better than
+it is.
+
+| Surface | Where it lives | Carries |
+|---|---|---|
+| UGC post description | the creator's caption / bio | short link with Noise UTMs |
+| Printed on the card | baked into the PNG (`card-renderer.ts:297`, `:768`) | clean `mercurypitch.com/mirror` |
+| Share text | `card-renderer.ts:804`, `voiceprint-share.ts` | optional card-viral tag |
+
+**The printed URL stays clean.** It is pixels, not a link — people read it and
+then type or search it. A short code (`/m/n1`) is harder to type, easier to
+mistype, and looks like spam on an otherwise premium card.
+
+**Never put the Noise tag on the card.** A viewer who receives a card from a
+friend who found us through Noise is *not* Noise traffic. Tagging the card
+would attribute the entire downstream organic loop to the paid channel,
+permanently and invisibly, which is precisely the wrong signal when deciding
+whether to keep spending.
+
+The **share text** is the interesting one: unlike the printed URL it is a real
+clickable link when shared into messaging apps. It could carry its own tag
+(`utm_source=voiceprint&utm_medium=share`) to separate card-driven virality
+from both paid and direct. That is a genuinely useful third bucket and a
+separate, small change.
+
+> **DECISION:** tag the share text as card-viral, or leave it untagged for now.
+
 ### Known limits
 
 - **Attribution is click-only.** Viewers who see the video and later search
@@ -216,8 +246,17 @@ it entirely.
 ## 7. The playbook
 
 **Name:** Voice Mirror — Voiceprint Reveal
+**Playbook id:** 19290, on campaign 15773
 **Type:** `image_slideshow`
-**Status:** create as inactive. Activation is a human action, never automated.
+**Status:** built and **inactive**. Activation is a human action, never
+automated.
+
+| Slide | id | Type |
+|---|---|---|
+| 1 hook | 151210 | `ugc` |
+| 2 action | 151211 | `ugc` |
+| 3 payoff | 151212 | `ugc` |
+| 4 CTA | 151213 | `image` — poster attached |
 
 The arc is hook → action → payoff → CTA. Slides 1-3 are the creator's own
 footage (`type: "ugc"`); slide 4 is our poster (`type: "image"`).
@@ -289,17 +328,23 @@ reasonable choice — the repo rule governs this artifact, not the ad copy.
 
 ## 8. Next actions
 
-| # | Action | Owner | Blocked by |
+| # | Action | Owner | State |
 |---|---|---|---|
-| 1 | Reconnect the Noise MCP connector | you | — |
-| 2 | Check the portal for creator-review / blocklist controls (§4) | you | — |
-| 3 | Create the playbook, inactive, slides 1-4 | agent | 1 |
-| 4 | Attach the poster to slide 4 via URL | agent | 3 |
-| 5 | Deactivate orphaned playbooks 19287 / 19288 | agent | 1 |
-| 6 | Review the playbook, then activate manually | you | 3, 4 |
-| 7 | Decide daily target and window (§3) | you | — |
-| 8 | Short-link redirect, or ship full UTM URLs (§5) | agent | decision |
-| 9 | Add Mirror capture profiles beyond `freddie` (§6) | agent | — |
+| 1 | Connect the Noise MCP connector | you | done |
+| 2 | Create the playbook, inactive, slides 1-4 | agent | done — 19290 |
+| 3 | Attach the poster to slide 4 via URL | agent | done |
+| 4 | Review the playbook in the portal, then activate | you | **next** |
+| 5 | Check the portal for creator-review / blocklist controls (§4) | you | open |
+| 6 | Verify per-slide captions survived the write (§7) | you | open |
+| 7 | Decide daily target and window (§3) | you | open |
+| 8 | Build the short-link redirect (§5) | agent | open |
+| 9 | Tag the share text as card-viral, or not (§5) | decision | open |
+| 10 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
+
+Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
+inactive and attached to no campaign, so they are harmless — and there is no
+delete tool over MCP, so removing them is a portal action if it is possible at
+all.
 
 ### Reading results
 
