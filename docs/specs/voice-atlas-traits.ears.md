@@ -20,7 +20,7 @@ measurements.
 
 ### REQ-VAT-002 — Keep spectral analysis explicit
 
-**WHEN** a singer chooses **Map tone traits**, the system shall decode and
+**WHEN** a singer chooses **Map spectrum snapshot**, the system shall decode and
 analyse only the selected local take or comparison pair and shall show progress
 while the spectral work runs. Selecting a take alone shall not start the
 expensive audio pass.
@@ -61,3 +61,10 @@ saved dry take.
 the shared draggable bottom sheet with backdrop dismissal, focus trapping,
 Escape handling, and safe-area padding. Desktop shall retain the contextual
 inspector rail.
+
+### REQ-VAT-009 — Keep experimental proxies neutral
+
+**WHEN** Voice Atlas presents results from the whole-recording spectral pass,
+the system shall show direct recording-dependent estimates and shall not expose
+the shared Lab's breathiness-quality, richness-quality, or dominant-resonance
+categories as claims about air use, register, placement, technique, or health.

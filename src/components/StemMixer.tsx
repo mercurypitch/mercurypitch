@@ -14,7 +14,7 @@ import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
-import { useKaraokeVoiceCaptureController } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
+import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/features/stem-mixer/useKaraokeVoiceCaptureController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -514,12 +514,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   )
 
   // A singer may enable the scoring mic after playback has already started.
-  // Join that run at the moment the mic becomes live; disabling it pauses the
-  // temporary replay without persisting anything.
+  // Join that run at the moment the mic becomes live. Disabling the mic ends
+  // the current score window, so discard its matching replay too; re-enabling
+  // during playback starts one fresh score-and-audio window.
   createEffect(
     on(mic.micActive, (active) => {
-      if (active && audio.playing()) karaokeVoiceCapture.startPlayback()
-      else if (!active) karaokeVoiceCapture.pausePlayback()
+      syncKaraokeCaptureWithMic(karaokeVoiceCapture, active, audio.playing())
     }),
   )
 

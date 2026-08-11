@@ -299,7 +299,7 @@ describe('voice take Dexie schema', () => {
     await dexie.destroy()
   })
 
-  it('creates the v7 metadata, audio, and contour stores', async () => {
+  it('creates the v8 metadata, audio, and contour stores', async () => {
     const take = await dexie
       .getRepository<VoiceTakeRecord>('voiceTakes')
       .create({
@@ -375,6 +375,13 @@ describe('voice take Dexie schema', () => {
       favorite: false,
       contextJson: '{}',
     })
+    await legacy.table('voiceTakeAudio').put({
+      id: 'legacy-audio',
+      takeId: 'legacy-take',
+      mimeType: 'audio/webm',
+      size: 2,
+      data: new Uint8Array([3, 4]).buffer,
+    })
     legacy.close()
 
     dexie = new DexieAdapter()
@@ -383,11 +390,102 @@ describe('voice take Dexie schema', () => {
         .getRepository<VoiceTakeRecord>('voiceTakes')
         .findById('legacy-take'),
     ).toMatchObject({ title: 'Legacy take' })
+    const audio = await dexie
+      .getRepository<VoiceTakeAudioRecord>('voiceTakeAudio')
+      .findById('legacy-audio')
+    expect(audio).toMatchObject({ takeId: 'legacy-take', size: 2 })
+    expect([...new Uint8Array(audio!.data)]).toEqual([3, 4])
     expect(
       await dexie
         .getRepository<VoiceTakeContourRecord>('voiceTakeContours')
         .findAll(),
     ).toEqual([])
+  })
+
+  it('reconciles the old v7 preview schema without losing voice history', async () => {
+    await dexie.destroy()
+    const legacy = new Dexie('MercuryPitchDB')
+    legacy.version(7).stores({
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt',
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
+      voiceTakeContours: 'id, &takeId',
+    })
+    await legacy.open()
+    await legacy.table('voiceTakes').put({
+      id: 'preview-take',
+      createdAt: '2026-08-01T12:00:00.000Z',
+      updatedAt: '2026-08-01T12:00:00.000Z',
+      source: 'freeform',
+      comparisonKey: 'freeform:preview:v1',
+      contextVersion: 1,
+      capturedAt: '2026-08-01T12:00:00.000Z',
+      durationMs: 1000,
+      mimeType: 'audio/webm',
+      sizeBytes: 2,
+      peaks: [0.2],
+      title: 'Preview take',
+      favorite: false,
+      contextJson: '{}',
+    })
+    await legacy.table('voiceTakeAudio').put({
+      id: 'preview-audio',
+      takeId: 'preview-take',
+      mimeType: 'audio/webm',
+      size: 2,
+      data: new Uint8Array([1, 2]).buffer,
+    })
+    await legacy.table('voiceTakeContours').put({
+      id: 'preview-contour',
+      takeId: 'preview-take',
+      contourVersion: 1,
+      analysisSource: 'f0-stream-yin-v1',
+      pointCount: 1,
+      payloadJson:
+        '{"v":1,"s":"f0-stream-yin-v1","hz":30,"p":[[0,6000,900,200]],"r":[6000,6000],"vr":1}',
+    })
+    await legacy.table('uvrStemBlobs').put({
+      id: 'preview-stem',
+      sessionId: 'session-1',
+      stemType: 'vocal',
+      createdAt: '2026-08-01T12:00:00.000Z',
+    })
+    legacy.close()
+
+    dexie = new DexieAdapter()
+    expect(
+      await dexie
+        .getRepository<VoiceTakeRecord>('voiceTakes')
+        .findById('preview-take'),
+    ).toMatchObject({ title: 'Preview take' })
+    const audio = await dexie.readByIndexStrict<VoiceTakeAudioRecord>(
+      'voiceTakeAudio',
+      'takeId',
+      'preview-take',
+    )
+    expect(audio).toHaveLength(1)
+    expect(audio[0]).toMatchObject({ id: 'preview-audio', size: 2 })
+    expect([...new Uint8Array(audio[0]!.data)]).toEqual([1, 2])
+    const contours = await dexie.readByIndexStrict<VoiceTakeContourRecord>(
+      'voiceTakeContours',
+      'takeId',
+      'preview-take',
+    )
+    expect(contours).toHaveLength(1)
+    expect(contours[0]).toMatchObject({
+      id: 'preview-contour',
+      pointCount: 1,
+      payloadJson:
+        '{"v":1,"s":"f0-stream-yin-v1","hz":30,"p":[[0,6000,900,200]],"r":[6000,6000],"vr":1}',
+    })
+    expect(
+      await dexie.countByCompoundIndexStrict(
+        'uvrStemBlobs',
+        '[sessionId+stemType]',
+        ['session-1', 'vocal'],
+      ),
+    ).toBe(1)
+    expect(await dexie.readAllStrict('pianoProjects')).toEqual([])
   })
 
   it('keeps every voice store out of cloud routing', () => {

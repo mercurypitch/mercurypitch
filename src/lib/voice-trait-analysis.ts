@@ -31,7 +31,8 @@ export interface VoicePitchTraits {
   /** Typical local standard deviation on held regions, expressed in cents. */
   heldCenterSpreadCents: number | null
   heldWindowCount: number
-  voicedRatio: number
+  /** Share of saved frames whose pitch clears the trait confidence floor. */
+  resolvedPitchRatio: number
 }
 
 function median(values: readonly number[]): number | null {
@@ -143,13 +144,19 @@ export function analyzeVoicePitchTraits(
     .sort((left, right) => right.confidence - left.confidence)
   const spreads = heldCenterSpreads(segments)
   const typicalSpread = median(spreads)
+  const resolvedPitchCount = contour.points.filter(
+    (point) => point.midiCents !== null && point.confidence >= MIN_CONFIDENCE,
+  ).length
 
   return {
     vibrato: detected[0] ?? NO_VIBRATO,
     heldCenterSpreadCents:
       typicalSpread === null ? null : Math.round(typicalSpread),
     heldWindowCount: spreads.length,
-    voicedRatio: contour.voicedRatio,
+    resolvedPitchRatio:
+      contour.points.length === 0
+        ? 0
+        : resolvedPitchCount / contour.points.length,
   }
 }
 
