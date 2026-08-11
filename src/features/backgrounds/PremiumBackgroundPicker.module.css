@@ -324,6 +324,66 @@
     linear-gradient(145deg, #3e3657, #16131d 72%);
 }
 
+.edition_rain-glasshouse {
+  background:
+    radial-gradient(
+      circle at 62% 26%,
+      rgba(95, 183, 219, 0.42),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #173747, #0c131d 72%);
+}
+
+.edition_alpine-observatory {
+  background:
+    radial-gradient(
+      circle at 38% 24%,
+      rgba(168, 204, 255, 0.42),
+      transparent 25%
+    ),
+    linear-gradient(145deg, #28445a, #171526 72%);
+}
+
+.edition_cedar-listening-room {
+  background:
+    radial-gradient(
+      circle at 62% 30%,
+      rgba(222, 170, 99, 0.38),
+      transparent 23%
+    ),
+    linear-gradient(145deg, #50351f, #17130f 72%);
+}
+
+.edition_desert-modern-salon {
+  background:
+    radial-gradient(
+      circle at 55% 28%,
+      rgba(255, 209, 145, 0.48),
+      transparent 27%
+    ),
+    linear-gradient(145deg, #8a6241, #2c2427 72%);
+}
+
+.edition_moonlit-gallery {
+  background:
+    radial-gradient(
+      circle at 36% 23%,
+      rgba(190, 205, 255, 0.4),
+      transparent 24%
+    ),
+    linear-gradient(145deg, #3a4566, #121422 72%);
+}
+
+.edition_coastal-fog-pavilion {
+  background:
+    radial-gradient(
+      circle at 58% 28%,
+      rgba(225, 239, 233, 0.48),
+      transparent 28%
+    ),
+    linear-gradient(145deg, #6f8988, #27373b 72%);
+}
+
 .lockMark {
   position: absolute;
   z-index: 3;

@@ -446,8 +446,10 @@ bundle boundary remains in force.
   typed background surface with `piano-afterglow` as its shipped public free
   default and shall not reuse a Karaoke or Jam identity.
 - **REQ-PN-BACKGROUND-002 — Free-room continuity:** The shared catalog shall
-  preserve Afterglow Studio and Morning Conservatory landscape, portrait,
-  focal-point, and authored contrast behavior from Slice 3.
+  preserve Afterglow Studio and Morning Conservatory from Slice 3 and shall
+  ship Nocturne Studio, Brick Practice Loft, and Quiet Music Library as
+  additional public free rooms; every room shall declare landscape, portrait,
+  focal-point, and authored contrast behavior.
 - **REQ-PN-BACKGROUND-003 — Sonic separation:** Changing a Piano room shall
   update only room art and contrast treatment; it shall not change the synth,
   mix, ambience, project, transport, or input state.
@@ -480,10 +482,11 @@ bundle boundary remains in force.
 - **REQ-PN-BACKGROUND-012 — Accessible room gallery:** The Room tab shall use
   Piano-specific accessible copy and an inline gallery within its existing
   drawer, preserving desktop focus containment and compact-sheet reachability.
-- **REQ-PN-BACKGROUND-013 — Publication truth:** Stable Piano premium
-  identities may exist in D1 and Studio before artwork is published; they
-  shall not appear in the runtime catalog or be described as shipped until a
-  complete revision is explicitly published.
+- **REQ-PN-BACKGROUND-013 — Publication truth:** The shared catalog shall
+  recognize the ten mastered Piano premium identities while D1 and Studio own
+  their publication state; an identity shall not appear in the runtime catalog
+  or be described as shipped until a complete revision is explicitly
+  published.
 
 ### Slice 4 verification map
 
