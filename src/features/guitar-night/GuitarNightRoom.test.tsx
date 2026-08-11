@@ -15,6 +15,9 @@ const listening = vi.hoisted(() => ({
   canTakeOverInput: vi.fn(() => false),
   inputTakeoverPending: vi.fn(() => false),
   currentNote: vi.fn(() => null),
+  detectedFrequency: vi.fn(() => null),
+  detectedCents: vi.fn(() => null),
+  pitchRevision: vi.fn(() => 0),
   clarity: vi.fn(() => 0),
   take: vi.fn<() => GuitarTakeSnapshot | null>(() => null),
   events: vi.fn(() => []),
@@ -221,6 +224,43 @@ describe('GuitarNightRoom', () => {
     expect(
       (screen.getByLabelText('Backing volume') as HTMLInputElement).value,
     ).toBe('0.31')
+  })
+
+  it('opens Tune silently, pauses the room, and suspends the Space transport', async () => {
+    const transport = createTransport()
+    render(() => (
+      <GuitarNightRoom
+        backing={BACKING}
+        transport={transport}
+        onSongs={vi.fn()}
+      />
+    ))
+
+    const tune = screen.getByRole('button', { name: 'Tune guitar' })
+    fireEvent.click(tune)
+
+    expect(transport.pause).toHaveBeenCalledOnce()
+    expect(listening.start).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('dialog', { name: 'Tune before the room.' }),
+    ).toBeInTheDocument()
+
+    const space = new KeyboardEvent('keydown', {
+      code: 'Space',
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    document.dispatchEvent(space)
+    expect(transport.play).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start listening' }))
+    expect(listening.start).toHaveBeenCalledWith({ purpose: 'tuner' })
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await Promise.resolve()
+    expect(screen.queryByTestId('guitar-night-tuner')).toBeNull()
+    expect(document.activeElement).toBe(tune)
   })
 
   it('leaves Doctor recovery Space untouched and recovers once on click', () => {

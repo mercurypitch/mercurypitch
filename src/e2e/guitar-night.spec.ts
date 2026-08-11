@@ -384,6 +384,41 @@ test('loads the standalone Guitar Night entry @smoke', async ({ page }) => {
   expect(pageErrors).toEqual([])
 })
 
+test('opens the Velvet tuner silently and returns focus on Escape @smoke', async ({
+  page,
+}) => {
+  await instrumentMicrophoneRequests(page)
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
+
+  const tune = page.locator('[data-entry="tuner"]')
+  await tune.click()
+
+  const tuner = page.getByTestId('guitar-night-tuner')
+  await expect(tuner).toBeVisible()
+  await expect(tuner).toHaveAttribute('role', 'dialog')
+  await expect(
+    tuner.getByRole('button', { name: 'Start listening' }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMicCalls: number })
+          .__guitarNightMicCalls,
+    ),
+  ).toBe(0)
+
+  await page.keyboard.press('Escape')
+  await expect(tuner).toHaveCount(0)
+  await expect(tune).toBeFocused()
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightMicCalls: number })
+          .__guitarNightMicCalls,
+    ),
+  ).toBe(0)
+})
+
 test('fits a phone and keeps every entry path touchable @smoke', async ({
   browser,
 }) => {
@@ -443,6 +478,44 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
       )
     }
 
+    const tune = page.locator('[data-entry="tuner"]')
+    const tuneBox = await tune.boundingBox()
+    expect(tuneBox?.width).toBeGreaterThanOrEqual(44)
+    expect(tuneBox?.height).toBeGreaterThanOrEqual(44)
+    await tune.click()
+
+    const tuner = page.getByTestId('guitar-night-tuner')
+    await expect(tuner).toBeVisible()
+    const tunerMetrics = await tuner.evaluate((surface) => {
+      const visibleButtons = [...surface.querySelectorAll('button')].filter(
+        (button) => button.getClientRects().length > 0,
+      )
+      return {
+        clientWidth: surface.clientWidth,
+        scrollWidth: surface.scrollWidth,
+        undersizedControls: visibleButtons.filter((button) => {
+          const box = button.getBoundingClientRect()
+          return box.width < 44 || box.height < 44
+        }).length,
+      }
+    })
+    expect(tunerMetrics.scrollWidth).toBeLessThanOrEqual(
+      tunerMetrics.clientWidth + 2,
+    )
+    expect(tunerMetrics.undersizedControls).toBe(0)
+    await tuner.evaluate((surface) => {
+      surface.scrollTop = surface.scrollHeight
+    })
+    await expect(tuner.getByLabel('Tuning presets, Standard')).toBeVisible()
+
+    const targetModeBox = await tuner
+      .getByRole('button', { name: 'Auto' })
+      .boundingBox()
+    const listeningBox = await tuner
+      .getByRole('button', { name: 'Start listening' })
+      .boundingBox()
+    expect(targetModeBox?.y).toBeLessThan(listeningBox?.y ?? 0)
+
     const runningAnimations = await page.evaluate(
       () =>
         document
@@ -450,6 +523,15 @@ test('fits a phone and keeps every entry path touchable @smoke', async ({
           .filter((animation) => animation.playState === 'running').length,
     )
     expect(runningAnimations).toBe(0)
+
+    await page.keyboard.press('Escape')
+    await roomMenu.click()
+    await page
+      .locator('#guitar-night-venue-menu')
+      .getByRole('button', { name: 'Tune guitar' })
+      .click()
+    await page.keyboard.press('Escape')
+    await expect(roomMenu).toBeFocused()
   } finally {
     await context.close()
   }

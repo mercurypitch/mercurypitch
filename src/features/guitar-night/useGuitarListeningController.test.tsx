@@ -168,6 +168,7 @@ function createAudioHarness() {
 
   return {
     context: context as unknown as AudioContext,
+    analyser,
     oscillators,
     setAmplitude(next: number) {
       amplitude = next
@@ -332,6 +333,17 @@ describe('useGuitarListeningController', () => {
     })
   })
 
+  it('uses a longer low-frequency window only for a tuner run', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start({ purpose: 'tuner' })).toBe(true)
+      expect(audio.analyser.fftSize).toBe(8192)
+      controller.cancel()
+    })
+  })
+
   it('keeps one pinned latency and enriches an exact attack in place', async () => {
     const audio = createAudioHarness()
     const frames = installFrameHarness(audio.context)
@@ -362,6 +374,8 @@ describe('useGuitarListeningController', () => {
       expect(controller.events()).toHaveLength(1)
       expect(controller.events()[0]?.id).toBe(provisional?.id)
       expect(controller.events()[0]?.pitch?.midi).toBe(64)
+      expect(controller.detectedFrequency()).toBeCloseTo(329.63, 2)
+      expect(controller.detectedCents()).toBe(0)
 
       dependencies.emitWorklet?.({
         type: 'attack',
@@ -618,6 +632,39 @@ describe('useGuitarListeningController', () => {
     await expect(pending).resolves.toBe(false)
     expect(dependencies.acquire).toHaveBeenCalledOnce()
     expect(dependencies.releaseTakeoverIfUnused).toHaveBeenCalledOnce()
+  })
+
+  it('gives back a handoff cancelled before it finishes', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+    let finishHandoff: ((moved: boolean) => void) | undefined
+    dependencies.takeOverFromOtherTab.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishHandoff = resolve
+        }),
+    )
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start({ purpose: 'tuner' })).toBe(false)
+      const pending = controller.useInputHere()
+      expect(controller.inputTakeoverPending()).toBe(true)
+
+      controller.cancel()
+      finishHandoff?.(true)
+
+      await expect(pending).resolves.toBe(false)
+      expect(controller.status()).toBe('off')
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(dependencies.releaseTakeoverIfUnused).toHaveBeenCalledOnce()
+    })
   })
 
   it('gives back a handoff when the player changes route while it is pending', async () => {

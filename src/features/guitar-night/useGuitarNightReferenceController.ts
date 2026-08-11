@@ -268,6 +268,16 @@ export function useGuitarNightReferenceController(
     replaceOnCurrentInstrument(standardTuning(instrument(), clamped))
   }
 
+  /**
+   * Keep a deliberate tuning choice attached to the visible stage as well as
+   * the tuner. A Drop D target with Standard rows would make every authored
+   * low-string fret untrue, so the same tuning must re-place the reference.
+   */
+  const setTuning = (next: InstrumentTuning): void => {
+    if (next.openMidi.length !== next.stringCount) return
+    replaceOnCurrentInstrument(adoptSourceTuning(next))
+  }
+
   const importFile = async (file: File): Promise<void> => {
     setImportStatus(null)
     const loadedPort = await ensurePort()
@@ -428,5 +438,6 @@ export function useGuitarNightReferenceController(
     cancelFollowStem,
     setInstrument,
     setStringCount,
+    setTuning,
   }
 }

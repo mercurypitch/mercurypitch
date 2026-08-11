@@ -23,6 +23,7 @@ import { resolveGuitarFirstWinConfig } from './first-win-config'
 import styles from './GuitarNightApp.module.css'
 import { GuitarNightFirstWin } from './GuitarNightFirstWin'
 import { guitarNightBackingSession, GuitarNightRoom } from './GuitarNightRoom'
+import { GuitarNightTunerPreflight } from './GuitarNightTunerPreflight'
 import type { GuitarNightPreparationPort } from './preparation-port'
 import type { GuitarNightReferencePort, GuitarNightTranscriptionPort, } from './reference-port'
 import { measuredReferenceForBacking, REFERENCE_FILE_ACCEPT, } from './reference-port'
@@ -48,7 +49,14 @@ const GuitarNightScoreRoom = lazy(async () => {
   return { default: module.GuitarNightScoreRoom }
 })
 
-type EntryView = 'choices' | 'first-win' | 'song' | 'room' | 'score-room'
+type EntryView =
+  | 'choices'
+  | 'first-win'
+  | 'song'
+  | 'room'
+  | 'score-room'
+  | 'tuner'
+type TunerReturnView = Exclude<EntryView, 'room' | 'score-room' | 'tuner'>
 type GuitarNightAppProps = {
   firstWinConfig?: unknown
   loadReferencePort?: () => Promise<GuitarNightReferencePort>
@@ -145,11 +153,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   const [view, setView] = createSignal<EntryView>(
     initialSessionId === null ? 'choices' : 'song',
   )
+  const [tunerReturnView, setTunerReturnView] =
+    createSignal<TunerReturnView>('choices')
   // Both rooms take the panel full-bleed and hide the entry chrome.
   const isRoomView = createMemo(
     () => view() === 'room' || view() === 'score-room',
   )
-  const isStageView = createMemo(() => view() === 'first-win' || isRoomView())
+  const isStageView = createMemo(
+    () => view() === 'first-win' || view() === 'tuner' || isRoomView(),
+  )
   const [visitedRoomSessionId, setVisitedRoomSessionId] = createSignal<
     string | null
   >(null)
@@ -166,6 +178,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
   }
   let venueMenuContainer: HTMLDivElement | undefined
   let venueMenuButton: HTMLButtonElement | undefined
+  let tunerReturnFocus: HTMLElement | undefined
 
   const closeVenueMenuAndRestoreFocus = (): void => {
     setVenueMenuOpen(false)
@@ -412,6 +425,49 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     window.location.assign('/#/guitar')
   }
 
+  const openTuner = (trigger?: HTMLElement): void => {
+    const currentView = view()
+    if (
+      currentView === 'room' ||
+      currentView === 'score-room' ||
+      currentView === 'tuner'
+    ) {
+      return
+    }
+    tunerReturnFocus = trigger
+    setTunerReturnView(currentView)
+    setVenueMenuOpen(false)
+    firstWinController.stopGroove()
+    playbackController.pause()
+    setView('tuner')
+  }
+
+  const closeTuner = (): void => {
+    const returnView = tunerReturnView()
+    setView(returnView)
+    queueMicrotask(() => {
+      const triggerWasInsideRoomMenu =
+        tunerReturnFocus !== undefined &&
+        venueMenuContainer?.contains(tunerReturnFocus) === true
+      if (triggerWasInsideRoomMenu && venueMenuButton?.isConnected === true) {
+        venueMenuButton.focus()
+        return
+      }
+      if (tunerReturnFocus !== undefined && tunerReturnFocus.isConnected) {
+        tunerReturnFocus.focus()
+        return
+      }
+      const entryTrigger = document.querySelector<HTMLButtonElement>(
+        '[data-entry="tuner"]',
+      )
+      if (entryTrigger !== null) {
+        entryTrigger.focus()
+        return
+      }
+      venueMenuButton?.focus()
+    })
+  }
+
   const enterRoom = () => {
     const backing = activeBacking()
     if (backing === null) return
@@ -643,7 +699,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       />
       <div class={styles.roomGlow} aria-hidden="true" />
 
-      <div class={styles.topbar}>
+      <div
+        class={styles.topbar}
+        inert={view() === 'tuner'}
+        aria-hidden={view() === 'tuner' ? 'true' : undefined}
+      >
         <a class={styles.brand} href="/" aria-label="MercuryPitch home">
           <img src="/favicon.svg" alt="" />
           <span>MercuryPitch</span>
@@ -687,6 +747,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 </For>
               </select>
             </label>
+            <Show when={!isRoomView()}>
+              <button
+                type="button"
+                class={styles.studioLink}
+                onClick={(event) => openTuner(event.currentTarget)}
+              >
+                Tune guitar
+              </button>
+            </Show>
             <a class={styles.studioLink} href="/#/guitar">
               Full studio
             </a>
@@ -701,6 +770,8 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         class={styles.main}
         classList={{ [styles.mainRoom]: isStageView() }}
         id="guitar-night-main"
+        inert={view() === 'tuner'}
+        aria-hidden={view() === 'tuner' ? 'true' : undefined}
       >
         <div
           class={styles.entryPanel}
@@ -764,6 +835,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                   </span>
                 </button>
               </div>
+              <button
+                class={styles.tunerEntryAction}
+                type="button"
+                data-entry="tuner"
+                onClick={(event) => openTuner(event.currentTarget)}
+              >
+                <strong>Tune guitar</strong>
+                <span>Quiet preflight before you play</span>
+              </button>
             </Match>
 
             <Match when={view() === 'first-win'}>
@@ -1448,6 +1528,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                 tuning={referenceController.tuning}
                 onInstrument={referenceController.setInstrument}
                 onStringCount={referenceController.setStringCount}
+                onTuning={referenceController.setTuning}
                 onSongs={returnToSongs}
                 onSeparateGuitar={prepareGuitarFreeBand}
               />
@@ -1471,6 +1552,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     tuning={referenceController.tuning}
                     onInstrument={referenceController.setInstrument}
                     onStringCount={referenceController.setStringCount}
+                    onTuning={referenceController.setTuning}
                     onSongs={returnToSongs}
                   />
                 </Suspense>
@@ -1479,6 +1561,15 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
           </Switch>
         </div>
       </main>
+
+      <Show when={view() === 'tuner'}>
+        <GuitarNightTunerPreflight
+          tuning={referenceController.tuning}
+          transport={playbackController}
+          onTuning={referenceController.setTuning}
+          onBack={closeTuner}
+        />
+      </Show>
 
       <Show when={!isStageView()}>
         <div

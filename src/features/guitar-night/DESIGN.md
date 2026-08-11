@@ -23,7 +23,9 @@ the player asks for them. The first screen is an invitation, not a dashboard.
 
 The approved room remains visibly present. A single entry surface offers
 `Start`, `Load a song`, and `I know my way around`. No microphone, MIDI, audio,
-analysis, or timer starts on entry. The room status states that it is quiet.
+analysis, or timer starts on entry. A quiet `Tune guitar` utility sits outside
+those three primary paths and likewise opens without capture or sound. The room
+status states that it is quiet.
 
 ## Interaction contract
 
@@ -52,9 +54,38 @@ analysis, or timer starts on entry. The room status states that it is quiet.
 ## Current integrated slice
 
 The reference, score-room, shared-loop, transcription, and input-event work in
-this section is implemented on open PR
-[#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remains in
-review until that PR is merged.
+this section is merged through
+[#458](https://github.com/mercurypitch/mercurypitch/pull/458). The dedicated
+Velvet tuner is implemented as the next additive parity slice on its focused
+follow-up branch.
+
+- `Tune guitar` opens the same full-room preflight from entry, the prepared-song
+  room, and the authored-tab room. Entry owns a temporary listener; mounted
+  rooms reuse their existing listener, input lease, detector path, audio graph,
+  and guide bus. Nothing requests permission or sounds until Start listening or
+  an explicit reference-string action.
+- The tuner follows the current 4–8-string guitar or bass tuning, including
+  source pitches and capo, and offers honest Room mic / Plugged in routes. MIDI
+  is never presented as a pitch measurement route. Automatic targeting remains
+  gated to nearby open strings; a selected physical string keeps useful
+  low/high evidence while substantially detuned.
+- Opening Tune parks playback without resetting the backing mix, score position,
+  or A/B loop. Reference sound and capture are mutually exclusive. Back or
+  Escape closes the overlay without resuming playback and restores the Tune
+  trigger; the hidden transport does not own Space while the tuner is open.
+- Backing playback gates only its stems bus while parked, leaving the shared
+  guide and monitor paths audible at the player's master level. Closing Tune or
+  starting a reference also invalidates a pending cross-tab input handoff, so a
+  late ownership result cannot start hidden capture. An active phrase review
+  keeps Tune unavailable until its evidence has completed rather than silently
+  discarding the take.
+- The phone composition keeps the gauge, all open strings, and the primary
+  Start action immediately available. Secondary input and preset setup can
+  scroll beneath sticky navigation and controls without horizontal overflow;
+  every visible action remains at least 44px and reduced motion removes needle
+  interpolation. Overlay focus is contained, collapsed tuning presets restore
+  their summary, mobile visual and keyboard order agree, and spoken pitch
+  direction changes only after the reading remains stable.
 
 - Selecting a supported local MP3, WAV, or FLAC file starts the existing
   durable on-device separation workflow from Guitar Night. The heavy
