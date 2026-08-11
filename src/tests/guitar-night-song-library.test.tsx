@@ -1,7 +1,7 @@
 // Guitar Night song-library tests protect honest prepared-session staging in the room UI.
 // ============================================================
 
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarBackingSession, GuitarBackingTrackState, GuitarBackingTransport, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
@@ -539,14 +539,13 @@ describe('GuitarNightApp prepared songs', () => {
     chooseAudio(file)
 
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(1))
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Separating vocals and accompaniment · 42%',
-    )
+    const progress = screen.getByRole('progressbar', {
+      name: 'Preparing practice-room.wav',
+    })
     expect(
-      screen.getByRole('progressbar', {
-        name: 'Preparing practice-room.wav',
-      }),
-    ).toHaveAttribute('value', '42')
+      within(progress.parentElement as HTMLElement).getByRole('status'),
+    ).toHaveTextContent('Separating vocals and accompaniment · 42%')
+    expect(progress).toHaveAttribute('value', '42')
 
     prepared = true
     preparation.resolve({
@@ -835,5 +834,31 @@ describe('GuitarNightApp prepared songs', () => {
     expect(
       screen.getByRole('button', { name: 'Show 5 more' }),
     ).toBeInTheDocument()
+  })
+
+  it('announces asynchronous library loading and failure', async () => {
+    const pendingPort = deferred<GuitarNightSongPort>()
+    const view = render(() => (
+      <GuitarNightApp loadSongPort={() => pendingPort.promise} />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+    const library = screen.getByRole('region', { name: 'Prepared songs' })
+    expect(library).toHaveAttribute('aria-busy', 'true')
+    expect(within(library).getByRole('status')).toHaveTextContent(
+      'Opening your local library',
+    )
+
+    view.unmount()
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.reject(new Error('device storage failed'))}
+      />
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'Load a song' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your local library could not be opened',
+    )
   })
 })

@@ -14,6 +14,13 @@ import styles from './GuitarNightApp.module.css'
 
 export function GuitarNightAccount() {
   const [menuOpen, setMenuOpen] = createSignal(false)
+  let trigger: HTMLButtonElement | undefined
+
+  const closeMenu = (restoreFocus = false): void => {
+    if (!menuOpen()) return
+    setMenuOpen(false)
+    if (restoreFocus) queueMicrotask(() => trigger?.focus())
+  }
 
   onMount(() => {
     void refreshAccount()
@@ -27,10 +34,19 @@ export function GuitarNightAccount() {
       ) {
         return
       }
-      setMenuOpen(false)
+      closeMenu()
+    }
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || !menuOpen()) return
+      event.preventDefault()
+      closeMenu(true)
     }
     window.addEventListener('pointerdown', closeOnOutside)
-    onCleanup(() => window.removeEventListener('pointerdown', closeOnOutside))
+    window.addEventListener('keydown', closeOnEscape)
+    onCleanup(() => {
+      window.removeEventListener('pointerdown', closeOnOutside)
+      window.removeEventListener('keydown', closeOnEscape)
+    })
   })
 
   const email = () => account()?.email ?? ''
@@ -57,10 +73,11 @@ export function GuitarNightAccount() {
       >
         <div class={styles.accountChipWrap}>
           <button
+            ref={trigger}
             type="button"
             class={styles.accountChip}
             aria-expanded={menuOpen()}
-            aria-haspopup="menu"
+            aria-controls="guitar-night-account-options"
             title={email() !== '' ? email() : undefined}
             onClick={() => setMenuOpen((open) => !open)}
           >
@@ -73,16 +90,18 @@ export function GuitarNightAccount() {
             </Show>
           </button>
           <Show when={menuOpen()}>
-            <div class={styles.accountMenu} role="menu">
+            <div
+              id="guitar-night-account-options"
+              class={styles.accountMenu}
+              role="group"
+              aria-label="Account options"
+            >
               <Show when={email() !== ''}>
                 <span>{email()}</span>
               </Show>
-              <a href="/#/settings/credits" role="menuitem">
-                Manage credits
-              </a>
+              <a href="/#/settings/credits">Manage credits</a>
               <button
                 type="button"
-                role="menuitem"
                 onClick={() => {
                   signOutStandalone()
                   setMenuOpen(false)
