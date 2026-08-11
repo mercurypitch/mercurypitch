@@ -26,10 +26,13 @@ export type GuitarInputSource = 'microphone' | 'midi' | 'interface'
  * without anything being picked; counting them as attacks would inflate every
  * timing and spacing reading a player is shown.
  */
-export type GuitarInputEventKind = 'attack' | 'pitch-change'
+export type GuitarInputEventKind = 'attack' | 'pitch-change' | 'release'
 
 /** The primary attack clock selected for a take. */
-export type GuitarInputTimingSource = 'audio-clock' | 'frame-loop'
+export type GuitarInputTimingSource =
+  | 'audio-clock'
+  | 'frame-loop'
+  | 'midi-clock'
 
 /** Pitch, once the slower analysis path has identified it. */
 export interface GuitarInputPitch {
@@ -58,11 +61,24 @@ export type GuitarInputClockProvenance =
       sampleRate: number
       windowFrames: number
     }
+  | {
+      kind: 'web-midi'
+      /** DOMHighResTimeStamp supplied with the MIDI message. */
+      eventTimestampMs: number
+      /** performance.now() observed when the message reached this adapter. */
+      observedPerformanceMs: number
+      /** The event timestamp mapped onto this room's AudioContext clock. */
+      mappedAudioTime: number
+      inputId: string
+      channel: number
+    }
 
 /** Event-shaped input before a take assigns identity and compensated time. */
 export interface GuitarInputCapture {
   kind: GuitarInputEventKind
   source: GuitarInputSource
+  /** Stable voice identity where a source can supply one; MIDI note releases do. */
+  voiceId: string | null
   level: number
   pitch: GuitarInputPitch | null
   clock: GuitarInputClockProvenance
@@ -73,6 +89,8 @@ export interface GuitarInputEvent {
   id: string
   kind: GuitarInputEventKind
   source: GuitarInputSource
+  /** Stable across an attack and its release when the input supplies identity. */
+  voiceId: string | null
   /** Audio-clock seconds, latency removed: when the string was struck. */
   at: number
   /** Audio-clock seconds, raw: when the sample carrying it arrived. */
@@ -132,7 +150,8 @@ export function attachPitchToLatestAttack(
   pitch: GuitarInputPitch,
   atSeconds: number,
 ): readonly GuitarInputEvent[] {
-  const index = events.length - 1
+  let index = events.length - 1
+  while (index >= 0 && events[index]?.kind !== 'attack') index -= 1
   const latest = events[index]
   if (latest === undefined) return events
   if (Math.abs(atSeconds - latest.at) * 1000 > PITCH_ATTACH_WINDOW_MS) {
@@ -157,6 +176,7 @@ export type GuitarInputHealth =
   | 'hot'
   | 'clipping'
   | 'noisy'
+  | 'uncertain'
 
 export interface GuitarInputHealthReading {
   state: GuitarInputHealth

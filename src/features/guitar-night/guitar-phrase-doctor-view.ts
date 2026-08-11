@@ -44,6 +44,15 @@ export function retainedTakeHealth(
     }
   }
   if (
+    health.states.uncertain >= 3 &&
+    health.states.uncertain / health.readings >= 0.2
+  ) {
+    return {
+      state: 'uncertain',
+      hint: 'The signal was present, but its pitch was often unclear.',
+    }
+  }
+  if (
     take.events.length === 0 &&
     health.states.silent + health.states.quiet === health.readings
   ) {
@@ -95,7 +104,8 @@ function headline(review: GuitarPhraseReview): {
   }
   if (
     unavailableReason === 'input-clipping' ||
-    unavailableReason === 'input-noisy'
+    unavailableReason === 'input-noisy' ||
+    unavailableReason === 'input-uncertain'
   ) {
     return {
       headline: 'The input needs a cleaner signal.',

@@ -1,19 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { micLockStatus, releaseMicLock } from '../lib/mic-lock'
 import { MicManager } from '../lib/mic-manager'
 
 interface MockTrack {
   stop: ReturnType<typeof vi.fn>
   addEventListener: ReturnType<typeof vi.fn>
+  getSettings: () => MediaTrackSettings
 }
 
 interface MockStream {
   getTracks: () => MockTrack[]
+  getAudioTracks: () => MockTrack[]
   track: MockTrack
 }
 
-function makeStream(): MockStream {
-  const track: MockTrack = { stop: vi.fn(), addEventListener: vi.fn() }
-  return { getTracks: () => [track], track }
+function makeStream(deviceId = ''): MockStream {
+  const track: MockTrack = {
+    stop: vi.fn(),
+    addEventListener: vi.fn(),
+    getSettings: () => ({ deviceId }),
+  }
+  return {
+    getTracks: () => [track],
+    getAudioTracks: () => [track],
+    track,
+  }
 }
 
 function domError(name: string): Error {
@@ -44,6 +55,7 @@ describe('MicManager', () => {
   })
 
   afterEach(() => {
+    releaseMicLock()
     vi.useRealTimers()
     vi.restoreAllMocks()
   })
@@ -59,6 +71,28 @@ describe('MicManager', () => {
     expect(a).toBe(b)
     expect(mgr.isActive()).toBe(true)
     expect([...mgr.getConsumers()].sort()).toEqual(['a', 'b'])
+  })
+
+  it('remembers the browser-resolved input after the capture closes', async () => {
+    mockGetUserMedia(() => Promise.resolve(makeStream('built-in-input')))
+
+    await mgr.acquire('a')
+    expect(mgr.getResolvedDevice()).toBe('built-in-input')
+    mgr.release('a')
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(mgr.getStream()).toBeNull()
+    expect(mgr.getResolvedDevice()).toBe('built-in-input')
+  })
+
+  it('forgets a resolved route when the requested input changes', async () => {
+    mockGetUserMedia(() => Promise.resolve(makeStream('built-in-input')))
+    await mgr.acquire('a')
+
+    await mgr.setPreferredDevice('usb-interface')
+
+    expect(mgr.getResolvedDevice()).toBeNull()
+    expect(mgr.getPreferredDevice()).toBe('usb-interface')
   })
 
   it('is idempotent per consumer id', async () => {
@@ -204,6 +238,26 @@ describe('MicManager', () => {
     expect(mgr.getConsumers()).toEqual([])
     // No linger: the point of forcing is that we stop capturing immediately.
     expect(stream.track.stop).toHaveBeenCalled()
+  })
+
+  it('gives back a completed handoff when no local consumer acquired', async () => {
+    expect(await mgr.takeOverFromOtherTab()).toBe(true)
+    expect(micLockStatus()).toBe('mine')
+
+    await mgr.releaseTakeoverIfUnused()
+
+    expect(micLockStatus()).toBe('free')
+  })
+
+  it('keeps the lock when another local consumer acquired after handoff', async () => {
+    mockGetUserMedia(() => Promise.resolve(makeStream()))
+    expect(await mgr.takeOverFromOtherTab()).toBe(true)
+    await mgr.acquire('next-room')
+
+    await mgr.releaseTakeoverIfUnused()
+
+    expect(micLockStatus()).toBe('mine')
+    expect(mgr.getConsumers()).toEqual(['next-room'])
   })
 
   // What the cross-tab handoff hangs on. mic-lock awaits this before it lets

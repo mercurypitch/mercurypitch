@@ -62,6 +62,7 @@ function event(
     id,
     kind: options.kind ?? 'attack',
     source: options.source ?? 'microphone',
+    voiceId: null,
     at: STARTED_AT_SECONDS + frame / SAMPLE_RATE,
     capturedAt: capturedAtFrame / SAMPLE_RATE,
     rawTransportFrame,
@@ -91,6 +92,12 @@ function take(
   return {
     id: 'take-1',
     lifecycle: 'completed',
+    input: {
+      kind: 'microphone',
+      requestedDeviceId: null,
+      activeDeviceId: 'test-mic',
+      activeDeviceLabel: 'Test microphone',
+    },
     clock: {
       startedAtFrame: STARTED_AT_SECONDS * SAMPLE_RATE,
       sampleRate: SAMPLE_RATE,
@@ -117,6 +124,7 @@ function take(
         hot: 0,
         clipping: 0,
         noisy: 0,
+        uncertain: 0,
       },
     },
     ...overrides,
@@ -263,6 +271,40 @@ describe('reviewGuitarPhrase', () => {
       expect(pitch.evidence.eventIds).toEqual(['near-first', 'near-second'])
       expect(pitch.evidence.targetIds).toEqual(['first', 'second'])
       expect(pitch.value.exactMidiMatches).toBe(2)
+    }
+  })
+
+  it('never treats MIDI release pitches as compared evidence', () => {
+    const assessment = window({
+      range: { startBeat: 0, endBeat: 2 },
+      targets: [
+        { id: 'first', midi: 60, startBeat: 0 },
+        { id: 'second', midi: 61, startBeat: 1 },
+      ],
+    })
+    const result = review(
+      take(
+        [
+          event('midi-attack', 0, 60, { source: 'midi' }),
+          event('midi-release', 1_000, 61, {
+            kind: 'release',
+            source: 'midi',
+          }),
+        ],
+        { durationFrames: 2_000 },
+      ),
+      assessment,
+    )
+
+    const pitch = result.metrics.pitchRelationship
+    expect(pitch.status).toBe('available')
+    if (pitch.status === 'available') {
+      expect(pitch.value).toMatchObject({
+        comparedEvents: 1,
+        exactMidiMatches: 1,
+      })
+      expect(pitch.evidence.eventIds).toEqual(['midi-attack'])
+      expect(pitch.evidence.targetIds).toEqual(['first'])
     }
   })
 

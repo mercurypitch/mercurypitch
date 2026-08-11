@@ -14,6 +14,7 @@ function attack(
     id: `event-${atSeconds}`,
     kind: 'attack',
     source: 'microphone',
+    voiceId: null,
     at: atSeconds,
     capturedAt: atSeconds + 0.04,
     level: 0.08,

@@ -4,11 +4,25 @@
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuitarInputWorkletMessage } from '@/lib/guitar/input-events'
-import { useGuitarListeningController } from './useGuitarListeningController'
+import { guitarInputAnalysisChannelCount, strongestGuitarInputChannel, useGuitarListeningController, } from './useGuitarListeningController'
 
 const dependencies = vi.hoisted(() => ({
   acquire: vi.fn(),
   release: vi.fn(),
+  listAudioInputs: vi.fn<() => Promise<MediaDeviceInfo[]>>(async () => []),
+  setPreferredDevice: vi.fn(async () => undefined),
+  getError: vi.fn(),
+  takeOverFromOtherTab: vi.fn(async () => true),
+  releaseTakeoverIfUnused: vi.fn(async () => undefined),
+  registerRunGuard: vi.fn(),
+  subscribe: vi.fn(),
+  micStateListener: null as
+    | ((state: {
+        active: boolean
+        error: { kind: string; message: string } | null
+      }) => void)
+    | null,
+  runGuard: null as (() => boolean) | null,
   connectWorklet: vi.fn(),
   workletTap: null as { dispose(): void } | null,
   detections: [] as Array<{
@@ -20,9 +34,16 @@ const dependencies = vi.hoisted(() => ({
   }>,
   emitWorklet: null as ((message: GuitarInputWorkletMessage) => void) | null,
   latencyMs: 0,
+  latencyByDevice: new Map<string, number>(),
   latencySpreadMs: null as number | null,
   setLatencyMeasurement:
-    vi.fn<(milliseconds: number, spreadMs: number | null) => void>(),
+    vi.fn<
+      (
+        deviceId: string | null,
+        milliseconds: number,
+        spreadMs: number | null,
+      ) => void
+    >(),
 }))
 
 vi.mock('@/lib/guitar/guitar-input-node', () => ({
@@ -30,9 +51,16 @@ vi.mock('@/lib/guitar/guitar-input-node', () => ({
 }))
 
 vi.mock('@/lib/mic-manager', () => ({
+  listAudioInputs: dependencies.listAudioInputs,
   micManager: {
     acquire: dependencies.acquire,
     release: dependencies.release,
+    setPreferredDevice: dependencies.setPreferredDevice,
+    getError: dependencies.getError,
+    takeOverFromOtherTab: dependencies.takeOverFromOtherTab,
+    releaseTakeoverIfUnused: dependencies.releaseTakeoverIfUnused,
+    registerRunGuard: dependencies.registerRunGuard,
+    subscribe: dependencies.subscribe,
   },
 }))
 
@@ -56,11 +84,36 @@ vi.mock('@/lib/pitch-detector', () => ({
   },
 }))
 
+describe('strongestGuitarInputChannel', () => {
+  it('keeps pitch analysis on the strongest intact channel', () => {
+    const quiet = new Float32Array([0.01, -0.01, 0.01, -0.01])
+    const strong = new Float32Array([0.5, -0.5, 0.5, -0.5])
+    const phaseOpposed = new Float32Array([-0.5, 0.5, -0.5, 0.5])
+
+    expect(strongestGuitarInputChannel([quiet, strong])).toBe(1)
+    expect(strongestGuitarInputChannel([strong, phaseOpposed])).toBe(0)
+  })
+})
+
+describe('guitarInputAnalysisChannelCount', () => {
+  it('keeps every browser-addressable interface channel', () => {
+    expect(guitarInputAnalysisChannelCount(12, 2)).toBe(12)
+    expect(guitarInputAnalysisChannelCount(Number.NaN, 16)).toBe(16)
+  })
+
+  it('fails visibly instead of silently dropping channels beyond Web Audio', () => {
+    expect(() => guitarInputAnalysisChannelCount(33, 2)).toThrow(
+      'can inspect at most 32',
+    )
+  })
+})
+
 vi.mock('@/stores/mic-latency-store', () => ({
-  micLatencyMs: () => dependencies.latencyMs,
-  micLatencySec: () => dependencies.latencyMs / 1000,
-  micLatencySpreadMs: () => dependencies.latencySpreadMs,
-  setMicLatencyMeasurement: dependencies.setLatencyMeasurement,
+  micLatencyMsForDevice: (deviceId: string | null) =>
+    dependencies.latencyByDevice.get(deviceId ?? 'default') ??
+    dependencies.latencyMs,
+  micLatencySpreadMsForDevice: () => dependencies.latencySpreadMs,
+  setMicLatencyMeasurementForDevice: dependencies.setLatencyMeasurement,
 }))
 
 interface FakeOscillator {
@@ -189,14 +242,44 @@ const E4 = {
 describe('useGuitarListeningController', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     dependencies.detections = []
     dependencies.workletTap = null
     dependencies.emitWorklet = null
     dependencies.latencyMs = 0
+    dependencies.latencyByDevice.clear()
     dependencies.latencySpreadMs = null
+    dependencies.micStateListener = null
+    dependencies.runGuard = null
+    dependencies.getError.mockReturnValue(null)
+    dependencies.takeOverFromOtherTab.mockResolvedValue(true)
+    dependencies.listAudioInputs.mockResolvedValue([])
+    dependencies.registerRunGuard.mockImplementation(
+      (_id: string, guard: () => boolean) => {
+        dependencies.runGuard = guard
+        return () => undefined
+      },
+    )
+    dependencies.subscribe.mockImplementation(
+      (
+        listener: (state: {
+          active: boolean
+          error: { kind: string; message: string } | null
+        }) => void,
+      ) => {
+        dependencies.micStateListener = listener
+        listener({ active: false, error: null })
+        return () => undefined
+      },
+    )
     dependencies.setLatencyMeasurement.mockImplementation(
-      (milliseconds: number, spreadMs: number | null) => {
+      (
+        deviceId: string | null,
+        milliseconds: number,
+        spreadMs: number | null,
+      ) => {
         dependencies.latencyMs = milliseconds
+        dependencies.latencyByDevice.set(deviceId ?? 'default', milliseconds)
         dependencies.latencySpreadMs = spreadMs
       },
     )
@@ -263,7 +346,6 @@ describe('useGuitarListeningController', () => {
         atFrame: 4_800,
         level: 0.2,
       })
-
       const provisional = controller.events()[0]
       expect(provisional?.clock).toEqual({
         kind: 'audio-worklet',
@@ -413,6 +495,355 @@ describe('useGuitarListeningController', () => {
     })
   })
 
+  it('completes the current take when the active audio input disappears', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      dependencies.emitWorklet?.({
+        type: 'attack',
+        atFrame: 4_800,
+        level: 0.2,
+      })
+      Object.assign(audio.context, { currentTime: 0.2 })
+
+      dependencies.micStateListener?.({
+        active: false,
+        error: {
+          kind: 'no-device',
+          message: 'The selected audio input disconnected.',
+        },
+      })
+
+      expect(controller.status()).toBe('error')
+      expect(controller.error()).toBe('The selected audio input disconnected.')
+      expect(controller.take()?.lifecycle).toBe('completed')
+      expect(controller.events()).toHaveLength(1)
+    })
+  })
+
+  it('offers an explicit cross-tab handoff and starts after taking ownership', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(false)
+      expect(controller.canTakeOverInput()).toBe(true)
+
+      dependencies.getError.mockReturnValue(null)
+      expect(await controller.useInputHere()).toBe(true)
+
+      expect(dependencies.takeOverFromOtherTab).toHaveBeenCalledOnce()
+      expect(controller.canTakeOverInput()).toBe(false)
+      expect(controller.status()).toBe('listening')
+    })
+  })
+
+  it('coalesces repeated cross-tab handoff requests', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+    let finishHandoff: ((moved: boolean) => void) | undefined
+    dependencies.takeOverFromOtherTab.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishHandoff = resolve
+        }),
+    )
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(false)
+      dependencies.getError.mockReturnValue(null)
+
+      const first = controller.useInputHere()
+      expect(controller.inputTakeoverPending()).toBe(true)
+      await expect(controller.useInputHere()).resolves.toBe(false)
+      expect(dependencies.takeOverFromOtherTab).toHaveBeenCalledOnce()
+
+      finishHandoff?.(true)
+      await expect(first).resolves.toBe(true)
+      expect(controller.inputTakeoverPending()).toBe(false)
+    })
+  })
+
+  it('does not reopen input when a pending cross-tab handoff outlives the room', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+    let finishHandoff: ((moved: boolean) => void) | undefined
+    dependencies.takeOverFromOtherTab.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishHandoff = resolve
+        }),
+    )
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio: async () => true,
+        getAudioGraph: () => ({ context: audio.context }) as never,
+      })
+    })
+
+    expect(await controller.start()).toBe(false)
+    dependencies.getError.mockReturnValue(null)
+    const pending = controller.useInputHere()
+    expect(controller.inputTakeoverPending()).toBe(true)
+
+    dispose()
+    finishHandoff?.(true)
+
+    await expect(pending).resolves.toBe(false)
+    expect(dependencies.acquire).toHaveBeenCalledOnce()
+    expect(dependencies.releaseTakeoverIfUnused).toHaveBeenCalledOnce()
+  })
+
+  it('gives back a handoff when the player changes route while it is pending', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+    let finishHandoff: ((moved: boolean) => void) | undefined
+    dependencies.takeOverFromOtherTab.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishHandoff = resolve
+        }),
+    )
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      requestMIDIAccess: vi.fn(async () => ({
+        inputs: new Map([
+          [
+            'midi-guitar',
+            {
+              id: 'midi-guitar',
+              name: 'MIDI guitar',
+              state: 'connected',
+              onmidimessage: null,
+            },
+          ],
+        ]),
+        onstatechange: null,
+      })),
+    })
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(false)
+      const pending = controller.useInputHere()
+      expect(controller.inputTakeoverPending()).toBe(true)
+
+      await controller.selectInputProfile('midi')
+      finishHandoff?.(true)
+
+      await expect(pending).resolves.toBe(false)
+      expect(controller.inputProfile()).toBe('midi')
+      expect(dependencies.acquire).toHaveBeenCalledOnce()
+      expect(dependencies.releaseTakeoverIfUnused).toHaveBeenCalledOnce()
+    })
+  })
+
+  it('clears a stale MIDI-open error after a successful retry', async () => {
+    const requestMIDIAccess = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('MIDI permission was not granted.'))
+      .mockResolvedValueOnce({
+        inputs: new Map([
+          [
+            'midi-guitar',
+            {
+              id: 'midi-guitar',
+              name: 'MIDI guitar',
+              state: 'connected',
+              onmidimessage: null,
+            },
+          ],
+        ]),
+        onstatechange: null,
+      })
+    vi.stubGlobal('navigator', { ...navigator, requestMIDIAccess })
+    const audio = createAudioHarness()
+
+    await withController(audio.context, async (controller) => {
+      await controller.selectInputProfile('midi')
+      expect(controller.midiConnectionStatus()).toBe('error')
+      expect(controller.error()).toBe('MIDI permission was not granted.')
+
+      await expect(controller.refreshMidiInputs()).resolves.toBe(true)
+      expect(controller.midiConnectionStatus()).toBe('ready')
+      expect(controller.midiInputs()).toEqual([
+        { id: 'midi-guitar', label: 'MIDI guitar' },
+      ])
+      expect(controller.error()).toBeNull()
+    })
+  })
+
+  it('releases a successful handoff when the room audio clock cannot start', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+    const activateAudio = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+    dependencies.acquire.mockRejectedValueOnce(
+      new Error('The microphone is open in another MercuryPitch tab.'),
+    )
+    dependencies.getError.mockReturnValue({
+      kind: 'held-elsewhere',
+      message: 'The microphone is open in another MercuryPitch tab.',
+    })
+    let dispose: () => void = () => undefined
+    const controller = createRoot((rootDispose) => {
+      dispose = rootDispose
+      return useGuitarListeningController({
+        activateAudio,
+        getAudioGraph: () => ({ context: audio.context }) as never,
+      })
+    })
+
+    expect(await controller.start()).toBe(false)
+    expect(controller.canTakeOverInput()).toBe(true)
+    expect(await controller.useInputHere()).toBe(false)
+    expect(dependencies.releaseTakeoverIfUnused).toHaveBeenCalledOnce()
+
+    dispose()
+  })
+
+  it('records the actual interface route when the saved device falls back', async () => {
+    localStorage.setItem('mp.guitarNight.inputProfile', 'interface')
+    localStorage.setItem('mp.guitarInputDevice', 'saved-interface')
+    dependencies.listAudioInputs.mockResolvedValue([
+      {
+        deviceId: 'system-default',
+        label: 'Built-in input',
+        kind: 'audioinput',
+        groupId: '',
+        toJSON: () => ({}),
+      },
+    ])
+    dependencies.acquire.mockResolvedValue({
+      getAudioTracks: () => [
+        {
+          label: 'Built-in input',
+          getSettings: () => ({ deviceId: 'system-default' }),
+        },
+      ],
+    })
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      expect(controller.inputProfile()).toBe('interface')
+      expect(controller.selectedAudioInputId()).toBe('system-default')
+      expect(controller.take()?.input).toEqual({
+        kind: 'interface',
+        requestedDeviceId: 'saved-interface',
+        activeDeviceId: 'system-default',
+        activeDeviceLabel: 'Built-in input',
+      })
+      expect(controller.error()).toBeNull()
+      expect(controller.notice()).toContain('saved input is unavailable')
+    })
+  })
+
+  it('reads calibration from the actual device behind the system default', async () => {
+    dependencies.latencyByDevice.set('system-default', 37)
+    dependencies.listAudioInputs.mockResolvedValue([
+      {
+        deviceId: 'system-default',
+        label: 'Built-in input',
+        kind: 'audioinput',
+        groupId: '',
+        toJSON: () => ({}),
+      },
+    ])
+    dependencies.acquire.mockResolvedValue({
+      getAudioTracks: () => [
+        {
+          label: 'Built-in input',
+          getSettings: () => ({ deviceId: 'system-default' }),
+        },
+      ],
+    })
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+
+    await withController(audio.context, async (controller) => {
+      expect(controller.selectedAudioInputId()).toBeNull()
+      expect(await controller.start()).toBe(true)
+      expect(controller.selectedAudioInputId()).toBeNull()
+      expect(controller.latencyMs()).toBe(37)
+    })
+  })
+
+  it('announces signal without a stable note as uncertain evidence', async () => {
+    const audio = createAudioHarness()
+    const frames = installFrameHarness(audio.context)
+    dependencies.workletTap = { dispose: vi.fn() }
+
+    await withController(audio.context, async (controller) => {
+      expect(await controller.start()).toBe(true)
+      audio.setAmplitude(0.1)
+      frames.run(1)
+      frames.run(1.02)
+      frames.run(1.04)
+
+      expect(controller.health()).toEqual({
+        state: 'uncertain',
+        hint: 'Signal is present, but the note is not stable enough to name.',
+      })
+      controller.stop()
+      expect(controller.take()?.inputHealth.states.uncertain).toBe(1)
+    })
+  })
+
+  it('registers a guard that is true only while an audio take is recording', async () => {
+    const audio = createAudioHarness()
+    installFrameHarness(audio.context)
+
+    await withController(audio.context, async (controller) => {
+      expect(dependencies.registerRunGuard).toHaveBeenCalledWith(
+        'guitar-night-listening-take',
+        expect.any(Function),
+      )
+      expect(dependencies.runGuard?.()).toBe(false)
+
+      expect(await controller.start()).toBe(true)
+      expect(dependencies.runGuard?.()).toBe(true)
+
+      controller.stop()
+      expect(dependencies.runGuard?.()).toBe(false)
+    })
+  })
+
   it('restores the completed review when a failed calibration is cancelled', async () => {
     vi.useFakeTimers()
     const audio = createAudioHarness()
@@ -439,11 +870,13 @@ describe('useGuitarListeningController', () => {
       await expect(calibration).resolves.toBe(false)
       expect(controller.status()).toBe('listening')
       expect(controller.take()?.lifecycle).toBe('recording')
+      expect(controller.notice()).toContain('clicks never came back')
 
-      controller.cancel()
+      controller.cancel({ preserveNotice: true })
       expect(controller.status()).toBe('off')
       expect(controller.take()).toEqual(completed)
-      expect(controller.error()).toContain('clicks never came back')
+      expect(controller.error()).toBeNull()
+      expect(controller.notice()).toContain('clicks never came back')
     })
   })
 
@@ -471,6 +904,15 @@ describe('useGuitarListeningController', () => {
 
   it('starts a clean take with the newly calibrated latency', async () => {
     vi.useFakeTimers()
+    localStorage.setItem('mp.guitarInputDevice', 'missing-device')
+    dependencies.acquire.mockResolvedValueOnce({
+      getAudioTracks: () => [
+        {
+          label: 'Fallback input',
+          getSettings: () => ({ deviceId: 'system-default' }),
+        },
+      ],
+    })
     const audio = createAudioHarness()
     installFrameHarness(audio.context)
     dependencies.workletTap = { dispose: vi.fn() }
@@ -492,7 +934,11 @@ describe('useGuitarListeningController', () => {
       await vi.runAllTimersAsync()
 
       await expect(calibration).resolves.toBe(true)
-      expect(dependencies.setLatencyMeasurement).toHaveBeenCalledWith(80, 0)
+      expect(dependencies.setLatencyMeasurement).toHaveBeenCalledWith(
+        'system-default',
+        80,
+        0,
+      )
       expect(controller.take()?.id).not.toBe(previousTakeId)
       expect(controller.take()?.clock.latency).toEqual({
         seconds: 0.08,

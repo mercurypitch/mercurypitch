@@ -131,6 +131,11 @@ export class MicManager {
   private readonly consumers = new Set<string>()
   private error: MicError | null = null
   private preferredDeviceId: string | null = null
+  // The browser-resolved id for the current route. Keep it after teardown so
+  // calibration and compensation still address the same physical input while
+  // the system-default choice is closed; clear it when the requested route
+  // changes and refresh it on the next successful open.
+  private resolvedDeviceId: string | null = null
   private readonly listeners = new Set<Listener>()
   // Serialises acquire/release so a teardown fully settles before the next
   // open — the core guard against the re-open race.
@@ -173,6 +178,10 @@ export class MicManager {
     return this.preferredDeviceId
   }
 
+  getResolvedDevice(): string | null {
+    return this.resolvedDeviceId
+  }
+
   /**
    * Choose which audio input device to capture from (e.g. a Focusrite
    * instrument input). Pass null/'' for the system default. If the device
@@ -184,6 +193,7 @@ export class MicManager {
     const next = deviceId !== null && deviceId !== '' ? deviceId : null
     if (this.preferredDeviceId === next) return
     this.preferredDeviceId = next
+    this.resolvedDeviceId = null
     await this.enqueue(async () => {
       this.teardown()
     })
@@ -237,6 +247,14 @@ export class MicManager {
       try {
         const stream = await this.openDevice()
         this.stream = stream
+        const reportedDeviceId = stream
+          .getAudioTracks?.()[0]
+          ?.getSettings?.()
+          .deviceId?.trim()
+        this.resolvedDeviceId =
+          reportedDeviceId !== undefined && reportedDeviceId.length > 0
+            ? reportedDeviceId
+            : this.preferredDeviceId
         this.attachEndedHandlers(stream)
         this.error = null
         this.emit()
@@ -358,6 +376,19 @@ export class MicManager {
       this.emit()
     }
     return won
+  }
+
+  /**
+   * Give back a completed handoff when its requesting surface disappeared
+   * before acquiring. The queue makes this safe beside a new local consumer:
+   * an established or in-flight open wins and keeps the tab's lock.
+   */
+  releaseTakeoverIfUnused(): Promise<void> {
+    return this.enqueue(async () => {
+      if (this.stream !== null || this.consumers.size > 0) return
+      releaseMicLock()
+      this.emit()
+    })
   }
 
   /** Set when another tab holds the mic, cleared once we do. */

@@ -12,6 +12,10 @@ import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrum
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightInputError } from './GuitarNightInputError'
+import { GuitarNightInputHealth } from './GuitarNightInputHealth'
+import { GuitarNightInputNotice } from './GuitarNightInputNotice'
+import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
@@ -230,6 +234,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
+        ownsSpace: () => !doctorOpen(),
         enabled: () =>
           props.transport.status() !== 'loading' && !isCalibrating(),
       }),
@@ -285,7 +290,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             >
               <summary
                 ref={bandSummary}
-                aria-label={`Band and loop controls, ${props.backing.stems.length} ${props.backing.stems.length === 1 ? 'track' : 'tracks'}`}
+                aria-label={`Band, loop, and input controls, ${props.backing.stems.length} ${props.backing.stems.length === 1 ? 'track' : 'tracks'}`}
               >
                 <span aria-hidden="true">
                   <SlidersHorizontal />
@@ -303,6 +308,48 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
                     <small>{mixCopy()}</small>
                   </div>
                 </header>
+                <GuitarNightInputPicker
+                  profile={listening.inputProfile}
+                  profileLabel={listening.inputProfileLabel}
+                  audioInputs={listening.audioInputs}
+                  selectedAudioInputId={listening.selectedAudioInputId}
+                  midiInputs={listening.midiInputs}
+                  selectedMidiInputId={listening.selectedMidiInputId}
+                  midiStatus={listening.midiConnectionStatus}
+                  evidenceExportEnabled={listening.evidenceExportEnabled}
+                  canExportEvidence={listening.canExportEvidence}
+                  switching={() =>
+                    listening.status() === 'requesting' ||
+                    listening.status() === 'calibrating' ||
+                    listening.inputTakeoverPending() ||
+                    listening.midiConnectionStatus() === 'requesting'
+                  }
+                  onProfile={(kind) => void listening.selectInputProfile(kind)}
+                  onAudioInput={(deviceId) =>
+                    void listening.selectAudioInput(deviceId)
+                  }
+                  onMidiInput={(deviceId) =>
+                    void listening.selectMidiInput(deviceId)
+                  }
+                  onRefreshAudio={() => void listening.refreshAudioInputs()}
+                  onRefreshMidi={() => void listening.refreshMidiInputs()}
+                  onExportEvidence={listening.exportEvidenceReport}
+                />
+                <Show
+                  when={
+                    listening.status() !== 'off' && listening.error() === null
+                  }
+                >
+                  <GuitarNightInputHealth
+                    profile={listening.inputProfile}
+                    listening={isListening}
+                    calibrating={isCalibrating}
+                    health={listening.health}
+                    timingSource={listening.timingSource}
+                    latencyMs={listening.latencyMs}
+                    onCalibrate={() => void listening.calibrate()}
+                  />
+                </Show>
                 <Show
                   when={
                     props.backing.defaultMix.kind === 'mixed-instrumental' &&
@@ -439,13 +486,13 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
         }
       />
 
-      <Show when={listening.error()}>
-        {(message) => (
-          <p class={styles.listeningError} role="alert">
-            {message()}
-          </p>
-        )}
-      </Show>
+      <GuitarNightInputError
+        message={listening.error}
+        canTakeOver={listening.canTakeOverInput}
+        takeoverPending={listening.inputTakeoverPending}
+        onTakeOver={() => void listening.useInputHere()}
+      />
+      <GuitarNightInputNotice message={listening.notice} floating />
 
       <div class={styles.transportDeck} data-testid="guitar-night-deck">
         <div class={styles.timeRail}>

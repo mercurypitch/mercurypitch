@@ -19,7 +19,7 @@
 //
 // Tests: src/lib/mic-latency.test.ts.
 
-import { median, nearestEventDelta, spreadMs } from './calibration-stats'
+import { median, spreadMs } from './calibration-stats'
 
 /** Clicks played in one measurement run. */
 export const LATENCY_CLICK_COUNT = 8
@@ -166,11 +166,22 @@ export function matchOnsetDeltas(
   onsetSec: number[],
   maxDistance: number = MAX_ONSET_DISTANCE_SEC,
 ): number[] {
+  const unusedOnsets = new Set(onsetSec.map((_, index) => index))
   const deltas: number[] = []
-  for (const onset of onsetSec) {
-    const delta = nearestEventDelta(scheduledSec, onset, maxDistance)
-    if (delta === null || delta < 0) continue
-    deltas.push(delta)
+  for (const scheduled of scheduledSec) {
+    let bestIndex: number | null = null
+    let bestDelta = Number.POSITIVE_INFINITY
+    for (const index of unusedOnsets) {
+      const onset = onsetSec[index]
+      if (onset === undefined) continue
+      const delta = onset - scheduled
+      if (delta < 0 || delta > maxDistance || delta >= bestDelta) continue
+      bestIndex = index
+      bestDelta = delta
+    }
+    if (bestIndex === null) continue
+    unusedOnsets.delete(bestIndex)
+    deltas.push(bestDelta)
   }
   return deltas
 }

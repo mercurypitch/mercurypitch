@@ -17,7 +17,10 @@ import { normalizeLoopSpan, quantizeSpanToBeats } from '@/lib/guitar/loop-span'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { guitarPhraseDoctorView, retainedTakeHealth, } from './guitar-phrase-doctor-view'
 import styles from './GuitarNightApp.module.css'
+import { GuitarNightInputError } from './GuitarNightInputError'
 import { GuitarNightInputHealth } from './GuitarNightInputHealth'
+import { GuitarNightInputNotice } from './GuitarNightInputNotice'
+import { GuitarNightInputPicker } from './GuitarNightInputPicker'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
@@ -432,7 +435,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
           return
         }
         if (!(await listening.calibrate())) {
-          listening.cancel()
+          listening.cancel({ preserveNotice: true })
           if (!disposed) setDoctorOpen(true)
           return
         }
@@ -513,6 +516,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
+        ownsSpace: () => !doctorOpen(),
         enabled: () => room.status() !== 'starting' && !isCalibrating(),
       }),
     )
@@ -597,11 +601,42 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   </div>
                 </header>
 
+                <GuitarNightInputPicker
+                  profile={listening.inputProfile}
+                  profileLabel={listening.inputProfileLabel}
+                  audioInputs={listening.audioInputs}
+                  selectedAudioInputId={listening.selectedAudioInputId}
+                  midiInputs={listening.midiInputs}
+                  selectedMidiInputId={listening.selectedMidiInputId}
+                  midiStatus={listening.midiConnectionStatus}
+                  evidenceExportEnabled={listening.evidenceExportEnabled}
+                  canExportEvidence={listening.canExportEvidence}
+                  switching={() =>
+                    takeIsActive() ||
+                    listening.status() === 'requesting' ||
+                    listening.status() === 'calibrating' ||
+                    listening.inputTakeoverPending() ||
+                    listening.midiConnectionStatus() === 'requesting'
+                  }
+                  onProfile={(kind) => void listening.selectInputProfile(kind)}
+                  onAudioInput={(deviceId) =>
+                    void listening.selectAudioInput(deviceId)
+                  }
+                  onMidiInput={(deviceId) =>
+                    void listening.selectMidiInput(deviceId)
+                  }
+                  onRefreshAudio={() => void listening.refreshAudioInputs()}
+                  onRefreshMidi={() => void listening.refreshMidiInputs()}
+                  onExportEvidence={listening.exportEvidenceReport}
+                />
+                <GuitarNightInputNotice message={listening.notice} />
+
                 <button
                   type="button"
                   class={styles.sessionListening}
                   classList={{ [styles.listeningActive]: isListening() }}
                   aria-pressed={isListening()}
+                  disabled={takeIsActive()}
                   aria-label={
                     listening.status() === 'requesting'
                       ? 'Cancel opening input'
@@ -630,13 +665,19 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
                   </span>
                 </button>
 
-                <Show when={listening.status() !== 'off'}>
+                <Show
+                  when={
+                    listening.status() !== 'off' && listening.error() === null
+                  }
+                >
                   <GuitarNightInputHealth
+                    profile={listening.inputProfile}
                     listening={isListening}
                     calibrating={() => listening.status() === 'calibrating'}
                     health={listening.health}
                     timingSource={listening.timingSource}
                     latencyMs={listening.latencyMs}
+                    locked={takeIsActive}
                     onCalibrate={() => void listening.calibrate()}
                   />
                 </Show>
@@ -789,6 +830,7 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
               view={doctorView()}
               recording={assessmentCaptureActive()}
               liveEventCount={listening.events().length}
+              footer={<GuitarNightInputNotice message={listening.notice} />}
               returnFocus={() =>
                 doctorRecoveryActive() ? roomHeading : (doctorTrigger ?? null)
               }
@@ -804,13 +846,12 @@ export function GuitarNightScoreRoom(props: GuitarNightScoreRoomProps) {
         }
       />
 
-      <Show when={listening.error()}>
-        {(message) => (
-          <p class={styles.listeningError} role="alert">
-            {message()}
-          </p>
-        )}
-      </Show>
+      <GuitarNightInputError
+        message={listening.error}
+        canTakeOver={listening.canTakeOverInput}
+        takeoverPending={listening.inputTakeoverPending}
+        onTakeOver={() => void listening.useInputHere()}
+      />
       <Show when={room.error()}>
         {(message) => (
           <p class={styles.playbackError} role="alert">

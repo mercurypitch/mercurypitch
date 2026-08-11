@@ -14,6 +14,7 @@ function exactCapture(
   return {
     kind: 'attack',
     source: 'microphone',
+    voiceId: null,
     level: 0.3,
     pitch: null,
     clock: {
@@ -41,6 +42,12 @@ function recorder(
     takeId: 'take-1',
     startedAtSeconds: 10,
     sampleRate: SAMPLE_RATE,
+    input: {
+      kind: 'microphone',
+      requestedDeviceId: null,
+      activeDeviceId: 'default-mic',
+      activeDeviceLabel: 'Built-in microphone',
+    },
     latency: {
       seconds: 0.04,
       provenance: 'stored-round-trip',
@@ -57,6 +64,12 @@ describe('createGuitarTakeRecorder', () => {
       takeId: 'take-1',
       startedAtSeconds: 10,
       sampleRate: SAMPLE_RATE,
+      input: {
+        kind: 'microphone' as const,
+        requestedDeviceId: null,
+        activeDeviceId: 'default-mic',
+        activeDeviceLabel: 'Built-in microphone',
+      },
       latency: {
         seconds: 0.04,
         provenance: 'stored-round-trip' as const,
@@ -127,6 +140,7 @@ describe('createGuitarTakeRecorder', () => {
     const event = take.append({
       kind: 'pitch-change',
       source: 'microphone',
+      voiceId: null,
       level: 0.2,
       pitch: pitch(67),
       clock: {
@@ -158,6 +172,7 @@ describe('createGuitarTakeRecorder', () => {
     take.append({
       kind: 'attack',
       source: 'microphone',
+      voiceId: null,
       level: 0.2,
       pitch: pitch(67),
       clock: {
@@ -181,6 +196,7 @@ describe('createGuitarTakeRecorder', () => {
     take.append({
       kind: 'pitch-change',
       source: 'microphone',
+      voiceId: null,
       level: 0.2,
       pitch: pitch(67),
       clock: {
@@ -213,6 +229,49 @@ describe('createGuitarTakeRecorder', () => {
       provenance: 'none',
       uncertaintySeconds: null,
     })
+  })
+
+  it('pins MIDI event-clock provenance without inventing route correction', () => {
+    const take = recorder({
+      attackTimingSource: 'midi-clock',
+      input: {
+        kind: 'midi',
+        requestedDeviceId: 'midi-1',
+        activeDeviceId: 'midi-1',
+        activeDeviceLabel: 'Guitar MIDI',
+      },
+      latency: {
+        seconds: 0,
+        provenance: 'midi-route-unmeasured',
+        uncertaintySeconds: null,
+      },
+    })
+    const event = take.append({
+      kind: 'release',
+      source: 'midi',
+      voiceId: 'midi-1:0:64',
+      level: 0,
+      pitch: pitch(64),
+      clock: {
+        kind: 'web-midi',
+        eventTimestampMs: 10_200,
+        observedPerformanceMs: 10_210,
+        mappedAudioTime: 10.2,
+        inputId: 'midi-1',
+        channel: 0,
+      },
+    })
+
+    expect(event?.voiceId).toBe('midi-1:0:64')
+    expect(event?.capturedAt).toBe(10.2)
+    expect(take.snapshot().input.kind).toBe('midi')
+    expect(take.snapshot().clock.attack).toEqual({
+      timingSource: 'midi-clock',
+      precision: 'high-resolution-midi',
+    })
+    expect(take.snapshot().clock.latency.provenance).toBe(
+      'midi-route-unmeasured',
+    )
   })
 
   it('filters evidence before start and after completion', () => {
@@ -264,6 +323,7 @@ describe('createGuitarTakeRecorder', () => {
         hot: 0,
         clipping: 1,
         noisy: 1,
+        uncertain: 0,
       },
     })
 
@@ -281,6 +341,7 @@ describe('createGuitarTakeRecorder', () => {
         hot: 0,
         clipping: 0,
         noisy: 0,
+        uncertain: 0,
       },
     })
   })

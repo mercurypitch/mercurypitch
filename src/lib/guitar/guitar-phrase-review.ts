@@ -84,6 +84,7 @@ export type GuitarPhraseUnavailableReason =
   | 'input-silent'
   | 'input-clipping'
   | 'input-noisy'
+  | 'input-uncertain'
   | 'no-targets'
   | 'no-attacks'
   | 'too-few-matched-attacks'
@@ -219,6 +220,8 @@ const UNAVAILABLE_DETAIL: Record<GuitarPhraseUnavailableReason, string> = {
     'The assessment input clipped, so its timing and pitch evidence are not dependable.',
   'input-noisy':
     'The background was too close to the guitar level for a dependable review.',
+  'input-uncertain':
+    'The signal was present, but its pitch was too unstable for a dependable review.',
   'no-targets': 'The selected beat range contains no authored target onsets.',
   'no-attacks': 'No fresh attacks were retained inside this beat range.',
   'too-few-matched-attacks':
@@ -546,6 +549,7 @@ function commonUnavailableReason(
   if (input.inputHealth.state === 'silent') return 'input-silent'
   if (input.inputHealth.state === 'clipping') return 'input-clipping'
   if (input.inputHealth.state === 'noisy') return 'input-noisy'
+  if (input.inputHealth.state === 'uncertain') return 'input-uncertain'
   return null
 }
 
@@ -705,6 +709,7 @@ function pitchRelationshipMetric(
   const pitchedEvents = events
     .filter(
       (event) =>
+        event.kind !== 'release' &&
         event.pitch !== null &&
         event.pitch.clarity >= input.window.minimumPitchClarity,
     )
