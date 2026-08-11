@@ -176,7 +176,9 @@ function session(
   }
 }
 
-function audioHarness(options: { fadeSeconds?: number } = {}) {
+function audioHarness(
+  options: { fadeSeconds?: number; memoryBudgetBytes?: number } = {},
+) {
   const context = new FakeAudioContext()
   const contextFactory = vi.fn(() => context as unknown as AudioContext)
   const activateContext = vi.fn(async (audioContext: AudioContext) => {
@@ -197,6 +199,7 @@ function audioHarness(options: { fadeSeconds?: number } = {}) {
     fetchArrayBuffer,
     mediaElementFactory,
     fadeSeconds: options.fadeSeconds ?? 0,
+    memoryBudgetBytes: options.memoryBudgetBytes,
     scheduleLeadSeconds: 0.012,
   })
   return {
@@ -354,6 +357,57 @@ describe('createGuitarBackingTransport', () => {
     expect(harness.context.decodeAudioData).toHaveBeenCalledTimes(2)
   })
 
+  it('gates only backing stems on pause and restores them on resume', async () => {
+    const harness = audioHarness({ fadeSeconds: 0.05 })
+    harness.transport.setMasterVolume(0.31)
+    harness.transport.configure(
+      session('shared-graph-pause', [track('drums'), track('guitar')]),
+    )
+    await harness.transport.play()
+
+    const graph = harness.transport.getAudioGraph()!
+    const master = graph.master as unknown as FakeGainNode
+    const guide = graph.buses.guide as unknown as FakeGainNode
+    const monitor = graph.buses.monitor as unknown as FakeGainNode
+    const stems = graph.buses.stems as unknown as FakeGainNode
+    const masterGain = master.gain.value
+    const guideGain = guide.gain.value
+    const monitorGain = monitor.gain.value
+    master.gain.operations.length = 0
+    guide.gain.operations.length = 0
+    monitor.gain.operations.length = 0
+    stems.gain.operations.length = 0
+
+    harness.context.currentTime = 12
+    harness.transport.pause()
+
+    expect(stems.gain.operations).toEqual([
+      { kind: 'cancel', when: 12 },
+      { kind: 'set', value: 1, when: 12 },
+      { kind: 'linear', value: 0, when: 12.05 },
+    ])
+    expect(stems.gain.value).toBe(0)
+    expect(master.gain.value).toBe(masterGain)
+    expect(master.gain.operations).toEqual([])
+    expect(guide.gain.value).toBe(guideGain)
+    expect(guide.gain.operations).toEqual([])
+    expect(guide.connect).toHaveBeenCalledWith(master)
+    expect(monitor.gain.value).toBe(monitorGain)
+    expect(monitor.gain.operations).toEqual([])
+    expect(monitor.connect).toHaveBeenCalledWith(master)
+
+    await expect(harness.transport.play()).resolves.toBe(true)
+
+    expect(stems.gain.value).toBe(1)
+    expect(stems.gain.operations.at(-1)).toMatchObject({
+      kind: 'linear',
+      value: 1,
+    })
+    expect(stems.gain.operations.at(-1)?.when).toBeCloseTo(12.062)
+    expect(master.gain.value).toBe(masterGain)
+    expect(master.gain.operations).toEqual([])
+  })
+
   it('restarts all active stems at the same target when seeking', async () => {
     const harness = audioHarness()
     harness.transport.configure(
@@ -373,6 +427,36 @@ describe('createGuitarBackingTransport', () => {
     expect(soughtStarts[1][1]).toBe(7.25)
     expect(harness.transport.getCurrentTime()).toBeCloseTo(7.25)
     expect(harness.transport.getStatus()).toBe('playing')
+  })
+
+  it('gates streamed seeks on the stems bus without changing the master', async () => {
+    const harness = audioHarness({
+      fadeSeconds: 0.05,
+      memoryBudgetBytes: 1,
+    })
+    harness.transport.setMasterVolume(0.31)
+    harness.transport.configure(session('streamed-seek'))
+    await expect(harness.transport.play()).resolves.toBe(true)
+    expect(harness.transport.getLoadMode()).toBe('streamed')
+
+    const graph = harness.transport.getAudioGraph()!
+    const master = graph.master as unknown as FakeGainNode
+    const stems = graph.buses.stems as unknown as FakeGainNode
+    const masterGain = master.gain.value
+    master.gain.operations.length = 0
+    stems.gain.operations.length = 0
+    harness.context.currentTime = 14
+
+    harness.transport.seek(7.25)
+
+    expect(stems.gain.operations).toEqual([
+      { kind: 'cancel', when: 14 },
+      { kind: 'set', value: 0, when: 14 },
+      { kind: 'linear', value: 1, when: 14.05 },
+    ])
+    expect(master.gain.value).toBe(masterGain)
+    expect(master.gain.operations).toEqual([])
+    expect(harness.mediaElements[0].currentTime).toBe(7.25)
   })
 
   it('rejects an unsafe decoded-size estimate before fetching or decoding', async () => {
