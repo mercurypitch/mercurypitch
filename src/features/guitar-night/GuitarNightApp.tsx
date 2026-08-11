@@ -945,6 +945,12 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               <section
                 class={styles.songLibrary}
                 aria-labelledby="guitar-night-library-title"
+                aria-busy={
+                  songController.libraryState() === 'idle' ||
+                  songController.libraryState() === 'loading'
+                    ? 'true'
+                    : 'false'
+                }
               >
                 <div class={styles.songLibraryHeader}>
                   <h2 id="guitar-night-library-title">Prepared songs</h2>
@@ -964,7 +970,11 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       songController.libraryState() === 'loading'
                     }
                   >
-                    <p class={styles.songMessage}>
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
                       Opening your local library…
                       <Show when={libraryOpenIsSlow()}>
                         <small>
@@ -976,7 +986,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                     </p>
                   </Match>
                   <Match when={songController.libraryState() === 'error'}>
-                    <div class={styles.songMessageRow}>
+                    <div class={styles.songMessageRow} role="alert">
                       <p>Your local library could not be opened.</p>
                       <button type="button" onClick={songController.retry}>
                         Try again
@@ -1055,6 +1065,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               <section
                 class={styles.songLibrary}
                 aria-labelledby="guitar-night-reference-title"
+                aria-busy={
+                  referenceController.libraryState() === 'idle' ||
+                  referenceController.libraryState() === 'loading'
+                }
               >
                 <div class={styles.songLibraryHeader}>
                   <h2 id="guitar-night-reference-title">Tab to follow</h2>
@@ -1159,7 +1173,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                       referenceController.libraryState() === 'loading'
                     }
                   >
-                    <p class={styles.songMessage}>Opening your tab library…</p>
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Opening your tab library…
+                    </p>
                   </Match>
                   <Match when={referenceController.references().length > 0}>
                     <ul class={styles.songList}>
@@ -1428,7 +1448,13 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               {(authored) => (
                 <Suspense
                   fallback={
-                    <p class={styles.songMessage}>Opening the tab room…</p>
+                    <p
+                      class={styles.songMessage}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Opening the tab room…
+                    </p>
                   }
                 >
                   <GuitarNightScoreRoom

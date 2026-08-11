@@ -90,10 +90,10 @@ review until that PR is merged.
   never offered.
 - The stage shows only traceable reference notes: authored score events or
   confidence-bearing measured events bound to the active recording. Authored
-  tempo maps, tracks and Guitar Pro fingering are attached because the saved
-  representation really carries them; meter, sections, source tuning and capo
-  are not claimed. MIDI notes without authored fingering are placed by the
-  shared helper.
+  tempo maps, tracks, Guitar Pro fingering, source tuning/name/capo, chord
+  labels, and techniques are attached only when the saved representation
+  really carries them; meter and sections are not claimed. MIDI notes without
+  authored fingering are placed by the shared helper.
 - Authored score beat time is derived from the tab room's canonical audio
   clock, never from render frames. Beat-to-seconds and seconds-to-beat mapping
   both use the complete persisted tempo map; changing the opening tempo scales
@@ -161,10 +161,21 @@ review until that PR is merged.
   choice is stored locally. Guitar Night supplies its own translucent Velvet
   palette, direct mouse/touch camera, responsive entry/Reset framing, larger
   next target and truthful `NOW` rail without changing the legacy renderer
-  defaults; `Tab` and `Neck` provide quieter alternate views. A song without an
-  attached score exposes a nullable beat, says no tab is attached, and remains
-  a useful free-play fretboard instead of deriving a fake beat from elapsed
-  seconds.
+  defaults. Four calm camera presets include phrase following that yields as
+  soon as the player drags, wheels, touches, or uses the keyboard and resumes
+  only on Reset. Left-handed Highway and Grid mirror their spatial projection;
+  the moving thirteen-fret Neck reverses consistently; 4–8 strings, alternate
+  tuning, and capo remain source-aware. Authored chords and bend, slide,
+  hammer/pull, vibrato, palm-mute, and let-ring marks reach the stage without
+  inferring technique from coincident notes. `Tab` and `Neck` remain fast,
+  quieter alternatives. A song without an attached score exposes a nullable
+  beat, says no tab is attached, and remains a useful free-play fretboard
+  instead of deriving a fake beat from elapsed seconds.
+- The canvas observes its actual bounds, caps its device-pixel ratio, reuses a
+  compiled immutable score and queries only the visible time window. A paused
+  room paints on scene or camera change instead of running a permanent frame
+  loop. Reduced motion snaps camera changes, while reduced effects removes
+  glow, shadows and additive compositing without removing musical meaning.
 - The score-only room keeps Play and tempo visible while count-in, guide sound,
   Listening and loop setup live in one restrained Session overlay. Before Play,
   the stage rests just ahead of the first authored note so a long intro reads as
@@ -181,20 +192,34 @@ review until that PR is merged.
   regressions keep the stage and pedalboard in the first viewport, preserve
   44px controls, and wrap a six-part band without horizontal page or channel
   discovery scrolling.
-- `Listening` is explicit and local. It reuses the room context, pauses pitched
-  backing for a clean assessed take, and runs the existing guitar-range MPM
-  detector. The on-demand Jam Doctor reports only captured attack count,
-  median detector clarity, attack-spacing variation, and detected pitch range.
-  It stores no audio and makes no phrase, string, fret, or quality claim that
-  the evidence cannot support.
+- `Listening` is explicit and local. A compact Session/Band sheet offers Room
+  mic, Plugged in, and MIDI without requesting access until the player acts.
+  The selected route and device persist independently; the active take records
+  the device the browser actually opened, reports a saved-device fallback, and
+  completes cleanly if that device disappears. A microphone held by another
+  tab offers `Use it here` through the shared handoff instead of requiring a
+  refresh. Audio routes reuse the room context, pause pitched backing for a
+  clean assessed take, and run the existing guitar-range MPM detector. MIDI
+  keeps per-voice attack/release identity and maps its high-resolution event
+  timestamp onto the room clock while stating that route delay is unmeasured.
+  The on-demand Jam Doctor stores no audio and makes no phrase, string, fret,
+  latency, or quality claim that the evidence cannot support.
 - Timestamped attacks are captured in an AudioWorklet and anchored to the
-  shared audio clock; every non-empty input channel is inspected and the
-  strongest intact channel is analyzed rather than assuming the guitar is on
-  channel one or averaging channels that may cancel. The coarse fallback
+  shared audio clock; every browser-addressable input channel (up to Web
+  Audio's 32-channel splitter limit) is inspected and the strongest intact
+  channel is analyzed rather than assuming the guitar is on channel one or
+  averaging channels that may cancel. Larger routes fail visibly with a routing
+  action rather than silently truncating analysis. The coarse fallback
   identifies itself and preserves same-pitch restrikes without turning detector
   settling into a second note. Latency calibration is exclusive with playback
   and assessed Listening, is cancellable, and removes its scheduled clicks and
   temporary evidence when stopped or disposed.
+- Eight deterministic synthetic fixtures cover a clean note, fast alternate
+  picking, room noise, bend, slide, vibrato, chord onset and clipping. They
+  report attack delay/misses/false attacks plus note and cents error only where
+  ground truth is monophonic. A query-gated development export captures route,
+  clock, aggregate health and event counts without audio or an event timeline;
+  it labels a real-device run as user-captured and unverified.
 
 ## Copy contract
 
@@ -213,11 +238,12 @@ subordinate to the crop until the source receives a final retouch.
 
 ## Next integrations
 
-1. Finish the fast-input evidence gate with named guitar fixtures, real-device
-   browser checks, latency distributions, and explicit microphone, direct
-   interface and MIDI adapters before publishing speed or quality claims.
-2. Extend the shipped string highway with readable technique marks,
-   reduced-effects behavior and measured real-device mobile performance.
+1. Finish the fast-input evidence gate with real-device browser checks,
+   measured latency distributions, audio note-release/continuous-pitch
+   evidence, and a separately validated polyphonic path before publishing speed
+   or quality claims.
+2. Measure the upgraded string highway on representative mobile hardware, add
+   stable screenshot baselines, and complete the final material/lighting pass.
 3. Extend the configurable first win into a beginner progression, then add the
    professional band presets, drummer controls and take history.
 4. Complete authored-score-to-recording alignment plus release and

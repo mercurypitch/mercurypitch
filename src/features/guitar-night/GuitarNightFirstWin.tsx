@@ -208,7 +208,7 @@ export function GuitarNightFirstWin(props: GuitarNightFirstWinProps) {
             >
               {props.completionAction() === 'load-song'
                 ? 'Load a song'
-                : 'Keep jamming'}
+                : 'Open Guitar workspace'}
             </button>
           </Show>
         </div>

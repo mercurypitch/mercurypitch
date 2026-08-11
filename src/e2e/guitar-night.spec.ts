@@ -597,7 +597,12 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
     page.getByText('You just read your first bar of tab.'),
   ).toBeVisible()
 
-  await page.getByRole('button', { name: 'Back', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Open Guitar workspace', exact: true })
+    .click()
+  await expect(page).toHaveURL(/\/#\/guitar$/)
+
+  await page.goto('/guitar-night', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: 'Bring a song into the room.' }),
@@ -723,6 +728,137 @@ test('scrubs, pauses, and resumes an authored score with a real pointer @smoke',
   ).toBe(1)
 })
 
+test('keeps stage settings reachable at 200% text on a narrow phone @smoke', async ({
+  browser,
+}) => {
+  const baseURL = test.info().project.use.baseURL
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 320, height: 568 },
+  })
+  const page = await context.newPage()
+  const songId = `guitar-night-reflow-${Date.now()}`
+
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await seedAuthoredGuitarScore(page, songId)
+    await page.goto(`/guitar-night?song=${encodeURIComponent(songId)}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await page.getByRole('button', { name: 'Load a song', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Rehearse the tab', exact: true })
+      .click()
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty(
+        'font-size',
+        '200%',
+        'important',
+      )
+    })
+
+    const room = page.getByTestId('guitar-night-score-room')
+    const roomMenuButton = page.getByRole('button', {
+      name: 'Room',
+      exact: true,
+    })
+    await roomMenuButton.click()
+    const roomMenu = page.locator('#guitar-night-venue-menu')
+    await expect(roomMenu).toBeVisible()
+    const roomMenuMetrics = await roomMenu.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      const children = [...element.querySelectorAll<HTMLElement>('select, a')]
+      return {
+        allControlsInside: children.every((child) => {
+          const childBounds = child.getBoundingClientRect()
+          return childBounds.left >= 0 && childBounds.right <= window.innerWidth
+        }),
+        left: bounds.left,
+        right: bounds.right,
+        viewportWidth: window.innerWidth,
+      }
+    })
+    expect(roomMenuMetrics.left).toBeGreaterThanOrEqual(0)
+    expect(roomMenuMetrics.right).toBeLessThanOrEqual(
+      roomMenuMetrics.viewportWidth,
+    )
+    expect(roomMenuMetrics.allControlsInside).toBe(true)
+    await page.keyboard.press('Escape')
+    await expect(roomMenu).not.toBeVisible()
+    await expect(roomMenuButton).toBeFocused()
+
+    const stage = room.getByTestId('guitar-night-stage')
+    await expect(stage).toBeVisible()
+    await expect(stage.locator('canvas')).toHaveAttribute(
+      'data-camera-ready',
+      'true',
+    )
+
+    const modeButtons = room.getByRole('button').filter({
+      hasText: /^(Highway|Grid|Tab|Neck)$/,
+    })
+    await expect(modeButtons).toHaveCount(4)
+    const reflow = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(reflow.scrollWidth).toBeLessThanOrEqual(reflow.clientWidth + 2)
+
+    const camera = room.getByLabel('Camera, Runway', { exact: true })
+    await camera.click()
+    const panel = room.getByRole('group', {
+      name: 'Stage view and display settings',
+      exact: true,
+    })
+    await expect(panel).toBeVisible()
+    const panelMetrics = await panel.evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      return {
+        bottom: bounds.bottom,
+        clientHeight: element.clientHeight,
+        overflowY: getComputedStyle(element).overflowY,
+        scrollHeight: element.scrollHeight,
+        top: bounds.top,
+        viewportHeight: window.innerHeight,
+      }
+    })
+    expect(panelMetrics.top).toBeGreaterThanOrEqual(0)
+    expect(panelMetrics.bottom).toBeLessThanOrEqual(
+      panelMetrics.viewportHeight + 1,
+    )
+    expect(panelMetrics.overflowY).toBe('auto')
+    expect(panelMetrics.scrollHeight).toBeGreaterThan(panelMetrics.clientHeight)
+
+    const reducedEffects = panel.getByRole('button', {
+      name: /Reduced effects/,
+    })
+    await reducedEffects.scrollIntoViewIfNeeded()
+    await expect(reducedEffects).toBeVisible()
+    const reducedBounds = await reducedEffects.boundingBox()
+    expect(reducedBounds).not.toBeNull()
+    expect(reducedBounds?.y).toBeGreaterThanOrEqual(0)
+    expect(
+      (reducedBounds?.y ?? 0) + (reducedBounds?.height ?? 0),
+    ).toBeLessThanOrEqual(568)
+
+    await page.keyboard.press('Escape')
+    await expect(panel).not.toBeVisible()
+    await expect(camera).toBeFocused()
+
+    const setup = room.getByLabel('6-string guitar setup', { exact: true })
+    await setup.click()
+    const strings = room.getByRole('combobox', { name: 'Strings' })
+    await expect(strings).toBeVisible()
+    const stringBounds = await strings.boundingBox()
+    expect(stringBounds).not.toBeNull()
+    expect(
+      (stringBounds?.y ?? 0) + (stringBounds?.height ?? 0),
+    ).toBeLessThanOrEqual(568)
+  } finally {
+    await context.close()
+  }
+})
+
 test('enters a silent prepared-song room, plays, pauses, and seeks with a real pointer @smoke', async ({
   page,
 }) => {
@@ -806,6 +942,9 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     'data-tab-presentation',
     'string-highway',
   )
+  await room.getByLabel('Camera, Runway', { exact: true }).click()
+  await room.getByRole('button', { name: /Phrase follow/ }).click()
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
   await flowCanvas.scrollIntoViewIfNeeded()
   const initialYaw = await flowCanvas.getAttribute('data-camera-yaw')
   const canvasBox = await flowCanvas.boundingBox()
@@ -824,6 +963,7 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
   await expect
     .poll(() => flowCanvas.getAttribute('data-camera-yaw'))
     .not.toBe(initialYaw)
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'false')
   const orbitedYaw = await flowCanvas.getAttribute('data-camera-yaw')
   const orbitedRadius = await flowCanvas.getAttribute('data-camera-radius')
 
@@ -851,6 +991,11 @@ test('enters a silent prepared-song room, plays, pauses, and seeks with a real p
     'string-highway',
   )
   await expect(flowCanvas).toHaveAttribute('data-camera-yaw', orbitedYaw ?? '')
+
+  await room
+    .getByRole('group', { name: '3D performance view controls' })
+    .press('r')
+  await expect(flowCanvas).toHaveAttribute('data-camera-following', 'true')
 
   await room.getByRole('button', { name: 'Neck', exact: true }).click()
   await expect(room.locator('[data-stage-mode="neck"]')).toBeVisible()
@@ -1085,8 +1230,9 @@ test('keeps a full band inside the room across tablet and phone widths @smoke', 
     await page.getByRole('button', { name: 'Enter room', exact: true }).click()
 
     const room = page.getByTestId('guitar-night-room')
-    const bandControls = room.locator(
-      'summary[aria-label^="Band and loop controls"]',
+    const bandControls = room.getByLabel(
+      'Band, loop, and input controls, 6 tracks',
+      { exact: true },
     )
     await bandControls.click()
     const channels = room.locator('[aria-label="Backing tracks"] button')

@@ -28,10 +28,14 @@ Velvet camera/target treatment are implemented on open PR
 [#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remain in
 review until that PR is merged. The same PR now records those attacks in one
 bounded, memory-only take with stable identity, exact or explicitly coarse
-clock provenance, and a pinned latency snapshot. The
-authored-score-to-recording alignment, release and continuous-pitch evidence,
-fast-passage fixture validation, technique notation, real-device highway
-performance validation, and legacy runtime cutover remain target work.
+clock provenance, and a pinned latency snapshot. It also carries explicit
+room-microphone, direct-interface, and Web MIDI routes; MIDI attack/release
+evidence; deterministic guitar-input fixtures; authored tuning, capo, chord,
+and technique notation; and the camera/effects/handedness stage upgrade.
+Authored-score-to-recording alignment, audio-input release and continuous-pitch
+evidence, dependable polyphonic analysis, real-device latency and
+highway-performance validation, and the legacy runtime cutover remain target
+work.
 
 **Product direction:** Velvet Rehearsal room, small musical wins, and
 incremental reuse of proven Guitar, 3D, separation, microphone, MIDI, and
@@ -164,10 +168,12 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   cancelled, superseded, stopped, or disposed, its scheduled clicks, temporary
   nodes, timeout, and captured evidence shall be released.
 - **REQ-GN-RUNTIME-014 — Complete input-channel analysis:** WHERE a browser or
-  interface exposes more than one non-empty input channel, onset analysis shall
-  inspect every such channel and analyze the strongest intact channel rather
-  than assume the instrument is present on channel one or attenuate it through
-  channel averaging.
+  interface exposes two through 32 non-empty input channels, onset analysis
+  shall inspect every such channel and analyze the strongest intact channel
+  rather than assume the instrument is present on channel one or attenuate it
+  through channel averaging. IF an input exceeds Web Audio's 32-channel splitter
+  limit, THEN assessed Listening shall fail visibly with a routing action rather
+  than silently ignore channels.
 - **REQ-GN-RUNTIME-015 — Exact score transport:** WHEN the player points,
   drags, or uses the keyboard on an authored-score timeline, the room shall
   park at that exact fractional beat through the complete tempo map without
@@ -193,6 +199,31 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   shall be excluded; bounded truncation shall be recorded. Stop shall complete
   the take, while failed activation or disposal shall cancel it. Guitar Night
   shall neither retain raw input audio nor persist Capture v0 takes.
+- **REQ-GN-RUNTIME-019 — Explicit input routes:** Guitar Night shall present
+  room microphone, direct interface, and MIDI as explicit Listening routes.
+  The selected route and device may persist locally, but access shall begin
+  only after a player gesture. The active take shall record the requested and
+  actual device identity; IF the browser opens a fallback device, THEN the
+  room shall name that fallback rather than label it as the unavailable saved
+  device.
+- **REQ-GN-RUNTIME-020 — Input loss and handoff:** WHEN an active audio or MIDI
+  device disconnects, or another tab takes over the shared microphone hold,
+  Guitar Night shall complete the bounded take, detach analysis nodes and
+  handlers, and expose a recoverable error. IF another tab holds the selected
+  audio input, THEN the room shall offer an explicit `Use it here` handoff and
+  shall not claim ownership before the shared manager confirms it.
+- **REQ-GN-RUNTIME-021 — MIDI clock truth:** MIDI attacks and releases shall
+  retain a stable voice identity, input port, channel, event timestamp, receipt
+  timestamp, and mapping onto the room AudioContext clock. That mapping may
+  support high-resolution event spacing, but MIDI route delay shall remain
+  explicitly unmeasured and shall not unlock absolute early/late claims.
+- **REQ-GN-RUNTIME-022 — Input evidence harness:** A deterministic synthetic
+  corpus shall separately report detector delay, misses, false attacks, note
+  error, and cents error where monophonic ground truth exists. Polyphonic and
+  unusable fixtures shall name why pitch evidence is unavailable. A
+  development-only real-device export may include route, clock, aggregate
+  health, latency provenance, and event counts, but shall contain no raw audio
+  or event timeline and shall label the capture as user-run and unverified.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 
@@ -513,6 +544,29 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   the selected projection shall persist locally. The legacy Guitar host shall
   continue to default to `Grid` unless it explicitly opts into another
   projection.
+- **REQ-GN-STAGE-013 — Authored instrument meaning:** WHERE the imported score
+  supplies tuning, tuning name, capo, fingering, chord labels, or techniques,
+  the reference adapter shall preserve that source meaning through the shared
+  scene. The renderer may show simultaneous chord targets, bends, slides,
+  hammer-ons, pull-offs, vibrato, palm mute, and let ring only when authored;
+  it shall not infer labels or techniques from visual coincidence.
+- **REQ-GN-STAGE-014 — Player-owned framing:** Guitar Night shall offer calm
+  Flow, player-neck, full-neck, and phrase-focus camera presets. Automatic
+  phrase framing shall yield immediately to pointer, touch, wheel, or keyboard
+  camera input and shall resume only after an explicit Reset. Reduced motion
+  shall snap camera changes instead of tweening them.
+- **REQ-GN-STAGE-015 — Instrument preferences:** Guitar Night shall preserve
+  right- and left-handed Highway, Grid, Tab, and Neck meaning; support declared
+  4–8-string guitar/bass setups, alternate tuning, and capo; and keep Tab and
+  a moving thirteen-fret Neck useful as fast non-canvas alternatives. View,
+  handedness, and reduced-effects preferences may persist without changing the
+  legacy Guitar host defaults.
+- **REQ-GN-STAGE-016 — Bounded rendering cost:** The shared canvas shall cap
+  its device-pixel ratio, observe actual surface size, reuse compiled score
+  structure, and repaint from relevant scene/camera signals rather than run a
+  permanent frame loop while paused. Reduced effects shall remove additive
+  glow and shadow work without hiding the now-line, targets, techniques, or
+  result identity.
 
 ## Incremental delivery — `GN-DELIVERY-*`
 
