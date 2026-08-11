@@ -3,12 +3,13 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Mic, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
+import { ChevronLeft, Mic, MusicNote, Pause, Play, SkipBack, SlidersHorizontal, Volume2, VolumeX, } from '@/components/icons'
 import type { GuitarBackingSession, GuitarBackingTransportStatus, } from '@/features/guitar/backing/guitar-backing-transport'
 import type { GuitarBackingTransportController } from '@/features/guitar/backing/useGuitarBackingTransportController'
 import { clampRate, MAX_RATE, MIN_RATE, } from '@/features/guitar-practice/practice-rate'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
+import { standardTuning } from '@/lib/guitar/instrument-tuning'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { createGuitarNightPerformanceAdapter } from './createGuitarNightPerformanceAdapter'
 import styles from './GuitarNightApp.module.css'
@@ -20,10 +21,12 @@ import type { GuitarNightDoctorView } from './GuitarNightJamDoctor'
 import { GuitarNightDoctorCue, GuitarNightJamDoctor, } from './GuitarNightJamDoctor'
 import { GuitarNightLoopControls } from './GuitarNightLoopControls'
 import { GuitarNightStage } from './GuitarNightStage'
+import { GuitarNightTunerExperience } from './GuitarNightTunerExperience'
 import type { GuitarNightReference } from './reference-port'
 import type { GuitarNightBackingLease, GuitarNightStemKind } from './song-port'
 import { useGuitarListeningController } from './useGuitarListeningController'
 import { useGuitarNightLoopController } from './useGuitarNightLoopController'
+import { useGuitarNightTunerController } from './useGuitarNightTunerController'
 
 interface GuitarNightRoomProps {
   backing: GuitarNightBackingLease
@@ -34,6 +37,7 @@ interface GuitarNightRoomProps {
   tuning?: Accessor<InstrumentTuning>
   onInstrument?(instrument: StringedInstrument): void
   onStringCount?(count: number): void
+  onTuning?(tuning: InstrumentTuning): void
   onSongs(): void
   onSeparateGuitar?(): void
 }
@@ -95,10 +99,23 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
   let roomHeading!: HTMLHeadingElement
   let bandSummary!: HTMLElement
   let doctorTrigger: HTMLButtonElement | undefined
+  let tunerTrigger: HTMLButtonElement | undefined
   const [doctorOpen, setDoctorOpen] = createSignal(false)
+  const [tunerOpen, setTunerOpen] = createSignal(false)
   const listening = useGuitarListeningController({
     activateAudio: () => props.transport.activate(),
     getAudioGraph: () => props.transport.getAudioGraph(),
+  })
+  const roomTuning = createMemo(
+    () => props.tuning?.() ?? standardTuning('guitar'),
+  )
+  const tuner = useGuitarNightTunerController({
+    tuning: roomTuning,
+    listening,
+    activateAudio: () => props.transport.activate(),
+    getAudioGraph: () => props.transport.getAudioGraph(),
+    pausePlayback: () => props.transport.pause(),
+    onTuning: (next) => props.onTuning?.(next),
   })
   const reference = createMemo(() => props.reference?.() ?? null)
   const performance = createGuitarNightPerformanceAdapter(
@@ -212,7 +229,18 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     void listening.start()
   }
 
+  const openTuner = (): void => {
+    setDoctorOpen(false)
+    setTunerOpen(true)
+  }
+
+  const closeTuner = (): void => {
+    setTunerOpen(false)
+    queueMicrotask(() => tunerTrigger?.focus())
+  }
+
   const leaveRoom = (): void => {
+    tuner.close()
     listening.stop()
     props.onSongs()
   }
@@ -234,7 +262,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     onCleanup(
       installSpacePlaybackToggle({
         toggle: togglePlayback,
-        ownsSpace: () => !doctorOpen(),
+        ownsSpace: () => !doctorOpen() && !tunerOpen(),
         enabled: () =>
           props.transport.status() !== 'loading' && !isCalibrating(),
       }),
@@ -278,6 +306,19 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
             device
           </span>
           <div class={styles.roomTools} aria-label="Room tools">
+            <button
+              ref={tunerTrigger}
+              type="button"
+              aria-haspopup="dialog"
+              aria-label="Tune guitar"
+              disabled={props.transport.status() === 'loading'}
+              onClick={openTuner}
+            >
+              <span aria-hidden="true">
+                <MusicNote />
+              </span>
+              <strong>Tune</strong>
+            </button>
             <details
               class={styles.scoreSession}
               onKeyDown={(event) => {
@@ -600,6 +641,21 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
           </small>
         </p>
       </div>
+
+      <Show when={tunerOpen()}>
+        <GuitarNightTunerExperience
+          controller={tuner}
+          tuning={roomTuning}
+          detectedFrequencyHz={listening.detectedFrequency}
+          detectedNoteLabel={listening.currentNote}
+          surfaceMode="overlay"
+          recoveryActionLabel={() =>
+            listening.canTakeOverInput() ? 'Use it here' : null
+          }
+          onRecoveryAction={() => void listening.useInputHere()}
+          onBack={closeTuner}
+        />
+      </Show>
     </section>
   )
 }

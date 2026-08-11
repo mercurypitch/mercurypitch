@@ -1,17 +1,18 @@
 // ============================================================
-// Guitar Tuner — pitch-to-string mapping and cent deviation
+// Stringed instrument tuner — target selection and cent deviation
 // ============================================================
 //
-// Standard 6-string guitar tuning (EADGBE, low to high). Accepts
-// a detected frequency and returns the nearest string + cent
-// deviation, so a tuner UI can show a needle / color indicator.
-// Pure functions — no DOM, no audio.
+// Host-neutral target and reading APIs accept the same 4–8-string guitar or
+// bass tuning shown by the stage. The original low-to-high six-string preset
+// exports stay intact for the legacy Guitar tuner.
 //
 // Reuses existing constants from guitar-synth.ts (GUITAR_TUNING,
-// GUITAR_STRINGS) and note-utils.ts (midiToNoteName, NOTE_NAMES).
+// GUITAR_STRINGS) and the shared InstrumentTuning authority.
 
 import { computeCentsDeviation, frequencyToMidi, midiToNoteName, } from '@/lib/frequency-to-note'
 import { GUITAR_STRINGS, GUITAR_TUNING } from '@/lib/guitar/guitar-synth'
+import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
+import { instrumentTuningFromSource, soundingOpenMidi, } from '@/lib/guitar/instrument-tuning'
 
 // ── Re-export for convenience ──────────────────────────────────
 
@@ -30,7 +31,7 @@ export const STRING_LABELS: Record<string, string> = {
 }
 
 /** Alternate tuning presets (Hz), low→high, 6 strings each. */
-export const ALTERNATE_TUNINGS: Record<string, number[]> = {
+export const ALTERNATE_TUNINGS = {
   Standard: [
     GUITAR_TUNING.E2,
     GUITAR_TUNING.A2,
@@ -65,7 +66,7 @@ export const TUNER_MIN_CLARITY = 0.3
 export interface TunerResult {
   /** Detected frequency (Hz). */
   frequency: number
-  /** Nearest standard string name (e.g. "A2"). */
+  /** Selected or nearest target string name (e.g. "A2"). */
   stringName: string
   /** Display label for the string. */
   stringLabel: string
@@ -83,6 +84,37 @@ export interface TunerResult {
   clarity: number
 }
 
+/** One open-string target in stage row order (highest string first). */
+export interface TunerTarget {
+  /** Stable row identity, including when two strings share a pitch. */
+  stringIndex: number
+  /** Sounding note name after capo (for example, "F#4"). */
+  stringName: string
+  /** Instrument row label before capo (for example, "e"). */
+  stringLabel: string
+  /** Sounding open MIDI pitch after capo. */
+  targetMidi: number
+  /** Target frequency at the requested concert pitch. */
+  targetHz: number
+}
+
+/** A host-neutral tuner reading with its exact instrument-string identity. */
+export interface TunerReading extends TunerResult {
+  stringIndex: number
+  targetMidi: number
+}
+
+export interface InstrumentPitchOptions {
+  /**
+   * Pin classification to one stage row. Manual selection intentionally
+   * bypasses the auto-acquisition window so a badly detuned string still
+   * produces useful direction.
+   */
+  targetStringIndex?: number
+  /** Reference frequency for A4. Defaults to modern concert pitch (440 Hz). */
+  concertPitchHz?: number
+}
+
 // ── String names (derived from GUITAR_STRINGS for reuse) ──────
 
 /** Standard tuning string names in display order (low→high). */
@@ -90,6 +122,20 @@ export const STRING_NAMES = ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'] as const
 
 /** Standard-tuning open-string frequencies (Hz), low→high. */
 const STANDARD_TARGETS: number[] = STRING_NAMES.map((n) => GUITAR_TUNING[n])
+
+const DEFAULT_CONCERT_PITCH_HZ = 440
+
+function targetFrequency(midi: number, concertPitchHz: number): number {
+  return concertPitchHz * 2 ** ((midi - 69) / 12)
+}
+
+function resolvedConcertPitch(concertPitchHz: number | undefined): number {
+  return concertPitchHz !== undefined &&
+    Number.isFinite(concertPitchHz) &&
+    concertPitchHz > 0
+    ? concertPitchHz
+    : DEFAULT_CONCERT_PITCH_HZ
+}
 
 // ── Core logic ────────────────────────────────────────────────
 
@@ -154,7 +200,126 @@ export function classifyPitch(
 }
 
 /**
- * Check whether a frequency is close enough to *any* guitar string
+ * Build tuner targets from the same tuning authority used by the fretboard.
+ * Instrument tunings are highest-string first; the returned indices preserve
+ * that order. A capo changes the sounding MIDI pitch and target frequency,
+ * while the row label continues to identify the physical string.
+ */
+export function getTunerTargets(
+  tuning: InstrumentTuning,
+  concertPitchHz = DEFAULT_CONCERT_PITCH_HZ,
+): TunerTarget[] {
+  const referenceHz = resolvedConcertPitch(concertPitchHz)
+  return soundingOpenMidi(tuning).map((targetMidi, stringIndex) => {
+    const stringName = midiToNoteName(targetMidi)
+    return {
+      stringIndex,
+      stringName,
+      stringLabel: tuning.labels[stringIndex] ?? stringName,
+      targetMidi,
+      targetHz: targetFrequency(targetMidi, referenceHz),
+    }
+  })
+}
+
+/** Select the closest open string without applying the auto signal gate. */
+export function findNearestTunerTarget(
+  frequency: number,
+  targets: readonly TunerTarget[],
+): TunerTarget | null {
+  if (!(frequency > 0) || !Number.isFinite(frequency) || targets.length === 0) {
+    return null
+  }
+
+  let nearest: TunerTarget | null = null
+  let nearestCents = Infinity
+  for (const target of targets) {
+    if (!(target.targetHz > 0) || !Number.isFinite(target.targetHz)) continue
+    const cents = Math.abs(1200 * Math.log2(frequency / target.targetHz))
+    if (cents < nearestCents) {
+      nearest = target
+      nearestCents = cents
+    }
+  }
+  return nearest
+}
+
+/**
+ * Classify against an explicit string target. Cents remain unrounded so the
+ * host can smooth or format them without losing detector precision. There is
+ * no ±50-cent gate here: explicit selection means the player wants guidance
+ * even when a string starts far from pitch.
+ */
+export function classifyPitchAgainstTarget(
+  frequency: number,
+  clarity: number,
+  target: TunerTarget,
+): TunerReading | null {
+  if (
+    !(frequency > 0) ||
+    !Number.isFinite(frequency) ||
+    !Number.isFinite(clarity) ||
+    clarity < TUNER_MIN_CLARITY ||
+    !(target.targetHz > 0) ||
+    !Number.isFinite(target.targetHz)
+  ) {
+    return null
+  }
+
+  const midi = frequencyToMidi(frequency, false)
+  const centsDeviation = computeCentsDeviation(
+    midi,
+    frequencyToMidi(target.targetHz, false),
+  )
+  const absCents = Math.abs(centsDeviation)
+
+  return {
+    frequency,
+    stringIndex: target.stringIndex,
+    stringName: target.stringName,
+    stringLabel: target.stringLabel,
+    targetMidi: target.targetMidi,
+    targetHz: target.targetHz,
+    centsDeviation,
+    inTune: absCents <= TUNER_IN_TUNE_CENTS,
+    close: absCents <= TUNER_CLOSE_CENTS,
+    midi: frequencyToMidi(frequency),
+    clarity,
+  }
+}
+
+/**
+ * Classify a pitch against any valid 4–8-string guitar or bass tuning.
+ *
+ * Auto mode only acquires a reading within ±50 cents of the nearest open
+ * string. That prevents room noise or a played fret from masquerading as a
+ * tuned string. Passing `targetStringIndex` selects manual mode and keeps a
+ * reading outside that window, which is necessary for a freshly restrung or
+ * substantially detuned instrument.
+ */
+export function classifyInstrumentPitch(
+  frequency: number,
+  clarity: number,
+  tuning: InstrumentTuning,
+  options: InstrumentPitchOptions = {},
+): TunerReading | null {
+  const targets = getTunerTargets(tuning, options.concertPitchHz)
+  const manualIndex = options.targetStringIndex
+  const target =
+    manualIndex === undefined
+      ? findNearestTunerTarget(frequency, targets)
+      : Number.isInteger(manualIndex)
+        ? (targets[manualIndex] ?? null)
+        : null
+  if (target === null) return null
+
+  const reading = classifyPitchAgainstTarget(frequency, clarity, target)
+  if (reading === null) return null
+  return manualIndex === undefined && !isTuningSignal(reading) ? null : reading
+}
+
+/**
+ * Check whether a frequency is close enough to the selected instrument string
  * to be considered a tuning attempt.
  */
 export function isTuningSignal(result: TunerResult): boolean {
@@ -172,7 +337,9 @@ export function getTargetHz(stringName: string): number {
  * Get all open-string frequencies for a given tuning preset.
  */
 export function getTuningFrequencies(tuningName: string): number[] {
-  return ALTERNATE_TUNINGS[tuningName] ?? ALTERNATE_TUNINGS.Standard
+  return (
+    ALTERNATE_TUNINGS[tuningName as TuningPreset] ?? ALTERNATE_TUNINGS.Standard
+  )
 }
 
 /**
@@ -182,4 +349,24 @@ export function getTuningFrequencies(tuningName: string): number[] {
 export function getTuningStringNames(tuningName: string): string[] {
   const freqs = getTuningFrequencies(tuningName)
   return freqs.map((f) => midiToNoteName(frequencyToMidi(f)))
+}
+
+/**
+ * Adapt a legacy six-string preset to the stage's tuning authority.
+ * The preset table remains low-string first for GuitarTuner compatibility;
+ * InstrumentTuning rows are high-string first, so this boundary reverses it.
+ */
+export function instrumentTuningForPreset(
+  preset: TuningPreset,
+): InstrumentTuning {
+  const openMidiHighFirst = ALTERNATE_TUNINGS[preset]
+    .map((frequency) => frequencyToMidi(frequency))
+    .reverse()
+  const tuning = instrumentTuningFromSource('guitar', openMidiHighFirst, {
+    name: preset,
+  })
+  if (tuning === null) {
+    throw new Error(`Invalid built-in guitar tuning preset: ${preset}`)
+  }
+  return tuning
 }

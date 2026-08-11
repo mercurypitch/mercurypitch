@@ -22,6 +22,7 @@ import { createMemo, createSignal, onCleanup } from 'solid-js'
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { presentationFps, recordAnimationFrame } from '@/lib/device-tier'
 import { createAdaptiveFrameRateLimiter } from '@/lib/frame-rate-limiter'
+import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { GuitarInputTap } from '@/lib/guitar/guitar-input-node'
 import { connectGuitarInputWorklet } from '@/lib/guitar/guitar-input-node'
 import type { GuitarInputDeviceOption, GuitarInputProfileKind, GuitarInputProfileSnapshot, } from '@/lib/guitar/guitar-input-profile'
@@ -44,7 +45,10 @@ import { buildGuitarTakeEvidenceReport, downloadGuitarInputEvidenceReport, guita
 
 const CONSUMER_ID = 'guitar-night-listening'
 const MAX_EVENTS = 256
-const ANALYSER_SIZE = 2048
+const PERFORMANCE_ANALYSER_SIZE = 2048
+const TUNER_ANALYSER_SIZE = 8192
+const PERFORMANCE_MIN_FREQUENCY = 55
+const TUNER_MIN_FREQUENCY = 25
 // Longer than the sample detector's 45 ms refractory period and several frame
 // callbacks, while still admitting sixteenth notes at common practice tempos.
 const COARSE_RESTRIKE_DEBOUNCE_SECONDS = 0.08
@@ -91,6 +95,15 @@ export interface GuitarListeningObservation {
 interface GuitarListeningControllerOptions {
   activateAudio(): Promise<boolean>
   getAudioGraph(): GuitarSessionAudioGraph | null
+}
+
+export interface GuitarListeningStartOptions {
+  /**
+   * Tuning trades attack speed for the longer window required by bass and
+   * extended-range open strings. Performance capture keeps its validated,
+   * lower-latency window.
+   */
+  purpose?: 'performance' | 'tuner'
 }
 
 function median(values: readonly number[]): number {
@@ -325,6 +338,11 @@ export function useGuitarListeningController(
   const [inputTakeoverPending, setInputTakeoverPending] = createSignal(false)
   const [currentNote, setCurrentNote] = createSignal<string | null>(null)
   const [detectedMidi, setDetectedMidi] = createSignal<number | null>(null)
+  const [detectedFrequency, setDetectedFrequency] = createSignal<number | null>(
+    null,
+  )
+  const [detectedCents, setDetectedCents] = createSignal<number | null>(null)
+  const [pitchRevision, setPitchRevision] = createSignal(0)
   const [clarity, setClarity] = createSignal(0)
   const [take, setTake] = createSignal<GuitarTakeSnapshot | null>(null)
   const evidenceExportEnabled = createMemo(() =>
@@ -377,6 +395,7 @@ export function useGuitarListeningController(
   let midiAdapter: GuitarMidiInputAdapter | null = null
   let ownsMic = false
   let stoppingInput = false
+  let lastStartOptions: GuitarListeningStartOptions = {}
   let activeInput: GuitarInputProfileSnapshot = {
     kind: inputProfile(),
     requestedDeviceId:
@@ -507,7 +526,10 @@ export function useGuitarListeningController(
       heldMidiVoices.set(message.voiceId, message)
       setCurrentNote(noteName)
       setDetectedMidi(message.midi)
+      setDetectedFrequency(midiToFrequency(message.midi))
+      setDetectedCents(0)
       setClarity(1)
+      setPitchRevision((revision) => revision + 1)
     } else {
       heldMidiVoices.delete(message.voiceId)
       const remaining = [...heldMidiVoices.values()].at(-1)
@@ -515,6 +537,10 @@ export function useGuitarListeningController(
         remaining === undefined ? null : midiToNoteNameOctave(remaining.midi),
       )
       setDetectedMidi(remaining?.midi ?? null)
+      setDetectedFrequency(
+        remaining === undefined ? null : midiToFrequency(remaining.midi),
+      )
+      setDetectedCents(remaining === undefined ? null : 0)
       setClarity(remaining === undefined ? 0 : 1)
     }
 
@@ -644,6 +670,9 @@ export function useGuitarListeningController(
     setStatus('off')
     setCurrentNote(null)
     setDetectedMidi(null)
+    setDetectedFrequency(null)
+    setDetectedCents(null)
+    setPitchRevision(0)
     setClarity(0)
     setHealth(null)
     setCanTakeOverInput(false)
@@ -667,6 +696,9 @@ export function useGuitarListeningController(
     setStatus('off')
     setCurrentNote(null)
     setDetectedMidi(null)
+    setDetectedFrequency(null)
+    setDetectedCents(null)
+    setPitchRevision(0)
     setClarity(0)
     setHealth(null)
     setCanTakeOverInput(false)
@@ -733,6 +765,9 @@ export function useGuitarListeningController(
       setStatus('off')
       setCurrentNote(null)
       setDetectedMidi(null)
+      setDetectedFrequency(null)
+      setDetectedCents(null)
+      setPitchRevision(0)
       setClarity(0)
       setHealth(null)
       setNotice(null)
@@ -751,6 +786,9 @@ export function useGuitarListeningController(
     releaseMicHold()
     setCurrentNote(null)
     setDetectedMidi(null)
+    setDetectedFrequency(null)
+    setDetectedCents(null)
+    setPitchRevision(0)
     setClarity(0)
     setHealth(null)
     setNotice(null)
@@ -847,9 +885,23 @@ export function useGuitarListeningController(
     if (!selected) await refreshMidiInputs()
   }
 
-  const start = async (): Promise<boolean> => {
+  const start = async (
+    startOptions: GuitarListeningStartOptions = {},
+  ): Promise<boolean> => {
     if (disposed) return false
     if (status() !== 'off' && status() !== 'error') return true
+    lastStartOptions =
+      startOptions.purpose === undefined
+        ? {}
+        : { purpose: startOptions.purpose }
+    const analyserSize =
+      startOptions.purpose === 'tuner'
+        ? TUNER_ANALYSER_SIZE
+        : PERFORMANCE_ANALYSER_SIZE
+    const minimumFrequency =
+      startOptions.purpose === 'tuner'
+        ? TUNER_MIN_FREQUENCY
+        : PERFORMANCE_MIN_FREQUENCY
     generation += 1
     const currentGeneration = generation
     const previousTake = take()
@@ -952,7 +1004,7 @@ export function useGuitarListeningController(
       )
       const nextPitchAnalysers = Array.from({ length: channelCount }, () => {
         const channelAnalyser = context.createAnalyser()
-        channelAnalyser.fftSize = ANALYSER_SIZE
+        channelAnalyser.fftSize = analyserSize
         channelAnalyser.smoothingTimeConstant = 0
         return channelAnalyser
       })
@@ -1023,12 +1075,12 @@ export function useGuitarListeningController(
       )
       // How far back the analyser's window reaches. A note named from it began
       // at least this long ago, which is what the strike it belongs to knows.
-      const windowSeconds = ANALYSER_SIZE / context.sampleRate
+      const windowSeconds = analyserSize / context.sampleRate
       const detector = new PitchDetector({
         algorithm: 'mpm',
         sampleRate: context.sampleRate,
-        bufferSize: ANALYSER_SIZE,
-        minFrequency: 55,
+        bufferSize: analyserSize,
+        minFrequency: minimumFrequency,
         maxFrequency: 1600,
         minConfidence: 0.38,
         minAmplitude: 0.018,
@@ -1094,7 +1146,10 @@ export function useGuitarListeningController(
           const label = `${detected.noteName}${detected.octave}`
           setCurrentNote(label)
           setDetectedMidi(midi)
+          setDetectedFrequency(detected.frequency)
+          setDetectedCents(detected.cents)
           setClarity(detected.clarity)
+          setPitchRevision((revision) => revision + 1)
           silentFrames = 0
           uncertainFrames = 0
 
@@ -1111,7 +1166,7 @@ export function useGuitarListeningController(
               observedAt: now,
               windowStartAt: capturedAt,
               sampleRate: context.sampleRate,
-              windowFrames: ANALYSER_SIZE,
+              windowFrames: analyserSize,
             }
             const coarseAttack =
               tap === null &&
@@ -1194,6 +1249,9 @@ export function useGuitarListeningController(
           if (silentFrames >= 6) {
             setCurrentNote(null)
             setDetectedMidi(null)
+            setDetectedFrequency(null)
+            setDetectedCents(null)
+            setPitchRevision(0)
             setClarity(0)
           }
         }
@@ -1244,7 +1302,7 @@ export function useGuitarListeningController(
       }
       setCanTakeOverInput(false)
       setStatus('off')
-      const started = await start()
+      const started = await start(lastStartOptions)
       if (!started) await micManager.releaseTakeoverIfUnused()
       return started
     } finally {
@@ -1373,6 +1431,9 @@ export function useGuitarListeningController(
     inputTakeoverPending,
     currentNote,
     detectedMidi,
+    detectedFrequency,
+    detectedCents,
+    pitchRevision,
     clarity,
     take,
     evidenceExportEnabled,
@@ -1405,3 +1466,7 @@ export function useGuitarListeningController(
     clearTake,
   }
 }
+
+export type GuitarListeningController = ReturnType<
+  typeof useGuitarListeningController
+>

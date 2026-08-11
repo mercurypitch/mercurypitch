@@ -618,6 +618,42 @@
   background: rgba(244, 234, 219, 0.04);
 }
 
+.tunerEntryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: var(--touch-target);
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.72);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tunerEntryAction strong,
+.tunerEntryAction span {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.tunerEntryAction span {
+  color: rgba(244, 234, 219, 0.5);
+}
+
+.tunerEntryAction:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.04);
+}
+
+.tunerEntryAction:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
 .rhythmPreview {
   margin-top: 0.85rem;
 }

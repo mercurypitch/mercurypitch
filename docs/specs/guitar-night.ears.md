@@ -24,14 +24,14 @@ remains in the accompaniment.
 Authored and measured reference adapters, the score-only rehearsal room,
 shared A/B loop ownership, timestamped AudioWorklet attacks, route-local
 latency calibration, the stage-first beginner lesson, and the responsive
-Velvet camera/target treatment are implemented on open PR
-[#458](https://github.com/mercurypitch/mercurypitch/pull/458) and remain in
-review until that PR is merged. The same PR now records those attacks in one
-bounded, memory-only take with stable identity, exact or explicitly coarse
-clock provenance, and a pinned latency snapshot. It also carries explicit
-room-microphone, direct-interface, and Web MIDI routes; MIDI attack/release
-evidence; deterministic guitar-input fixtures; authored tuning, capo, chord,
-and technique notation; and the camera/effects/handedness stage upgrade.
+Velvet camera/target treatment were merged through
+[#458](https://github.com/mercurypitch/mercurypitch/pull/458). That work records
+attacks in one bounded, memory-only take with stable identity, exact or
+explicitly coarse clock provenance, and a pinned latency snapshot. It also
+carries explicit room-microphone, direct-interface, and Web MIDI routes; MIDI
+attack/release evidence; deterministic guitar-input fixtures; authored
+tuning, capo, chord, and technique notation; and the camera, effects, and
+handedness stage upgrade.
 Authored-score-to-recording alignment, audio-input release and continuous-pitch
 evidence, dependable polyphonic analysis, real-device latency and
 highway-performance validation, and the legacy runtime cutover remain target
@@ -224,6 +224,56 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   development-only real-device export may include route, clock, aggregate
   health, latency provenance, and event counts, but shall contain no raw audio
   or event timeline and shall label the capture as user-run and unverified.
+
+## Tuner — `GN-TUNER-*`
+
+- **REQ-GN-TUNER-001 — Silent entry:** WHEN the tuner opens, it shall be ready
+  without requesting device permission, activating capture, starting or
+  resuming room playback, or sounding a reference tone.
+- **REQ-GN-TUNER-002 — Explicit audio start:** WHEN the player selects `Start
+listening`, the tuner shall use an explicitly selected microphone or direct
+  audio-interface route. MIDI shall not be presented or interpreted as a
+  pitch-tuning input.
+- **REQ-GN-TUNER-003 — Shared listening graph:** WHILE the tuner is open from
+  an existing room, it shall reuse that room's single listening controller,
+  input lease, detector path, `AudioContext`, and output graph rather than
+  create a tuner-owned listener, capture lease, detector loop, or audio graph.
+- **REQ-GN-TUNER-004 — Instrument tuning truth:** Tuner targets shall derive
+  from the current declared 4–8-string guitar or bass tuning in stage row
+  order. WHERE that tuning carries source-authored pitches or a capo, each
+  target shall use the corresponding sounding open pitch, including the capo.
+- **REQ-GN-TUNER-005 — Automatic and explicit targets:** WHILE no string is
+  selected, the tuner shall acquire the nearest open-string target only within
+  its bounded automatic signal window. WHEN the player selects a string, the
+  tuner shall retain that exact row identity and show useful flat/sharp
+  deviation even outside the automatic window.
+- **REQ-GN-TUNER-006 — Exclusive reference tone:** WHEN the player starts a
+  reference tone, active capture shall stop first and the tone shall sound
+  through the room's guide bus. WHEN capture starts, every reference tone
+  shall stop first; reference tone and capture shall never be active together.
+  WHEN either action supersedes a pending cross-tab input handoff, a late
+  handoff result shall be released without starting hidden capture.
+- **REQ-GN-TUNER-007 — Non-destructive room pause:** WHEN the tuner opens from
+  either a backing room or score room, the active transport shall pause without
+  resetting parked position, A/B loop, or mix, while the guide bus remains
+  audible at the player's master level. WHILE a phrase assessment is recording,
+  Tune shall remain unavailable rather than discarding its evidence. WHEN the
+  tuner closes, it shall not resume transport or capture automatically.
+- **REQ-GN-TUNER-008 — Overlay navigation and keyboard ownership:** WHEN the
+  player invokes Back or Escape, the tuner shall close and restore focus to its
+  trigger. WHILE the tuner overlay is open, the underlying room transport
+  shall not own Space, and Space shall not start or resume hidden playback.
+- **REQ-GN-TUNER-009 — Accessible responsive controls:** Tuner controls shall
+  remain at least 44 by 44 CSS pixels on supported phone and desktop layouts.
+  Target, cents direction, listening state, and in-tune judgment shall be
+  available without colour alone; live announcements shall be throttled; and
+  reduced motion shall remove continuous needle or lock animation without
+  hiding the current reading.
+- **REQ-GN-TUNER-010 — Preset synchronization:** WHEN the player chooses a
+  built-in tuning preset, Guitar Night shall update the current
+  `InstrumentTuning`, tuner targets, reference tones, and every stage
+  projection together in high-string-first row order; a preset shall never be
+  a label-only tuner change.
 
 ## Phrase review and Jam Doctor — `GN-DOCTOR-*`
 

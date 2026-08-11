@@ -94,6 +94,37 @@ describe('GuitarNightScoreRoom', () => {
     expect(document.activeElement).toBe(summary)
   })
 
+  it('opens Tune without starting the score clock and restores its trigger', async () => {
+    render(() => (
+      <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />
+    ))
+
+    const tune = screen.getByRole('button', { name: 'Tune guitar' })
+    fireEvent.click(tune)
+
+    expect(
+      screen.getByRole('dialog', { name: 'Tune before the room.' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Start listening' }),
+    ).toBeEnabled()
+
+    fireEvent.keyDown(document, {
+      key: ' ',
+      code: 'Space',
+      bubbles: true,
+      cancelable: true,
+    })
+    expect(
+      screen.getByText('Press Play or Space to start the count-in'),
+    ).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await Promise.resolve()
+    expect(screen.queryByTestId('guitar-night-tuner')).toBeNull()
+    expect(document.activeElement).toBe(tune)
+  })
+
   it('keeps phrase review inside the compact Session layer', () => {
     render(() => (
       <GuitarNightScoreRoom reference={() => VELVET_RIFF} onSongs={vi.fn()} />

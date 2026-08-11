@@ -351,6 +351,24 @@ describe('useGuitarNightReferenceController', () => {
     expect(controller.reference()?.outOfRangeNotes).toBe(0)
   })
 
+  it('keeps a deliberate tuner preset and re-places the visible score', async () => {
+    const { port } = fakePort()
+    const controller = mount(port)
+    await controller.attach(VELVET_RIFF.id, 'track-rhythm')
+
+    controller.setTuning({
+      instrument: 'guitar',
+      stringCount: 6,
+      openMidi: [64, 59, 55, 50, 45, 38],
+      labels: ['e', 'B', 'G', 'D', 'A', 'D'],
+      name: 'Drop D',
+    })
+
+    await waitFor(() => expect(controller.tuning().name).toBe('Drop D'))
+    expect(controller.tuning().openMidi).toEqual([64, 59, 55, 50, 45, 38])
+    expect(controller.reference()?.tuning.name).toBe('Drop D')
+  })
+
   it('measures a bass stem onto bass rows at the pitch it was heard', async () => {
     const { port } = fakePort()
     const controller = mountWithTranscription(port, async () => ({
