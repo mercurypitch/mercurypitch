@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { ChevronLeft, Headphones, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, SlidersHorizontal, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -179,19 +179,27 @@ export function PianoNightApp(): JSX.Element {
   let compactSurfaceOpener: HTMLElement | null = null
   let announcementTimer: number | null = null
 
-  const phraseIndex = (): number => {
+  const phraseIndex = createMemo((): number => {
     const beat = controller.playheadBeat()
     const index = PIANO_NIGHT_PHRASES.findIndex(
       (candidate) => beat < candidate.endBeat,
     )
     return index === -1 ? PIANO_NIGHT_PHRASES.length - 1 : index
-  }
-  const phrase = (): PianoNightPhrase => PIANO_NIGHT_PHRASES[phraseIndex()]
+  })
+  const phrase = createMemo<PianoNightPhrase>(
+    () => PIANO_NIGHT_PHRASES[phraseIndex()],
+  )
   const sessionProgress = createMemo(() => {
     const totalBeats = controller.stage.totalBeats
     if (!(totalBeats > 0)) return 0
     return Math.min(1, Math.max(0, controller.playheadBeat() / totalBeats))
   })
+  const sessionClock = createMemo(() =>
+    formatClock(
+      controller.playheadBeat(),
+      controller.transport.timeline.tempoBpm(),
+    ),
+  )
   const roomLabel = (): string =>
     background
       .options()
@@ -326,6 +334,10 @@ export function PianoNightApp(): JSX.Element {
     }
   }
 
+  const openSettings = (): void => {
+    openDrawer(drawerSection())
+  }
+
   const openCoach = (): void => {
     if (!compactSheets()) {
       coachElement?.focus()
@@ -410,15 +422,14 @@ export function PianoNightApp(): JSX.Element {
         aria-label="Piano Night navigation"
         inert={blockingModal()}
       >
-        <button
+        <a
           class={styles.railButton}
-          type="button"
-          onClick={() => openDrawer('session')}
-          aria-label="Open Piano Night controls"
+          href={LEGACY_PIANO_PATH}
+          aria-label="Open the current Piano workspace"
         >
-          <SlidersHorizontal />
-          <span>Controls</span>
-        </button>
+          <MusicBoard />
+          <span>Current Piano</span>
+        </a>
 
         <nav class={styles.railStack}>
           <button
@@ -434,27 +445,19 @@ export function PianoNightApp(): JSX.Element {
             <WaveformBars />
             <span>Coach</span>
           </button>
-          <button
-            class={styles.railButton}
-            type="button"
-            onClick={() => openDrawer('sound')}
-          >
-            <Headphones />
-            <span>Sounds</span>
-          </button>
-          <a class={styles.railButton} href={LEGACY_PIANO_PATH}>
-            <MusicBoard />
-            <span>Current Piano</span>
-          </a>
         </nav>
 
         <button
           class={styles.railButton}
           type="button"
-          onClick={() => openDrawer('room')}
+          onClick={openSettings}
+          aria-label="Open Piano Night settings"
+          aria-haspopup="dialog"
+          aria-expanded={drawerOpen()}
+          aria-controls="piano-night-settings"
         >
           <Settings />
-          <span>Room</span>
+          <span>Settings</span>
         </button>
       </aside>
 
@@ -476,14 +479,9 @@ export function PianoNightApp(): JSX.Element {
         <div class={styles.roomGrade} aria-hidden="true" />
 
         <div class={styles.sessionHud} aria-label="Piano Night session status">
-          <button
-            class={styles.sessionDocument}
-            type="button"
-            onClick={() => openDrawer('session')}
-            aria-label="Open session controls"
-          >
+          <span class={styles.sessionDocument} aria-hidden="true">
             <MusicBoard />
-          </button>
+          </span>
           <div class={styles.sessionPiece}>
             <strong>{controller.stage.title}</strong>
             <span>
@@ -491,12 +489,7 @@ export function PianoNightApp(): JSX.Element {
             </span>
           </div>
           <div class={`${styles.sessionMetric} ${styles.timeMetric}`}>
-            <strong>
-              {formatClock(
-                controller.playheadBeat(),
-                controller.transport.timeline.tempoBpm(),
-              )}
-            </strong>
+            <strong>{sessionClock()}</strong>
             <span>{controller.transport.phase()}</span>
           </div>
           <div class={styles.sessionTrace}>
@@ -592,13 +585,6 @@ export function PianoNightApp(): JSX.Element {
 
         <div class={styles.fallboard}>
           <div class={styles.transport} aria-label="Piano Night transport">
-            <button
-              type="button"
-              onClick={() => openDrawer('session')}
-              aria-label="Open session controls"
-            >
-              <SlidersHorizontal />
-            </button>
             <button
               type="button"
               disabled
@@ -713,11 +699,21 @@ export function PianoNightApp(): JSX.Element {
           <WaveformBars />
           <span>Coach</span>
         </button>
-        <button type="button" onClick={() => openDrawer('sound')}>
-          <Headphones />
-          <span>Sounds</span>
+        <button
+          type="button"
+          onClick={openSettings}
+          aria-label="Open Piano Night settings"
+          aria-haspopup="dialog"
+          aria-expanded={drawerOpen()}
+          aria-controls="piano-night-settings"
+        >
+          <Settings />
+          <span>Settings</span>
         </button>
-        <a href={LEGACY_PIANO_PATH}>
+        <a
+          href={LEGACY_PIANO_PATH}
+          aria-label="Open the current Piano workspace"
+        >
           <MusicBoard />
           <span>Current</span>
         </a>
@@ -732,6 +728,7 @@ export function PianoNightApp(): JSX.Element {
         />
       </Show>
       <aside
+        id="piano-night-settings"
         ref={drawerElement}
         class={styles.drawer}
         classList={{ [styles.drawerOpen]: drawerOpen() }}
@@ -876,14 +873,6 @@ export function PianoNightApp(): JSX.Element {
                 </p>
               )}
             </Show>
-
-            <a class={styles.legacyLink} href={LEGACY_PIANO_PATH}>
-              <PianoKeys />
-              <span>
-                <strong>Open the current Piano tab</strong>
-                <small>Use today’s songs, microphone, loop, and scoring.</small>
-              </span>
-            </a>
           </section>
         </Show>
 

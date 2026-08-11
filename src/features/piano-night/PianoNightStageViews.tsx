@@ -10,7 +10,7 @@ import { createMemo, For, Show } from 'solid-js'
 import type { PianoPerformanceNote } from '@/features/piano/runtime/piano-performance-contract'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PianoNightPhrase } from './piano-night-demo-project'
-import { pianoNightFallGeometry } from './piano-night-fall-geometry'
+import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallWindow, } from './piano-night-fall-geometry'
 import styles from './PianoNightApp.module.css'
 
 export type PianoNightPerformanceView = 'fall' | 'score' | 'keys'
@@ -41,17 +41,24 @@ function noteX(midi: number): number {
 }
 
 function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
+  const visualBeat = createMemo(() =>
+    props.reducedMotion() ? props.phrase().startBeat : props.playheadBeat(),
+  )
+  const anchorBeat = createMemo(() => pianoNightFallAnchorBeat(visualBeat()))
+  const trackNotes = createMemo(() =>
+    pianoNightFallWindow(props.notes, anchorBeat()),
+  )
+  const trackTranslation = createMemo(() =>
+    pianoNightFallTrackTranslationPercent(visualBeat(), anchorBeat()),
+  )
+  const semanticBeat = createMemo(() => Math.floor(props.playheadBeat()))
   const semanticSummary = createMemo(() => {
     const upcoming = props.notes.filter(
       (note) =>
-        note.startBeat + note.duration >= props.playheadBeat() - 1 &&
-        note.startBeat <= props.playheadBeat() + 12,
+        note.startBeat + note.duration >= semanticBeat() - 1 &&
+        note.startBeat <= semanticBeat() + 12,
     )
-    return `${upcoming.length} project notes around beat ${props
-      .playheadBeat()
-      .toFixed(
-        1,
-      )}. Square cyan notes mark the lower register and rounded coral notes mark the upper register.`
+    return `${upcoming.length} project notes around beat ${semanticBeat()}. Square cyan notes mark the lower register and rounded coral notes mark the upper register.`
   })
 
   return (
@@ -68,48 +75,53 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
         aria-hidden="true"
         data-testid="piano-night-strike-guide"
       />
-      <For each={props.notes}>
-        {(note) => {
-          const timedGeometry = createMemo(() =>
-            pianoNightFallGeometry(
-              note.startBeat,
-              note.duration,
-              props.playheadBeat(),
-            ),
-          )
-          const geometry = createMemo(() =>
-            props.reducedMotion()
-              ? pianoNightFallGeometry(
+      <div
+        class={styles.fallTrack}
+        style={{
+          transform: `translate3d(0, ${trackTranslation()}%, 0)`,
+        }}
+        data-anchor-beat={anchorBeat()}
+        data-testid="piano-night-fall-track"
+        aria-hidden="true"
+      >
+        <For each={trackNotes()}>
+          {(note) => {
+            const striking = createMemo(
+              () =>
+                props.isPlaying() &&
+                pianoNightFallGeometry(
                   note.startBeat,
                   note.duration,
-                  props.phrase().startBeat,
-                )
-              : timedGeometry(),
-          )
-          const striking = (): boolean =>
-            props.isPlaying() && timedGeometry().striking
-          return (
-            <i
-              classList={{
-                [styles.fallNote]: true,
-                [styles.leftNote]: note.midi < 60,
-                [styles.rightNote]: note.midi >= 60,
-              }}
-              data-striking={striking()}
-              data-register={note.midi < 60 ? 'lower' : 'upper'}
-              data-start-beat={note.startBeat}
-              data-duration-beats={note.duration}
-              style={{
-                display: geometry().visible ? 'block' : 'none',
-                left: `${noteX(note.midi)}%`,
-                bottom: `${geometry().bottomPercent}%`,
-                height: `${geometry().heightPercent}%`,
-              }}
-              aria-hidden="true"
-            />
-          )
-        }}
-      </For>
+                  props.playheadBeat(),
+                ).striking,
+            )
+            return (
+              <i
+                classList={{
+                  [styles.fallNote]: true,
+                  [styles.leftNote]: note.midi < 60,
+                  [styles.rightNote]: note.midi >= 60,
+                }}
+                data-note-id={note.id}
+                data-striking={striking()}
+                data-register={note.midi < 60 ? 'lower' : 'upper'}
+                data-start-beat={note.startBeat}
+                data-duration-beats={note.duration}
+                style={{
+                  left: `${noteX(note.midi)}%`,
+                  bottom: `${pianoNightFallStaticBottomPercent(
+                    note.startBeat,
+                    anchorBeat(),
+                  )}%`,
+                  height: `${
+                    note.duration * PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT
+                  }%`,
+                }}
+              />
+            )
+          }}
+        </For>
+      </div>
       <span class={styles.projectLabel}>Prepared project performance</span>
       <p class={styles.srOnly}>{semanticSummary()}</p>
     </section>

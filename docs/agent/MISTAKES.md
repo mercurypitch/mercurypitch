@@ -262,6 +262,18 @@ leaves there too. Treat a circular-chunk warning as a failed build and run a
 production browser boot test before pushing.
 **See:** `vite.config.ts` `manualChunks`.
 
+### Move timed note fields as one compositor track
+
+**Symptom:** a small falling-note scene dropped near 20 fps on a tablet while
+audio remained correctly timed.
+**Cause:** every sampled frame rewrote each note's layout-driving `bottom`, so
+style recalculation, paint, and raster dominated despite little JavaScript.
+**Rule:** keep note geometry static inside a bounded beat window and translate
+one stage-sized track; update the window and anchor only at coarse beat seams.
+Guard zero per-note style mutations in a browser test, not with an FPS gate.
+**See:** `src/features/piano-night/PianoNightStageViews.tsx`,
+`src/e2e/piano-night.spec.ts`
+
 ## Data and billing
 
 ### Hydrate a durable job before trying to resume it

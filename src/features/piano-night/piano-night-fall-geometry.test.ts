@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallGeometry, } from './piano-night-fall-geometry'
+import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallWindow, } from './piano-night-fall-geometry'
 
 describe('pianoNightFallGeometry', () => {
   it('places the leading edge on the keyboard at note-on', () => {
@@ -46,5 +46,47 @@ describe('pianoNightFallGeometry', () => {
       PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT,
     )
     expect(first.heightPercent).toBe(second.heightPercent)
+  })
+
+  it('preserves exact note geometry across a track-anchor rollover', () => {
+    const startBeat = 12
+
+    for (const playheadBeat of [3.999, 4, 7.999, 8]) {
+      const anchorBeat = pianoNightFallAnchorBeat(playheadBeat)
+      const staticBottom = pianoNightFallStaticBottomPercent(
+        startBeat,
+        anchorBeat,
+      )
+      const translation = pianoNightFallTrackTranslationPercent(
+        playheadBeat,
+        anchorBeat,
+      )
+      const composedBottom = staticBottom - translation
+
+      expect(composedBottom).toBeCloseTo(
+        pianoNightFallGeometry(startBeat, 2, playheadBeat).bottomPercent,
+      )
+    }
+  })
+
+  it('keeps a bounded window while retaining long sustains', () => {
+    const denseScore = Array.from({ length: 10_000 }, (_, index) => ({
+      id: index,
+      startBeat: index / 10,
+      duration: 0.5,
+    }))
+    const longSustain = {
+      id: 'long-sustain',
+      startBeat: 14,
+      duration: 12,
+    }
+    const window = pianoNightFallWindow([...denseScore, longSustain], 20)
+
+    expect(window).toContain(longSustain)
+    expect(window.length).toBeLessThan(200)
+    expect(window.every((note) => note.startBeat <= 37)).toBe(true)
+    expect(window.every((note) => note.startBeat + note.duration > 19)).toBe(
+      true,
+    )
   })
 })
