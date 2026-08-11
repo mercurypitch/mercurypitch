@@ -58,12 +58,14 @@ test('records Twin Trails, scrubs, reflects, and confirms deletion in-app @smoke
   await expect(
     page.getByRole('heading', { name: 'The shape behind the trail.' }),
   ).toBeVisible()
-  await expect(page.getByText('Vibrato pulse', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Map tone traits' }).click()
+  await expect(page.getByText('Held-tone pulse', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Map spectrum snapshot' }).click()
   await expect(
-    page.getByRole('button', { name: 'Remap tone traits' }),
+    page.getByRole('button', { name: 'Remap spectrum snapshot' }),
   ).toBeVisible({ timeout: 15000 })
-  await expect(page.getByText('Air and ring', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('Harmonic contrast estimate', { exact: true }),
+  ).toBeVisible()
   await expect(
     page.locator('[data-testid="voice-history-page"] canvas'),
   ).not.toHaveCount(0)

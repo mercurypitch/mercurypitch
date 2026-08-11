@@ -465,7 +465,7 @@ export function PracticeLoomPanel(props: PracticeLoomPanelProps): JSX.Element {
           <i class={styles.playheadLegend} aria-hidden="true" /> Listening
           position
         </span>
-        <span>Gaps stay unvoiced</span>
+        <span>Unresolved pitch stays a gap</span>
       </div>
 
       <VoicePlaybackTransport

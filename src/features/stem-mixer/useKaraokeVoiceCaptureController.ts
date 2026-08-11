@@ -50,6 +50,23 @@ export interface KaraokeVoiceCaptureController {
   dismiss: () => void
 }
 
+export function syncKaraokeCaptureWithMic(
+  capture: Pick<
+    KaraokeVoiceCaptureController,
+    'state' | 'startPlayback' | 'dismiss'
+  >,
+  micActive: boolean,
+  playbackActive: boolean,
+): void {
+  if (!micActive) {
+    if (capture.state() === 'recording' || capture.state() === 'paused') {
+      capture.dismiss()
+    }
+    return
+  }
+  if (playbackActive) capture.startPlayback()
+}
+
 export function useKaraokeVoiceCaptureController(
   deps: KaraokeVoiceCaptureDependencies,
 ): KaraokeVoiceCaptureController {

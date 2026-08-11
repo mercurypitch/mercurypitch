@@ -40,6 +40,11 @@ interface MigrationRec extends DbEntity {
   completedAt: string
 }
 
+interface StemRec extends DbEntity {
+  sessionId: string
+  stemType: string
+}
+
 describe('DexieAdapter', () => {
   let adapter: DexieAdapter
 
@@ -234,24 +239,102 @@ describe('DexieAdapter', () => {
     ).toEqual([])
   })
 
-  it('upgrades an existing v6 database without replacing its rows', async () => {
+  it('upgrades the current-main v6 stem schema into the reconciled stores', async () => {
     await adapter.destroy()
     const legacy = new DexieDB('MercuryPitchDB')
-    legacy.version(6).stores({ sessionRecords: 'id, userId, endedAt' })
+    legacy.version(6).stores({
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+    })
+    const stem: StemRec = {
+      id: 'stem-before-v7',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      sessionId: 'session-before-v7',
+      stemType: 'vocal',
+    }
+    await legacy.table<StemRec, string>('uvrStemBlobs').put(stem)
+    legacy.close()
+
+    adapter = new DexieAdapter()
+    expect(
+      await adapter.countByCompoundIndexStrict(
+        'uvrStemBlobs',
+        '[sessionId+stemType]',
+        [stem.sessionId, stem.stemType],
+      ),
+    ).toBe(1)
+    expect(await adapter.readAllStrict('voiceTakes')).toEqual([])
+    expect(await adapter.readAllStrict('pianoProjects')).toEqual([])
+  })
+
+  it('upgrades the current-main v7 schema without replacing its rows', async () => {
+    await adapter.destroy()
+    const legacy = new DexieDB('MercuryPitchDB')
+    legacy.version(7).stores({
+      sessionRecords: 'id, userId, endedAt',
+      uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+      pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
+      pianoProjectMigrations: 'id, &migrationKey, completedAt',
+    })
     const existing: Rec = {
-      id: 'before-v7',
+      id: 'before-v8',
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
       userId: 'local-user',
       score: 93,
     }
+    const project: PianoRec = {
+      id: 'project-before-v8',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      title: 'Existing project',
+      sourceKind: 'midi',
+      sourceHash: 'existing-source',
+    }
+    const stem: StemRec = {
+      id: 'stem-before-v8',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      sessionId: 'session-before-v8',
+      stemType: 'vocal',
+    }
+    const migration: MigrationRec = {
+      id: 'migration-before-v8',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      migrationKey: 'legacy-midi-v1:existing-source',
+      projectId: project.id,
+      completedAt: '2026-01-01T00:00:00.000Z',
+    }
     await legacy.table<Rec, string>('sessionRecords').put(existing)
+    await legacy.table<StemRec, string>('uvrStemBlobs').put(stem)
+    await legacy.table<PianoRec, string>('pianoProjects').put(project)
+    await legacy
+      .table<MigrationRec, string>('pianoProjectMigrations')
+      .put(migration)
     legacy.close()
 
     adapter = new DexieAdapter()
     expect(
       await adapter.readByIdStrict<Rec>('sessionRecords', existing.id),
     ).toEqual(existing)
-    expect(await adapter.readAllStrict<PianoRec>('pianoProjects')).toEqual([])
+    expect(
+      await adapter.readByIdStrict<PianoRec>('pianoProjects', project.id),
+    ).toEqual(project)
+    expect(
+      await adapter.countByCompoundIndexStrict(
+        'uvrStemBlobs',
+        '[sessionId+stemType]',
+        [stem.sessionId, stem.stemType],
+      ),
+    ).toBe(1)
+    expect(
+      await adapter.readByIndexStrict<MigrationRec>(
+        'pianoProjectMigrations',
+        'migrationKey',
+        migration.migrationKey,
+      ),
+    ).toEqual([migration])
+    expect(await adapter.readAllStrict('voiceTakes')).toEqual([])
   })
 })

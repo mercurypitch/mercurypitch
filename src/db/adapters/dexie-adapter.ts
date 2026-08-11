@@ -59,16 +59,21 @@ class DexieDatabase extends DexieDB {
       zenTakes:
         'id, mode, takeNumber, exerciseId, exerciseVersion, completedAt',
     })
-    // v6: exact session-and-stem reads let standalone playback rooms hydrate
-    // only the band parts they selected instead of materializing every blob.
+    // v6 reconciles two histories that both shipped in preview builds: main's
+    // exact session-and-stem index and Hear Yourself's metadata/audio stores.
+    // Keep this union registered so a v6 voice preview does not lose its rows
+    // while passing through the v7 upgrade below.
     this.version(6).stores({
       uvrStemBlobs: 'id, sessionId, stemType, createdAt, [sessionId+stemType]',
+      voiceTakes: 'id, createdAt, capturedAt, source, comparisonKey',
+      voiceTakeAudio: 'id, &takeId',
     })
-    // v7: canonical Piano projects and non-destructive legacy-import markers.
-    // Both stores are intentionally local-only and absent from CLOUD_ENTITIES.
+    // v7 likewise preserves main's local Piano stores and the voice-preview
+    // contour store. All remain local-only and absent from CLOUD_ENTITIES.
     this.version(7).stores({
       pianoProjects: 'id, updatedAt, sourceKind, sourceHash',
       pianoProjectMigrations: 'id, &migrationKey, completedAt',
+      voiceTakeContours: 'id, &takeId',
     })
     // v8: song manifests — the library list, without any audio.
     //

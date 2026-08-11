@@ -101,7 +101,7 @@ describe('StemMixerScoreModal voice keep action', () => {
     render(() => (
       <StemMixerScoreModal
         showScore={() => true}
-        score={score}
+        score={() => VOICE_SCORE}
         voiceTakeState="saving"
         voiceTakeMessage="Saving locally"
         onKeepVoiceTake={vi.fn()}
