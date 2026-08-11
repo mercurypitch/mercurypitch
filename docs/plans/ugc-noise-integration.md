@@ -1,6 +1,8 @@
 # UGC distribution via Noise — integration plan
 
 **Status:** draft, nothing live. No campaign or playbook has been activated.
+**Playbook 19290 is built and paused**; §8 lists the product facts a brief
+must not get wrong, learned by getting them wrong first.
 **Owner decision points are marked** > **DECISION** — everything else is settled.
 
 Noise (getnoise.com) is a pay-per-view UGC marketplace: creators produce short
@@ -286,67 +288,100 @@ shareable, socially-sized artifact (1080×1920 story and 1080×1080 square,
 rendered by `src/features/mirror/card-renderer.ts`). The creator does not have
 to manufacture a reason to show the product — the product hands them one.
 
-### Slide 1 — the hook (`ugc`)
+### Where the instructions live
 
-```
-<creator_instructions>
-Film yourself the moment after hearing your own singing played back. You
-thought it sounded fine in your head. It did not. React honestly — wince,
-laugh, cover your face, look away. First person, handheld, unpolished. No
-product yet. Three seconds of pure recognition.
-</creator_instructions>
-<hook_captions>
-{{I thought I sounded better than that}}
-{{Not me hearing my own voice back}}
-{{All that practice for THIS}}
-{{why does my voice sound like that}}
-</hook_captions>
-```
+A playbook describes **one post by one creator**, not one shot each for
+several creators. The slides are the sequence inside that single piece of
+content, which is why they are `order`ed and why the playbook has one
+`example_url`.
 
-### Slide 2 — the action (`ugc`)
+That gives two levels, and putting the right thing at each level matters:
 
-```
-<creator_instructions>
-Open MercuryPitch and sing one line of a song you already know. Show the
-screen while the live pitch visualisation moves with your voice. Keep singing
-through it — the point is that you can see the note drift in real time.
-Casual, not a tutorial. Do not explain the app, just use it.
-</creator_instructions>
-<hook_captions>
-{{ok this is actually showing me every note}}
-{{watching my voice miss in real time}}
-</hook_captions>
-```
+| Level | Field | Carries |
+|---|---|---|
+| Playbook | `prompt` | Where to go, what the app does, hard rules. Read once. |
+| Slide | `prompt` | Direction for that shot only. |
+| Slide | `<hook_captions>` | On-screen text options for that shot. |
 
-### Slide 3 — the payoff (`ugc`)
+**The destination URL belongs in the playbook prompt**, not buried in a slide.
+A creator reads the brief once before filming; a slide that says "open the
+app" without saying where is a brief that produces the wrong video. The first
+version of this playbook made exactly that mistake.
 
-```
-<creator_instructions>
-Hold up your finished voiceprint card to camera — the star trail of your
-actual voice, your range, and the famous singer you matched. React to who you
-got. This is the reveal, so give it the beat it deserves. Say the twin's name
-out loud. End on the card filling the frame.
-</creator_instructions>
-<hook_captions>
-{{apparently this is my voice twin}}
-{{my voice as a constellation}}
-{{no way this is who I matched}}
-</hook_captions>
-```
+### The slides
 
-### Slide 4 — the CTA (`image`)
+Live content is in playbook 19290; this is the shape rather than a second copy
+to drift out of sync.
 
-Our poster, attached via `generate_slide_image` with `source: "url"`.
-Headline "Find your pitch.", URL `mercurypitch.com/mirror`.
+1. **Hook** (`ugc`) — you have sung your whole life and have never seen what
+   your voice actually does. No product on screen. About three seconds.
+2. **The run** (`ugc`) — open `/mirror`, allow the mic, do the three tasks,
+   show the trail drawing itself. A cappella, explicitly no music.
+3. **The payoff** (`ugc`) — hold up the finished card, react to the twin, say
+   the name out loud, end on the card filling the frame.
+4. **The CTA** (`image`) — the supplied poster.
 
-**Note on emoji:** the captions above are emoji-free because this file lives in
+**Note on emoji:** captions are written emoji-free because this file lives in
 the repo, where AGENTS.md forbids them. Emoji in TikTok hook captions is
-platform-native and often helps. Adding them in the Noise portal is a
-reasonable choice — the repo rule governs this artifact, not the ad copy.
+platform-native and often helps; adding them in the portal is a reasonable
+choice. The repo rule governs this artifact, not the ad copy.
 
 ---
 
-## 8. Next actions
+## 8. Product facts a brief must not get wrong
+
+The first version of this playbook invented a feature. Writing a brief means
+describing what the app *does*, and getting it wrong wastes creator time and
+buys views of a video that misrepresents the product. What is actually true:
+
+| Claim | Reality |
+|---|---|
+| "Hear yourself played back" | **Glass only.** `glass/take-recorder.ts` records the real voice for rep replay and says outright that nothing else in the app did this before. The Mirror does not play your voice back. |
+| "Sing a song you know" | Not how the Mirror works, and not needed. |
+| Needs an account | No. `/mirror` is a standalone entry, no auth gate. |
+| Needs a download | No. Phone browser, mic permission. |
+
+**The Voice Mirror asks for four things and none of them is a song**
+(`TASK_COPY` in `MirrorApp.tsx`): glide up like a siren, glide down, hold one
+note steady, and match a played tone. There is also a Free Sing mode — "sing
+anything for 40 seconds, your shower song counts" — which is a cappella by
+design.
+
+### Why that settles the music question
+
+**The Mirror never needs music, so no creator video for it should contain
+any.** That removes the exposure rather than managing it.
+
+Worth stating in every brief regardless: platform music libraries generally
+license tracks for *personal* posts, and **branded or commercial content is
+typically excluded** from that grant. A creator adding a popular track to what
+is functionally an ad is a different risk from adding one to their own post,
+and it is the brand that carries it. The rule for every MercuryPitch playbook
+is therefore: no recorded music, or platform-cleared commercial-use audio
+only.
+
+This is a practical marketing rule, not legal advice — worth a real check
+before any campaign with music in it.
+
+### Glass — the natural second playbook
+
+The "hear yourself back" hook is genuinely strong and it belongs to Glass,
+which is the one surface that can actually do it. Glass also has the better
+visual spectacle: a pane that shatters when the voice locks on.
+
+Sketch, for when a Glass campaign exists:
+
+1. **Hook** — the moment after hearing your own take replayed. This is the
+   hook that was wrong for the Mirror and is exactly right here.
+2. **The attempt** — lock the note, the pane stresses and cracks.
+3. **The break** — it shatters. The spectacle *is* the payoff.
+4. **CTA** — a Glass end card at `/glass`.
+
+Same rules: destination in the playbook prompt, no music, a cappella.
+
+---
+
+## 9. Next actions
 
 | # | Action | Owner | State |
 |---|---|---|---|
@@ -361,7 +396,9 @@ reasonable choice — the repo rule governs this artifact, not the ad copy.
 | 9 | Tag the Glass share text (§5) | agent | done |
 | 10 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
-| 12 | Get `preview_image` onto MCP-created playbooks (§9) | you | open |
+| 12 | Get `preview_image` onto MCP-created playbooks (§10) | you | open |
+| 13 | Update a portal-created playbook over MCP, to test rendering | agent | waiting on draft |
+| 14 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no
@@ -382,7 +419,7 @@ worked.
 
 ---
 
-## 9. Known gap — MCP-created playbooks have no preview media
+## 10. Known gap — MCP-created playbooks have no preview media
 
 Playbook 19290 was created entirely over MCP. Its content is verifiably
 present: `get_playbook_details` returns all four slides with prompts and
