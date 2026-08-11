@@ -11,9 +11,13 @@ import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { PianoPerformancePhase, PianoPerformanceTransport, } from './piano-performance-contract'
+import type { CompiledPianoTempoMap } from './piano-tempo-map'
+import { compilePianoTempoMap, pianoTempoBeatToSeconds, pianoTempoBpmAtBeat, pianoTempoSecondsToBeat, } from './piano-tempo-map'
 
 export interface PianoAudioClockTransportOptions {
   totalBeats: Accessor<number>
+  /** Reactive stage map; replace sources only while this transport is stopped. */
+  tempoMap?: Accessor<CompiledPianoTempoMap>
   initialTempoBpm?: number
   initialSpeed?: number
   contextFactory?: () => AudioContext
@@ -28,6 +32,18 @@ export interface PianoAudioClockTransport extends PianoPerformanceTransport {
    * moving the playhead. Call this from live-key and MIDI-connect gestures.
    */
   activate(): Promise<boolean>
+  /** BPM authored in the score before user tempo or speed scaling. */
+  authoredTempoBpmAtBeat(beat: number): number
+  /** Authored BPM scaled by the user's base-tempo choice, excluding speed. */
+  scaledTempoBpmAtBeat(beat: number): number
+  /** Actual performed BPM after base-tempo and playback-speed scaling. */
+  effectiveTempoBpmAtBeat(beat: number): number
+  /** Performed seconds from beat zero using the current tempo and speed. */
+  playbackSecondsAtBeat(beat: number): number
+  /** Absolute AudioContext time for a score beat, or null before activation. */
+  contextTimeAtBeat(beat: number): number | null
+  /** Score beat at an AudioContext time, clamped to this performance. */
+  beatAtContextTime(contextTime: number): number
   getAudioContext(): AudioContext | null
   subscribe(listener: () => void): () => void
   dispose(): Promise<void>
@@ -64,13 +80,22 @@ export function createPianoAudioClockTransport(
     (() => new AudioContext({ latencyHint: 'interactive' }))
   const activateContext = options.activateContext ?? defaultActivateContext
   const closeContextOnDispose = options.closeContextOnDispose ?? true
+  const fallbackTempoMap = compilePianoTempoMap([
+    {
+      beat: 0,
+      bpm: positiveOr(options.initialTempoBpm, DEFAULT_TEMPO_BPM),
+    },
+  ])
   const listeners = new Set<() => void>()
   const [revision, setRevision] = createSignal(0)
 
   let context: AudioContext | null = null
   let currentPhase: PianoPerformancePhase = 'ready'
   let currentError: string | null = null
-  let tempoBpm = positiveOr(options.initialTempoBpm, DEFAULT_TEMPO_BPM)
+  let tempoBpm = positiveOr(
+    options.initialTempoBpm,
+    (options.tempoMap?.() ?? fallbackTempoMap).initialTempoBpm,
+  )
   let speed = positiveOr(options.initialSpeed, DEFAULT_SPEED)
   let parkedBeat = 0
   let startedBeat = 0
@@ -108,7 +133,45 @@ export function createPianoAudioClockTransport(
     return Number.isFinite(value) ? Math.max(0, value) : 0
   }
 
-  const beatsPerSecond = (): number => (tempoBpm / 60) * speed
+  const tempoMap = (): CompiledPianoTempoMap =>
+    options.tempoMap?.() ?? fallbackTempoMap
+
+  const baseTempoScale = (map: CompiledPianoTempoMap): number =>
+    tempoBpm / map.initialTempoBpm
+
+  const playbackRate = (map: CompiledPianoTempoMap): number =>
+    baseTempoScale(map) * speed
+
+  const beatAtContextTime = (contextTime: number): number => {
+    const duration = totalBeats()
+    if (currentPhase !== 'playing' || context === null) {
+      return clamp(parkedBeat, 0, duration)
+    }
+    const map = tempoMap()
+    const safeContextTime = Number.isFinite(contextTime)
+      ? contextTime
+      : context.currentTime
+    const elapsedSeconds = Math.max(0, safeContextTime - startedAtContextTime)
+    const authoredSeconds =
+      pianoTempoBeatToSeconds(map, startedBeat) +
+      elapsedSeconds * playbackRate(map)
+    return clamp(pianoTempoSecondsToBeat(map, authoredSeconds), 0, duration)
+  }
+
+  const contextTimeAtBeat = (beat: number): number | null => {
+    if (context === null) return null
+    const map = tempoMap()
+    const duration = totalBeats()
+    const targetBeat = Number.isFinite(beat) ? clamp(beat, 0, duration) : 0
+    const referenceBeat =
+      currentPhase === 'playing' ? startedBeat : clamp(parkedBeat, 0, duration)
+    const referenceContextTime =
+      currentPhase === 'playing' ? startedAtContextTime : context.currentTime
+    const authoredDelta =
+      pianoTempoBeatToSeconds(map, targetBeat) -
+      pianoTempoBeatToSeconds(map, referenceBeat)
+    return referenceContextTime + authoredDelta / playbackRate(map)
+  }
 
   const completeAt = (beat: number): number => {
     parkedBeat = beat
@@ -125,11 +188,7 @@ export function createPianoAudioClockTransport(
       return clamp(parkedBeat, 0, duration)
     }
 
-    const elapsedSeconds = Math.max(
-      0,
-      context.currentTime - startedAtContextTime,
-    )
-    const beat = startedBeat + elapsedSeconds * beatsPerSecond()
+    const beat = beatAtContextTime(context.currentTime)
     if (beat >= duration) return completeAt(duration)
     parkedBeat = beat
     return clamp(beat, 0, duration)
@@ -186,15 +245,7 @@ export function createPianoAudioClockTransport(
 
     const currentContextTime = context.currentTime
     const duration = totalBeats()
-    const elapsedSeconds = Math.max(
-      0,
-      currentContextTime - startedAtContextTime,
-    )
-    const beat = clamp(
-      startedBeat + elapsedSeconds * beatsPerSecond(),
-      0,
-      duration,
-    )
+    const beat = beatAtContextTime(currentContextTime)
     if (beat >= duration) {
       completeAt(duration)
       setRate()
@@ -345,6 +396,32 @@ export function createPianoAudioClockTransport(
         speed = safeSpeed
       })
     },
+
+    authoredTempoBpmAtBeat(beat) {
+      trackRevision()
+      return pianoTempoBpmAtBeat(tempoMap(), beat)
+    },
+
+    scaledTempoBpmAtBeat(beat) {
+      trackRevision()
+      const map = tempoMap()
+      return pianoTempoBpmAtBeat(map, beat) * baseTempoScale(map)
+    },
+
+    effectiveTempoBpmAtBeat(beat) {
+      trackRevision()
+      const map = tempoMap()
+      return pianoTempoBpmAtBeat(map, beat) * playbackRate(map)
+    },
+
+    playbackSecondsAtBeat(beat) {
+      trackRevision()
+      const map = tempoMap()
+      return pianoTempoBeatToSeconds(map, beat) / playbackRate(map)
+    },
+
+    contextTimeAtBeat,
+    beatAtContextTime,
 
     getAudioContext: () => context,
 

@@ -5,6 +5,8 @@
 import { createComputed, createMemo, createRoot } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import { createPianoAudioClockTransport } from './piano-audio-clock-transport'
+import type { CompiledPianoTempoMap } from './piano-tempo-map'
+import { compilePianoTempoMap } from './piano-tempo-map'
 
 class FakeAudioContext {
   currentTime = 10
@@ -33,6 +35,7 @@ function harness(
     totalBeats?: () => number
     tempoBpm?: number
     speed?: number
+    tempoMap?: CompiledPianoTempoMap
     activation?: () => Promise<void>
   } = {},
 ) {
@@ -44,8 +47,10 @@ function harness(
         await context.resume()
       }),
   )
+  const tempoMap = options.tempoMap
   const transport = createPianoAudioClockTransport({
     totalBeats: options.totalBeats ?? (() => 32),
+    tempoMap: tempoMap === undefined ? undefined : () => tempoMap,
     initialTempoBpm: options.tempoBpm ?? 120,
     initialSpeed: options.speed ?? 1,
     contextFactory,
@@ -136,12 +141,37 @@ describe('createPianoAudioClockTransport', () => {
     expect(instance.contextFactory).toHaveBeenCalledOnce()
   })
 
+  it('advances and seeks through authored tempo boundaries on one audio clock', async () => {
+    const tempoMap = compilePianoTempoMap([
+      { beat: 0, bpm: 120 },
+      { beat: 4, bpm: 60 },
+      { beat: 6, bpm: 180 },
+    ])
+    const instance = harness({ tempoBpm: 120, tempoMap })
+
+    await instance.transport.play()
+    instance.context.currentTime = 12.5
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(4.5)
+    expect(instance.transport.authoredTempoBpmAtBeat(4.5)).toBe(60)
+    expect(instance.transport.scaledTempoBpmAtBeat(4.5)).toBe(60)
+    expect(instance.transport.effectiveTempoBpmAtBeat(4.5)).toBe(60)
+    expect(instance.transport.playbackSecondsAtBeat(6)).toBeCloseTo(4)
+    expect(instance.transport.contextTimeAtBeat(6)).toBeCloseTo(14)
+
+    instance.transport.seekToBeat(3)
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(3)
+    instance.context.currentTime = 13.5
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(4.5)
+  })
+
   it('invalidates reactive consumers when discrete transport state changes', () => {
     const activation = deferred<undefined>()
     const instance = harness({ activation: () => activation.promise })
     createRoot((disposeRoot) => {
       let reads = 0
       let observed = ''
+      let observedEffectiveTempo = 0
+      let observedPlaybackSeconds = 0
       const snapshot = createMemo(() => {
         reads += 1
         return [
@@ -152,8 +182,12 @@ describe('createPianoAudioClockTransport', () => {
       })
       createComputed(() => {
         observed = snapshot()
+        observedEffectiveTempo = instance.transport.effectiveTempoBpmAtBeat(4)
+        observedPlaybackSeconds = instance.transport.playbackSecondsAtBeat(4)
       })
       expect(observed).toBe('ready:120:1')
+      expect(observedEffectiveTempo).toBe(120)
+      expect(observedPlaybackSeconds).toBe(2)
       let previousReads = reads
 
       void instance.transport.play()
@@ -164,6 +198,8 @@ describe('createPianoAudioClockTransport', () => {
       instance.transport.setTempoBpm(96)
       instance.transport.setSpeed(0.75)
       expect(observed).toBe('loading:96:0.75')
+      expect(observedEffectiveTempo).toBeCloseTo(72)
+      expect(observedPlaybackSeconds).toBeCloseTo(10 / 3)
       expect(reads).toBeGreaterThan(previousReads)
       previousReads = reads
 
@@ -222,6 +258,33 @@ describe('createPianoAudioClockTransport', () => {
     expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(6)
     instance.context.currentTime = 16
     expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(7)
+  })
+
+  it('scales the entire authored map by base tempo and playback speed', async () => {
+    const tempoMap = compilePianoTempoMap([
+      { beat: 0, bpm: 120 },
+      { beat: 4, bpm: 60 },
+    ])
+    const instance = harness({ tempoBpm: 60, speed: 0.5, tempoMap })
+
+    expect(instance.transport.timeline.tempoBpm()).toBe(60)
+    expect(instance.transport.scaledTempoBpmAtBeat(4)).toBe(30)
+    expect(instance.transport.effectiveTempoBpmAtBeat(4)).toBe(15)
+    expect(instance.transport.playbackSecondsAtBeat(6)).toBeCloseTo(16)
+
+    await instance.transport.play()
+    instance.context.currentTime = 14
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(2)
+
+    instance.transport.setTempoBpm(120)
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(2)
+    instance.context.currentTime = 16
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(4)
+
+    instance.transport.setSpeed(1)
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(4)
+    instance.context.currentTime = 17
+    expect(instance.transport.timeline.playheadBeat()).toBeCloseTo(5)
   })
 
   it('completes at the exact final beat and replays from zero', async () => {

@@ -95,6 +95,18 @@ export type PianoNightMidiImportResult =
       readonly message: string
     }
 
+export type PianoNightTrackSelectionResult =
+  | { readonly ok: true; readonly project: PianoProject }
+  | {
+      readonly ok: false
+      readonly code:
+        | 'invalid-selection'
+        | 'project-not-found'
+        | 'storage-full'
+        | 'storage-unavailable'
+      readonly message: string
+    }
+
 export interface PianoNightMidiImportOptions {
   readonly signal?: AbortSignal
 }
@@ -115,6 +127,11 @@ export interface PianoNightMusicSourceDependencies {
     options: PianoNightMidiImportOptions,
   ): Promise<PianoProject>
   saveProject(project: PianoProject): Promise<PianoLibraryResult<PianoProject>>
+  updateProjectSelection(
+    id: string,
+    scoreTrackId: string,
+    backingTrackIds: readonly string[],
+  ): Promise<PianoLibraryResult<PianoProject>>
 }
 
 export interface PianoNightMusicSource {
@@ -125,6 +142,11 @@ export interface PianoNightMusicSource {
     file: File,
     options?: PianoNightMidiImportOptions,
   ): Promise<PianoNightMidiImportResult>
+  updateProjectSelection(
+    projectId: string,
+    scoreTrackId: string,
+    backingTrackIds: readonly string[],
+  ): Promise<PianoNightTrackSelectionResult>
 }
 
 const CATALOG_UNAVAILABLE_MESSAGE =
@@ -155,6 +177,11 @@ const DEFAULT_DEPENDENCIES: PianoNightMusicSourceDependencies = {
     const { savePianoProject } =
       await import('@/db/services/piano-library-service')
     return savePianoProject(project)
+  },
+  async updateProjectSelection(id, scoreTrackId, backingTrackIds) {
+    const { updatePianoProjectSelection } =
+      await import('@/db/services/piano-library-service')
+    return updatePianoProjectSelection(id, scoreTrackId, backingTrackIds)
   },
 }
 
@@ -505,6 +532,38 @@ function mapSaveFailure(
   )
 }
 
+function mapSelectionFailure(
+  result: Extract<PianoLibraryResult<PianoProject>, { ok: false }>,
+): PianoNightTrackSelectionResult {
+  if (result.code === 'quota-exceeded') {
+    return {
+      ok: false,
+      code: 'storage-full',
+      message:
+        'Track choices could not be saved because device storage is full.',
+    }
+  }
+  if (result.code === 'invalid-project') {
+    return {
+      ok: false,
+      code: 'invalid-selection',
+      message: 'Choose one playable Score track and pitched Hear tracks only.',
+    }
+  }
+  if (result.code === 'not-found') {
+    return {
+      ok: false,
+      code: 'project-not-found',
+      message: 'This project is no longer in the Piano library.',
+    }
+  }
+  return {
+    ok: false,
+    code: 'storage-unavailable',
+    message: 'Track choices could not be saved on this device.',
+  }
+}
+
 /** Create an injectable, route-neutral source for Piano Night music data. */
 export function createPianoNightMusicSource(
   overrides: Partial<PianoNightMusicSourceDependencies> = {},
@@ -595,7 +654,31 @@ export function createPianoNightMusicSource(
     return saved.ok ? { ok: true, project: saved.value } : mapSaveFailure(saved)
   }
 
-  return { loadCatalog, importMidi }
+  const updateProjectSelection = async (
+    projectId: string,
+    scoreTrackId: string,
+    backingTrackIds: readonly string[],
+  ): Promise<PianoNightTrackSelectionResult> => {
+    let updated: PianoLibraryResult<PianoProject>
+    try {
+      updated = await dependencies.updateProjectSelection(
+        projectId,
+        scoreTrackId,
+        backingTrackIds,
+      )
+    } catch {
+      return {
+        ok: false,
+        code: 'storage-unavailable',
+        message: 'Track choices could not be saved on this device.',
+      }
+    }
+    return updated.ok
+      ? { ok: true, project: updated.value }
+      : mapSelectionFailure(updated)
+  }
+
+  return { loadCatalog, importMidi, updateProjectSelection }
 }
 
 const defaultMusicSource = createPianoNightMusicSource()

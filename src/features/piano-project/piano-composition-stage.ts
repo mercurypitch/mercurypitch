@@ -7,6 +7,7 @@
 // is untrusted: only bounded, pitched, non-rest notes cross this boundary.
 
 import type { PianoProjectStage } from '@/features/piano/runtime/piano-project-stage'
+import { compilePianoTempoMap } from '@/features/piano/runtime/piano-tempo-map'
 
 export const PIANO_COMPOSITION_LIBRARY_KEY = 'pitchperfect_library'
 
@@ -370,11 +371,13 @@ export function pianoCompositionToStage(
     (latest, note) => Math.max(latest, note.startBeat + note.duration),
     0,
   )
+  const tempoMap = compilePianoTempoMap([{ beat: 0, bpm: composition.bpm }])
 
   return Object.freeze({
     title: composition.name,
     notes: Object.freeze(notes),
     totalBeats,
-    initialTempoBpm: composition.bpm,
+    initialTempoBpm: tempoMap.initialTempoBpm,
+    tempoMap,
   })
 }

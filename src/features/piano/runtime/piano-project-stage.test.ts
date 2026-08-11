@@ -109,6 +109,9 @@ describe('pianoProjectToStage', () => {
       title: 'Nocturne Study',
       totalBeats: 4,
       initialTempoBpm: 100,
+      tempoMap: {
+        points: [{ beat: 0, bpm: 100, authoredSeconds: 0 }],
+      },
     })
     expect(stage.notes).toEqual([
       {
@@ -261,6 +264,53 @@ describe('pianoProjectToStage', () => {
       notes: [],
       totalBeats: 4,
       initialTempoBpm: 120,
+      tempoMap: {
+        initialTempoBpm: 120,
+        points: [{ beat: 0, bpm: 120, authoredSeconds: 0 }],
+      },
     })
+  })
+
+  it('compiles canonical source ordering and keeps fallback tempo before a later first event', () => {
+    const project = projectFixture()
+    project.tempoMap = [
+      {
+        sourceTrackIndex: 1,
+        order: 2,
+        tick: 960,
+        microsecondsPerQuarter: 750_000,
+      },
+      {
+        sourceTrackIndex: 1,
+        order: 3,
+        tick: 960,
+        microsecondsPerQuarter: 1_000_000,
+      },
+      {
+        sourceTrackIndex: 0,
+        order: 8,
+        tick: 960,
+        microsecondsPerQuarter: 500_000,
+      },
+      {
+        sourceTrackIndex: 0,
+        order: 1,
+        tick: 1_440,
+        microsecondsPerQuarter: 1_000_000,
+      },
+    ]
+    const originalTempoMap = project.tempoMap.map((event) => ({ ...event }))
+
+    const stage = pianoProjectToStage(project)
+
+    expect(stage.initialTempoBpm).toBe(120)
+    expect(stage.tempoMap).toEqual({
+      initialTempoBpm: 120,
+      points: [
+        { beat: 0, bpm: 120, authoredSeconds: 0 },
+        { beat: 2, bpm: 60, authoredSeconds: 1 },
+      ],
+    })
+    expect(project.tempoMap).toEqual(originalTempoMap)
   })
 })

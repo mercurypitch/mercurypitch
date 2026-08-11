@@ -10,6 +10,8 @@
 import type { PianoProject, PianoProjectChannelEvent, PianoProjectTrack, } from '@/features/piano-project/piano-project'
 import { pianoProjectTicksPerQuarter } from '@/features/piano-project/piano-project'
 import type { PianoPerformanceNote } from './piano-performance-contract'
+import type { CompiledPianoTempoMap } from './piano-tempo-map'
+import { compilePianoTempoMap } from './piano-tempo-map'
 
 export interface PianoProjectStageNote extends PianoPerformanceNote {
   /** Strike velocity normalized from canonical MIDI 0..127 into 0..1. */
@@ -24,6 +26,7 @@ export interface PianoProjectStage {
   readonly notes: readonly PianoProjectStageNote[]
   readonly totalBeats: number
   readonly initialTempoBpm: number
+  readonly tempoMap: CompiledPianoTempoMap
 }
 
 interface ActiveNote {
@@ -62,10 +65,11 @@ function compareEvents(
   return left.tick - right.tick || left.order - right.order
 }
 
-function projectScoreNotes(
+/** Project one canonical playable track without changing its source events. */
+export function pianoProjectTrackToStageNotes(
   track: PianoProjectTrack,
   ticksPerQuarter: number,
-): PianoProjectStageNote[] {
+): readonly PianoProjectStageNote[] {
   const active = new Map<number, ActiveNote[]>()
   const projected: OrderedStageNote[] = []
   const events = [...track.events].sort(compareEvents)
@@ -113,16 +117,35 @@ function projectScoreNotes(
     (left, right) =>
       left.startBeat - right.startBeat || left.sourceOrder - right.sourceOrder,
   )
-  return projected.map(({ sourceOrder: _sourceOrder, ...note }) =>
-    Object.freeze(note),
+  return Object.freeze(
+    projected.map(({ sourceOrder: _sourceOrder, ...note }) =>
+      Object.freeze(note),
+    ),
   )
 }
 
-function initialTempoBpm(project: PianoProject): number {
-  const firstTempo = project.tempoMap[0]
-  return firstTempo === undefined
-    ? 120
-    : 60_000_000 / firstTempo.microsecondsPerQuarter
+function compareSourcePositions(
+  left: { tick: number; sourceTrackIndex: number; order: number },
+  right: { tick: number; sourceTrackIndex: number; order: number },
+): number {
+  return (
+    left.tick - right.tick ||
+    left.sourceTrackIndex - right.sourceTrackIndex ||
+    left.order - right.order
+  )
+}
+
+function projectTempoMap(
+  project: PianoProject,
+  ticksPerQuarter: number,
+): CompiledPianoTempoMap {
+  const events = [...project.tempoMap]
+    .sort(compareSourcePositions)
+    .map((event) => ({
+      beat: event.tick / ticksPerQuarter,
+      bpm: 60_000_000 / event.microsecondsPerQuarter,
+    }))
+  return compilePianoTempoMap(events)
 }
 
 /** Project one canonical score track into the shared performance vocabulary. */
@@ -132,16 +155,17 @@ export function pianoProjectToStage(project: PianoProject): PianoProjectStage {
     project.scoreTrackId === null
       ? undefined
       : project.tracks.find((track) => track.id === project.scoreTrackId)
-  const notes = Object.freeze(
+  const notes =
     scoreTrack === undefined
       ? []
-      : projectScoreNotes(scoreTrack, ticksPerQuarter),
-  )
+      : pianoProjectTrackToStageNotes(scoreTrack, ticksPerQuarter)
+  const tempoMap = projectTempoMap(project, ticksPerQuarter)
 
   return Object.freeze({
     title: project.name,
-    notes,
+    notes: Object.freeze(notes),
     totalBeats: project.durationTicks / ticksPerQuarter,
-    initialTempoBpm: initialTempoBpm(project),
+    initialTempoBpm: tempoMap.initialTempoBpm,
+    tempoMap,
   })
 }

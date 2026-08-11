@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slices 2–5 implemented.
+**Status:** Phase 1A and Slices 2–6 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -587,3 +587,79 @@ separate Guitar Night surface. The bundled study remains the silent fallback.
 | `PN-MUSIC-004`–`008` | Composition adapter fixtures, durable import tests, source-swap scheduler/transport tests, and cancelled/stale completion tests           |
 | `PN-MUSIC-009`–`011` | Component loading/empty/error/retry/current/large-title cases plus all-lens imported-content truth checks                                 |
 | `PN-MUSIC-012`–`015` | Additional-track/tempo-limit copy assertions, one-Settings regression, responsive browser smoke, and a standalone MIDI import/reload test |
+
+## Slice 6 — mapped tempo, track assignment, and measured practice
+
+Slice 6 supersedes the playback limits in `REQ-PN-MUSIC-012` for pitched
+project lanes. It keeps one practice lane while making imported tempo changes,
+canonical score/backing choices, accompaniment, and live-input results part of
+the same route-owned performance runtime. Multi-hand targets, percussion
+rendering, General MIDI timbres, and installed soundbanks remain later slices.
+
+### Performance truth — `PN-PRACTICE-*`
+
+- **REQ-PN-PRACTICE-001 — Canonical tempo map:** A canonical Piano project
+  shall project every valid tempo event into one deterministic beat-to-time
+  map; events shall be ordered by tick, source track, and source order without
+  mutating the persisted project.
+- **REQ-PN-PRACTICE-002 — MIDI default tempo:** IF no tempo exists at beat
+  zero, THEN playback shall use the Standard MIDI default of 120 BPM until the
+  first authored tempo event.
+- **REQ-PN-PRACTICE-003 — Piecewise clock:** The playhead, seek, session clock,
+  scheduler lookahead, note starts, and note releases shall use the same
+  piecewise tempo conversion, including notes that span a tempo boundary.
+- **REQ-PN-PRACTICE-004 — Practice-tempo scaling:** WHEN the player changes
+  the reference tempo or playback speed, Piano Night shall scale the complete
+  authored tempo map without flattening its relative changes or jumping the
+  playhead.
+- **REQ-PN-PRACTICE-005 — Single practice lane:** A multi-track canonical
+  project shall expose one pitched Score choice and zero or more pitched Hear
+  choices. The Score lane shall remain the only lane judged in this slice.
+- **REQ-PN-PRACTICE-006 — Canonical selection persistence:** WHEN a saved
+  project's Score or Hear choices change, Piano Night shall validate and write
+  those choices through the local Piano project authority before reporting
+  them as saved; a session-only migration fallback may apply the choice only
+  to that staged session and shall say so.
+- **REQ-PN-PRACTICE-007 — Import assignment:** A MIDI import with one pitched
+  lane may stage immediately. An import with multiple pitched lanes shall offer
+  Score and Hear assignment before it replaces the active source.
+- **REQ-PN-PRACTICE-008 — Pitched accompaniment:** Selected Hear lanes shall
+  follow the same transport and tempo map as the Score lane, shall release on
+  pause, seek, replacement, visibility loss, and disposal, and shall never
+  enter score judgments.
+- **REQ-PN-PRACTICE-009 — Sound truth:** WHILE the free fallback synth remains
+  the only renderer, every audible lane shall be described as using that
+  fallback sound. Instrument names remain assignment metadata, not a claim of
+  General MIDI, sampled-piano, arranger, or soundbank playback.
+- **REQ-PN-PRACTICE-010 — Percussion boundary:** Percussion lanes shall remain
+  preserved in the canonical project but shall not be offered as pitched
+  Score or Hear lanes or rendered through the fallback piano synth.
+- **REQ-PN-PRACTICE-011 — Normalized scoring input:** WHILE the transport is
+  playing, note-on evidence from the shared MIDI/touch input authority shall be
+  compared with the Score lane only, using bounded timing windows and exact
+  target MIDI pitch.
+- **REQ-PN-PRACTICE-012 — Discontinuity safety:** Pause, seek, repeat, source
+  replacement, and completion shall not replay stale judgments, count skipped
+  notes as misses, preserve a prior source's score, or leave scheduled or live
+  voices sounding.
+- **REQ-PN-PRACTICE-013 — Measured-result truth:** Accuracy, streak, hits, and
+  misses shall remain visibly pending before evidence exists and shall derive
+  only from completed judgments; authored coaching prompts shall remain
+  distinct from measured results.
+- **REQ-PN-PRACTICE-014 — Bounded runtime:** Tempo lookup, scheduler, and
+  scoring work shall remain bounded by indexed, binary-searched, or fixed-size
+  score windows rather than scanning or copying the complete imported project
+  on every animation, scheduling, or judgment sample.
+- **REQ-PN-PRACTICE-015 — Deferred multi-hand mode:** This slice shall not
+  represent multiple simultaneous Score lanes or infer left/right hands. That
+  later model shall build on the canonical track assignment rather than merge
+  every MIDI lane into one unreviewable target.
+
+### Slice 6 verification map
+
+| Requirement area        | Minimum evidence                                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-PRACTICE-001`–`004` | Pure tempo-map fixtures plus transport/scheduler boundary, seek, speed, duration, and source-replacement tests                            |
+| `PN-PRACTICE-005`–`010` | Canonical assignment component/service tests, import staging tests, accompaniment scheduling tests, and percussion/sound-truth assertions |
+| `PN-PRACTICE-011`–`013` | Input-event scoring fixtures plus miss, seek, pause, replacement, completion, and pending/result UI tests                                 |
+| `PN-PRACTICE-014`–`015` | Dense scheduler/scorer bounded-work assertions, single-Score control assertion, responsive browser smoke, and first-paint boundary audit  |

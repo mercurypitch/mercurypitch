@@ -1,0 +1,273 @@
+.editor {
+  --assignment-line: rgb(224 207 180 / 12%);
+  --assignment-brass: #c8a267;
+
+  min-width: 0;
+}
+
+.backButton {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 2px;
+  border: 0;
+  color: #b9b0a3;
+  background: transparent;
+  cursor: pointer;
+}
+
+.backButton:hover:not(:disabled) {
+  color: #f0e5d7;
+}
+
+.backButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.backButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.kicker {
+  display: block;
+  margin-top: 20px;
+  color: var(--assignment-brass);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.editor h2 {
+  max-width: 19ch;
+  margin: 11px 0 10px;
+  overflow-wrap: anywhere;
+}
+
+.intro {
+  max-width: 54ch;
+  margin: 0;
+  color: #c2b9ad;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: 52px 52px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 23px;
+  padding: 0 10px 9px;
+  border-bottom: 1px solid var(--assignment-line);
+  color: #8f877d;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legend span:nth-child(-n + 2) {
+  text-align: center;
+}
+
+.trackList {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.trackRow {
+  display: grid;
+  grid-template-columns: 52px 52px minmax(0, 1fr);
+  gap: 8px;
+  min-height: 72px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--assignment-line);
+  transition: background-color 160ms ease-out;
+}
+
+.trackRowScore {
+  background: linear-gradient(90deg, rgb(200 162 103 / 10%), transparent 86%);
+}
+
+.trackRowPercussion {
+  color: #807a73;
+}
+
+.choice {
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  color: #d7cec1;
+  cursor: pointer;
+}
+
+.choiceDisabled {
+  color: #68635d;
+  cursor: default;
+}
+
+.choice input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--assignment-brass);
+}
+
+.choiceLabel {
+  font-size: 9px;
+}
+
+.trackCopy {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.trackIcon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgb(224 207 180 / 14%);
+  border-radius: 9px;
+  color: #999188;
+  background: rgb(255 255 255 / 2%);
+}
+
+.trackRowScore .trackIcon {
+  border-color: rgb(200 162 103 / 44%);
+  color: var(--assignment-brass);
+  background: rgb(200 162 103 / 9%);
+}
+
+.trackIcon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.trackCopy strong,
+.trackCopy small {
+  display: block;
+  min-width: 0;
+}
+
+.trackCopy strong {
+  overflow: hidden;
+  color: #eee5d8;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trackRowPercussion .trackCopy strong {
+  color: #aaa198;
+}
+
+.trackCopy small {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: #918980;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.error {
+  margin: 16px 0 0;
+  padding: 11px 12px;
+  border: 1px solid rgb(217 126 114 / 35%);
+  border-radius: 10px;
+  color: #dbc1bb;
+  background: rgb(103 35 35 / 16%);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+  margin-top: 18px;
+  color: #918980;
+  font-size: 10px;
+}
+
+.summary span {
+  white-space: nowrap;
+}
+
+.summary strong {
+  color: #d9c5a2;
+  font-weight: 600;
+}
+
+.saveButton {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  border: 1px solid rgb(220 184 125 / 72%);
+  border-radius: 10px;
+  color: #120f0b;
+  background: #c8a267;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 18%);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #d5b47c;
+}
+
+.saveButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (width <= 420px) {
+  .legend,
+  .trackRow {
+    grid-template-columns: 44px 44px minmax(0, 1fr);
+    gap: 5px;
+    padding-inline: 4px;
+  }
+
+  .trackCopy {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .trackIcon {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trackRow {
+    transition: none;
+  }
+}
