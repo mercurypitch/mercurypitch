@@ -464,7 +464,7 @@ export default defineConfig(({ command, mode }) => {
               return 'local-song-library'
             }
             if (
-              /src\/lib\/(mirror\/|glass\/|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
+              /src\/lib\/(mirror\/|glass\/|pitch-measurements\/|pitch-pipeline\/(?:log-pitch|running-median)|pitch-f0-stream|pitch-detector|swift-f0-detector|scale-data|note-utils|mic-manager|mic-lock|mic-level|input-health|id\.|defaults|frequency-to-note|vocal-analyzer|legal-links|storage\.|analytics\.|consent\.)/.test(
                 id,
               ) ||
               /src\/stores\/notifications-store/.test(id) ||

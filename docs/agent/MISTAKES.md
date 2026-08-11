@@ -251,6 +251,17 @@ name, never a shared one. Verify with `ANALYZE=1 pnpm build` and then
 `grep <chunk> dist/*.html` — absent from every entry HTML is the only proof.
 **See:** `vite.config.ts` `manualChunks`; `src/lib/jam/stem-encoder.ts:36`.
 
+### Keep every runtime dependency of `pitch-core` on its side of the chunk boundary
+
+**Symptom:** the production build completed, but the app stayed blank with
+`Cannot access '<minified name>' before initialization`; unit tests stayed green.
+**Cause:** a new `pitch-core` module imported unclassified pitch leaves that
+Rollup placed in `advanced`, closing `advanced -> library -> pitch-core -> advanced`.
+**Rule:** when `pitch-core` gains an import, pin its dependency-free runtime
+leaves there too. Treat a circular-chunk warning as a failed build and run a
+production browser boot test before pushing.
+**See:** `vite.config.ts` `manualChunks`.
+
 ## Data and billing
 
 ### Hydrate a durable job before trying to resume it
