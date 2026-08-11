@@ -28,6 +28,7 @@
   --coach-width: 258px;
   --keybed-height: clamp(124px, 15.2vh, 154px);
   --fallboard-height: 74px;
+  --mobile-nav-height: 64px;
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -1646,21 +1647,26 @@
   .scoreStage,
   .keysStage {
     top: 76px;
-    bottom: calc(var(--keybed-height) + var(--fallboard-height) + 64px);
+    bottom: calc(
+      var(--keybed-height) + var(--fallboard-height) + var(--mobile-nav-height)
+    );
   }
 
   .keybed {
-    bottom: calc(var(--fallboard-height) + 64px + env(safe-area-inset-bottom));
+    bottom: calc(
+      var(--fallboard-height) + var(--mobile-nav-height) +
+        env(safe-area-inset-bottom)
+    );
   }
 
   .fallboard {
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
 
   .coachPeek {
     bottom: calc(
-      var(--keybed-height) + var(--fallboard-height) + 78px +
-        env(safe-area-inset-bottom)
+      var(--keybed-height) + var(--fallboard-height) +
+        var(--mobile-nav-height) + 14px + env(safe-area-inset-bottom)
     );
   }
 
@@ -1671,7 +1677,7 @@
     bottom: 0;
     left: 0;
     display: grid;
-    height: calc(64px + env(safe-area-inset-bottom));
+    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     grid-template-columns: repeat(4, 1fr);
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid rgb(181 138 80 / 24%);
@@ -1707,15 +1713,15 @@
 
   .coach {
     bottom: calc(
-      64px + var(--keybed-height) + var(--fallboard-height) +
-        env(safe-area-inset-bottom)
+      var(--mobile-nav-height) + var(--keybed-height) +
+        var(--fallboard-height) + env(safe-area-inset-bottom)
     );
   }
 
   .drawer {
     bottom: calc(
-      64px + var(--keybed-height) + var(--fallboard-height) +
-        env(safe-area-inset-bottom)
+      var(--mobile-nav-height) + var(--keybed-height) +
+        var(--fallboard-height) + env(safe-area-inset-bottom)
     );
   }
 
@@ -1724,7 +1730,7 @@
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 680px), (max-width: 900px) and (max-height: 500px) {
   .shell {
     --keybed-height: 112px;
     --fallboard-height: 70px;
@@ -1854,8 +1860,8 @@
     top: auto;
     width: 100%;
     max-height: calc(
-      100dvh - 76px - 64px - var(--keybed-height) - var(--fallboard-height) -
-        env(safe-area-inset-bottom)
+      100dvh - 76px - var(--mobile-nav-height) - var(--keybed-height) -
+        var(--fallboard-height) - env(safe-area-inset-bottom)
     );
     border-top: 1px solid var(--line);
     border-left: 0;
@@ -1946,6 +1952,81 @@
     color: #ddd5c9;
     background: rgb(5 7 9 / 76%);
     font-size: 9px;
+  }
+}
+
+@media (max-width: 900px) and (max-height: 500px) {
+  .shell {
+    --keybed-height: 88px;
+    --fallboard-height: 58px;
+    --mobile-nav-height: 52px;
+  }
+
+  .sessionHud {
+    top: max(4px, env(safe-area-inset-top));
+    right: 8px;
+    left: 8px;
+    height: 52px;
+  }
+
+  .fallStage,
+  .scoreStage,
+  .keysStage {
+    top: 60px;
+  }
+
+  .coach {
+    top: 56px;
+  }
+
+  .coachTopline {
+    min-height: 64px;
+  }
+
+  .coachBody {
+    padding: 14px 18px 18px;
+  }
+
+  .coachGuidance {
+    margin: 8px 0 16px;
+  }
+
+  .coachSection + .coachSection {
+    margin-top: 16px;
+  }
+
+  .drawer {
+    max-height: calc(
+      100dvh - var(--mobile-nav-height) - var(--keybed-height) -
+        var(--fallboard-height) - env(safe-area-inset-bottom)
+    );
+  }
+
+  .drawerTopline {
+    min-height: 56px;
+    padding: 6px 12px 6px 18px;
+  }
+
+  .drawerTopline strong {
+    margin-top: 2px;
+    font-size: 17px;
+  }
+
+  .drawerTabs {
+    padding: 0 12px;
+  }
+
+  .drawerPanel {
+    padding: 12px 18px 24px;
+  }
+
+  .drawerPanel h2 {
+    margin: 6px 0 10px;
+    font-size: 24px;
+  }
+
+  .keyboardRange {
+    top: 6px;
   }
 }
 

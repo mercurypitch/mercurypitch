@@ -22,8 +22,8 @@ import { setMicActive } from '@/stores'
 import { countIn } from '@/stores'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { beatsPerSecond, clickPianoEnabled, combo, currentSongBpm, gameState, hitResults, inputMode, maxCombo, midiConnected, notesMissed, playheadBeat, score, setClickPianoEnabled, setCombo, setCurrentSongBpm, setGameState, setHitResults, setInputMode, setMaxCombo, setMidiConnected, setNotesMissed, setPlayheadBeat, setScore, setSelectedSongName, setShowNoteLabels, setSongNotes, setTotalNotes, setVisibleBeatWindow, showNoteLabels, songNotes, totalNotes, visibleBeatWindow, } from '@/stores/falling-notes-store'
+import { showNotification } from '@/stores/notifications-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
-import { updateMidiSongSelection } from '@/stores/saved-midi-songs-store'
 import type { AccuracyRating } from '@/types'
 
 export type PianoPlayMode = 'once' | 'repeat'
@@ -72,6 +72,29 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     new Set(),
   )
   const [totalBeats, setTotalBeats] = createSignal(0)
+  let trackSelectionPersistence = Promise.resolve()
+
+  const persistTrackSelection = (song: SavedMidiSong): void => {
+    // Keep the canonical Piano/DB graph out of first paint. The compatibility
+    // DTO declares its authority, and the lazy router preserves the legacy
+    // localStorage path for ordinary SavedMidiSong entries.
+    trackSelectionPersistence = trackSelectionPersistence
+      .then(async () => {
+        const { persistPianoCompatibilitySelection } =
+          await import('@/features/piano-project/import-piano-project-for-legacy')
+        await persistPianoCompatibilitySelection(song)
+      })
+      .catch((error: unknown) => {
+        console.warn(
+          '[FallingNotes] Failed to persist backing-track selection:',
+          error,
+        )
+        showNotification(
+          'Backing-track choice changed for this session but could not be saved. Try again.',
+          'error',
+        )
+      })
+  }
 
   const toggleTrackMute = (trackId: string) => {
     const song = currentSong()
@@ -95,7 +118,7 @@ export function useFallingNotesController(audioEngine: AudioEngine) {
     }
     setCurrentSong(updatedSong)
 
-    updateMidiSongSelection(song.id, song.scoreTrackId, newBackingTrackIds)
+    persistTrackSelection(updatedSong)
   }
 
   const toggleTrackVisibility = (trackId: string) => {

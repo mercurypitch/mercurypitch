@@ -388,6 +388,7 @@ test('imports and persists a canonical Piano project in the browser @smoke', asy
 
 const RESPONSIVE_VIEWPORTS = [
   { name: 'phone', width: 390, height: 844 },
+  { name: 'phone landscape', width: 844, height: 390 },
   { name: 'tablet', width: 1024, height: 768 },
   { name: 'short desktop', width: 1440, height: 720 },
   { name: 'desktop', width: 1440, height: 900 },
@@ -448,7 +449,10 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
       expect(playBox?.width).toBeGreaterThanOrEqual(44)
       expect(playBox?.height).toBeGreaterThanOrEqual(44)
 
-      if (viewport.width <= 680) {
+      const compactKeyboard =
+        viewport.width <= 680 ||
+        (viewport.width <= 900 && viewport.height <= 500)
+      if (compactKeyboard) {
         const range = page.getByLabel('Touch keyboard range')
         await expect(range).toBeVisible()
         for (const button of await range.getByRole('button').all()) {
@@ -461,6 +465,39 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
             .getByTestId('piano-night-keyboard')
             .locator('button[data-in-range="true"]'),
         ).toHaveCount(25)
+        await expect(
+          page
+            .getByTestId('piano-night-keyboard')
+            .locator('button[data-in-range="false"]:visible'),
+        ).toHaveCount(0)
+      }
+
+      if (viewport.name === 'phone landscape') {
+        const fallBox = await page
+          .getByTestId('piano-night-fall-view')
+          .boundingBox()
+        expect(fallBox?.height).toBeGreaterThanOrEqual(100)
+
+        await page.getByRole('button', { name: 'Sounds', exact: true }).click()
+        const drawer = page.getByRole('dialog', {
+          name: 'Piano Night controls',
+        })
+        const heading = drawer.getByRole('heading', {
+          name: 'Mercury Felt Synth',
+        })
+        await expect(heading).toBeVisible()
+        const drawerBox = await drawer.boundingBox()
+        const headingBox = await heading.boundingBox()
+        expect(headingBox?.y).toBeGreaterThanOrEqual(drawerBox?.y ?? 0)
+        expect(
+          (headingBox?.y ?? Number.POSITIVE_INFINITY) +
+            (headingBox?.height ?? 0),
+        ).toBeLessThanOrEqual(
+          (drawerBox?.y ?? 0) + (drawerBox?.height ?? 0) + 1,
+        )
+        await drawer
+          .getByRole('button', { name: 'Close Piano Night controls' })
+          .click()
       }
 
       if (viewport.width <= 1180) {
