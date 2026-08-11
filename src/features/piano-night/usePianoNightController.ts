@@ -16,11 +16,24 @@ import { createPianoFallbackSynth } from '@/features/piano/runtime/piano-fallbac
 import { createPianoPerformanceScheduler } from '@/features/piano/runtime/piano-performance-scheduler'
 import { pianoProjectToStage } from '@/features/piano/runtime/piano-project-stage'
 import { installAudioUnlock } from '@/lib/audio-unlock'
+import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { PIANO_NIGHT_DEMO_PROJECT } from './piano-night-demo-project'
 
 const stage = pianoProjectToStage(PIANO_NIGHT_DEMO_PROJECT)
 
+function sameMidiSet(
+  previous: ReadonlySet<number>,
+  next: ReadonlySet<number>,
+): boolean {
+  if (previous.size !== next.size) return false
+  for (const midiNote of previous) {
+    if (!next.has(midiNote)) return false
+  }
+  return true
+}
+
 export function usePianoNightController() {
+  const projectActiveMidis = createPianoNightActiveMidiIndex(stage.notes)
   const transport = createPianoAudioClockTransport({
     totalBeats: () => stage.totalBeats,
     initialTempoBpm: stage.initialTempoBpm,
@@ -66,20 +79,21 @@ export function usePianoNightController() {
   let uninstallAudioUnlock: (() => void) | null = null
   let disposed = false
 
-  const activeMidis = createMemo<ReadonlySet<number>>(() => {
-    const active = new Set(
-      inputSnapshot().soundingNotes.map((voice) => voice.midi),
-    )
-    if (transport.phase() === 'playing') {
-      const beat = playheadBeat()
-      for (const note of stage.notes) {
-        if (note.startBeat <= beat && note.startBeat + note.duration > beat) {
-          active.add(note.midi)
+  const activeMidis = createMemo<ReadonlySet<number>>(
+    () => {
+      const active = new Set(
+        inputSnapshot().soundingNotes.map((voice) => voice.midi),
+      )
+      if (transport.phase() === 'playing') {
+        for (const midiNote of projectActiveMidis.atBeat(playheadBeat())) {
+          active.add(midiNote)
         }
       }
-    }
-    return active
-  })
+      return active
+    },
+    new Set<number>(),
+    { equals: sameMidiSet },
+  )
 
   const cancelFrame = (): void => {
     if (frame === null) return

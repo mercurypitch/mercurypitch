@@ -413,7 +413,7 @@ describe('PianoNightApp', () => {
       screen.getByRole('navigation', {
         name: 'Piano Night mobile navigation',
       }),
-    ).getByRole('button', { name: 'Sounds' })
+    ).getByRole('button', { name: 'Open Piano Night settings' })
     opener.focus()
     fireEvent.click(opener)
     const close = screen.getByRole('button', {
@@ -454,7 +454,7 @@ describe('PianoNightApp', () => {
     render(() => <PianoNightApp />)
 
     fireEvent.click(
-      screen.getAllByRole('button', { name: 'Open Piano Night controls' })[0],
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
     )
     expect(requestMidiAccess).not.toHaveBeenCalled()
     expect(createAudioContext).not.toHaveBeenCalled()
@@ -478,10 +478,35 @@ describe('PianoNightApp', () => {
     expect(createWorker).not.toHaveBeenCalled()
   })
 
-  it('persists a Piano room choice without changing sound and retains the legacy link', () => {
+  it('uses one settings entry per layout and keeps one current-Piano link per layout', () => {
     render(() => <PianoNightApp />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Room' }))
+    expect(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' }),
+    ).toHaveLength(2)
+    expect(
+      screen.queryByRole('button', { name: 'Open session controls' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Sounds' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Room' }),
+    ).not.toBeInTheDocument()
+    for (const link of screen.getAllByRole('link', {
+      name: 'Open the current Piano workspace',
+    })) {
+      expect(link).toHaveAttribute('href', '/#/piano')
+    }
+  })
+
+  it('persists a Piano room choice without changing sound', () => {
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }))
     const roomButton = screen.getByRole('button', {
       name: /Morning Conservatory/,
     })
@@ -507,10 +532,5 @@ describe('PianoNightApp', () => {
       'piano-morning-conservatory',
     )
     expectSilentBrowserBoundary()
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Session' }))
-    expect(
-      screen.getByRole('link', { name: /Open the current Piano tab/ }),
-    ).toHaveAttribute('href', '/#/piano')
   })
 })

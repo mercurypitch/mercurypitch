@@ -111,6 +111,10 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   recreate the approved composition with semantic HTML, CSS, SVG, and
   responsive image assets; it shall not use a screenshot of the composition
   as a baked interface.
+- **REQ-PN-STAGE-008 — Consolidated settings:** Each responsive composition
+  shall expose one Settings entry for the shared Session, Sound, and Room
+  drawer; the session HUD and transport shall not duplicate that drawer
+  action.
 
 ## Safe first paint and product truth — `PN-TRUTH-*`
 
@@ -355,6 +359,10 @@ Nocturne-only room behavior inside `/piano-night`.
   expose a visible playhead derived from the shared transport position; WHEN a
   pointer seek updates the transport, the playhead and accessible beat value
   shall update to the same bounded position.
+- **REQ-PN-SESSION-008 — Bounded fall rendering:** WHILE the Fall lens moves,
+  nearby notes shall retain static local geometry and one bounded temporal
+  track shall carry frame-by-frame travel; the renderer shall not rewrite the
+  position style of every project note on every sampled frame.
 
 ### Standalone transport and sound — `PN-PLAYBACK-*`
 
@@ -433,12 +441,12 @@ Nocturne-only room behavior inside `/piano-night`.
 
 ### Slice 3 verification map
 
-| Requirement area | Minimum evidence                                                                                                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PN-SESSION`     | Canonical-project projection and fall-geometry unit tests, silent standalone mount assertions, real-browser seek/playhead alignment, and built entry import audit |
-| `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage                                                              |
-| `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions                                                            |
-| `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions                                                |
+| Requirement area | Minimum evidence                                                                                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-SESSION`     | Canonical-project projection, anchor/window geometry tests, silent standalone mount assertions, real-browser bounded-track mutation and seek/playhead alignment, and built entry import audit |
+| `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage                                                                                          |
+| `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions                                                                                        |
+| `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions                                                                            |
 
 ## Slice 4 — shared Piano background surface
 

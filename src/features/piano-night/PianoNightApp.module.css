@@ -273,6 +273,10 @@
   place-items: center;
 }
 
+.sessionDocument {
+  color: var(--muted);
+}
+
 .sessionDocument svg,
 .viewButton svg {
   width: 22px;
@@ -482,6 +486,17 @@
 
 .laneGuides i:last-child {
   border-right: 1px solid rgb(191 215 220 / 10%);
+}
+
+.fallTrack {
+  position: absolute;
+  inset: 0;
+  contain: layout style;
+  pointer-events: none;
+}
+
+.playing .fallTrack {
+  will-change: transform;
 }
 
 .fallNote {
@@ -1345,35 +1360,6 @@
   font-size: 12px;
 }
 
-.legacyLink {
-  display: flex;
-  min-height: 68px;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border: 1px solid rgb(181 138 80 / 46%);
-  border-radius: 13px;
-  color: var(--ivory);
-  background: rgb(181 138 80 / 8%);
-  text-decoration: none;
-  transition:
-    border-color 150ms ease-out,
-    background 150ms ease-out;
-}
-
-.legacyLink:hover {
-  border-color: var(--brass-soft);
-  background: rgb(181 138 80 / 14%);
-}
-
-.legacyLink > svg {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 auto;
-  color: var(--brass-soft);
-}
-
-.legacyLink > span,
 .previewRow > span,
 .roomSwatch > div {
   display: flex;
@@ -1381,13 +1367,11 @@
   flex-direction: column;
 }
 
-.legacyLink strong,
 .previewRow strong,
 .roomSwatch strong {
   font-size: 13px;
 }
 
-.legacyLink small,
 .previewRow small,
 .roomSwatch small {
   margin-top: 4px;
@@ -1818,7 +1802,6 @@
   }
 
   .transport > button:first-child,
-  .transport > button:nth-child(2),
   .transportDivider,
   .tempoReadout {
     display: none;

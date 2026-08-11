@@ -183,11 +183,71 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   expect(pageErrors).toEqual([])
 })
 
+test('moves one bounded fall track without rewriting every note style @smoke', async ({
+  page,
+}) => {
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+
+  const mutations = await page.evaluate(async () => {
+    const track = document.querySelector<HTMLElement>(
+      '[data-testid="piano-night-fall-track"]',
+    )
+    const seek = document.querySelector<HTMLInputElement>(
+      '[data-testid="piano-night-seek"]',
+    )
+    if (track === null || seek === null) return null
+
+    let noteStyleMutations = 0
+    let trackStyleMutations = 0
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.target === track) trackStyleMutations += 1
+        else if (
+          record.target instanceof HTMLElement &&
+          record.target.matches('[data-note-id]')
+        ) {
+          noteStyleMutations += 1
+        }
+      }
+    })
+    observer.observe(track, {
+      attributes: true,
+      attributeFilter: ['style'],
+      subtree: true,
+    })
+
+    for (let index = 1; index <= 20; index += 1) {
+      seek.value = String(index / 10)
+      seek.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      )
+    }
+    observer.disconnect()
+
+    return {
+      noteCount: track.querySelectorAll('[data-note-id]').length,
+      noteStyleMutations,
+      trackStyleMutations,
+    }
+  })
+
+  expect(mutations).not.toBeNull()
+  expect(mutations?.noteCount).toBeGreaterThan(0)
+  expect(mutations?.noteCount).toBeLessThan(128)
+  expect(mutations?.noteStyleMutations).toBe(0)
+  expect(mutations?.trackStyleMutations).toBeGreaterThan(5)
+})
+
 test('persists a free Piano room without crossing into sound state @smoke', async ({
   page,
 }) => {
   await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('button', { name: 'Room' }).click()
+  await page
+    .getByRole('button', { name: 'Open Piano Night settings' })
+    .filter({ visible: true })
+    .click()
+  await page.getByRole('tab', { name: 'Room' }).click()
   await page.getByRole('button', { name: /Morning Conservatory/ }).click()
 
   await expect(page.getByTestId('piano-night-shell')).toHaveAttribute(
@@ -484,6 +544,28 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
       await expect(
         page.getByTestId('piano-night-keyboard').locator('button[data-midi]'),
       ).toHaveCount(88)
+      await expect(
+        page.getByRole('button', { name: 'Open Piano Night settings' }),
+      ).toHaveCount(1)
+      await expect(
+        page.getByRole('link', {
+          name: 'Open the current Piano workspace',
+        }),
+      ).toHaveCount(1)
+
+      if (viewport.name === 'tablet') {
+        const settings = page.getByRole('button', {
+          name: 'Open Piano Night settings',
+        })
+        await settings.focus()
+        await settings.click()
+        const close = page.getByRole('button', {
+          name: 'Close Piano Night controls',
+        })
+        await expect(close).toBeFocused()
+        await close.click()
+        await expect(settings).toBeFocused()
+      }
 
       const hud = page.getByLabel('Piano Night session status')
       const hudBox = await hud.boundingBox()
@@ -528,10 +610,14 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
           .boundingBox()
         expect(fallBox?.height).toBeGreaterThanOrEqual(100)
 
-        await page.getByRole('button', { name: 'Sounds', exact: true }).click()
+        await page
+          .getByRole('button', { name: 'Open Piano Night settings' })
+          .filter({ visible: true })
+          .click()
         const drawer = page.getByRole('dialog', {
           name: 'Piano Night controls',
         })
+        await drawer.getByRole('tab', { name: 'Sound' }).click()
         const heading = drawer.getByRole('heading', {
           name: 'Mercury Felt Synth',
         })
