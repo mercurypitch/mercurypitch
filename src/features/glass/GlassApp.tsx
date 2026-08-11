@@ -37,7 +37,7 @@ import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream, PitchFrame } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
-import { renderShatterCard } from './card-renderer'
+import { glassShareText, renderShatterCard } from './card-renderer'
 import { trackGlass } from './funnel'
 import type { FxRack as FxAudio, FxSettings } from './fx-rack'
 import { createFxRack, DEFAULT_FX } from './fx-rack'
@@ -1212,9 +1212,7 @@ export const GlassApp: Component = () => {
       datedFilename(shattered ? 'glass-shattered' : 'glass-held'),
       {
         title: 'Break glass with your voice',
-        text: shattered
-          ? 'I shattered it — mercurypitch.com/glass'
-          : 'The glass is still standing… for now — mercurypitch.com/glass',
+        text: glassShareText(shattered),
       },
     )
     // Closing the sheet without sending is neither a share nor a save —

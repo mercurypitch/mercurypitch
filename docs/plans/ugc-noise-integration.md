@@ -184,19 +184,24 @@ The **share text** is the interesting one: unlike the printed URL it is a real
 clickable link when shared into messaging apps, so it carries its own tag and
 separates card-driven virality from both paid and direct.
 
-Both constants live in `card-renderer.ts` and
-`share-link-tagging.test.ts` pins the relationship between them — including
-that no paid-acquisition source may ever appear on the share link. They look
-like a duplication begging to be tidied into one; the test is there because
-tidying them breaks attribution silently rather than loudly.
+**`utm_medium=share` is the bucket.** It means a human handed this card to
+another human, on any surface. `utm_source` then says which card did it, so
+the two card surfaces stay tellable apart inside that one bucket:
 
-Three call sites (`MirrorApp` ×2, `CosmicMode`) pass no share meta and pick up
-the tagged default automatically.
+| Card | Printed | Share link |
+|---|---|---|
+| Voiceprint | `mercurypitch.com/mirror` | `utm_source=voiceprint&utm_medium=share` |
+| Glass | `mercurypitch.com/glass` | `utm_source=glasscard&utm_medium=share` |
 
-**Still untagged:** Glass shares its own text pointing at
-`mercurypitch.com/glass` (`GlassApp.tsx`). Same class of gap, different
-surface and funnel — left alone deliberately. The constant pattern above is
-what to copy when it is worth doing.
+Each card's two constants live in its own `card-renderer.ts`, and
+`src/tests/share-link-tagging.test.ts` pins the rule across both — including
+that no paid-acquisition source may ever appear on a share link. The pair
+looks like a duplication begging to be tidied into one; the test exists
+because tidying it breaks attribution silently rather than loudly. It is
+table-driven, so a new card surface registers itself by adding one row.
+
+Three Mirror call sites (`MirrorApp` ×2, `CosmicMode`) pass no share meta and
+pick up the tagged default automatically.
 
 > **NOTE:** the share text currently carries the full UTM URL, which is long
 > in a message body. When the short link ships it should replace `SHARE_URL` —
@@ -353,9 +358,10 @@ reasonable choice — the repo rule governs this artifact, not the ad copy.
 | 6 | Verify per-slide captions survived the write (§7) | you | open |
 | 7 | Set the daily target to $20 (§3) | agent | done — period rolled |
 | 8 | Tag the share text as card-viral (§5) | agent | done |
-| 9 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
-| 10 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
-| 11 | Tag the Glass share text too, or decide not to (§5) | decision | open |
+| 9 | Tag the Glass share text (§5) | agent | done |
+| 10 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
+| 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
+| 12 | Get `preview_image` onto MCP-created playbooks (§9) | you | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no
@@ -373,3 +379,43 @@ be.
 Judge the test on GA4 `results_view` and `card_shared` against Noise views.
 Views alone say the content was distributed; the funnel says whether it
 worked.
+
+---
+
+## 9. Known gap — MCP-created playbooks have no preview media
+
+Playbook 19290 was created entirely over MCP. Its content is verifiably
+present: `get_playbook_details` returns all four slides with prompts and
+captions, and the audit log records `Playbook created` (slides: 4) plus
+`Slide image added (url)` against slide 151213.
+
+But two fields are `null` on it and populated on 18979, which was created
+through the portal:
+
+| Field | 18979 (portal) | 19290 (MCP) |
+|---|---|---|
+| `preview_image` | a hosted `.jpg` | `null` |
+| `example_url` | a hosted `.mp4` | `null` |
+| `created_by` | a user uuid | `null` |
+
+Neither `preview_image` nor `example_url` is settable through any MCP tool —
+`save_playbook` has no parameter for them, and nothing else writes them. On
+18979 the portal set `example_url` in a **separate** update two minutes after
+creation (audit, 2026-08-09 12:43), which reads like a portal-side generation
+step that the MCP create path does not trigger.
+
+That is the most likely reason a playbook can look empty in the dashboard
+while holding all of its content: the detail view appears to be built around
+the preview media rather than the slide records.
+
+**What was ruled out.** Content is present (read back after writing).
+Campaign linkage is correct (`offer_id: 15773`; the orphans 19287/19288 have
+`offer_id: null`, which is why *those* are invisible). Captions were moved
+into the slide prompt as `<hook_captions>{{…}}</hook_captions>`, byte-matching
+the format 18979 uses, in case the structured `captions` field is write-only.
+
+**Unresolved.** Whether the portal can generate preview media for a playbook
+it did not create — a re-save or a preview regeneration in the UI may be
+enough. If not, this is a question for Noise support: it makes the MCP
+authoring path unable to produce a fully-rendered playbook on its own, which
+is worth their knowing regardless.
