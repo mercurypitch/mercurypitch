@@ -290,8 +290,20 @@ describe('PianoNightApp', () => {
   it('keeps the phrase lens aligned with a project seek', () => {
     render(() => <PianoNightApp />)
 
-    fireEvent.input(screen.getByLabelText('Seek prepared piano project'), {
+    const seek = screen.getByLabelText('Seek prepared piano project')
+    const playhead = screen.getByTestId('piano-night-trace-playhead')
+    expect(seek).toHaveAttribute('aria-valuetext', 'Beat 0.0 of 64')
+    expect(playhead).toHaveStyle({
+      left: 'clamp(15px, 0%, calc(100% - 15px))',
+    })
+
+    fireEvent.input(seek, {
       target: { value: '20' },
+    })
+
+    expect(seek).toHaveAttribute('aria-valuetext', 'Beat 20.0 of 64')
+    expect(playhead).toHaveStyle({
+      left: 'clamp(15px, 31.25%, calc(100% - 15px))',
     })
     fireEvent.click(
       screen.getByRole('button', {

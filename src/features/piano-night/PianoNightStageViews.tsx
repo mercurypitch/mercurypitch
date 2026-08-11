@@ -10,6 +10,7 @@ import { createMemo, For, Show } from 'solid-js'
 import type { PianoPerformanceNote } from '@/features/piano/runtime/piano-performance-contract'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PianoNightPhrase } from './piano-night-demo-project'
+import { pianoNightFallGeometry } from './piano-night-fall-geometry'
 import styles from './PianoNightApp.module.css'
 
 export type PianoNightPerformanceView = 'fall' | 'score' | 'keys'
@@ -62,20 +63,31 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
       <div class={styles.laneGuides} aria-hidden="true">
         <For each={Array.from({ length: 12 })}>{() => <i />}</For>
       </div>
-      <div class={styles.strikeGuide} aria-hidden="true" />
+      <div
+        class={styles.strikeGuide}
+        aria-hidden="true"
+        data-testid="piano-night-strike-guide"
+      />
       <For each={props.notes}>
         {(note) => {
-          const relativeBeat = (): number =>
-            note.startBeat -
-            (props.reducedMotion()
-              ? props.phrase().startBeat
-              : props.playheadBeat())
-          const visible = (): boolean =>
-            relativeBeat() >= -Math.max(1, note.duration) &&
-            relativeBeat() <= 13
+          const timedGeometry = createMemo(() =>
+            pianoNightFallGeometry(
+              note.startBeat,
+              note.duration,
+              props.playheadBeat(),
+            ),
+          )
+          const geometry = createMemo(() =>
+            props.reducedMotion()
+              ? pianoNightFallGeometry(
+                  note.startBeat,
+                  note.duration,
+                  props.phrase().startBeat,
+                )
+              : timedGeometry(),
+          )
           const striking = (): boolean =>
-            note.startBeat <= props.playheadBeat() &&
-            note.startBeat + note.duration > props.playheadBeat()
+            props.isPlaying() && timedGeometry().striking
           return (
             <i
               classList={{
@@ -85,11 +97,13 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
               }}
               data-striking={striking()}
               data-register={note.midi < 60 ? 'lower' : 'upper'}
+              data-start-beat={note.startBeat}
+              data-duration-beats={note.duration}
               style={{
-                display: visible() ? 'block' : 'none',
+                display: geometry().visible ? 'block' : 'none',
                 left: `${noteX(note.midi)}%`,
-                top: `${clamp(82 - relativeBeat() * 6.4, -18, 94)}%`,
-                height: `${clamp(note.duration * 24, 30, 132)}px`,
+                bottom: `${geometry().bottomPercent}%`,
+                height: `${geometry().heightPercent}%`,
               }}
               aria-hidden="true"
             />

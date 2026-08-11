@@ -346,6 +346,15 @@ Nocturne-only room behavior inside `/piano-night`.
 - **REQ-PN-SESSION-005 — No future surfaces:** The standalone free session
   shall not statically import VexFlow, the main App, a soundbank parser,
   premium-background access, or arranger modules.
+- **REQ-PN-SESSION-006 — Truthful fall geometry:** WHILE the Fall lens is
+  moving, each project note's leading edge shall reach the key horizon at its
+  transport start beat and its trailing edge shall reach the same horizon at
+  its transport end beat, using one viewport-independent beat scale for travel
+  and duration.
+- **REQ-PN-SESSION-007 — Visible seek position:** The session trace shall
+  expose a visible playhead derived from the shared transport position; WHEN a
+  pointer seek updates the transport, the playhead and accessible beat value
+  shall update to the same bounded position.
 
 ### Standalone transport and sound — `PN-PLAYBACK-*`
 
@@ -424,12 +433,12 @@ Nocturne-only room behavior inside `/piano-night`.
 
 ### Slice 3 verification map
 
-| Requirement area | Minimum evidence                                                                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `PN-SESSION`     | Canonical-project projection unit tests, silent standalone mount assertions, and built entry import audit          |
-| `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage               |
-| `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions             |
-| `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions |
+| Requirement area | Minimum evidence                                                                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-SESSION`     | Canonical-project projection and fall-geometry unit tests, silent standalone mount assertions, real-browser seek/playhead alignment, and built entry import audit |
+| `PN-PLAYBACK`    | Injected audio-clock/synth tests plus Play, Pause, tempo, failure, visibility, and disposal coverage                                                              |
+| `PN-LIVE-INPUT`  | Existing normalized-input fixtures plus real-pointer key smoke and explicit MIDI permission assertions                                                            |
+| `PN-FREE-ROOM`   | Asset-response and responsive-source assertions, visual-only room-switch test, and no-premium import/UI assertions                                                |
 
 ## Slice 4 — shared Piano background surface
 

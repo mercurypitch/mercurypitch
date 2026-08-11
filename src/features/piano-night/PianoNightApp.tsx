@@ -7,7 +7,7 @@
 // importing the App-owned Piano page or its stores.
 
 import type { JSX } from 'solid-js'
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { ChevronLeft, Headphones, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, SlidersHorizontal, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
@@ -187,6 +187,11 @@ export function PianoNightApp(): JSX.Element {
     return index === -1 ? PIANO_NIGHT_PHRASES.length - 1 : index
   }
   const phrase = (): PianoNightPhrase => PIANO_NIGHT_PHRASES[phraseIndex()]
+  const sessionProgress = createMemo(() => {
+    const totalBeats = controller.stage.totalBeats
+    if (!(totalBeats > 0)) return 0
+    return Math.min(1, Math.max(0, controller.playheadBeat() / totalBeats))
+  })
   const roomLabel = (): string =>
     background
       .options()
@@ -506,7 +511,16 @@ export function PianoNightApp(): JSX.Element {
                   />
                 )}
               </For>
-              <b />
+              <span
+                class={styles.traceProgress}
+                style={{ transform: `scaleX(${sessionProgress()})` }}
+              />
+              <b
+                style={{
+                  left: `clamp(15px, ${sessionProgress() * 100}%, calc(100% - 15px))`,
+                }}
+                data-testid="piano-night-trace-playhead"
+              />
             </div>
             <input
               type="range"
@@ -515,6 +529,9 @@ export function PianoNightApp(): JSX.Element {
               step="0.25"
               value={controller.playheadBeat()}
               aria-label="Seek prepared piano project"
+              aria-valuetext={`Beat ${controller
+                .playheadBeat()
+                .toFixed(1)} of ${controller.stage.totalBeats}`}
               onInput={(event) =>
                 controller.seekToBeat(Number(event.currentTarget.value))
               }
