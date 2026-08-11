@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_LATENCY_MS } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
-import { clearMicLatency, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyMs, micLatencySec, micLatencySpreadByDevice, micLatencySpreadMs, setMicLatencyByDevice, setMicLatencyMeasurement, setMicLatencyMs, setMicLatencySpreadByDevice, } from '@/stores/mic-latency-store'
+import { clearMicLatency, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, } from '@/stores/mic-latency-store'
 
 /** Pretend a particular input is selected, without touching a real device. */
 function pretendDevice(deviceId: string | null) {
@@ -14,6 +14,7 @@ function pretendDevice(deviceId: string | null) {
 
 describe('Mic Latency Store', () => {
   beforeEach(() => {
+    vi.spyOn(micManager, 'getResolvedDevice').mockReturnValue(null)
     setMicLatencyByDevice({})
     setMicLatencySpreadByDevice({})
   })
@@ -122,6 +123,37 @@ describe('Mic Latency Store', () => {
       expect(micLatencySpreadMs()).toBeNull()
       expect(micLatencySpreadByDevice()).toEqual({})
     })
+
+    it('pins a fallback calibration to the actual opened device', () => {
+      pretendDevice(null)
+
+      setMicLatencyMeasurementForDevice('fallback-device', 72, 5)
+
+      expect(micLatencyMs()).toBe(0)
+      expect(micLatencyMsForDevice('fallback-device')).toBe(72)
+      expect(micLatencySpreadMsForDevice('fallback-device')).toBe(5)
+    })
+
+    it('shares a resolved default-route measurement with every consumer', () => {
+      pretendDevice(null)
+      vi.mocked(micManager.getResolvedDevice).mockReturnValue('built-in-input')
+
+      setMicLatencyMeasurementForDevice('built-in-input', 72, 5)
+
+      expect(currentMicDeviceKey()).toBe('built-in-input')
+      expect(micLatencyMs()).toBe(72)
+      expect(micLatencySpreadMs()).toBe(5)
+    })
+
+    it('falls back to the legacy default alias for the resolved route', () => {
+      pretendDevice(null)
+      setMicLatencyByDevice({ [DEFAULT_DEVICE_KEY]: 96 })
+      setMicLatencySpreadByDevice({ [DEFAULT_DEVICE_KEY]: 8 })
+      vi.mocked(micManager.getResolvedDevice).mockReturnValue('built-in-input')
+
+      expect(micLatencyMsForDevice('built-in-input')).toBe(96)
+      expect(micLatencySpreadMsForDevice('built-in-input')).toBe(8)
+    })
   })
 
   describe('clearMicLatency', () => {
@@ -144,6 +176,28 @@ describe('Mic Latency Store', () => {
 
       expect(micLatencyByDevice()).toEqual({ 'built-in': 140 })
       expect(micLatencySpreadByDevice()).toEqual({ 'built-in': 12 })
+    })
+
+    it('does not resurrect a legacy default offset after clearing its resolved route', () => {
+      pretendDevice(null)
+      vi.mocked(micManager.getResolvedDevice).mockReturnValue('built-in-input')
+      setMicLatencyByDevice({
+        [DEFAULT_DEVICE_KEY]: 96,
+        'built-in-input': 72,
+        'usb-interface': 38,
+      })
+      setMicLatencySpreadByDevice({
+        [DEFAULT_DEVICE_KEY]: 8,
+        'built-in-input': 5,
+        'usb-interface': 3,
+      })
+
+      clearMicLatency()
+
+      expect(micLatencyMs()).toBe(0)
+      expect(micLatencySpreadMs()).toBeNull()
+      expect(micLatencyByDevice()).toEqual({ 'usb-interface': 38 })
+      expect(micLatencySpreadByDevice()).toEqual({ 'usb-interface': 3 })
     })
 
     it('is a no-op for an input that was never measured', () => {

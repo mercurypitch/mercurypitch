@@ -6,11 +6,15 @@
 // latency and primary timing source are copied at start so a calibration or
 // device change cannot rewrite the meaning of evidence already in flight.
 
+import type { GuitarInputProfileSnapshot } from './guitar-input-profile'
 import type { GuitarInputCapture, GuitarInputEvent, GuitarInputHealth, GuitarInputTimingSource, } from './input-events'
 
 export type GuitarTakeLifecycle = 'recording' | 'completed' | 'cancelled'
 
-export type GuitarTakeLatencyProvenance = 'stored-round-trip' | 'none'
+export type GuitarTakeLatencyProvenance =
+  | 'stored-round-trip'
+  | 'midi-route-unmeasured'
+  | 'none'
 
 export interface GuitarTakeLatencyInput {
   seconds: number
@@ -29,7 +33,7 @@ export interface GuitarTakeClockSnapshot {
   sampleRate: number
   attack: {
     timingSource: GuitarInputTimingSource
-    precision: 'sample-exact' | 'coarse-frame-loop'
+    precision: 'sample-exact' | 'coarse-frame-loop' | 'high-resolution-midi'
   }
   latency: GuitarTakeLatencySnapshot
 }
@@ -44,6 +48,7 @@ export interface GuitarTakeEvent extends GuitarInputEvent {
 export interface GuitarTakeSnapshot {
   id: string
   lifecycle: GuitarTakeLifecycle
+  input: GuitarInputProfileSnapshot
   clock: GuitarTakeClockSnapshot
   events: readonly GuitarTakeEvent[]
   /** Length from transport zero to completion; absent until completed. */
@@ -64,6 +69,7 @@ export interface GuitarTakeRecorderOptions {
   startedAtSeconds: number
   sampleRate: number
   latency: GuitarTakeLatencyInput
+  input: GuitarInputProfileSnapshot
   attackTimingSource: GuitarInputTimingSource
   maxEvents?: number
 }
@@ -91,6 +97,7 @@ function emptyHealthStates(): Record<GuitarInputHealth, number> {
     hot: 0,
     clipping: 0,
     noisy: 0,
+    uncertain: 0,
   }
 }
 
@@ -111,6 +118,12 @@ function captureAtSeconds(capture: GuitarInputCapture): number | null {
       return null
     }
     return capture.clock.atFrame / capture.clock.sampleRate
+  }
+  if (capture.clock.kind === 'web-midi') {
+    return Number.isFinite(capture.clock.mappedAudioTime) &&
+      capture.clock.mappedAudioTime >= 0
+      ? capture.clock.mappedAudioTime
+      : null
   }
   if (
     !Number.isFinite(capture.clock.observedAt) ||
@@ -148,8 +161,17 @@ export function createGuitarTakeRecorder(
   if (options.latency.provenance === 'none' && options.latency.seconds !== 0) {
     throw new Error('Unmeasured latency cannot apply a timing correction.')
   }
+  if (
+    options.latency.provenance === 'midi-route-unmeasured' &&
+    options.latency.seconds !== 0
+  ) {
+    throw new Error(
+      'A MIDI event timestamp is not a measured route correction.',
+    )
+  }
 
   const takeId = options.takeId
+  const input = { ...options.input }
   const sampleRate = options.sampleRate
   const startedAtFrame = Math.round(options.startedAtSeconds * sampleRate)
   const latencyFrames = Math.round(options.latency.seconds * sampleRate)
@@ -166,7 +188,9 @@ export function createGuitarTakeRecorder(
       precision:
         options.attackTimingSource === 'audio-clock'
           ? 'sample-exact'
-          : 'coarse-frame-loop',
+          : options.attackTimingSource === 'midi-clock'
+            ? 'high-resolution-midi'
+            : 'coarse-frame-loop',
     },
     latency: {
       seconds: options.latency.seconds,
@@ -189,6 +213,7 @@ export function createGuitarTakeRecorder(
   const snapshot = (): GuitarTakeSnapshot => ({
     id: takeId,
     lifecycle,
+    input: { ...input },
     clock: {
       ...clock,
       attack: { ...clock.attack },
@@ -219,14 +244,19 @@ export function createGuitarTakeRecorder(
 
     // Pitch changes are intentionally found on the coarse analyser even in an
     // exact-attack take. Only an attack can weaken the take's attack clock.
-    if (
-      capture.kind === 'attack' &&
-      capture.clock.kind !== 'audio-worklet' &&
-      clock.attack.precision === 'sample-exact'
-    ) {
+    if (capture.kind === 'attack' && capture.clock.kind === 'frame-loop') {
       clock.attack = {
         timingSource: 'frame-loop',
         precision: 'coarse-frame-loop',
+      }
+    } else if (
+      capture.kind === 'attack' &&
+      capture.clock.kind === 'web-midi' &&
+      clock.attack.precision !== 'coarse-frame-loop'
+    ) {
+      clock.attack = {
+        timingSource: 'midi-clock',
+        precision: 'high-resolution-midi',
       }
     }
 
@@ -242,6 +272,7 @@ export function createGuitarTakeRecorder(
       id: `${takeId}:event-${nextEvent}`,
       kind: capture.kind,
       source: capture.source,
+      voiceId: capture.voiceId,
       at: (startedAtFrame + compensatedTransportFrame) / sampleRate,
       capturedAt: capturedAtFrame / sampleRate,
       rawTransportFrame,

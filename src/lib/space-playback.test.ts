@@ -89,6 +89,20 @@ describe('installSpacePlaybackToggle', () => {
     expect(toggle).not.toHaveBeenCalled()
   })
 
+  it('yields Space untouched while another surface owns the key', () => {
+    const toggle = vi.fn()
+    uninstall = installSpacePlaybackToggle({
+      toggle,
+      ownsSpace: () => false,
+    })
+    const button = document.createElement('button')
+    document.body.append(button)
+    const event = pressSpace(button)
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(toggle).not.toHaveBeenCalled()
+  })
+
   it('runs in the capture phase so bubble-phase widgets cannot steal the key', () => {
     const toggle = vi.fn()
     uninstall = installSpacePlaybackToggle({ toggle })

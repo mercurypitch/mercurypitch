@@ -100,6 +100,16 @@ describe('matchOnsetDeltas', () => {
   it('drops a negative gap — a click cannot return before it is played', () => {
     expect(matchOnsetDeltas(scheduled, [0.95])).toEqual([])
   })
+
+  it('uses at most one return for each click when a room echo repeats it', () => {
+    expect(matchOnsetDeltas(scheduled, [1.08, 1.14, 1.83])).toEqual([
+      0.08000000000000007, 0.08000000000000007,
+    ])
+  })
+
+  it('does not let one onset answer two scheduled clicks', () => {
+    expect(matchOnsetDeltas([1, 1.2], [1.19], 0.25)).toHaveLength(1)
+  })
 })
 
 describe('summariseLatency', () => {

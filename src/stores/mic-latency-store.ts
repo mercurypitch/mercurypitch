@@ -5,8 +5,8 @@
 // Per device on purpose: a USB interface and a laptop's built-in mic differ by
 // more than the offset itself, so one number for the machine would be wrong on
 // whichever device was not measured. Keyed by the MicManager's preferred
-// device id, with `DEFAULT_DEVICE_KEY` standing for "whatever the OS picks" —
-// the case for most people, who never open the device list.
+// resolved device id. `DEFAULT_DEVICE_KEY` remains the backwards-compatible
+// alias for measurements saved before the browser exposed the physical input.
 //
 // Zero is the default and means uncompensated, which is exactly how the app
 // behaved before this existed. Every consumer must stay a no-op at zero.
@@ -54,7 +54,32 @@ export const [micLatencySpreadByDevice, setMicLatencySpreadByDevice] =
 
 /** The device the offsets are keyed by right now. */
 export function currentMicDeviceKey(): string {
-  return micManager.getPreferredDevice() ?? DEFAULT_DEVICE_KEY
+  return (
+    micManager.getResolvedDevice() ??
+    micManager.getPreferredDevice() ??
+    DEFAULT_DEVICE_KEY
+  )
+}
+
+function valueForDevice(
+  values: LatencyByDevice,
+  deviceId: string | null,
+): number | undefined {
+  const key = deviceId ?? DEFAULT_DEVICE_KEY
+  const exact = values[key]
+  if (exact !== undefined) return exact
+
+  // Older releases stored the system-default route under one alias. Once the
+  // browser resolves that route, keep the old calibration useful until the
+  // player measures the physical input again; an exact value always wins.
+  if (
+    key !== DEFAULT_DEVICE_KEY &&
+    micManager.getPreferredDevice() === null &&
+    micManager.getResolvedDevice() === key
+  ) {
+    return values[DEFAULT_DEVICE_KEY]
+  }
+  return undefined
 }
 
 /**
@@ -62,7 +87,12 @@ export function currentMicDeviceKey(): string {
  * measured — callers rely on that meaning "change nothing".
  */
 export function micLatencyMs(): number {
-  return micLatencyByDevice()[currentMicDeviceKey()] ?? 0
+  return valueForDevice(micLatencyByDevice(), currentMicDeviceKey()) ?? 0
+}
+
+/** Read one known opened route even when MicManager had to fall back to it. */
+export function micLatencyMsForDevice(deviceId: string | null): number {
+  return valueForDevice(micLatencyByDevice(), deviceId) ?? 0
 }
 
 /** The same number in seconds, which is what the audio clock deals in. */
@@ -72,7 +102,16 @@ export function micLatencySec(): number {
 
 /** Calibration spread for the current input, or null for legacy/unknown runs. */
 export function micLatencySpreadMs(): number | null {
-  return micLatencySpreadByDevice()[currentMicDeviceKey()] ?? null
+  return (
+    valueForDevice(micLatencySpreadByDevice(), currentMicDeviceKey()) ?? null
+  )
+}
+
+/** Read spread evidence for the actual opened route, not its stale request. */
+export function micLatencySpreadMsForDevice(
+  deviceId: string | null,
+): number | null {
+  return valueForDevice(micLatencySpreadByDevice(), deviceId) ?? null
 }
 
 /** Store a measured offset against the current input, clamped to the believable range. */
@@ -110,19 +149,50 @@ export function setMicLatencyMeasurement(
   })
 }
 
+/** Store calibration against the actual opened route after device fallback. */
+export function setMicLatencyMeasurementForDevice(
+  deviceId: string | null,
+  latencyMs: number,
+  spreadMs: number | null,
+): void {
+  const clampedLatency = Math.max(
+    0,
+    Math.min(MAX_LATENCY_MS, Math.round(latencyMs)),
+  )
+  const key = deviceId ?? DEFAULT_DEVICE_KEY
+  setMicLatencyByDevice((prev) => ({ ...prev, [key]: clampedLatency }))
+  setMicLatencySpreadByDevice((prev) => {
+    if (spreadMs === null || !Number.isFinite(spreadMs) || spreadMs < 0) {
+      if (!(key in prev)) return prev
+      const next = { ...prev }
+      delete next[key]
+      return next
+    }
+    return { ...prev, [key]: Math.round(spreadMs) }
+  })
+}
+
 /** Forget the current input's offset, back to uncompensated. */
 export function clearMicLatency(): void {
   const key = currentMicDeviceKey()
+  const keys = new Set([key])
+  if (
+    key !== DEFAULT_DEVICE_KEY &&
+    micManager.getPreferredDevice() === null &&
+    micManager.getResolvedDevice() === key
+  ) {
+    keys.add(DEFAULT_DEVICE_KEY)
+  }
   setMicLatencyByDevice((prev) => {
-    if (!(key in prev)) return prev
+    if (![...keys].some((candidate) => candidate in prev)) return prev
     const next = { ...prev }
-    delete next[key]
+    for (const candidate of keys) delete next[candidate]
     return next
   })
   setMicLatencySpreadByDevice((prev) => {
-    if (!(key in prev)) return prev
+    if (![...keys].some((candidate) => candidate in prev)) return prev
     const next = { ...prev }
-    delete next[key]
+    for (const candidate of keys) delete next[candidate]
     return next
   })
 }

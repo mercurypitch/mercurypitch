@@ -13,6 +13,7 @@ function attack(
     id: `attack-${at}`,
     kind: 'attack',
     source: 'microphone',
+    voiceId: null,
     at,
     capturedAt: at + 0.04,
     level: 0.4,
@@ -101,6 +102,15 @@ describe('describeInputHealth', () => {
     const reading = describeInputHealth(0.4, 0.01)
     expect(reading.state).toBe('good')
     expect(reading.hint).not.toBe('')
+  })
+
+  it('keeps an uncertain note distinct from silence', () => {
+    const uncertain = {
+      state: 'uncertain' as const,
+      hint: 'Signal is present, but the note is not stable enough to name.',
+    }
+    expect(uncertain.state).not.toBe('silent')
+    expect(uncertain.hint).toContain('not stable enough')
   })
 })
 

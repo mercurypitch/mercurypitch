@@ -40,6 +40,9 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 export interface SpacePlaybackOptions {
   /** Toggle play/pause. Called once per discrete, unmodified Space press. */
   toggle: () => void
+  /** Optional ownership gate — return false while an overlay owns the key,
+   *  leaving Space untouched for its focused control. */
+  ownsSpace?: () => boolean
   /** Optional gate — return false while the surface should swallow Space
    *  without toggling (e.g. a transport still loading). */
   enabled?: () => boolean
@@ -53,6 +56,7 @@ export function installSpacePlaybackToggle(
     if (event.code !== 'Space' || event.repeat) return
     if (event.ctrlKey || event.metaKey || event.altKey) return
     if (isTypingTarget(event.target)) return
+    if (options.ownsSpace?.() === false) return
     event.preventDefault()
     if (options.enabled?.() === false) return
     options.toggle()
