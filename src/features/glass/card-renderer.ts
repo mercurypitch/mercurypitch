@@ -12,6 +12,30 @@
 import type { CardFormat } from '@/features/mirror/card-renderer'
 import { generateFracture, mulberry32, polyCentroid, } from '@/lib/glass/fracture'
 
+// Two surfaces, two strings — the same split the mirror card makes, for the
+// same reasons. Drawn on the card the URL is read and then typed, so it stays
+// bare; in share text it is clickable, so it is tagged.
+//
+// `utm_medium=share` is the bucket: it means a human passed this card to
+// another human, on any surface. `utm_source` says which card did it, so
+// Glass and the voiceprint stay tellable apart inside that bucket without
+// either being confused for paid traffic.
+// See docs/plans/ugc-noise-integration.md §5.
+
+/** Printed on the card face. Bare on purpose — it is read, not clicked. */
+export const CARD_URL = 'mercurypitch.com/glass'
+
+const SHARE_URL =
+  'https://mercurypitch.com/glass?utm_source=glasscard&utm_medium=share'
+
+/** Share text for a shatter card, which reads differently depending on
+ *  whether the glass actually broke. */
+export function glassShareText(shattered: boolean): string {
+  return shattered
+    ? `I shattered it — ${SHARE_URL}`
+    : `The glass is still standing… for now — ${SHARE_URL}`
+}
+
 export interface ShatterCardInput {
   targetLabel: string
   /** null → the glass held. */
@@ -151,7 +175,7 @@ export function renderShatterCard(
 
   ctx.font = '500 32px system-ui, sans-serif'
   ctx.fillStyle = '#8a86a8'
-  ctx.fillText('mercurypitch.com/glass', cx, height - 76)
+  ctx.fillText(CARD_URL, cx, height - 76)
 
   return canvas
 }
