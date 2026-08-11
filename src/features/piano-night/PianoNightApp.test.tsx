@@ -200,7 +200,7 @@ describe('PianoNightApp', () => {
     expect(screen.getByText('Prepared project performance')).toBeVisible()
     expect(screen.getByText('bars 1–4 · Afterglow Studio')).toBeVisible()
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Afterglow Study is ready. Audio and input are off.',
+      'Afterglow Study in E-flat is ready. Audio and input are off.',
     )
 
     const keyboard = screen.getByTestId('piano-night-keyboard')
@@ -230,7 +230,7 @@ describe('PianoNightApp', () => {
     expect(audioContext.gains.length).toBeGreaterThan(1)
     expect(audioContext.oscillators.length).toBeGreaterThan(0)
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Playing Afterglow Study with the built-in fallback synth.',
+      'Playing Afterglow Study in E-flat with the built-in fallback synth.',
     )
     expect(requestMidiAccess).not.toHaveBeenCalled()
     expect(getUserMedia).not.toHaveBeenCalled()
@@ -253,8 +253,10 @@ describe('PianoNightApp', () => {
 
     fireEvent.click(view)
     const score = screen.getByTestId('piano-night-score-view')
-    expect(score).toHaveAccessibleName('Prepared project score')
-    expect(screen.getByText('Project score lens')).toBeVisible()
+    expect(score).toHaveAccessibleName(
+      'Project score for Afterglow Study in E-flat',
+    )
+    expect(screen.getByText('Prepared score lens')).toBeVisible()
     expect(screen.getByText(/notes$/)).toBeVisible()
 
     fireEvent.click(
@@ -290,7 +292,7 @@ describe('PianoNightApp', () => {
   it('keeps the phrase lens aligned with a project seek', () => {
     render(() => <PianoNightApp />)
 
-    const seek = screen.getByLabelText('Seek prepared piano project')
+    const seek = screen.getByLabelText('Seek piano project')
     const playhead = screen.getByTestId('piano-night-trace-playhead')
     expect(seek).toHaveAttribute('aria-valuetext', 'Beat 0.0 of 64')
     expect(playhead).toHaveStyle({
@@ -334,7 +336,7 @@ describe('PianoNightApp', () => {
     await waitFor(() => expect(cSharp).toHaveAttribute('aria-pressed', 'true'))
     expect(createAudioContext).toHaveBeenCalledOnce()
 
-    fireEvent.input(screen.getByLabelText('Seek prepared piano project'), {
+    fireEvent.input(screen.getByLabelText('Seek piano project'), {
       target: { value: '24' },
     })
     expect(cSharp).toHaveAttribute('aria-pressed', 'false')
@@ -478,11 +480,124 @@ describe('PianoNightApp', () => {
     expect(createWorker).not.toHaveBeenCalled()
   })
 
-  it('uses one settings entry per layout and keeps one current-Piano link per layout', () => {
+  it('opens the device library only from Music without activating audio or a worker', async () => {
+    render(() => <PianoNightApp />)
+    expectSilentBrowserBoundary()
+
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Choose music for Piano Night',
+      })[0],
+    )
+
+    await screen.findByRole('heading', { name: 'Choose what to play' })
+    const musicPanel = screen.getByRole('tabpanel', { name: 'Music' })
+    await waitFor(() =>
+      expect(musicPanel).toHaveAttribute('aria-busy', 'false'),
+    )
+    await waitFor(() => expect(databaseOpen).toHaveBeenCalled())
+    expect(createWorker).not.toHaveBeenCalled()
+    expect(createAudioContext).not.toHaveBeenCalled()
+    expect(requestMidiAccess).not.toHaveBeenCalled()
+    expect(getUserMedia).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: /Afterglow Study in E-flat/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('stages a composed melody without inventing authored coaching', async () => {
+    localStorage.setItem(
+      'pitchperfect_library',
+      JSON.stringify({
+        melodies: {
+          'device-nocturne': {
+            id: 'device-nocturne',
+            name: 'Device Nocturne',
+            bpm: 132,
+            kind: 'melody',
+            items: [
+              {
+                id: 1,
+                isRest: false,
+                note: { midi: 60 },
+                startBeat: 0,
+                duration: 2,
+                velocity: 100,
+              },
+            ],
+          },
+        },
+      }),
+    )
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Choose music for Piano Night',
+      })[0],
+    )
+    const composition = await screen.findByRole('button', {
+      name: /Device Nocturne/,
+    })
+    fireEvent.click(composition)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Device Nocturne').length).toBeGreaterThan(0)
+      expect(screen.getByText('Loaded project performance')).toBeVisible()
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Device Nocturne is on stage.',
+      )
+    })
+    expect(screen.getByLabelText('Seek piano project')).toHaveAttribute(
+      'aria-valuetext',
+      'Beat 0.0 of 2',
+    )
+    expect(
+      screen.getByText(
+        'No authored coaching prompt exists for Device Nocturne.',
+      ),
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('img', {
+        name: 'Crescendo from mezzo-piano to mezzo-forte',
+      }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Change performance view. Current view: Fall',
+      }),
+    )
+    expect(screen.getByTestId('piano-night-score-view')).toHaveAccessibleName(
+      'Project score for Device Nocturne',
+    )
+    expect(screen.getByText('Project score lens')).toBeVisible()
+    expect(screen.getByText('Key not specified')).toBeVisible()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Change performance view. Current view: Score',
+      }),
+    )
+    expect(screen.getByTestId('piano-night-keys-view')).toHaveTextContent(
+      'Beat 0.0 of 2',
+    )
+    expect(screen.getByRole('heading', { name: 'C4' })).toBeVisible()
+    expect(createWorker).not.toHaveBeenCalled()
+    expect(createAudioContext).not.toHaveBeenCalled()
+    expect(requestMidiAccess).not.toHaveBeenCalled()
+    expect(getUserMedia).not.toHaveBeenCalled()
+  })
+
+  it('uses one Music and Settings entry per responsive layout', () => {
     render(() => <PianoNightApp />)
 
     expect(
       screen.getAllByRole('button', { name: 'Open Piano Night settings' }),
+    ).toHaveLength(2)
+    expect(
+      screen.getAllByRole('button', {
+        name: 'Choose music for Piano Night',
+      }),
     ).toHaveLength(2)
     expect(
       screen.queryByRole('button', { name: 'Open session controls' }),
@@ -493,11 +608,52 @@ describe('PianoNightApp', () => {
     expect(
       screen.queryByRole('button', { name: 'Room' }),
     ).not.toBeInTheDocument()
-    for (const link of screen.getAllByRole('link', {
-      name: 'Open the current Piano workspace',
-    })) {
-      expect(link).toHaveAttribute('href', '/#/piano')
-    }
+    expect(
+      screen.getByRole('link', {
+        name: 'Open the current Piano workspace',
+      }),
+    ).toHaveAttribute('href', '/#/piano')
+  })
+
+  it('keeps Music distinct and reopens the last settings section', async () => {
+    render(() => <PianoNightApp />)
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }))
+    expect(screen.getByRole('tab', { name: 'Room' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: 'Piano Night controls' }),
+      ).getByRole('button', { name: 'Close Piano Night controls' }),
+    )
+
+    fireEvent.click(
+      screen.getAllByRole('button', {
+        name: 'Choose music for Piano Night',
+      })[0],
+    )
+    await screen.findByRole('tabpanel', { name: 'Music' })
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: 'Piano Night controls' }),
+      ).getByRole('button', { name: 'Close Piano Night controls' }),
+    )
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open Piano Night settings' })[0],
+    )
+    expect(screen.getByRole('tab', { name: 'Room' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(
+      screen.queryByRole('tabpanel', { name: 'Music' }),
+    ).not.toBeInTheDocument()
   })
 
   it('persists a Piano room choice without changing sound', () => {

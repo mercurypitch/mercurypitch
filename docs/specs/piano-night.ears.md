@@ -6,7 +6,7 @@ composition, adds a discoverable launcher to the existing Piano tab, and
 establishes reusable presentation boundaries without replacing the current
 Piano runtime.
 
-**Status:** Phase 1A and Slices 2–4 implemented.
+**Status:** Phase 1A and Slices 2–5 implemented.
 
 **Visual authority:** the Performance Horizon variant is binding for
 composition. The established Piano Night materials and product-truth rules
@@ -513,3 +513,77 @@ bundle boundary remains in force.
 | `PN-BACKGROUND-005`–`010` | Runtime/controller/picker tests for locked fetch suppression, responsive variants, decode/authorization fallback, and URL revocation |
 | `PN-BACKGROUND-011`–`012` | Silent-mount component test, drawer focus coverage, standalone build audit, and desktop/mobile browser smoke                         |
 | `PN-BACKGROUND-013`       | Empty/populated D1 migration tests plus Worker catalog, byte-delivery, Studio, and non-Jam capability tests                          |
+
+## Slice 5 — device music and canonical MIDI loading
+
+Slice 5 lets the standalone room stage music already authored or imported on
+this device. It reuses the canonical Piano project and Worker-import
+foundations without mounting the App-owned legacy song picker or changing the
+separate Guitar Night surface. The bundled study remains the silent fallback.
+
+### Intent-lazy music library — `PN-MUSIC-*`
+
+- **REQ-PN-MUSIC-001 — Explicit library boundary:** Loading Piano Night or
+  opening Session, Sound, Room, or Coach shall not read IndexedDB, the legacy
+  MIDI key, or the MercuryPitch composition library. Only an explicit Music
+  action may load those device-local sources.
+- **REQ-PN-MUSIC-002 — Intent-only importer:** Opening Music may load the
+  failure-bearing project catalog, but the MIDI importer module and its Worker
+  shall load only after a file-selection gesture.
+- **REQ-PN-MUSIC-003 — Canonical catalog:** WHEN Music opens, Piano Night shall
+  list valid canonical Piano projects in deterministic library order and may
+  run the existing non-destructive legacy MIDI migration so older device-local
+  imports become discoverable.
+- **REQ-PN-MUSIC-004 — Composition projection:** Valid, pitched, non-empty
+  melodies from the MercuryPitch composition library shall project through a
+  pure, bounded adapter into the same beat-native performance stage without
+  being mislabeled or persisted as a MIDI-derived PianoProject.
+- **REQ-PN-MUSIC-005 — Durable import before stage:** WHEN a local MIDI import
+  succeeds, Piano Night shall validate it in the bounded Worker and durably
+  save the canonical project before exposing it as the active stage. IF
+  parsing or persistence fails, THEN the current source shall remain active.
+- **REQ-PN-MUSIC-006 — Atomic source replacement:** WHEN a valid source is
+  selected, the one route-owned scheduler shall stop old score voices, the
+  transport shall cancel pending playback and reset to beat zero, live voices
+  shall release, and title, notes, duration, active-note index, and initial
+  tempo shall change as one source replacement.
+- **REQ-PN-MUSIC-007 — One runtime owner:** Source replacement shall retain the
+  same transport, scheduler, synth, AudioContext, normalized input, touch port,
+  and selected MIDI port rather than construct a competing owner.
+- **REQ-PN-MUSIC-008 — Stale-result safety:** WHEN a library read, import, or
+  pending Play is cancelled or superseded, its late completion shall not stage
+  content, start a scheduler, overwrite status, or report success.
+- **REQ-PN-MUSIC-009 — Failure-bearing states:** Music shall distinguish
+  loading, empty, partial/skipped, unavailable, importing, and import-failure
+  states; Included music shall remain selectable and Retry shall remain
+  available after a device-library read failure.
+- **REQ-PN-MUSIC-010 — Selection identity:** Current-source indication shall
+  use stable source identity rather than title and shall expose visible and
+  accessible `On stage` state.
+- **REQ-PN-MUSIC-011 — Imported-content truth:** The authored Afterglow phrase,
+  notation, dynamics, pedal, key, and bar copy shall appear only for the
+  bundled study. Other sources shall use factual project sections, dynamic
+  title/duration/note metadata, and an explicit not-analysed coach state.
+- **REQ-PN-MUSIC-012 — Playback limits:** WHILE Piano Night performs only the
+  selected score lane at one initial tempo, it shall identify additional
+  tracks as saved rather than audible and shall not claim tempo-map-aware,
+  backing-track, arranger, or percussion playback.
+- **REQ-PN-MUSIC-013 — One controls surface:** Music shall be a distinct entry
+  into the existing Piano Night controls drawer. Settings shall remain one
+  entry per responsive composition and shall reopen the last settings section,
+  not silently reopen Music.
+- **REQ-PN-MUSIC-014 — Compact reachability:** At compact widths the Music tab,
+  import action, current selection, retry/error copy, transport, and playable
+  key horizon shall remain reachable without horizontal page overflow.
+- **REQ-PN-MUSIC-015 — Guitar isolation:** Slice 5 shall not change Guitar
+  Night or replace its in-flight picker work; only route-neutral canonical
+  project/import foundations may be shared.
+
+### Slice 5 verification map
+
+| Requirement area     | Minimum evidence                                                                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-MUSIC-001`–`003` | Silent mount/settings assertions, Music-intent DB assertion, importer-module/Worker first-gesture audit, and migration/catalog fixtures   |
+| `PN-MUSIC-004`–`008` | Composition adapter fixtures, durable import tests, source-swap scheduler/transport tests, and cancelled/stale completion tests           |
+| `PN-MUSIC-009`–`011` | Component loading/empty/error/retry/current/large-title cases plus all-lens imported-content truth checks                                 |
+| `PN-MUSIC-012`–`015` | Additional-track/tempo-limit copy assertions, one-Settings regression, responsive browser smoke, and a standalone MIDI import/reload test |

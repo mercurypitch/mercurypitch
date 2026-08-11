@@ -6,6 +6,7 @@
 // comes from the injected transport, and every discontinuity clears the score
 // voices before a new generation is allowed to schedule.
 
+import type { Accessor } from 'solid-js'
 import type { PianoAudioClockTransport } from './piano-audio-clock-transport'
 import type { PianoFallbackSynth } from './piano-fallback-synth'
 import type { PianoProjectStageNote } from './piano-project-stage'
@@ -19,7 +20,7 @@ export interface PianoPerformanceScheduler {
 
 export interface PianoPerformanceSchedulerOptions {
   transport: PianoAudioClockTransport
-  notes: readonly PianoProjectStageNote[]
+  notes: Accessor<readonly PianoProjectStageNote[]>
   synth: Pick<PianoFallbackSynth, 'noteOn' | 'noteOff'>
   scheduleAheadSeconds?: number
   schedulerIntervalMs?: number
@@ -85,7 +86,7 @@ export function createPianoPerformanceScheduler(
     const horizonBeat = beat + scheduleAheadSeconds * beatsPerSecond
     const secondsPerBeat = 1 / beatsPerSecond
 
-    for (const note of options.notes) {
+    for (const note of options.notes()) {
       const id = voiceId(note)
       if (scheduledIds.has(id)) continue
       const endBeat = note.startBeat + note.duration

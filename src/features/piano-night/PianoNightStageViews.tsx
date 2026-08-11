@@ -1,5 +1,5 @@
 // ============================================================
-// Piano Night stage lenses — truthful projections of one prepared score
+// Piano Night stage lenses — truthful projections of one replaceable score
 // ============================================================
 //
 // Fall, Score, and Keys share the same notes and sampled playhead. None owns
@@ -17,7 +17,11 @@ export type PianoNightPerformanceView = 'fall' | 'score' | 'keys'
 
 interface PianoNightStageViewsProps {
   view: Accessor<PianoNightPerformanceView>
-  notes: readonly PianoPerformanceNote[]
+  notes: Accessor<readonly PianoPerformanceNote[]>
+  title: Accessor<string>
+  totalBeats: Accessor<number>
+  keyLabel: Accessor<string | null>
+  hasAuthoredCoach: Accessor<boolean>
   playheadBeat: Accessor<number>
   isPlaying: Accessor<boolean>
   phrase: Accessor<PianoNightPhrase>
@@ -46,18 +50,20 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
   )
   const anchorBeat = createMemo(() => pianoNightFallAnchorBeat(visualBeat()))
   const trackNotes = createMemo(() =>
-    pianoNightFallWindow(props.notes, anchorBeat()),
+    pianoNightFallWindow(props.notes(), anchorBeat()),
   )
   const trackTranslation = createMemo(() =>
     pianoNightFallTrackTranslationPercent(visualBeat(), anchorBeat()),
   )
   const semanticBeat = createMemo(() => Math.floor(props.playheadBeat()))
   const semanticSummary = createMemo(() => {
-    const upcoming = props.notes.filter(
-      (note) =>
-        note.startBeat + note.duration >= semanticBeat() - 1 &&
-        note.startBeat <= semanticBeat() + 12,
-    )
+    const upcoming = props
+      .notes()
+      .filter(
+        (note) =>
+          note.startBeat + note.duration >= semanticBeat() - 1 &&
+          note.startBeat <= semanticBeat() + 12,
+      )
     return `${upcoming.length} project notes around beat ${semanticBeat()}. Square cyan notes mark the lower register and rounded coral notes mark the upper register.`
   })
 
@@ -122,7 +128,11 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
           }}
         </For>
       </div>
-      <span class={styles.projectLabel}>Prepared project performance</span>
+      <span class={styles.projectLabel}>
+        {props.hasAuthoredCoach()
+          ? 'Prepared project performance'
+          : 'Loaded project performance'}
+      </span>
       <p class={styles.srOnly}>{semanticSummary()}</p>
     </section>
   )
@@ -130,11 +140,13 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
 
 function PianoNightScoreView(props: PianoNightStageViewsProps): JSX.Element {
   const phraseNotes = createMemo(() =>
-    props.notes.filter(
-      (note) =>
-        note.startBeat < props.phrase().endBeat &&
-        note.startBeat + note.duration > props.phrase().startBeat,
-    ),
+    props
+      .notes()
+      .filter(
+        (note) =>
+          note.startBeat < props.phrase().endBeat &&
+          note.startBeat + note.duration > props.phrase().startBeat,
+      ),
   )
   const scoreX = (note: PianoPerformanceNote): number =>
     112 +
@@ -149,12 +161,12 @@ function PianoNightScoreView(props: PianoNightStageViewsProps): JSX.Element {
   return (
     <section
       class={styles.scoreStage}
-      aria-label="Prepared project score"
+      aria-label={`Project score for ${props.title()}`}
       data-testid="piano-night-score-view"
     >
       <div class={styles.scorePaper}>
         <div class={styles.scoreHeading}>
-          <span>Afterglow Study</span>
+          <span>{props.title()}</span>
           <small>{props.phrase().range}</small>
         </div>
         <svg
@@ -220,9 +232,15 @@ function PianoNightScoreView(props: PianoNightStageViewsProps): JSX.Element {
           />
         </svg>
         <div class={styles.scoreLegend}>
-          <span>E-flat major</span>
+          <Show when={props.keyLabel()}>
+            {(label) => <span>{label()}</span>}
+          </Show>
           <span>{phraseNotes().length} notes</span>
-          <span>Project score lens</span>
+          <span>
+            {props.hasAuthoredCoach()
+              ? 'Prepared score lens'
+              : 'Project score lens'}
+          </span>
         </div>
       </div>
     </section>
@@ -232,7 +250,8 @@ function PianoNightScoreView(props: PianoNightStageViewsProps): JSX.Element {
 function PianoNightKeysView(props: PianoNightStageViewsProps): JSX.Element {
   const projectMidis = createMemo(() =>
     props.isPlaying()
-      ? props.notes
+      ? props
+          .notes()
           .filter(
             (note) =>
               note.startBeat <= props.playheadBeat() &&
@@ -248,11 +267,12 @@ function PianoNightKeysView(props: PianoNightStageViewsProps): JSX.Element {
   })
   const nextMidis = createMemo(() => {
     if (currentMidis().length > 0) return currentMidis()
-    const nextStart = props.notes.find(
-      (note) => note.startBeat >= props.playheadBeat(),
-    )?.startBeat
+    const nextStart = props
+      .notes()
+      .find((note) => note.startBeat >= props.playheadBeat())?.startBeat
     if (nextStart === undefined) return []
-    return props.notes
+    return props
+      .notes()
       .filter((note) => Math.abs(note.startBeat - nextStart) < 0.001)
       .map((note) => note.midi)
       .sort((left, right) => left - right)
@@ -274,7 +294,8 @@ function PianoNightKeysView(props: PianoNightStageViewsProps): JSX.Element {
           </Show>
         </h2>
         <p>
-          Beat {props.playheadBeat().toFixed(1)} of 64 · {props.phrase().range}
+          Beat {props.playheadBeat().toFixed(1)} of {props.totalBeats()} ·{' '}
+          {props.phrase().range}
         </p>
         <div>
           <For each={nextMidis()}>{(midi) => <i>{displayNote(midi)}</i>}</For>
