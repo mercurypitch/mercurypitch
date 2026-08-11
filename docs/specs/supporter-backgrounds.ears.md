@@ -15,6 +15,7 @@ behavior.
 `workers/db-worker/src/background-capabilities.ts`,
 `workers/db-worker/migrations/0018_premium_background_studio.sql`,
 `workers/db-worker/migrations/0023_piano_background_surface.sql`,
+`workers/db-worker/migrations/0024_piano_background_pack.sql`,
 `workers/jam-worker/src/host-verification.ts`,
 `workers/jam-worker/src/room-ownership.ts`,
 `workers/jam-worker/src/signaling-intent.ts`,
@@ -42,7 +43,10 @@ behavior), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 
 - **BG-CAT-1** — The system shall define Karaoke Night, Jam Rooms, and Piano
   Night backgrounds in one typed catalog.
-- **BG-CAT-2** — The catalog shall include every currently shipped free background, the existing `golden-stage`, `golden-singer`, and `aurora-loft` masters, and the reserved Mercury Editions identifiers.
+- **BG-CAT-2** — The catalog shall include every currently shipped free
+  background, the existing `golden-stage`, `golden-singer`, and `aurora-loft`
+  masters, the reserved Mercury Editions identifiers, and all ten mastered
+  Piano supporter identities.
 - **BG-CAT-3** — The catalog shall distinguish shipped, master-ready, and planned backgrounds.
 - **BG-CAT-4** — Every supporter background shall use an opaque protected source key and shall not contain a public asset URL.
 - **BG-CAT-5** — Every surface shall have a shipped free default.

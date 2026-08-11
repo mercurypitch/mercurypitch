@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, } from './background-catalog'
+import { BACKGROUND_CATALOG, BACKGROUND_PERK_IDS, CURRENT_FREE_BACKGROUND_IDS, defaultBackground, EXISTING_PREMIUM_BACKGROUND_IDS, getBackgroundDefinition, listBackgrounds, NEW_EDITION_BACKGROUND_IDS, PIANO_PREMIUM_BACKGROUND_IDS, } from './background-catalog'
 
 describe('background catalog', () => {
   it('registers every current free performance scene as shipped', () => {
@@ -20,11 +20,17 @@ describe('background catalog', () => {
     }
   })
 
-  it('marks the three existing premium masters separately from new concepts', () => {
+  it('marks every available master separately from the remaining planned editions', () => {
     for (const id of EXISTING_PREMIUM_BACKGROUND_IDS) {
       expect(getBackgroundDefinition(id)?.delivery).toBe('master-ready')
     }
-    for (const id of NEW_EDITION_BACKGROUND_IDS) {
+    for (const id of PIANO_PREMIUM_BACKGROUND_IDS) {
+      expect(getBackgroundDefinition(id)?.delivery).toBe('master-ready')
+    }
+    const masteredPianoIds = new Set<string>(PIANO_PREMIUM_BACKGROUND_IDS)
+    for (const id of NEW_EDITION_BACKGROUND_IDS.filter(
+      (id) => !masteredPianoIds.has(id),
+    )) {
       expect(getBackgroundDefinition(id)?.delivery).toBe('planned')
     }
   })
@@ -65,7 +71,13 @@ describe('background catalog', () => {
       'midnight-rain-stage',
     ])
     expect(listBackgrounds('piano').map((background) => background.id)).toEqual(
-      ['piano-afterglow', 'piano-morning-conservatory'],
+      [
+        'piano-afterglow',
+        'piano-morning-conservatory',
+        'piano-nocturne-studio',
+        'piano-brick-practice-loft',
+        'piano-quiet-music-library',
+      ],
     )
     expect(
       listBackgrounds('piano', { includeUnshipped: true }).map(
@@ -74,10 +86,19 @@ describe('background catalog', () => {
     ).toEqual([
       'piano-afterglow',
       'piano-morning-conservatory',
+      'piano-nocturne-studio',
+      'piano-brick-practice-loft',
+      'piano-quiet-music-library',
       'piano-velvet-recital',
       'piano-aurora-loft',
       'piano-midnight-rain',
       'piano-mercury-archive',
+      'piano-rain-glasshouse',
+      'piano-alpine-observatory',
+      'piano-cedar-listening-room',
+      'piano-desert-modern-salon',
+      'piano-moonlit-gallery',
+      'piano-coastal-fog-pavilion',
     ])
   })
 
@@ -93,6 +114,9 @@ describe('background catalog', () => {
   it('keeps Piano responsive artwork and contrast treatment in the shared catalog', () => {
     const afterglow = getBackgroundDefinition('piano-afterglow')
     const morning = getBackgroundDefinition('piano-morning-conservatory')
+    const nocturne = getBackgroundDefinition('piano-nocturne-studio')
+    const brick = getBackgroundDefinition('piano-brick-practice-loft')
+    const library = getBackgroundDefinition('piano-quiet-music-library')
     expect(afterglow?.assetSource).toMatchObject({
       kind: 'public',
       portrait: '/piano-night/afterglow-studio-portrait.webp',
@@ -101,7 +125,22 @@ describe('background catalog', () => {
       kind: 'public',
       portrait: '/piano-night/morning-conservatory-portrait.webp',
     })
+    expect(nocturne?.assetSource).toMatchObject({
+      kind: 'public',
+      portrait: '/piano-night/nocturne-studio-portrait.webp',
+    })
+    expect(brick?.assetSource).toMatchObject({
+      kind: 'public',
+      portrait: '/piano-night/brick-practice-loft-portrait.webp',
+    })
+    expect(library?.assetSource).toMatchObject({
+      kind: 'public',
+      portrait: '/piano-night/quiet-music-library-portrait.webp',
+    })
     expect(afterglow?.treatment ?? 'dark').toBe('dark')
     expect(morning?.treatment).toBe('light')
+    expect(nocturne?.treatment ?? 'dark').toBe('dark')
+    expect(brick?.treatment).toBe('light')
+    expect(library?.treatment ?? 'dark').toBe('dark')
   })
 })

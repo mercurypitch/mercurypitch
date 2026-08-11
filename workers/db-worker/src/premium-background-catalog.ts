@@ -37,6 +37,12 @@ const SURFACE_BY_ID: Record<PremiumBackgroundId, BackgroundSurface> = {
   'piano-aurora-loft': 'piano',
   'piano-midnight-rain': 'piano',
   'piano-mercury-archive': 'piano',
+  'piano-rain-glasshouse': 'piano',
+  'piano-alpine-observatory': 'piano',
+  'piano-cedar-listening-room': 'piano',
+  'piano-desert-modern-salon': 'piano',
+  'piano-moonlit-gallery': 'piano',
+  'piano-coastal-fog-pavilion': 'piano',
 }
 
 function includes<const T extends readonly string[]>(

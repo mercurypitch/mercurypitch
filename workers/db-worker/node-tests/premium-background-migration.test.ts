@@ -21,14 +21,27 @@ const PIANO_MIGRATION = join(
   import.meta.dirname,
   '../migrations/0023_piano_background_surface.sql',
 )
+const PIANO_PACK_MIGRATION = join(
+  import.meta.dirname,
+  '../migrations/0024_piano_background_pack.sql',
+)
 const BACKGROUND_ID = 'golden-stage'
 const NOW = '2026-08-06T00:00:00.000Z'
-const PIANO_IDS = [
+const PIANO_CORE_IDS = [
   'piano-aurora-loft',
   'piano-mercury-archive',
   'piano-midnight-rain',
   'piano-velvet-recital',
 ] as const
+const PIANO_PACK_IDS = [
+  'piano-alpine-observatory',
+  'piano-cedar-listening-room',
+  'piano-coastal-fog-pavilion',
+  'piano-desert-modern-salon',
+  'piano-moonlit-gallery',
+  'piano-rain-glasshouse',
+] as const
+const PIANO_IDS = [...PIANO_CORE_IDS, ...PIANO_PACK_IDS].sort()
 
 let directory: string
 let primary: DatabaseSync
@@ -62,6 +75,11 @@ function insertDraft(
 
 function applyPianoMigration(database: DatabaseSync): void {
   database.exec(readFileSync(PIANO_MIGRATION, 'utf8'))
+  database.exec(readFileSync(PIANO_PACK_MIGRATION, 'utf8'))
+}
+
+function applyPianoPackMigration(database: DatabaseSync): void {
+  database.exec(readFileSync(PIANO_PACK_MIGRATION, 'utf8'))
 }
 
 function rows(database: DatabaseSync, table: string, where = '1 = 1') {
@@ -130,7 +148,7 @@ describe('premium background revision migration', () => {
     ).toEqual({ id: 'draft-winner' })
   })
 
-  it('adds Piano identities without publishing protected revisions', () => {
+  it('adds the complete Piano pack without publishing protected revisions', () => {
     applyPianoMigration(primary)
 
     expect(
@@ -288,24 +306,24 @@ describe('premium background revision migration', () => {
     ).toThrow(/UNIQUE constraint failed/)
   })
 
-  it('replays without restoring an intentionally revoked Piano assignment', () => {
+  it('replays the additive pack without restoring an intentional revocation', () => {
     applyPianoMigration(primary)
     primary
       .prepare(
         `UPDATE premiumSupporterGroupPerks
             SET revokedAt = ?
           WHERE groupId = 'group-active-supporters'
-            AND backgroundId = 'piano-aurora-loft'`,
+            AND backgroundId = 'piano-rain-glasshouse'`,
       )
       .run(NOW)
 
-    expect(() => applyPianoMigration(primary)).not.toThrow()
+    expect(() => applyPianoPackMigration(primary)).not.toThrow()
     expect(
       primary
         .prepare(
           `SELECT revokedAt FROM premiumSupporterGroupPerks
             WHERE groupId = 'group-active-supporters'
-              AND backgroundId = 'piano-aurora-loft'`,
+              AND backgroundId = 'piano-rain-glasshouse'`,
         )
         .get(),
     ).toEqual({ revokedAt: NOW })

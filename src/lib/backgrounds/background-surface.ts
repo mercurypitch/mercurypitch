@@ -142,6 +142,18 @@ function descriptionFor(background: BackgroundDefinition): string {
       return 'After-dark reflections and cinematic rain'
     case 'mercury-archive':
       return 'A Mercury Edition from the private archive'
+    case 'rain-glasshouse':
+      return 'Rain-lit glass and deep blue reflections'
+    case 'alpine-observatory':
+      return 'High-altitude twilight and an open horizon'
+    case 'cedar-listening-room':
+      return 'Dark cedar and close-listening warmth'
+    case 'desert-modern-salon':
+      return 'Warm stone and spacious desert light'
+    case 'moonlit-gallery':
+      return 'Silver-blue architecture after midnight'
+    case 'coastal-fog-pavilion':
+      return 'Soft coastal light through the morning fog'
   }
 }
 
