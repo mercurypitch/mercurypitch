@@ -271,6 +271,22 @@ describe('PianoNightApp', () => {
     expectSilentBrowserBoundary()
   })
 
+  it('describes the visual dynamics and pedal prompts to assistive technology', () => {
+    render(() => <PianoNightApp />)
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Crescendo from mezzo-piano to mezzo-forte',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', {
+        name: 'Hold the sustain pedal through the phrase, then release',
+      }),
+    ).toBeInTheDocument()
+    expectSilentBrowserBoundary()
+  })
+
   it('keeps the phrase lens aligned with a project seek', () => {
     render(() => <PianoNightApp />)
 
@@ -319,13 +335,22 @@ describe('PianoNightApp', () => {
       configurable: true,
       value: vi.fn((query: string) => ({
         get matches() {
-          return query === '(max-width: 680px)' ? mobile : false
+          return query ===
+            '(max-width: 680px), (max-width: 900px) and (max-height: 500px)'
+            ? mobile
+            : false
         },
         media: query,
         onchange: null,
         addEventListener: vi.fn(
           (type: string, listener: EventListenerOrEventListenerObject) => {
-            if (query !== '(max-width: 680px)' || type !== 'change') return
+            if (
+              query !==
+                '(max-width: 680px), (max-width: 900px) and (max-height: 500px)' ||
+              type !== 'change'
+            ) {
+              return
+            }
             notifyMobileChange = () => {
               if (typeof listener === 'function') listener(new Event('change'))
               else listener.handleEvent(new Event('change'))

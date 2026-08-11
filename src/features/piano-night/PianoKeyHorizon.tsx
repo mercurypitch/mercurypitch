@@ -49,6 +49,8 @@ const ORDERED_KEYS = [...KEYBOARD.white, ...KEYBOARD.black].sort(
   (left, right) => left.midi - right.midi,
 )
 const MOBILE_RANGE_STARTS = [36, 48, 60, 72] as const
+const COMPACT_KEYBOARD_MEDIA_QUERY =
+  '(max-width: 680px), (max-width: 900px) and (max-height: 500px)'
 
 export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
   const [mobile, setMobile] = createSignal(false)
@@ -103,7 +105,7 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
   onMount(() => {
     const media =
       typeof window.matchMedia === 'function'
-        ? window.matchMedia('(max-width: 680px)')
+        ? window.matchMedia(COMPACT_KEYBOARD_MEDIA_QUERY)
         : null
     const sync = (): void => {
       const nextMobile = media?.matches ?? false

@@ -123,7 +123,11 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
 
         <section class={styles.coachSection}>
           <h2>Dynamics prompt</h2>
-          <div class={styles.dynamics} aria-label="Suggested crescendo">
+          <div
+            class={styles.dynamics}
+            role="img"
+            aria-label="Crescendo from mezzo-piano to mezzo-forte"
+          >
             <i>mp</i>
             <svg viewBox="0 0 160 38" aria-hidden="true">
               <path d="M2 30c47 0 65-20 104-20 24 0 37-5 52-7" />
@@ -134,7 +138,11 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
 
         <section class={styles.coachSection}>
           <h2>Pedal prompt</h2>
-          <div class={styles.pedal} aria-label="Suggested sustain range">
+          <div
+            class={styles.pedal}
+            role="img"
+            aria-label="Hold the sustain pedal through the phrase, then release"
+          >
             <i aria-hidden="true" />
             <span />
             <i aria-hidden="true" />
