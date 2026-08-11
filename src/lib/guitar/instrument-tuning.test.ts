@@ -2,7 +2,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { assignStringForMidi, clampStringCount, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, liftIntoTuningRange, standardTuning, suggestInstrumentForMidi, tuningLabels, } from './instrument-tuning'
+import { assignStringForMidi, clampStringCount, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, instrumentTuningFromSource, liftIntoTuningRange, soundingOpenMidi, standardTuning, suggestInstrumentForMidi, tuningLabels, } from './instrument-tuning'
 
 describe('standardTuning', () => {
   it('gives a six string guitar its standard rows, high to low', () => {
@@ -54,6 +54,38 @@ describe('tuningLabels', () => {
   })
 })
 
+describe('instrumentTuningFromSource', () => {
+  it('keeps authored tuning identity and applies capo only to sounding pitch', () => {
+    const tuning = instrumentTuningFromSource(
+      'guitar',
+      [64, 59, 55, 50, 45, 38],
+      { name: 'Drop D', capo: 2 },
+    )
+
+    expect(tuning).toEqual({
+      instrument: 'guitar',
+      stringCount: 6,
+      openMidi: [64, 59, 55, 50, 45, 38],
+      labels: ['E', 'B', 'G', 'd', 'A', 'D'],
+      name: 'Drop D',
+      capo: 2,
+    })
+    expect(soundingOpenMidi(tuning!)).toEqual([66, 61, 57, 52, 47, 40])
+  })
+
+  it('rejects source metadata the stage cannot represent', () => {
+    expect(instrumentTuningFromSource('guitar', [64, 59, 55])).toBeNull()
+    expect(
+      instrumentTuningFromSource('guitar', [64, 59, 55, 50, 45, 140]),
+    ).toBeNull()
+    expect(
+      instrumentTuningFromSource('guitar', [64, 59, 55, 50, 45, 40], {
+        capo: -1,
+      }),
+    ).toBeNull()
+  })
+})
+
 describe('assignStringForMidi', () => {
   it('picks the lowest fret that reaches the note', () => {
     // A3 (57) is fret 2 on the G string, not fret 7 on D.
@@ -73,6 +105,20 @@ describe('assignStringForMidi', () => {
   it('refuses a note the neck cannot reach', () => {
     expect(assignStringForMidi(20, DEFAULT_GUITAR_TUNING)).toBeNull()
     expect(assignStringForMidi(120, DEFAULT_GUITAR_TUNING)).toBeNull()
+  })
+
+  it('counts frets from the capo rather than the physical nut', () => {
+    const capoTwo = instrumentTuningFromSource(
+      'guitar',
+      DEFAULT_GUITAR_TUNING.openMidi,
+      { capo: 2 },
+    )!
+    expect(assignStringForMidi(42, capoTwo)).toEqual({
+      stringIndex: 5,
+      fret: 0,
+    })
+    expect(fingeringMatchesTuning(42, 5, 0, capoTwo)).toBe(true)
+    expect(fingeringMatchesTuning(40, 5, 0, capoTwo)).toBe(false)
   })
 })
 

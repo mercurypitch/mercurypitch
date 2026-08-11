@@ -45,6 +45,212 @@ afterEach(() => {
 })
 
 describe('GuitarTab3DView keyboard camera', () => {
+  it('repaints when the playhead changes without keeping a paused frame loop alive', () => {
+    const queuedFrames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      queuedFrames.push(callback)
+      return queuedFrames.length
+    })
+    const [playheadBeat, setPlayheadBeat] = createSignal(0)
+    render(() => (
+      <>
+        <button type="button" onClick={() => setPlayheadBeat(2)}>
+          Advance
+        </button>
+        <GuitarTab3DView
+          fallingNotes={() => []}
+          playheadBeat={playheadBeat}
+          visibleBeatWindow={() => 8}
+          showNoteLabels={() => true}
+          showFretboard={() => true}
+          isActive={() => true}
+          showGizmo={() => false}
+        />
+      </>
+    ))
+
+    expect(queuedFrames).toHaveLength(1)
+    queuedFrames.shift()?.(performance.now())
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+    expect(renderer.render.mock.calls[0]?.[0]).toMatchObject({
+      playheadBeat: 0,
+    })
+    expect(queuedFrames).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Advance' }))
+
+    expect(queuedFrames).toHaveLength(1)
+    queuedFrames.shift()?.(performance.now())
+    expect(renderer.render).toHaveBeenCalledTimes(2)
+    expect(renderer.render.mock.calls[1]?.[0]).toMatchObject({
+      playheadBeat: 2,
+    })
+    expect(queuedFrames).toHaveLength(0)
+  })
+
+  it('does no hidden playback or camera work and catches up when reactivated', () => {
+    let nextFrameId = 0
+    const queuedFrames = new Map<number, FrameRequestCallback>()
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      nextFrameId += 1
+      queuedFrames.set(nextFrameId, callback)
+      return nextFrameId
+    })
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((frameId) => {
+      queuedFrames.delete(frameId)
+    })
+    const first: CameraState = {
+      yaw: 0,
+      pitch: 0.55,
+      radius: 21,
+      target: [0, -2, -12],
+    }
+    const second: CameraState = {
+      ...first,
+      target: [3, -2, -12],
+    }
+    const [active, setActive] = createSignal(true)
+    const [playheadBeat, setPlayheadBeat] = createSignal(0)
+    const [preset, setPreset] = createSignal(first)
+    render(() => (
+      <GuitarTab3DView
+        fallingNotes={() => []}
+        playheadBeat={playheadBeat}
+        visibleBeatWindow={() => 8}
+        showNoteLabels={() => true}
+        showFretboard={() => true}
+        isActive={active}
+        showGizmo={() => false}
+        cameraPreset={preset}
+        cameraAutoFollow={() => true}
+        reducedMotion={() => true}
+      />
+    ))
+
+    const runNextFrame = () => {
+      const next = queuedFrames.entries().next().value as
+        | [number, FrameRequestCallback]
+        | undefined
+      expect(next).toBeDefined()
+      if (next === undefined) return
+      queuedFrames.delete(next[0])
+      next[1](performance.now())
+    }
+    runNextFrame()
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+
+    setActive(false)
+    setPlayheadBeat(6)
+    setPreset(second)
+
+    expect(queuedFrames.size).toBe(0)
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'data-camera-target-x',
+      first.target[0].toFixed(4),
+    )
+
+    setActive(true)
+
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'data-camera-target-x',
+      second.target[0].toFixed(4),
+    )
+    expect(queuedFrames.size).toBe(1)
+    runNextFrame()
+    expect(renderer.render).toHaveBeenCalledTimes(2)
+    expect(renderer.render.mock.calls.at(-1)?.[0]).toMatchObject({
+      playheadBeat: 6,
+    })
+  })
+
+  it('snaps a reduced-motion preset, yields phrase following to a pointer, and resumes on reset', () => {
+    const queuedFrames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      queuedFrames.push(callback)
+      return queuedFrames.length
+    })
+    const first: CameraState = {
+      yaw: 0,
+      pitch: 0.55,
+      radius: 21,
+      target: [0, -2, -12],
+    }
+    const second: CameraState = {
+      yaw: 0.1,
+      pitch: 0.65,
+      radius: 24,
+      target: [2.2, -1, -10],
+    }
+    const [preset, setPreset] = createSignal(first)
+    render(() => (
+      <>
+        <button type="button" onClick={() => setPreset(second)}>
+          Follow next phrase
+        </button>
+        <GuitarTab3DView
+          fallingNotes={() => []}
+          playheadBeat={() => 0}
+          visibleBeatWindow={() => 8}
+          showNoteLabels={() => true}
+          showFretboard={() => true}
+          isActive={() => true}
+          showGizmo={() => false}
+          cameraPreset={preset}
+          cameraAutoFollow={() => true}
+          reducedMotion={() => true}
+          reducedEffects={() => true}
+        />
+      </>
+    ))
+
+    const controls = screen.getByRole('group', {
+      name: '3D performance view controls',
+    })
+    const canvas = screen.getByRole('img')
+    expect(canvas).toHaveAttribute('data-camera-following', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Follow next phrase' }))
+    expect(canvas).toHaveAttribute(
+      'data-camera-target-x',
+      second.target[0].toFixed(4),
+    )
+    queuedFrames.shift()?.(performance.now())
+    expect(renderer.render.mock.calls.at(-1)?.[0].display).toMatchObject({
+      motion: 'reduced',
+      effects: 'reduced',
+    })
+
+    const pointer = (
+      type: string,
+      clientX: number,
+      clientY: number,
+    ): MouseEvent => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        button: 0,
+        cancelable: true,
+        clientX,
+        clientY,
+      })
+      Object.defineProperty(event, 'pointerId', { value: 1 })
+      return event
+    }
+    canvas.dispatchEvent(pointer('pointerdown', 120, 90))
+    canvas.dispatchEvent(pointer('pointermove', 160, 105))
+    canvas.dispatchEvent(pointer('pointerup', 160, 105))
+
+    expect(canvas).toHaveAttribute('data-camera-following', 'false')
+    expect(canvas).not.toHaveAttribute('data-camera-yaw', second.yaw.toFixed(4))
+
+    fireEvent.keyDown(controls, { key: 'r' })
+    expect(canvas).toHaveAttribute('data-camera-following', 'true')
+    expect(canvas).toHaveAttribute(
+      'data-camera-target-x',
+      second.target[0].toFixed(4),
+    )
+    expect(canvas).toHaveAttribute('data-camera-yaw', second.yaw.toFixed(4))
+  })
+
   it('exposes a focused equivalent for orbit, zoom, and reset', () => {
     renderView()
 

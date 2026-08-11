@@ -58,11 +58,12 @@ describe('highway geometry', () => {
     expect(leftHanded.slice(1)).toEqual(rightHanded.slice(1))
   })
 
-  it('keeps the legacy Grid target aligned with its unmirrored surface', () => {
+  it('mirrors Grid fret positions as one coherent surface', () => {
     const rightHanded = tabLandingPoint('fret-axis', 0, 7, 6, 24, false)
     const leftHanded = tabLandingPoint('fret-axis', 0, 7, 6, 24, true)
 
-    expect(leftHanded).toEqual(rightHanded)
+    expect(leftHanded[0]).toBe(-rightHanded[0])
+    expect(leftHanded.slice(1)).toEqual(rightHanded.slice(1))
   })
 
   it('can tighten portrait lanes toward the horizon without moving NOW', () => {

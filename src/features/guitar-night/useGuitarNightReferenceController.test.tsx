@@ -90,11 +90,18 @@ function mountWithTranscription(
   port: GuitarNightReferencePort,
   transcribeStem: GuitarNightTranscriptionPort['transcribeStem'],
 ) {
+  return mountWithTranscriptionLoader(port, async () => ({ transcribeStem }))
+}
+
+function mountWithTranscriptionLoader(
+  port: GuitarNightReferencePort,
+  loadTranscriptionPort: () => Promise<GuitarNightTranscriptionPort>,
+) {
   let controller!: ReturnType<typeof useGuitarNightReferenceController>
   const Harness: Component = () => {
     controller = useGuitarNightReferenceController({
       loadReferencePort: async () => port,
-      loadTranscriptionPort: async () => ({ transcribeStem }),
+      loadTranscriptionPort,
     })
     return null
   }
@@ -273,6 +280,48 @@ describe('useGuitarNightReferenceController', () => {
     expect(controller.reference()?.outOfRangeNotes).toBe(0)
   })
 
+  it('adopts an authored tuning and capo until the player changes the setup', async () => {
+    const sourceTuning = {
+      instrument: 'guitar' as const,
+      stringCount: 6,
+      openMidi: [64, 59, 55, 50, 45, 38],
+      labels: ['e', 'B', 'G', 'D', 'A', 'D'],
+      name: 'Drop D',
+      capo: 2,
+    }
+    const openReference = vi.fn((_songId, trackId, tuning) =>
+      openGuitarNightReference(VELVET_RIFF, trackId, tuning),
+    )
+    const { port } = fakePort({
+      openReference,
+      suggestInstrument: () => ({
+        trackId: 'track-lead',
+        instrument: 'guitar',
+        sourceTuning,
+      }),
+    })
+    const controller = mount(port)
+
+    await controller.attach(VELVET_RIFF.id, 'track-lead')
+
+    expect(controller.tuning()).toBe(sourceTuning)
+    expect(openReference).toHaveBeenLastCalledWith(
+      VELVET_RIFF.id,
+      'track-lead',
+      sourceTuning,
+    )
+
+    controller.setStringCount(7)
+    await waitFor(() => expect(controller.stringCount()).toBe(7))
+
+    expect(controller.tuning()).toMatchObject({
+      instrument: 'guitar',
+      stringCount: 7,
+    })
+    expect(controller.tuning().capo).toBeUndefined()
+    expect(controller.tuning().name).toBeUndefined()
+  })
+
   it('keeps a deliberate instrument choice while that part stays attached', async () => {
     const { port } = fakePort()
     const controller = mount(port)
@@ -356,6 +405,26 @@ describe('useGuitarNightReferenceController', () => {
 
     expect(observed.signal?.aborted).toBe(true)
     expect(controller.reference()?.kind).toBe('authored')
+  })
+
+  it('ignores a stale note-reader load failure after another score attaches', async () => {
+    const { port } = fakePort()
+    const loading = Promise.withResolvers<GuitarNightTranscriptionPort>()
+    const controller = mountWithTranscriptionLoader(port, () => loading.promise)
+
+    const pending = controller.followStem({
+      sessionId: 'session-room',
+      stemKind: 'bass',
+      stemLabel: 'Bass',
+      stemUrl: 'blob:bass',
+    })
+    await Promise.resolve()
+    await controller.attach(VELVET_RIFF.id)
+    loading.reject(new Error('The old note reader failed.'))
+    await pending
+
+    expect(controller.reference()?.kind).toBe('authored')
+    expect(controller.importStatus()).toBeNull()
   })
 
   it('does not let a cancelled run clear the next run progress', async () => {

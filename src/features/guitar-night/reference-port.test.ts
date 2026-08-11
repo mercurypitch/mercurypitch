@@ -94,6 +94,41 @@ describe('openGuitarNightReference', () => {
     ])
   })
 
+  it('keeps an authored harmonic row when its sounding pitch differs', () => {
+    const harmonicSource = source({
+      tracks: [
+        {
+          id: 'track-lead',
+          name: 'Harmonics',
+          instrumentName: 'Electric Guitar',
+          noteCount: 1,
+          sourceTuning: [64, 59, 55, 50, 45, 40],
+          sourceCapo: 0,
+          notes: [
+            {
+              midi: 64,
+              startBeat: 0,
+              duration: 1,
+              stringIndex: 5,
+              fret: 5,
+              authoredFingering: true,
+            },
+          ],
+        },
+      ],
+    })
+
+    const result = openGuitarNightReference(harmonicSource)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.notes[0]).toMatchObject({
+      midi: 64,
+      stringIndex: 5,
+      fret: 5,
+    })
+  })
+
   it('keeps the complete authored tempo map', () => {
     const tempoChanges = [
       { beat: 0, usPerBeat: 625000 },
@@ -197,6 +232,89 @@ describe('openGuitarNightReference', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.reference.tempoBpm).toBe(120)
+  })
+
+  it('adopts source tuning and carries authored notation into stage notes', () => {
+    const authored = source({
+      tracks: [
+        {
+          id: 'drop-d',
+          name: 'Drop D guitar',
+          instrumentName: 'Steel Guitar',
+          noteCount: 1,
+          sourceTuning: [64, 59, 55, 50, 45, 38],
+          sourceTuningName: 'Drop D',
+          sourceCapo: 2,
+          notes: [
+            {
+              id: 'gp-t0-s0-n12',
+              midi: 40,
+              startBeat: 0,
+              duration: 1,
+              stringIndex: 5,
+              fret: 0,
+              letRing: true,
+              notation: {
+                chordLabel: 'D5',
+                techniques: [{ kind: 'palm-mute' }],
+              },
+            },
+          ],
+        },
+      ],
+      scoreTrackId: 'drop-d',
+    })
+    const result = openGuitarNightReference(authored)
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.tuning).toEqual({
+      instrument: 'guitar',
+      stringCount: 6,
+      openMidi: [64, 59, 55, 50, 45, 38],
+      labels: ['E', 'B', 'G', 'd', 'A', 'D'],
+      name: 'Drop D',
+      capo: 2,
+    })
+    expect(result.reference.sourceTuning).toEqual(result.reference.tuning)
+    expect(result.reference.notes[0]).toMatchObject({
+      id: 'gp-t0-s0-n12',
+      stringIndex: 5,
+      fret: 0,
+      notation: {
+        chordLabel: 'D5',
+        techniques: [{ kind: 'palm-mute' }, { kind: 'let-ring' }],
+      },
+    })
+  })
+
+  it('keeps source setup separate when the player selected other rows', () => {
+    const authored = source({
+      tracks: [
+        {
+          id: 'drop-d',
+          name: 'Drop D guitar',
+          instrumentName: 'Steel Guitar',
+          noteCount: 1,
+          sourceTuning: [64, 59, 55, 50, 45, 38],
+          sourceTuningName: 'Drop D',
+          sourceCapo: 0,
+          notes: [{ midi: 42, startBeat: 0, duration: 1 }],
+        },
+      ],
+      scoreTrackId: 'drop-d',
+    })
+    const result = openGuitarNightReference(
+      authored,
+      undefined,
+      DEFAULT_GUITAR_TUNING,
+    )
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.reference.tuning).toBe(DEFAULT_GUITAR_TUNING)
+    expect(result.reference.sourceTuning?.name).toBe('Drop D')
+    expect(result.reference.sourceTuning?.openMidi.at(-1)).toBe(38)
   })
 })
 
@@ -327,6 +445,35 @@ describe('suggestReferenceInstrument', () => {
     expect(suggestReferenceInstrument(source())).toEqual({
       trackId: 'track-lead',
       instrument: 'guitar',
+    })
+  })
+
+  it('returns source setup with the instrument suggestion', () => {
+    const suggestion = suggestReferenceInstrument(
+      source({
+        tracks: [
+          {
+            id: 'extended',
+            name: 'Extended guitar',
+            noteCount: 1,
+            sourceTuning: [64, 59, 55, 50, 45, 40, 35, 30],
+            sourceTuningName: 'Eight string standard',
+            sourceCapo: 1,
+            notes: [{ midi: 31, startBeat: 0, duration: 1 }],
+          },
+        ],
+        scoreTrackId: 'extended',
+      }),
+    )
+
+    expect(suggestion).toMatchObject({
+      trackId: 'extended',
+      instrument: 'guitar',
+      sourceTuning: {
+        stringCount: 8,
+        name: 'Eight string standard',
+        capo: 1,
+      },
     })
   })
 

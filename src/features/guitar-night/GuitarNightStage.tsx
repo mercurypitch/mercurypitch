@@ -5,8 +5,12 @@ import type { Accessor, JSX } from 'solid-js'
 import { children, createEffect, createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import type { GuitarPerformanceStageSource } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { CameraState } from '@/features/guitar-tab-3d/renderer/camera'
+import type { TabCameraPresetId } from '@/features/guitar-tab-3d/renderer/camera-presets'
+import { TAB_CAMERA_PRESET_CHOICES, tabCameraPreset, } from '@/features/guitar-tab-3d/renderer/camera-presets'
+import { tabFretX, tabStringLaneX, } from '@/features/guitar-tab-3d/renderer/canvas2d/highway-geometry'
 import type { TabPresentation } from '@/features/guitar-tab-3d/renderer/TabRenderer'
 import { VELVET_DISPLAY } from '@/features/guitar-tab-3d/renderer/TabRenderer'
+import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
 import { DEFAULT_GUITAR_TUNING, MAX_STRING_COUNT, MIN_STRING_COUNT, } from '@/lib/guitar/instrument-tuning'
@@ -23,6 +27,9 @@ type GuitarNightStageView = 'highway' | 'grid' | 'tab' | 'neck'
 
 export const GUITAR_NIGHT_FLOW_PRESENTATION_KEY =
   'guitar-night-flow-presentation-v1'
+export const GUITAR_NIGHT_CAMERA_PRESET_KEY = 'guitar-night-camera-preset-v1'
+export const GUITAR_NIGHT_HANDEDNESS_KEY = 'guitar-night-handedness-v1'
+export const GUITAR_NIGHT_EFFECTS_KEY = 'guitar-night-effects-v1'
 
 interface GuitarNightStageProps {
   source: GuitarPerformanceStageSource
@@ -46,7 +53,8 @@ interface GuitarNightStageProps {
   overlay?: JSX.Element
 }
 
-const FRET_LABELS = Array.from({ length: 13 }, (_, index) => index)
+type GuitarNightHandedness = 'right' | 'left'
+type GuitarNightEffects = 'full' | 'reduced'
 
 const INSTRUMENT_CHOICES: readonly {
   id: StringedInstrument
@@ -78,18 +86,12 @@ export const TAB_PLAYHEAD_RATIO = 0.18
 
 /** Guitar Night owns its cinematic framing without changing the legacy tab. */
 export const GUITAR_NIGHT_CAMERA_WIDE: CameraState = {
-  yaw: 0,
-  pitch: 0.55,
-  radius: 21,
-  target: [0, -2, -12],
+  ...tabCameraPreset('flow', { narrow: false }),
 }
 
 /** Portrait needs distance and a steeper view so every fret stays reachable. */
 export const GUITAR_NIGHT_CAMERA_NARROW: CameraState = {
-  yaw: 0,
-  pitch: 0.75,
-  radius: 32,
-  target: [0, 2, -12],
+  ...tabCameraPreset('flow', { narrow: true }),
 }
 
 export interface TabWindowEntry {
@@ -97,6 +99,376 @@ export interface TabWindowEntry {
   offsetPercent: number
   isActive: boolean
   isPast: boolean
+}
+
+export interface StageTabWindowIndex {
+  notes: readonly GuitarNote[]
+  /** Segment-tree maxima let moving windows skip expired score regions. */
+  maxEndTree: readonly number[]
+}
+
+export interface NeckWindow {
+  frets: readonly number[]
+  activeNotes: readonly GuitarNote[]
+  nextNotes: readonly GuitarNote[]
+}
+
+export interface StageNoteEvent {
+  startBeat: number
+  endBeat: number
+  notes: readonly GuitarNote[]
+}
+
+export interface StageNoteIndex {
+  events: readonly StageNoteEvent[]
+  /** Segment-tree maxima let point queries skip every expired score region. */
+  activeEndTree: readonly number[]
+}
+
+export interface StageEventContext {
+  activeNotes: readonly GuitarNote[]
+  nextNotes: readonly GuitarNote[]
+}
+
+const EVENT_TOLERANCE_BEATS = 0.0625
+const NECK_WINDOW_FRETS = 13
+
+function fillTabWindowEndTree(
+  notes: readonly GuitarNote[],
+  tree: number[],
+  node: number,
+  left: number,
+  right: number,
+): number {
+  if (left === right) {
+    const note = notes[left]
+    const endBeat =
+      note === undefined ? -Infinity : note.startBeat + note.duration
+    tree[node] = endBeat
+    return endBeat
+  }
+  const middle = Math.floor((left + right) / 2)
+  const endBeat = Math.max(
+    fillTabWindowEndTree(notes, tree, node * 2, left, middle),
+    fillTabWindowEndTree(notes, tree, node * 2 + 1, middle + 1, right),
+  )
+  tree[node] = endBeat
+  return endBeat
+}
+
+/** Compile every rendered note, including backing, for the lightweight Tab lane. */
+export function buildStageTabWindowIndex(
+  notes: readonly GuitarNote[],
+): StageTabWindowIndex {
+  const sorted = [...notes].sort(
+    (left, right) => left.startBeat - right.startBeat,
+  )
+  const maxEndTree = Array.from(
+    { length: Math.max(1, sorted.length * 4) },
+    () => -Infinity,
+  )
+  if (sorted.length > 0) {
+    fillTabWindowEndTree(sorted, maxEndTree, 1, 0, sorted.length - 1)
+  }
+  return { notes: sorted, maxEndTree }
+}
+
+function fillActiveEndTree(
+  events: readonly StageNoteEvent[],
+  tree: number[],
+  node: number,
+  left: number,
+  right: number,
+): number {
+  if (left === right) {
+    const endBeat = events[left]?.endBeat ?? -Infinity
+    tree[node] = endBeat
+    return endBeat
+  }
+  const middle = Math.floor((left + right) / 2)
+  const leftEnd = fillActiveEndTree(events, tree, node * 2, left, middle)
+  const rightEnd = fillActiveEndTree(
+    events,
+    tree,
+    node * 2 + 1,
+    middle + 1,
+    right,
+  )
+  const endBeat = Math.max(leftEnd, rightEnd)
+  tree[node] = endBeat
+  return endBeat
+}
+
+/**
+ * Compile score notes once so playback-time target lookups stay logarithmic.
+ * Backing notes never enter the player-target index.
+ */
+export function buildStageNoteIndex(
+  notes: readonly GuitarNote[],
+): StageNoteIndex {
+  const sorted = notes
+    .filter((note) => (note.isBacking ?? false) === false)
+    .sort((left, right) => left.startBeat - right.startBeat)
+  const events: Array<{
+    startBeat: number
+    endBeat: number
+    notes: GuitarNote[]
+  }> = []
+
+  for (const note of sorted) {
+    const event = events.at(-1)
+    if (
+      event !== undefined &&
+      Math.abs(note.startBeat - event.startBeat) <= EVENT_TOLERANCE_BEATS
+    ) {
+      event.notes.push(note)
+      event.endBeat = Math.max(event.endBeat, note.startBeat + note.duration)
+      continue
+    }
+    events.push({
+      startBeat: note.startBeat,
+      endBeat: note.startBeat + note.duration,
+      notes: [note],
+    })
+  }
+
+  const activeEndTree = Array.from(
+    { length: Math.max(1, events.length * 4) },
+    () => -Infinity,
+  )
+  if (events.length > 0) {
+    fillActiveEndTree(events, activeEndTree, 1, 0, events.length - 1)
+  }
+  return { events, activeEndTree }
+}
+
+function upperBoundEventStart(
+  events: readonly StageNoteEvent[],
+  beat: number,
+): number {
+  let left = 0
+  let right = events.length
+  while (left < right) {
+    const middle = Math.floor((left + right) / 2)
+    if ((events[middle]?.startBeat ?? Infinity) <= beat) left = middle + 1
+    else right = middle
+  }
+  return left
+}
+
+function lowerBoundEventStart(
+  events: readonly StageNoteEvent[],
+  beat: number,
+): number {
+  let left = 0
+  let right = events.length
+  while (left < right) {
+    const middle = Math.floor((left + right) / 2)
+    if ((events[middle]?.startBeat ?? Infinity) < beat) left = middle + 1
+    else right = middle
+  }
+  return left
+}
+
+function collectActiveNotes(
+  index: StageNoteIndex,
+  playheadBeat: number,
+  lastStartedEvent: number,
+): GuitarNote[] {
+  const active: GuitarNote[] = []
+  if (lastStartedEvent < 0) return active
+
+  const visit = (node: number, left: number, right: number) => {
+    if (
+      left > lastStartedEvent ||
+      (index.activeEndTree[node] ?? -Infinity) <= playheadBeat
+    ) {
+      return
+    }
+    if (left === right) {
+      const event = index.events[left]
+      if (event === undefined) return
+      for (const note of event.notes) {
+        if (
+          note.startBeat <= playheadBeat &&
+          note.startBeat + note.duration > playheadBeat
+        ) {
+          active.push(note)
+        }
+      }
+      return
+    }
+    const middle = Math.floor((left + right) / 2)
+    visit(node * 2, left, middle)
+    visit(node * 2 + 1, middle + 1, right)
+  }
+
+  if (index.events.length > 0) {
+    visit(1, 0, index.events.length - 1)
+  }
+  return active
+}
+
+export function stageEventContext(
+  index: StageNoteIndex,
+  playheadBeat: number | null,
+): StageEventContext {
+  if (index.events.length === 0) {
+    return { activeNotes: [], nextNotes: [] }
+  }
+  if (playheadBeat === null) {
+    return { activeNotes: [], nextNotes: index.events[0]?.notes ?? [] }
+  }
+
+  const lastStartedEvent = upperBoundEventStart(index.events, playheadBeat) - 1
+  const nextEvent =
+    index.events[lowerBoundEventStart(index.events, playheadBeat - 0.02)]
+  return {
+    activeNotes: collectActiveNotes(index, playheadBeat, lastStartedEvent),
+    nextNotes: nextEvent?.notes ?? [],
+  }
+}
+
+function bendTechniqueSummary(
+  bendType: GuitarBendType,
+  amount: number,
+): string {
+  const interval = `${amount} ${amount === 1 ? 'semitone' : 'semitones'}`
+  if (bendType === 'release') return `bend release ${interval}`
+  if (bendType === 'bend-release') return `bend ${interval}, then release`
+  if (bendType === 'hold') return `hold bend ${interval}`
+  if (bendType === 'prebend') return `pre-bend ${interval}`
+  if (bendType === 'prebend-bend') return `pre-bend, then bend ${interval}`
+  if (bendType === 'prebend-release') {
+    return `pre-bend ${interval}, then release`
+  }
+  if (bendType === 'custom') return `custom bend ${interval}`
+  return `bend ${interval}`
+}
+
+function resolvedTechniqueFret(
+  technique: { toFret?: number; toNoteId?: string },
+  noteById: ReadonlyMap<string, GuitarNote>,
+): number | undefined {
+  return (
+    (technique.toNoteId === undefined
+      ? undefined
+      : noteById.get(technique.toNoteId)?.fret) ?? technique.toFret
+  )
+}
+
+function techniqueSummary(
+  note: GuitarNote,
+  noteById: ReadonlyMap<string, GuitarNote>,
+): string {
+  const labels = (note.notation?.techniques ?? []).map((technique) => {
+    if (technique.kind === 'bend') {
+      const amount = Math.abs(technique.semitones)
+      return bendTechniqueSummary(technique.bendType, amount)
+    }
+    if (technique.kind === 'slide') {
+      if (technique.slideType === 'into-from-below') {
+        return 'slide in from below'
+      }
+      if (technique.slideType === 'into-from-above') {
+        return 'slide in from above'
+      }
+      if (technique.slideType === 'out-up') return 'slide out upward'
+      if (technique.slideType === 'out-down') return 'slide out downward'
+      if (technique.slideType === 'pick-slide-up') return 'pick slide upward'
+      if (technique.slideType === 'pick-slide-down') {
+        return 'pick slide downward'
+      }
+      const targetFret = resolvedTechniqueFret(technique, noteById)
+      return targetFret === undefined ? 'slide' : `slide to fret ${targetFret}`
+    }
+    if (technique.kind === 'hammer-on') {
+      const targetFret = resolvedTechniqueFret(technique, noteById)
+      return targetFret === undefined
+        ? 'hammer-on'
+        : `hammer-on to fret ${targetFret}`
+    }
+    if (technique.kind === 'pull-off') {
+      const targetFret = resolvedTechniqueFret(technique, noteById)
+      return targetFret === undefined
+        ? 'pull-off'
+        : `pull-off to fret ${targetFret}`
+    }
+    if (technique.kind === 'vibrato') return `${technique.width} vibrato`
+    if (technique.kind === 'palm-mute') return 'palm mute'
+    return 'let ring'
+  })
+  return [...new Set(labels)].join(', ')
+}
+
+function targetGroupSummary(
+  targets: readonly GuitarNote[],
+  tuning: InstrumentTuning,
+  noteById: ReadonlyMap<string, GuitarNote>,
+): string {
+  if (targets.length === 0) return 'No target note.'
+  const chord = targets.find((note) => {
+    const label = note.notation?.chordLabel?.trim()
+    return label !== undefined && label.length > 0
+  })?.notation?.chordLabel
+  const positions = targets
+    .map((note) => {
+      const string = tuning.labels[note.stringIndex]
+      const position = note.fret === 0 ? 'open' : `fret ${note.fret}`
+      return `${note.noteName}, string ${note.stringIndex + 1}${string === undefined ? '' : ` ${string}`}, ${position}`
+    })
+    .join('; ')
+  const techniques = [
+    ...new Set(
+      targets.map((note) => techniqueSummary(note, noteById)).filter(Boolean),
+    ),
+  ]
+  return `${chord === undefined ? '' : `${chord} chord: `}${positions}.${techniques.length === 0 ? '' : ` Technique: ${techniques.join('; ')}.`}`
+}
+
+export function nextStageEvent(
+  notes: readonly GuitarNote[],
+  playheadBeat: number | null,
+): GuitarNote[] {
+  return [
+    ...stageEventContext(buildStageNoteIndex(notes), playheadBeat).nextNotes,
+  ]
+}
+
+export function neckWindow(
+  notes: readonly GuitarNote[],
+  playheadBeat: number | null,
+  maxFret = 24,
+): NeckWindow {
+  return neckWindowFromContext(
+    stageEventContext(buildStageNoteIndex(notes), playheadBeat),
+    maxFret,
+  )
+}
+
+function neckWindowFromContext(
+  context: StageEventContext,
+  maxFret: number,
+): NeckWindow {
+  const { activeNotes, nextNotes } = context
+  const focus = activeNotes.length > 0 ? activeNotes : nextNotes
+  const focusFrets = focus.map((note) => note.fret).sort((a, b) => a - b)
+  const median = focusFrets[Math.floor(focusFrets.length / 2)] ?? 6
+  const laidMaxFret = Math.max(12, Math.min(24, maxFret))
+  const lastStart = Math.max(0, laidMaxFret - (NECK_WINDOW_FRETS - 1))
+  const start = Math.max(
+    0,
+    Math.min(lastStart, Math.round(median) - Math.floor(NECK_WINDOW_FRETS / 2)),
+  )
+
+  return {
+    frets: Array.from(
+      { length: NECK_WINDOW_FRETS },
+      (_, index) => start + index,
+    ),
+    activeNotes,
+    nextNotes,
+  }
 }
 
 /**
@@ -125,7 +497,7 @@ export function guidePreviewBeat(
  * attached tab is readable before anything starts.
  */
 export function tabWindowEntries(
-  notes: readonly GuitarNote[],
+  index: StageTabWindowIndex,
   playheadBeat: number | null,
   windowBeats = TAB_WINDOW_BEATS,
 ): TabWindowEntry[] {
@@ -134,18 +506,30 @@ export function tabWindowEntries(
   const end = start + windowBeats
 
   const entries: TabWindowEntry[] = []
-  for (const note of notes) {
-    if (note.startBeat > end || note.startBeat + note.duration < start) continue
+  if (index.notes.length === 0) return entries
+
+  const visit = (node: number, left: number, right: number) => {
+    if ((index.maxEndTree[node] ?? -Infinity) < start) return
+    const first = index.notes[left]
+    if (first === undefined || first.startBeat > end) return
+    if (left !== right) {
+      const middle = Math.floor((left + right) / 2)
+      visit(node * 2, left, middle)
+      visit(node * 2 + 1, middle + 1, right)
+      return
+    }
+    if (first.startBeat + first.duration < start) return
     entries.push({
-      note,
-      offsetPercent: ((note.startBeat - start) / windowBeats) * 100,
+      note: first,
+      offsetPercent: ((first.startBeat - start) / windowBeats) * 100,
       isActive:
         playheadBeat !== null &&
-        note.startBeat <= playheadBeat &&
-        note.startBeat + note.duration > playheadBeat,
-      isPast: playheadBeat !== null && note.startBeat + note.duration <= head,
+        first.startBeat <= playheadBeat &&
+        first.startBeat + first.duration > playheadBeat,
+      isPast: playheadBeat !== null && first.startBeat + first.duration <= head,
     })
   }
+  visit(1, 0, index.notes.length - 1)
   return entries
 }
 
@@ -197,29 +581,88 @@ function InstrumentPicker(props: {
           </For>
         </select>
       </label>
-      <small>{props.tuning.labels.join(' ')}</small>
+      <small>
+        {props.tuning.name ?? props.tuning.labels.join(' ')}
+        {(props.tuning.capo ?? 0) > 0 ? ` · capo ${props.tuning.capo}` : ''}
+      </small>
     </div>
   )
 }
 
-function noteAtPlayhead(
-  notes: readonly GuitarNote[],
-  playheadBeat: number | null,
-): GuitarNote | null {
-  if (playheadBeat === null) return null
+function StageViewPicker(props: {
+  showCameraChoices: boolean
+  cameraPreset: TabCameraPresetId
+  handedness: GuitarNightHandedness
+  effects: GuitarNightEffects
+  onCameraPreset(preset: TabCameraPresetId): void
+  onHandedness(handedness: GuitarNightHandedness): void
+  onEffects(effects: GuitarNightEffects): void
+}) {
   return (
-    notes.find(
-      (note) =>
-        note.startBeat <= playheadBeat &&
-        note.startBeat + note.duration > playheadBeat,
-    ) ?? null
+    <div
+      class={styles.stageViewPicker}
+      role="group"
+      aria-label="Stage view and display settings"
+    >
+      <Show when={props.showCameraChoices}>
+        <div
+          class={styles.stageViewChoices}
+          role="group"
+          aria-label="Camera view"
+        >
+          <For each={TAB_CAMERA_PRESET_CHOICES}>
+            {(choice) => (
+              <button
+                type="button"
+                classList={{
+                  [styles.stageViewChoiceActive]:
+                    props.cameraPreset === choice.id,
+                }}
+                aria-pressed={props.cameraPreset === choice.id}
+                onClick={() => props.onCameraPreset(choice.id)}
+              >
+                <strong>{choice.label}</strong>
+                <small>{choice.description}</small>
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+      <div class={styles.stageViewPreferences}>
+        <button
+          type="button"
+          aria-pressed={props.handedness === 'left'}
+          onClick={() =>
+            props.onHandedness(props.handedness === 'left' ? 'right' : 'left')
+          }
+        >
+          <span>Left-handed layout</span>
+          <small>{props.handedness === 'left' ? 'On' : 'Off'}</small>
+        </button>
+        <button
+          type="button"
+          aria-pressed={props.effects === 'reduced'}
+          onClick={() =>
+            props.onEffects(props.effects === 'reduced' ? 'full' : 'reduced')
+          }
+        >
+          <span>Reduced effects</span>
+          <small>{props.effects === 'reduced' ? 'On' : 'Off'}</small>
+        </button>
+      </div>
+    </div>
   )
 }
 
 export function GuitarNightStage(props: GuitarNightStageProps) {
+  let stageRoot: HTMLElement | undefined
   let instrumentDetails: HTMLDetailsElement | undefined
+  let instrumentSummary: HTMLElement | undefined
+  let viewDetails: HTMLDetailsElement | undefined
+  let viewSummary: HTMLElement | undefined
   const overlay = children(() => props.overlay)
   const narrowQuery = '(max-width: 720px)'
+  const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
   const matchesNarrowViewport = () =>
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -227,6 +670,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const [narrowViewport, setNarrowViewport] = createSignal(
     matchesNarrowViewport(),
   )
+  const [systemReducedMotion, setSystemReducedMotion] = createSignal(false)
   const [mode, setMode] = createSignal<GuitarNightStageMode>(
     props.initialMode ?? 'flow',
   )
@@ -239,6 +683,35 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
           value === 'string-highway' || value === 'fret-axis',
       },
     )
+  const [cameraPresetId, setCameraPresetId] =
+    createPersistedSignal<TabCameraPresetId>(
+      GUITAR_NIGHT_CAMERA_PRESET_KEY,
+      'flow',
+      {
+        validator: (value): value is TabCameraPresetId =>
+          value === 'flow' ||
+          value === 'player-neck' ||
+          value === 'full-neck' ||
+          value === 'phrase-focus',
+      },
+    )
+  const [handedness, setHandedness] =
+    createPersistedSignal<GuitarNightHandedness>(
+      GUITAR_NIGHT_HANDEDNESS_KEY,
+      'right',
+      {
+        validator: (value): value is GuitarNightHandedness =>
+          value === 'right' || value === 'left',
+      },
+    )
+  const [effects, setEffects] = createPersistedSignal<GuitarNightEffects>(
+    GUITAR_NIGHT_EFFECTS_KEY,
+    'full',
+    {
+      validator: (value): value is GuitarNightEffects =>
+        value === 'full' || value === 'reduced',
+    },
+  )
   const activeView = createMemo<GuitarNightStageView>(() => {
     const currentMode = mode()
     if (currentMode !== 'flow') return currentMode
@@ -254,14 +727,26 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   }
   const tuning = createMemo(() => props.tuning?.() ?? DEFAULT_GUITAR_TUNING)
   const instrumentLabel = createMemo(
-    () => `${tuning().stringCount}-string ${tuning().instrument}`,
+    () =>
+      `${tuning().stringCount}-string ${tuning().instrument}${tuning().name === undefined ? '' : ` in ${tuning().name}`}${(tuning().capo ?? 0) > 0 ? ` with capo ${tuning().capo}` : ''}`,
   )
   const notes = createMemo(() => [...props.source.notes()])
+  const noteById = createMemo(
+    () => new Map(notes().map((note) => [note.id, note] as const)),
+  )
+  const noteIndex = createMemo(() => buildStageNoteIndex(notes()))
+  const tabWindowIndex = createMemo(() => buildStageTabWindowIndex(notes()))
   const actualPlayheadBeat = createMemo(() =>
     props.source.timeline.playheadBeat(),
   )
   const visualPlayheadBeat = createMemo(() =>
     guidePreviewBeat(notes(), actualPlayheadBeat()),
+  )
+  const actualEventContext = createMemo(() =>
+    stageEventContext(noteIndex(), actualPlayheadBeat()),
+  )
+  const visualEventContext = createMemo(() =>
+    stageEventContext(noteIndex(), visualPlayheadBeat()),
   )
   const firstGuideNote = createMemo(() =>
     notes().reduce<GuitarNote | null>(
@@ -272,12 +757,40 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
       null,
     ),
   )
-  const activeNote = createMemo(() =>
-    noteAtPlayhead(notes(), actualPlayheadBeat()),
-  )
   const hasGuide = createMemo(() => notes().length > 0)
   const visibleTabNotes = createMemo(() =>
-    tabWindowEntries(notes(), visualPlayheadBeat()),
+    tabWindowEntries(tabWindowIndex(), visualPlayheadBeat()),
+  )
+  const visibleTabNotesByString = createMemo(() => {
+    const rows = Array.from(
+      { length: tuning().stringCount },
+      () => [] as TabWindowEntry[],
+    )
+    for (const entry of visibleTabNotes()) {
+      rows[entry.note.stringIndex]?.push(entry)
+    }
+    return rows
+  })
+  const maxAuthoredFret = createMemo(() =>
+    notes().reduce((highest, note) => Math.max(highest, note.fret), 12),
+  )
+  const neck = createMemo(() =>
+    neckWindowFromContext(actualEventContext(), maxAuthoredFret()),
+  )
+  const displayedNeckFrets = createMemo(() =>
+    handedness() === 'left' ? [...neck().frets].reverse() : neck().frets,
+  )
+  const activeNeckCells = createMemo(
+    () =>
+      new Set(
+        neck().activeNotes.map((note) => `${note.stringIndex}:${note.fret}`),
+      ),
+  )
+  const nextNeckCells = createMemo(
+    () =>
+      new Set(
+        neck().nextNotes.map((note) => `${note.stringIndex}:${note.fret}`),
+      ),
   )
   const canRetune = createMemo(
     () => props.onInstrument !== undefined && props.onStringCount !== undefined,
@@ -285,22 +798,130 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
   const instrumentSetupDisabled = createMemo(
     () => props.instrumentSetupDisabled?.() ?? false,
   )
+  const display = createMemo(() => ({
+    ...VELVET_DISPLAY,
+    leftHanded: handedness() === 'left',
+    motion: systemReducedMotion() ? ('reduced' as const) : ('full' as const),
+    effects:
+      effects() === 'reduced' || systemReducedMotion()
+        ? ('reduced' as const)
+        : ('full' as const),
+  }))
+  const phraseFocusX = createMemo(() => {
+    const context = visualEventContext()
+    const event =
+      context.activeNotes.length > 0 ? context.activeNotes : context.nextNotes
+    if (event.length === 0) return 0
+    const ordered = [...event].sort((left, right) => {
+      const leftPosition =
+        flowPresentation() === 'string-highway' ? left.stringIndex : left.fret
+      const rightPosition =
+        flowPresentation() === 'string-highway' ? right.stringIndex : right.fret
+      return leftPosition - rightPosition
+    })
+    const middle = ordered[Math.floor(ordered.length / 2)]
+    if (middle === undefined) return 0
+    const worldX =
+      flowPresentation() === 'string-highway'
+        ? tabStringLaneX(
+            middle.stringIndex,
+            tuning().stringCount,
+            handedness() === 'left',
+          )
+        : tabFretX(middle.fret, maxAuthoredFret(), handedness() === 'left')
+    return worldX * 0.42
+  })
   const cameraPreset = createMemo(() =>
-    narrowViewport() ? GUITAR_NIGHT_CAMERA_NARROW : GUITAR_NIGHT_CAMERA_WIDE,
+    tabCameraPreset(cameraPresetId(), {
+      narrow: narrowViewport(),
+      phraseFocusX: phraseFocusX(),
+    }),
+  )
+  const cameraLabel = createMemo(
+    () =>
+      TAB_CAMERA_PRESET_CHOICES.find((choice) => choice.id === cameraPresetId())
+        ?.label ?? 'Runway',
   )
   onMount(() => {
-    if (typeof window.matchMedia !== 'function') return
-    const query = window.matchMedia(narrowQuery)
-    const sync = () => setNarrowViewport(query.matches)
-    sync()
-    query.addEventListener?.('change', sync)
-    onCleanup(() => query.removeEventListener?.('change', sync))
+    let narrow: MediaQueryList | null = null
+    let reduced: MediaQueryList | null = null
+    const syncNarrow = () => setNarrowViewport(narrow?.matches ?? false)
+    const syncMotion = () => setSystemReducedMotion(reduced?.matches ?? false)
+    if (typeof window.matchMedia === 'function') {
+      narrow = window.matchMedia(narrowQuery)
+      reduced = window.matchMedia(reducedMotionQuery)
+      syncNarrow()
+      syncMotion()
+      narrow.addEventListener?.('change', syncNarrow)
+      reduced.addEventListener?.('change', syncMotion)
+    }
+
+    const closeStageDetails = (restoreFocus: boolean) => {
+      const openView = viewDetails?.open === true
+      const openInstrument = instrumentDetails?.open === true
+      if (viewDetails !== undefined) viewDetails.open = false
+      if (instrumentDetails !== undefined) instrumentDetails.open = false
+      if (!restoreFocus) return
+      if (openView) viewSummary?.focus()
+      else if (openInstrument) instrumentSummary?.focus()
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (
+        viewDetails?.contains(target) === true ||
+        instrumentDetails?.contains(target) === true
+      ) {
+        return
+      }
+      closeStageDetails(false)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (viewDetails?.open !== true && instrumentDetails?.open !== true) return
+      event.preventDefault()
+      event.stopPropagation()
+      closeStageDetails(true)
+    }
+    const handleToggle = (event: Event) => {
+      const target = event.target
+      if (!(target instanceof HTMLDetailsElement) || !target.open) return
+      if (target === viewDetails || target === instrumentDetails) return
+      closeStageDetails(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('toggle', handleToggle, true)
+    onCleanup(() => {
+      narrow?.removeEventListener?.('change', syncNarrow)
+      reduced?.removeEventListener?.('change', syncMotion)
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('toggle', handleToggle, true)
+    })
   })
   createEffect(() => {
     if (instrumentSetupDisabled() && instrumentDetails?.open === true) {
       instrumentDetails.open = false
     }
   })
+  const openStageDisclosure = (opened: HTMLDetailsElement) => {
+    if (!opened.open) return
+    if (opened !== instrumentDetails && instrumentDetails !== undefined) {
+      instrumentDetails.open = false
+    }
+    if (opened !== viewDetails && viewDetails !== undefined) {
+      viewDetails.open = false
+    }
+    const room = stageRoot?.closest(
+      '[data-testid="guitar-night-room"], [data-testid="guitar-night-score-room"]',
+    )
+    room
+      ?.querySelectorAll<HTMLDetailsElement>('details[open]')
+      .forEach((details) => {
+        if (details !== opened) details.open = false
+      })
+  }
   const isListening = createMemo(() => props.listening?.() ?? false)
   const heardNote = createMemo(() => props.heardNote?.() ?? null)
   const heardCopy = createMemo(() => {
@@ -310,14 +931,23 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
     const confidence = Math.round((props.heardClarity?.() ?? 0) * 100)
     return `${note} · ${confidence}% clear`
   })
+  const targetSummary = createMemo(() => {
+    const { activeNotes: active, nextNotes: upcoming } = actualEventContext()
+    if (active.length > 0) {
+      return `Current target: ${targetGroupSummary(active, tuning(), noteById())}`
+    }
+    return upcoming.length === 0
+      ? 'No upcoming target.'
+      : `Next target: ${targetGroupSummary(upcoming, tuning(), noteById())}`
+  })
   const flowSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${firstGuideNote() === null ? '' : `The first note is ${firstGuideNote()!.noteName}, ${tuning().labels[firstGuideNote()!.stringIndex] ?? `string ${firstGuideNote()!.stringIndex + 1}`}, ${firstGuideNote()!.fret === 0 ? 'open' : `fret ${firstGuideNote()!.fret}`}.`}`
+      ? `${props.source.title()}. ${notes().length} guided notes approach ${flowPresentation() === 'string-highway' ? `${tuning().stringCount} string lanes on a ${instrumentLabel()} runway` : `a ${instrumentLabel()} fretboard grid`}. ${targetSummary()}`
       : `${props.source.title()}. Interactive ${instrumentLabel()} ${flowPresentation() === 'string-highway' ? 'string runway' : 'fretboard grid'}; no song tab is attached.`,
   )
   const tabSummary = createMemo(() =>
     hasGuide()
-      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets.`
+      ? `${props.source.title()}. Moving tablature with ${tuning().stringCount} string rows and ${notes().length} guided fret targets. ${targetSummary()}`
       : `${props.source.title()}. Empty ${tuning().stringCount}-string tablature; no song tab is attached.`,
   )
   const visualSource: GuitarPerformanceStageSource = {
@@ -340,9 +970,13 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
 
   return (
     <section
+      ref={stageRoot}
       class={styles.performanceStage}
       aria-label="Guitar stage"
       data-testid="guitar-night-stage"
+      data-camera-preset={cameraPresetId()}
+      data-handedness={handedness()}
+      data-effects={display().effects}
       data-signal={
         isListening() ? 'listening' : hasGuide() ? 'guided' : 'free-play'
       }
@@ -390,11 +1024,23 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               classList={{
                 [styles.stageSetupDisabled]: instrumentSetupDisabled(),
               }}
+              onToggle={(event) => openStageDisclosure(event.currentTarget)}
             >
               <summary
+                ref={instrumentSummary}
+                aria-label={`${tuning().stringCount}-string ${tuning().instrument} setup`}
                 aria-disabled={instrumentSetupDisabled()}
                 onClick={(event) => {
-                  if (instrumentSetupDisabled()) event.preventDefault()
+                  if (instrumentSetupDisabled()) {
+                    event.preventDefault()
+                    return
+                  }
+                  if (
+                    instrumentDetails?.open !== true &&
+                    viewDetails !== undefined
+                  ) {
+                    viewDetails.open = false
+                  }
                 }}
               >
                 {tuning().stringCount}-string {tuning().instrument}
@@ -407,6 +1053,46 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               />
             </details>
           </Show>
+          <details
+            ref={viewDetails}
+            class={`${styles.stageSetup} ${styles.stageViewMenu}`}
+            onToggle={(event) => openStageDisclosure(event.currentTarget)}
+          >
+            <summary
+              ref={viewSummary}
+              aria-label={
+                mode() === 'flow'
+                  ? `Camera, ${cameraLabel()}`
+                  : 'Display settings'
+              }
+              onClick={() => {
+                if (
+                  viewDetails?.open !== true &&
+                  instrumentDetails !== undefined
+                ) {
+                  instrumentDetails.open = false
+                }
+              }}
+            >
+              {mode() === 'flow' ? 'Camera' : 'Display'}
+              <Show when={mode() === 'flow'}>
+                <span class={styles.stageSetupContext}> · {cameraLabel()}</span>
+              </Show>
+            </summary>
+            <StageViewPicker
+              showCameraChoices={mode() === 'flow'}
+              cameraPreset={cameraPresetId()}
+              handedness={handedness()}
+              effects={effects()}
+              onCameraPreset={(preset) => {
+                setCameraPresetId(preset)
+                if (viewDetails !== undefined) viewDetails.open = false
+                queueMicrotask(() => viewSummary?.focus())
+              }}
+              onHandedness={setHandedness}
+              onEffects={setEffects}
+            />
+          </details>
           <div class={styles.stageModes} role="group" aria-label="Stage view">
             <For each={STAGE_VIEW_CHOICES}>
               {(choice) => (
@@ -431,7 +1117,11 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         data-stage-mode={mode()}
         data-flow-presentation={flowPresentation()}
       >
-        <Show when={mode() === 'flow'}>
+        <div
+          class={styles.stageFlow}
+          classList={{ [styles.stageFlowHidden]: mode() !== 'flow' }}
+          aria-hidden={mode() !== 'flow'}
+        >
           <Suspense
             fallback={
               <div class={styles.stageLoading} role="status">
@@ -447,13 +1137,16 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               showNoteLabels={() => props.flowLabelMode !== 'fret'}
               showFretboard={() => true}
               isActive={() => props.active() && mode() === 'flow'}
-              display={() => VELVET_DISPLAY}
+              display={display}
               presentation={flowPresentation}
               showGizmo={() => false}
               ariaLabel={flowSummary}
               fallbackText={flowSummary}
               borderRadius={() => '0'}
               cameraPreset={cameraPreset}
+              cameraAutoFollow={() => cameraPresetId() === 'phrase-focus'}
+              reducedMotion={systemReducedMotion}
+              reducedEffects={() => display().effects === 'reduced'}
             />
           </Suspense>
           <p class={styles.stageGestureHint}>
@@ -468,7 +1161,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               </small>
             </div>
           </Show>
-        </Show>
+        </div>
 
         <Show when={mode() === 'tab'}>
           <div class={styles.stageTab}>
@@ -489,15 +1182,15 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
                     <i aria-hidden="true" />
                     <div aria-hidden="true">
                       <For
-                        each={visibleTabNotes().filter(
-                          (entry) => entry.note.stringIndex === stringIndex(),
-                        )}
+                        each={visibleTabNotesByString()[stringIndex()] ?? []}
                       >
                         {(entry) => (
                           <b
                             classList={{
                               [styles.stageTabNoteActive]: entry.isActive,
                               [styles.stageTabNotePast]: entry.isPast,
+                              [styles.stageTabNoteBacking]:
+                                entry.note.isBacking === true,
                             }}
                             style={{ left: `${entry.offsetPercent}%` }}
                           >
@@ -522,26 +1215,28 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
         <Show when={mode() === 'neck'}>
           <div
             class={styles.stageNeck}
-            aria-label={
-              activeNote() === null
-                ? `Twelve-fret ${instrumentLabel()} neck with no target note`
-                : `${instrumentLabel()} neck target: ${tuning().labels[activeNote()!.stringIndex] ?? `string ${activeNote()!.stringIndex + 1}`} string, fret ${activeNote()!.fret}`
-            }
+            aria-label={`${NECK_WINDOW_FRETS}-fret ${instrumentLabel()} neck. ${targetSummary()}`}
             role="img"
+            data-handedness={handedness()}
           >
             <div class={styles.fretNumbers} aria-hidden="true">
-              <For each={FRET_LABELS}>{(fret) => <span>{fret}</span>}</For>
+              <For each={displayedNeckFrets()}>
+                {(fret) => <span>{fret}</span>}
+              </For>
             </div>
             <For each={tuning().labels}>
               {(_label, stringIndex) => (
                 <div class={styles.neckString} aria-hidden="true">
-                  <For each={FRET_LABELS}>
+                  <For each={displayedNeckFrets()}>
                     {(fret) => (
                       <span
                         classList={{
-                          [styles.neckTarget]:
-                            activeNote()?.stringIndex === stringIndex() &&
-                            activeNote()?.fret === fret,
+                          [styles.neckTarget]: activeNeckCells().has(
+                            `${stringIndex()}:${fret}`,
+                          ),
+                          [styles.neckNextTarget]: nextNeckCells().has(
+                            `${stringIndex()}:${fret}`,
+                          ),
                         }}
                       />
                     )}
@@ -550,7 +1245,7 @@ export function GuitarNightStage(props: GuitarNightStageProps) {
               )}
             </For>
             <Show when={!hasGuide()}>
-              <p>Free play · standard {tuning().instrument} tuning</p>
+              <p>Free play · {tuning().labels.join(' ')}</p>
             </Show>
           </div>
         </Show>

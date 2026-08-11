@@ -71,7 +71,12 @@ export function useGuitarNightReferenceController(
   const [stringCount, setStringCountSignal] = createSignal(
     DEFAULT_STRING_COUNT.guitar,
   )
-  const tuning = createMemo(() => standardTuning(instrument(), stringCount()))
+  const [sourceTuning, setSourceTuning] = createSignal<InstrumentTuning | null>(
+    null,
+  )
+  const tuning = createMemo(
+    () => sourceTuning() ?? standardTuning(instrument(), stringCount()),
+  )
 
   let disposed = false
   let attachGeneration = 0
@@ -128,11 +133,18 @@ export function useGuitarNightReferenceController(
    * tuning directly so callers never depend on signal propagation order.
    */
   const adoptInstrument = (next: StringedInstrument): InstrumentTuning => {
-    if (next === instrument()) return tuning()
     const count = DEFAULT_STRING_COUNT[next]
+    setSourceTuning(null)
     setInstrumentSignal(next)
     setStringCountSignal(count)
     return standardTuning(next, count)
+  }
+
+  const adoptSourceTuning = (next: InstrumentTuning): InstrumentTuning => {
+    setInstrumentSignal(next.instrument)
+    setStringCountSignal(next.stringCount)
+    setSourceTuning(next)
+    return next
   }
 
   const attach = async (
@@ -168,7 +180,10 @@ export function useGuitarNightReferenceController(
       const trackKey = `${normalizedSongId}:${suggestion.trackId}`
       if (trackKey !== tunedForTrack) {
         tunedForTrack = trackKey
-        stageTuning = adoptInstrument(suggestion.instrument)
+        stageTuning =
+          suggestion.sourceTuning === undefined
+            ? adoptInstrument(suggestion.instrument)
+            : adoptSourceTuning(suggestion.sourceTuning)
       }
     }
 
@@ -210,6 +225,7 @@ export function useGuitarNightReferenceController(
     cancelFollowStem()
     lastMeasured = null
     tunedForTrack = null
+    setSourceTuning(null)
     setState({ kind: 'idle' })
     // Only the saved-score axis owns a URL parameter. A measured reference has
     // none, so clearing it must not push an identical entry onto history.
@@ -238,7 +254,7 @@ export function useGuitarNightReferenceController(
   }
 
   const setInstrument = (next: StringedInstrument): void => {
-    if (next === instrument()) return
+    if (next === instrument() && sourceTuning() === null) return
     // A deliberate choice outranks the suggestion for as long as this part stays
     // attached.
     replaceOnCurrentInstrument(adoptInstrument(next))
@@ -246,7 +262,8 @@ export function useGuitarNightReferenceController(
 
   const setStringCount = (next: number): void => {
     const clamped = clampStringCount(next)
-    if (clamped === stringCount()) return
+    if (clamped === stringCount() && sourceTuning() === null) return
+    setSourceTuning(null)
     setStringCountSignal(clamped)
     replaceOnCurrentInstrument(standardTuning(instrument(), clamped))
   }
@@ -298,7 +315,9 @@ export function useGuitarNightReferenceController(
         options.loadTranscriptionPort ?? loadDefaultGuitarNightTranscriptionPort
       loaded = await load()
     } catch {
-      if (!disposed) setImportStatus('The note reader could not be opened.')
+      if (!disposed && generation === attachGeneration) {
+        setImportStatus('The note reader could not be opened.')
+      }
       return
     }
     if (disposed || generation !== attachGeneration) return
