@@ -69,6 +69,18 @@ describe('analyzeVoicePitchTraits', () => {
     expect(result?.heldCenterSpreadCents).toBeNull()
   })
 
+  it('counts only confidence-qualified frames as resolved pitch', () => {
+    const result = analyzeVoicePitchTraits(
+      contour([
+        { timeMs: 0, midiCents: 6_000, confidence: 0.9, level: 0.6 },
+        { timeMs: 33, midiCents: 6_000, confidence: 0.3, level: 0.6 },
+        { timeMs: 66, midiCents: null, confidence: 0, level: 0.1 },
+      ]),
+    )
+
+    expect(result?.resolvedPitchRatio).toBeCloseTo(1 / 3)
+  })
+
   it('reports no pitch traits when no contour was saved', () => {
     expect(analyzeVoicePitchTraits(null)).toBeNull()
   })

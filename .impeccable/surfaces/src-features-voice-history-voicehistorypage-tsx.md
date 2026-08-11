@@ -1,8 +1,18 @@
 ---
 version: 1
-slug: "src-features-voice-history-voicehistorypage-tsx"
-primary_target: "src/features/voice-history/VoiceHistoryPage.tsx"
-related_targets: ["src/App.tsx","src/features/voice-history/FreeformVoiceRecorder.tsx","src/features/challenges/ChallengeResultCard.tsx","src/features/challenges/WeeklyLegendHero.tsx","src/features/glass/GlassApp.tsx","src/features/exercises/ExerciseShell.tsx","src/features/exercises/use-base-exercise.ts","src/features/home/DestinationGallery.tsx"]
+slug: 'src-features-voice-history-voicehistorypage-tsx'
+primary_target: 'src/features/voice-history/VoiceHistoryPage.tsx'
+related_targets:
+  [
+    'src/App.tsx',
+    'src/features/voice-history/FreeformVoiceRecorder.tsx',
+    'src/features/challenges/ChallengeResultCard.tsx',
+    'src/features/challenges/WeeklyLegendHero.tsx',
+    'src/features/glass/GlassApp.tsx',
+    'src/features/exercises/ExerciseShell.tsx',
+    'src/features/exercises/use-base-exercise.ts',
+    'src/features/home/DestinationGallery.tsx',
+  ]
 ---
 
 # Voice history surface brief

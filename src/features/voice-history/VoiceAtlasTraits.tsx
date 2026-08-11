@@ -63,40 +63,8 @@ function TraitRow(props: TraitRowProps): JSX.Element {
   )
 }
 
-function airLabel(timbre: TimbreReading): string {
-  if (timbre.breathiness.quality === 'breathy') return 'Air-led'
-  if (timbre.breathiness.quality === 'normal') return 'Balanced air'
-  if (timbre.breathiness.quality === 'resonant') return 'Clear ring'
-  return 'Dense edge'
-}
-
-function bloomLabel(timbre: TimbreReading): string {
-  if (timbre.richness.quality === 'thin') return 'Focused core'
-  if (timbre.richness.quality === 'normal') return 'Layered core'
-  if (timbre.richness.quality === 'rich') return 'Harmonic bloom'
-  return 'Wide bloom'
-}
-
-function resonanceLabel(timbre: TimbreReading): string {
-  if (timbre.resonance.dominantZone === 'chest') return 'Chest-led'
-  if (timbre.resonance.dominantZone === 'mask') return 'Forward-led'
-  if (timbre.resonance.dominantZone === 'head') return 'Head-led'
-  return 'Mixed field'
-}
-
 function vibratoLabel(pitch: VoicePitchTraits): string {
-  if (!pitch.vibrato.detected) return 'No sustained pulse resolved'
-  if (pitch.vibrato.classification === 'slow-operatic') return 'Slow pulse'
-  if (pitch.vibrato.classification === 'natural') return 'Even pulse'
-  if (pitch.vibrato.classification === 'wide') return 'Wide pulse'
-  return 'Quick pulse'
-}
-
-function heldCenterLabel(spread: number): string {
-  if (spread < 15) return 'Narrow centre'
-  if (spread < 30) return 'Gentle drift'
-  if (spread < 60) return 'Open drift'
-  return 'Moving centre'
+  return pitch.vibrato.detected ? 'Pulse resolved' : 'No pulse resolved'
 }
 
 function SpectrumVisual(props: {
@@ -115,7 +83,7 @@ function SpectrumVisual(props: {
   )
 }
 
-function ResonanceVisual(props: { timbre: TimbreReading }): JSX.Element {
+function BandBalanceVisual(props: { timbre: TimbreReading }): JSX.Element {
   const resonance = (): TimbreReading['resonance'] => props.timbre.resonance
   return (
     <div class={styles.resonanceVisual} aria-hidden="true">
@@ -140,12 +108,12 @@ function PitchRows(props: { pitch: VoicePitchTraits | null }): JSX.Element {
       {(pitch) => (
         <>
           <TraitRow
-            label="Vibrato pulse"
+            label="Held-tone pulse"
             value={vibratoLabel(pitch)}
             detail={
               pitch.vibrato.detected
-                ? `${pitch.vibrato.rateHz.toFixed(1)} Hz · ${pitch.vibrato.depthCents} cent span`
-                : 'Measured only across continuous held regions'
+                ? `Strongest qualifying held region · ${pitch.vibrato.rateHz.toFixed(1)} Hz · ~${pitch.vibrato.depthCents} cent span`
+                : 'No qualifying held region produced a reliable periodic pulse'
             }
             visual={
               <div
@@ -158,16 +126,16 @@ function PitchRows(props: { pitch: VoicePitchTraits | null }): JSX.Element {
             }
           />
           <TraitRow
-            label="Held centre"
+            label="Local pitch spread"
             value={
               pitch.heldCenterSpreadCents === null
-                ? 'Not enough held tone'
-                : heldCenterLabel(pitch.heldCenterSpreadCents)
+                ? 'Not resolved'
+                : `~${pitch.heldCenterSpreadCents} cents`
             }
             detail={
               pitch.heldCenterSpreadCents === null
-                ? 'A longer continuous note will reveal local motion'
-                : `~${pitch.heldCenterSpreadCents} cent local spread · ${pitch.heldWindowCount} ${pitch.heldWindowCount === 1 ? 'window' : 'windows'}`
+                ? 'A longer continuous note is needed for a local spread estimate'
+                : `Typical spread across ${pitch.heldWindowCount} qualifying ${pitch.heldWindowCount === 1 ? 'window' : 'windows'}`
             }
           />
         </>
@@ -186,46 +154,47 @@ function ToneRows(props: { state: ToneState }): JSX.Element {
       fallback={
         <li class={styles.unavailableRow} aria-live="polite">
           {props.state.status === 'loading'
-            ? `Mapping tone traits · ${props.state.progress}%`
+            ? `Mapping recording spectrum · ${props.state.progress}%`
             : props.state.status === 'error'
               ? props.state.message
               : props.state.status === 'ready'
                 ? 'No voiced spectrum resolved in this recording.'
-                : 'Map the local audio to reveal air, bloom, and resonance.'}
+                : 'Map the local audio to reveal an experimental spectrum snapshot.'}
         </li>
       }
     >
       {(reading) => (
         <>
           <TraitRow
-            label="Air and ring"
-            value={airLabel(reading)}
-            detail={`${reading.breathiness.hnrDb.toFixed(1)} dB harmonic-to-noise reading`}
+            label="Harmonic contrast estimate"
+            value={`${reading.breathiness.hnrDb.toFixed(1)} dB`}
+            detail="Whole-recording estimate; melody, microphone, distance, and room affect it"
             visual={
               <SpectrumVisual
                 value={((reading.breathiness.hnrDb + 5) / 40) * 100}
-                start="Air"
-                end="Ring"
+                start="Lower"
+                end="Higher"
               />
             }
           />
           <TraitRow
-            label="Harmonic bloom"
-            value={bloomLabel(reading)}
-            detail={`${reading.richness.harmonicCount} harmonics resolved · ${reading.richness.richnessScore}/100 density`}
-            visual={
-              <SpectrumVisual
-                value={reading.richness.richnessScore}
-                start="Core"
-                end="Bloom"
-              />
+            label="Resolved harmonic peaks"
+            value={
+              reading.richness.harmonicProfile.length === 0
+                ? 'Not resolved'
+                : `${reading.richness.harmonicCount} peaks`
+            }
+            detail={
+              reading.richness.harmonicProfile.length === 0
+                ? 'This pass did not resolve a usable harmonic peak set'
+                : 'Whole-recording spectrum snapshot; not a tone-quality score'
             }
           />
           <TraitRow
-            label="Resonance compass"
-            value={resonanceLabel(reading)}
-            detail={`${reading.resonance.spectralCentroid} Hz spectral centre`}
-            visual={<ResonanceVisual timbre={reading} />}
+            label="Spectral centre"
+            value={`${reading.resonance.spectralCentroid} Hz`}
+            detail={`${Math.round(reading.resonance.chestRatio * 100)}% low · ${Math.round(reading.resonance.maskRatio * 100)}% mid · ${Math.round(reading.resonance.headRatio * 100)}% high recorded energy`}
+            visual={<BandBalanceVisual timbre={reading} />}
           />
         </>
       )}
@@ -254,7 +223,7 @@ function TakeTraitColumn(props: {
         <small>
           {pitch() === null
             ? 'Waveform archive'
-            : `${Math.round(pitch()!.voicedRatio * 100)}% voiced contour`}
+            : `Pitch resolved in ${Math.round(pitch()!.resolvedPitchRatio * 100)}% of saved frames`}
         </small>
       </div>
       <ul class={styles.traitList}>
@@ -419,8 +388,9 @@ export function VoiceAtlasTraits(props: VoiceAtlasTraitsProps): JSX.Element {
           <span>Atlas traits</span>
           <h4 id={titleId}>The shape behind the trail.</h4>
           <p>
-            Pitch motion appears from the saved contour. Tone facets use one
-            private, on-device spectral pass per take.
+            Pitch motion appears from the saved contour. Optional spectrum rows
+            report raw, recording-dependent estimates from one private,
+            on-device pass per take.
           </p>
         </div>
         <button
@@ -434,8 +404,8 @@ export function VoiceAtlasTraits(props: VoiceAtlasTraitsProps): JSX.Element {
             {mapping()
               ? `Mapping ${overallProgress()}%`
               : allReady()
-                ? 'Remap tone traits'
-                : 'Map tone traits'}
+                ? 'Remap spectrum snapshot'
+                : 'Map spectrum snapshot'}
           </span>
         </button>
       </div>
@@ -455,9 +425,10 @@ export function VoiceAtlasTraits(props: VoiceAtlasTraitsProps): JSX.Element {
       </div>
 
       <p class={styles.disclaimer}>
-        These are listening landmarks, not a quality score. Microphone,
-        distance, and room can change tone readings; your saved audio stays
-        unchanged and on this device.
+        These are listening landmarks, not a quality score. Spectrum rows
+        describe this recording, not breath support, resonance placement,
+        technique, or vocal health. Your saved audio stays unchanged and on this
+        device.
       </p>
     </section>
   )

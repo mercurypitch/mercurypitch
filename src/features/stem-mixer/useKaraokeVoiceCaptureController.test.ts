@@ -1,7 +1,8 @@
 import { createRoot } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { TakeRecorder } from '@/lib/voice-capture'
-import { useKaraokeVoiceCaptureController } from './useKaraokeVoiceCaptureController'
+import type { KaraokeVoiceCaptureState } from './useKaraokeVoiceCaptureController'
+import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from './useKaraokeVoiceCaptureController'
 
 const SCORE = {
   totalNotes: 100,
@@ -14,6 +15,37 @@ const SCORE = {
 }
 
 describe('karaoke voice capture controller', () => {
+  it('discards only an active mic window and starts fresh when scoring returns', () => {
+    let state: KaraokeVoiceCaptureState = 'recording'
+    const capture = {
+      state: () => state,
+      startPlayback: vi.fn(),
+      dismiss: vi.fn(),
+    }
+
+    syncKaraokeCaptureWithMic(capture, false, true)
+    expect(capture.dismiss).toHaveBeenCalledOnce()
+    expect(capture.startPlayback).not.toHaveBeenCalled()
+
+    state = 'paused'
+    syncKaraokeCaptureWithMic(capture, false, false)
+    expect(capture.dismiss).toHaveBeenCalledTimes(2)
+
+    state = 'processing'
+    syncKaraokeCaptureWithMic(capture, false, false)
+    expect(capture.dismiss).toHaveBeenCalledTimes(2)
+
+    state = 'ready'
+    syncKaraokeCaptureWithMic(capture, false, false)
+    expect(capture.dismiss).toHaveBeenCalledTimes(2)
+
+    syncKaraokeCaptureWithMic(capture, true, true)
+    expect(capture.startPlayback).toHaveBeenCalledOnce()
+
+    syncKaraokeCaptureWithMic(capture, true, false)
+    expect(capture.startPlayback).toHaveBeenCalledOnce()
+  })
+
   it('pauses with transport and explicitly keeps the scored replay', async () => {
     let clockMs = 1_000
     const start = vi.fn(() => true)
