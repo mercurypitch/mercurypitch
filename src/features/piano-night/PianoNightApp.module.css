@@ -598,6 +598,7 @@
 .scoreLegend {
   display: flex;
   align-items: baseline;
+  gap: 16px;
   justify-content: space-between;
 }
 
@@ -612,7 +613,11 @@
 }
 
 .scoreHeading span {
+  min-width: 0;
+  overflow: hidden;
   font-size: 20px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .scoreHeading small,
@@ -771,6 +776,12 @@
   color: var(--ivory-strong);
 }
 
+.coachTopline > button:disabled {
+  color: #716a62;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .coachTopline svg {
   width: 19px;
   height: 19px;
@@ -839,6 +850,42 @@
   color: var(--brass-soft);
   font-size: 11px;
   font-weight: 650;
+}
+
+.coachFacts {
+  margin: 0;
+}
+
+.coachFacts > div {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgb(224 207 180 / 10%);
+}
+
+.coachFacts dt {
+  color: var(--quiet);
+  font-size: 10px;
+}
+
+.coachFacts dd {
+  max-width: 62%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ivory);
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coachTruth {
+  margin: 18px 0 0;
+  color: #a99f92;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .focusLine {
@@ -1294,7 +1341,7 @@
 
 .drawerTabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding: 12px 18px 0;
 }
 
@@ -1355,9 +1402,14 @@
 }
 
 .sessionFacts dd {
+  max-width: 64%;
   margin: 0;
+  overflow: hidden;
   color: var(--ivory);
   font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .previewRow > span,

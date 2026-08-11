@@ -2,12 +2,12 @@
 // Piano Night — standalone Performance Horizon practice room
 // ============================================================
 //
-// This route composes one prepared project, one audio-clock transport, one
-// normalized input owner, and one zero-download fallback instrument without
-// importing the App-owned Piano page or its stores.
+// This route composes one replaceable staged source, one audio-clock transport,
+// one normalized input owner, and one zero-download fallback instrument
+// without importing the App-owned Piano page or its stores on first paint.
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { ChevronLeft, Metronome, MusicBoard, Pause, PianoKeys, Play, Settings, SkipBack, SkipForward, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
@@ -16,6 +16,7 @@ import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import { PIANO_NIGHT_PHRASES } from './piano-night-demo-project'
+import { createPianoNightPracticeSections } from './piano-night-practice-sections'
 import { PianoKeyHorizon } from './PianoKeyHorizon'
 import styles from './PianoNightApp.module.css'
 import type { PianoNightPerformanceView } from './PianoNightStageViews'
@@ -23,7 +24,14 @@ import { PianoNightStageViews } from './PianoNightStageViews'
 import { LEGACY_PIANO_PATH } from './route'
 import { usePianoNightController } from './usePianoNightController'
 
-type DrawerSection = 'session' | 'sound' | 'room'
+const PianoNightMusicPanel = lazy(async () =>
+  import('./PianoNightMusicPanel').then((module) => ({
+    default: module.PianoNightMusicPanel,
+  })),
+)
+
+type SettingsSection = 'session' | 'sound' | 'room'
+type DrawerSection = SettingsSection | 'music'
 
 const VIEW_ORDER: readonly PianoNightPerformanceView[] = [
   'fall',
@@ -35,11 +43,22 @@ const VIEW_LABELS: Record<PianoNightPerformanceView, string> = {
   score: 'Score',
   keys: 'Keys',
 }
-const DRAWER_SECTIONS: readonly DrawerSection[] = ['session', 'sound', 'room']
+const DRAWER_SECTIONS: readonly DrawerSection[] = [
+  'session',
+  'music',
+  'sound',
+  'room',
+]
 
 interface PhraseCoachProps {
   phrase: () => PianoNightPhrase
   phraseIndex: () => number
+  phraseCount: () => number
+  hasAuthoredCoach: () => boolean
+  sourceTitle: () => string
+  practiceTrackLabel: () => string
+  noteCount: () => number
+  tempoBpm: () => number
   onPrevious: () => void
   onNext: () => void
   onClose: () => void
@@ -53,20 +72,31 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
         <button
           type="button"
           onClick={() => props.onPrevious()}
-          aria-label="Previous practice phrase"
+          aria-label={
+            props.hasAuthoredCoach()
+              ? 'Previous practice phrase'
+              : 'Previous project section'
+          }
+          disabled={props.phraseCount() <= 1}
         >
           <ChevronLeft />
         </button>
         <div>
           <strong>
-            Phrase {props.phraseIndex() + 1} of {PIANO_NIGHT_PHRASES.length}
+            {props.hasAuthoredCoach() ? 'Phrase' : 'Section'}{' '}
+            {props.phraseIndex() + 1} of {props.phraseCount()}
           </strong>
           <span>{props.phrase().range}</span>
         </div>
         <button
           type="button"
           onClick={() => props.onNext()}
-          aria-label="Next practice phrase"
+          aria-label={
+            props.hasAuthoredCoach()
+              ? 'Next practice phrase'
+              : 'Next project section'
+          }
+          disabled={props.phraseCount() <= 1}
         >
           <span class={styles.chevronRight}>
             <ChevronLeft />
@@ -84,70 +114,112 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
       </div>
 
       <div class={styles.coachBody}>
-        <span class={styles.previewLabel}>Practice prompt · not scored</span>
-        <p class={styles.coachGuidance}>{props.phrase().guidance}</p>
+        <Show
+          when={props.hasAuthoredCoach()}
+          fallback={
+            <>
+              <span class={styles.previewLabel}>
+                Project section · not analysed
+              </span>
+              <p class={styles.coachGuidance}>
+                No authored coaching prompt exists for {props.sourceTitle()}.
+              </p>
+              <section class={styles.coachSection}>
+                <h2>On stage</h2>
+                <dl class={styles.coachFacts}>
+                  <div>
+                    <dt>Section</dt>
+                    <dd>{props.phrase().range}</dd>
+                  </div>
+                  <div>
+                    <dt>Practice track</dt>
+                    <dd>{props.practiceTrackLabel()}</dd>
+                  </div>
+                  <div>
+                    <dt>Score notes</dt>
+                    <dd>{props.noteCount()}</dd>
+                  </div>
+                  <div>
+                    <dt>Initial tempo</dt>
+                    <dd>{Math.round(props.tempoBpm())} BPM</dd>
+                  </div>
+                </dl>
+                <p class={styles.coachTruth}>
+                  Use this beat range as a rehearsal boundary. Dynamics, pedal,
+                  and performance feedback have not been inferred.
+                </p>
+              </section>
+            </>
+          }
+        >
+          <span class={styles.previewLabel}>Practice prompt · not scored</span>
+          <p class={styles.coachGuidance}>{props.phrase().guidance}</p>
 
-        <section class={styles.coachSection}>
-          <h2>Focus</h2>
-          <p class={styles.focusLine}>
-            <i aria-hidden="true" />
-            {props.phrase().focus}
-          </p>
-          <svg
-            class={styles.miniStaff}
-            viewBox="0 0 210 66"
-            role="img"
-            aria-label="Practice-prompt notation, not a measured result"
-          >
-            <path d="M10 19h190M10 27h190M10 35h190M10 43h190M10 51h190" />
-            <path class={styles.staffBars} d="M62 15v40M118 15v40M174 15v40" />
-            <text x="12" y="49">
-              𝄞
-            </text>
-            <g class={styles.cyanNotes}>
-              <ellipse cx="52" cy="43" rx="5" ry="4" />
-              <path d="M57 42V23" />
-              <ellipse cx="80" cy="35" rx="5" ry="4" />
-              <path d="M85 34V16" />
-              <ellipse cx="108" cy="31" rx="5" ry="4" />
-              <path d="M113 30V12" />
-            </g>
-            <g class={styles.coralNotes}>
-              <ellipse cx="144" cy="39" rx="5" ry="4" />
-              <path d="M149 38V20" />
-              <ellipse cx="172" cy="35" rx="5" ry="4" />
-              <path d="M177 34V16" />
-            </g>
-          </svg>
-        </section>
-
-        <section class={styles.coachSection}>
-          <h2>Dynamics prompt</h2>
-          <div
-            class={styles.dynamics}
-            role="img"
-            aria-label="Crescendo from mezzo-piano to mezzo-forte"
-          >
-            <i>mp</i>
-            <svg viewBox="0 0 160 38" aria-hidden="true">
-              <path d="M2 30c47 0 65-20 104-20 24 0 37-5 52-7" />
+          <section class={styles.coachSection}>
+            <h2>Focus</h2>
+            <p class={styles.focusLine}>
+              <i aria-hidden="true" />
+              {props.phrase().focus}
+            </p>
+            <svg
+              class={styles.miniStaff}
+              viewBox="0 0 210 66"
+              role="img"
+              aria-label="Practice-prompt notation, not a measured result"
+            >
+              <path d="M10 19h190M10 27h190M10 35h190M10 43h190M10 51h190" />
+              <path
+                class={styles.staffBars}
+                d="M62 15v40M118 15v40M174 15v40"
+              />
+              <text x="12" y="49">
+                𝄞
+              </text>
+              <g class={styles.cyanNotes}>
+                <ellipse cx="52" cy="43" rx="5" ry="4" />
+                <path d="M57 42V23" />
+                <ellipse cx="80" cy="35" rx="5" ry="4" />
+                <path d="M85 34V16" />
+                <ellipse cx="108" cy="31" rx="5" ry="4" />
+                <path d="M113 30V12" />
+              </g>
+              <g class={styles.coralNotes}>
+                <ellipse cx="144" cy="39" rx="5" ry="4" />
+                <path d="M149 38V20" />
+                <ellipse cx="172" cy="35" rx="5" ry="4" />
+                <path d="M177 34V16" />
+              </g>
             </svg>
-            <i>mf</i>
-          </div>
-        </section>
+          </section>
 
-        <section class={styles.coachSection}>
-          <h2>Pedal prompt</h2>
-          <div
-            class={styles.pedal}
-            role="img"
-            aria-label="Hold the sustain pedal through the phrase, then release"
-          >
-            <i aria-hidden="true" />
-            <span />
-            <i aria-hidden="true" />
-          </div>
-        </section>
+          <section class={styles.coachSection}>
+            <h2>Dynamics prompt</h2>
+            <div
+              class={styles.dynamics}
+              role="img"
+              aria-label="Crescendo from mezzo-piano to mezzo-forte"
+            >
+              <i>mp</i>
+              <svg viewBox="0 0 160 38" aria-hidden="true">
+                <path d="M2 30c47 0 65-20 104-20 24 0 37-5 52-7" />
+              </svg>
+              <i>mf</i>
+            </div>
+          </section>
+
+          <section class={styles.coachSection}>
+            <h2>Pedal prompt</h2>
+            <div
+              class={styles.pedal}
+              role="img"
+              aria-label="Hold the sustain pedal through the phrase, then release"
+            >
+              <i aria-hidden="true" />
+              <span />
+              <i aria-hidden="true" />
+            </div>
+          </section>
+        </Show>
       </div>
     </>
   )
@@ -167,6 +239,8 @@ export function PianoNightApp(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = createSignal(false)
   const [drawerSection, setDrawerSection] =
     createSignal<DrawerSection>('session')
+  const [lastSettingsSection, setLastSettingsSection] =
+    createSignal<SettingsSection>('session')
   const [coachOpen, setCoachOpen] = createSignal(false)
   const [compactSheets, setCompactSheets] = createSignal(false)
   const [announcement, setAnnouncement] = createSignal('')
@@ -179,18 +253,23 @@ export function PianoNightApp(): JSX.Element {
   let compactSurfaceOpener: HTMLElement | null = null
   let announcementTimer: number | null = null
 
+  const practiceSections = createMemo<readonly PianoNightPhrase[]>(() =>
+    controller.source().hasAuthoredCoach
+      ? PIANO_NIGHT_PHRASES
+      : createPianoNightPracticeSections(controller.stage().totalBeats),
+  )
   const phraseIndex = createMemo((): number => {
     const beat = controller.playheadBeat()
-    const index = PIANO_NIGHT_PHRASES.findIndex(
+    const index = practiceSections().findIndex(
       (candidate) => beat < candidate.endBeat,
     )
-    return index === -1 ? PIANO_NIGHT_PHRASES.length - 1 : index
+    return index === -1 ? practiceSections().length - 1 : index
   })
   const phrase = createMemo<PianoNightPhrase>(
-    () => PIANO_NIGHT_PHRASES[phraseIndex()],
+    () => practiceSections()[phraseIndex()],
   )
   const sessionProgress = createMemo(() => {
-    const totalBeats = controller.stage.totalBeats
+    const totalBeats = controller.stage().totalBeats
     if (!(totalBeats > 0)) return 0
     return Math.min(1, Math.max(0, controller.playheadBeat() / totalBeats))
   })
@@ -255,6 +334,7 @@ export function PianoNightApp(): JSX.Element {
 
   const selectDrawerSection = (section: DrawerSection): void => {
     setDrawerSection(section)
+    if (section !== 'music') setLastSettingsSection(section)
     queueMicrotask(() => drawerElement?.scrollTo?.({ top: 0 }))
   }
 
@@ -283,11 +363,18 @@ export function PianoNightApp(): JSX.Element {
   }
 
   const stepPhrase = (direction: -1 | 1): void => {
-    const next =
-      (phraseIndex() + direction + PIANO_NIGHT_PHRASES.length) %
-      PIANO_NIGHT_PHRASES.length
-    controller.seekToBeat(PIANO_NIGHT_PHRASES[next].startBeat)
-    announce(`Phrase ${next + 1}, ${PIANO_NIGHT_PHRASES[next].range}.`)
+    const sections = practiceSections()
+    if (sections.length <= 1) {
+      announce('This project fits in one practice section.')
+      return
+    }
+    const next = (phraseIndex() + direction + sections.length) % sections.length
+    controller.seekToBeat(sections[next].startBeat)
+    announce(
+      `${controller.source().hasAuthoredCoach ? 'Phrase' : 'Section'} ${
+        next + 1
+      }, ${sections[next].range}.`,
+    )
   }
 
   const cycleView = (): void => {
@@ -335,7 +422,11 @@ export function PianoNightApp(): JSX.Element {
   }
 
   const openSettings = (): void => {
-    openDrawer(drawerSection())
+    openDrawer(lastSettingsSection())
+  }
+
+  const openMusic = (): void => {
+    openDrawer('music')
   }
 
   const openCoach = (): void => {
@@ -441,6 +532,18 @@ export function PianoNightApp(): JSX.Element {
             <PianoKeys />
             <span>Stage</span>
           </button>
+          <button
+            class={styles.railButton}
+            type="button"
+            onClick={openMusic}
+            aria-label="Choose music for Piano Night"
+            aria-haspopup="dialog"
+            aria-expanded={drawerOpen() && drawerSection() === 'music'}
+            aria-controls="piano-night-settings"
+          >
+            <MusicBoard />
+            <span>Music</span>
+          </button>
           <button class={styles.railButton} type="button" onClick={openCoach}>
             <WaveformBars />
             <span>Coach</span>
@@ -483,7 +586,7 @@ export function PianoNightApp(): JSX.Element {
             <MusicBoard />
           </span>
           <div class={styles.sessionPiece}>
-            <strong>{controller.stage.title}</strong>
+            <strong>{controller.stage().title}</strong>
             <span>
               {phrase().range} · {roomLabel()}
             </span>
@@ -518,13 +621,13 @@ export function PianoNightApp(): JSX.Element {
             <input
               type="range"
               min="0"
-              max={controller.stage.totalBeats}
+              max={controller.stage().totalBeats}
               step="0.25"
               value={controller.playheadBeat()}
-              aria-label="Seek prepared piano project"
+              aria-label="Seek piano project"
               aria-valuetext={`Beat ${controller
                 .playheadBeat()
-                .toFixed(1)} of ${controller.stage.totalBeats}`}
+                .toFixed(1)} of ${controller.stage().totalBeats}`}
               onInput={(event) =>
                 controller.seekToBeat(Number(event.currentTarget.value))
               }
@@ -557,7 +660,11 @@ export function PianoNightApp(): JSX.Element {
 
         <PianoNightStageViews
           view={view}
-          notes={controller.stage.notes}
+          notes={() => controller.stage().notes}
+          title={() => controller.stage().title}
+          totalBeats={() => controller.stage().totalBeats}
+          keyLabel={() => controller.source().keyLabel}
+          hasAuthoredCoach={() => controller.source().hasAuthoredCoach}
           playheadBeat={controller.playheadBeat}
           isPlaying={isPlaying}
           phrase={phrase}
@@ -572,7 +679,10 @@ export function PianoNightApp(): JSX.Element {
           aria-expanded={coachOpen()}
         >
           <WaveformBars />
-          <span>Phrase {phraseIndex() + 1}</span>
+          <span>
+            {controller.source().hasAuthoredCoach ? 'Phrase' : 'Section'}{' '}
+            {phraseIndex() + 1}
+          </span>
         </button>
 
         <PianoKeyHorizon
@@ -597,7 +707,12 @@ export function PianoNightApp(): JSX.Element {
             <button
               type="button"
               onClick={() => stepPhrase(-1)}
-              aria-label="Previous practice phrase"
+              aria-label={
+                controller.source().hasAuthoredCoach
+                  ? 'Previous practice phrase'
+                  : 'Previous project section'
+              }
+              disabled={practiceSections().length <= 1}
             >
               <SkipBack />
             </button>
@@ -619,7 +734,12 @@ export function PianoNightApp(): JSX.Element {
             <button
               type="button"
               onClick={() => stepPhrase(1)}
-              aria-label="Next practice phrase"
+              aria-label={
+                controller.source().hasAuthoredCoach
+                  ? 'Next practice phrase'
+                  : 'Next project section'
+              }
+              disabled={practiceSections().length <= 1}
             >
               <SkipForward />
             </button>
@@ -673,6 +793,12 @@ export function PianoNightApp(): JSX.Element {
         <PhraseCoach
           phrase={phrase}
           phraseIndex={phraseIndex}
+          phraseCount={() => practiceSections().length}
+          hasAuthoredCoach={() => controller.source().hasAuthoredCoach}
+          sourceTitle={() => controller.stage().title}
+          practiceTrackLabel={() => controller.source().practiceTrackLabel}
+          noteCount={() => controller.stage().notes.length}
+          tempoBpm={controller.transport.timeline.tempoBpm}
           onPrevious={() => stepPhrase(-1)}
           onNext={() => stepPhrase(1)}
           onClose={closeCoach}
@@ -695,6 +821,17 @@ export function PianoNightApp(): JSX.Element {
           <PianoKeys />
           <span>Stage</span>
         </button>
+        <button
+          type="button"
+          onClick={openMusic}
+          aria-label="Choose music for Piano Night"
+          aria-haspopup="dialog"
+          aria-expanded={drawerOpen() && drawerSection() === 'music'}
+          aria-controls="piano-night-settings"
+        >
+          <MusicBoard />
+          <span>Music</span>
+        </button>
         <button type="button" onClick={openCoach} aria-expanded={coachOpen()}>
           <WaveformBars />
           <span>Coach</span>
@@ -710,13 +847,6 @@ export function PianoNightApp(): JSX.Element {
           <Settings />
           <span>Settings</span>
         </button>
-        <a
-          href={LEGACY_PIANO_PATH}
-          aria-label="Open the current Piano workspace"
-        >
-          <MusicBoard />
-          <span>Current</span>
-        </a>
       </nav>
 
       <Show when={blockingModal()}>
@@ -786,20 +916,41 @@ export function PianoNightApp(): JSX.Element {
             role="tabpanel"
             aria-labelledby="piano-night-tab-session"
           >
-            <span class={styles.drawerKicker}>Prepared session</span>
-            <h2>{controller.stage.title}</h2>
+            <span class={styles.drawerKicker}>
+              {controller.source().provenanceLabel}
+            </span>
+            <h2>{controller.stage().title}</h2>
             <p>
-              A bundled first-party score powers every lens. Nothing is loaded
-              from your library until a later handoff phase.
+              Fall, Score, Keys, and the transport are reading this same staged
+              source. Open Music to choose another composition or import MIDI
+              from this device.
             </p>
             <dl class={styles.sessionFacts}>
               <div>
                 <dt>Position</dt>
                 <dd>
                   Beat {controller.playheadBeat().toFixed(1)} of{' '}
-                  {controller.stage.totalBeats}
+                  {controller.stage().totalBeats}
                 </dd>
               </div>
+              <div>
+                <dt>Tempo</dt>
+                <dd>
+                  {Math.round(controller.transport.timeline.tempoBpm())} BPM
+                </dd>
+              </div>
+              <div>
+                <dt>Practice track</dt>
+                <dd>{controller.source().practiceTrackLabel}</dd>
+              </div>
+              <Show when={controller.source().additionalTrackCount > 0}>
+                <div>
+                  <dt>Additional tracks</dt>
+                  <dd>
+                    {controller.source().additionalTrackCount} saved, not played
+                  </dd>
+                </div>
+              </Show>
               <div>
                 <dt>Input</dt>
                 <dd>{midiLabel()}</dd>
@@ -874,6 +1025,37 @@ export function PianoNightApp(): JSX.Element {
               )}
             </Show>
           </section>
+        </Show>
+
+        <Show when={drawerOpen() && drawerSection() === 'music'}>
+          <Suspense
+            fallback={
+              <section
+                id="piano-night-panel-music"
+                class={styles.drawerPanel}
+                role="tabpanel"
+                aria-labelledby="piano-night-tab-music"
+                aria-busy="true"
+              >
+                <span class={styles.drawerKicker}>Music on this device</span>
+                <h2>Opening your music…</h2>
+                <p>Afterglow Study remains ready while the library loads.</p>
+              </section>
+            }
+          >
+            <PianoNightMusicPanel
+              panelClass={styles.drawerPanel}
+              currentSourceId={() => controller.source().id}
+              legacyPianoPath={LEGACY_PIANO_PATH}
+              onSelect={(source) => {
+                const selected = controller.replaceSource(source)
+                if (!selected) return false
+                announce(`${source.stage.title} is on stage.`)
+                closeDrawer()
+                return true
+              }}
+            />
+          </Suspense>
         </Show>
 
         <Show when={drawerSection() === 'sound'}>

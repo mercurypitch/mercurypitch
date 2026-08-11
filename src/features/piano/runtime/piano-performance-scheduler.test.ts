@@ -11,6 +11,19 @@ import type { PianoProjectStageNote } from './piano-project-stage'
 function harness() {
   let beat = 0
   let phase: 'playing' | 'paused' = 'playing'
+  let notes: PianoProjectStageNote[] = [
+    {
+      id: 'n1',
+      midi: 60,
+      name: 'C',
+      startBeat: 0.2,
+      duration: 1,
+      targetFreq: 261.63,
+      velocity: 0.8,
+      releaseVelocity: 0.3,
+      channel: 0,
+    },
+  ]
   const context = { currentTime: 10, state: 'running' } as AudioContext
   const transport = {
     phase: () => phase,
@@ -33,19 +46,7 @@ function harness() {
   const scheduler = createPianoPerformanceScheduler({
     transport,
     synth,
-    notes: [
-      {
-        id: 'n1',
-        midi: 60,
-        name: 'C',
-        startBeat: 0.2,
-        duration: 1,
-        targetFreq: 261.63,
-        velocity: 0.8,
-        releaseVelocity: 0.3,
-        channel: 0,
-      },
-    ] satisfies PianoProjectStageNote[],
+    notes: () => notes,
     scheduleAheadSeconds: 0.2,
     schedulerIntervalMs: 20,
     setInterval: (callback) => {
@@ -55,6 +56,7 @@ function harness() {
     clearInterval,
   })
   return {
+    clearInterval,
     context,
     noteOff,
     noteOn,
@@ -64,6 +66,9 @@ function harness() {
     },
     setPhase(value: 'playing' | 'paused') {
       phase = value
+    },
+    setNotes(value: PianoProjectStageNote[]) {
+      notes = value
     },
     tick() {
       tick?.()
@@ -104,6 +109,39 @@ describe('createPianoPerformanceScheduler', () => {
     expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10)
     expect(instance.noteOn).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: 'score:1:n1' }),
+    )
+  })
+
+  it('reads replacement notes without creating a second scheduler clock', () => {
+    const instance = harness()
+    instance.scheduler.start()
+    instance.noteOn.mockClear()
+    instance.noteOff.mockClear()
+
+    instance.scheduler.stop()
+    instance.setNotes([
+      {
+        id: 'replacement',
+        midi: 67,
+        name: 'G',
+        startBeat: 0.2,
+        duration: 1,
+        targetFreq: 392,
+        velocity: 0.7,
+        releaseVelocity: 0.2,
+        channel: 0,
+      },
+    ])
+
+    expect(instance.scheduler.start()).toBe(true)
+    expect(instance.clearInterval).toHaveBeenCalledWith(7)
+    expect(instance.noteOff).toHaveBeenCalledWith('score:0:n1', 10)
+    expect(instance.noteOn).toHaveBeenCalledOnce()
+    expect(instance.noteOn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'score:1:replacement',
+        midi: 67,
+      }),
     )
   })
 })

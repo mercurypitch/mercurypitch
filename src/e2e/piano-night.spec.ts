@@ -1,4 +1,4 @@
-// Piano Night smoke coverage protects the standalone prepared-project room.
+// Piano Night smoke coverage protects the standalone, source-loading room.
 // ============================================================
 
 import { devices, expect, test } from '@playwright/test'
@@ -79,6 +79,33 @@ async function instrumentFirstPaint(
   })
 }
 
+async function browserBoundaryCounts(
+  page: import('@playwright/test').Page,
+): Promise<{
+  audio: number
+  database: number
+  midi: number
+  mic: number
+  workers: number
+}> {
+  return page.evaluate(() => {
+    const trackedWindow = window as unknown as {
+      __pianoNightAudioContexts: number
+      __pianoNightDatabaseOpens: number
+      __pianoNightMidiRequests: number
+      __pianoNightMicRequests: number
+      __pianoNightWorkers: number
+    }
+    return {
+      audio: trackedWindow.__pianoNightAudioContexts,
+      database: trackedWindow.__pianoNightDatabaseOpens,
+      midi: trackedWindow.__pianoNightMidiRequests,
+      mic: trackedWindow.__pianoNightMicRequests,
+      workers: trackedWindow.__pianoNightWorkers,
+    }
+  })
+}
+
 test('loads the prepared standalone room with a silent first paint @smoke', async ({
   page,
 }) => {
@@ -142,22 +169,7 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
     expect(note.striking).toBe('false')
   }
 
-  const firstPaintCalls = await page.evaluate(() => {
-    const trackedWindow = window as unknown as {
-      __pianoNightAudioContexts: number
-      __pianoNightDatabaseOpens: number
-      __pianoNightMidiRequests: number
-      __pianoNightMicRequests: number
-      __pianoNightWorkers: number
-    }
-    return {
-      audio: trackedWindow.__pianoNightAudioContexts,
-      database: trackedWindow.__pianoNightDatabaseOpens,
-      midi: trackedWindow.__pianoNightMidiRequests,
-      mic: trackedWindow.__pianoNightMicRequests,
-      workers: trackedWindow.__pianoNightWorkers,
-    }
-  })
+  const firstPaintCalls = await browserBoundaryCounts(page)
   expect(firstPaintCalls).toEqual({
     audio: 0,
     database: 0,
@@ -174,12 +186,174 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
   )
   expect(
     loadedResources.filter((name) =>
-      /\/(?:library|local-song-library|piano-library|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
+      /\/(?:PianoNightMusicPanel|library|local-song-library|piano-library|piano-composition-stage|piano-night-music-source|piano-project-import|pitch-core|vendor-db|vendor-media|vendor-vexflow|advanced)-/.test(
         name,
       ),
     ),
   ).toEqual([])
 
+  expect(pageErrors).toEqual([])
+})
+
+test('imports, stages, and reloads a canonical MIDI from Piano Night @smoke', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await instrumentFirstPaint(page)
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+
+  expect(await browserBoundaryCounts(page)).toEqual({
+    audio: 0,
+    database: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
+
+  await page
+    .getByRole('button', { name: 'Choose music for Piano Night' })
+    .filter({ visible: true })
+    .click()
+  const musicPanel = page.getByRole('tabpanel', { name: 'Music' })
+  await expect(musicPanel).toBeVisible()
+  await expect(musicPanel).toHaveAttribute('aria-busy', 'false')
+  await expect
+    .poll(async () => (await browserBoundaryCounts(page)).database)
+    .toBeGreaterThan(0)
+  expect(await browserBoundaryCounts(page)).toMatchObject({
+    audio: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
+
+  const fileChooserPromise = page.waitForEvent('filechooser')
+  await musicPanel.getByRole('button', { name: /Import MIDI/ }).click()
+  const fileChooser = await fileChooserPromise
+  await fileChooser.setFiles({
+    name: 'worker-fixture.mid',
+    mimeType: 'audio/midi',
+    buffer: TWO_TRACK_MIDI,
+  })
+
+  await expect(page.getByLabel('Piano Night session status')).toContainText(
+    'worker-fixture',
+  )
+  await expect(page.getByRole('status').last()).toContainText(
+    'worker-fixture is on stage.',
+  )
+  await expect(page.getByText('Loaded project performance')).toBeVisible()
+  await expect(
+    page.getByText('No authored coaching prompt exists for worker-fixture.'),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('img', {
+      name: 'Crescendo from mezzo-piano to mezzo-forte',
+    }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('slider', { name: 'Seek piano project' }),
+  ).toHaveAttribute('max', '1')
+  expect(await browserBoundaryCounts(page)).toMatchObject({
+    audio: 0,
+    midi: 0,
+    mic: 0,
+    workers: 1,
+  })
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<{
+            backingTrackIds: string[]
+            count: number
+            name: string | null
+            sourceKind: string | null
+          }>((resolve, reject) => {
+            const open = indexedDB.open('MercuryPitchDB')
+            open.onerror = () => reject(open.error)
+            open.onsuccess = () => {
+              const database = open.result
+              const transaction = database.transaction(
+                'pianoProjects',
+                'readonly',
+              )
+              const request = transaction.objectStore('pianoProjects').getAll()
+              request.onerror = () => reject(request.error)
+              request.onsuccess = () => {
+                const records = request.result as Array<{
+                  project?: {
+                    backingTrackIds?: unknown[]
+                    name?: unknown
+                  }
+                  sourceKind?: unknown
+                }>
+                const record = records[0]
+                resolve({
+                  backingTrackIds: Array.isArray(
+                    record?.project?.backingTrackIds,
+                  )
+                    ? record.project.backingTrackIds.filter(
+                        (value): value is string => typeof value === 'string',
+                      )
+                    : [],
+                  count: records.length,
+                  name:
+                    typeof record?.project?.name === 'string'
+                      ? record.project.name
+                      : null,
+                  sourceKind:
+                    typeof record?.sourceKind === 'string'
+                      ? record.sourceKind
+                      : null,
+                })
+                database.close()
+              }
+            }
+          }),
+      ),
+    )
+    .toEqual({
+      backingTrackIds: ['smf-t1-c1'],
+      count: 1,
+      name: 'worker-fixture',
+      sourceKind: 'midi',
+    })
+
+  await page
+    .getByRole('button', { name: 'Open Piano Night settings' })
+    .filter({ visible: true })
+    .click()
+  const sessionPanel = page.getByRole('tabpanel', { name: 'Session' })
+  await expect(sessionPanel).toContainText('Imported MIDI')
+  await expect(sessionPanel).toContainText('1 saved, not played')
+
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  expect(await browserBoundaryCounts(page)).toEqual({
+    audio: 0,
+    database: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
+  await page
+    .getByRole('button', { name: 'Choose music for Piano Night' })
+    .filter({ visible: true })
+    .click()
+  const savedRow = page.getByRole('button', { name: /worker-fixture/ })
+  await expect(savedRow).toBeVisible()
+  await savedRow.click()
+  await expect(page.getByLabel('Piano Night session status')).toContainText(
+    'worker-fixture',
+  )
+  expect(await browserBoundaryCounts(page)).toMatchObject({
+    audio: 0,
+    midi: 0,
+    mic: 0,
+    workers: 0,
+  })
   expect(pageErrors).toEqual([])
 })
 
@@ -285,7 +459,7 @@ test('plays a key and seeks the prepared project with a real pointer @smoke', as
   await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
 
   const seek = page.getByRole('slider', {
-    name: 'Seek prepared piano project',
+    name: 'Seek piano project',
   })
   await expect(seek).toBeVisible()
   const seekBox = await seek.boundingBox()
@@ -548,10 +722,30 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
         page.getByRole('button', { name: 'Open Piano Night settings' }),
       ).toHaveCount(1)
       await expect(
-        page.getByRole('link', {
-          name: 'Open the current Piano workspace',
-        }),
+        page.getByRole('button', { name: 'Choose music for Piano Night' }),
       ).toHaveCount(1)
+      const currentPianoLink = page.getByRole('link', {
+        name: 'Open the current Piano workspace',
+      })
+      if (viewport.width <= 900) {
+        await expect(currentPianoLink).toHaveCount(0)
+        await page
+          .getByRole('button', { name: 'Choose music for Piano Night' })
+          .click()
+        const drawer = page.getByRole('dialog', {
+          name: 'Piano Night controls',
+        })
+        await expect(
+          drawer.getByRole('link', {
+            name: 'Open the current Piano workspace',
+          }),
+        ).toBeVisible()
+        await drawer
+          .getByRole('button', { name: 'Close Piano Night controls' })
+          .click()
+      } else {
+        await expect(currentPianoLink).toHaveCount(1)
+      }
 
       if (viewport.name === 'tablet') {
         const settings = page.getByRole('button', {

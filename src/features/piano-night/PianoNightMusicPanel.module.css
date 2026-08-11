@@ -1,0 +1,482 @@
+.panel {
+  --music-line: rgb(224 207 180 / 12%);
+  --music-brass: #c8a267;
+
+  min-width: 0;
+}
+
+.kicker {
+  color: var(--music-brass);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.headingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(152px, 0.58fr);
+  gap: 18px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.headingRow h2 {
+  max-width: 13ch;
+  margin: 0 0 12px;
+}
+
+.headingRow p {
+  max-width: 48ch;
+  margin: 0;
+  color: #c2b9ad;
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.importButton {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgb(200 162 103 / 48%);
+  border-radius: 12px;
+  color: #f4eadb;
+  text-align: left;
+  background:
+    linear-gradient(135deg, rgb(200 162 103 / 13%), transparent 65%),
+    rgb(255 255 255 / 2%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 4%);
+  cursor: pointer;
+}
+
+.importButton:hover:not(:disabled) {
+  border-color: rgb(220 184 125 / 75%);
+  background-color: rgb(200 162 103 / 8%);
+}
+
+.importButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.importButton svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  color: var(--music-brass);
+}
+
+.importButton span {
+  min-width: 0;
+}
+
+.importButton strong,
+.importButton small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.importButton strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.importButton small {
+  margin-top: 4px;
+  color: #968e84;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.errorBox,
+.issueBox {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 13px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.errorBox {
+  border: 1px solid rgb(217 126 114 / 35%);
+  color: #dbc1bb;
+  background: rgb(103 35 35 / 16%);
+}
+
+.issueBox {
+  border: 1px solid rgb(200 162 103 / 22%);
+  color: #c7bcae;
+  background: rgb(200 162 103 / 6%);
+}
+
+.errorBox strong,
+.issueBox strong {
+  color: #eee4d6;
+  font-size: 11px;
+}
+
+.errorBox button {
+  width: fit-content;
+  min-height: 32px;
+  margin-top: 3px;
+  padding: 0 12px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 999px;
+  color: #f3e8d8;
+  background: transparent;
+  cursor: pointer;
+}
+
+.issueBox ul {
+  margin: 0;
+  padding-left: 17px;
+}
+
+.emptyLibrary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 18px;
+  padding: 11px 13px;
+  border: 1px solid var(--music-line);
+  border-radius: 10px;
+  color: #9d958b;
+  background: rgb(255 255 255 / 1.5%);
+}
+
+.emptyLibrary svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--music-brass);
+}
+
+.emptyLibrary strong,
+.emptyLibrary small {
+  display: block;
+}
+
+.emptyLibrary strong {
+  color: #d8cec1;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.emptyLibrary small {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.searchField {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 0 13px;
+  border: 1px solid var(--music-line);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.searchField:focus-within {
+  border-color: rgb(200 162 103 / 55%);
+}
+
+.searchField svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: #8f877d;
+}
+
+.searchField input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #f0e5d7;
+  font: inherit;
+  font-size: 12px;
+  background: transparent;
+}
+
+.searchField input::placeholder {
+  color: #77716a;
+}
+
+.libraryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 27px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--music-line);
+}
+
+.libraryHeader span {
+  color: var(--music-brass);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.libraryHeader small {
+  color: #817a72;
+  font-size: 10px;
+}
+
+.musicList {
+  display: grid;
+}
+
+.musicRow {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-height: 76px;
+  align-items: center;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--music-line);
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.musicRow:hover,
+.musicRowCurrent {
+  background: linear-gradient(90deg, rgb(200 162 103 / 7%), transparent 82%);
+}
+
+.rowIcon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgb(224 207 180 / 14%);
+  border-radius: 9px;
+  color: #a29a90;
+  background: rgb(255 255 255 / 2%);
+}
+
+.musicRowCurrent .rowIcon {
+  border-color: rgb(200 162 103 / 42%);
+  color: var(--music-brass);
+  background: rgb(200 162 103 / 9%);
+}
+
+.rowIcon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rowCopy,
+.rowTopline {
+  min-width: 0;
+}
+
+.rowCopy,
+.rowCopy small {
+  display: block;
+}
+
+.rowTopline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rowTopline strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #eee5d8;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.rowTopline i {
+  flex: 0 0 auto;
+  color: #90887f;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.musicRowCurrent .rowTopline i {
+  color: var(--music-brass);
+}
+
+.rowCopy small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #8f8880;
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loadingRows {
+  display: grid;
+}
+
+.loadingRows i {
+  display: block;
+  height: 76px;
+  border-bottom: 1px solid var(--music-line);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 4%),
+    transparent
+  );
+  background-size: 220% 100%;
+  animation: music-shimmer 1.4s ease-in-out infinite;
+}
+
+.emptyState {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: #8d867d;
+  text-align: center;
+}
+
+.emptyState svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  color: var(--music-brass);
+}
+
+.emptyState strong {
+  color: #d9d0c5;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.emptyState span {
+  font-size: 11px;
+}
+
+.showMore {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 13px;
+  border: 1px solid var(--music-line);
+  border-radius: 9px;
+  color: #c9beb0;
+  background: rgb(255 255 255 / 2%);
+  cursor: pointer;
+}
+
+.libraryFooter {
+  display: grid;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 17px;
+  border-top: 1px solid var(--music-line);
+}
+
+.libraryFooter p {
+  margin: 0;
+  color: #827b73;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.libraryFooter a {
+  width: fit-content;
+  color: #d6b77f;
+  font-size: 11px;
+  text-underline-offset: 3px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes music-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (width <= 720px) {
+  .headingRow {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .importButton {
+    min-height: 58px;
+  }
+}
+
+@media (height <= 760px) and (orientation: landscape) {
+  .headingRow {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+  }
+
+  .importButton {
+    min-height: 58px;
+  }
+
+  .libraryHeader {
+    margin-top: 19px;
+  }
+
+  .musicRow {
+    min-height: 66px;
+    padding-block: 9px;
+  }
+
+  .libraryFooter {
+    margin-top: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingRows i {
+    animation: none;
+  }
+}

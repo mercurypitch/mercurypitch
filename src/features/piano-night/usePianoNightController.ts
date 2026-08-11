@@ -1,11 +1,11 @@
 // ============================================================
-// Piano Night controller — one project, audio clock, input owner, and synth lifetime
+// Piano Night controller — one replaceable source and one route-owned runtime
 // ============================================================
 //
 // The standalone route stays store-free on first paint. Browser capabilities
 // activate only from Play, Connect MIDI, or an on-screen key gesture.
 
-import { createMemo, createSignal, onCleanup, onMount } from 'solid-js'
+import { batch, createMemo, createSignal, onCleanup, onMount } from 'solid-js'
 import type { PianoInputSnapshot, PianoPedalKind, } from '@/features/piano/input/piano-input-state'
 import { createPianoInputState } from '@/features/piano/input/piano-input-state'
 import { createTouchPianoInputPort } from '@/features/piano/input/touch-piano-input-port'
@@ -14,12 +14,18 @@ import { createWebMidiInputPort } from '@/features/piano/input/web-midi-input-po
 import { createPianoAudioClockTransport } from '@/features/piano/runtime/piano-audio-clock-transport'
 import { createPianoFallbackSynth } from '@/features/piano/runtime/piano-fallback-synth'
 import { createPianoPerformanceScheduler } from '@/features/piano/runtime/piano-performance-scheduler'
-import { pianoProjectToStage } from '@/features/piano/runtime/piano-project-stage'
 import { installAudioUnlock } from '@/lib/audio-unlock'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
-import { PIANO_NIGHT_DEMO_PROJECT } from './piano-night-demo-project'
+import type { PianoNightSource } from './piano-night-source'
+import { PIANO_NIGHT_INCLUDED_SOURCE } from './piano-night-source'
 
-const stage = pianoProjectToStage(PIANO_NIGHT_DEMO_PROJECT)
+const MINIMUM_TEMPO_BPM = 40
+const MAXIMUM_TEMPO_BPM = 280
+
+function boundedTempoBpm(tempoBpm: number): number {
+  if (!Number.isFinite(tempoBpm)) return 120
+  return Math.max(MINIMUM_TEMPO_BPM, Math.min(MAXIMUM_TEMPO_BPM, tempoBpm))
+}
 
 function sameMidiSet(
   previous: ReadonlySet<number>,
@@ -33,17 +39,23 @@ function sameMidiSet(
 }
 
 export function usePianoNightController() {
-  const projectActiveMidis = createPianoNightActiveMidiIndex(stage.notes)
+  const [source, setSource] = createSignal<PianoNightSource>(
+    PIANO_NIGHT_INCLUDED_SOURCE,
+  )
+  const stage = () => source().stage
+  const projectActiveMidis = createMemo(() =>
+    createPianoNightActiveMidiIndex(stage().notes),
+  )
   const transport = createPianoAudioClockTransport({
-    totalBeats: () => stage.totalBeats,
-    initialTempoBpm: stage.initialTempoBpm,
+    totalBeats: () => stage().totalBeats,
+    initialTempoBpm: stage().initialTempoBpm,
   })
   const synth = createPianoFallbackSynth({
     getAudioContext: () => transport.getAudioContext(),
   })
   const scheduler = createPianoPerformanceScheduler({
     transport,
-    notes: stage.notes,
+    notes: () => stage().notes,
     synth,
   })
   const input = createPianoInputState()
@@ -70,13 +82,14 @@ export function usePianoNightController() {
   const [audioActive, setAudioActive] = createSignal(false)
   const [reducedMotion, setReducedMotion] = createSignal(false)
   const [statusMessage, setStatusMessage] = createSignal(
-    'Afterglow Study is ready. Audio and input are off.',
+    `${stage().title} is ready. Audio and input are off.`,
   )
 
   const pendingPointers = new Map<number, number>()
   const keyboardReleaseTimers = new Map<number, number>()
   let frame: number | null = null
   let uninstallAudioUnlock: (() => void) | null = null
+  let commandGeneration = 0
   let disposed = false
 
   const activeMidis = createMemo<ReadonlySet<number>>(
@@ -85,7 +98,7 @@ export function usePianoNightController() {
         inputSnapshot().soundingNotes.map((voice) => voice.midi),
       )
       if (transport.phase() === 'playing') {
-        for (const midiNote of projectActiveMidis.atBeat(playheadBeat())) {
+        for (const midiNote of projectActiveMidis().atBeat(playheadBeat())) {
           active.add(midiNote)
         }
       }
@@ -107,7 +120,7 @@ export function usePianoNightController() {
       frame = null
       scheduler.stop()
       if (transport.phase() === 'complete') {
-        setStatusMessage('Afterglow Study complete. Ready to play again.')
+        setStatusMessage(`${stage().title} complete. Ready to play again.`)
       }
       return
     }
@@ -187,8 +200,9 @@ export function usePianoNightController() {
   }
 
   const play = async (): Promise<boolean> => {
+    const generation = commandGeneration
     const started = await transport.play()
-    if (disposed) return false
+    if (disposed || generation !== commandGeneration) return false
     syncTransport()
     if (!started) {
       setAudioError(transport.error())
@@ -203,12 +217,13 @@ export function usePianoNightController() {
     scheduler.start()
     startFrame()
     setStatusMessage(
-      'Playing Afterglow Study with the built-in fallback synth.',
+      `Playing ${stage().title} with the built-in fallback synth.`,
     )
     return true
   }
 
   const pause = (): void => {
+    commandGeneration += 1
     transport.pause()
     scheduler.stop()
     releaseLiveVoices()
@@ -230,12 +245,36 @@ export function usePianoNightController() {
   }
 
   const setTempoBpm = (tempoBpm: number): void => {
-    transport.setTempoBpm(Math.max(40, Math.min(160, tempoBpm)))
+    transport.setTempoBpm(boundedTempoBpm(tempoBpm))
     if (transport.phase() === 'playing') scheduler.refresh()
     syncTransport()
     setStatusMessage(
       `Tempo set to ${Math.round(transport.timeline.tempoBpm())} BPM.`,
     )
+  }
+
+  const replaceSource = (nextSource: PianoNightSource): boolean => {
+    if (
+      disposed ||
+      nextSource.stage.notes.length === 0 ||
+      !(nextSource.stage.totalBeats > 0)
+    ) {
+      return false
+    }
+
+    commandGeneration += 1
+    scheduler.stop()
+    cancelFrame()
+    transport.stop()
+    releaseLiveVoices()
+    batch(() => {
+      setSource(nextSource)
+      transport.setTempoBpm(boundedTempoBpm(nextSource.stage.initialTempoBpm))
+      setPlayheadBeat(0)
+      setAudioError(null)
+      setStatusMessage(`${nextSource.stage.title} is ready.`)
+    })
+    return true
   }
 
   const connectMidi = async (): Promise<boolean> => {
@@ -386,6 +425,7 @@ export function usePianoNightController() {
 
   onCleanup(() => {
     disposed = true
+    commandGeneration += 1
     pendingPointers.clear()
     for (const timer of keyboardReleaseTimers.values()) {
       window.clearTimeout(timer)
@@ -407,6 +447,7 @@ export function usePianoNightController() {
   })
 
   return {
+    source,
     stage,
     transport,
     playheadBeat,
@@ -423,6 +464,7 @@ export function usePianoNightController() {
     togglePlayback,
     seekToBeat,
     setTempoBpm,
+    replaceSource,
     connectMidi,
     disconnectMidi,
     selectMidiInput,
