@@ -104,6 +104,9 @@ const MEMORY_ERROR =
   'This mix is too large to open safely on this device. Prepare a shorter song or fewer parts.'
 const STREAM_ERROR =
   'This browser could not open the large room mix. Try a shorter song or fewer band parts.'
+// Playback owns only this bus gate. The room master also carries tuner guide
+// and monitor audio, so transport fades must never automate the master itself.
+const STEMS_BUS_OPEN_GAIN = 1
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value))
@@ -470,11 +473,11 @@ export function createGuitarBackingTransport(
     requestGeneration: number,
   ): Promise<boolean> => {
     const currentContext = context
-    const currentMaster = audioGraph?.master ?? null
+    const currentStemsBus = audioGraph?.buses.stems ?? null
     const currentStreamEngine = streamEngine
     if (
       currentContext === null ||
-      currentMaster === null ||
+      currentStemsBus === null ||
       currentStreamEngine === null
     ) {
       return false
@@ -482,8 +485,8 @@ export function createGuitarBackingTransport(
 
     const safeOffset = clamp(offset, 0, Math.max(0, duration - 0.001))
     setStatus('loading')
-    currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
-    currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
+    currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
+    currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
     const started = await currentStreamEngine.play(safeOffset, targetTrackGain)
     if (disposed || requestGeneration !== generation) {
       currentStreamEngine.pause()
@@ -503,8 +506,8 @@ export function createGuitarBackingTransport(
     startedOffset = safeOffset
     parkedOffset = safeOffset
     startedAtContextTime = currentContext.currentTime
-    currentMaster.gain.linearRampToValueAtTime(
-      sliderToGain(masterPosition),
+    currentStemsBus.gain.linearRampToValueAtTime(
+      STEMS_BUS_OPEN_GAIN,
       currentContext.currentTime + fadeSeconds,
     )
     setStatus('playing')
@@ -513,10 +516,10 @@ export function createGuitarBackingTransport(
 
   const startAt = (offset: number): boolean => {
     const currentContext = context
-    const currentMaster = audioGraph?.master ?? null
+    const currentStemsBus = audioGraph?.buses.stems ?? null
     if (
       currentContext === null ||
-      currentMaster === null ||
+      currentStemsBus === null ||
       decodedTracks.length === 0 ||
       duration <= 0
     ) {
@@ -531,10 +534,10 @@ export function createGuitarBackingTransport(
     let endingSource: AudioBufferSourceNode | null = null
     let longestRemaining = -1
 
-    currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
-    currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
-    currentMaster.gain.linearRampToValueAtTime(
-      sliderToGain(masterPosition),
+    currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
+    currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
+    currentStemsBus.gain.linearRampToValueAtTime(
+      STEMS_BUS_OPEN_GAIN,
       when + fadeSeconds,
     )
 
@@ -719,9 +722,14 @@ export function createGuitarBackingTransport(
       if (status !== 'playing') return
       parkedOffset = currentTime()
       const currentContext = context
-      const currentMaster = audioGraph?.master ?? null
-      if (currentContext !== null && currentMaster !== null) {
-        rampGain(currentMaster.gain, 0, currentContext.currentTime, fadeSeconds)
+      const currentStemsBus = audioGraph?.buses.stems ?? null
+      if (currentContext !== null && currentStemsBus !== null) {
+        rampGain(
+          currentStemsBus.gain,
+          0,
+          currentContext.currentTime,
+          fadeSeconds,
+        )
         if (loadMode === 'streamed') {
           streamEngine?.pause(fadeSeconds * 1000 + 8)
         } else {
@@ -771,15 +779,15 @@ export function createGuitarBackingTransport(
       }
       if (loadMode === 'streamed') {
         const currentContext = context
-        const currentMaster = audioGraph?.master ?? null
-        if (currentContext !== null && currentMaster !== null) {
-          currentMaster.gain.cancelScheduledValues(currentContext.currentTime)
-          currentMaster.gain.setValueAtTime(0, currentContext.currentTime)
+        const currentStemsBus = audioGraph?.buses.stems ?? null
+        if (currentContext !== null && currentStemsBus !== null) {
+          currentStemsBus.gain.cancelScheduledValues(currentContext.currentTime)
+          currentStemsBus.gain.setValueAtTime(0, currentContext.currentTime)
           streamEngine?.seek(target)
           startedOffset = target
           startedAtContextTime = currentContext.currentTime
-          currentMaster.gain.linearRampToValueAtTime(
-            sliderToGain(masterPosition),
+          currentStemsBus.gain.linearRampToValueAtTime(
+            STEMS_BUS_OPEN_GAIN,
             currentContext.currentTime + fadeSeconds,
           )
           emit()
