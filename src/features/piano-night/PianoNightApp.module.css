@@ -372,6 +372,17 @@
   content: '';
 }
 
+.traceProgress {
+  position: absolute;
+  z-index: 1;
+  right: 15px;
+  left: 15px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--coral));
+  box-shadow: 0 0 10px rgb(105 196 220 / 24%);
+  transform-origin: left center;
+}
+
 .sessionTrace i {
   position: relative;
   z-index: 1;
@@ -386,10 +397,12 @@
 
 .sessionTrace b {
   position: absolute;
-  right: 22%;
+  z-index: 2;
   width: 1px;
   height: 25px;
   background: var(--coral);
+  box-shadow: 0 0 8px rgb(235 133 135 / 48%);
+  transform: translateX(-50%);
 }
 
 .inputState {
@@ -474,14 +487,10 @@
 .fallNote {
   position: absolute;
   width: 23px;
-  min-height: 58px;
   border-radius: 7px;
   opacity: 0.83;
   transform: translateX(-50%);
-  transition:
-    top 90ms linear,
-    opacity 180ms ease-out;
-  will-change: top;
+  transition: opacity 180ms ease-out;
 }
 
 .fallNote::after {
@@ -522,7 +531,7 @@
 .strikeGuide {
   position: absolute;
   right: 0;
-  bottom: 17.5%;
+  bottom: 0;
   left: 0;
   height: 1px;
   background: linear-gradient(

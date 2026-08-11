@@ -108,6 +108,40 @@ test('loads the prepared standalone room with a silent first paint @smoke', asyn
     'noindex, nofollow',
   )
 
+  const fallAlignment = await page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>(
+      '[data-testid="piano-night-fall-view"]',
+    )
+    const guide = document.querySelector<HTMLElement>(
+      '[data-testid="piano-night-strike-guide"]',
+    )
+    const notes = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-start-beat="0"]'),
+    )
+    if (stage === null || guide === null || notes.length === 0) return null
+    const stageRect = stage.getBoundingClientRect()
+    const guideRect = guide.getBoundingClientRect()
+    return notes.map((note) => {
+      const noteRect = note.getBoundingClientRect()
+      const duration = Number(note.dataset.durationBeats)
+      return {
+        keyboardOffset: Math.abs(noteRect.bottom - stageRect.bottom),
+        guideOffset: Math.abs(noteRect.bottom - guideRect.bottom),
+        durationError: Math.abs(
+          noteRect.height - stageRect.height * duration * 0.064,
+        ),
+        striking: note.dataset.striking,
+      }
+    })
+  })
+  expect(fallAlignment).not.toBeNull()
+  for (const note of fallAlignment ?? []) {
+    expect(note.keyboardOffset).toBeLessThanOrEqual(1)
+    expect(note.guideOffset).toBeLessThanOrEqual(1)
+    expect(note.durationError).toBeLessThanOrEqual(1)
+    expect(note.striking).toBe('false')
+  }
+
   const firstPaintCalls = await page.evaluate(() => {
     const trackedWindow = window as unknown as {
       __pianoNightAudioContexts: number
@@ -213,6 +247,22 @@ test('plays a key and seeks the prepared project with a real pointer @smoke', as
   await expect
     .poll(async () => Number(await seek.inputValue()))
     .toBeGreaterThan(beforeSeek)
+  const seekValue = Number(await seek.inputValue())
+  await expect(seek).toHaveAttribute(
+    'aria-valuetext',
+    `Beat ${seekValue.toFixed(1)} of 64`,
+  )
+  await expect
+    .poll(async () => {
+      const markerBox = await page
+        .getByTestId('piano-night-trace-playhead')
+        .boundingBox()
+      if (markerBox === null) return Number.POSITIVE_INFINITY
+      const markerCentre = markerBox.x + markerBox.width / 2
+      const expectedCentre = seekBox.x + seekBox.width * (seekValue / 64)
+      return Math.abs(markerCentre - expectedCentre)
+    })
+    .toBeLessThanOrEqual(1)
   expect(
     await page.evaluate(
       () =>
