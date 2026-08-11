@@ -12,32 +12,40 @@
 // ============================================================
 
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import type { F0Frame, VoicedFrame } from '@/lib/pitch-measurements'
+import { centsToMidi, CONF_MIN, DEFAULT_VOICED_RUN_GAP_SEC, estimateFrameHop as estimateHop, foldCents, median, MEDIAN_WINDOW, medianFilter as sharedMedianFilter, preprocessF0Frames, } from '@/lib/pitch-measurements'
 import { detectVibrato } from '@/lib/vocal-analyzer'
 import { VOICE_TYPE_BANDS } from './legend-catalog'
 
-/** One pitch frame from the detector stream. */
-export interface F0Frame {
-  /** Time in seconds since task start. */
-  t: number
-  /** Fundamental frequency in Hz; 0 when unvoiced. */
-  f0: number
-  /** Detector confidence/clarity, 0..1. */
-  conf: number
+export type { F0Frame, VoicedFrame } from '@/lib/pitch-measurements'
+export {
+  centsToMidi,
+  CONF_MIN,
+  DEFAULT_HOP_SEC,
+  foldCents,
+  hzToCents,
+  median,
+  MEDIAN_WINDOW,
+} from '@/lib/pitch-measurements'
+
+/** Preserve Voice Mirror's shipped edge smoothing while sharing the kernel. */
+export function medianFilter(values: number[], window: number): number[] {
+  return sharedMedianFilter(values, window, 'truncate-window')
 }
 
-/** A voiced, median-filtered frame in MIDI-cents. */
-export interface VoicedFrame {
-  t: number
-  /** MIDI-cents: 1200·log2(f0/440) + 6900, so C4 = 6000, A4 = 6900. */
-  cents: number
+/** Preserve Voice Mirror's public signature and preprocessing policy. */
+export function preprocess(
+  frames: readonly F0Frame[],
+  confMin: number = CONF_MIN,
+): VoicedFrame[] {
+  return preprocessF0Frames(frames, {
+    confidenceFloor: confMin,
+    medianWindow: MEDIAN_WINDOW,
+    maxVoicedGapSeconds: DEFAULT_VOICED_RUN_GAP_SEC,
+    medianEdgePolicy: 'truncate-window',
+  })
 }
 
-// The app's YIN/MPM detector reports `clarity` that healthy voiced frames
-// clear at ~0.5+ (exercise code gates at 0.2–0.5); the spec's 0.85 assumed a
-// different confidence scale.
-export const CONF_MIN = 0.5
-/** Median-filter window (frames) used to kill single-frame octave glitches. */
-export const MEDIAN_WINDOW = 5
 /** Cumulative dwell (s) within ±50 c for a semitone bin to qualify (§4.1). */
 export const BIN_DWELL_MIN_SEC = 0.15
 /** Lock = this long contiguously within ±LOCK_TOLERANCE_CENTS (§4.2). */
@@ -59,45 +67,6 @@ export const ONSET_SUSTAIN_SEC = 0.1
 /** Vibrato counts as a feature only inside the singerly rate band (v1.1). */
 export const VIBRATO_MIN_HZ = 3.5
 export const VIBRATO_MAX_HZ = 8.5
-/** Fallback hop when a take has too few frames to estimate one (~60 Hz rAF). */
-export const DEFAULT_HOP_SEC = 0.016
-
-// ── Shared helpers ───────────────────────────────────────────
-
-/** Hz → MIDI-cents (A4 = 6900). */
-export function hzToCents(f0: number): number {
-  return 1200 * Math.log2(f0 / 440) + 6900
-}
-
-/** Nearest note (integer MIDI) for a MIDI-cents value. */
-export function centsToMidi(cents: number): number {
-  return Math.round(cents / 100)
-}
-
-/**
- * Fold a cents error into [−600, +600): matching the reference in a different
- * octave is correct (§4.2), which is essential for low/high voices.
- */
-export function foldCents(delta: number): number {
-  return (((delta % 1200) + 1800) % 1200) - 600
-}
-
-/** Centered median filter; edges use the available part of the window. */
-export function medianFilter(values: number[], window: number): number[] {
-  const half = Math.floor(window / 2)
-  return values.map((_, i) => {
-    const slice = values.slice(Math.max(0, i - half), i + half + 1)
-    return median(slice)
-  })
-}
-
-export function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid]
-}
 
 /** Linear-interpolated percentile over a pre-sorted array, p in [0, 1]. */
 function percentileSorted(sorted: number[], p: number): number {
@@ -159,48 +128,6 @@ export function bestSinusoidFit(
     }
   }
   return best
-}
-
-/** Median inter-frame gap, used as the per-frame dwell/duration estimate. */
-function estimateHop(frames: readonly { t: number }[]): number {
-  const gaps: number[] = []
-  for (let i = 1; i < frames.length; i++) {
-    const gap = frames[i].t - frames[i - 1].t
-    if (gap > 0) gaps.push(gap)
-  }
-  return gaps.length > 0 ? median(gaps) : DEFAULT_HOP_SEC
-}
-
-/** Gaps longer than this split voiced frames into separate runs. */
-const RUN_GAP_SEC = 0.12
-
-/**
- * §3 preprocessing: drop unvoiced/low-confidence frames, median-filter f0 to
- * kill YIN octave halving/doubling glitches, convert to MIDI-cents. The
- * filter runs per contiguous voiced run — filtering across an unvoiced gap
- * (a breath, a consonant) would smear pre-gap pitch into post-gap frames.
- */
-export function preprocess(
-  frames: readonly F0Frame[],
-  confMin: number = CONF_MIN,
-): VoicedFrame[] {
-  const voiced = frames.filter((f) => f.f0 > 0 && f.conf >= confMin)
-  const result: VoicedFrame[] = []
-  let runStart = 0
-  for (let i = 1; i <= voiced.length; i++) {
-    const gap = i < voiced.length ? voiced[i].t - voiced[i - 1].t : Infinity
-    if (gap <= RUN_GAP_SEC) continue
-    const run = voiced.slice(runStart, i)
-    const filtered = medianFilter(
-      run.map((f) => f.f0),
-      MEDIAN_WINDOW,
-    )
-    for (let j = 0; j < run.length; j++) {
-      result.push({ t: run[j].t, cents: hzToCents(filtered[j]) })
-    }
-    runStart = i
-  }
-  return result
 }
 
 // ── §4.1 Vocal range ─────────────────────────────────────────

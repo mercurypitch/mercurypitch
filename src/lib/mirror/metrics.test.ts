@@ -111,6 +111,10 @@ describe('medianFilter', () => {
     expect(medianFilter([1, 100, 1, 1, 1], 5)).toEqual([1, 1, 1, 1, 1])
   })
 
+  it('preserves the shipped truncated edge-window behavior', () => {
+    expect(medianFilter([1, 100, 100, 1, 1], 5)[0]).toBe(100)
+  })
+
   it('preserves a constant signal', () => {
     expect(medianFilter([5, 5, 5], 5)).toEqual([5, 5, 5])
   })
