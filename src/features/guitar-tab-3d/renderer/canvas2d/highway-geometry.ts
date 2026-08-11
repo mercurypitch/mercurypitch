@@ -13,10 +13,15 @@ export const TAB_LANE_HEIGHT = 0.18
 
 export type TabWorldPoint = [number, number, number]
 
-export function tabFretX(fret: number, maxFret: number): number {
+export function tabFretX(
+  fret: number,
+  maxFret: number,
+  leftHanded = false,
+): number {
   const left = -TAB_WALL_HALF_WIDTH + TAB_FRET_MARGIN
   const right = TAB_WALL_HALF_WIDTH - TAB_FRET_MARGIN
-  return left + (maxFret > 0 ? fret / maxFret : 0.5) * (right - left)
+  const x = left + (maxFret > 0 ? fret / maxFret : 0.5) * (right - left)
+  return leftHanded ? -x : x
 }
 
 export function tabFretStringY(
@@ -58,10 +63,7 @@ export function tabLandingPoint(
       0,
     ]
   }
-  const x = tabFretX(fret, maxFret)
-  // Grid keeps the legacy surface orientation until its wires and labels can
-  // be mirrored as one unit; mirroring only targets would put them on the
-  // opposite fret from the drawn board.
+  const x = tabFretX(fret, maxFret, leftHanded)
   return [x, tabFretStringY(stringIndex, stringCount), 0]
 }
 

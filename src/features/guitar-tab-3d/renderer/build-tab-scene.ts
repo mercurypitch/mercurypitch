@@ -3,7 +3,7 @@
 
 import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
-import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { compileTabNotes, matchingTabNoteAtPlayhead } from './compile-tab-notes'
 import type { TabDetected, TabPresentation, TabScene } from './TabRenderer'
 import { DEFAULT_DISPLAY } from './TabRenderer'
 
@@ -32,26 +32,28 @@ export interface BuildTabSceneOptions {
    * it the neck is inferred from the notes, which cannot tell a four-string
    * bass from a guitar whose top two strings happen to be silent.
    */
-  tuning?: { stringCount: number; openMidi: readonly number[] }
+  tuning?: {
+    stringCount: number
+    openMidi: readonly number[]
+    capo?: number
+  }
   now?: number
 }
 
 export function buildTabScene(options: BuildTabSceneOptions): TabScene {
+  const compiled = compileTabNotes(options.notes)
   let stringCount = options.tuning?.stringCount ?? MIN_STRING_COUNT
-  let maxFret = 0
-  const observedOpen: number[] = []
-  for (const note of options.notes) {
-    if (note.stringIndex + 1 > stringCount) stringCount = note.stringIndex + 1
-    if (note.fret > maxFret) maxFret = note.fret
-    observedOpen[note.stringIndex] = note.midi - note.fret
-  }
+  stringCount = Math.max(stringCount, compiled.inferredStringCount)
   const declaredOpen = options.tuning?.openMidi
+  const capo = options.tuning?.capo ?? 0
   const openMidi: number[] = []
   for (let index = 0; index < stringCount; index += 1) {
     openMidi[index] =
-      declaredOpen?.[index] ?? observedOpen[index] ?? DEFAULT_OPEN[index] ?? 40
+      declaredOpen?.[index] === undefined
+        ? (compiled.observedOpenMidi[index] ?? DEFAULT_OPEN[index] ?? 40)
+        : declaredOpen[index]! + capo
   }
-  const laidMaxFret = Math.min(24, Math.max(12, maxFret))
+  const laidMaxFret = Math.min(24, Math.max(12, compiled.maxFret))
   const clampFret = (fret: number) => Math.max(0, Math.min(laidMaxFret, fret))
   const now = options.now ?? Date.now()
   const feedback = options.feedback
@@ -68,12 +70,10 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
   let detected: TabDetected | null = null
   const detectedMidi = feedback?.detectedMidi ?? null
   if (detectedMidi !== null && (feedback?.showUserNotes ?? true)) {
-    const matched = options.notes.find(
-      (note) =>
-        (note.isBacking ?? false) === false &&
-        note.startBeat - options.playheadBeat <= 0.35 &&
-        note.startBeat + note.duration - options.playheadBeat >= -0.35 &&
-        detectedMidi % 12 === note.midi % 12,
+    const matched = matchingTabNoteAtPlayhead(
+      compiled,
+      options.playheadBeat,
+      detectedMidi,
     )
     const clarity = feedback?.detectedClarity ?? 1
     if (matched !== undefined) {
@@ -106,14 +106,11 @@ export function buildTabScene(options: BuildTabSceneOptions): TabScene {
   }
 
   return {
-    notes: options.notes.map((note) => ({
-      stringIndex: note.stringIndex,
-      fret: note.fret,
-      startBeat: note.startBeat,
-      durationBeats: note.duration,
-      noteName: midiToNoteNameOctave(note.midi),
-      isBacking: note.isBacking ?? false,
-    })),
+    notes: compiled.notes,
+    noteIntervalIndex: compiled.noteIntervalIndex,
+    events: compiled.events,
+    noteById: compiled.noteById,
+    maxNoteDurationBeats: compiled.maxNoteDurationBeats,
     playheadBeat: options.playheadBeat,
     visibleBeatWindow: Math.max(1, options.visibleBeatWindow),
     stringCount,

@@ -125,4 +125,60 @@ describe('buildTabScene', () => {
       clarity: 0.82,
     })
   })
+
+  it('uses sounding-open pitches for source tuning with a capo', () => {
+    const notation = {
+      chordLabel: 'E5',
+      techniques: [{ kind: 'palm-mute' as const }],
+    }
+    const source = [
+      note({
+        id: 'capo-low-e',
+        midi: 42,
+        stringIndex: 5,
+        fret: 0,
+        startBeat: 0,
+        notation,
+      }),
+    ]
+    const scene = buildTabScene({
+      notes: source,
+      playheadBeat: 0,
+      visibleBeatWindow: 8,
+      showNoteLabels: true,
+      showFretboard: true,
+      tuning: {
+        stringCount: 6,
+        openMidi: [64, 59, 55, 50, 45, 40],
+        capo: 2,
+      },
+      now: 1_000,
+      feedback: {
+        detectedMidi: 42,
+        detectedClarity: 1,
+        showUserNotes: true,
+        hitResults: [
+          {
+            itemIndex: 'capo-low-e',
+            midiNote: 42,
+            noteName: 'F#2',
+            stringIndex: 5,
+            timing: 'perfect',
+            score: 100,
+            timestamp: 800,
+          },
+        ],
+      },
+    })
+
+    expect(scene.openMidi).toEqual([66, 61, 57, 52, 47, 42])
+    expect(scene.notes[0].notation).toBe(notation)
+    expect(scene.events[0].chordLabel).toBe('E5')
+    expect(scene.hits[0]).toMatchObject({ stringIndex: 5, fret: 0 })
+    expect(scene.detected).toMatchObject({
+      stringIndex: 5,
+      fret: 0,
+      matchesTarget: true,
+    })
+  })
 })

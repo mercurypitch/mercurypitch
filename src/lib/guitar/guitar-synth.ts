@@ -3,6 +3,7 @@
 // ============================================================
 
 import { NOTE_NAMES } from '@/lib/note-utils'
+import type { GuitarNoteNotation } from './guitar-notation'
 
 /**
  * Guitar voice variant.
@@ -404,6 +405,8 @@ export interface GuitarNote {
   targetFreq: number
   isBacking?: boolean
   trackId?: string
+  /** Source-authored notation. Absent for plain MIDI and measured notes. */
+  notation?: GuitarNoteNotation
 }
 
 export function melodyToGuitarNotes(
@@ -417,6 +420,7 @@ export function melodyToGuitarNotes(
     /** Explicit fingering (Guitar Pro imports); auto-placed when omitted. */
     stringIndex?: number
     fret?: number
+    notation?: GuitarNoteNotation
   }>,
 ): GuitarNote[] {
   return items.map((item, index) => {
@@ -433,6 +437,7 @@ export function melodyToGuitarNotes(
       startBeat: item.startBeat,
       duration: item.duration,
       targetFreq: item.targetFreq ?? 440 * Math.pow(2, (item.midi - 69) / 12),
+      ...(item.notation === undefined ? {} : { notation: item.notation }),
     }
   })
 }

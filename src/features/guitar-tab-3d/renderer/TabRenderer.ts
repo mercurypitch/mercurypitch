@@ -7,6 +7,7 @@
 // backend will slot in behind the same interface later.
 
 import { isWebGpuSupported } from '@/lib/gpu/webgpu-device'
+import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { CameraState } from './camera'
 import { Canvas2dTabRenderer } from './canvas2d/Canvas2dTabRenderer'
 
@@ -27,12 +28,18 @@ export interface DisplaySettings {
   leftHanded: boolean
   /** Surface palette; standalone rooms can reuse the renderer without its legacy blue world. */
   theme?: 'midnight' | 'velvet'
+  /** Motion policy is resolved by the host, never queried in the render loop. */
+  motion?: 'full' | 'reduced'
+  /** Reduced effects preserve notation while dropping expensive glow/compositing. */
+  effects?: 'full' | 'reduced'
 }
 
 export const DEFAULT_DISPLAY: DisplaySettings = {
   stringColors: DEFAULT_STRING_COLORS,
   leftHanded: false,
   theme: 'midnight',
+  motion: 'full',
+  effects: 'full',
 }
 
 export const VELVET_DISPLAY: DisplaySettings = {
@@ -46,6 +53,8 @@ export const VELVET_DISPLAY: DisplaySettings = {
   ],
   leftHanded: false,
   theme: 'velvet',
+  motion: 'full',
+  effects: 'full',
 }
 
 /** The same musical scene can be projected as a fret grid or string lanes. */
@@ -53,6 +62,8 @@ export type TabPresentation = 'fret-axis' | 'string-highway'
 
 /** A single note to render, derived from the guitar engine's falling notes. */
 export interface TabSceneNote {
+  id: string
+  midi: number
   stringIndex: number
   fret: number
   startBeat: number
@@ -60,6 +71,22 @@ export interface TabSceneNote {
   /** Pre-formatted note name (e.g. "A#") for the note-name label mode. */
   noteName: string
   isBacking: boolean
+  /** Authored score detail only; measured/plain MIDI notes leave this absent. */
+  notation?: GuitarNoteNotation
+}
+
+/** One authored event; simultaneous notes share one semantic chord frame. */
+export interface TabSceneEvent {
+  id: string
+  startBeat: number
+  endBeat: number
+  notes: readonly TabSceneNote[]
+  chordLabel?: string
+}
+
+/** Static interval maxima let render frames skip expired score regions. */
+export interface TabNoteIntervalIndex {
+  maxEndTree: readonly number[]
 }
 
 /** A scored hit to flash on its cell, coloured by accuracy. */
@@ -84,6 +111,11 @@ export interface TabDetected {
 /** Everything a renderer needs for one frame. Pure data, no engine coupling. */
 export interface TabScene {
   notes: readonly TabSceneNote[]
+  noteIntervalIndex: TabNoteIntervalIndex
+  events: readonly TabSceneEvent[]
+  noteById: ReadonlyMap<string, TabSceneNote>
+  /** Longest note, used to binary-search sustained notes crossing the window. */
+  maxNoteDurationBeats: number
   playheadBeat: number
   /** How many beats ahead are visible (depth of the highway). */
   visibleBeatWindow: number

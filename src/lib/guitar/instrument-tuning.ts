@@ -48,6 +48,8 @@ export type StringedInstrument = 'guitar' | 'bass'
 
 export const MIN_STRING_COUNT = 4
 export const MAX_STRING_COUNT = 8
+/** Highest fret the stage is willing to place a note on. */
+export const MAX_PLAYABLE_FRET = 24
 export const DEFAULT_STRING_COUNT: Record<StringedInstrument, number> = {
   // The common instrument in each case, so the default is never a surprise.
   guitar: 6,
@@ -57,10 +59,19 @@ export const DEFAULT_STRING_COUNT: Record<StringedInstrument, number> = {
 export interface InstrumentTuning {
   instrument: StringedInstrument
   stringCount: number
-  /** Open pitches, highest string first — the order the stage draws rows. */
+  /** Open pitches before capo, highest string first — the stage row order. */
   openMidi: readonly number[]
   /** Row labels, highest string first. */
   labels: readonly string[]
+  /** Source-authored tuning name, when one exists. */
+  name?: string
+  /** Capo fret. The sounding open pitch is `openMidi + capo`. */
+  capo?: number
+}
+
+export interface InstrumentTuningSourceOptions {
+  name?: string
+  capo?: number
 }
 
 export function clampStringCount(count: number): number {
@@ -111,11 +122,52 @@ export function standardTuning(
   }
 }
 
+/**
+ * Build stage rows from a source score without silently repairing malformed
+ * metadata. Returning null lets callers fall back to a known standard tuning.
+ */
+export function instrumentTuningFromSource(
+  instrument: StringedInstrument,
+  openMidiHighFirst: readonly number[],
+  options: InstrumentTuningSourceOptions = {},
+): InstrumentTuning | null {
+  if (
+    openMidiHighFirst.length < MIN_STRING_COUNT ||
+    openMidiHighFirst.length > MAX_STRING_COUNT ||
+    openMidiHighFirst.some(
+      (midi) => !Number.isInteger(midi) || midi < 0 || midi > 127,
+    ) ||
+    (options.capo !== undefined &&
+      (!Number.isInteger(options.capo) ||
+        options.capo < 0 ||
+        options.capo > MAX_PLAYABLE_FRET))
+  ) {
+    return null
+  }
+
+  const openMidi = [...openMidiHighFirst]
+  const name = options.name?.trim()
+  const capo = options.capo
+
+  return {
+    instrument,
+    stringCount: openMidi.length,
+    openMidi,
+    labels: tuningLabels(openMidi),
+    ...(name === undefined || name === '' ? {} : { name }),
+    ...(capo === undefined ? {} : { capo }),
+  }
+}
+
+/** Open pitches after applying the capo, highest string first. */
+export function soundingOpenMidi(tuning: InstrumentTuning): readonly number[] {
+  const capo = tuning.capo ?? 0
+  if (capo === 0) return tuning.openMidi
+  return tuning.openMidi.map((midi) => midi + capo)
+}
+
 export const DEFAULT_GUITAR_TUNING = standardTuning('guitar')
 export const DEFAULT_BASS_TUNING = standardTuning('bass')
-
-/** Highest fret the stage is willing to place a note on. */
-export const MAX_PLAYABLE_FRET = 24
 
 /**
  * Place a pitch on this instrument, preferring the lowest fret that can reach
@@ -127,8 +179,9 @@ export function assignStringForMidi(
   tuning: InstrumentTuning,
 ): { stringIndex: number; fret: number } | null {
   let best: { stringIndex: number; fret: number } | null = null
+  const capo = tuning.capo ?? 0
   for (let index = 0; index < tuning.openMidi.length; index += 1) {
-    const fret = midi - tuning.openMidi[index]
+    const fret = midi - (tuning.openMidi[index] + capo)
     if (fret < 0 || fret > MAX_PLAYABLE_FRET) continue
     if (best === null || fret < best.fret) best = { stringIndex: index, fret }
   }
@@ -140,7 +193,8 @@ export function liftIntoTuningRange(
   midi: number,
   tuning: InstrumentTuning,
 ): number {
-  const lowest = tuning.openMidi[tuning.openMidi.length - 1] ?? 40
+  const lowest =
+    (tuning.openMidi[tuning.openMidi.length - 1] ?? 40) + (tuning.capo ?? 0)
   let lifted = midi
   while (lifted < lowest) lifted += 12
   return lifted
@@ -160,7 +214,7 @@ export function fingeringMatchesTuning(
   if (stringIndex === undefined || fret === undefined) return false
   if (stringIndex < 0 || stringIndex >= tuning.openMidi.length) return false
   if (fret < 0 || fret > MAX_PLAYABLE_FRET) return false
-  return tuning.openMidi[stringIndex] + fret === midi
+  return tuning.openMidi[stringIndex] + (tuning.capo ?? 0) + fret === midi
 }
 
 /**

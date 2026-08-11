@@ -432,6 +432,18 @@ describe('melodyToGuitarNotes', () => {
     expect(notes[0].targetFreq).toBeCloseTo(440, 0)
   })
 
+  it('keeps optional authored notation on the converted note', () => {
+    const notation = {
+      chordLabel: 'Am',
+      techniques: [{ kind: 'vibrato' as const, width: 'slight' as const }],
+    }
+    const notes = melodyToGuitarNotes([
+      { midi: 69, startBeat: 0, duration: 1, notation },
+    ])
+
+    expect(notes[0].notation).toBe(notation)
+  })
+
   it('returns empty array for empty input', () => {
     const notes = melodyToGuitarNotes([])
     expect(notes).toHaveLength(0)

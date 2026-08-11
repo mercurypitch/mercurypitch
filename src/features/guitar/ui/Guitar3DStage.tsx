@@ -23,8 +23,15 @@ export interface Guitar3DStageProps {
   borderRadius?: Accessor<string>
   /** Host-owned starting/reset framing; absent preserves the legacy camera. */
   cameraPreset?: Accessor<CameraState>
+  cameraAutoFollow?: Accessor<boolean>
+  reducedMotion?: Accessor<boolean>
+  reducedEffects?: Accessor<boolean>
   /** The instrument the notes sit on. Absent leaves the neck inferred. */
-  tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
+  tuning?: Accessor<{
+    stringCount: number
+    openMidi: readonly number[]
+    capo?: number
+  }>
 }
 
 export function Guitar3DStage(props: Guitar3DStageProps) {
@@ -44,6 +51,9 @@ export function Guitar3DStage(props: Guitar3DStageProps) {
       fallbackText={props.fallbackText}
       borderRadius={props.borderRadius}
       cameraPreset={props.cameraPreset}
+      cameraAutoFollow={props.cameraAutoFollow}
+      reducedMotion={props.reducedMotion}
+      reducedEffects={props.reducedEffects}
       tuning={props.tuning}
     />
   )

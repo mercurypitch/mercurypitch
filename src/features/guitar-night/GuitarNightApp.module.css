@@ -44,6 +44,7 @@
   --amber-bright: #f0bd78;
   --teal: #6acabd;
   --line: rgba(244, 234, 219, 0.14);
+  --muted-readable: rgba(244, 234, 219, 0.56);
   --space-tight: 0.35rem;
   --space-control: 0.55rem;
   --space-group: 0.85rem;
@@ -286,6 +287,9 @@
 
 .accountMenu a,
 .accountMenu button {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
   padding: 0.4rem 0.5rem;
   border: 0;
   border-radius: 0.4rem;
@@ -1055,7 +1059,7 @@
 .songMessage small {
   display: block;
   margin-top: 0.3rem;
-  color: rgba(244, 234, 219, 0.42);
+  color: var(--muted-readable);
   font-size: 0.7rem;
 }
 
@@ -2140,6 +2144,140 @@
 }
 
 /* Input health — what the room can honestly claim about what it is hearing. */
+.inputPicker {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(244, 234, 219, 0.1);
+  border-radius: 0.62rem;
+  background: rgba(244, 234, 219, 0.025);
+}
+
+.inputPicker > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.inputPicker > header strong {
+  color: #f4eadb;
+  font-size: 0.7rem;
+}
+
+.inputPicker > header small,
+.inputPickerNote {
+  color: rgba(244, 234, 219, 0.52);
+  font-size: 0.57rem;
+  line-height: 1.4;
+}
+
+.inputProfileChoices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.24rem;
+  padding: 0.2rem;
+  border-radius: 0.56rem;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.inputProfileChoices button,
+.inputFindDevice {
+  min-height: var(--touch-target);
+  border: 1px solid transparent;
+  border-radius: 0.44rem;
+  color: rgba(244, 234, 219, 0.62);
+  background: transparent;
+  font: inherit;
+  font-size: 0.61rem;
+  cursor: pointer;
+}
+
+.inputProfileChoices button[aria-pressed='true'] {
+  border-color: rgba(243, 195, 155, 0.3);
+  color: #17100a;
+  background: var(--amber-bright);
+  box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.22);
+}
+
+.inputProfileChoices button:focus-visible,
+.inputFindDevice:focus-visible,
+.inputDeviceField select:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+.inputProfileChoices button:disabled,
+.inputFindDevice:disabled,
+.inputDeviceField select:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.inputDeviceField {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  color: rgba(244, 234, 219, 0.58);
+  font-size: 0.58rem;
+}
+
+.inputDeviceField select {
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0.45rem 1.8rem 0.45rem 0.65rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 0.46rem;
+  color: #f4eadb;
+  background: rgba(12, 9, 7, 0.82);
+  font: inherit;
+  font-size: 0.61rem;
+}
+
+.inputFindDevice {
+  width: 100%;
+  border-color: rgba(244, 234, 219, 0.14);
+  color: rgba(244, 234, 219, 0.82);
+  background: rgba(244, 234, 219, 0.045);
+}
+
+.inputPickerNote {
+  margin: 0;
+}
+
+.inputEvidenceExport {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.08);
+}
+
+.inputEvidenceExport button {
+  min-height: var(--touch-target);
+  padding-inline: 0.65rem;
+  border: 1px solid rgba(244, 234, 219, 0.14);
+  border-radius: 0.44rem;
+  color: rgba(244, 234, 219, 0.8);
+  background: rgba(244, 234, 219, 0.04);
+  font: inherit;
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+
+.inputEvidenceExport button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.inputEvidenceExport small {
+  color: var(--muted-readable);
+  font-size: 0.54rem;
+  line-height: 1.4;
+}
+
 .inputHealth {
   display: flex;
   flex-direction: column;
@@ -2177,7 +2315,8 @@
 }
 
 .inputHealthHint[data-state='hot'] .inputHealthDot,
-.inputHealthHint[data-state='noisy'] .inputHealthDot {
+.inputHealthHint[data-state='noisy'] .inputHealthDot,
+.inputHealthHint[data-state='uncertain'] .inputHealthDot {
   background: #e8a75c;
   box-shadow: 0 0 0.35rem rgba(232, 167, 92, 0.6);
 }
@@ -2232,9 +2371,35 @@
   line-height: 1.4;
 }
 
+.inputNotice {
+  margin: 0;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid rgba(238, 181, 111, 0.14);
+  border-radius: 0.35rem;
+  color: rgba(244, 234, 219, 0.68);
+  background: rgba(28, 21, 17, 0.38);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.inputNoticeFloating {
+  position: absolute;
+  z-index: 39;
+  top: 4.6rem;
+  left: 50%;
+  width: max-content;
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(238, 181, 111, 0.2);
+  border-radius: 0.45rem;
+  background: rgba(23, 17, 13, 0.94);
+  box-shadow: 0 0.8rem 2.4rem rgba(0, 0, 0, 0.24);
+  transform: translateX(-50%);
+}
+
 .listeningError {
   position: absolute;
-  z-index: 9;
+  z-index: 40;
   top: 4.6rem;
   left: 50%;
   margin: 0;
@@ -2246,6 +2411,33 @@
   font-size: 0.72rem;
   line-height: 1.45;
   transform: translateX(-50%);
+}
+
+.listeningError {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: max-content;
+  max-width: min(32rem, calc(100vw - 2rem));
+}
+
+.listeningError button {
+  flex: none;
+  min-height: var(--touch-target);
+  padding-inline: 0.72rem;
+  border: 1px solid rgba(243, 195, 155, 0.36);
+  border-radius: 0.42rem;
+  color: #17100a;
+  background: var(--amber-bright);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.listeningError button:focus-visible {
+  outline: 2px solid #f4eadb;
+  outline-offset: 2px;
 }
 
 .stageHeader {
@@ -2278,7 +2470,7 @@
   backdrop-filter: blur(12px);
 }
 
-.stageHeader span {
+.stageHeader > div:first-child > span {
   color: var(--teal);
   font-size: 0.59rem;
   font-weight: 750;
@@ -2286,7 +2478,7 @@
   text-transform: uppercase;
 }
 
-.stageHeader strong {
+.stageHeader > div:first-child > strong {
   overflow: hidden;
   color: rgba(244, 234, 219, 0.78);
   font-size: 0.72rem;
@@ -2353,6 +2545,16 @@
       transparent 42%
     ),
     linear-gradient(180deg, rgba(8, 7, 6, 0.16), rgba(8, 7, 6, 0.42));
+}
+
+.stageFlow {
+  position: absolute;
+  inset: 0;
+}
+
+.stageFlowHidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .stageLoading {
@@ -2471,8 +2673,9 @@
 }
 
 .stageSetup summary {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--touch-target);
   padding: 0.45rem 0.75rem;
   border: 1px solid rgba(244, 234, 219, 0.09);
@@ -2518,6 +2721,93 @@
     100vw - max(1rem, var(--safe-left)) - max(1rem, var(--safe-right))
   );
   flex-wrap: wrap;
+}
+
+.stageViewMenu .stageViewPicker {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+.stageViewPicker {
+  overflow: hidden;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 0.65rem;
+  background: rgba(10, 8, 7, 0.96);
+  box-shadow: 0 1rem 2.8rem rgba(0, 0, 0, 0.34);
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.stageViewChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.22rem;
+  padding: 0.35rem;
+}
+
+.stageViewChoices button {
+  display: grid;
+  gap: 0.12rem;
+  min-height: var(--touch-target);
+  padding: 0.55rem 0.62rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  color: rgba(244, 234, 219, 0.66);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stageViewChoices button:hover {
+  color: var(--ivory);
+  background: rgba(244, 234, 219, 0.04);
+}
+
+.stageViewChoices .stageViewChoiceActive {
+  border-color: rgba(224, 164, 93, 0.34);
+  color: #fdf3e4;
+  background: rgba(224, 164, 93, 0.12);
+}
+
+.stageViewChoices strong,
+.stageViewPreferences span {
+  font-size: 0.66rem;
+  font-weight: 720;
+}
+
+.stageViewChoices small,
+.stageViewPreferences small {
+  color: var(--muted-readable);
+  font-size: 0.55rem;
+  line-height: 1.35;
+}
+
+.stageViewPreferences {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border-top: 1px solid rgba(244, 234, 219, 0.08);
+  background: rgba(244, 234, 219, 0.08);
+}
+
+.stageViewPreferences button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--touch-target);
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  color: rgba(244, 234, 219, 0.67);
+  background: rgba(10, 8, 7, 0.98);
+  cursor: pointer;
+}
+
+.stageViewPreferences button[aria-pressed='true'] small {
+  color: var(--teal);
 }
 
 /* One engraved plate, matching the view switch beside it. */
@@ -2574,7 +2864,7 @@
 }
 
 .stageInstrument small {
-  color: rgba(244, 234, 219, 0.42);
+  color: var(--muted-readable);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.62rem;
   letter-spacing: 0.12em;
@@ -2658,8 +2948,15 @@
 
 .stageTabString .stageTabNotePast {
   border-color: rgba(244, 234, 219, 0.16);
-  color: rgba(244, 234, 219, 0.42);
+  color: var(--muted-readable);
   background: rgba(20, 37, 34, 0.6);
+  box-shadow: none;
+}
+
+.stageTabString .stageTabNoteBacking {
+  border-style: dashed;
+  color: var(--muted-readable);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -2677,7 +2974,7 @@
   left: 50%;
   bottom: 1rem;
   margin: 0;
-  color: rgba(244, 234, 219, 0.48);
+  color: var(--muted-readable);
   font-size: 0.67rem;
   text-align: center;
   transform: translateX(-50%);
@@ -2703,7 +3000,7 @@
 
 .fretNumbers span {
   padding-bottom: 0.45rem;
-  color: rgba(244, 234, 219, 0.35);
+  color: var(--muted-readable);
   font-size: 0.55rem;
   text-align: center;
 }
@@ -2735,6 +3032,31 @@
   box-shadow: 0 0 1rem rgba(106, 202, 189, 0.52);
   content: '';
   transform: translate(-50%, -50%);
+}
+
+.neckString .neckNextTarget::after {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(242, 201, 143, 0.82);
+  border-radius: 50%;
+  background: rgba(23, 17, 13, 0.86);
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+.stageNeck[data-handedness='left'] .neckString span:first-child {
+  border-right-color: rgba(244, 234, 219, 0.13);
+}
+
+.stageNeck[data-handedness='left'] .neckString span:last-child {
+  border-right-color: rgba(244, 234, 219, 0.45);
+}
+
+.performanceStage[data-effects='reduced'] .stageTabString b,
+.performanceStage[data-effects='reduced'] .neckString .neckTarget::after {
+  box-shadow: none;
 }
 
 .transportIdentity {
@@ -3780,7 +4102,17 @@
   }
 
   .stageHeaderTools {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+    align-items: start;
+    gap: 0.35rem;
     width: 100%;
+  }
+
+  .stageHeaderTools > .stageSetup {
+    position: static;
   }
 
   .firstWinRoom .stageHeader > div:first-child {
@@ -3791,22 +4123,55 @@
     display: none;
   }
 
-  .stageHeader strong {
+  .stageHeader > div:first-child > strong {
     max-width: min(34vw, 9.5rem);
   }
 
   .stageModes {
-    grid-template-columns: repeat(4, minmax(2.75rem, 1fr));
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(5em, 1fr));
+    justify-self: stretch;
+    width: 100%;
+    font-size: 0.68rem;
   }
 
   .stageModes button {
+    min-width: 0;
     padding-inline: 0.4rem;
+    font-size: inherit;
+  }
+
+  .stageSetup summary {
+    padding-inline: 0.55rem;
+  }
+
+  .stageSetupContext {
+    display: none;
+  }
+
+  .stageViewMenu .stageViewPicker {
+    position: fixed;
+    z-index: 50;
+    top: max(0.45rem, var(--safe-top));
+    right: max(0.45rem, var(--safe-right));
+    width: min(
+      22rem,
+      calc(
+        100vw - max(0.45rem, var(--safe-left)) - max(0.45rem, var(--safe-right))
+      )
+    );
+    max-height: calc(
+      100dvh - max(0.45rem, var(--safe-top)) - max(0.45rem, var(--safe-bottom))
+    );
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .stageViewport {
     flex: 1 1 auto;
     height: auto;
-    min-height: 10rem;
+    min-height: 0;
   }
 
   .stageGestureHint {
@@ -3994,6 +4359,124 @@
 
   .loopControls {
     gap: 0.3rem;
+  }
+}
+
+/* Extra-narrow rooms preserve their structural stage when text is enlarged.
+   Fixed chrome dimensions and wrapping mode choices let content reflow
+   vertically without pushing the canvas to zero height. */
+@media (max-width: 24rem) {
+  .topbar {
+    flex-wrap: nowrap;
+    min-height: 60px;
+    padding: max(8px, var(--safe-top)) max(10px, var(--safe-right)) 6px
+      max(10px, var(--safe-left));
+  }
+
+  .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .brand img {
+    width: 28px;
+    height: 28px;
+    flex: none;
+  }
+
+  .brand span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbarActions {
+    flex: none;
+  }
+
+  .venueMenu {
+    position: fixed;
+    top: max(68px, calc(var(--safe-top) + 60px));
+    right: max(10px, var(--safe-right));
+    left: max(10px, var(--safe-left));
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: calc(
+      100dvh - max(68px, calc(var(--safe-top) + 60px)) -
+        max(8px, var(--safe-bottom))
+    );
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .roomHeadingRow {
+    min-height: 56px;
+    padding: 6px max(8px, var(--safe-right)) 6px max(8px, var(--safe-left));
+  }
+
+  .roomIdentity {
+    gap: 6px;
+  }
+
+  .roomHeadingRow .eyebrow {
+    max-width: 48vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .roomHeadingRow h1 {
+    max-width: 52vw;
+  }
+
+  .stageHeader {
+    right: max(6px, var(--safe-right));
+    left: max(6px, var(--safe-left));
+  }
+
+  [data-room-kind='score'] .transportIdentity {
+    display: none;
+  }
+
+  [data-room-kind='score'] .transportDeck {
+    gap: 4px;
+    padding: 4px max(8px, var(--safe-right)) 6px max(8px, var(--safe-left));
+  }
+
+  .timeRail {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 6px;
+  }
+
+  [data-room-kind='score'] .transportControls {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  [data-room-kind='score'] .playControl {
+    width: 54px;
+    height: 54px;
+  }
+
+  .roomFooter {
+    min-height: 44px;
+    padding: 0 max(8px, var(--safe-right)) max(2px, var(--safe-bottom))
+      max(8px, var(--safe-left));
+  }
+
+  .firstWinRoom {
+    grid-template-rows: minmax(280px, 1fr) auto;
+    overflow-y: auto;
+  }
+
+  .firstWinDeck {
+    min-height: 0;
+    padding: 6px max(8px, var(--safe-right)) max(6px, var(--safe-bottom))
+      max(8px, var(--safe-left));
   }
 }
 

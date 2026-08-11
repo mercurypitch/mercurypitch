@@ -16,7 +16,7 @@ import { buildTabScene } from './renderer/build-tab-scene'
 import type { CameraState } from './renderer/camera'
 import { cameraBasis, clampCamera, DEFAULT_CAMERA, PITCH_MAX, } from './renderer/camera'
 import type { TabPresentation, TabRenderer, TabScene, } from './renderer/TabRenderer'
-import { createTabRenderer } from './renderer/TabRenderer'
+import { createTabRenderer, DEFAULT_DISPLAY } from './renderer/TabRenderer'
 import { NavGizmo } from './ui/NavGizmo'
 import type { Tab3DControls } from './ui/Tab3DHud'
 import { Tab3DHud } from './ui/Tab3DHud'
@@ -51,8 +51,18 @@ export interface GuitarTab3DViewProps {
   borderRadius?: Accessor<string>
   /** Host-owned starting/reset framing; absent preserves the legacy camera. */
   cameraPreset?: Accessor<CameraState>
+  /** Phrase-following may update the preset until the player moves the camera. */
+  cameraAutoFollow?: Accessor<boolean>
+  /** Host-resolved accessibility policy; absent follows the operating system. */
+  reducedMotion?: Accessor<boolean>
+  /** Host-resolved rendering policy used to cap the canvas pixel budget. */
+  reducedEffects?: Accessor<boolean>
   /** The instrument the notes sit on. Absent leaves the neck inferred. */
-  tuning?: Accessor<{ stringCount: number; openMidi: readonly number[] }>
+  tuning?: Accessor<{
+    stringCount: number
+    openMidi: readonly number[]
+    capo?: number
+  }>
 }
 
 export function GuitarTab3DView(props: GuitarTab3DViewProps) {
@@ -64,31 +74,47 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     clampCamera(props.cameraPreset?.() ?? DEFAULT_CAMERA)
   const [camera, setCamera] = createSignal<CameraState>(homeCamera())
   const [interactive, setInteractive] = createSignal(false)
+  const [systemReducedMotion, setSystemReducedMotion] = createSignal(false)
+  const [followSuspended, setFollowSuspended] = createSignal(false)
+  const shouldReduceMotion = () =>
+    props.reducedMotion?.() ?? systemReducedMotion()
+  let requestPaint = () => undefined
 
   // A direct manipulation (drag/wheel/pinch) cancels any in-flight tween so
   // the camera never fights the user's hand.
   let tweenRaf = 0
+  let pendingCameraPreset: CameraState | null = null
   const cancelTween = () => {
     if (tweenRaf !== 0) cancelAnimationFrame(tweenRaf)
     tweenRaf = 0
   }
   const animateCamera = (to: CameraState, ms = 280) => {
     cancelTween()
+    if (!props.isActive()) return
+    const destination = clampCamera(to)
+    if (shouldReduceMotion()) {
+      setCamera(destination)
+      return
+    }
     const from = camera()
     const t0 = performance.now()
     const lerp = (a: number, b: number, k: number) => a + (b - a) * k
     const step = (now: number) => {
+      if (!props.isActive()) {
+        tweenRaf = 0
+        return
+      }
       const t = Math.min(1, (now - t0) / ms)
       const k = 1 - (1 - t) ** 3 // ease-out cubic
       setCamera(
         clampCamera({
-          yaw: lerp(from.yaw, to.yaw, k),
-          pitch: lerp(from.pitch, to.pitch, k),
-          radius: lerp(from.radius, to.radius, k),
+          yaw: lerp(from.yaw, destination.yaw, k),
+          pitch: lerp(from.pitch, destination.pitch, k),
+          radius: lerp(from.radius, destination.radius, k),
           target: [
-            lerp(from.target[0], to.target[0], k),
-            lerp(from.target[1], to.target[1], k),
-            lerp(from.target[2], to.target[2], k),
+            lerp(from.target[0], destination.target[0], k),
+            lerp(from.target[1], destination.target[1], k),
+            lerp(from.target[2], destination.target[2], k),
           ],
         }),
       )
@@ -98,8 +124,13 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   }
   onCleanup(cancelTween)
 
-  const orbit = (dx: number, dy: number) => {
+  const suspendFollowing = () => {
     cancelTween()
+    setFollowSuspended(true)
+  }
+
+  const orbit = (dx: number, dy: number) => {
+    suspendFollowing()
     setCamera((c) =>
       clampCamera({
         ...c,
@@ -109,7 +140,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
     )
   }
   const zoom = (deltaY: number) => {
-    cancelTween()
+    suspendFollowing()
     setCamera((c) =>
       clampCamera({ ...c, radius: c.radius * Math.exp(deltaY * ZOOM_SENS) }),
     )
@@ -117,11 +148,11 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   // Pinch zoom: multiply the orbit radius directly by a ratio (fingers
   // spreading apart → factor < 1 → camera moves closer).
   const zoomBy = (factor: number) => {
-    cancelTween()
+    suspendFollowing()
     setCamera((c) => clampCamera({ ...c, radius: c.radius * factor }))
   }
   const pan = (dx: number, dy: number) => {
-    cancelTween()
+    suspendFollowing()
     setCamera((c) => {
       const { right, up } = cameraBasis(c)
       const s = c.radius * 0.0016
@@ -139,6 +170,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   // equivalent of the default yaw so Reset glides instead of whirling back
   // through every accumulated revolution.
   const resetCamera = () => {
+    setFollowSuspended(false)
     const c = camera()
     const home = homeCamera()
     animateCamera({
@@ -151,17 +183,45 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   const yawDelta = (a: number, b: number) =>
     Math.atan2(Math.sin(a - b), Math.cos(a - b))
 
+  const applyCameraPreset = (preset: CameraState) => {
+    const current = camera()
+    const next = clampCamera(preset)
+    animateCamera({
+      ...next,
+      yaw: current.yaw + yawDelta(next.yaw, current.yaw),
+    })
+  }
+
   createEffect(
     on(
       () => props.cameraPreset?.(),
       (preset) => {
         if (preset === undefined) return
-        const current = camera()
-        const next = clampCamera(preset)
-        animateCamera({
-          ...next,
-          yaw: current.yaw + yawDelta(next.yaw, current.yaw),
-        })
+        if (props.cameraAutoFollow?.() === true && followSuspended()) return
+        if (!props.isActive()) {
+          pendingCameraPreset = preset
+          cancelTween()
+          return
+        }
+        pendingCameraPreset = null
+        applyCameraPreset(preset)
+      },
+      { defer: true },
+    ),
+  )
+
+  createEffect(
+    on(
+      () => props.isActive(),
+      (active) => {
+        if (!active) {
+          cancelTween()
+          return
+        }
+        const pending = pendingCameraPreset
+        pendingCameraPreset = null
+        if (pending !== null) applyCameraPreset(pending)
+        requestPaint()
       },
       { defer: true },
     ),
@@ -172,6 +232,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   // to the opposite side. Y goes to the top-down view (pitch is clamped so the
   // camera can never flip under the scene).
   const snapToAxis = (axis: 'X' | 'Y' | 'Z') => {
+    suspendFollowing()
     const c = camera()
     if (axis === 'Y') {
       animateCamera({ ...c, pitch: PITCH_MAX })
@@ -242,13 +303,27 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
   const buildScene = (): TabScene => {
     const ctrls = props.controls
+    const requestedDisplay = props.display?.() ?? DEFAULT_DISPLAY
+    const display =
+      shouldReduceMotion() || props.reducedEffects?.() === true
+        ? {
+            ...requestedDisplay,
+            motion: shouldReduceMotion()
+              ? ('reduced' as const)
+              : requestedDisplay.motion,
+            effects:
+              props.reducedEffects?.() === true
+                ? ('reduced' as const)
+                : requestedDisplay.effects,
+          }
+        : requestedDisplay
     return buildTabScene({
       notes: props.fallingNotes(),
       playheadBeat: props.playheadBeat(),
       visibleBeatWindow: props.visibleBeatWindow(),
       showNoteLabels: props.showNoteLabels(),
       showFretboard: props.showFretboard(),
-      display: props.display?.(),
+      display,
       presentation: props.presentation?.(),
       tuning: props.tuning?.(),
       feedback:
@@ -266,32 +341,117 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
   onMount(() => {
     if (canvas === undefined) return
     const hw = canvas
+    let motionQuery: MediaQueryList | null = null
+    if (
+      props.reducedMotion === undefined &&
+      typeof window.matchMedia === 'function'
+    ) {
+      motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+      const syncMotion = () =>
+        setSystemReducedMotion(motionQuery?.matches ?? false)
+      syncMotion()
+      motionQuery.addEventListener?.('change', syncMotion)
+      onCleanup(() => motionQuery?.removeEventListener?.('change', syncMotion))
+    }
     const r = createTabRenderer()
     renderer = r
     void r.mount(hw)
 
     let lastW = 0
     let lastH = 0
+    let lastDpr = 0
+    let lastCamera: CameraState | null = null
+    let resizeObserver: ResizeObserver | null = null
+    const effectiveDpr = () =>
+      Math.min(
+        props.reducedEffects?.() === true ||
+          props.display?.().effects === 'reduced'
+          ? 1.5
+          : 2,
+        Math.max(1, window.devicePixelRatio || 1),
+      )
+    const resize = (width: number, height: number) => {
+      if (width <= 0 || height <= 0) return
+      const dpr = effectiveDpr()
+      if (width === lastW && height === lastH && dpr === lastDpr) return
+      lastW = width
+      lastH = height
+      lastDpr = dpr
+      r.resize(width, height, dpr)
+      requestPaint()
+    }
     const renderFrame = () => {
-      const rect = hw.getBoundingClientRect()
-      if (rect.width !== lastW || rect.height !== lastH) {
-        lastW = rect.width
-        lastH = rect.height
-        r.resize(rect.width, rect.height, window.devicePixelRatio)
+      rafId = 0
+      if (!props.isActive()) return
+      const nextCamera = camera()
+      if (lastCamera !== nextCamera) {
+        r.setCamera(nextCamera)
+        lastCamera = nextCamera
       }
-      r.setCamera(camera())
-      r.render(buildScene())
+      const scene = buildScene()
+      r.render(scene)
+      if (
+        scene.display.motion !== 'reduced' &&
+        (scene.hits.length > 0 || scene.detected !== null)
+      ) {
+        requestPaint()
+      }
+    }
+
+    requestPaint = () => {
+      if (!props.isActive() || rafId !== 0) return
+      rafId = requestAnimationFrame(renderFrame)
+    }
+
+    const initialBounds = hw.getBoundingClientRect()
+    resize(initialBounds.width, initialBounds.height)
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0]
+        if (entry === undefined) return
+        resize(entry.contentRect.width, entry.contentRect.height)
+      })
+      resizeObserver.observe(hw)
+    } else {
+      const resizeFromBounds = () => {
+        const bounds = hw.getBoundingClientRect()
+        resize(bounds.width, bounds.height)
+      }
+      window.addEventListener('resize', resizeFromBounds)
+      onCleanup(() => window.removeEventListener('resize', resizeFromBounds))
     }
 
     // Paint once immediately so the view isn't blank before the first rAF.
-    renderFrame()
+    requestPaint()
 
-    const loop = () => {
-      if (props.isActive()) renderFrame()
-      rafId = requestAnimationFrame(loop)
-    }
-
-    rafId = requestAnimationFrame(loop)
+    // Solid invalidates the canvas only when musical, display, feedback, or
+    // camera state changes. Playback still paints at its source cadence, while
+    // a paused room consumes no permanent animation loop.
+    createEffect(() => {
+      if (!props.isActive()) {
+        if (rafId !== 0) cancelAnimationFrame(rafId)
+        rafId = 0
+        return
+      }
+      props.fallingNotes()
+      props.playheadBeat()
+      props.visibleBeatWindow()
+      props.showNoteLabels()
+      props.showFretboard()
+      props.display?.()
+      props.reducedMotion?.()
+      props.reducedEffects?.()
+      systemReducedMotion()
+      props.presentation?.()
+      props.tuning?.()
+      props.controls?.hitResults()
+      props.controls?.detectedMidi()
+      props.controls?.detectedClarity()
+      props.controls?.showUserNotes()
+      camera()
+      if (lastW > 0 && lastH > 0) resize(lastW, lastH)
+      requestPaint()
+    })
 
     // Direct camera control on the canvas. Pointer Events unify mouse, touch
     // and pen:
@@ -393,6 +553,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
 
     onCleanup(() => {
       setInteractive(false)
+      resizeObserver?.disconnect()
       hw.removeEventListener('pointerdown', onPointerDown)
       hw.removeEventListener('pointermove', onPointerMove)
       hw.removeEventListener('pointerup', onPointerUp)
@@ -441,6 +602,9 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
         data-camera-yaw={camera().yaw.toFixed(4)}
         data-camera-radius={camera().radius.toFixed(4)}
         data-camera-target-x={camera().target[0].toFixed(4)}
+        data-camera-following={
+          props.cameraAutoFollow?.() === true && !followSuspended()
+        }
         style={{
           display: 'block',
           width: '100%',

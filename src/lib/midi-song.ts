@@ -6,8 +6,12 @@
 // melody), this parser keeps tracks separate so the user can choose
 // which track to practice against and which to hear as backing.
 
+import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
+
 /** A single note within a parsed MIDI track. */
 export interface MidiSongNote {
+  /** Stable score-local id when the source exposes note relationships. */
+  id?: string
   midi: number
   startBeat: number
   duration: number
@@ -15,6 +19,8 @@ export interface MidiSongNote {
   stringIndex?: number
   /** Original tab fret (Guitar Pro imports only). */
   fret?: number
+  /** The source explicitly authored this row/fret, even if sounding pitch differs. */
+  authoredFingering?: boolean
   /**
    * Guitar Pro "let ring": the note keeps sounding past its notated length
    * until the same string is struck again. Realised at import by extending
@@ -22,6 +28,8 @@ export interface MidiSongNote {
    * is preserved for a future visual cue / honor-toggle.
    */
   letRing?: boolean
+  /** Guitar Pro notation retained verbatim enough for every stage renderer. */
+  notation?: GuitarNoteNotation
 }
 
 /** One playable track (drum channels are filtered out). */
@@ -34,6 +42,12 @@ export interface MidiSongTrack {
   instrumentName: string
   noteCount: number
   notes: MidiSongNote[]
+  /** Authored open pitches before capo, highest string first. */
+  sourceTuning?: readonly number[]
+  /** Authored tuning name when the file carried one. */
+  sourceTuningName?: string
+  /** Authored capo fret. Zero is meaningful and may be present. */
+  sourceCapo?: number
 }
 
 /** One set-tempo event, placed on the beat it takes effect. */

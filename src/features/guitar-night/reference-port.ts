@@ -4,13 +4,14 @@
 // A reference is the score axis of a rehearsal: the authored notes the stage
 // may display. It stays independent from the backing axis (separated stems),
 // so either can be used alone. Only values the source really carries are
-// exposed — tempo, tracks and authored fingering exist in the saved-song
-// representation; meter, sections, tuning and capo do not, so this port does
-// not pretend to know them.
+// exposed — tempo, tracks, authored fingering, notation and source setup flow
+// through when an import carried them; plain MIDI and measured audio remain
+// deliberately silent about details they cannot prove.
 
+import type { GuitarNoteNotation } from '@/lib/guitar/guitar-notation'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import type { InstrumentTuning, StringedInstrument, } from '@/lib/guitar/instrument-tuning'
-import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, liftIntoTuningRange, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
+import { assignStringForMidi, DEFAULT_BASS_TUNING, DEFAULT_GUITAR_TUNING, fingeringMatchesTuning, instrumentTuningFromSource, liftIntoTuningRange, MAX_PLAYABLE_FRET, suggestInstrumentForMidi, } from '@/lib/guitar/instrument-tuning'
 import type { MidiSongNote, MidiTempoChange } from '@/lib/midi-song'
 import { midiToNote } from '@/lib/scale-data'
 import type { StemTranscription } from '@/lib/transcription/stem-transcription'
@@ -20,8 +21,12 @@ import type { GuitarNightStemKind } from './song-port'
 export interface GuitarNightReferenceSourceTrack {
   id: string
   name: string
+  instrumentName?: string
   noteCount: number
   notes: readonly MidiSongNote[]
+  sourceTuning?: readonly number[]
+  sourceTuningName?: string
+  sourceCapo?: number
 }
 
 export interface GuitarNightReferenceSource {
@@ -68,6 +73,8 @@ export interface GuitarNightReference {
   backingSessionId?: string
   /** The instrument these notes were placed on — the rows the stage draws. */
   tuning: InstrumentTuning
+  /** The source-authored setup, even when the player chose different rows. */
+  sourceTuning?: InstrumentTuning
   notes: readonly GuitarNote[]
   tracks: readonly GuitarNightReferenceTrack[]
   /** Notes this instrument's neck could not reach, so they were not drawn. */
@@ -96,7 +103,11 @@ export interface GuitarNightReferencePort {
   suggestInstrument(
     songId: string,
     trackId?: string,
-  ): { trackId: string; instrument: StringedInstrument } | null
+  ): {
+    trackId: string
+    instrument: StringedInstrument
+    sourceTuning?: InstrumentTuning
+  } | null
   /** Persist which track this source is scored against, for later opens. */
   rememberTrack(songId: string, trackId: string): void
   importReference(file: File): Promise<GuitarNightReferenceSummary>
@@ -155,6 +166,45 @@ interface StageNoteInput {
   duration: number
   stringIndex?: number
   fret?: number
+  authoredFingering?: boolean
+  notation?: GuitarNoteNotation
+}
+
+function sameTuning(left: InstrumentTuning, right: InstrumentTuning): boolean {
+  return (
+    left.instrument === right.instrument &&
+    (left.capo ?? 0) === (right.capo ?? 0) &&
+    left.openMidi.length === right.openMidi.length &&
+    left.openMidi.every((midi, index) => midi === right.openMidi[index])
+  )
+}
+
+function authoredFingeringFitsRows(
+  input: StageNoteInput,
+  tuning: InstrumentTuning,
+): input is StageNoteInput & { stringIndex: number; fret: number } {
+  return (
+    input.stringIndex !== undefined &&
+    input.fret !== undefined &&
+    input.stringIndex >= 0 &&
+    input.stringIndex < tuning.openMidi.length &&
+    input.fret >= 0 &&
+    input.fret <= MAX_PLAYABLE_FRET
+  )
+}
+
+function notationWithLegacyLetRing(
+  note: MidiSongNote,
+): GuitarNoteNotation | undefined {
+  if (note.letRing !== true) return note.notation
+  const techniques = note.notation?.techniques ?? []
+  if (techniques.some((technique) => technique.kind === 'let-ring')) {
+    return note.notation
+  }
+  return {
+    ...note.notation,
+    techniques: [...techniques, { kind: 'let-ring' }],
+  }
 }
 
 /**
@@ -167,19 +217,28 @@ interface StageNoteInput {
 export function toStageNotes(
   inputs: readonly StageNoteInput[],
   tuning: InstrumentTuning,
+  trustAuthoredFingering = false,
 ): { notes: GuitarNote[]; outOfRange: number } {
   const notes: GuitarNote[] = []
   let outOfRange = 0
 
   for (const input of inputs) {
-    const placement = fingeringMatchesTuning(
-      input.midi,
-      input.stringIndex,
-      input.fret,
-      tuning,
-    )
-      ? { stringIndex: input.stringIndex as number, fret: input.fret as number }
-      : assignStringForMidi(input.midi, tuning)
+    const placement =
+      trustAuthoredFingering &&
+      input.authoredFingering === true &&
+      authoredFingeringFitsRows(input, tuning)
+        ? { stringIndex: input.stringIndex, fret: input.fret }
+        : fingeringMatchesTuning(
+              input.midi,
+              input.stringIndex,
+              input.fret,
+              tuning,
+            )
+          ? {
+              stringIndex: input.stringIndex as number,
+              fret: input.fret as number,
+            }
+          : assignStringForMidi(input.midi, tuning)
 
     if (placement === null) {
       outOfRange += 1
@@ -195,6 +254,7 @@ export function toStageNotes(
       startBeat: input.startBeat,
       duration: input.duration,
       targetFreq: 440 * Math.pow(2, (input.midi - 69) / 12),
+      ...(input.notation === undefined ? {} : { notation: input.notation }),
     })
   }
 
@@ -205,23 +265,30 @@ export function toStageNotes(
 export function openGuitarNightReference(
   source: GuitarNightReferenceSource,
   requestedTrackId?: string,
-  tuning: InstrumentTuning = DEFAULT_GUITAR_TUNING,
+  tuning?: InstrumentTuning,
 ): GuitarNightOpenReferenceResult {
   const track = resolveReferenceTrack(source, requestedTrackId)
   if (track === null) return { ok: false, code: 'no-playable-notes' }
+
+  const instrument = sourceTrackInstrument(track)
+  const sourceTuning = sourceTuningForTrack(track, instrument)
+  const stageTuning = tuning ?? sourceTuning ?? DEFAULT_GUITAR_TUNING
 
   const tempoBpm =
     Number.isFinite(source.bpm) && source.bpm > 0 ? source.bpm : 120
   const placed = toStageNotes(
     track.notes.map((note, index) => ({
-      id: `${track.id}-${index}-${note.startBeat}`,
+      id: note.id ?? `${track.id}-${index}-${note.startBeat}`,
       midi: note.midi,
       startBeat: note.startBeat,
       duration: note.duration,
       stringIndex: note.stringIndex,
       fret: note.fret,
+      authoredFingering: note.authoredFingering,
+      notation: notationWithLegacyLetRing(note),
     })),
-    tuning,
+    stageTuning,
+    sourceTuning !== undefined && sameTuning(sourceTuning, stageTuning),
   )
 
   return {
@@ -234,7 +301,8 @@ export function openGuitarNightReference(
       trackName: track.name,
       tempoBpm,
       tempoChanges: source.tempoChanges,
-      tuning,
+      tuning: stageTuning,
+      ...(sourceTuning === undefined ? {} : { sourceTuning }),
       notes: placed.notes,
       outOfRangeNotes: placed.outOfRange,
       tracks: referenceTrackSummaries(source),
@@ -250,13 +318,49 @@ export function openGuitarNightReference(
 export function suggestReferenceInstrument(
   source: GuitarNightReferenceSource,
   trackId?: string,
-): { trackId: string; instrument: StringedInstrument } | null {
+): {
+  trackId: string
+  instrument: StringedInstrument
+  sourceTuning?: InstrumentTuning
+} | null {
   const track = resolveReferenceTrack(source, trackId)
   if (track === null) return null
+  const instrument = sourceTrackInstrument(track)
+  const sourceTuning = sourceTuningForTrack(track, instrument)
   return {
     trackId: track.id,
-    instrument: suggestInstrumentForMidi(track.notes.map((note) => note.midi)),
+    instrument,
+    ...(sourceTuning === undefined ? {} : { sourceTuning }),
   }
+}
+
+function sourceTrackInstrument(
+  track: GuitarNightReferenceSourceTrack,
+): StringedInstrument {
+  const instrumentName = track.instrumentName?.toLowerCase() ?? ''
+  if (instrumentName.includes('bass')) return 'bass'
+  if (instrumentName.includes('guitar')) return 'guitar'
+  if (track.sourceTuning !== undefined && track.sourceTuning.length > 0) {
+    // Extended guitars and extended basses can share the same string count;
+    // their highest open string is the reliable distinction in source setup.
+    const highestOpen = Math.max(...track.sourceTuning)
+    if (highestOpen >= 57) return 'guitar'
+    if (highestOpen <= 55) return 'bass'
+  }
+  return suggestInstrumentForMidi(track.notes.map((note) => note.midi))
+}
+
+function sourceTuningForTrack(
+  track: GuitarNightReferenceSourceTrack,
+  instrument: StringedInstrument,
+): InstrumentTuning | undefined {
+  if (track.sourceTuning === undefined) return undefined
+  return (
+    instrumentTuningFromSource(instrument, track.sourceTuning, {
+      name: track.sourceTuningName,
+      capo: track.sourceCapo,
+    }) ?? undefined
+  )
 }
 
 // ── Measured references ─────────────────────────────────────
@@ -286,7 +390,8 @@ export function measuredReferenceFromTranscription(
   input: MeasuredReferenceInput,
   tuning: InstrumentTuning = DEFAULT_BASS_TUNING,
 ): GuitarNightReference {
-  const lowestPlayable = tuning.openMidi[tuning.openMidi.length - 1] ?? 40
+  const lowestPlayable =
+    (tuning.openMidi[tuning.openMidi.length - 1] ?? 40) + (tuning.capo ?? 0)
   const liftedOctaves = input.transcription.notes.some(
     (note) => note.midi < lowestPlayable,
   )

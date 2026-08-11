@@ -14,10 +14,13 @@
 // Coordinates: +X right, +Y up, +Z toward viewer (depth into screen = −Z).
 
 import { mat4 } from 'wgpu-matrix'
+import type { GuitarBendType } from '@/lib/guitar/guitar-notation'
+import type { GuitarSlideType } from '@/lib/guitar/guitar-notation'
 import type { CameraState } from '../camera'
 import { cameraEye, DEFAULT_CAMERA } from '../camera'
+import { nextTabEvent, visibleTabEvents, visibleTabNotes, } from '../compile-tab-notes'
 import { beatsToDepth } from '../projection'
-import type { TabRenderer, TabScene, TabSceneNote } from '../TabRenderer'
+import type { TabRenderer, TabScene, TabSceneEvent, TabSceneNote, } from '../TabRenderer'
 import { colorForString, labelInk, lighten, withAlpha } from './color'
 import { cellKey, cellNoteName, isDoubleFretMarker, isFretMarker, } from './FretboardStrip'
 import { TAB_FLOOR_DEPTH as FLOOR_DEPTH, TAB_LANE_HEIGHT as LANE_HEIGHT, TAB_WALL_BOTTOM as Y_BOTTOM, TAB_WALL_TOP as WALL_TOP, tabConvergedX, tabFlightPoint, tabFretStringY, tabFretX, tabStringLaneX, tabTransverseWorldSpan, } from './highway-geometry'
@@ -34,10 +37,65 @@ const FAR = 300
 const NEAR_BEATS = 1.0 // imminence ramp: full emphasis at the hit line
 const FLASH_IN = 0.05 // strike flash starts just before the hit
 const FLASH_OUT = 0.3 // and fades out this many beats after
-const CHORD_TOL = 0.0625 // notes within 1/16 beat = a chord
 const BEATS_PER_BAR = 4 // for downbeat emphasis (assume 4/4)
 const HIT_FLASH_MS = 500 // scored-hit ring fade duration
 const PORTRAIT_HIGHWAY_FAR_SCALE = 0.45
+
+export function bendAmountLabel(semitones: number): string {
+  const amount = Math.abs(semitones)
+  if (Math.abs(amount - 0.5) < 0.05) return '¼'
+  if (Math.abs(amount - 1) < 0.05) return '½'
+  if (Math.abs(amount - 2) < 0.05) return 'full'
+  return `${amount.toFixed(1)} st`
+}
+
+export type BendVisualMotion = 'up' | 'down' | 'up-down' | 'hold'
+
+export function bendVisualMotion(bendType: GuitarBendType): BendVisualMotion {
+  if (bendType === 'release' || bendType === 'prebend-release') return 'down'
+  if (bendType === 'bend-release') return 'up-down'
+  if (bendType === 'hold') return 'hold'
+  return 'up'
+}
+
+export function linkedTechniqueTargetFret(
+  authoredFret: number | undefined,
+  resolvedTargetFret: number | undefined,
+): number | undefined {
+  return resolvedTargetFret ?? authoredFret
+}
+
+export function slideInSourceFret(
+  slideType: GuitarSlideType,
+  currentFret: number,
+  maxFret: number,
+): number | undefined {
+  if (slideType === 'into-from-below') return Math.max(0, currentFret - 2)
+  if (slideType === 'into-from-above') {
+    return Math.min(maxFret, currentFret + 2)
+  }
+  return undefined
+}
+
+export function slideOutTargetFret(
+  slideType: GuitarSlideType,
+  currentFret: number,
+  maxFret: number,
+): number | undefined {
+  if (slideType === 'out-up' || slideType === 'pick-slide-up') {
+    return Math.min(maxFret, currentFret + 2)
+  }
+  if (slideType === 'out-down' || slideType === 'pick-slide-down') {
+    return Math.max(0, currentFret - 2)
+  }
+  return undefined
+}
+
+export function slideMarkLabel(slideType: GuitarSlideType): string {
+  return slideType === 'pick-slide-up' || slideType === 'pick-slide-down'
+    ? 'P.S.'
+    : 'SL'
+}
 
 interface Projected {
   x: number
@@ -67,6 +125,16 @@ export class Canvas2dTabRenderer implements TabRenderer {
   }
 
   setCamera(camera: CameraState): void {
+    if (
+      camera.yaw === this.camera.yaw &&
+      camera.pitch === this.camera.pitch &&
+      camera.radius === this.camera.radius &&
+      camera.target[0] === this.camera.target[0] &&
+      camera.target[1] === this.camera.target[1] &&
+      camera.target[2] === this.camera.target[2]
+    ) {
+      return
+    }
     this.camera = camera
     this.cameraDirty = true
   }
@@ -75,9 +143,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
     this.cssWidth = width
     this.cssHeight = height
     if (this.canvas === null || this.ctx === null) return
-    this.canvas.width = Math.max(1, Math.round(width * dpr))
-    this.canvas.height = Math.max(1, Math.round(height * dpr))
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const effectiveDpr = Math.max(1, Math.min(2, dpr))
+    this.canvas.width = Math.max(1, Math.round(width * effectiveDpr))
+    this.canvas.height = Math.max(1, Math.round(height * effectiveDpr))
+    this.ctx.setTransform(effectiveDpr, 0, 0, effectiveDpr, 0, 0)
   }
 
   private ensureCamera(): void {
@@ -114,8 +183,8 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
   }
 
-  private fretX(f: number, maxFret: number): number {
-    return tabFretX(f, maxFret)
+  private fretX(f: number, maxFret: number, leftHanded = false): number {
+    return tabFretX(f, maxFret, leftHanded)
   }
 
   private stringY(s: number, n: number): number {
@@ -159,12 +228,12 @@ export class Canvas2dTabRenderer implements TabRenderer {
     return tabConvergedX(x, depthRatio, PORTRAIT_HIGHWAY_FAR_SCALE)
   }
 
-  private reducedMotion(): boolean {
-    return (
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
+  private reducedMotion(scene: TabScene): boolean {
+    return scene.display.motion === 'reduced'
+  }
+
+  private reducedEffects(scene: TabScene): boolean {
+    return scene.display.effects === 'reduced'
   }
 
   /** Projected spacing across the active fret cells or string lanes. */
@@ -233,17 +302,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
     this.drawBackground(ctx, scene)
 
     // ── Readability scaffolding ──────────────────────────────
-    const bucketKey = (b: number) => Math.round(b / CHORD_TOL)
-    let nextKey: number | null = null
-    let nextStart = Infinity
+    const nextEvent = nextTabEvent(scene)
+    const nextNoteIds = new Set(nextEvent?.notes.map((note) => note.id) ?? [])
+    const visibleNotes = visibleTabNotes(scene)
     const upcomingCells = new Set<string>() // cells with a note arriving soon
-    for (const note of scene.notes) {
+    for (const note of visibleNotes) {
       if (note.isBacking) continue
       const ba = note.startBeat - ph
-      if (note.startBeat >= ph - 0.02 && note.startBeat < nextStart) {
-        nextStart = note.startBeat
-        nextKey = bucketKey(note.startBeat)
-      }
       if (ba > -0.1 && ba < 0.6) {
         upcomingCells.add(cellKey(note.stringIndex, note.fret))
       }
@@ -256,12 +321,19 @@ export class Canvas2dTabRenderer implements TabRenderer {
       } else {
         this.drawFretboard(ctx, scene, N, maxFret, upcomingCells)
       }
-      this.drawTargetFeedback(ctx, scene, N, maxFret, nextKey, bucketKey)
+      this.drawTargetFeedback(
+        ctx,
+        scene,
+        N,
+        maxFret,
+        nextEvent?.notes ?? [],
+        visibleNotes,
+      )
       this.drawHits(ctx, scene, N, maxFret)
       this.drawDetected(ctx, scene, N, maxFret)
     }
 
-    const visible = scene.notes
+    const visible = visibleNotes
       .map((note) => ({
         note,
         t0: beatsToDepth(note.startBeat - ph, beatWindow),
@@ -271,12 +343,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
       .sort((a, b) => b.t0 - a.t0)
 
     // Chord spines (bind simultaneous main-track notes) — behind the chips.
-    this.drawChordSpines(ctx, scene, visible, N, maxFret)
+    this.drawChordSpines(ctx, scene, visibleTabEvents(scene), N, maxFret)
 
     for (const { note, t0, t1 } of visible) {
-      const isNext = !note.isBacking && bucketKey(note.startBeat) === nextKey
+      const isNext = !note.isBacking && nextNoteIds.has(note.id)
       this.drawNote(ctx, scene, note, t0, t1, N, maxFret, beatWindow, isNext)
     }
+    this.drawTechniqueMarks(ctx, scene, visible, N, maxFret)
   }
 
   private drawBackground(ctx: CanvasRenderingContext2D, scene: TabScene): void {
@@ -311,10 +384,10 @@ export class Canvas2dTabRenderer implements TabRenderer {
     const floorY = isStringHighway ? LANE_HEIGHT : Y_BOTTOM
     const left = isStringHighway
       ? tabStringLaneX(0, n, false)
-      : this.fretX(0, maxFret)
+      : this.fretX(0, maxFret, scene.display.leftHanded)
     const right = isStringHighway
       ? tabStringLaneX(n - 1, n, false)
-      : this.fretX(maxFret, maxFret)
+      : this.fretX(maxFret, maxFret, scene.display.leftHanded)
 
     if (isStringHighway) {
       const nearLeft = this.project(left - 0.45, floorY - 0.04, 0)
@@ -334,9 +407,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
           (point) => point.w > NEAR,
         )
       ) {
-        const runway = ctx.createLinearGradient(0, farLeft.y, 0, nearLeft.y)
-        runway.addColorStop(0, 'rgba(26, 22, 18, 0.08)')
-        runway.addColorStop(1, 'rgba(31, 24, 19, 0.54)')
+        const runway = this.reducedEffects(scene)
+          ? 'rgba(31, 24, 19, 0.34)'
+          : ctx.createLinearGradient(0, farLeft.y, 0, nearLeft.y)
+        if (typeof runway !== 'string') {
+          runway.addColorStop(0, 'rgba(26, 22, 18, 0.08)')
+          runway.addColorStop(1, 'rgba(31, 24, 19, 0.54)')
+        }
         ctx.beginPath()
         ctx.moveTo(nearLeft.x, nearLeft.y)
         ctx.lineTo(nearRight.x, nearRight.y)
@@ -366,7 +443,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     } else {
       for (let f = 0; f <= maxFret; f++) {
-        const x = this.fretX(f, maxFret)
+        const x = this.fretX(f, maxFret, scene.display.leftHanded)
         this.line(ctx, x, floorY, 0, x, floorY, -FLOOR_DEPTH, laneColor, 1)
       }
     }
@@ -440,7 +517,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
   ): void {
     // Fret wires (vertical).
     for (let f = 0; f <= maxFret; f++) {
-      const x = this.fretX(f, maxFret)
+      const x = this.fretX(f, maxFret, scene.display.leftHanded)
       this.line(
         ctx,
         x,
@@ -458,7 +535,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     const yMid = this.stringY((n - 1) / 2, n)
     for (let f = 1; f <= maxFret; f++) {
       if (!isFretMarker(f)) continue
-      const x = this.fretX(f, maxFret)
+      const x = this.fretX(f, maxFret, scene.display.leftHanded)
       const offs = isDoubleFretMarker(f) ? [-0.5, 0.5] : [0]
       for (const dy of offs) {
         const p = this.project(x, yMid + dy, 0)
@@ -470,8 +547,8 @@ export class Canvas2dTabRenderer implements TabRenderer {
       }
     }
 
-    const xL = this.fretX(0, maxFret)
-    const xR = this.fretX(maxFret, maxFret)
+    const xL = this.fretX(0, maxFret, scene.display.leftHanded)
+    const xR = this.fretX(maxFret, maxFret, scene.display.leftHanded)
 
     // Strings (horizontal, coloured) + open labels + decluttered cell names.
     for (let s = 0; s < n; s++) {
@@ -493,9 +570,13 @@ export class Canvas2dTabRenderer implements TabRenderer {
       if (lp.w > NEAR) {
         ctx.fillStyle = withAlpha(color, 0.95)
         ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif'
-        ctx.textAlign = 'right'
+        ctx.textAlign = scene.display.leftHanded ? 'left' : 'right'
         ctx.textBaseline = 'middle'
-        ctx.fillText(cellNoteName(open, 0), lp.x - 8, lp.y)
+        ctx.fillText(
+          cellNoteName(open, 0),
+          lp.x + (scene.display.leftHanded ? 8 : -8),
+          lp.y,
+        )
       }
       // Per-cell names only where a note is incoming soon (declutter the grid).
       if (scene.showNoteLabels) {
@@ -504,7 +585,11 @@ export class Canvas2dTabRenderer implements TabRenderer {
         ctx.font = '9px ui-sans-serif, system-ui, sans-serif'
         for (let f = 0; f <= maxFret; f++) {
           if (!upcomingCells.has(cellKey(s, f))) continue
-          const p = this.project(this.fretX(f, maxFret), y, 0)
+          const p = this.project(
+            this.fretX(f, maxFret, scene.display.leftHanded),
+            y,
+            0,
+          )
           if (p.w <= NEAR) continue
           ctx.fillStyle = 'rgba(255,255,255,0.32)'
           ctx.fillText(cellNoteName(open, f), p.x, p.y)
@@ -516,7 +601,11 @@ export class Canvas2dTabRenderer implements TabRenderer {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     for (let f = 0; f <= maxFret; f++) {
-      const p = this.project(this.fretX(f, maxFret), Y_BOTTOM - 0.3, 0)
+      const p = this.project(
+        this.fretX(f, maxFret, scene.display.leftHanded),
+        Y_BOTTOM - 0.3,
+        0,
+      )
       if (p.w <= NEAR) continue
       ctx.fillStyle = isFretMarker(f)
         ? scene.display.theme === 'velvet'
@@ -557,15 +646,14 @@ export class Canvas2dTabRenderer implements TabRenderer {
     scene: TabScene,
     n: number,
     maxFret: number,
-    nextKey: number | null,
-    bucketKey: (beat: number) => number,
+    nextNotes: readonly TabSceneNote[],
+    visibleNotes: readonly TabSceneNote[],
   ): void {
-    if (nextKey !== null) {
-      const pulse = this.reducedMotion()
+    if (nextNotes.length > 0) {
+      const pulse = this.reducedMotion(scene)
         ? 0.64
         : 0.4 + 0.3 * Math.sin(scene.playheadBeat * Math.PI * 2)
-      for (const note of scene.notes) {
-        if (note.isBacking || bucketKey(note.startBeat) !== nextKey) continue
+      for (const note of nextNotes) {
         const [x, y, z] = this.notePos(
           scene,
           note.stringIndex,
@@ -604,8 +692,8 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
 
     ctx.save()
-    ctx.globalCompositeOperation = 'lighter'
-    for (const note of scene.notes) {
+    if (!this.reducedEffects(scene)) ctx.globalCompositeOperation = 'lighter'
+    for (const note of visibleNotes) {
       if (note.isBacking) continue
       const distance = scene.playheadBeat - note.startBeat
       if (distance < -FLASH_IN || distance > FLASH_OUT) continue
@@ -653,28 +741,23 @@ export class Canvas2dTabRenderer implements TabRenderer {
   private drawChordSpines(
     ctx: CanvasRenderingContext2D,
     scene: TabScene,
-    visible: { note: TabSceneNote; t0: number; t1: number }[],
+    visibleEvents: readonly TabSceneEvent[],
     n: number,
     maxFret: number,
   ): void {
-    const groups = new Map<number, { note: TabSceneNote; t0: number }[]>()
-    for (const v of visible) {
-      if (v.note.isBacking) continue
-      const k = Math.round(v.note.startBeat / CHORD_TOL)
-      const arr = groups.get(k)
-      if (arr) arr.push(v)
-      else groups.set(k, [v])
-    }
-    for (const members of groups.values()) {
-      if (members.length < 2) continue
-      const t = members[0].t0
+    for (const event of visibleEvents) {
+      if (event.notes.length === 0) continue
+      const t = beatsToDepth(
+        event.startBeat - scene.playheadBeat,
+        scene.visibleBeatWindow,
+      )
       const near = clamp01(1 - (t * scene.visibleBeatWindow) / NEAR_BEATS)
-      const pts = members
-        .map((m) => {
+      const pts = event.notes
+        .map((note) => {
           const [x, y, z] = this.notePos(
             scene,
-            m.note.stringIndex,
-            m.note.fret,
+            note.stringIndex,
+            note.fret,
             Math.max(t, 0),
             n,
             maxFret,
@@ -685,14 +768,40 @@ export class Canvas2dTabRenderer implements TabRenderer {
         .sort((a, b) =>
           scene.presentation === 'string-highway' ? a.x - b.x : a.y - b.y,
         )
-      if (pts.length < 2) continue
-      ctx.beginPath()
-      ctx.moveTo(pts[0].x, pts[0].y)
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
-      ctx.strokeStyle = `rgba(255,255,255,${(0.12 + 0.22 * near).toFixed(3)})`
-      ctx.lineWidth = 2
-      ctx.lineCap = 'round'
-      ctx.stroke()
+      if (pts.length === 0) continue
+      if (pts.length >= 2) {
+        ctx.beginPath()
+        ctx.moveTo(pts[0].x, pts[0].y)
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
+        ctx.strokeStyle = `rgba(255,255,255,${(0.12 + 0.22 * near).toFixed(3)})`
+        ctx.lineWidth = 2
+        ctx.lineCap = 'round'
+        ctx.stroke()
+      }
+      if (event.chordLabel !== undefined) {
+        const anchor = pts[0]
+        if (anchor === undefined) continue
+        const label = event.chordLabel.slice(0, 18)
+        ctx.font = '650 10px ui-sans-serif, system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'bottom'
+        const width = Math.max(28, ctx.measureText(label).width + 12)
+        const x =
+          scene.presentation === 'string-highway'
+            ? (pts[0]!.x + pts[pts.length - 1]!.x) / 2
+            : Math.min(...pts.map((point) => point.x)) - width / 2 - 7
+        const y = Math.min(...pts.map((point) => point.y)) - 10
+        roundRect(ctx, x - width / 2, y - 15, width, 16, 5)
+        ctx.fillStyle = this.reducedEffects(scene)
+          ? 'rgba(23,17,13,0.92)'
+          : 'rgba(23,17,13,0.78)'
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(242,201,143,0.42)'
+        ctx.lineWidth = 1
+        ctx.stroke()
+        ctx.fillStyle = 'rgba(253,243,228,0.9)'
+        ctx.fillText(label, x, y - 2)
+      }
     }
   }
 
@@ -766,16 +875,33 @@ export class Canvas2dTabRenderer implements TabRenderer {
       )
       const tail = this.project(tx, ty, tz)
       if (tail.w > NEAR) {
+        const palmMuted =
+          note.notation?.techniques?.some(
+            (technique) => technique.kind === 'palm-mute',
+          ) === true
+        const letRing =
+          note.notation?.techniques?.some(
+            (technique) => technique.kind === 'let-ring',
+          ) === true
         ctx.beginPath()
         ctx.moveTo(head.x, head.y)
         ctx.lineTo(tail.x, tail.y)
         ctx.strokeStyle = withAlpha(color, 0.3 * alpha)
         ctx.lineWidth =
           scene.presentation === 'string-highway'
-            ? Math.min(12, Math.max(2, cell * 0.11))
-            : Math.max(2, cell * 0.32)
+            ? Math.min(12, Math.max(2, cell * (palmMuted ? 0.07 : 0.11)))
+            : Math.max(2, cell * (palmMuted ? 0.2 : 0.32))
         ctx.lineCap = 'round'
+        ctx.setLineDash(palmMuted ? [4, 4] : [])
         ctx.stroke()
+        ctx.setLineDash([])
+        if (letRing) {
+          ctx.beginPath()
+          ctx.arc(tail.x, tail.y, 3.5, 0, Math.PI * 2)
+          ctx.strokeStyle = withAlpha(lighten(color, 0.45), 0.72 * alpha)
+          ctx.lineWidth = 1.5
+          ctx.stroke()
+        }
       }
     }
 
@@ -790,7 +916,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
           )
     const h = w * 0.66
     ctx.save()
-    if (near > 0) {
+    if (near > 0 && !this.reducedEffects(scene)) {
       ctx.shadowColor = color
       ctx.shadowBlur = 16 * near * near
     }
@@ -834,6 +960,235 @@ export class Canvas2dTabRenderer implements TabRenderer {
     }
   }
 
+  /** Source-authored technique marks stay restrained and never invent intent. */
+  private drawTechniqueMarks(
+    ctx: CanvasRenderingContext2D,
+    scene: TabScene,
+    visible: readonly { note: TabSceneNote; t0: number; t1: number }[],
+    n: number,
+    maxFret: number,
+  ): void {
+    ctx.save()
+    ctx.font = '700 9px ui-sans-serif, system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.lineWidth = 1.5
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    for (const entry of visible) {
+      const techniques = entry.note.notation?.techniques
+      if (entry.note.isBacking || techniques === undefined) continue
+      const headT = Math.max(entry.t0, -0.03)
+      const [hx, hy, hz] = this.notePos(
+        scene,
+        entry.note.stringIndex,
+        entry.note.fret,
+        headT,
+        n,
+        maxFret,
+      )
+      const head = this.project(hx, hy, hz)
+      if (head.w <= NEAR) continue
+      const ink = 'rgba(253,243,228,0.84)'
+      const line = 'rgba(242,201,143,0.72)'
+      let textRow = 0
+
+      for (const technique of techniques) {
+        if (
+          technique.kind === 'hammer-on' ||
+          technique.kind === 'pull-off' ||
+          technique.kind === 'slide'
+        ) {
+          const slideInFret =
+            technique.kind === 'slide'
+              ? slideInSourceFret(technique.slideType, entry.note.fret, maxFret)
+              : undefined
+          const slideOutFret =
+            technique.kind === 'slide'
+              ? slideOutTargetFret(
+                  technique.slideType,
+                  entry.note.fret,
+                  maxFret,
+                )
+              : undefined
+          const target =
+            technique.toNoteId === undefined
+              ? undefined
+              : scene.noteById.get(technique.toNoteId)
+          const targetFret =
+            linkedTechniqueTargetFret(technique.toFret, target?.fret) ??
+            slideOutFret
+          const targetStart = target?.startBeat
+          let tx = head.x + 22
+          let ty = head.y - 12
+          if (slideInFret !== undefined && technique.kind === 'slide') {
+            const sourceT = beatsToDepth(
+              entry.note.startBeat - 0.35 - scene.playheadBeat,
+              scene.visibleBeatWindow,
+            )
+            const [worldX, worldY, worldZ] = this.notePos(
+              scene,
+              entry.note.stringIndex,
+              slideInFret,
+              Math.max(-0.03, sourceT),
+              n,
+              maxFret,
+            )
+            const projectedSource = this.project(worldX, worldY, worldZ)
+            if (projectedSource.w > NEAR) {
+              tx = projectedSource.x
+              ty = projectedSource.y
+            }
+            if (scene.presentation === 'string-highway') {
+              const pitchDirection =
+                technique.slideType === 'into-from-below' ? -1 : 1
+              const handedDirection = scene.display.leftHanded ? -1 : 1
+              tx = head.x + pitchDirection * handedDirection * 22
+              ty = head.y + 12
+            }
+          } else if (targetFret !== undefined) {
+            const targetT = beatsToDepth(
+              (targetStart ?? entry.note.startBeat + 0.35) - scene.playheadBeat,
+              scene.visibleBeatWindow,
+            )
+            const [worldX, worldY, worldZ] = this.notePos(
+              scene,
+              target?.stringIndex ?? entry.note.stringIndex,
+              targetFret,
+              Math.max(-0.03, targetT),
+              n,
+              maxFret,
+            )
+            const projectedTarget = this.project(worldX, worldY, worldZ)
+            if (projectedTarget.w > NEAR) {
+              tx = projectedTarget.x
+              ty = projectedTarget.y
+            }
+            if (
+              slideOutFret !== undefined &&
+              technique.kind === 'slide' &&
+              scene.presentation === 'string-highway'
+            ) {
+              const pitchDirection =
+                technique.slideType === 'out-up' ||
+                technique.slideType === 'pick-slide-up'
+                  ? 1
+                  : -1
+              const handedDirection = scene.display.leftHanded ? -1 : 1
+              tx = head.x + pitchDirection * handedDirection * 22
+              ty = head.y - 12
+            }
+          }
+          ctx.beginPath()
+          if (slideInFret !== undefined && technique.kind === 'slide') {
+            ctx.moveTo(tx, ty)
+            ctx.lineTo(head.x, head.y - 6)
+          } else {
+            ctx.moveTo(head.x, head.y - 6)
+          }
+          if (technique.kind === 'slide' && slideInFret === undefined) {
+            ctx.lineTo(tx, ty)
+          } else if (technique.kind !== 'slide') {
+            ctx.quadraticCurveTo(
+              (head.x + tx) / 2,
+              Math.min(head.y, ty) - 12,
+              tx,
+              ty,
+            )
+          }
+          ctx.strokeStyle = line
+          ctx.stroke()
+          ctx.fillStyle = ink
+          const markLabel =
+            technique.kind === 'slide'
+              ? slideMarkLabel(technique.slideType)
+              : technique.kind === 'hammer-on'
+                ? 'H'
+                : 'P'
+          ctx.fillText(markLabel, (head.x + tx) / 2, Math.min(head.y, ty) - 7)
+          continue
+        }
+
+        if (technique.kind === 'bend') {
+          const topY = head.y - 25
+          const bottomX = head.x + 4
+          const bottomY = head.y - 5
+          const topX = head.x + 10
+          const motion = bendVisualMotion(technique.bendType)
+          ctx.beginPath()
+          if (motion === 'down') {
+            ctx.moveTo(topX, topY)
+            ctx.quadraticCurveTo(head.x + 17, head.y - 18, bottomX, bottomY)
+            ctx.lineTo(bottomX + 1, bottomY - 5)
+            ctx.moveTo(bottomX, bottomY)
+            ctx.lineTo(bottomX + 5, bottomY - 2)
+          } else if (motion === 'up-down') {
+            ctx.moveTo(bottomX, bottomY)
+            ctx.quadraticCurveTo(head.x + 17, head.y - 18, topX, topY)
+            ctx.quadraticCurveTo(head.x + 21, head.y - 15, bottomX + 9, bottomY)
+            ctx.lineTo(bottomX + 10, bottomY - 5)
+            ctx.moveTo(bottomX + 9, bottomY)
+            ctx.lineTo(bottomX + 14, bottomY - 2)
+          } else if (motion === 'hold') {
+            ctx.moveTo(bottomX, head.y - 16)
+            ctx.lineTo(head.x + 22, head.y - 16)
+            ctx.moveTo(bottomX, head.y - 20)
+            ctx.lineTo(bottomX, head.y - 12)
+            ctx.moveTo(head.x + 22, head.y - 20)
+            ctx.lineTo(head.x + 22, head.y - 12)
+          } else {
+            ctx.moveTo(bottomX, bottomY)
+            ctx.quadraticCurveTo(head.x + 17, head.y - 18, topX, topY)
+            ctx.lineTo(head.x + 7, topY + 4)
+            ctx.moveTo(topX, topY)
+            ctx.lineTo(head.x + 13, topY + 4)
+          }
+          ctx.strokeStyle = line
+          ctx.stroke()
+          ctx.fillStyle = ink
+          ctx.textAlign = 'left'
+          const prefix = technique.bendType.startsWith('prebend')
+            ? 'pre '
+            : motion === 'down'
+              ? 'rel '
+              : motion === 'hold'
+                ? 'hold '
+                : ''
+          ctx.fillText(
+            `${prefix}${bendAmountLabel(technique.semitones)}`,
+            head.x + 15,
+            topY + 1,
+          )
+          ctx.textAlign = 'center'
+          continue
+        }
+
+        if (technique.kind === 'vibrato') {
+          const y = head.y - 14
+          ctx.beginPath()
+          ctx.moveTo(head.x - 13, y)
+          const width = technique.width === 'wide' ? 5 : 3
+          for (let step = 1; step <= 6; step += 1) {
+            ctx.lineTo(
+              head.x - 13 + step * 4.4,
+              y + (step % 2 === 0 ? -width : width),
+            )
+          }
+          ctx.strokeStyle = line
+          ctx.stroke()
+          continue
+        }
+
+        const label = technique.kind === 'palm-mute' ? 'PM' : 'LR'
+        ctx.fillStyle = ink
+        ctx.fillText(label, head.x, head.y + 16 + textRow * 10)
+        textRow += 1
+      }
+    }
+    ctx.restore()
+  }
+
   /** Let targets breathe while guaranteeing dense 8-string chords never touch. */
   private stringHighwayTargetWidth(
     laneSpacing: number,
@@ -863,7 +1218,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
     if (scene.hits.length === 0) return
     const now = Date.now()
     ctx.save()
-    ctx.globalCompositeOperation = 'lighter'
+    if (!this.reducedEffects(scene)) ctx.globalCompositeOperation = 'lighter'
     for (const h of scene.hits) {
       const age = now - h.at
       if (age < 0 || age > HIT_FLASH_MS) continue
@@ -901,6 +1256,26 @@ export class Canvas2dTabRenderer implements TabRenderer {
       ctx.arc(p.x, p.y, baseR * 0.55, 0, Math.PI * 2)
       ctx.fillStyle = withAlpha(color, 0.5 * k)
       ctx.fill()
+      // Accuracy is also encoded by one, two, or three crown ticks so the
+      // result never depends on the green/amber palette alone.
+      const tickCount =
+        h.timing === 'perfect' ? 3 : h.timing === 'great' ? 2 : 1
+      ctx.strokeStyle = withAlpha('#ffffff', 0.82 * k)
+      ctx.lineWidth = 2
+      for (let tick = 0; tick < tickCount; tick += 1) {
+        const angle =
+          -Math.PI / 2 + (tick - (tickCount - 1) / 2) * (Math.PI / 8)
+        ctx.beginPath()
+        ctx.moveTo(
+          p.x + Math.cos(angle) * baseR * 0.78,
+          p.y + Math.sin(angle) * baseR * 0.78,
+        )
+        ctx.lineTo(
+          p.x + Math.cos(angle) * baseR * 1.18,
+          p.y + Math.sin(angle) * baseR * 1.18,
+        )
+        ctx.stroke()
+      }
     }
     ctx.restore()
   }
@@ -933,7 +1308,7 @@ export class Canvas2dTabRenderer implements TabRenderer {
       scene.presentation === 'string-highway'
         ? Math.min(36, uncappedRadius)
         : uncappedRadius
-    const pulse = this.reducedMotion()
+    const pulse = this.reducedMotion(scene)
       ? 0.82
       : 0.6 + 0.4 * Math.sin(performance.now() / 180)
     const color = d.matchesTarget ? '#22c55e' : '#e8ecf5'
