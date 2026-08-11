@@ -71,6 +71,14 @@ function dependencies(
     readCompositions: () => ABSENT_COMPOSITIONS,
     importProject: async () => legacyProject('imported', 'imported-hash'),
     saveProject: async (project) => ({ ok: true, value: project }),
+    updateProjectSelection: async (_id, scoreTrackId, backingTrackIds) => ({
+      ok: true,
+      value: {
+        ...legacyProject('updated', 'updated-hash'),
+        scoreTrackId,
+        backingTrackIds: [...backingTrackIds],
+      },
+    }),
     ...overrides,
   }
 }
@@ -377,4 +385,81 @@ describe('Piano Night MIDI import', () => {
       expect(result).toMatchObject({ ok: false, code })
     },
   )
+})
+
+describe('Piano Night track selection', () => {
+  it('persists canonical track ids and returns the updated project', async () => {
+    const updated = legacyProject('saved-project', 'saved-hash')
+    const updateProjectSelection = vi.fn(
+      async (): Promise<PianoLibraryResult<PianoProject>> => ({
+        ok: true,
+        value: updated,
+      }),
+    )
+    const source = createPianoNightMusicSource(
+      dependencies({ updateProjectSelection }),
+    )
+
+    const result = await source.updateProjectSelection(
+      'saved-project',
+      'afterglow-grand',
+      [],
+    )
+
+    expect(updateProjectSelection).toHaveBeenCalledWith(
+      'saved-project',
+      'afterglow-grand',
+      [],
+    )
+    expect(result).toEqual({ ok: true, project: updated })
+  })
+
+  it.each([
+    ['invalid-project', 'invalid-selection'],
+    ['not-found', 'project-not-found'],
+    ['quota-exceeded', 'storage-full'],
+    ['storage-unavailable', 'storage-unavailable'],
+  ] as const)(
+    'maps selection failure %s to stable code %s',
+    async (rawCode, code) => {
+      const source = createPianoNightMusicSource(
+        dependencies({
+          updateProjectSelection: async () => ({
+            ok: false,
+            code: rawCode,
+          }),
+        }),
+      )
+
+      const result = await source.updateProjectSelection(
+        'saved-project',
+        'afterglow-grand',
+        [],
+      )
+
+      expect(result).toMatchObject({ ok: false, code })
+    },
+  )
+
+  it('contains a thrown storage error behind a stable failure', async () => {
+    const source = createPianoNightMusicSource(
+      dependencies({
+        updateProjectSelection: async () => {
+          throw new Error('private IndexedDB detail')
+        },
+      }),
+    )
+
+    const result = await source.updateProjectSelection(
+      'saved-project',
+      'afterglow-grand',
+      [],
+    )
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'storage-unavailable',
+    })
+    expect(JSON.stringify(result)).not.toContain('private')
+  })
 })

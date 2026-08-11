@@ -119,7 +119,7 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
           fallback={
             <>
               <span class={styles.previewLabel}>
-                Project section · not analysed
+                No authored prompt · results measured separately
               </span>
               <p class={styles.coachGuidance}>
                 No authored coaching prompt exists for {props.sourceTitle()}.
@@ -140,19 +140,22 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
                     <dd>{props.noteCount()}</dd>
                   </div>
                   <div>
-                    <dt>Initial tempo</dt>
+                    <dt>Base tempo</dt>
                     <dd>{Math.round(props.tempoBpm())} BPM</dd>
                   </div>
                 </dl>
                 <p class={styles.coachTruth}>
-                  Use this beat range as a rehearsal boundary. Dynamics, pedal,
-                  and performance feedback have not been inferred.
+                  Use this beat range as a rehearsal boundary. Dynamics and
+                  pedal guidance have not been inferred; timing and pitch
+                  results still appear in Session.
                 </p>
               </section>
             </>
           }
         >
-          <span class={styles.previewLabel}>Practice prompt · not scored</span>
+          <span class={styles.previewLabel}>
+            Practice prompt · results measured separately
+          </span>
           <p class={styles.coachGuidance}>{props.phrase().guidance}</p>
 
           <section class={styles.coachSection}>
@@ -225,8 +228,8 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
   )
 }
 
-function formatClock(beat: number, tempoBpm: number): string {
-  const seconds = Math.max(0, (beat * 60) / tempoBpm)
+function formatClock(elapsedSeconds: number): string {
+  const seconds = Math.max(0, elapsedSeconds)
   const minutes = Math.floor(seconds / 60)
   const remainder = Math.floor(seconds % 60)
   return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
@@ -237,6 +240,7 @@ export function PianoNightApp(): JSX.Element {
   const background = useBackgroundSurfaceController('piano')
   const [view, setView] = createSignal<PianoNightPerformanceView>('fall')
   const [drawerOpen, setDrawerOpen] = createSignal(false)
+  const [musicNavigationLocked, setMusicNavigationLocked] = createSignal(false)
   const [drawerSection, setDrawerSection] =
     createSignal<DrawerSection>('session')
   const [lastSettingsSection, setLastSettingsSection] =
@@ -275,8 +279,19 @@ export function PianoNightApp(): JSX.Element {
   })
   const sessionClock = createMemo(() =>
     formatClock(
-      controller.playheadBeat(),
-      controller.transport.timeline.tempoBpm(),
+      controller.transport.playbackSecondsAtBeat(controller.playheadBeat()),
+    ),
+  )
+  const currentTempoBpm = createMemo(() =>
+    controller.transport.effectiveTempoBpmAtBeat(controller.playheadBeat()),
+  )
+  const audibleBackingTrackCount = createMemo(
+    () => controller.arrangement().backingTrackIds.length,
+  )
+  const preservedBackingTrackCount = createMemo(() =>
+    Math.max(
+      0,
+      controller.source().additionalTrackCount - audibleBackingTrackCount(),
     ),
   )
   const roomLabel = (): string =>
@@ -333,6 +348,7 @@ export function PianoNightApp(): JSX.Element {
   }
 
   const selectDrawerSection = (section: DrawerSection): void => {
+    if (musicNavigationLocked() && section !== 'music') return
     setDrawerSection(section)
     if (section !== 'music') setLastSettingsSection(section)
     queueMicrotask(() => drawerElement?.scrollTo?.({ top: 0 }))
@@ -342,6 +358,7 @@ export function PianoNightApp(): JSX.Element {
     event: KeyboardEvent,
     section: DrawerSection,
   ): void => {
+    if (musicNavigationLocked()) return
     let nextIndex: number | null = null
     const currentIndex = DRAWER_SECTIONS.indexOf(section)
     if (event.key === 'ArrowLeft') nextIndex = currentIndex - 1
@@ -402,6 +419,7 @@ export function PianoNightApp(): JSX.Element {
   }
 
   const closeDrawer = (): void => {
+    if (musicNavigationLocked()) return
     setDrawerOpen(false)
     if (compactSheets()) restoreCompactSurfaceFocus()
   }
@@ -636,16 +654,19 @@ export function PianoNightApp(): JSX.Element {
           </div>
           <div class={styles.sessionMetric}>
             <strong>
-              {Math.round(controller.transport.timeline.tempoBpm())}
+              {controller.scoringState().judgedNotes > 0
+                ? `${controller.scoringState().accuracyPercent}%`
+                : '—'}
             </strong>
-            <span>BPM</span>
+            <span>accuracy</span>
           </div>
-          <div class={styles.inputState}>
-            <i
-              aria-hidden="true"
-              data-connected={controller.midiSnapshot().connected}
-            />
-            <span>{midiLabel()}</span>
+          <div class={`${styles.sessionMetric} ${styles.streakMetric}`}>
+            <strong>
+              {controller.scoringState().judgedNotes > 0
+                ? controller.scoringState().combo
+                : '—'}
+            </strong>
+            <span>streak</span>
           </div>
           <button
             class={styles.viewButton}
@@ -748,7 +769,7 @@ export function PianoNightApp(): JSX.Element {
               <strong>
                 {Math.round(controller.transport.timeline.tempoBpm())}
               </strong>
-              <span>BPM</span>
+              <span>BASE BPM</span>
             </div>
             <button
               type="button"
@@ -854,6 +875,7 @@ export function PianoNightApp(): JSX.Element {
           class={styles.scrim}
           type="button"
           onClick={closeDrawer}
+          disabled={musicNavigationLocked()}
           aria-label="Close Piano Night controls"
         />
       </Show>
@@ -878,6 +900,12 @@ export function PianoNightApp(): JSX.Element {
             ref={drawerCloseButton}
             type="button"
             onClick={closeDrawer}
+            disabled={musicNavigationLocked()}
+            title={
+              musicNavigationLocked()
+                ? 'Finish or leave track choices first'
+                : undefined
+            }
             aria-label="Close Piano Night controls"
           >
             <X />
@@ -900,6 +928,7 @@ export function PianoNightApp(): JSX.Element {
                 aria-selected={drawerSection() === section}
                 aria-controls={`piano-night-panel-${section}`}
                 tabindex={drawerSection() === section ? 0 : -1}
+                disabled={musicNavigationLocked() && section !== 'music'}
                 onClick={() => selectDrawerSection(section)}
                 onKeyDown={(event) => onDrawerTabKeyDown(event, section)}
               >
@@ -921,9 +950,9 @@ export function PianoNightApp(): JSX.Element {
             </span>
             <h2>{controller.stage().title}</h2>
             <p>
-              Fall, Score, Keys, and the transport are reading this same staged
-              source. Open Music to choose another composition or import MIDI
-              from this device.
+              Fall, Score, Keys, scoring, and the transport read the same staged
+              source. Selected pitched Hear tracks play as accompaniment; the
+              Score track remains the one measured practice lane.
             </p>
             <dl class={styles.sessionFacts}>
               <div>
@@ -934,21 +963,60 @@ export function PianoNightApp(): JSX.Element {
                 </dd>
               </div>
               <div>
-                <dt>Tempo</dt>
-                <dd>
-                  {Math.round(controller.transport.timeline.tempoBpm())} BPM
-                </dd>
+                <dt>Current tempo</dt>
+                <dd>{Math.round(currentTempoBpm())} BPM</dd>
               </div>
+              <Show when={controller.source().tempoMapChangeCount > 0}>
+                <div>
+                  <dt>Tempo map</dt>
+                  <dd>
+                    {controller.source().tempoMapChangeCount}{' '}
+                    {controller.source().tempoMapChangeCount === 1
+                      ? 'change'
+                      : 'changes'}{' '}
+                    · {Math.round(controller.transport.timeline.tempoBpm())} BPM
+                    base
+                  </dd>
+                </div>
+              </Show>
               <div>
                 <dt>Practice track</dt>
                 <dd>{controller.source().practiceTrackLabel}</dd>
               </div>
-              <Show when={controller.source().additionalTrackCount > 0}>
+              <Show when={audibleBackingTrackCount() > 0}>
                 <div>
-                  <dt>Additional tracks</dt>
+                  <dt>Hear tracks</dt>
                   <dd>
-                    {controller.source().additionalTrackCount} saved, not played
+                    {audibleBackingTrackCount()} pitched{' '}
+                    {audibleBackingTrackCount() === 1 ? 'part' : 'parts'}
                   </dd>
+                </div>
+              </Show>
+              <Show when={preservedBackingTrackCount() > 0}>
+                <div>
+                  <dt>Preserved tracks</dt>
+                  <dd>{preservedBackingTrackCount()} not rendered yet</dd>
+                </div>
+              </Show>
+              <div>
+                <dt>Result</dt>
+                <dd>
+                  {controller.scoringState().judgedNotes > 0
+                    ? `${controller.scoringState().accuracyPercent}% accuracy`
+                    : 'Waiting for input'}
+                </dd>
+              </div>
+              <Show when={controller.scoringState().judgedNotes > 0}>
+                <div>
+                  <dt>Notes</dt>
+                  <dd>
+                    {controller.scoringState().hits} hit ·{' '}
+                    {controller.scoringState().misses} missed
+                  </dd>
+                </div>
+                <div>
+                  <dt>Best streak</dt>
+                  <dd>{controller.scoringState().streak}</dd>
                 </div>
               </Show>
               <div>
@@ -957,7 +1025,10 @@ export function PianoNightApp(): JSX.Element {
               </div>
               <div>
                 <dt>Sound</dt>
-                <dd>Built-in fallback synth</dd>
+                <dd>
+                  Fallback synth ·{' '}
+                  {audibleBackingTrackCount() > 0 ? 'Score + Hear' : 'Score'}
+                </dd>
               </div>
               <Show when={pedalLabel()}>
                 {(label) => (
@@ -1047,10 +1118,12 @@ export function PianoNightApp(): JSX.Element {
               panelClass={styles.drawerPanel}
               currentSourceId={() => controller.source().id}
               legacyPianoPath={LEGACY_PIANO_PATH}
+              onNavigationLockChange={setMusicNavigationLocked}
               onSelect={(source) => {
                 const selected = controller.replaceSource(source)
                 if (!selected) return false
                 announce(`${source.stage.title} is on stage.`)
+                setMusicNavigationLocked(false)
                 closeDrawer()
                 return true
               }}
@@ -1069,8 +1142,9 @@ export function PianoNightApp(): JSX.Element {
             <h2>Mercury Felt Synth</h2>
             <p>
               A lightweight 32-voice Web Audio fallback starts only after your
-              first Play, MIDI-connect, or touch-key gesture. It is not a
-              sampled piano or imported soundbank.
+              first Play, MIDI-connect, or touch-key gesture. The Score track
+              and selected pitched Hear tracks share this synth; imported
+              instrument names are metadata until richer sound engines arrive.
             </p>
             <div class={styles.soundStatus}>
               <span>Current output</span>

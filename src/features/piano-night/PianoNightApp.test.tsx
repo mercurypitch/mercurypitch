@@ -208,6 +208,12 @@ describe('PianoNightApp', () => {
     expect(keyboard.querySelectorAll('button[data-midi]')).toHaveLength(88)
     expect(screen.queryByText(/No project loaded/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/Illustrative/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Piano Night session status'),
+    ).toHaveTextContent(/—\s*accuracy/)
+    expect(
+      screen.getByLabelText('Piano Night session status'),
+    ).toHaveTextContent(/—\s*streak/)
     expectSilentBrowserBoundary()
   })
 
@@ -444,6 +450,11 @@ describe('PianoNightApp', () => {
   })
 
   it('requests MIDI and audio only from the explicit Connect MIDI action', async () => {
+    let scheduledFrame: FrameRequestCallback | null = null
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      scheduledFrame = callback
+      return 71
+    })
     const input: FakeMidiInput = {
       id: 'stage-keyboard',
       name: 'Stage Keyboard',
@@ -475,6 +486,47 @@ describe('PianoNightApp', () => {
         'MIDI keyboard connected to the fallback synth.',
       )
     })
+
+    fireEvent.click(screen.getByTestId('piano-night-play'))
+    await waitFor(() => {
+      expect(screen.getByTestId('piano-night-play')).toHaveAccessibleName(
+        'Pause Piano Night',
+      )
+    })
+    input.onmidimessage?.({
+      data: new Uint8Array([0x90, 44, 100]),
+      timeStamp: performance.now(),
+    } as MIDIMessageEvent)
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText('Piano Night session status'),
+      ).toHaveTextContent(/100%\s*accuracy/)
+      expect(
+        screen.getByRole('tabpanel', { name: 'Session' }),
+      ).toHaveTextContent(/1 hit\s*·\s*0 missed/)
+    })
+    const heldKey =
+      document.querySelector<HTMLButtonElement>('[data-midi="44"]')
+    expect(heldKey).toHaveAttribute('aria-pressed', 'true')
+    expect(scheduledFrame).not.toBeNull()
+
+    audioContext.currentTime = 60
+
+    await waitFor(() => {
+      expect(screen.getByTestId('piano-night-play')).toHaveAccessibleName(
+        'Play Piano Night',
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Afterglow Study in E-flat complete. Ready to play again.',
+      )
+      expect(heldKey).toHaveAttribute('aria-pressed', 'false')
+    })
+    expect(
+      audioContext.oscillators.every(
+        (oscillator) => oscillator.stop.mock.calls.length > 0,
+      ),
+    ).toBe(true)
     expect(getUserMedia).not.toHaveBeenCalled()
     expect(databaseOpen).not.toHaveBeenCalled()
     expect(createWorker).not.toHaveBeenCalled()

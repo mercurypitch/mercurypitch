@@ -6,7 +6,9 @@
 // transport, Space toggles play/pause — always. A focused mute chip, seek
 // slider or panel button must not steal the key; the only exceptions are
 // real typing surfaces (text fields, textareas, selects, contenteditable)
-// and modifier chords. Focused buttons stay reachable with Enter.
+// and modifier chords. Checkbox and radio inputs also keep Space because it is
+// their native keyboard activation key; focused buttons stay reachable with
+// Enter.
 //
 // Install from the component that OWNS the transport, for exactly its
 // lifetime. The listener runs in the capture phase so no inner widget can
@@ -16,16 +18,14 @@
 
 const NON_TEXT_INPUT_TYPES = new Set([
   'button',
-  'checkbox',
   'color',
   'file',
-  'radio',
   'range',
   'reset',
   'submit',
 ])
 
-/** True when Space must keep its typing meaning for this event target. */
+/** True when Space must keep its native editing or activation meaning. */
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   if (target.isContentEditable) return true

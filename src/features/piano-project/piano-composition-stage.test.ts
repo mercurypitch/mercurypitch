@@ -263,5 +263,9 @@ describe('pianoCompositionToStage', () => {
     expect(Object.isFrozen(stage)).toBe(true)
     expect(Object.isFrozen(stage.notes)).toBe(true)
     expect(Object.isFrozen(stage.notes[0])).toBe(true)
+    expect(stage.tempoMap).toEqual({
+      initialTempoBpm: 104,
+      points: [{ beat: 0, bpm: 104, authoredSeconds: 0 }],
+    })
   })
 })

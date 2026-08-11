@@ -237,6 +237,61 @@ test('imports, stages, and reloads a canonical MIDI from Piano Night @smoke', as
     buffer: TWO_TRACK_MIDI,
   })
 
+  await expect(
+    musicPanel.getByRole('heading', { name: 'Arrange worker-fixture' }),
+  ).toBeVisible()
+  await expect(
+    musicPanel.getByRole('radio', { name: /Score Track 1, channel 1/ }),
+  ).toBeChecked()
+  const hearTrack = musicPanel.getByRole('checkbox', {
+    name: /Hear Track 2, channel 2/,
+  })
+  await expect(hearTrack).toBeChecked()
+  await hearTrack.focus()
+  await page.keyboard.press('Space')
+  await expect(hearTrack).not.toBeChecked()
+  expect((await browserBoundaryCounts(page)).audio).toBe(0)
+  await page.keyboard.press('Space')
+  await expect(hearTrack).toBeChecked()
+
+  const drawer = page.getByRole('dialog', { name: 'Piano Night controls' })
+  const drawerClose = drawer.getByRole('button', {
+    name: 'Close Piano Night controls',
+  })
+  const sessionTab = drawer.getByRole('tab', { name: 'Session' })
+  await expect(drawerClose).toBeEnabled()
+  await expect(sessionTab).toBeEnabled()
+
+  const saveButton = musicPanel.getByRole('button', {
+    name: 'Save and stage',
+  })
+  const pendingSaveState = await saveButton.evaluate((button) => {
+    const saveControl = button as HTMLButtonElement
+    saveControl.click()
+    const panel = document.querySelector('#piano-night-panel-music')
+    const controls = document.querySelector('#piano-night-settings')
+    const close = controls?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Close Piano Night controls"]',
+    )
+    const session = controls?.querySelector<HTMLButtonElement>(
+      '#piano-night-tab-session',
+    )
+    return {
+      busy: panel?.getAttribute('aria-busy'),
+      closeDisabled: close?.disabled,
+      saveDisabled: saveControl.disabled,
+      saveLabel: button.textContent?.trim(),
+      sessionDisabled: session?.disabled,
+    }
+  })
+  expect(pendingSaveState).toEqual({
+    busy: 'true',
+    closeDisabled: true,
+    saveDisabled: true,
+    saveLabel: 'Saving track choices…',
+    sessionDisabled: true,
+  })
+
   await expect(page.getByLabel('Piano Night session status')).toContainText(
     'worker-fixture',
   )
@@ -328,7 +383,7 @@ test('imports, stages, and reloads a canonical MIDI from Piano Night @smoke', as
     .click()
   const sessionPanel = page.getByRole('tabpanel', { name: 'Session' })
   await expect(sessionPanel).toContainText('Imported MIDI')
-  await expect(sessionPanel).toContainText('1 saved, not played')
+  await expect(sessionPanel).toContainText('1 pitched part')
 
   await page.reload({ waitUntil: 'domcontentloaded' })
   expect(await browserBoundaryCounts(page)).toEqual({
@@ -342,7 +397,7 @@ test('imports, stages, and reloads a canonical MIDI from Piano Night @smoke', as
     .getByRole('button', { name: 'Choose music for Piano Night' })
     .filter({ visible: true })
     .click()
-  const savedRow = page.getByRole('button', { name: /worker-fixture/ })
+  const savedRow = page.getByRole('button', { name: /^worker-fixture/ })
   await expect(savedRow).toBeVisible()
   await savedRow.click()
   await expect(page.getByLabel('Piano Night session status')).toContainText(
@@ -740,6 +795,61 @@ for (const viewport of RESPONSIVE_VIEWPORTS) {
             name: 'Open the current Piano workspace',
           }),
         ).toBeVisible()
+        if (viewport.name === 'phone') {
+          const musicPanel = drawer.getByRole('tabpanel', { name: 'Music' })
+          await expect(musicPanel).toHaveAttribute('aria-busy', 'false')
+          const fileChooserPromise = page.waitForEvent('filechooser')
+          await musicPanel.getByRole('button', { name: /Import MIDI/ }).click()
+          const fileChooser = await fileChooserPromise
+          await fileChooser.setFiles({
+            name: 'worker-fixture.mid',
+            mimeType: 'audio/midi',
+            buffer: TWO_TRACK_MIDI,
+          })
+
+          await expect(
+            musicPanel.getByRole('heading', {
+              name: 'Arrange worker-fixture',
+            }),
+          ).toBeVisible()
+          await expect(
+            musicPanel.getByRole('radio', {
+              name: /Score Track 1, channel 1/,
+            }),
+          ).toBeVisible()
+          await expect(
+            musicPanel.getByRole('checkbox', {
+              name: /Hear Track 2, channel 2/,
+            }),
+          ).toBeVisible()
+
+          const editorMetrics = await drawer.evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+          }))
+          expect(editorMetrics.scrollWidth).toBeLessThanOrEqual(
+            editorMetrics.clientWidth + 2,
+          )
+          const saveButton = musicPanel.getByRole('button', {
+            name: 'Save and stage',
+          })
+          await saveButton.scrollIntoViewIfNeeded()
+          const drawerBox = await drawer.boundingBox()
+          const saveBox = await saveButton.boundingBox()
+          expect(saveBox?.x).toBeGreaterThanOrEqual(drawerBox?.x ?? 0)
+          expect((saveBox?.x ?? 0) + (saveBox?.width ?? 0)).toBeLessThanOrEqual(
+            (drawerBox?.x ?? 0) + (drawerBox?.width ?? 0) + 1,
+          )
+
+          await musicPanel
+            .getByRole('button', { name: 'Back to music' })
+            .click()
+          await expect(
+            drawer.getByRole('link', {
+              name: 'Open the current Piano workspace',
+            }),
+          ).toBeVisible()
+        }
         await drawer
           .getByRole('button', { name: 'Close Piano Night controls' })
           .click()

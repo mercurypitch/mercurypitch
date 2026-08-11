@@ -245,6 +245,12 @@
   display: grid;
 }
 
+.musicRowShell {
+  position: relative;
+  min-width: 0;
+  border-bottom: 1px solid var(--music-line);
+}
+
 .musicRow {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -254,16 +260,41 @@
   align-items: center;
   padding: 12px 4px;
   border: 0;
-  border-bottom: 1px solid var(--music-line);
   color: inherit;
   text-align: left;
   background: transparent;
   cursor: pointer;
 }
 
-.musicRow:hover,
-.musicRowCurrent {
+.musicRowShell:hover,
+.musicRowShellCurrent {
   background: linear-gradient(90deg, rgb(200 162 103 / 7%), transparent 82%);
+}
+
+.musicRowWithTracks {
+  padding-inline-end: 74px;
+}
+
+.trackButton {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 4px;
+  min-width: 58px;
+  min-height: 44px;
+  padding: 0 9px;
+  border: 1px solid rgb(200 162 103 / 28%);
+  border-radius: 8px;
+  color: #cbb999;
+  background: rgb(7 9 11 / 72%);
+  font-size: 10px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.trackButton:hover {
+  border-color: rgb(220 184 125 / 62%);
+  color: #eadcc7;
+  background: rgb(200 162 103 / 8%);
 }
 
 .rowIcon {

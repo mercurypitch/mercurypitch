@@ -111,6 +111,7 @@ export function pianoProjectToPianoNightSource(
   options: PianoNightProjectSourceOptions = {},
 ): PianoNightSource {
   const provenance = projectProvenance(project)
+  const stage = pianoProjectToStage(project)
   return Object.freeze({
     id: `piano-night:${provenance}:${project.id}`,
     provenance,
@@ -119,8 +120,8 @@ export function pianoProjectToPianoNightSource(
     additionalTrackCount: project.backingTrackIds.length,
     keyLabel: projectKeyLabel(project),
     hasAuthoredCoach: options.hasAuthoredCoach ?? false,
-    tempoMapChangeCount: Math.max(0, project.tempoMap.length - 1),
-    stage: pianoProjectToStage(project),
+    tempoMapChangeCount: Math.max(0, stage.tempoMap.points.length - 1),
+    stage,
     project,
   })
 }

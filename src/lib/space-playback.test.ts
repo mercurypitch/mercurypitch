@@ -21,16 +21,20 @@ function pressSpace(
 }
 
 describe('isTypingTarget', () => {
-  it('keeps Space for text-entry surfaces', () => {
+  it('keeps Space for text-entry and native selection surfaces', () => {
     const text = document.createElement('input')
     text.type = 'text'
     const search = document.createElement('input')
     search.type = 'search'
     const area = document.createElement('textarea')
     const select = document.createElement('select')
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    const radio = document.createElement('input')
+    radio.type = 'radio'
     const editable = document.createElement('div')
     Object.defineProperty(editable, 'isContentEditable', { value: true })
-    for (const el of [text, search, area, select, editable]) {
+    for (const el of [text, search, area, select, checkbox, radio, editable]) {
       expect(isTypingTarget(el)).toBe(true)
     }
   })
@@ -39,10 +43,8 @@ describe('isTypingTarget', () => {
     const button = document.createElement('button')
     const range = document.createElement('input')
     range.type = 'range'
-    const checkbox = document.createElement('input')
-    checkbox.type = 'checkbox'
     const div = document.createElement('div')
-    for (const el of [button, range, checkbox, div]) {
+    for (const el of [button, range, div]) {
       expect(isTypingTarget(el)).toBe(false)
     }
     expect(isTypingTarget(null)).toBe(false)
@@ -78,6 +80,20 @@ describe('installSpacePlaybackToggle', () => {
     pressSpace(document.body, { repeat: true })
     pressSpace(document.body, { ctrlKey: true })
     pressSpace(document.body, { metaKey: true })
+    expect(toggle).not.toHaveBeenCalled()
+  })
+
+  it('preserves native Space activation for checkbox and radio inputs', () => {
+    const toggle = vi.fn()
+    uninstall = installSpacePlaybackToggle({ toggle })
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    const radio = document.createElement('input')
+    radio.type = 'radio'
+    document.body.append(checkbox, radio)
+
+    expect(pressSpace(checkbox).defaultPrevented).toBe(false)
+    expect(pressSpace(radio).defaultPrevented).toBe(false)
     expect(toggle).not.toHaveBeenCalled()
   })
 
