@@ -12,6 +12,38 @@
 import type { F0Frame, MirrorDelta, MirrorResult } from '@/lib/mirror/metrics'
 import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
 
+// The destination appears on two surfaces that must NOT carry the same
+// string, however duplicated they look side by side.
+//
+// Drawn on the card it is pixels, not a link: it gets read and then typed
+// or searched, so it stays bare. Query params there would be noise a human
+// has to retype, on an artifact whose whole job is to look considered.
+//
+// In share text it is a real clickable link, so it can carry a tag — and
+// that tag is what separates card-driven virality from paid UGC and from
+// direct traffic. Deliberately NOT a paid-campaign tag: a card reaching
+// someone through a friend is organic, whoever seeded it, and stamping an
+// acquisition source on it would credit that channel with the whole loop
+// downstream of it. See docs/plans/ugc-noise-integration.md §5.
+
+/** Printed on the card face. Bare on purpose — it is read, not clicked.
+ *  Exported only so the invariant above can be tested. */
+export const CARD_URL = 'mercurypitch.com/mirror'
+
+/** The same destination in share text, where it IS clickable. Tagged so
+ *  card-driven traffic is separable in GA4. When the short link ships,
+ *  this constant is the only line that changes. */
+const SHARE_URL =
+  'https://mercurypitch.com/mirror?utm_source=voiceprint&utm_medium=share'
+
+/** Share text for a card whose caller has nothing more specific to say. */
+export const DEFAULT_SHARE_TEXT = `My voice, mapped — ${SHARE_URL}`
+
+/** Share text naming the singer someone matched. */
+export function twinShareText(twin: string): string {
+  return `${twin} is my voice twin — ${SHARE_URL}`
+}
+
 export type CardFormat = 'story' | 'square'
 
 export interface CardInput {
@@ -294,7 +326,7 @@ export function renderTwinFaceCard(input: {
   ctx.fillText(wordmark, width / 2, wmY)
   ctx.font = '500 27px system-ui, sans-serif'
   ctx.fillStyle = '#9b93c0'
-  ctx.fillText('mercurypitch.com/mirror', width / 2, height - 24)
+  ctx.fillText(CARD_URL, width / 2, height - 24)
 
   return canvas
 }
@@ -765,7 +797,7 @@ function drawFooter(
   ctx.fillText(wordmark, cx, y)
   ctx.font = '500 34px system-ui, sans-serif'
   ctx.fillStyle = '#9b93c0'
-  ctx.fillText('mercurypitch.com/mirror', cx, height - 56)
+  ctx.fillText(CARD_URL, cx, height - 56)
 }
 
 export function cardToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -801,7 +833,7 @@ export async function shareCard(
   const shareData: ShareData = {
     files: [file],
     title: meta?.title ?? 'My voiceprint',
-    text: meta?.text ?? 'My voice, mapped — mercurypitch.com/mirror',
+    text: meta?.text ?? DEFAULT_SHARE_TEXT,
   }
   if (
     typeof navigator.canShare === 'function' &&

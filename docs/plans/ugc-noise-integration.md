@@ -76,8 +76,8 @@ Current campaign **15773 "My Niche Campaign"** — paused, has never spent.
 | Field | Value | Changed by |
 |---|---|---|
 | Budget | $1,500 | `update_campaign_budget` |
-| Window | 2026-08-09 → 2026-09-09 | portal |
-| Daily target | $50/day | `set_daily_target` |
+| Window | rolled forward 2026-08-11 | rolls on `set_daily_target` |
+| Daily target | **$20/day** | `set_daily_target` |
 | Rate | $0.002/view = **$2 CPM** | `update_campaign_rates` |
 | Status | paused | `set_campaign_status` |
 | Spent | $0 (0% utilisation) | — |
@@ -87,15 +87,16 @@ Pausing after three days at target spend costs $150, not $1,500. Both the
 campaign and each individual playbook can be paused independently and at any
 time, so there are two separate kill switches.
 
-At $2 CPM, $50/day buys roughly 25,000 views/day.
+At $2 CPM, $20/day buys roughly 10,000 views/day.
 
-Note the window is already running — it opened 2026-08-09 against a 31-day
-term. Calendar is burning at zero spend, which costs nothing but does shrink
-the runway for a test inside this term.
+**Changing the daily target rolls the budget period forward**, so pacing
+restarts from the moment of the change. That is a useful side effect: the term
+had been burning calendar since 2026-08-09 at zero spend, and setting the
+target to $20 reset it. Worth knowing before changing the target on a campaign
+that is genuinely mid-flight, where a roll is not free.
 
-> **DECISION:** whether to shorten the window or lower the daily target before
-> going live. A $20/day target extends the learning period at the same total
-> risk.
+At $20/day the $1,500 budget spans about 75 days — well past the 31-day term,
+so the term, not the budget, is the binding constraint.
 
 ---
 
@@ -163,11 +164,11 @@ There are **three** places a URL reaches a viewer, and they must not share a
 tag. Conflating them is the easiest way to make this channel look better than
 it is.
 
-| Surface | Where it lives | Carries |
-|---|---|---|
-| UGC post description | the creator's caption / bio | short link with Noise UTMs |
-| Printed on the card | baked into the PNG (`card-renderer.ts:297`, `:768`) | clean `mercurypitch.com/mirror` |
-| Share text | `card-renderer.ts:804`, `voiceprint-share.ts` | optional card-viral tag |
+| Surface | Where it lives | Carries | State |
+|---|---|---|---|
+| UGC post description | the creator's caption / bio | short link with Noise UTMs | pending short link |
+| Printed on the card | `CARD_URL` in `card-renderer.ts` | bare `mercurypitch.com/mirror` | shipped |
+| Share text | `DEFAULT_SHARE_TEXT` / `twinShareText()` | `utm_source=voiceprint&utm_medium=share` | shipped |
 
 **The printed URL stays clean.** It is pixels, not a link — people read it and
 then type or search it. A short code (`/m/n1`) is harder to type, easier to
@@ -180,12 +181,26 @@ permanently and invisibly, which is precisely the wrong signal when deciding
 whether to keep spending.
 
 The **share text** is the interesting one: unlike the printed URL it is a real
-clickable link when shared into messaging apps. It could carry its own tag
-(`utm_source=voiceprint&utm_medium=share`) to separate card-driven virality
-from both paid and direct. That is a genuinely useful third bucket and a
-separate, small change.
+clickable link when shared into messaging apps, so it carries its own tag and
+separates card-driven virality from both paid and direct.
 
-> **DECISION:** tag the share text as card-viral, or leave it untagged for now.
+Both constants live in `card-renderer.ts` and
+`share-link-tagging.test.ts` pins the relationship between them — including
+that no paid-acquisition source may ever appear on the share link. They look
+like a duplication begging to be tidied into one; the test is there because
+tidying them breaks attribution silently rather than loudly.
+
+Three call sites (`MirrorApp` ×2, `CosmicMode`) pass no share meta and pick up
+the tagged default automatically.
+
+**Still untagged:** Glass shares its own text pointing at
+`mercurypitch.com/glass` (`GlassApp.tsx`). Same class of gap, different
+surface and funnel — left alone deliberately. The constant pattern above is
+what to copy when it is worth doing.
+
+> **NOTE:** the share text currently carries the full UTM URL, which is long
+> in a message body. When the short link ships it should replace `SHARE_URL` —
+> one line, one place.
 
 ### Known limits
 
@@ -336,10 +351,11 @@ reasonable choice — the repo rule governs this artifact, not the ad copy.
 | 4 | Review the playbook in the portal, then activate | you | **next** |
 | 5 | Check the portal for creator-review / blocklist controls (§4) | you | open |
 | 6 | Verify per-slide captions survived the write (§7) | you | open |
-| 7 | Decide daily target and window (§3) | you | open |
-| 8 | Build the short-link redirect (§5) | agent | open |
-| 9 | Tag the share text as card-viral, or not (§5) | decision | open |
+| 7 | Set the daily target to $20 (§3) | agent | done — period rolled |
+| 8 | Tag the share text as card-viral (§5) | agent | done |
+| 9 | Build the short-link redirect, then swap `SHARE_URL` (§5) | agent | open |
 | 10 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
+| 11 | Tag the Glass share text too, or decide not to (§5) | decision | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
 inactive and attached to no campaign, so they are harmless — and there is no

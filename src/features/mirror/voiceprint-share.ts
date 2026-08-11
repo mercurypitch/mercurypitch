@@ -12,7 +12,7 @@
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { voiceTypeHint } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { cardToPngBlob, datedFilename, renderTwinFaceCard, shareCard, } from './card-renderer'
+import { cardToPngBlob, datedFilename, renderTwinFaceCard, shareCard, twinShareText, } from './card-renderer'
 import { legendArt } from './LegendCaricature'
 
 function loadPortrait(src: string): Promise<HTMLImageElement> {
@@ -89,6 +89,6 @@ export async function shareVoiceprintRecord(
   const blob = await cardToPngBlob(canvas)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
-    text: `${record.twin ?? 'My twin'} is my voice twin — mercurypitch.com/mirror`,
+    text: twinShareText(record.twin ?? 'My twin'),
   })
 }
