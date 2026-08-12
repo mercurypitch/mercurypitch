@@ -48,12 +48,25 @@ export interface ManifestStem {
   bytes?: number
 }
 
+/**
+ * One value for "nothing recorded here".
+ *
+ * A manifest field that is absent locally is NULL in D1 and comes back as
+ * `null`, so the two spellings of empty have to compare equal. Exported for the
+ * test that pins the no-redundant-write guarantee.
+ */
+export function unset<T>(value: T | null | undefined): T | null {
+  return value ?? null
+}
+
 export function parseManifestStems(
   manifest: Pick<SongManifest, 'stemsJson'>,
 ): Record<string, ManifestStem> {
-  if (manifest.stemsJson === undefined || manifest.stemsJson === '') return {}
+  // Nullable column: absent locally, NULL in D1. Both mean "no stems listed".
+  const raw = manifest.stemsJson
+  if (raw === undefined || raw === null || raw === '') return {}
   try {
-    const parsed: unknown = JSON.parse(manifest.stemsJson)
+    const parsed: unknown = JSON.parse(raw)
     return typeof parsed === 'object' && parsed !== null
       ? (parsed as Record<string, ManifestStem>)
       : {}
@@ -156,10 +169,17 @@ export async function publishLibraryManifests(
       // Only write when something a reader would notice has changed.
       // Republishing an unchanged library on every load would be a write
       // per song per app start, for no new information.
+      //
+      // Compare through `unset` rather than `===`. `durationSec` and
+      // `stemsJson` are optional here and NULL in D1, so a song with no stem
+      // durations is built locally as `undefined` and read back as `null` —
+      // and `null === undefined` is false. Comparing raw made every such song
+      // look changed on every load, which is precisely the write-per-app-start
+      // this guard exists to prevent.
       if (
         prior.title === next.title &&
-        prior.durationSec === next.durationSec &&
-        prior.stemsJson === next.stemsJson &&
+        unset(prior.durationSec) === unset(next.durationSec) &&
+        unset(prior.stemsJson) === unset(next.stemsJson) &&
         prior.hasLyrics === next.hasLyrics
       ) {
         continue

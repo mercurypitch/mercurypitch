@@ -3,7 +3,7 @@ import type { Achievement, BadgeDefinition, ChallengeDefinition, SessionRecord, 
 import type { GrantContext } from '@/db/services/grant-context'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { ProgressModelInput } from './model'
-import { buildProgressModel, PROGRESS_HISTORY_WEEKS, sessionComparisonKey, } from './model'
+import { buildProgressModel, challengeIdForRecord, PROGRESS_HISTORY_WEEKS, sessionComparisonKey, } from './model'
 import type { ProgressDataDependencies } from './progress-data'
 import { loadProgressModel } from './progress-data'
 
@@ -788,5 +788,126 @@ describe('Progress data loader', () => {
       pageSize: 500,
       maxRecords: 5_000,
     })
+  })
+})
+
+/**
+ * Rows written before this release.
+ *
+ * `0025_sessionRecords_progress.sql` adds the five evidence columns to a table
+ * that already had rows, so they are nullable in D1 — and the server adapter
+ * hands JSON straight through without normalising. Every record belonging to an
+ * account that practised before the Progress tab shipped therefore arrives with
+ * literal `null` in those fields, not a missing key.
+ *
+ * That is not hypothetical: it took the Atlas down on a real signed-in account
+ * with `null is not an object (evaluating 'e.sourceRef.trim')`, because
+ * `sourceRef !== undefined` is true for `null`.
+ */
+describe('records from before the Progress migration', () => {
+  /** Exactly what D1 returns for a legacy row: present keys, null values. */
+  const legacyNulls: Partial<SessionRecord> = {
+    instrument: null,
+    durationMs: null,
+    sourceRef: null,
+    sourceVersion: null,
+    comparabilityKey: null,
+    weeklyChallengeId: null,
+  }
+
+  it('builds a model from a record whose evidence columns are all null', () => {
+    const records = [
+      record('legacy-1', '2026-08-10T10:00:00.000Z', 72, legacyNulls),
+    ]
+
+    expect(() =>
+      buildProgressModel(input({ records }), { now: NOW }),
+    ).not.toThrow()
+
+    const model = buildProgressModel(input({ records }), { now: NOW })
+    expect(model.sessions.totalLoaded).toBe(1)
+  })
+
+  it.each([
+    'instrument',
+    'durationMs',
+    'sourceRef',
+    'sourceVersion',
+    'comparabilityKey',
+    'weeklyChallengeId',
+  ] as const)('survives a null %s on its own', (column) => {
+    const records = [
+      record('legacy-col', '2026-08-10T10:00:00.000Z', 64, {
+        [column]: null,
+      } as Partial<SessionRecord>),
+    ]
+
+    expect(() =>
+      buildProgressModel(input({ records }), { now: NOW }),
+    ).not.toThrow()
+  })
+
+  it('does not throw resolving a challenge id from a null sourceRef', () => {
+    const legacyChallenge = record(
+      'legacy-challenge',
+      '2026-08-10T10:00:00.000Z',
+      88,
+      {
+        ...legacyNulls,
+        source: 'challenge',
+        melodyName: 'Challenge: Crown line',
+      },
+    )
+
+    // The reported crash, at its exact call site.
+    expect(() => challengeIdForRecord(legacyChallenge, [])).not.toThrow()
+  })
+
+  it('falls back to matching the title when sourceRef is null', () => {
+    const legacyChallenge = record(
+      'legacy-challenge-2',
+      '2026-08-10T10:00:00.000Z',
+      91,
+      {
+        ...legacyNulls,
+        source: 'challenge',
+        melodyName: 'Challenge: Crown line',
+      },
+    )
+    const definitions = [
+      { id: 'crown-line', title: 'Crown line' },
+    ] as unknown as ChallengeDefinition[]
+
+    // Null must read as "no reference recorded", not as a reference — a legacy
+    // challenge take is still identifiable by its title.
+    expect(challengeIdForRecord(legacyChallenge, definitions)).toBe(
+      'crown-line',
+    )
+  })
+
+  it('treats a blank sourceRef the same as an absent one', () => {
+    const blank = record('blank-ref', '2026-08-10T10:00:00.000Z', 55, {
+      source: 'challenge',
+      sourceRef: '   ',
+      melodyName: 'Challenge: Nothing matches this',
+    })
+
+    expect(challengeIdForRecord(blank, [])).toBeNull()
+  })
+
+  it('omits null evidence from history rather than publishing it', () => {
+    const records = [
+      record('legacy-hist', '2026-08-10T10:00:00.000Z', 77, legacyNulls),
+    ]
+
+    const model = buildProgressModel(input({ records }), { now: NOW })
+    const item = model.recentHistory.find((h) => h.id === 'legacy-hist')
+
+    // Absent keys, not null values: downstream readers check presence.
+    expect(item).toBeDefined()
+    expect('sourceRef' in (item ?? {})).toBe(false)
+    expect('weeklyChallengeId' in (item ?? {})).toBe(false)
+    expect(item?.durationMs).toBeNull()
+    expect(item?.instrument).toBe('voice')
   })
 })

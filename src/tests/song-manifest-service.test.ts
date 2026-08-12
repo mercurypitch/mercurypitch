@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { SongManifest } from '@/db/entities'
-import { manifestBytes, manifestFromSession, manifestsMissingHere, parseManifestStems, } from '@/db/services/song-manifest-service'
+import { manifestBytes, manifestFromSession, manifestsMissingHere, parseManifestStems, unset, } from '@/db/services/song-manifest-service'
 import type { UvrSession } from '@/stores/uvr-store'
 
 const session = (over: Partial<UvrSession> = {}): UvrSession => ({
@@ -150,5 +150,44 @@ describe('manifestsMissingHere', () => {
       [session({ fileHash: 'hash-1', status: 'processing' })],
     )
     expect(missing).toHaveLength(1)
+  })
+})
+
+/**
+ * Why this matters beyond tidiness: `publishLibraryManifests` republishes the
+ * library on every load and skips rows nothing would notice a change in. It
+ * decided that by comparing the optional fields with `===`, but a song with no
+ * stem durations is built locally as `undefined` and stored in D1 as NULL —
+ * which reads back as `null`. `null === undefined` is false, so every such song
+ * looked changed forever: one D1 write per song, per app start, for no new
+ * information. Exactly what the guard was written to prevent.
+ */
+describe('unset — the two spellings of "nothing recorded"', () => {
+  it('reads a D1 null and a local undefined as the same absence', () => {
+    expect(unset(null)).toBe(unset(undefined))
+  })
+
+  it('leaves real values alone, including falsy ones', () => {
+    expect(unset(0)).toBe(0)
+    expect(unset('')).toBe('')
+    expect(unset(227.4)).toBe(227.4)
+  })
+
+  it('makes a stored manifest compare equal to the one rebuilt from its session', () => {
+    // What D1 hands back for a song whose stems carried no duration and no
+    // sizes: present columns, null values.
+    const stored = manifest({ durationSec: null, stemsJson: null })
+    // No stem metadata at all: nothing to advertise, nothing to time. Note a
+    // stem that merely lacks its own numbers is NOT this case — it still
+    // contributes a key, so stemsJson is `{"vocal":{}}`, not absent.
+    const rebuilt = manifestFromSession(session({ stemMeta: {} }), {
+      userId: 'u1',
+    })
+
+    expect(rebuilt).not.toBeNull()
+    expect(unset(stored.durationSec)).toBe(unset(rebuilt?.durationSec))
+    expect(unset(stored.stemsJson)).toBe(unset(rebuilt?.stemsJson))
+    // Raw comparison is the bug: these are the values that used to differ.
+    expect(stored.durationSec === rebuilt?.durationSec).toBe(false)
   })
 })

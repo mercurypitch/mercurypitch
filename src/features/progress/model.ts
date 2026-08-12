@@ -361,12 +361,32 @@ function scoreOf(record: SessionRecord): number | null {
     : null
 }
 
+/**
+ * A column the database may hand back as NULL, read as "absent".
+ *
+ * Every evidence field on a session record is nullable in D1 — they were added
+ * by `0025_sessionRecords_progress.sql` to a table that already had rows — and
+ * the server adapter passes JSON through without normalising. So a record from
+ * any account that practised before this release carries a literal `null`, and
+ * `x !== undefined` is not the same question as "is there a value here".
+ * Everything in this file that reads one goes through here or through `??`.
+ */
+function presentText(value: string | null | undefined): string | undefined {
+  if (value === undefined || value === null) return undefined
+  const trimmed = value.trim()
+  return trimmed === '' ? undefined : value
+}
+
+function presentNumber(value: number | null | undefined): number | undefined {
+  return value === undefined || value === null || !Number.isFinite(value)
+    ? undefined
+    : value
+}
+
 function measuredDurationOf(record: SessionRecord): number | null {
-  return record.durationMs !== undefined &&
-    Number.isFinite(record.durationMs) &&
-    record.durationMs > 0 &&
-    record.durationMs <= MAX_MEASURED_DURATION_MS
-    ? record.durationMs
+  const ms = presentNumber(record.durationMs)
+  return ms !== undefined && ms > 0 && ms <= MAX_MEASURED_DURATION_MS
+    ? ms
     : null
 }
 
@@ -628,14 +648,15 @@ export function challengeIdForRecord(
   record: SessionRecord,
   definitions: readonly ChallengeDefinition[],
 ): string | null {
+  const ref = presentText(record.sourceRef)
   if (
     (sourceOf(record) === 'challenge' || sourceOf(record) === 'weekly') &&
-    record.sourceRef !== undefined &&
-    record.sourceRef.trim() !== ''
+    ref !== undefined
   ) {
-    return record.sourceRef
+    return ref
   }
-  if (record.weeklyChallengeId !== undefined) return record.weeklyChallengeId
+  const weekly = presentText(record.weeklyChallengeId)
+  if (weekly !== undefined) return weekly
   if (sourceOf(record) !== 'challenge') return null
   const title = record.melodyName.replace(/^Challenge:\s*/i, '').trim()
   return (
@@ -1115,12 +1136,14 @@ export function buildProgressModel(
         streak: record.streak,
         instrument: record.instrument ?? 'voice',
         durationMs: measuredDurationOf(record),
-        ...(record.sourceRef === undefined
+        // The history item is our own derived shape, so it gets clean optional
+        // fields: a NULL column becomes an absent key, never `null`.
+        ...(presentText(record.sourceRef) === undefined
           ? {}
-          : { sourceRef: record.sourceRef }),
-        ...(record.weeklyChallengeId === undefined
+          : { sourceRef: presentText(record.sourceRef) }),
+        ...(presentText(record.weeklyChallengeId) === undefined
           ? {}
-          : { weeklyChallengeId: record.weeklyChallengeId }),
+          : { weeklyChallengeId: presentText(record.weeklyChallengeId) }),
         comparisonKey: sessionComparisonKey(record),
         isComparablePersonalBest:
           pointByRecord.get(record.id)?.isComparablePersonalBest ?? false,

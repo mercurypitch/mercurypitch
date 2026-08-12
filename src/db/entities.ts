@@ -89,20 +89,31 @@ export interface SessionRecord extends DbEntity {
   streak: number
   avgCents?: number
   rating?: string
-  /** Set when this attempt was a weekly "Sing the Legend" challenge take. */
-  weeklyChallengeId?: string
+  /** Set when this attempt was a weekly "Sing the Legend" challenge take.
+      Nullable in D1 since `0001_baseline` — see the note on the evidence
+      fields below for why that `| null` has to be in the type. */
+  weeklyChallengeId?: string | null
   /** Drives leaderboard eligibility. Older rows predate it — treat as 'practice'. */
   source?: SessionSource
+  // The five evidence fields below are `| null` on purpose, and that is not
+  // decoration. `0025_sessionRecords_progress.sql` adds them to a table that
+  // already had rows, so they are nullable in D1 by design — and the server
+  // adapter hands JSON straight through without normalising, so a record read
+  // back for any account that practised before this release carries a literal
+  // `null` here, not a missing key. Declaring them `?: string` alone made the
+  // type lie: `record.sourceRef !== undefined` type-checked, passed at runtime
+  // on `null`, and `.trim()` threw. Keep the `| null` so the compiler makes
+  // every reader handle the row shape the database can actually produce.
   /** Instrument that produced the attempt. Missing legacy values mean voice. */
-  instrument?: 'voice' | 'piano' | 'guitar'
+  instrument?: 'voice' | 'piano' | 'guitar' | null
   /** Measured scored/performance duration. Never backfilled from streak credit. */
-  durationMs?: number
+  durationMs?: number | null
   /** Stable exercise, challenge, song, or passage identity when known. */
-  sourceRef?: string
+  sourceRef?: string | null
   /** Version of the target and scoring semantics behind sourceRef. */
-  sourceVersion?: number
+  sourceVersion?: number | null
   /** Persisted only when every task property needed for comparison is known. */
-  comparabilityKey?: string
+  comparabilityKey?: string | null
   results: PracticeResultRecord[]
 }
 
@@ -461,15 +472,20 @@ export interface SongManifest extends DbEntity {
   fileHash: string
   /** What the library shows -- today, the uploaded file's name. */
   title: string
-  durationSec?: number
+  /** Nullable in D1 (`0025_song_manifests`), so `| null` — a song with no stem
+      durations is written absent here and read back as `null`. Comparing the
+      two spellings of empty with `===` is what made every such song look
+      changed on every load; see `unset` in song-manifest-service. */
+  durationSec?: number | null
   /**
    * A song separated on a device is lossless there. Anything that arrived
    * as a portable bundle says so, so the library can mark it a reduced
    * copy instead of letting a singer conclude the separation is broken.
    */
   quality: SongAudioQuality
-  /** JSON `Record<string, { bytes?: number }>` -- which stems, how big. */
-  stemsJson?: string
+  /** JSON `Record<string, { bytes?: number }>` -- which stems, how big.
+      Nullable in D1 for the same reason as `durationSec`. */
+  stemsJson?: string | null
   hasLyrics?: boolean
 }
 
