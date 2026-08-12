@@ -138,7 +138,14 @@ function makeWire(): Wire {
 }
 
 /** Build on device A, wipe the library, receive on "device B". */
-async function crossTheWire(wire: Wire) {
+async function crossTheWire(
+  wire: Wire,
+  opts: {
+    checkRoom?: (
+      bytes: number,
+    ) => Promise<{ ok: true } | { ok: false; message: string }>
+  } = {},
+) {
   await seedSourceSong()
   const bundle = await buildPortableBundle(SOURCE_ID, { tier: 'portable-192' })
   deleteAllUvrSessions()
@@ -153,6 +160,7 @@ async function crossTheWire(wire: Wire) {
     bundle.manifest,
     wire.receiverPort,
     importPortableBundle,
+    opts.checkRoom === undefined ? {} : { checkRoom: opts.checkRoom },
   )
   wire.toReceiver.control = (msg) => receiver.handleControl(msg)
   wire.toReceiver.chunk = (bytes) => receiver.handleChunk(bytes)
@@ -272,6 +280,60 @@ describe('sync protocol over a wire', () => {
     expect(sent.outcome).toBe('failed')
     expect(kept.outcome).toBe('failed')
     expect(getUvrSessionByHash(HASH)).toBeUndefined()
+  })
+})
+
+describe('sync protocol when the far device is full', () => {
+  beforeEach(() => {
+    deleteAllUvrSessions()
+  })
+
+  it('refuses before a byte moves, and says how full it is', async () => {
+    const wire = makeWire()
+    const asked: number[] = []
+    const { sender, receiver } = await crossTheWire(wire, {
+      checkRoom: (bytes) => {
+        asked.push(bytes)
+        return Promise.resolve({
+          ok: false,
+          message:
+            'This device has about 8.0 MB free and the song needs 42.0 MB.',
+        })
+      },
+    })
+
+    const [sent, kept] = await Promise.all([sender.result, receiver.result])
+
+    // Nothing was pulled and nothing was sent: the whole point is that a
+    // device which cannot hold the song says so from the manifest, not
+    // after minutes of transfer and a rollback.
+    expect(wire.requests).toEqual([])
+    expect(wire.chunksDelivered).toBe(0)
+    expect(getUvrSessionByHash(HASH)).toBeUndefined()
+
+    // Asked about the real total, not a guess.
+    expect(asked).toHaveLength(1)
+    expect(asked[0]).toBeGreaterThan(0)
+
+    // And the sender is told the truth. Reporting this as "already there"
+    // -- which every decline used to mean -- would tell somebody their
+    // song had arrived when it had not.
+    expect(sent.outcome).toBe('failed')
+    expect(sent).toHaveProperty('message', expect.stringContaining('8.0 MB'))
+    expect(kept.outcome).toBe('failed')
+  })
+
+  it('still accepts when the browser will not say how much room there is', async () => {
+    const wire = makeWire()
+    const { sender, receiver } = await crossTheWire(wire, {
+      // What a browser with no StorageManager answers. An unknown must
+      // never read as a refusal, or sync breaks entirely on those.
+      checkRoom: () => Promise.resolve({ ok: true }),
+    })
+
+    const [sent, kept] = await Promise.all([sender.result, receiver.result])
+    expect(sent).toEqual({ outcome: 'sent' })
+    expect(kept.outcome).toBe('imported')
   })
 })
 

@@ -309,3 +309,18 @@
   line-height: 1.45;
   color: var(--text-muted);
 }
+
+/* A device that is nearly full, or a song that will not fit on it. Stated
+   where the choice is made rather than as a toast after a failed transfer:
+   the failure this answers took minutes of packing to arrive. */
+.warn {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--warning, #d29922);
+}
+
+.songNote {
+  color: var(--warning, #d29922);
+  font-size: 0.78rem;
+}

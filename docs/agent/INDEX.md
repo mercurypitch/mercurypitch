@@ -130,7 +130,7 @@ These are the rules that break things when ignored.
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 1.9k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.5k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
-| `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 900 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
+| `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 950 | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 650 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 400 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
@@ -178,9 +178,9 @@ These are the rules that break things when ignored.
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.5k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 700 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [sync-store.ts](../../src/stores/sync-store.ts) | 650 | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 550 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
-| [sync-store.ts](../../src/stores/sync-store.ts) | 500 | ── Sync store One person, two devices, a room code between them. |
 | [session-store.ts](../../src/stores/session-store.ts) | 450 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 450 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 250 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |

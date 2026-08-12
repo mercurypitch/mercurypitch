@@ -25,6 +25,7 @@ if (typeof Blob.prototype.arrayBuffer !== 'function') {
 
 import { loadLyricsFromDbStrict, saveLyricsToDbStrict, } from '@/db/services/lyrics-db-service'
 import { buildPortableBundle, importPortableBundle, } from '@/db/services/portable-bundle-service'
+import * as uvrService from '@/db/services/uvr-service'
 import { getStemBlobStrict, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
@@ -212,5 +213,59 @@ describe('portable bundle round trip', () => {
     }
     // Misreading a song is worse than declining one.
     expect(isReadableManifest(manifest)).toBe(false)
+  })
+})
+
+describe('a device with no room left', () => {
+  beforeEach(() => {
+    deleteAllUvrSessions()
+    vi.restoreAllMocks()
+  })
+
+  it('says the device is full, with numbers, instead of naming the stem', async () => {
+    await seedSourceSong()
+    const built = await buildPortableBundle(SOURCE_ID)
+    deleteAllUvrSessions()
+
+    // What a full device does: the first stem lands, the second does not.
+    // Reported from a real TV, where the message was only "the
+    // instrumental stem could not be stored" -- true, useless, and
+    // arriving after the whole transfer.
+    const real = uvrService.saveStemBlobDurable
+    let saves = 0
+    vi.spyOn(uvrService, 'saveStemBlobDurable').mockImplementation(
+      async (...args: Parameters<typeof real>) => {
+        saves += 1
+        if (saves === 1) return real(...args)
+        return { ok: false, quotaExceeded: true, error: undefined }
+      },
+    )
+    // jsdom has no StorageManager; the numbers are the whole point of the
+    // message, so they are supplied rather than skipped.
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: {
+        estimate: () =>
+          Promise.resolve({
+            quota: 16 * 1024 * 1024,
+            usage: 8 * 1024 * 1024,
+          }),
+      },
+    })
+
+    const error = await importPortableBundle(built.manifest, (info) =>
+      Promise.resolve(built.parts.get(info.id)!),
+    ).catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(Error)
+    const message = (error as Error).message
+    expect(message).toContain('no room on this device')
+    // The figures are the point: "could not be stored" gives somebody
+    // nothing to act on, and a 16 MB allowance is the actual answer.
+    expect(message).toContain('16.0 MB')
+    expect(message).toContain('8.0 MB')
+
+    // And a torn import still leaves nothing behind.
+    expect(getUvrSessionByHash(HASH)).toBeUndefined()
   })
 })

@@ -43,11 +43,27 @@ export const PART_STALL_MS = 20_000
 export const SENDER_SILENCE_MS = 45_000
 
 export type SyncWireMessage =
+  /**
+   * What each device tells the other about itself the moment the channel
+   * opens, before any song is chosen.
+   *
+   * `freeBytes` is why this exists: a TV measured in testing allowed 16 MB
+   * in TOTAL, so the sender needs to know the far side is nearly full
+   * BEFORE it spends minutes packing a song that cannot land. Omitted when
+   * the browser will not say, which means "unknown", never "unlimited".
+   */
+  | { type: 'sync-hello'; label: string; freeBytes?: number; quota?: number }
   | { type: 'sync-offer'; manifest: PortableBundleManifest }
   | { type: 'sync-accept'; fileHash: string }
   | { type: 'part-request'; fileHash: string; part: PortablePartId }
   | { type: 'sync-kept'; fileHash: string }
-  | { type: 'sync-declined'; fileHash: string; reason: string }
+  | {
+      type: 'sync-declined'
+      fileHash: string
+      reason: 'already-here' | 'no-room'
+      /** Shown to the sender as-is when the reason is not already-here. */
+      message?: string
+    }
   | { type: 'sync-failed'; fileHash: string; message: string }
   | { type: 'sync-abort'; fileHash: string; message: string }
 
@@ -238,7 +254,18 @@ export function sendBundleOverWire(
         settle({ outcome: 'sent' })
         break
       case 'sync-declined':
-        settle({ outcome: 'already-there' })
+        // Only ONE decline means the song is already over there. Reporting
+        // a refusal for want of space as "already there" would tell
+        // somebody their song had arrived when it had not.
+        if (msg.reason === 'already-here') {
+          settle({ outcome: 'already-there' })
+        } else {
+          settle({
+            outcome: 'failed',
+            message:
+              msg.message ?? 'The other device would not accept the song.',
+          })
+        }
         break
       case 'sync-failed':
         settle({ outcome: 'failed', message: msg.message })
@@ -312,6 +339,19 @@ export function receiveBundleOverWire(
   opts: {
     onProgress?: (p: SyncProgress) => void
     stallMs?: number
+    /**
+     * Whether this device can hold the bundle, asked BEFORE accepting.
+     *
+     * The failure this exists for was measured: a TV took a whole vocal
+     * stem, then refused the instrumental because the origin allows 16 MB
+     * in total -- minutes of transfer spent to arrive at a rollback. The
+     * manifest names every part's size up front, so the answer is knowable
+     * before a single byte moves. Absent means "no opinion"; an unknown
+     * quota must never read as a refusal.
+     */
+    checkRoom?: (
+      bytes: number,
+    ) => Promise<{ ok: true } | { ok: false; message: string }>
   } = {},
 ): BundleReceiver {
   const stallMs = opts.stallMs ?? PART_STALL_MS
@@ -444,15 +484,30 @@ export function receiveBundleOverWire(
     failPull(new SyncAbortError(message))
   }
 
-  // Accepted before the import starts pulling, so the sender hears
-  // "accepted" before the first part-request.
-  port.sendControl({
-    type: 'sync-accept',
-    fileHash: manifest.song.fileHash,
-  })
-
   const result = (async (): Promise<ReceiveOutcome> => {
     try {
+      // Room first, and only then accept: a refusal here costs the offer
+      // frame, where the same refusal discovered mid-import costs the
+      // whole transfer and leaves the sender believing it worked.
+      const room = await opts.checkRoom?.(total)
+      if (room !== undefined && !room.ok) {
+        port.sendControl({
+          type: 'sync-declined',
+          fileHash: manifest.song.fileHash,
+          reason: 'no-room',
+          message: room.message,
+        })
+        return { outcome: 'failed', message: room.message }
+      }
+      if (aborted !== null) throw new SyncAbortError(aborted)
+
+      // Accepted before the import starts pulling, so the sender hears
+      // "accepted" before the first part-request.
+      port.sendControl({
+        type: 'sync-accept',
+        fileHash: manifest.song.fileHash,
+      })
+
       const kept = await importBundle(manifest, getPart)
       if (kept.outcome === 'already-here') {
         port.sendControl({
@@ -492,6 +547,7 @@ export function isSyncWireMessage(
   return (
     typeof value['type'] === 'string' &&
     [
+      'sync-hello',
       'sync-offer',
       'sync-accept',
       'part-request',
