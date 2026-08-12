@@ -87,6 +87,12 @@ export interface ExerciseShellProps {
 
   /** Reviewed, launch-scoped guided dose. Never written to global settings. */
   guidedPractice?: GuidedPracticeLaunchConfig
+  /**
+   * Confirms that a timer-finished guided run captured enough exercise-specific
+   * evidence to count toward the prescribed dose. Guided runs fail closed when
+   * this is omitted; an elapsed timer alone is not proof of a completed hold.
+   */
+  guidedCompletionReady?: () => boolean
 
   /** Settings shown in idle (note pickers, scale selects). Optional. */
   idleSettings?: JSX.Element
@@ -134,6 +140,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [guidedCompletedRepetitions, setGuidedCompletedRepetitions] =
     createSignal(0)
   const [lastGuidedRunCompleted, setLastGuidedRunCompleted] =
+    createSignal(false)
+  const [guidedRunNeedsEvidence, setGuidedRunNeedsEvidence] =
     createSignal(false)
   const [guidedStopReason, setGuidedStopReason] = createSignal<
     'paused' | 'discomfort' | null
@@ -211,6 +219,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         guidedResultFocusTimer = undefined
         guidedTimerCompletionPending = false
         setLastGuidedRunCompleted(false)
+        setGuidedRunNeedsEvidence(false)
         setGuidedStopReason(null)
         voiceKeepGeneration += 1
         setVoiceKeepState('idle')
@@ -226,9 +235,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       // Score reveal gets a haptic on devices that support it (Android):
       // celebratory for a strong run, a light tick otherwise.
       if (s === 'complete' && previous === 'active') {
-        const completedTimedGuidedRun =
+        const finishedByGuidedTimer =
           props.guidedPractice !== undefined && guidedTimerCompletionPending
+        const completedTimedGuidedRun =
+          finishedByGuidedTimer && props.guidedCompletionReady?.() === true
         setLastGuidedRunCompleted(completedTimedGuidedRun)
+        setGuidedRunNeedsEvidence(
+          finishedByGuidedTimer && !completedTimedGuidedRun,
+        )
         if (completedTimedGuidedRun) {
           const total = guidedTotalRepetitions()
           setGuidedCompletedRepetitions((completed) =>
@@ -343,6 +357,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     if (
       props.guidedPractice !== undefined &&
       !lastGuidedRunCompleted() &&
+      !guidedRunNeedsEvidence() &&
       guidedStopReason() === null
     ) {
       return
@@ -612,6 +627,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total}`
     }
     if (isComplete() && !lastGuidedRunCompleted()) {
+      if (guidedRunNeedsEvidence()) {
+        return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total} needs another try`
+      }
       return `Hold ${Math.min(total, guidedCompletedRepetitions() + 1)} of ${total} paused`
     }
     if (guidedDoseComplete()) return 'Guided dose complete'
@@ -737,7 +755,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                           ? 'Stopped for comfort'
                           : lastGuidedRunCompleted()
                             ? 'Hold complete'
-                            : 'Hold paused'}
+                            : guidedRunNeedsEvidence()
+                              ? 'Hold needs another try'
+                              : 'Hold paused'}
                       </div>
                     }
                   >
@@ -771,14 +791,28 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                       </p>
                     }
                   >
-                    <div class="exercise-result-summary">
-                      {props.resultSummary}
-                    </div>
+                    <Show
+                      when={!guidedRunNeedsEvidence()}
+                      fallback={
+                        <p class="exercise-guided-stop-copy">
+                          We did not hear enough sustained voice to count this
+                          hold. Check the microphone, then try the same hold
+                          again.
+                        </p>
+                      }
+                    >
+                      <div class="exercise-result-summary">
+                        {props.resultSummary}
+                      </div>
+                    </Show>
                   </Show>
                   {/* The score says how well; the contour says where. */}
                   <Show
                     when={
-                      guidedStopReason() !== 'discomfort' ? runTrace() : null
+                      guidedStopReason() !== 'discomfort' &&
+                      !guidedRunNeedsEvidence()
+                        ? runTrace()
+                        : null
                     }
                   >
                     {(trace) => <RunTraceCanvas trace={trace()} />}
@@ -787,7 +821,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 <Show
                   when={
                     props.voiceCapture !== undefined &&
-                    guidedStopReason() !== 'discomfort'
+                    guidedStopReason() !== 'discomfort' &&
+                    !guidedRunNeedsEvidence()
                   }
                 >
                   <div class="exercise-result-voice">
@@ -904,6 +939,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                   props.guidedPractice !== undefined &&
                   isComplete() &&
                   !lastGuidedRunCompleted() &&
+                  !guidedRunNeedsEvidence() &&
                   guidedStopReason() === null
                 }
               >
@@ -935,6 +971,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     props.guidedPractice !== undefined &&
                     isComplete() &&
                     !lastGuidedRunCompleted() &&
+                    !guidedRunNeedsEvidence() &&
                     guidedStopReason() === null
                   )
                 }

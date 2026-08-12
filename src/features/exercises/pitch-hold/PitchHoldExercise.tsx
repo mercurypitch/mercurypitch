@@ -155,6 +155,7 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       guidedPractice={guidedPractice}
+      guidedCompletionReady={controller.hasSufficientVoicedEvidence}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <IconLock size={48} />

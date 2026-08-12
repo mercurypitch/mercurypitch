@@ -115,6 +115,7 @@ describe('ExerciseShell auto-timer', () => {
         resultScore={() => (status() === 'complete' ? 80 : null)}
         onBack={onBack}
         guidedPractice={guidedPractice}
+        guidedCompletionReady={() => true}
         onStart={() => setStatus('active')}
         activeContent={<div>active</div>}
         onStop={() => setStatus('complete')}
@@ -163,6 +164,90 @@ describe('ExerciseShell auto-timer', () => {
       screen.getByRole('button', { name: 'Return to Focus reading' }),
     )
     expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  it('requires voiced evidence before a timed guided hold advances the dose', async () => {
+    const guidedPractice: GuidedPracticeLaunchConfig = {
+      assessmentRunId: 'run-silent',
+      exercise: {
+        exerciseId: EXERCISE_PITCH_HOLD,
+        exerciseVersion: '1.0.0',
+        configuration: {
+          configurationId: 'pitch-hold.guided-pitch-centre',
+          configurationVersion: '1.0.0',
+        },
+      },
+      dose: {
+        durationMilliseconds: 5_000,
+        repetitions: 3,
+        sets: 1,
+        comfortableRangeMidiCents: null,
+        demand: 'same',
+      },
+      stopRuleId: 'guided.stop-on-discomfort-v1',
+      targetMidiCents: 6_000,
+      toleranceCents: 35,
+    }
+    const [status, setStatus] = createSignal<ExerciseStatus>('idle')
+    const [completionReady, setCompletionReady] = createSignal(false)
+    let now = 0
+    let intervalCallback: (() => void) | undefined
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    vi.spyOn(globalThis, 'setInterval').mockImplementation((callback) => {
+      intervalCallback = callback as () => void
+      return 1 as unknown as ReturnType<typeof setInterval>
+    })
+    vi.spyOn(globalThis, 'clearInterval').mockImplementation(() => {})
+
+    render(() => (
+      <ExerciseShell
+        type={EXERCISE_PITCH_HOLD}
+        title="Pitch Hold"
+        status={status}
+        currentScore={() => 0}
+        resultScore={() => (status() === 'complete' ? 0 : null)}
+        onBack={() => {}}
+        guidedPractice={guidedPractice}
+        guidedCompletionReady={completionReady}
+        onStart={() => setStatus('active')}
+        activeContent={<div>active</div>}
+        onStop={() => setStatus('complete')}
+        resultSummary={<>silent result must be suppressed</>}
+        onTryAgain={() => setStatus('active')}
+        onChangeTarget={() => {}}
+        autoTimer={{ onElapse: () => setStatus('complete') }}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await tick()
+    now += 5_000
+    intervalCallback?.()
+    await tick()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Hold needs another try',
+    )
+    expect(screen.getByText('Hold 1 of 3 needs another try')).toBeVisible()
+    expect(
+      screen.getByText(/did not hear enough sustained voice/),
+    ).toBeVisible()
+    expect(screen.queryByText('silent result must be suppressed')).toBeNull()
+    expect(
+      screen.queryByRole('group', { name: 'How did stopping feel?' }),
+    ).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry hold · 1 of 3' }))
+    await tick()
+    expect(screen.getByText('Hold 1 of 3')).toBeVisible()
+
+    setCompletionReady(true)
+    now += 5_000
+    intervalCallback?.()
+    await tick()
+    expect(
+      screen.getByRole('button', { name: 'Next hold · 2 of 3' }),
+    ).toBeVisible()
   })
 
   it('asks why an early guided stop happened and never escalates after discomfort', async () => {
