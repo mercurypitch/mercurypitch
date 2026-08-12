@@ -104,6 +104,12 @@ export const VOICE_LEGENDS = [
     imageSrc: '/legends/louis-armstrong.webp',
   },
   {
+    id: 'paul-robeson',
+    name: 'Paul Robeson',
+    band: 'Bass',
+    imageSrc: '/legends/paul-robeson.webp',
+  },
+  {
     id: 'elvis-presley',
     name: 'Elvis Presley',
     band: 'Baritone',
@@ -158,6 +164,12 @@ export const VOICE_LEGENDS = [
     imageSrc: '/legends/pavarotti.webp',
   },
   {
+    id: 'nusrat-fateh-ali-khan',
+    name: 'Nusrat Fateh Ali Khan',
+    band: 'Tenor',
+    imageSrc: '/legends/nusrat-fateh-ali-khan.webp',
+  },
+  {
     id: 'amy-winehouse',
     name: 'Amy Winehouse',
     band: 'Alto',
@@ -174,6 +186,30 @@ export const VOICE_LEGENDS = [
     name: 'Nina Simone',
     band: 'Alto',
     imageSrc: '/legends/nina-simone.webp',
+  },
+  {
+    id: 'umm-kulthum',
+    name: 'Umm Kulthum',
+    band: 'Alto',
+    imageSrc: '/legends/umm-kulthum.webp',
+  },
+  {
+    id: 'miriam-makeba',
+    name: 'Miriam Makeba',
+    band: 'Alto',
+    imageSrc: '/legends/miriam-makeba.webp',
+  },
+  {
+    id: 'billie-holiday',
+    name: 'Billie Holiday',
+    band: 'Alto',
+    imageSrc: '/legends/billie-holiday.webp',
+  },
+  {
+    id: 'patti-smith',
+    name: 'Patti Smith',
+    band: 'Alto',
+    imageSrc: '/legends/patti-smith.webp',
   },
   {
     id: 'adele',
@@ -194,6 +230,24 @@ export const VOICE_LEGENDS = [
     imageSrc: '/legends/aretha-franklin.webp',
   },
   {
+    id: 'edith-piaf',
+    name: 'Édith Piaf',
+    band: 'Mezzo-soprano',
+    imageSrc: '/legends/edith-piaf.webp',
+  },
+  {
+    id: 'lady-gaga',
+    name: 'Lady Gaga',
+    band: 'Mezzo-soprano',
+    imageSrc: '/legends/lady-gaga.webp',
+  },
+  {
+    id: 'pj-harvey',
+    name: 'PJ Harvey',
+    band: 'Mezzo-soprano',
+    imageSrc: '/legends/pj-harvey.webp',
+  },
+  {
     id: 'mariah-carey',
     name: 'Mariah Carey',
     band: 'Soprano',
@@ -210,5 +264,11 @@ export const VOICE_LEGENDS = [
     name: 'Ariana Grande',
     band: 'Soprano',
     imageSrc: '/legends/ariana-grande.webp',
+  },
+  {
+    id: 'dolly-parton',
+    name: 'Dolly Parton',
+    band: 'Soprano',
+    imageSrc: '/legends/dolly-parton.webp',
   },
 ] as const satisfies readonly VoiceLegend[]

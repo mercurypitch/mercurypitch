@@ -79,7 +79,7 @@ describe('VoiceConstellationSurface', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('shows all 21 positions but only loads saved current and past portraits', async () => {
+  it('shows all 31 positions but only loads saved current and past portraits', async () => {
     mocks.listVoiceprints.mockResolvedValue([
       voiceprint('current', 'Freddie Mercury', '2026-08-05T10:00:00.000Z'),
       voiceprint('past', 'Elvis Presley', '2026-07-01T10:00:00.000Z'),
@@ -93,7 +93,7 @@ describe('VoiceConstellationSurface', () => {
     const savedMatches = await screen.findByText('saved matches')
     expect(savedMatches.parentElement).toHaveTextContent('2 saved matches')
     const cards = document.querySelectorAll('[data-legend-card]')
-    expect(cards).toHaveLength(21)
+    expect(cards).toHaveLength(31)
 
     const current = document.querySelector(
       '[data-legend-card="freddie-mercury"]',
@@ -191,7 +191,7 @@ describe('VoiceConstellationSurface', () => {
     })
 
     await screen.findByRole('alert')
-    expect(document.querySelectorAll('[data-legend-card]')).toHaveLength(21)
+    expect(document.querySelectorAll('[data-legend-card]')).toHaveLength(31)
     expect(document.querySelectorAll('[data-legend-card] img')).toHaveLength(0)
     expect(
       document.querySelector('[data-legend-card="freddie-mercury"]'),
@@ -227,6 +227,9 @@ describe('VoiceConstellationSurface', () => {
     expect(screen.getByText('saved matches').parentElement).toHaveTextContent(
       '2 saved matches',
     )
+    expect(
+      screen.getByText(/These names are part of your saved history/),
+    ).toHaveTextContent('current 31-legend map')
   })
 
   it('traps the route surface, closes with Escape, and restores the opener', async () => {
