@@ -1,6 +1,7 @@
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import { createDprWatcher, createRedrawScheduler, syncCanvasBacking, } from '@/lib/canvas-size-sync'
+import { renderScale } from '@/lib/device-tier'
 import type { ZenCanvasRenderModel } from './zen-canvas-renderer'
 import { renderZenPitchCanvas } from './zen-canvas-renderer'
 import styles from './ZenPitchCanvas.module.css'
@@ -17,7 +18,7 @@ export const ZenPitchCanvas: Component<ZenPitchCanvasProps> = (props) => {
 
   const draw = (): void => {
     if (canvas === undefined || snapshot === null) return
-    const dpr = Math.max(1, window.devicePixelRatio || 1)
+    const dpr = Math.max(1, renderScale())
     syncCanvasBacking(canvas, dpr)
     const rect = canvas.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) return

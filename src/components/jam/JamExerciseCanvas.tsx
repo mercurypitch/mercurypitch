@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 import { roleCountFor, roleIndexOf, targetForRole } from '@/lib/jam/jam-modes'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamMyTarget, jamPeers, jamPitchHistory, jamRoomMode, setJamExerciseHistory, } from '@/stores/jam-store'
@@ -132,7 +133,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
 
   const resizeCanvas = () => {
     if (!canvasRef || !ctx) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

@@ -28,7 +28,6 @@ import { IS_DEV } from '@/lib/defaults'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
-import { getUvrInstrumentalIntensity, getUvrMode, getUvrSmoothing, getUvrVocalIntensity, } from './uvr-store'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
@@ -56,27 +55,6 @@ export async function initAudioEngine(): Promise<AudioEngine> {
 
   _audioEngineInstance = new AudioEngine()
   return _audioEngineInstance
-}
-
-/** Apply current UVR settings to the audio engine */
-export async function applyUvrSettings(): Promise<void> {
-  const engine = _audioEngineInstance
-  if (!engine) return
-
-  const mode = getUvrMode()
-  const vocalIntensity = getUvrVocalIntensity()
-  const instrumentalIntensity = getUvrInstrumentalIntensity()
-  const smoothing = getUvrSmoothing()
-
-  engine.setUvrSettings({
-    mode,
-    vocalIntensity,
-    instrumentalIntensity,
-    smoothing,
-  })
-
-  // Enable UVR processing
-  engine.enableUvr()
 }
 
 // ── Walkthrough Tutorial (GH #140, GH #199) ────────────────────
@@ -714,6 +692,16 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,
     navigate: ['[data-testid="settings-tab-credits"]'],
+  },
+  {
+    title: 'Karaoke preferences',
+    targetSelector: '[data-tour="settings.karaoke-prep"]',
+    description:
+      'Everything the Karaoke tab honours lives here: where songs are separated (on this device, or the studio GPU for a credit), and whether new songs are fingerprinted for Shazam & Sing.',
+    placement: 'bottom',
+    section: 'settings-general',
+    requiredTab: TAB_SETTINGS,
+    navigate: ['[data-testid="settings-tab-karaoke"]'],
   },
   {
     title: 'Reset & danger zone',

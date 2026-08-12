@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 
 interface HistoryCanvasProps {
   frequencyData: () => Float32Array | null
@@ -39,7 +40,7 @@ export const HistoryCanvas: Component<HistoryCanvasProps> = (props) => {
 
   const resizeCanvas = () => {
     if (!canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

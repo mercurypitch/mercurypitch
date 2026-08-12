@@ -1,5 +1,6 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 
 interface CentsDeviationCanvasProps {
   centsOffset: number | null
@@ -116,7 +117,7 @@ export const CentsDeviationCanvas: Component<CentsDeviationCanvasProps> = (
     if (w === 0 || h === 0) return
     cssW = w
     cssH = h
-    dpr = window.devicePixelRatio || 1
+    dpr = renderScale()
 
     canvasRef.width = Math.round(cssW * dpr)
     canvasRef.height = Math.round(cssH * dpr)

@@ -7,6 +7,7 @@ import { createMemo, onCleanup, onMount } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import { drawAbLoopOverlay, hitTestAbLoopMarker } from '@/lib/ab-loop-canvas'
+import { renderScale } from '@/lib/device-tier'
 import type { FallingNote, NoteJudgment } from '@/stores/falling-notes-store'
 import { setVisibleBeatWindow, showNoteLabels, } from '@/stores/falling-notes-store'
 
@@ -492,7 +493,7 @@ export const FallingNotesCanvas: Component<FallingNotesCanvasProps> = (
 
   const resizeCanvas = () => {
     if (!canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

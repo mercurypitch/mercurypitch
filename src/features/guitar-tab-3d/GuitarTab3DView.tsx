@@ -10,6 +10,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, on, onCleanup, onMount, Show, } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import styles from './GuitarTab3DView.module.css'
 import { buildTabScene } from './renderer/build-tab-scene'
@@ -368,7 +369,7 @@ export function GuitarTab3DView(props: GuitarTab3DViewProps) {
           props.display?.().effects === 'reduced'
           ? 1.5
           : 2,
-        Math.max(1, window.devicePixelRatio || 1),
+        Math.max(1, renderScale()),
       )
     const resize = (width: number, height: number) => {
       if (width <= 0 || height <= 0) return

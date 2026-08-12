@@ -1,6 +1,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { computeBackingSize, createRedrawScheduler, } from '@/lib/canvas-size-sync'
+import { renderScale } from '@/lib/device-tier'
 import { drawNoteLabelOnBlock } from '@/lib/note-display-utils'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
@@ -413,7 +414,7 @@ export const OfflinePitchCanvas: Component<OfflinePitchCanvasProps> = (
     const size = computeBackingSize(
       parent.clientWidth,
       parent.clientHeight,
-      window.devicePixelRatio,
+      renderScale(),
     )
     if (!size) return
     forceRedraw = true

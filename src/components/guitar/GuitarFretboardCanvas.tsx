@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
 import type { GuitarHitResult } from '@/features/guitar/runtime/guitar-performance-contract'
+import { renderScale } from '@/lib/device-tier'
 import { STRING_LABELS } from '@/lib/guitar/constants'
 import type { GuitarNote } from '@/lib/guitar/guitar-synth'
 import { midiToNoteName, NOTE_COLORS } from '@/lib/note-utils'
@@ -168,7 +169,7 @@ export const GuitarFretboardCanvas: Component<GuitarFretboardCanvasProps> = (
 
   const resizeCanvas = () => {
     if (!canvasRef) return
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.parentElement!.clientWidth
     const h = canvasRef.parentElement!.clientHeight
     canvasRef.width = w * dpr

@@ -4,6 +4,7 @@
 
 import type { Component } from 'solid-js'
 import { onCleanup, onMount, untrack } from 'solid-js'
+import { renderScale } from '@/lib/device-tier'
 
 interface WaveformPaneProps {
   waveformData: Float32Array | null | undefined
@@ -22,7 +23,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
     if (ctx === null || canvasRef === undefined) return
     const w = canvasRef.width
     const h = canvasRef.height
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
 
     // Clear
     ctx.fillStyle = '#0d1117'
@@ -131,7 +132,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
   onMount(() => {
     if (canvasRef === undefined) return
     ctx = canvasRef.getContext('2d')
-    const dpr = window.devicePixelRatio || 1
+    const dpr = renderScale()
     const w = canvasRef.clientWidth
     const h = props.height
     canvasRef.width = w * dpr
@@ -140,7 +141,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
 
     const resizeObs = new ResizeObserver(() => {
       if (canvasRef === undefined || ctx === null) return
-      const d = window.devicePixelRatio || 1
+      const d = renderScale()
       canvasRef.width = canvasRef.clientWidth * d
       canvasRef.height = props.height * d
       ctx.setTransform(d, 0, 0, d, 0, 0)
