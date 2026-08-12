@@ -174,6 +174,11 @@ class AuthStatement {
     if (this.sql.startsWith('INSERT INTO deviceLinkCodes')) {
       const [code, pollTokenHash, deviceLabel, createdAt, expiresAt] =
         this.values
+      // WHERE NOT EXISTS — a code already in the table is not overwritten,
+      // and the caller learns that from `changes` and mints another.
+      if (this.db.deviceLinks.has(String(code))) {
+        return { success: true, meta: { changes: 0 } }
+      }
       this.db.deviceLinks.set(String(code), {
         code: String(code),
         pollTokenHash: String(pollTokenHash),
@@ -2119,5 +2124,62 @@ describe('device linking and anonymous identities', () => {
     )
     expect(approve?.status).toBe(401)
     expect(db.deviceLinks.get(code)?.userId).toBeNull()
+  })
+})
+
+describe('device link codes are claimed, not merely random', () => {
+  it('mints another code rather than colliding with a live one', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+
+    // Force the first draw to land on a code already in the table. The
+    // alternative is a primary-key violation, which a television would
+    // report as "could not reach MercuryPitch".
+    const taken = await handleAuth(
+      new Request('https://api.test/api/auth/device/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel: 'First TV' }),
+      }),
+      env,
+      '/api/auth/device/start',
+      respond,
+    )
+    const first = (await taken!.json()) as { code: string }
+
+    const values = [...first.code].map((c) =>
+      'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'.indexOf(c),
+    )
+    let draw = 0
+    const real = crypto.getRandomValues.bind(crypto)
+    vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
+      const bytes = array as Uint8Array
+      // The 8-byte draw is the code; the 43-byte one is the poll token and
+      // is left genuinely random.
+      if (bytes.length === 8 && draw++ === 0) {
+        bytes.set(values)
+        return array
+      }
+      return real(array as Parameters<typeof real>[0])
+    })
+
+    const second = await handleAuth(
+      new Request('https://api.test/api/auth/device/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel: 'Second TV' }),
+      }),
+      env,
+      '/api/auth/device/start',
+      respond,
+    )
+    expect(second?.status).toBe(200)
+    const body = (await second!.json()) as { code: string }
+    expect(body.code).not.toBe(first.code)
+
+    // And the first device's row is untouched — the second TV must not
+    // have overwritten a link somebody is in the middle of approving.
+    expect(db.deviceLinks.get(first.code)?.deviceLabel).toBe('First TV')
+    expect(db.deviceLinks.size).toBe(2)
   })
 })
