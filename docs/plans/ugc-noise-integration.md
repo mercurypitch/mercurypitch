@@ -58,13 +58,31 @@ Three properties worth internalising:
 
 - **Every write previews by default.** It returns current → proposed plus
   consequences and changes nothing. Only `confirm: true` applies it.
-- **`save_playbook` is declarative, not a patch.** It replaces the entire
-  slide list. Any existing slide you omit is **deleted**. Always
-  read-modify-write via `get_playbook_details` first. This is the main
-  footgun in the whole API.
-- **There is no delete tool.** Playbooks can be deactivated
-  (`set_playbook_status`) but not removed over MCP. Deletion, if it exists at
-  all, is a portal action.
+- **`save_playbook` claims to be declarative but does not delete.** Its
+  description says omitted slides are removed, and its preview reports
+  `1 removed`. Neither is true: the slide survives, and a replacement sent in
+  the same call is *added alongside* it. Verified twice on playbook 19290 on
+  2026-08-12 — two calls omitting slide 151213, both returning success, and
+  the slide still present in `get_playbook_details` afterwards, with no
+  deletion in the audit log. Still read-modify-write, but for the opposite
+  reason: not to avoid losing slides, but to avoid duplicating them.
+- **`generate_slide_image` appends, it does not replace.** Each call adds
+  another image to the slide, and the slide then shows them in sequence. It
+  returns `imageCount: 1` every time regardless, so the response cannot be
+  used to tell an append from a replace. Three calls on slide 151213 produced
+  three stacked images.
+- **Nothing can delete anything over MCP** — not playbooks, not slides, not
+  slide images. `set_playbook_status` deactivates; that is the whole of it.
+  Deletion is a portal action.
+
+Together those three make **slide images effectively write-once over MCP**.
+Attach an image only when the slide is final: a wrong one cannot be replaced
+or removed without opening the portal. Preview the *content* freely, but treat
+every `generate_slide_image` call as permanent.
+
+Worth reporting to Noise: a declarative endpoint whose preview reports
+deletions it does not perform is the kind of thing that quietly corrupts state
+for anyone automating against it.
 
 Everything is audited (`get_audit_log`) and guardrailed — CPM and budget caps,
 plus a per-day cap on AI image generation.
@@ -438,7 +456,8 @@ Same rules: destination in the playbook prompt, no music, a cappella.
 | 11 | Add Mirror capture profiles beyond `freddie` (§6) | agent | open |
 | 12 | Ask Noise whether `preview_image` affects creator pickup (§10) | you | open |
 | 13 | Build the Glass playbook when a Glass campaign exists (§8) | agent | open |
-| 15 | Confirm slide 4 shows one image, not a stack (§10) | you | open |
+| 15 | Delete orphan slide 151213 in the portal (§2) | you | **next** |
+| 16 | Report the save_playbook / generate_slide_image behaviour to Noise (§2) | you | open |
 | 14 | Give zen exercises a URL, if it should be a UGC destination (§8) | decision | open |
 
 Playbooks 19287 / 19288 are orphaned empty scaffolds. They are already
