@@ -21,9 +21,12 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
 
   const draw = () => {
     if (ctx === null || canvasRef === undefined) return
-    const w = canvasRef.width
-    const h = canvasRef.height
-    const dpr = renderScale()
+    // Logical (CSS) pixels: the context carries a renderScale() transform,
+    // so drawing in backing-store pixels would scale everything twice and
+    // push most of the waveform off the right edge on a high-DPR display.
+    const scale = renderScale()
+    const w = canvasRef.width / scale
+    const h = canvasRef.height / scale
 
     // Clear
     ctx.fillStyle = '#0d1117'
@@ -50,7 +53,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
     const samplesPerPixel = Math.max(1, Math.floor(waveform.length / w))
 
     ctx.strokeStyle = '#58a6ff'
-    ctx.lineWidth = 1.5 * dpr
+    ctx.lineWidth = 1.5
     ctx.beginPath()
 
     for (let px = 0; px < w; px++) {
@@ -87,7 +90,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
 
     // Draw upper envelope and fill between
     ctx.strokeStyle = '#58a6ff'
-    ctx.lineWidth = 1.5 * dpr
+    ctx.lineWidth = 1.5
     ctx.beginPath()
     for (let px = 0; px < w; px++) {
       const t = t0 + (px / w) * dur
@@ -110,7 +113,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
 
     // Center line
     ctx.strokeStyle = 'rgba(255,255,255,0.1)'
-    ctx.lineWidth = 0.5 * dpr
+    ctx.lineWidth = 0.5
     ctx.beginPath()
     ctx.moveTo(0, midY)
     ctx.lineTo(w, midY)
@@ -121,7 +124,7 @@ export const WaveformPane: Component<WaveformPaneProps> = (props) => {
     if (playPct >= 0 && playPct <= 1) {
       const px = playPct * w
       ctx.strokeStyle = '#f85149'
-      ctx.lineWidth = 1.5 * dpr
+      ctx.lineWidth = 1.5
       ctx.beginPath()
       ctx.moveTo(px, 0)
       ctx.lineTo(px, h)
