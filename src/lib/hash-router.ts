@@ -138,7 +138,10 @@ export function parseHash(rawHash: string): HashRoute {
   // Match: /jam:roomId
   const jamMatch = hash.match(/^\/jam:(.+)$/)
   if (jamMatch) {
-    return { type: 'jam-room', roomId: jamMatch[1] }
+    // Uppercased here as well as on the server: a link that went through
+    // something which lowercases URLs (chat apps do this, and people
+    // retype links) would otherwise ask for a room nobody is in.
+    return { type: 'jam-room', roomId: jamMatch[1].toUpperCase() }
   }
 
   // Match: /karaoke/session/:sessionId/mixer or /uvr/...

@@ -1,18 +1,23 @@
 // ── Room code normalization ──────────────────────────────────────────
 // What the other device shows, however this device's keyboard typed it.
 //
-// A room id is a Durable Object NAME (`idFromName(roomId)` in the jam
-// worker), so it is case-sensitive in the least forgiving way possible:
-// a lowercase code does not fail, it silently opens a DIFFERENT, empty
-// room. The two devices then sit waiting for each other in separate
-// rooms, which is indistinguishable from the feature not working -- and
-// is exactly what a phone keyboard produces when autocapitalize is only
-// a hint, or when the code is pasted.
+// Shared by jam rooms and device sync: they are the same eight characters
+// from the same alphabet, handed between two people who are reading one
+// screen and typing into another.
 //
-// The worker's alphabet is 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' -- no
-// 0/O/1/I, so the classic confusions cannot arise. Anything outside it
-// (spaces from a copy, dashes somebody added for readability) is
-// dropped rather than sent.
+// A room id becomes a Durable Object NAME in the jam worker, and those
+// are byte-exact. The worker folds case before it names anything, so a
+// lowercase code now finds the room it meant. This runs on the client
+// for the other half of the problem: showing the code back in the form
+// it will actually be sent, and dropping what a paste picked up along
+// the way -- spaces, dashes somebody added for readability, a trailing
+// newline from a chat message.
+//
+// The alphabet is 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' -- no 0/O/1/I, so
+// the classic misreadings cannot arise. A mistyped character that IS in
+// the alphabet still asks for a different room, and there is nothing
+// here that can catch that; the sync store's peer-arrival deadline is
+// what turns that silence into an error message.
 
 /** The characters a room code can contain. Mirrors newRoomId(). */
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'

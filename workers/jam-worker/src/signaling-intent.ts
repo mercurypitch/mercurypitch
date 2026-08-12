@@ -21,6 +21,23 @@ export function isJamRoomId(value: string): boolean {
   return JAM_ROOM_ID_RE.test(value)
 }
 
+/**
+ * The canonical form of a room code somebody typed, scanned or pasted.
+ *
+ * A room id becomes a Durable Object NAME, and those are byte-exact: two
+ * spellings of one code are two different rooms. Codes are generated
+ * uppercase and only uppercase, so folding case costs nothing -- the
+ * space is 32^8 either way -- while a phone keyboard, a URL somebody
+ * lowercased, and a copy that picked up a space are all things that
+ * really happen and were all failures.
+ *
+ * Anything still not a room id after folding is rejected by the caller;
+ * this only removes what could never have been part of a code.
+ */
+export function normalizeJamRoomId(value: string): string {
+  return value.trim().toUpperCase()
+}
+
 export function parseInitialConnectionIntent(
   value: string | null,
 ): 'create' | 'join' | null {

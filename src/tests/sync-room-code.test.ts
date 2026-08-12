@@ -5,7 +5,7 @@
 // work" and a transfer.
 
 import { describe, expect, it } from 'vitest'
-import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/sync/room-code'
+import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 
 describe('sync room code', () => {
   it('uppercases what a phone keyboard typed', () => {

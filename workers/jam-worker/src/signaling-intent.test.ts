@@ -3,7 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { connectionAllowsMessage, isJamRoomId, JAM_CONNECTION_INTENT_HEADER, JAM_ROOM_ID_HEADER, parseInitialConnectionIntent, withJamConnectionContext, } from './signaling-intent'
+import { connectionAllowsMessage, isJamRoomId, JAM_CONNECTION_INTENT_HEADER, JAM_ROOM_ID_HEADER, normalizeJamRoomId, parseInitialConnectionIntent, withJamConnectionContext, } from './signaling-intent'
 
 describe('Jam signaling connection intent', () => {
   it('allows exactly one route-appropriate handshake', () => {
@@ -31,6 +31,17 @@ describe('Jam signaling connection intent', () => {
     expect(isJamRoomId('ABCDEF0I')).toBe(false)
     expect(isJamRoomId('ABCDEFGHI')).toBe(false)
     expect(isJamRoomId('../ROOMS')).toBe(false)
+  })
+
+  it('folds a typed code to the one room it means', () => {
+    // The id becomes a Durable Object name, so casing is not cosmetic:
+    // two spellings are two rooms, and the devices never meet.
+    expect(normalizeJamRoomId('abcdefgh')).toBe('ABCDEFGH')
+    expect(normalizeJamRoomId(' AbCdEfGh ')).toBe('ABCDEFGH')
+    expect(isJamRoomId(normalizeJamRoomId('abcd2345'))).toBe(true)
+    // Folding is not laundering: what was never a code still is not one.
+    expect(isJamRoomId(normalizeJamRoomId('abcdef0i'))).toBe(false)
+    expect(isJamRoomId(normalizeJamRoomId('../rooms'))).toBe(false)
   })
 
   it('overwrites spoofed client routing headers before DO dispatch', () => {

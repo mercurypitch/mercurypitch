@@ -40,6 +40,21 @@ describe('parseHash', () => {
     // Test separately in UVR routes below
   })
 
+  it('a jam link means the same room whatever case it arrived in', () => {
+    // Chat apps lowercase URLs and people retype them. A room id is a
+    // Durable Object name, so the wrong case is not a broken link -- it
+    // is a different, empty room, which looks exactly like nobody being
+    // there.
+    expect(parseHash('#/jam:ABCD2345')).toEqual({
+      type: 'jam-room',
+      roomId: 'ABCD2345',
+    })
+    expect(parseHash('#/jam:abcd2345')).toEqual({
+      type: 'jam-room',
+      roomId: 'ABCD2345',
+    })
+  })
+
   // #/uvr is a valid tab name but router intercepts it as uvr-upload
   it('#/uvr is routed as uvr-upload, not tab:uvr', () => {
     expect(parseHash('#/uvr')).toEqual({ type: 'uvr-upload' })
