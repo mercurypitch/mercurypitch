@@ -1,7 +1,7 @@
 // Guitar Night stage tests protect its shared, persisted visual presentations.
 // ============================================================
 
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -191,6 +191,86 @@ describe('GuitarNightStage views', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Highway' }))
     expect(screen.getByTestId('shared-3d-stage')).toBe(originalRenderer)
     expect(originalRenderer).toBeVisible()
+  })
+
+  it('turns a neck-only activity into exact accessible positions without mounting 3D', async () => {
+    const onSelect = vi.fn()
+    render(() => (
+      <GuitarNightStage
+        source={SOURCE}
+        active={() => true}
+        initialMode="neck"
+        availableViews={() => ['neck']}
+        showHeader={() => false}
+        neckLabel={() => 'Find every E between frets 0 and 4.'}
+        neckInteraction={{
+          frets: () => [0, 1, 2, 3, 4],
+          cellState: (position) =>
+            position.stringIndex === 0 && position.fret === 0
+              ? 'found'
+              : position.stringIndex === 1 && position.fret === 1
+                ? 'miss'
+                : 'idle',
+          onSelect,
+        }}
+      />
+    ))
+
+    expect(screen.queryByTestId('shared-3d-stage')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Stage view' })).toBeNull()
+    expect(screen.queryByLabelText('Display settings')).toBeNull()
+    const neck = screen.getByRole('group', {
+      name: 'Find every E between frets 0 and 4.',
+    })
+    expect(neck).toBeVisible()
+    expect(
+      screen.getByRole('group', { name: 'string 1, high E' }),
+    ).toBeVisible()
+    expect(screen.getByRole('group', { name: 'string 6, low E' })).toBeVisible()
+    const neckButtons = within(neck).getAllByRole('button')
+    expect(neckButtons).toHaveLength(30)
+    expect(neckButtons.filter((button) => button.tabIndex === 0)).toHaveLength(
+      1,
+    )
+
+    const found = screen.getByRole('button', {
+      name: 'string 1, high E, open, found',
+    })
+    expect(found).toHaveAttribute('aria-pressed', 'true')
+    found.focus()
+    fireEvent.keyDown(found, { key: 'ArrowDown' })
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: 'string 2, B, open, not marked',
+        }),
+      ).toHaveFocus(),
+    )
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' })
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: 'string 2, B, fret 1, wrong selection',
+        }),
+      ).toHaveFocus(),
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'string 2, B, fret 1, wrong selection',
+      }),
+    ).toHaveAttribute('data-state', 'miss')
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'string 2, B, fret 2, not marked',
+      }),
+    )
+    expect(onSelect).toHaveBeenCalledWith({
+      stringIndex: 1,
+      stringLabel: 'B',
+      fret: 2,
+      midi: 61,
+    })
   })
 
   it('names authored tuning and capo without changing the setup control contract', () => {
