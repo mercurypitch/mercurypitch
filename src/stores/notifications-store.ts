@@ -13,6 +13,19 @@ export interface Notification {
   id: number
   message: string
   type: 'info' | 'success' | 'warning' | 'error'
+  /**
+   * The small caps line above the message.
+   *
+   * Omit it and the toast falls back to a word for its `type` (see
+   * NOTIFICATION_LABELS in Notifications.tsx). Pass `null` to show no title at
+   * all, for a message that already reads as a whole sentence.
+   *
+   * Set it when the toast belongs to something the reader would recognise —
+   * "Update", "Offline", "Microphone". The type-based fallback can only ever
+   * describe severity, and a severity word repeated above every message is
+   * what made every toast in the app look like an app update.
+   */
+  title?: string | null
   /** Optional action button (e.g. "Undo") rendered in the toast. */
   action?: { label: string; onClick: () => void }
   /**
@@ -50,6 +63,8 @@ let _notifId = 0
 export interface NotificationOptions {
   /** Replace any existing notification on this channel (see `Notification.channel`). */
   channel?: string
+  /** The caps line above the message — see `Notification.title`. */
+  title?: string | null
   /** Override how long the toast stays visible. Defaults are intentionally
    *  longer for warnings and errors so important feedback is not missed. */
   durationMs?: number
@@ -140,6 +155,9 @@ export function showNotification(
     message: group === undefined ? message : group.summarise([message]),
     type,
     channel: opts?.channel,
+    // Spread-guarded so an absent option stays absent rather than becoming an
+    // explicit `undefined`, which `title in notif` checks would then see.
+    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
     ...(group === undefined
       ? {}
       : {
@@ -159,7 +177,14 @@ export function showActionNotification(
   opts?: NotificationOptions,
 ): number {
   const id = ++_notifId
-  pushNotification({ id, message, type, action, channel: opts?.channel })
+  pushNotification({
+    id,
+    message,
+    type,
+    action,
+    channel: opts?.channel,
+    ...(opts !== undefined && 'title' in opts ? { title: opts.title } : {}),
+  })
   setTimeout(() => removeNotification(id), opts?.durationMs ?? 10000)
   return id
 }

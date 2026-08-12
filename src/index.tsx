@@ -48,7 +48,11 @@ registerServiceWorker({
       // Longer than a normal toast because it asks for a decision, but not
       // sticky: ignoring it is a valid answer. The waiting worker takes over
       // on the next navigation either way.
-      { channel: 'pwa-update', durationMs: 60_000 },
+      //
+      // "Update" is this toast's word. It used to be the fallback title on
+      // every `info` message in the app, which left the one notification that
+      // really is an app update indistinguishable from a saved display name.
+      { channel: 'pwa-update', durationMs: 60_000, title: 'Update' },
     )
   },
 })

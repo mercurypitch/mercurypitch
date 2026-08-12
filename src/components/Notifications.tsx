@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { For, Match, Switch } from 'solid-js'
+import { For, Match, Show, Switch } from 'solid-js'
 // Import straight from the leaf store, not the @/stores barrel — the barrel
 // pulls app-store, which would drag the whole app shell into the standalone
 // karaoke/mirror entries that also mount this toast host.
@@ -12,11 +12,28 @@ import { notifications, removeNotification } from '@/stores/notifications-store'
 import styles from '@/styles/Notifications.module.css'
 import { AlertTriangle, CheckCircle, XCircle } from './icons'
 
+// Fallback titles, used only when a caller gives no `title` of its own.
+//
+// These can describe severity and nothing else, so they are deliberately
+// plain. `info` used to read "Update", which made every ordinary message in
+// the app — a saved name, a loaded song — announce itself like a pending app
+// update; "Update" now belongs to the one toast that means it (the service
+// worker's, in src/index.tsx). Anything that can name its own subject should
+// pass `title` instead of leaning on these.
 const NOTIFICATION_LABELS: Record<Notification['type'], string> = {
-  info: 'Update',
-  success: 'Complete',
-  warning: 'Check this',
-  error: 'Action needed',
+  info: 'Note',
+  success: 'Done',
+  warning: 'Heads up',
+  error: 'Problem',
+}
+
+/**
+ * The caps line for a toast: the caller's title, else a word for its type.
+ * `null` is a caller saying "no title" — the message stands on its own.
+ */
+function notificationTitle(notif: Notification): string | null {
+  if (notif.title !== undefined) return notif.title
+  return NOTIFICATION_LABELS[notif.type]
 }
 
 const NotificationIcon: Component<{ type: Notification['type'] }> = (props) => (
@@ -65,7 +82,9 @@ export const Notifications: Component = () => {
               <NotificationIcon type={notif.type} />
             </span>
             <span class={styles.notificationBody}>
-              <strong>{NOTIFICATION_LABELS[notif.type]}</strong>
+              <Show when={notificationTitle(notif)}>
+                {(title) => <strong>{title()}</strong>}
+              </Show>
               <span class={styles.notificationText}>{notif.message}</span>
             </span>
             {notif.action && (
