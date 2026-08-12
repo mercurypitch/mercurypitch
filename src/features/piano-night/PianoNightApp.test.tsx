@@ -667,6 +667,26 @@ describe('PianoNightApp', () => {
     ).toHaveAttribute('href', '/#/piano')
   })
 
+  it('uses purpose-specific icons for the score, music library, and Piano workspace', () => {
+    render(() => <PianoNightApp />)
+
+    expect(
+      screen
+        .getByLabelText('Piano Night session status')
+        .querySelector('[data-icon="score-document"]'),
+    ).toBeInTheDocument()
+    expect(
+      screen
+        .getAllByRole('button', { name: 'Choose music for Piano Night' })[0]
+        .querySelector('[data-icon="music-library"]'),
+    ).toBeInTheDocument()
+    expect(
+      screen
+        .getByRole('link', { name: 'Open the current Piano workspace' })
+        .querySelector('[data-icon="piano-workspace"]'),
+    ).toBeInTheDocument()
+  })
+
   it('keeps Music distinct and reopens the last settings section', async () => {
     render(() => <PianoNightApp />)
 
