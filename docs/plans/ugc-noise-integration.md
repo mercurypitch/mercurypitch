@@ -365,11 +365,27 @@ buys views of a video that misrepresents the product. What is actually true:
 | Needs an account | No. `/mirror` is a standalone entry, no auth gate. |
 | Needs a download | No. Phone browser, mic permission. |
 
-**The Voice Mirror asks for four things and none of them is a song**
-(`TASK_COPY` in `MirrorApp.tsx`): glide up like a siren, glide down, hold one
-note steady, and match a played tone. There is also a Free Sing mode — "sing
-anything for 40 seconds, your shower song counts" — which is a cappella by
-design.
+**The Voice Mirror asks for eight vocal actions, and none of them is a song.**
+The sequence is fixed in `src/lib/mirror/session.ts`:
+
+```
+idle -> mic -> glide-up -> glide-down -> hold -> match(1..5) -> results
+```
+
+Glide up like a siren, glide down, hold one note steady — then **five** played
+notes to sing back, one at a time, with one free retry each
+(`MATCH_NOTE_COUNT = 5`). Call it two to three minutes, not one. A brief that
+says "the three things it asks" sends a creator in expecting a third of the
+flow.
+
+There is also a Free Sing mode — "sing anything for 40 seconds, your shower
+song counts" — which is a cappella by design.
+
+**The twin does not need the match notes.** `singerForRange(result.range)` is
+keyed off the detected low and high MIDI alone, and range is computed from the
+glides at the `hold-done` transition. The payoff is therefore knowable about
+twenty seconds in; the five match notes contribute accuracy, not the twin. See
+§11 for why that matters.
 
 ### Why that settles the music question
 
@@ -517,3 +533,76 @@ Worth confirming with Noise support, alongside whether the portal can generate
 preview media for a playbook it did not create. If it cannot, the workaround
 is to create playbooks in the portal and author their content over MCP, which
 keeps nearly all of the benefit.
+
+
+---
+
+## 11. Improving the landing experience
+
+UGC buys a click from someone who has never heard of us and is holding a
+phone. These are ranked by expected effect on that visitor, and each one is
+tied to something in the code rather than to general advice.
+
+### Mirror: the payoff arrives far later than it needs to
+
+The twin is the hook — it is what the creator holds up in slide 3 and what a
+viewer clicks for. It is also computable about twenty seconds in, and we make
+people work for two to three minutes before showing it.
+
+`singerForRange()` keys only off detected low and high MIDI. Range is computed
+at the `hold-done` transition, before a single match note is sung. Everything
+after that point sharpens *accuracy*, not the twin.
+
+So the flow could be: two sirens, one held note, **twin revealed** — then
+"want your accuracy score too? five more notes." A short guaranteed win first,
+depth as an opt-in second. For cold paid traffic that is the difference
+between a card to share and an abandoned tab.
+
+Worth measuring before building: the funnel already emits `task_hold_done`,
+`task_match_done` and `results_view`, so the drop-off between the hold and the
+results is answerable from data we are already collecting. If it is small,
+leave the flow alone.
+
+### Mirror: Free Sing is the fast path, and nobody finds it
+
+"Sing anything you like for 40 seconds — your shower song counts" is a
+gentler, shorter, more obviously fun entry than eight guided vocal actions,
+and it produces a shareable card of its own. It is currently a mode inside a
+flow rather than a door into one. For UGC arrivals it may simply be the better
+landing.
+
+### Mirror: check when the mic is asked, and why
+
+First Light asks at the moment of intent, one tap after the visitor has said
+they want to sing, with the reason on screen — see
+`src/features/onboarding/beats/BeatFirstLight.tsx`. If the Mirror's `mic`
+phase asks cold, before the visitor has committed to anything, that is
+probably the single largest drop-off on the whole path, and the fix is copy
+rather than engineering.
+
+### Glass: spectacular, but not personal
+
+Glass has the better *spectacle* — a pane shattering is more watchable than a
+line being drawn. The voiceprint has the better *artifact*: "this is my voice
+twin" is about the person holding it, which is why it gets posted.
+
+The shatter card already carries real data (target note, reps, best lock,
+precision in cents, peak resonance). What it lacks is an identity hook — a
+"you broke it on an A4, which is where X sings" would make it a thing about
+the singer rather than a scoreboard. Same trick the twin plays.
+
+### Karaoke: a different rights posture entirely
+
+Karaoke is the one surface where recorded music is intrinsic, so the rule that
+makes the Mirror and Glass campaigns safe — no music, ever — cannot apply.
+That needs deciding before any karaoke campaign exists, not during one.
+Options are platform-cleared commercial-use audio only, or original and
+public-domain songs. It is a real constraint on the format rather than a
+detail, and it is the reason Mirror and Glass were the right places to start.
+
+### Cross-cutting
+
+- **Short link** (§5) — cleans up both the creator caption and the share text.
+- **A URL for zen exercises** (§8) — would unlock the middle slide.
+- **`preview_image` on the playbook** (§10) — may affect whether creators pick
+  the offer up at all.
