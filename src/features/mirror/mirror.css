@@ -144,9 +144,9 @@ body {
 }
 
 /* ── Mid-run twin reveal ──────────────────────────────────────
-   Sits between the hold and the match notes. Deliberately quiet compared to
-   the results card: this is the answer arriving early, not the finale. */
-/* The twin gets the same frame as the results card's back face — full-bleed
+   Sits between the hold and the match notes.
+
+   The twin gets the same frame as the results card's back face — full-bleed
    portrait, scrim, caption over it — because this is where the payoff now
    lands. It was a 132px circle, which cropped the face to a thumbnail at the
    one moment the image is the point.
@@ -1455,4 +1455,20 @@ body {
 
 .mirror-cta-ready {
   margin-top: 10px;
+}
+
+/* "I'm done" under a take in progress. The countdown is a ceiling, not a
+   quota — a glide is over the moment the voice reaches the top, and the
+   frames already captured are the take. Quiet by design: it must not read as
+   the primary action while someone is still singing. */
+.mirror-stopearly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+}
+.mirror-stopearly .mirror-dim {
+  font-size: 0.8rem;
+  margin: 0;
 }

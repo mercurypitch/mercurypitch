@@ -17,6 +17,7 @@ import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
 import { attemptByTake, parseTakeHash, saveAttempt, takeHash, } from '@/lib/mirror/attempts'
 import { deltaVsBaseline, saveBaseline } from '@/lib/mirror/baseline'
+import { CHECKPOINT_HASH, clearCheckpoint, isCheckpointHash, loadCheckpoint, saveCheckpoint, } from '@/lib/mirror/checkpoint'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
 import type { FreeSingResult } from '@/lib/mirror/free-sing'
 import { computeFreeSing } from '@/lib/mirror/free-sing'
@@ -44,13 +45,20 @@ import { RevealCard } from './RevealCard'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
 
-const GLIDE_SEC = 8
+// 8s was long enough that people ran out of glide and stood there filling
+// time. 6 still covers a full siren both ways, and the "I'm done" control
+// below means the timer is a ceiling rather than a quota.
+const GLIDE_SEC = 6
 const HOLD_SEC = 6
 const REFERENCE_SEC = 1.4
 const MATCH_TAKE_SEC = 3
 // A "get ready" count-in between hearing the note and singing it back, so the
 // match task doesn't fire notes at the singer with no time to prepare.
 const MATCH_PREPARE_SEC = 2
+/** How much of a take must exist before "I'm done" appears. Below this there
+ *  is not enough voiced audio to measure, and an instant tap would hand the
+ *  analyser an empty take that reads as a failed mic. */
+const EARLY_STOP_AFTER_SEC = 2
 const FREE_SING_SEC = 40
 const MIC_CONSUMER_ID = 'voice-mirror'
 // A live mic never reads exactly zero (room noise floors around 1e-3); dead
@@ -121,7 +129,14 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   // The legend shown by the mid-run twin peek, held separately from the
   // results-card reveal so the two cannot fight over one signal.
   const [peekLegend, setPeekLegend] = createSignal<string | null>(null)
+  /** A checkpoint was restored and the flow has not been re-entered yet, so
+   *  the peek's CTA must acquire the mic (inside its tap, for iOS) and jump
+   *  to the match phase rather than resolving a gate nobody is awaiting. */
+  const [pendingResume, setPendingResume] = createSignal(false)
   const [remaining, setRemaining] = createSignal(0)
+  /** Whether the take in progress accepts an early finish (glides and the
+   *  hold; a 3s match note is too short to be worth cutting). */
+  const [stoppable, setStoppable] = createSignal(false)
   const [taskKey, setTaskKey] = createSignal(0)
   const [micError, setMicError] = createSignal<string | null>(null)
   const [micChecking, setMicChecking] = createSignal(false)
@@ -181,6 +196,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   let flowGen = 0
   // Resolver for the pending "I'm ready" intro gate, if a task is waiting.
   let readyResolve: (() => void) | null = null
+  /** Set by "I'm done"; read and cleared by the countdown it belongs to. */
+  let stopRequested = false
   let freeTakeFrames: F0Frame[] = []
   // Guards double-taps on Start/Try-again/Test-again: a second concurrent
   // start would orphan AudioContexts and drive two flows over one session.
@@ -244,6 +261,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (isCosmicHash()) return
     const take = parseTakeHash(window.location.hash)
     if (take !== null && restoreAttempt(take)) return
+    // Only `#twin` opts into the save point; a bare /mirror deliberately
+    // ignores it, so reloading the plain URL still means "start over".
+    if (isCheckpointHash(window.location.hash) && restoreCheckpoint()) return
     if (import.meta.env.DEV && (await maybeStartDemo())) return
     if (session().phase === 'results' || freePhase() === 'results') resetAll()
   }
@@ -302,6 +322,18 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (cancelled || gen !== flowGen) return Promise.resolve()
     const legend = singerForRange(session().range)
     if (legend === null) return Promise.resolve()
+    // Save point. From here a reload can pick the run back up instead of
+    // charging someone a second minute for the answer they already earned.
+    const state = session()
+    if (state.range !== null && localStorage !== null) {
+      saveCheckpoint(localStorage, {
+        glides: state.glides,
+        hold: state.hold,
+        targets: state.targets,
+        range: state.range,
+      })
+      history.replaceState(null, '', `#${CHECKPOINT_HASH}`)
+    }
     setPeekLegend(legend)
     setSubPhase('twin-peek')
     // Meeting the twin here is the meeting — metTwin is sticky and gates both
@@ -331,6 +363,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     releaseIntroGate()
     setSubPhase('brief')
     setPeekLegend(null)
+    setPendingResume(false)
+    // Starting over abandons the save point on purpose — otherwise the next
+    // #twin load would resurrect a run the person deliberately dropped.
+    if (localStorage !== null) clearCheckpoint(localStorage)
     setHowtoOpen(false)
     starting = false
     cardCanvas = null
@@ -352,8 +388,12 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setTwinTrace(false)
     setTwinData(false)
     setMetTwin(false)
-    // Drop a #take-N fragment so the landing isn't re-restored on reload.
-    if (parseTakeHash(window.location.hash) !== null) {
+    // Drop a #take-N or #twin fragment so the landing isn't re-restored on
+    // reload — the bare URL is what "start over" has to leave behind.
+    if (
+      parseTakeHash(window.location.hash) !== null ||
+      isCheckpointHash(window.location.hash)
+    ) {
       history.replaceState(
         null,
         '',
@@ -381,13 +421,21 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   /** Countdown helper driving the `remaining` signal. Aborts early when the
    *  flow generation changes mid-count (reset / take restore), so an
    *  orphaned flow can't keep writing `remaining` — or run for its full
-   *  duration — after the user has moved on. */
-  async function countdown(seconds: number): Promise<void> {
+   *  duration — after the user has moved on.
+   *
+   *  `stoppable` additionally lets the singer end the take: a glide is over
+   *  the moment the voice reaches the top, and holding the clock out past
+   *  that is dead air they spend wondering whether they did it wrong. The
+   *  frames already captured are the take — nothing is discarded. */
+  async function countdown(seconds: number, stoppable = false): Promise<void> {
     const gen = flowGen
     const start = performance.now()
+    stopRequested = false
     setRemaining(seconds)
     while (!cancelled && gen === flowGen) {
-      const left = seconds - (performance.now() - start) / 1000
+      const elapsed = (performance.now() - start) / 1000
+      if (stoppable && stopRequested && elapsed >= EARLY_STOP_AFTER_SEC) break
+      const left = seconds - elapsed
       if (left <= 0) break
       setRemaining(left)
       await sleep(100)
@@ -406,13 +454,18 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     await countdown(seconds)
   }
 
-  async function record(seconds: number): Promise<F0Frame[]> {
+  async function record(
+    seconds: number,
+    stoppable = false,
+  ): Promise<F0Frame[]> {
     if (!f0) return []
     const gen = flowGen
     setTaskKey((k) => k + 1)
+    setStoppable(stoppable)
     setSubPhase('recording')
     f0.startTask()
-    await countdown(seconds)
+    await countdown(seconds, stoppable)
+    setStoppable(false)
     // The take is void if the run was reset/restored mid-count, and f0 may
     // have been torn down while we were awaiting (unmount mid-take).
     if (cancelled || gen !== flowGen) return []
@@ -521,6 +574,13 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       void runFreeFlow()
       return
     }
+    // Resuming: the session already holds the restored glides, hold, targets
+    // and range, so 'mic-granted' must not reset it back to the first glide.
+    if (pendingResume()) {
+      setPendingResume(false)
+      void runMatchPhase(++flowGen)
+      return
+    }
     dispatch({ type: 'mic-granted' })
     void runFlow()
   }
@@ -545,8 +605,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     starting = true
     setMode(selected)
     setShareStatus(null)
+    // A resume keeps the restored session; 'start' would wipe it back to the
+    // mic panel and lose the very thing the checkpoint saved.
     if (selected === 'free') setFreePhase('mic')
-    else dispatch({ type: 'start' })
+    else if (!pendingResume()) dispatch({ type: 'start' })
     try {
       audioContext = new AudioContext()
       if (audioContext.state === 'suspended') await audioContext.resume()
@@ -585,7 +647,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setFreePhase('task')
     await brief(3)
     if (cancelled || gen !== flowGen) return
-    const frames = await record(FREE_SING_SEC)
+    const frames = await record(FREE_SING_SEC, true)
     // A mid-take reset/restore orphans this flow — it must not tear down
     // the successor run's audio or flip the UI to a dead results screen.
     if (cancelled || gen !== flowGen) return
@@ -647,14 +709,14 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (!alive()) return
     await brief(3)
     if (!alive()) return
-    const glideUp = await record(GLIDE_SEC)
+    const glideUp = await record(GLIDE_SEC, true)
     if (!alive()) return
     dispatch({ type: 'glide-done', frames: glideUp })
     await taskIntro(gen)
     if (!alive()) return
     await brief(2)
     if (!alive()) return
-    const glideDown = await record(GLIDE_SEC)
+    const glideDown = await record(GLIDE_SEC, true)
     if (!alive()) return
     dispatch({ type: 'glide-done', frames: glideDown })
     trackFunnel('task_glide_done')
@@ -664,7 +726,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (!alive()) return
     await brief(3)
     if (!alive()) return
-    const holdTake = await record(HOLD_SEC)
+    const holdTake = await record(HOLD_SEC, true)
     if (!alive()) return
     dispatch({ type: 'hold-done', frames: holdTake })
     trackFunnel('task_hold_done')
@@ -674,8 +736,17 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     await twinPeek(gen)
     if (!alive()) return
 
-    // Task C — match 5, reference-then-record (never simultaneous).
-    // One gate before round 1; rounds 2-5 keep the automatic rhythm.
+    await runMatchPhase(gen)
+  }
+
+  /** Task C — match 5, reference-then-record (never simultaneous).
+   *  One gate before round 1; rounds 2-5 keep the automatic rhythm.
+   *
+   *  Split out of runFlow so a checkpoint resume can enter here: after a
+   *  reload the glides, hold and targets come from storage rather than from
+   *  the first half of a run that no longer exists. */
+  async function runMatchPhase(gen: number): Promise<void> {
+    const alive = (): boolean => !cancelled && gen === flowGen
     await taskIntro(gen)
     if (!alive()) return
     await brief(2)
@@ -739,6 +810,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
 
   function finishRun(state: MirrorSessionState): void {
     teardownAudio()
+    // The run landed: the save point has nothing left to rescue, and the
+    // #take-N pushed below supersedes #twin as the restorable URL.
+    if (localStorage !== null) clearCheckpoint(localStorage)
+    setPendingResume(false)
     const result = state.result
     if (!result) {
       trackFunnel('results_view')
@@ -832,6 +907,38 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       range: attempt.result.range,
       result: attempt.result,
     })
+    return true
+  }
+
+  /** Restore the mid-run save point: the twin back on screen with the five
+   *  notes still on offer. No audio is touched here — the run is parked at a
+   *  gate, and the mic is acquired by the CTA's tap so iOS Safari still sees
+   *  a user gesture. Returns whether a checkpoint was actually restored. */
+  function restoreCheckpoint(): boolean {
+    if (localStorage === null) return false
+    const saved = loadCheckpoint(localStorage)
+    if (saved === null) return false
+    const legend = singerForRange(saved.range)
+    if (legend === null) return false
+    teardownAudio()
+    flowGen++
+    releaseIntroGate()
+    starting = false
+    setFreePhase(null)
+    setFreeResult(null)
+    setMode('guided')
+    setSession({
+      ...initialSessionState(),
+      phase: 'match',
+      glides: saved.glides,
+      hold: saved.hold,
+      targets: saved.targets,
+      range: saved.range,
+    })
+    setMetTwin(true)
+    setPeekLegend(legend)
+    setPendingResume(true)
+    setSubPhase('twin-peek')
     return true
   }
 
@@ -985,6 +1092,15 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       : '/#/exercises'
 
   const currentTask = (): TaskCopy | null => TASK_COPY[session().phase] ?? null
+
+  /** The take length for the phase in progress — drives both the time bar and
+   *  the point at which "I'm done" becomes available. */
+  const taskSeconds = (): number =>
+    session().phase === 'hold'
+      ? HOLD_SEC
+      : session().phase === 'match'
+        ? MATCH_TAKE_SEC
+        : GLIDE_SEC
   const isTaskPhase = (): boolean => currentTask() !== null
   const taskNumber = (): number =>
     session().phase === 'hold' ? 2 : session().phase === 'match' ? 3 : 1
@@ -1170,6 +1286,27 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
                   }}
                 />
               </div>
+              {/* 40s is the longest take in the product and the one most
+                  likely to outlast the song someone picked. */}
+              <Show
+                when={
+                  stoppable() &&
+                  FREE_SING_SEC - remaining() >= EARLY_STOP_AFTER_SEC
+                }
+              >
+                <div class="mirror-stopearly">
+                  <button
+                    type="button"
+                    class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+                    onClick={() => {
+                      stopRequested = true
+                    }}
+                  >
+                    I'm done
+                  </button>
+                  <p class="mirror-dim">We keep what we've heard.</p>
+                </div>
+              </Show>
             </Show>
           </div>
         </section>
@@ -1258,10 +1395,27 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           <div class="mirror-actions">
             <button
               class="mirror-cta mirror-cta-ready"
-              onClick={() => releaseIntroGate()}
+              onClick={() => {
+                // After a reload there is no gate to release — the mic has to
+                // be re-acquired, and it must happen inside this tap.
+                if (pendingResume()) void start('guided')
+                else releaseIntroGate()
+              }}
             >
               Add my accuracy score
             </button>
+            {/* A resumed run sits at phase 'match', where the mic panel does
+                not render and the reducer ignores 'mic-denied' — so without
+                this a revoked permission would leave the button doing
+                nothing at all. pendingResume stays true after a failure, so
+                the tap above is still a retry. */}
+            <Show
+              when={pendingResume() && (micError() !== null || micSilent())}
+            >
+              <p class="mirror-error">
+                {micError() ?? "We're not hearing much from your microphone."}
+              </p>
+            </Show>
           </div>
           <p class="mirror-dim">
             Five short notes to sing back — about a minute.
@@ -1341,10 +1495,32 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
                 <div
                   class="mirror-timebar-fill"
                   style={{
-                    width: `${Math.max(0, Math.min(100, (remaining() / (session().phase === 'hold' ? HOLD_SEC : session().phase === 'match' ? MATCH_TAKE_SEC : GLIDE_SEC)) * 100))}%`,
+                    width: `${Math.max(0, Math.min(100, (remaining() / taskSeconds()) * 100))}%`,
                   }}
                 />
               </div>
+              {/* The clock is a ceiling, not a quota. Appears only once there
+                  is a measurable take, so an instant tap cannot hand the
+                  analyser an empty one. */}
+              <Show
+                when={
+                  stoppable() &&
+                  taskSeconds() - remaining() >= EARLY_STOP_AFTER_SEC
+                }
+              >
+                <div class="mirror-stopearly">
+                  <button
+                    type="button"
+                    class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+                    onClick={() => {
+                      stopRequested = true
+                    }}
+                  >
+                    I'm done
+                  </button>
+                  <p class="mirror-dim">We keep what we've heard.</p>
+                </div>
+              </Show>
             </Show>
           </div>
         </section>
