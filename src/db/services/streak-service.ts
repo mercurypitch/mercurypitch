@@ -23,7 +23,7 @@
 
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
-import { findOwnProfile } from '@/db/services/user-service'
+import { findOwnProfile, getUserId } from '@/db/services/user-service'
 
 export const MAX_FREEZES = 3
 /**
@@ -367,16 +367,22 @@ function streakPatch(f: StreakFields): Partial<UserProfile> {
  * Record a practice for today and persist the advanced streak.
  * Returns the new streak value (0 if no profile / on error).
  */
-export async function updatePracticeStreak(): Promise<number> {
+export async function updatePracticeStreak(
+  expectedUserId = getUserId(),
+): Promise<number> {
   try {
+    if (getUserId() !== expectedUserId) return 0
     const db = await getDb()
+    if (getUserId() !== expectedUserId) return 0
     const repo = db.getRepository<UserProfile>('userProfiles')
-    const profile = await findOwnProfile(repo)
+    const profile = await findOwnProfile(repo, expectedUserId)
     if (profile === undefined) return 0
+    if (getUserId() !== expectedUserId) return 0
 
     const today = todayDateString()
     const next = advanceStreak(streakFieldsOf(profile), today)
     await repo.update(profile.id, streakPatch(next))
+    if (getUserId() !== expectedUserId) return 0
     return next.currentStreak
   } catch {
     return 0
@@ -434,11 +440,16 @@ export async function repairStreak(): Promise<RepairResult> {
  * Get the current streak without modifying it. Kept for existing callers
  * (badge engine, leaderboard); now accounts for freezes via the read model.
  */
-export async function getCurrentStreak(): Promise<number> {
+export async function getCurrentStreak(
+  expectedUserId = getUserId(),
+): Promise<number> {
   try {
+    if (getUserId() !== expectedUserId) return 0
     const db = await getDb()
+    if (getUserId() !== expectedUserId) return 0
     const repo = db.getRepository<UserProfile>('userProfiles')
-    const profile = await findOwnProfile(repo)
+    const profile = await findOwnProfile(repo, expectedUserId)
+    if (getUserId() !== expectedUserId) return 0
     return computeStreakState(streakFieldsOf(profile), todayDateString())
       .currentStreak
   } catch {

@@ -8,17 +8,23 @@
 // arrays, ~600 points max — a few KB per challenge). Local-only for now;
 // cloud sync can layer on once shared takes exist server-side.
 
+import { getUserId } from '@/db/services/user-service'
 import type { RunTrace, TracePoint } from '@/features/exercises/last-run-trace'
 
-const KEY_PREFIX = 'mp_challenge_trace_v1_'
+const KEY_PREFIX = 'mp_challenge_trace_v2_'
 
 export interface StoredChallengeTrace {
+  ownerId: string
   score: number
   at: number
   durationMs: number
   /** [tSeconds, hz] pairs — positional to keep the JSON small. */
   samples: Array<[number, number]>
   targets: Array<[number, number]>
+}
+
+function storageKey(ownerId: string, challengeId: string): string {
+  return `${KEY_PREFIX}${encodeURIComponent(ownerId)}_${challengeId}`
 }
 
 /** A new take replaces the stored one when it scores at least as well. */
@@ -37,18 +43,20 @@ export function saveChallengeTrace(
   score: number,
   trace: RunTrace,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
+  ownerId = getUserId(),
 ): void {
   try {
-    const existing = loadChallengeTrace(challengeId, storage)
+    const existing = loadChallengeTrace(challengeId, storage, ownerId)
     if (!shouldReplaceTrace(existing, score)) return
     const stored: StoredChallengeTrace = {
+      ownerId,
       score,
       at: trace.completedAt,
       durationMs: trace.durationMs,
       samples: compact(trace.samples),
       targets: compact(trace.targets),
     }
-    storage.setItem(KEY_PREFIX + challengeId, JSON.stringify(stored))
+    storage.setItem(storageKey(ownerId, challengeId), JSON.stringify(stored))
   } catch {
     // Storage full or blocked — the attempt itself is unaffected.
   }
@@ -57,14 +65,16 @@ export function saveChallengeTrace(
 export function loadChallengeTrace(
   challengeId: string,
   storage: Pick<Storage, 'getItem' | 'setItem'> = localStorage,
+  ownerId = getUserId(),
 ): StoredChallengeTrace | null {
   try {
-    const raw = storage.getItem(KEY_PREFIX + challengeId)
+    const raw = storage.getItem(storageKey(ownerId, challengeId))
     if (raw === null) return null
     const parsed: unknown = JSON.parse(raw)
     if (
       typeof parsed !== 'object' ||
       parsed === null ||
+      (parsed as StoredChallengeTrace).ownerId !== ownerId ||
       typeof (parsed as StoredChallengeTrace).score !== 'number' ||
       !Array.isArray((parsed as StoredChallengeTrace).samples)
     ) {

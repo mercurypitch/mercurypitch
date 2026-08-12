@@ -4,7 +4,7 @@
 
 import { getDb } from '@/db'
 import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, UserAchievement, UserBadge, } from '@/db/entities'
-import { getUserId } from '@/db/seed'
+import { getUserId } from '@/db/services/user-service'
 
 export interface ChallengeView {
   id: string
@@ -58,12 +58,16 @@ export async function loadChallengeDefinitions(): Promise<
   }
 }
 
-export async function loadChallengeProgress(): Promise<ChallengeProgress[]> {
+export async function loadChallengeProgress(
+  expectedUserId = getUserId(),
+): Promise<ChallengeProgress[]> {
   try {
+    if (getUserId() !== expectedUserId) return []
     const db = await getDb()
+    if (getUserId() !== expectedUserId) return []
     const repo = db.getRepository<ChallengeProgress>('challengeProgress')
     return await repo.findAll({
-      where: { userId: getUserId() },
+      where: { userId: expectedUserId },
     })
   } catch {
     return []
@@ -116,9 +120,14 @@ export async function loadUserAchievements(): Promise<UserAchievement[]> {
 
 export async function saveChallengeProgress(
   progress: Omit<ChallengeProgress, 'id' | 'createdAt' | 'updatedAt'>,
+  expectedUserId = progress.userId,
 ): Promise<ChallengeProgress | null> {
   try {
+    if (progress.userId !== expectedUserId || getUserId() !== expectedUserId) {
+      return null
+    }
     const db = await getDb()
+    if (getUserId() !== expectedUserId) return null
     const repo = db.getRepository<ChallengeProgress>('challengeProgress')
     // Upsert: check if exists for this userId + challengeId
     const existing = await repo.findAll({
@@ -127,6 +136,7 @@ export async function saveChallengeProgress(
         challengeId: progress.challengeId,
       },
     })
+    if (getUserId() !== expectedUserId) return null
     if (existing.length > 0) {
       return await repo.update(existing[0].id, progress)
     }

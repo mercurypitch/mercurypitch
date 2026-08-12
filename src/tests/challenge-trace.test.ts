@@ -25,8 +25,8 @@ const trace = (score: number): RunTrace => ({
 describe('challenge trace persistence', () => {
   it('round-trips a stored trace with compacted points', () => {
     const storage = memStorage()
-    saveChallengeTrace('ch1', 72, trace(72), storage)
-    const loaded = loadChallengeTrace('ch1', storage)
+    saveChallengeTrace('ch1', 72, trace(72), storage, 'singer-a')
+    const loaded = loadChallengeTrace('ch1', storage, 'singer-a')
     expect(loaded?.score).toBe(72)
     expect(loaded?.durationMs).toBe(8000)
     // compacted to 10ms / 0.1Hz precision, positional pairs
@@ -36,12 +36,14 @@ describe('challenge trace persistence', () => {
 
   it('keeps the best take: lower score never overwrites', () => {
     const storage = memStorage()
-    saveChallengeTrace('ch1', 80, trace(80), storage)
-    saveChallengeTrace('ch1', 60, trace(60), storage)
-    expect(loadChallengeTrace('ch1', storage)?.score).toBe(80)
+    saveChallengeTrace('ch1', 80, trace(80), storage, 'singer-a')
+    saveChallengeTrace('ch1', 60, trace(60), storage, 'singer-a')
+    expect(loadChallengeTrace('ch1', storage, 'singer-a')?.score).toBe(80)
     // equal-or-better replaces (fresher take wins ties)
-    saveChallengeTrace('ch1', 80, trace(81), storage)
-    expect(loadChallengeTrace('ch1', storage)?.at).toBe(1_700_000_000_000 + 81)
+    saveChallengeTrace('ch1', 80, trace(81), storage, 'singer-a')
+    expect(loadChallengeTrace('ch1', storage, 'singer-a')?.at).toBe(
+      1_700_000_000_000 + 81,
+    )
   })
 
   it('shouldReplaceTrace: first take always stores', () => {
@@ -52,11 +54,21 @@ describe('challenge trace persistence', () => {
 
   it('missing or corrupt entries load as null', () => {
     const storage = memStorage()
-    expect(loadChallengeTrace('none', storage)).toBeNull()
+    expect(loadChallengeTrace('none', storage, 'singer-a')).toBeNull()
     storage.setItem('mp_challenge_trace_v1_bad', '{not json')
-    expect(loadChallengeTrace('bad', storage)).toBeNull()
+    expect(loadChallengeTrace('bad', storage, 'singer-a')).toBeNull()
     storage.setItem('mp_challenge_trace_v1_shape', '{"score":"x"}')
-    expect(loadChallengeTrace('shape', storage)).toBeNull()
+    expect(loadChallengeTrace('shape', storage, 'singer-a')).toBeNull()
+  })
+
+  it('never exposes one account trace to another account', () => {
+    const storage = memStorage()
+    saveChallengeTrace('ch1', 72, trace(72), storage, 'singer-a')
+
+    expect(loadChallengeTrace('ch1', storage, 'singer-b')).toBeNull()
+    expect(loadChallengeTrace('ch1', storage, 'singer-a')?.ownerId).toBe(
+      'singer-a',
+    )
   })
 })
 

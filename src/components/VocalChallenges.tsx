@@ -18,6 +18,7 @@ import { beginChallengeAttempt, challengeAttemptVersion, } from '@/features/chal
 import { generateChallengeDrill } from '@/features/challenges/challenge-drill-generator'
 import { PastWeeklyChallenges } from '@/features/challenges/PastWeeklyChallenges'
 import { WeeklyLegendHero } from '@/features/challenges/WeeklyLegendHero'
+import { getDifficulty } from '@/features/practice-intelligence/difficulty-store'
 import { launchDrill } from '@/stores/ui-store'
 import { IconBadge, IconBoltChallenge, iconByName, IconChart, IconCheckSolid, IconCloseSimple, IconFireChallenge, IconGuitarChallenge, IconLeaf, IconMicChallenge, IconMusicChallenge, IconPaper, IconRefreshSimple, IconStarChallenge, IconTarget, renderIcon, } from './hidden-features-icons'
 
@@ -131,11 +132,14 @@ function startChallengeDrill(challenge: ChallengeProgress): void {
     challenge.name,
     challenge.difficulty,
   )
+  const scoringDifficulty = getDifficulty(drill.exercise)
   beginChallengeAttempt({
     challengeId: challenge.id,
     title: challenge.name,
     category: challenge.type,
     exercise: drill.exercise,
+    targetNotes: drill.notes,
+    difficulty: scoringDifficulty,
     targetScore: challenge.targetScore,
     rewardBadgeId: challenge.rewardBadgeId,
   })
@@ -143,6 +147,7 @@ function startChallengeDrill(challenge: ChallengeProgress): void {
     exercise: drill.exercise,
     notes: drill.notes,
     challengeName: drill.challengeName,
+    difficulty: scoringDifficulty,
   })
 }
 

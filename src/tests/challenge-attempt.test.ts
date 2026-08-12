@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeAttemptOutcome } from '@/features/challenges/challenge-attempt'
+import { challengeAttemptComparabilityKey, computeAttemptOutcome, } from '@/features/challenges/challenge-attempt'
 
 describe('computeAttemptOutcome', () => {
   it('first attempt below target stays active', () => {
@@ -85,5 +85,31 @@ describe('computeAttemptOutcome', () => {
         90,
       ).progress,
     ).toBe(98)
+  })
+})
+
+describe('challenge attempt comparability', () => {
+  it('changes when the scored task changes and stays absent without the task', () => {
+    const target = {
+      challengeId: 'c1',
+      title: 'Hold steady',
+      category: 'basics',
+      exercise: 'long-note' as const,
+      targetScore: 80,
+      difficulty: 3,
+      targetNotes: ['C4'],
+    }
+    expect(challengeAttemptComparabilityKey(target)).toBe(
+      challengeAttemptComparabilityKey({ ...target }),
+    )
+    expect(challengeAttemptComparabilityKey(target)).not.toBe(
+      challengeAttemptComparabilityKey({ ...target, targetNotes: ['D4'] }),
+    )
+    expect(
+      challengeAttemptComparabilityKey({
+        ...target,
+        targetNotes: undefined,
+      }),
+    ).toBeUndefined()
   })
 })

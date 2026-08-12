@@ -11,8 +11,10 @@
 
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
+import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
+import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
 import { exerciseLabel } from '@/features/routines/segment-labels'
 import { autoAdvanceRoutineSegment } from '@/features/routines/use-daily-routine'
@@ -46,6 +48,7 @@ export function exerciseHistory(): ExerciseHistoryEntry[] {
 }
 
 export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
+  const ownerId = getUserId()
   setHistory((prev) => {
     const next = [entry, ...prev]
     return next.slice(0, 100) // keep last 100 entries
@@ -58,6 +61,18 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
   // recordCompletion counts a FINISHED run for the survey gate (and counts
   // as activity too, so recordActivity is folded in).
   recordCompletion()
+
+  const trace = lastRunTrace()
+  const tracedRunMs =
+    trace !== null &&
+    trace.type === entry.type &&
+    trace.completedAt === entry.completedAt
+      ? trace.durationMs
+      : undefined
+  const measuredRunMs =
+    entry.metrics.durationMs ?? entry.metrics.elapsedMs ?? tracedRunMs
+  const durationMs =
+    measuredRunMs !== undefined && measuredRunMs > 0 ? measuredRunMs : undefined
 
   // Persisting the run is async and order-dependent: a run launched from a
   // challenge or weekly is recorded by that path (with source 'challenge' /
@@ -72,30 +87,36 @@ export function recordExerciseResult(entry: ExerciseHistoryEntry): void {
     const consumedChallenge = await recordChallengeAttempt({
       type: entry.type,
       score: entry.score,
+      durationMs,
     })
     const consumedWeekly = await recordWeeklyAttempt({
       type: entry.type,
       score: entry.score,
+      durationMs,
     })
     if (consumedChallenge || consumedWeekly) return
 
-    const runMs = entry.metrics.durationMs ?? entry.metrics.elapsedMs
-    await saveSessionRecord({
-      melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
-      score: entry.score,
-      accuracy: entry.score,
-      notesHit: 0,
-      notesTotal: 0,
-      durationMs: runMs !== undefined && runMs > 0 ? runMs : undefined,
-      source: 'exercise',
-    })
+    const savedSession = await saveSessionRecord(
+      {
+        melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
+        score: entry.score,
+        accuracy: entry.score,
+        notesHit: 0,
+        notesTotal: 0,
+        durationMs,
+        source: 'exercise',
+        sourceRef: entry.type,
+      },
+      ownerId,
+    )
+    if (savedSession === null || getUserId() !== ownerId) return
     // The other three surfaces — session, challenge, weekly — each run the
     // grant pass after saving. This one never did, so drills earned nothing
     // until some OTHER surface happened to trigger a pass, at which point
     // everything they had earned unlocked in one heap. Half the goals count
     // drills (Drill Sergeant, Drill Habit, Well Rounded, every note and day
     // total), so this was not a small gap.
-    await checkAndGrantBadges()
+    await checkAndGrantBadges(ownerId)
   })()
 }
 

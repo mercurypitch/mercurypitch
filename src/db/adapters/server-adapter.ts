@@ -28,6 +28,12 @@ export interface ServerAdapterConfig {
    * browsing must never create an account.
    */
   beforeWrite?: () => Promise<unknown>
+  /**
+   * Current owner of a state-changing request. Captured before `beforeWrite`
+   * and checked again immediately before auth headers are read so an account
+   * switch cannot send the old operation with the next account's token.
+   */
+  writeIdentity?: () => string
   /** Observe structured API failures before the adapter consumes their body. */
   onErrorResponse?: (status: number, body: string) => void | Promise<void>
 }
@@ -88,9 +94,12 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     path: string,
     init?: RequestInit,
     retries = 2,
+    fixedHeaders?: Record<string, string>,
+    fixedIdentity?: string,
   ): Promise<R> {
     const url = `${this.url}${path}`
-    const headers = { ...this.headers(), ...init?.headers }
+    const expectedIdentity = fixedIdentity ?? this.config.writeIdentity?.()
+    const headers = { ...(fixedHeaders ?? this.headers()), ...init?.headers }
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -107,7 +116,12 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
 
         if (!res.ok) {
           const body = await res.text().catch(() => '')
-          await this.config.onErrorResponse?.(res.status, body)
+          if (
+            expectedIdentity === undefined ||
+            this.config.writeIdentity?.() === expectedIdentity
+          ) {
+            await this.config.onErrorResponse?.(res.status, body)
+          }
           throw new Error(
             `ServerAdapter: ${res.status} ${res.statusText} on ${url}${body ? ` — ${body}` : ''}`,
           )
@@ -130,6 +144,24 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     throw new Error(
       `ServerAdapter: request failed after ${retries + 1} attempts`,
     )
+  }
+
+  private async prepareWrite(): Promise<{
+    headers: Record<string, string>
+    identity?: string
+  }> {
+    const expectedIdentity = this.config.writeIdentity?.()
+    await this.config.beforeWrite?.()
+    if (
+      expectedIdentity !== undefined &&
+      this.config.writeIdentity?.() !== expectedIdentity
+    ) {
+      throw new Error('ServerAdapter: write identity changed before dispatch')
+    }
+    // Freeze the credential in the same continuation as the identity check.
+    // A later account switch cannot replace it while the caller resumes or a
+    // network retry waits; this operation remains owned by its initiator.
+    return { headers: this.headers(), identity: expectedIdentity }
   }
 
   async findById(id: string): Promise<T | null> {
@@ -159,34 +191,53 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       return await this.request<T[]>(qs ? `?${qs}` : '')
     } catch (err) {
       warnCloudUnreachable(err)
+      if (opts?.throwOnError === true) throw err
       return []
     }
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    await this.config.beforeWrite?.()
-    return this.request<T>('', {
-      method: 'POST',
-      body: JSON.stringify(entity),
-    })
+    const prepared = await this.prepareWrite()
+    return this.request<T>(
+      '',
+      {
+        method: 'POST',
+        body: JSON.stringify(entity),
+      },
+      2,
+      prepared.headers,
+      prepared.identity,
+    )
   }
 
   async update(
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
-    await this.config.beforeWrite?.()
-    return this.request<T>(`/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify(patch),
-    })
+    const prepared = await this.prepareWrite()
+    return this.request<T>(
+      `/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      },
+      2,
+      prepared.headers,
+      prepared.identity,
+    )
   }
 
   async delete(id: string): Promise<void> {
-    await this.config.beforeWrite?.()
-    await this.request(`/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    })
+    const prepared = await this.prepareWrite()
+    await this.request(
+      `/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+      },
+      2,
+      prepared.headers,
+      prepared.identity,
+    )
   }
 
   async count(opts?: QueryOptions<T>): Promise<number> {
@@ -204,6 +255,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       return result.count
     } catch (err) {
       warnCloudUnreachable(err)
+      if (opts?.throwOnError === true) throw err
       return 0
     }
   }

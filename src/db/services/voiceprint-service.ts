@@ -112,6 +112,8 @@ export async function saveVoiceprint(input: {
   source: VoiceprintSource
   takenAt?: string
 }): Promise<VoiceprintRecord> {
+  const accountOwnerId = realAccountHeld() ? getUserId() : null
+  const cloudOwnerId = cloudAvailable() ? getUserId() : null
   const record: VoiceprintRecord = {
     id: globalThis.crypto.randomUUID(),
     summary: input.summary,
@@ -126,11 +128,11 @@ export async function saveVoiceprint(input: {
     // again after signing in. Not the device id either — that survives
     // sign-in/out and would make every signed-out take look like it
     // belonged to whoever signs in next.
-    madeBy: realAccountHeld() ? getUserId() : MADE_ANONYMOUSLY,
+    madeBy: accountOwnerId ?? MADE_ANONYMOUSLY,
   }
 
   writeLocal([record, ...loadLocalVoiceprints()])
-  if (cloudAvailable()) await pushToCloud([record])
+  if (cloudOwnerId !== null) await pushToCloud([record], cloudOwnerId)
   return record
 }
 
@@ -157,18 +159,25 @@ function cloudAvailable(): boolean {
 
 async function pushToCloud(
   records: readonly VoiceprintRecord[],
-): Promise<void> {
+  expectedUserId: string,
+): Promise<number> {
+  if (getUserId() !== expectedUserId) return 0
+  let uploaded = 0
   try {
     const db = await getDb()
+    if (getUserId() !== expectedUserId) return 0
     const repo = db.getRepository<Voiceprint>('voiceprints')
     for (const record of records) {
+      if (getUserId() !== expectedUserId) return uploaded
       await repo.create({
-        userId: getUserId(),
+        userId: expectedUserId,
         summary: record.summary,
         twin: record.twin ?? undefined,
         source: record.source,
         takenAt: record.takenAt,
       })
+      if (getUserId() !== expectedUserId) return uploaded
+      uploaded += 1
     }
   } catch (err) {
     // The local copy already succeeded — a failed upload must never
@@ -178,6 +187,7 @@ async function pushToCloud(
     // and a flaky network look identical from in here.
     console.warn('[voiceprints] upload failed; kept on this device', err)
   }
+  return uploaded
 }
 
 // ── Read ─────────────────────────────────────────────────────────
@@ -194,11 +204,14 @@ export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
   const local = loadLocalVoiceprints()
   if (!cloudAvailable()) return sortNewestFirst(local)
 
-  const mine = local.filter((r) => recordMadeBy(r) === getUserId())
+  const ownerId = getUserId()
+  const mine = local.filter((r) => recordMadeBy(r) === ownerId)
   try {
     const db = await getDb()
+    if (getUserId() !== ownerId) return []
     const repo = db.getRepository<Voiceprint>('voiceprints')
-    const rows = await repo.findAll({ where: { userId: getUserId() } })
+    const rows = await repo.findAll({ where: { userId: ownerId } })
+    if (getUserId() !== ownerId) return []
     const remote: VoiceprintRecord[] = rows.map((row) => ({
       id: row.id,
       summary: row.summary,
@@ -210,7 +223,111 @@ export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
     // reached the server yet, and it should still show.
     return sortNewestFirst(dedupeByTakenAt([...remote, ...mine]))
   } catch {
-    return sortNewestFirst(mine)
+    return getUserId() === ownerId ? sortNewestFirst(mine) : []
+  }
+}
+
+export interface ProgressVoiceprintRecords {
+  records: VoiceprintRecord[]
+  available: boolean
+  complete: boolean
+  totalAvailable: number | null
+  /** False for anonymous/legacy device history that may span several people. */
+  comparable: boolean
+}
+
+/** Bounded account history with explicit completeness for Progress. */
+export async function loadProgressVoiceprints(
+  options: { pageSize?: number; maxRecords?: number } = {},
+): Promise<ProgressVoiceprintRecords> {
+  const ownerId = getUserId()
+  const local = loadLocalVoiceprints()
+  if (!cloudAvailable()) {
+    const progressOwnerId = realAccountHeld() ? ownerId : MADE_ANONYMOUSLY
+    const records = sortNewestFirst(
+      local.filter((record) => recordMadeBy(record) === progressOwnerId),
+    )
+    const localHistoryIsComplete = local.length < LOCAL_CAP
+    return {
+      records,
+      available: true,
+      complete: localHistoryIsComplete,
+      totalAvailable: localHistoryIsComplete ? records.length : null,
+      comparable: progressOwnerId !== MADE_ANONYMOUSLY,
+    }
+  }
+
+  const mine = local.filter((record) => recordMadeBy(record) === ownerId)
+  const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
+  const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
+  try {
+    const db = await getDb()
+    if (getUserId() !== ownerId) throw new Error('identity changed')
+    const repo = db.getRepository<Voiceprint>('voiceprints')
+    const where = { userId: ownerId }
+    const initialTotal = await repo.count({ where, throwOnError: true })
+    const target = Math.min(initialTotal, maxRecords)
+    const remote: VoiceprintRecord[] = []
+    const seen = new Set<string>()
+    let offset = 0
+
+    while (offset < target) {
+      const requested = Math.min(pageSize, target - offset)
+      const page = await repo.findAll({
+        where,
+        orderBy: 'takenAt',
+        orderDir: 'desc',
+        limit: requested,
+        offset,
+        throwOnError: true,
+      })
+      if (getUserId() !== ownerId) throw new Error('identity changed')
+      if (page.length === 0) break
+      offset += page.length
+      for (const row of page) {
+        if (seen.has(row.id)) continue
+        seen.add(row.id)
+        remote.push({
+          id: row.id,
+          summary: row.summary,
+          twin: row.twin ?? null,
+          source: row.source,
+          takenAt: row.takenAt,
+        })
+      }
+      if (page.length < requested) break
+    }
+
+    const finalTotal = await repo.count({ where, throwOnError: true })
+    if (getUserId() !== ownerId) throw new Error('identity changed')
+    const complete =
+      initialTotal === finalTotal &&
+      initialTotal <= maxRecords &&
+      remote.length === initialTotal
+    const records = sortNewestFirst(dedupeByTakenAt([...remote, ...mine]))
+    const totalAvailable =
+      finalTotal >= remote.length
+        ? complete
+          ? records.length
+          : finalTotal
+        : null
+    return {
+      records,
+      available: true,
+      complete,
+      totalAvailable,
+      comparable: true,
+    }
+  } catch {
+    return {
+      records: sortNewestFirst(mine),
+      // Local account-tagged takes remain useful evidence, but a failed
+      // audited cloud read cannot prove that this is the account's history.
+      available: false,
+      complete: false,
+      totalAvailable: null,
+      comparable: true,
+    }
   }
 }
 
@@ -247,7 +364,7 @@ function dedupeByTakenAt(records: VoiceprintRecord[]): VoiceprintRecord[] {
  * that both read "the server has none of these" would both upload —
  * duplicating every take the account was meant to rescue.
  */
-let syncing: Promise<number> | null = null
+const syncingByOwner = new Map<string, Promise<number>>()
 
 /**
  * Upload local takes the account does not have yet. Called after
@@ -257,31 +374,37 @@ let syncing: Promise<number> | null = null
  * Returns how many were uploaded.
  */
 export function syncLocalVoiceprints(): Promise<number> {
-  syncing ??= runSync().finally(() => {
-    syncing = null
+  if (!cloudAvailable()) return Promise.resolve(0)
+  const ownerId = getUserId()
+  const current = syncingByOwner.get(ownerId)
+  if (current !== undefined) return current
+  const next = runSync(ownerId).finally(() => {
+    if (syncingByOwner.get(ownerId) === next) syncingByOwner.delete(ownerId)
   })
-  return syncing
+  syncingByOwner.set(ownerId, next)
+  return next
 }
 
-async function runSync(): Promise<number> {
-  if (!cloudAvailable()) return 0
+async function runSync(ownerId: string): Promise<number> {
+  if (!cloudAvailable() || getUserId() !== ownerId) return 0
   // Only takes made under THIS identity upload by themselves. Anything
   // anonymous (or from before tagging) waits for the adoption notice —
   // uploading it here is exactly the shared-PC leak D2 closes.
   const local = loadLocalVoiceprints().filter(
-    (record) => recordMadeBy(record) === getUserId(),
+    (record) => recordMadeBy(record) === ownerId,
   )
   if (local.length === 0) return 0
 
   try {
     const db = await getDb()
+    if (getUserId() !== ownerId) return 0
     const repo = db.getRepository<Voiceprint>('voiceprints')
-    const rows = await repo.findAll({ where: { userId: getUserId() } })
+    const rows = await repo.findAll({ where: { userId: ownerId } })
+    if (getUserId() !== ownerId) return 0
     const known = new Set(rows.map((row) => row.takenAt))
     const missing = local.filter((record) => !known.has(record.takenAt))
     if (missing.length === 0) return 0
-    await pushToCloud(missing)
-    return missing.length
+    return await pushToCloud(missing, ownerId)
   } catch {
     return 0
   }
@@ -369,12 +492,15 @@ export function declineAdoption(): void {
  * locally, then upload. Returns how many were adopted.
  */
 export async function adoptDeviceVoiceprints(): Promise<number> {
+  if (!cloudAvailable()) return 0
+  const me = getUserId()
   // Don't interleave with an in-flight auto-sync: both read the cloud
   // list before pushing, and an overlap could upload a take twice.
-  if (syncing !== null) await syncing
+  const syncing = syncingByOwner.get(me)
+  if (syncing !== undefined) await syncing
+  if (getUserId() !== me) return 0
   const adoptable = listAdoptableVoiceprints()
   if (adoptable.length === 0) return 0
-  const me = getUserId()
   const adopting = new Set(adoptable.map((record) => record.id))
   // Retag FIRST: even if the upload below fails, the takes are now
   // own-tagged and the next ordinary sync carries them up.
@@ -385,10 +511,15 @@ export async function adoptDeviceVoiceprints(): Promise<number> {
   )
   try {
     const db = await getDb()
+    if (getUserId() !== me) return 0
     const repo = db.getRepository<Voiceprint>('voiceprints')
     const rows = await repo.findAll({ where: { userId: me } })
+    if (getUserId() !== me) return 0
     const known = new Set(rows.map((row) => row.takenAt))
-    await pushToCloud(adoptable.filter((r) => !known.has(r.takenAt)))
+    await pushToCloud(
+      adoptable.filter((r) => !known.has(r.takenAt)),
+      me,
+    )
   } catch {
     // Covered by the retag-first note above.
   }

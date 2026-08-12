@@ -11,10 +11,13 @@
 import { createSignal } from 'solid-js'
 import { checkAndGrantBadges, grantBadgeByRef, } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
+import { getUserId } from '@/db/services/user-service'
+import { fingerprintOf } from '@/features/community/share-identity'
 import type { ExerciseType } from '@/features/exercises/types'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
+import { armScoredAttempt, disarmScoredAttempt } from './attempt-coordinator'
 import { presentChallengeResult, whileFinalizing, } from './challenge-result-store'
 
 export interface WeeklyAttemptTarget {
@@ -29,7 +32,38 @@ export interface WeeklyAttemptTarget {
   targetItems?: MelodyItem[]
 }
 
-const [active, setActive] = createSignal<WeeklyAttemptTarget | null>(null)
+export const WEEKLY_ATTEMPT_SOURCE_VERSION = 1
+
+/** Fingerprint the fields that the weekly stage actually scores. */
+export function weeklyAttemptComparabilityKey(
+  target: WeeklyAttemptTarget,
+): string | undefined {
+  const notes = (target.targetItems ?? [])
+    .filter(
+      (item) =>
+        Number.isFinite(item.note?.midi) &&
+        Number.isFinite(item.startBeat) &&
+        Number.isFinite(item.duration),
+    )
+    .map((item) => ({
+      midi: item.note.midi,
+      startBeat: item.startBeat,
+      duration: item.duration,
+    }))
+    .sort(
+      (a, b) =>
+        a.startBeat - b.startBeat || a.midi - b.midi || a.duration - b.duration,
+    )
+  if (notes.length === 0) return undefined
+  const signature = fingerprintOf(JSON.stringify(notes))
+  return `voice:weekly:${target.challengeId}:v${WEEKLY_ATTEMPT_SOURCE_VERSION}:${signature}`
+}
+
+interface ActiveWeeklyAttempt extends WeeklyAttemptTarget {
+  ownerId: string
+}
+
+const [active, setActive] = createSignal<ActiveWeeklyAttempt | null>(null)
 const [version, setVersion] = createSignal(0)
 
 /**
@@ -46,12 +80,14 @@ export const activeWeeklyAttempt = active
 export const weeklyAttemptVersion = version
 
 export function beginWeeklyAttempt(target: WeeklyAttemptTarget): void {
-  setActive(target)
+  setActive({ ...target, ownerId: getUserId() })
+  armScoredAttempt('weekly', () => setActive(null))
   trackEvent('weekly_join')
 }
 
 export function clearWeeklyAttempt(): void {
   setActive(null)
+  disarmScoredAttempt('weekly')
 }
 
 export type WeeklyTier = 'attempted' | 'completed' | 'beat-founder'
@@ -81,6 +117,7 @@ export function weeklyTier(
 export async function recordWeeklyAttempt(entry: {
   type: ExerciseType
   score: number
+  durationMs?: number
 }): Promise<boolean> {
   const a = active()
   if (a === null) {
@@ -102,26 +139,46 @@ export async function recordWeeklyAttempt(entry: {
     return false
   }
   if (entry.type !== a.exercise) {
-    setActive(null)
+    clearWeeklyAttempt()
     return false
+  }
+  if (getUserId() !== a.ownerId) {
+    clearWeeklyAttempt()
+    return true
   }
 
   const score = Math.min(100, Math.max(0, Math.round(entry.score)))
+  const comparabilityKey = weeklyAttemptComparabilityKey(a)
+  let sessionSaved = false
   try {
     // Wrapped so the stage can say "saving your run" instead of sitting
     // frozen through three round trips.
     await whileFinalizing(async () => {
       // Counts as a real practice session tagged to the weekly challenge — the
       // board derives best-per-user from these rows.
-      await saveSessionRecord({
-        melodyName: `Legend: ${a.title}`,
-        score,
-        accuracy: score,
-        notesHit: 0,
-        notesTotal: 0,
-        weeklyChallengeId: a.challengeId,
-        source: 'weekly',
-      })
+      const savedSession = await saveSessionRecord(
+        {
+          melodyName: `Legend: ${a.title}`,
+          score,
+          accuracy: score,
+          notesHit: 0,
+          notesTotal: 0,
+          durationMs: entry.durationMs,
+          weeklyChallengeId: a.challengeId,
+          source: 'weekly',
+          sourceRef: a.challengeId,
+          ...(comparabilityKey === undefined
+            ? {}
+            : {
+                sourceVersion: WEEKLY_ATTEMPT_SOURCE_VERSION,
+                comparabilityKey,
+              }),
+        },
+        a.ownerId,
+      )
+      if (savedSession === null) return
+      sessionSaved = true
+      if (getUserId() !== a.ownerId) return
       trackEvent('weekly_attempt')
 
       const tier = weeklyTier(score, a.targetScore, a.founderScore)
@@ -132,10 +189,13 @@ export async function recordWeeklyAttempt(entry: {
         a.rewardBadgeId !== null &&
         a.rewardBadgeId !== ''
       ) {
-        await grantBadgeByRef(a.rewardBadgeId)
+        await grantBadgeByRef(a.rewardBadgeId, a.ownerId)
+        if (getUserId() !== a.ownerId) return
         badgeGranted = true
       }
-      await checkAndGrantBadges()
+      if (getUserId() !== a.ownerId) return
+      await checkAndGrantBadges(a.ownerId)
+      if (getUserId() !== a.ownerId) return
 
       // Publish the result without navigating away. The app-level result
       // overlay sits above the frozen challenge canvas, so the singer can
@@ -154,6 +214,17 @@ export async function recordWeeklyAttempt(entry: {
   } catch {
     // The drill result stands even if persistence fails.
   }
+  if (getUserId() !== a.ownerId) {
+    clearWeeklyAttempt()
+    return true
+  }
+  if (!sessionSaved) {
+    showNotification(
+      `We couldn't save that Legend attempt. Your score was not posted; try the line again when you're ready.`,
+      'error',
+    )
+    return true
+  }
   // One armed attempt consumes exactly one run. Staying armed meant every
   // later run of the same exercise type — any melody, days later — kept
   // posting to the Legend board. Another go is one tap on the hero.
@@ -161,7 +232,7 @@ export async function recordWeeklyAttempt(entry: {
   // so repeat runs counting is the design there.)
   lastConsumed = { title: a.title, exercise: a.exercise }
   practiceHintShown = false
-  setActive(null)
+  clearWeeklyAttempt()
   setVersion((v) => v + 1)
   return true
 }

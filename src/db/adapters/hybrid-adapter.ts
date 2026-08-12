@@ -9,6 +9,7 @@
 // syncs to the cloud by design.
 
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
+import { getUserId } from '@/db/services/user-service'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 
 /**
@@ -77,6 +78,7 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     private inner: Repository<T>,
     private isAuthed: () => boolean,
     private ensureAuthed: () => Promise<boolean>,
+    private currentIdentity: () => string,
   ) {}
 
   async findById(id: string): Promise<T | null> {
@@ -92,7 +94,8 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
   }
 
   async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    await this.assertWritable()
+    const expectedIdentity = await this.prepareWrite()
+    this.assertWriteIdentity(expectedIdentity)
     return this.inner.create(entity)
   }
 
@@ -100,12 +103,14 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
   ): Promise<T> {
-    await this.assertWritable()
+    const expectedIdentity = await this.prepareWrite()
+    this.assertWriteIdentity(expectedIdentity)
     return this.inner.update(id, patch)
   }
 
   async delete(id: string): Promise<void> {
-    await this.assertWritable()
+    const expectedIdentity = await this.prepareWrite()
+    this.assertWriteIdentity(expectedIdentity)
     return this.inner.delete(id)
   }
 
@@ -133,10 +138,19 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
    * Reads deliberately do NOT do this. Browsing must leave no server-side
    * row, so an unprovisioned read resolves empty instead of minting.
    */
-  private async assertWritable(): Promise<void> {
-    if (this.isAuthed()) return
-    if (await this.ensureAuthed()) return
-    throw new Error('Signed out — personal data is not being saved')
+  private async prepareWrite(): Promise<string> {
+    const expectedIdentity = this.currentIdentity()
+    if (!this.isAuthed() && !(await this.ensureAuthed())) {
+      throw new Error('Signed out — personal data is not being saved')
+    }
+    this.assertWriteIdentity(expectedIdentity)
+    return expectedIdentity
+  }
+
+  private assertWriteIdentity(expectedIdentity: string): void {
+    if (this.currentIdentity() !== expectedIdentity) {
+      throw new Error('HybridAdapter: write identity changed before dispatch')
+    }
   }
 }
 
@@ -149,6 +163,7 @@ export class HybridAdapter implements DatabaseAdapter {
     private local: DatabaseAdapter,
     private isAuthed: () => boolean = hasValidToken,
     private ensureAuthed: () => Promise<boolean> = requireAuth,
+    private currentIdentity: () => string = getUserId,
   ) {}
 
   getRepository<T extends DbEntity>(entityName: string): Repository<T> {
@@ -164,6 +179,7 @@ export class HybridAdapter implements DatabaseAdapter {
       this.cloud.getRepository<T>(entityName),
       this.isAuthed,
       this.ensureAuthed,
+      this.currentIdentity,
     )
     this.guarded.set(entityName, guarded as Repository<DbEntity>)
     return guarded

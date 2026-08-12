@@ -16,6 +16,8 @@ export interface QueryOptions<T> {
   orderDir?: 'asc' | 'desc'
   limit?: number
   offset?: number
+  /** Opt out of repository empty-result fallbacks for audited reads. */
+  throwOnError?: boolean
 }
 
 /** Generic CRUD repository for one entity type. */

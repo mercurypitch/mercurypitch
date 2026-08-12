@@ -211,6 +211,7 @@ class DexieRepository<T extends DbEntity> implements Repository<T> {
         `[DexieAdapter] findAll failed for "${this.table.name}":`,
         err,
       )
+      if (opts?.throwOnError === true) throw err
       return []
     }
   }

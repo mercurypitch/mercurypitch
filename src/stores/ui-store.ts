@@ -404,6 +404,8 @@ export interface PendingDrill {
   exercise: ExerciseType
   notes: string[]
   challengeName: string
+  /** Pinned numeric scoring difficulty for a comparable targeted run. */
+  difficulty?: number
   /** Step-pattern for pattern-driven exercises (warmup blocks). */
   pattern?: string
 }

@@ -33,6 +33,46 @@ describe('validateWrite for sessionRecords', () => {
     expect(validateWrite('sessionRecords', { score: 88 })).toBeNull()
   })
 
+  it('accepts valid Progress evidence fields', () => {
+    expect(
+      validateWrite('sessionRecords', {
+        source: 'exercise',
+        instrument: 'voice',
+        durationMs: 12_500,
+        sourceVersion: 2,
+        sourceRef: 'long-note',
+        comparabilityKey: 'voice:exercise:long-note:v2',
+      }),
+    ).toBeNull()
+  })
+
+  it('rejects invalid Progress evidence fields', () => {
+    expect(validateWrite('sessionRecords', { instrument: 'drums' })).toMatch(
+      /instrument/,
+    )
+    expect(validateWrite('sessionRecords', { durationMs: 0 })).toMatch(
+      /durationMs/,
+    )
+    expect(validateWrite('sessionRecords', { durationMs: Infinity })).toMatch(
+      /durationMs/,
+    )
+    expect(validateWrite('sessionRecords', { sourceVersion: 1.5 })).toMatch(
+      /sourceVersion/,
+    )
+    expect(validateWrite('sessionRecords', { sourceRef: '' })).toMatch(
+      /sourceRef/,
+    )
+    expect(
+      validateWrite('sessionRecords', { comparabilityKey: { task: 'x' } }),
+    ).toMatch(/comparabilityKey/)
+    expect(
+      validateWrite('sessionRecords', {
+        comparabilityKey: 'voice:exercise:long-note:v1',
+        sourceRef: 'long-note',
+      }),
+    ).toMatch(/sourceVersion/)
+  })
+
   it('ignores other entities', () => {
     expect(validateWrite('userProfiles', { source: 'garbage' })).toBeNull()
   })

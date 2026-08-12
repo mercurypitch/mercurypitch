@@ -24,6 +24,7 @@ import { loadGrantContext } from '@/db/services/grant-context'
 import { isBadgePending, pendingAchievement, queueAchievement, queueBadge, } from '@/db/services/grant-flush'
 import type { ActivityCounts } from '@/db/services/user-activity-service'
 import { countActivity } from '@/db/services/user-activity-service'
+import { getUserId } from '@/db/services/user-service'
 import { localDayKey } from '@/features/practice-intelligence/practice-activity'
 import { showNotification } from '@/stores/notifications-store'
 
@@ -359,12 +360,17 @@ function evalAchievement(
  * ids are generated at seed time). Idempotent and silent on failure — same
  * contract as checkAndGrantBadges.
  */
-export async function grantBadgeByRef(ref: string): Promise<void> {
+export async function grantBadgeByRef(
+  ref: string,
+  expectedUserId = getUserId(),
+): Promise<void> {
   try {
+    if (getUserId() !== expectedUserId) return
     const [badges, userBadges] = await Promise.all([
       loadBadgeDefinitions(),
       loadUserBadges(),
     ])
+    if (getUserId() !== expectedUserId) return
     const badge = badges.find((b) => b.id === ref || b.name === ref)
     if (badge === undefined) return
     if (userBadges.some((ub) => ub.badgeId === badge.id)) return
@@ -385,9 +391,13 @@ export async function grantBadgeByRef(ref: string): Promise<void> {
  * window later (grant-flush.ts), so finishing a run no longer waits on the
  * achievements API at all — the toast fires from the evaluation above it.
  */
-export async function checkAndGrantBadges(): Promise<void> {
+export async function checkAndGrantBadges(
+  expectedUserId = getUserId(),
+): Promise<void> {
   try {
+    if (getUserId() !== expectedUserId) return
     const ctx = await loadGrantContext()
+    if (getUserId() !== expectedUserId) return
     const { badges, userBadges, achievements, userAchievements } = ctx
 
     if (badges.length === 0 && achievements.length === 0) return
@@ -410,6 +420,7 @@ export async function checkAndGrantBadges(): Promise<void> {
     // round (e.g. the bronze badge that completes the set).
     for (let pass = 0; pass < 2; pass++) {
       for (const badge of badges) {
+        if (getUserId() !== expectedUserId) return
         if (earnedBadgeIds.has(badge.id)) continue
         if (!isBadgeEarned(badge, stats, earnedBadgeIds, badges)) continue
         earnedBadgeIds.add(badge.id)
@@ -421,6 +432,7 @@ export async function checkAndGrantBadges(): Promise<void> {
     const achByDef = new Map(userAchievements.map((a) => [a.achievementId, a]))
     const measures = buildMeasures(stats)
     for (const ach of achievements) {
+      if (getUserId() !== expectedUserId) return
       const result = evalAchievement(ach, measures)
       if (!result) continue
 

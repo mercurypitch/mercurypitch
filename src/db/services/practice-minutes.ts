@@ -10,6 +10,7 @@
 // streak itself is the cloud value.
 
 import { getCurrentStreak, todayDateString, updatePracticeStreak, } from '@/db/services/streak-service'
+import { getUserId } from '@/db/services/user-service'
 import { recordPathPracticeDay } from '@/features/path/path-progress'
 
 export const DAILY_GOAL_MS = 5 * 60 * 1000 // 5 minutes
@@ -18,12 +19,16 @@ export const NOMINAL_RUN_MS = 90 * 1000
 const MS_KEY_PREFIX = 'mp_practice_ms_'
 const COUNTED_KEY_PREFIX = 'mp_streak_counted_'
 
-function msKey(date: string): string {
-  return `${MS_KEY_PREFIX}${date}`
+function ownerPart(ownerId: string): string {
+  return encodeURIComponent(ownerId)
 }
 
-function countedKey(date: string): string {
-  return `${COUNTED_KEY_PREFIX}${date}`
+function msKey(date: string, ownerId = getUserId()): string {
+  return `${MS_KEY_PREFIX}${ownerPart(ownerId)}_${date}`
+}
+
+function countedKey(date: string, ownerId = getUserId()): string {
+  return `${COUNTED_KEY_PREFIX}${ownerPart(ownerId)}_${date}`
 }
 
 function readNumber(key: string): number {
@@ -52,15 +57,18 @@ export function isDailyGoalMet(): boolean {
 }
 
 /** Drop counters for days other than today so localStorage doesn't grow. */
-function pruneOldDays(today: string): void {
+function pruneOldDays(today: string, ownerId: string): void {
   try {
+    const ownerMsPrefix = `${MS_KEY_PREFIX}${ownerPart(ownerId)}_`
+    const ownerCountedPrefix = `${COUNTED_KEY_PREFIX}${ownerPart(ownerId)}_`
     const stale: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (key === null) continue
       if (
-        (key.startsWith(MS_KEY_PREFIX) && key !== msKey(today)) ||
-        (key.startsWith(COUNTED_KEY_PREFIX) && key !== countedKey(today))
+        (key.startsWith(ownerMsPrefix) && key !== msKey(today, ownerId)) ||
+        (key.startsWith(ownerCountedPrefix) &&
+          key !== countedKey(today, ownerId))
       ) {
         stale.push(key)
       }
@@ -77,22 +85,26 @@ function pruneOldDays(today: string): void {
  * value; on any failure returns the value from a plain streak update so callers
  * still get a sensible number to store on a SessionRecord.
  */
-export async function addScoredMs(ms: number): Promise<number> {
+export async function addScoredMs(
+  ms: number,
+  ownerId = getUserId(),
+): Promise<number> {
+  if (getUserId() !== ownerId) return 0
   const today = todayDateString()
   const safeMs =
     Number.isFinite(ms) && ms > 0 ? Math.min(ms, DAILY_GOAL_MS * 12) : 0
 
-  let total = getTodayScoredMs()
+  let total = readNumber(msKey(today, ownerId))
   const wasMet = total >= DAILY_GOAL_MS
   total += safeMs
   try {
-    localStorage.setItem(msKey(today), String(total))
-    pruneOldDays(today)
+    localStorage.setItem(msKey(today, ownerId), String(total))
+    pruneOldDays(today, ownerId)
   } catch {
     // localStorage unavailable — fall through; the streak can still update.
   }
 
-  const alreadyCounted = readNumber(countedKey(today)) === 1
+  const alreadyCounted = readNumber(countedKey(today, ownerId)) === 1
   const justMet = total >= DAILY_GOAL_MS
 
   // A goal-met day also lights a segment on the guided path's active orb
@@ -101,10 +113,11 @@ export async function addScoredMs(ms: number): Promise<number> {
 
   // Bump on the crossing, or self-heal if a previous crossing failed to record.
   if (justMet && (!wasMet || !alreadyCounted)) {
-    const streak = await updatePracticeStreak()
+    const streak = await updatePracticeStreak(ownerId)
+    if (getUserId() !== ownerId) return 0
     if (streak > 0) {
       try {
-        localStorage.setItem(countedKey(today), '1')
+        localStorage.setItem(countedKey(today, ownerId), '1')
       } catch {
         // ignore — worst case we retry the (idempotent) bump next run
       }
@@ -114,5 +127,6 @@ export async function addScoredMs(ms: number): Promise<number> {
 
   // Goal not yet met (or already counted today): report the current streak so
   // callers can snapshot it, without advancing it here.
-  return await getCurrentStreak()
+  const streak = await getCurrentStreak(ownerId)
+  return getUserId() === ownerId ? streak : 0
 }

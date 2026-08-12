@@ -196,6 +196,30 @@ describe('HybridAdapter', () => {
       expect(cloud.calls).toEqual(['create', 'update'])
     })
 
+    it('does not pass an old operation through after provisioning changes accounts', async () => {
+      const cloud = trackingAdapter()
+      let identity = 'singer-a'
+      let releaseProvisioning = (_allowed: boolean): void => undefined
+      const hybrid = new HybridAdapter(
+        cloud,
+        stubAdapter(),
+        () => false,
+        () =>
+          new Promise<boolean>((resolve) => {
+            releaseProvisioning = resolve
+          }),
+        () => identity,
+      )
+      const repo = hybrid.getRepository('sessionRecords')
+
+      const writing = repo.create({})
+      identity = 'singer-b'
+      releaseProvisioning(true)
+
+      await expect(writing).rejects.toThrow(/write identity changed/)
+      expect(cloud.calls).toEqual([])
+    })
+
     it('never provisions on a read — browsing leaves no server-side row', async () => {
       const cloud = trackingAdapter()
       let minted = 0
