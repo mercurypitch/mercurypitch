@@ -1009,35 +1009,248 @@ body {
   box-shadow: 0 10px 30px rgba(140, 130, 255, 0.28);
 }
 
-/* Card-option chips as one centred row. */
-.mirror-cardopts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+/* ---- Card options sheet ---------------------------------------------
+   The card-tuning controls used to sit on the results screen as a row of
+   chips, competing with the share buttons at the exact moment the person
+   has decided to share. They now live in a sheet: a bottom sheet on a
+   phone, a right-hand drawer from tablet up. */
+
+.mirror-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(9, 7, 20, 0.62);
+  backdrop-filter: blur(3px);
+  animation: mirror-sheet-fade 0.18s ease-out;
 }
 
-/* Small pressed-state chip for card options (pitch trace on/off). */
-.mirror-optchip {
+.mirror-sheet {
+  position: fixed;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--mirror-text);
+  background: linear-gradient(
+    180deg,
+    var(--mirror-bg-mid) 0%,
+    var(--mirror-bg-bottom) 100%
+  );
+  border: 1px solid rgba(143, 163, 255, 0.22);
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
+  /* Phone: a bottom sheet. Capped so a long list scrolls inside the sheet
+     rather than pushing the grip off screen. */
+  inset: auto 0 0 0;
+  max-height: min(78vh, 620px);
+  overflow-y: auto;
+  padding: 10px 18px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 22px 22px 0 0;
+  animation: mirror-sheet-up 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 700px) {
+  .mirror-sheet {
+    inset: 0 0 0 auto;
+    width: min(400px, 92vw);
+    max-height: none;
+    border-radius: 22px 0 0 22px;
+    padding: 18px 22px calc(22px + env(safe-area-inset-bottom));
+    box-shadow: -18px 0 50px rgba(0, 0, 0, 0.5);
+    animation: mirror-sheet-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes mirror-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mirror-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes mirror-sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-sheet,
+  .mirror-sheet-scrim {
+    animation: none;
+  }
+}
+
+/* The drag affordance. Purely a signal that this panel dismisses —
+   dragging itself is the platform's job, not ours. */
+.mirror-sheet-grip {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(155, 147, 192, 0.45);
+  margin: 0 auto 8px;
+}
+@media (min-width: 700px) {
+  .mirror-sheet-grip {
+    display: none;
+  }
+}
+
+.mirror-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.mirror-sheet-head h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.mirror-sheet-close {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(143, 163, 255, 0.3);
+  border: 1px solid rgba(143, 163, 255, 0.24);
   background: transparent;
   color: var(--mirror-dim);
-  font-family: inherit;
-  font-size: 0.82rem;
-  padding: 6px 14px;
   cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
 }
-.mirror-optchip.on {
+.mirror-sheet-close:hover {
+  color: var(--mirror-text);
+  border-color: rgba(143, 163, 255, 0.5);
+}
+
+.mirror-sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* One tap target per setting, full width — the whole row toggles, not a
+   small switch the thumb has to find. */
+.mirror-sheet-row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 13px 4px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid rgba(143, 163, 255, 0.12);
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mirror-sheet-list li:last-child .mirror-sheet-row {
+  border-bottom: 0;
+}
+
+.mirror-sheet-rowicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 11px;
+  background: rgba(143, 163, 255, 0.12);
+  color: var(--mirror-accent);
+}
+.mirror-sheet-row[aria-pressed='true'] .mirror-sheet-rowicon {
+  background: rgba(255, 233, 168, 0.16);
   color: var(--mirror-gold);
-  border-color: rgba(255, 233, 168, 0.5);
+}
+
+.mirror-sheet-rowtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.mirror-sheet-rowlabel {
+  font-size: 0.95rem;
+}
+.mirror-sheet-rowhint {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--mirror-dim);
+}
+
+/* Presentational switch — state is announced via the row's aria-pressed. */
+.mirror-sheet-switch {
+  flex: none;
+  width: 42px;
+  height: 25px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(155, 147, 192, 0.26);
+  transition: background 0.18s ease;
+}
+.mirror-sheet-switch.on {
+  background: rgba(255, 233, 168, 0.55);
+}
+.mirror-sheet-knob {
+  display: block;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--mirror-text);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mirror-sheet-switch.on .mirror-sheet-knob {
+  transform: translateX(17px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mirror-sheet-knob {
+    transition: none;
+  }
+}
+
+.mirror-sheet-more {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(143, 163, 255, 0.16);
+}
+.mirror-sheet-action {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(143, 163, 255, 0.24);
+  background: rgba(143, 163, 255, 0.07);
+  color: var(--mirror-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.mirror-sheet-action:hover {
+  border-color: rgba(143, 163, 255, 0.5);
+  background: rgba(143, 163, 255, 0.13);
 }
 
 .mirror-actions-sub {
