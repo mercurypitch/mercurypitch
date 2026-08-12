@@ -268,9 +268,9 @@ Original scope, for reference:
 ## 7. Client-side: honest assessment
 
 The existing browser worker cannot be extended to do this. It is MDX-specific
-end to end: fixed STFT (n_fft 6144, hop 1024, 3072 bins), a 4-channel
+end to end: fixed STFT (n*fft 6144, hop 1024, 3072 bins), a 4-channel
 real/imag tensor layout, and a complex-domain subtraction that assumes
-_one_ predicted stem. Demucs is a hybrid waveform **and** spectrogram model
+\_one* predicted stem. Demucs is a hybrid waveform **and** spectrogram model
 with four outputs — different input pipeline, different output handling. It's
 a new worker, not a parameter change.
 
