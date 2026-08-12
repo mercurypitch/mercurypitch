@@ -79,6 +79,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
 - **The first onboarding screen says three things instead of a paragraph.**
   What you do, what you get, and where it happens — one line each.
 
+- **Compose fits on a phone.** The editor header used to stack five rows of
+  chrome — a notice, the melody name, four view tabs, the transport, the
+  Melody/Drums switch — above a piano roll that had whatever was left. It is
+  one row now: the four views as icons, play, and a three-dot button that opens
+  the rest in a drawer, the same one the other tabs use. The "built for a
+  bigger screen" notice is a toast you can dismiss instead of a permanent
+  banner, and it appears once rather than on every visit.
+
 - **Notifications stopped calling everything an "Update".** Every ordinary
   message — a saved display name, a finished export — announced itself with
   the same word as a pending app update. Messages now say "Note", "Done",
@@ -87,16 +95,14 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   full sentence can skip the heading altogether. "Update" is now reserved for
   the toast that really does offer you a new version.
 
-- **Notifications are half the size and no longer sit on the buttons.** They
-  were pinned to the very top-right corner — over the account and sign-in
-  buttons and the page's own rail — and each one was three stacked rows: a
-  heading, the message, then an action button on its own line. A toast is one
-  row now (42px instead of 72px, and narrower), with the heading leading the
-  message and any button beside it, and the stack starts below the header
-  instead of on top of it. Three of them together take 150px where they used
-  to take 237px. On a phone they stay at the top edge: the header there is
-  barely 50px and page content starts right under it, so dropping a toast
-  below it just covers something else.
+- **Notifications are a plain rounded rectangle, one row, half the size.** Each
+  one used to be three stacked rows — an uppercase heading, the message, then
+  an action button on its own line — dressed in a gradient wash, a glowing left
+  accent bar and a heavy shadow. A toast is now 38px instead of 72px and 340px
+  instead of 430px: an icon, the message, the button if there is one. Severity
+  still shows, in the icon and a tinted border. Most toasts have no heading at
+  all; one that genuinely needs to name its subject sets it as a coloured prefix
+  on the message rather than a line of its own.
 
 - **Adding songs in Karaoke shows you where they went.** On a laptop-height
   screen the upload zone filled the tab, so a new song landed in a queue below

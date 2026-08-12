@@ -9,6 +9,7 @@ import { lazy } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { AppSidebar } from '@/components/AppSidebar'
+import { ComposeMobileToolbar } from '@/components/compose/ComposeMobileToolbar'
 import { FocusMode } from '@/components/FocusMode'
 import { HistoryCanvas } from '@/components/HistoryCanvas'
 import { Drum, Music, MusicBoard, MusicNote, PianoKeys, SlidersHorizontal, Split, Voice, X, } from '@/components/icons'
@@ -243,7 +244,6 @@ import { flushPendingPurchase } from '@/lib/consent'
 import { drumVoiceForMidi } from '@/lib/drum-lanes'
 import { registerE2EBridge } from '@/lib/e2e-bridge'
 import { navigateTo, parseHash } from '@/lib/hash-router'
-import { publishHeaderHeight } from '@/lib/header-height'
 import type { MidiSongNote } from '@/lib/midi-song'
 import { initDefaultOGTags, setMelodyOGTags } from '@/lib/og-tags'
 import { segmentContourToMelody } from '@/lib/pitch-pipeline'
@@ -253,6 +253,7 @@ import { buildScaleMelody, buildSessionPlaybackMelody, } from '@/lib/session-bui
 import { copyShareUrl, decodeSharePayload, encodeMelodyForShare, fetchShortPayload, generateMelodyItemsFromCompact, } from '@/lib/share-codec'
 import { hasSharedPresetInURL, loadFromURL } from '@/lib/share-url'
 import { buildFingerprintIndex, loadStemFingerprints, } from '@/lib/shazam/melody-fingerprints'
+import { createPersistedSignal } from '@/lib/storage'
 import { applyPersistedValue, storageGet } from '@/lib/storage'
 import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
@@ -1772,6 +1773,96 @@ const AppShell: Component<AppProps> = (props) => {
     setLoopEnabled(true)
   }
 
+  /** The four Compose views, for the phone toolbar's icon-only tab row. */
+  const COMPOSE_VIEWS = [
+    {
+      id: 'piano-roll' as const,
+      label: 'Piano Roll',
+      icon: () => <MusicBoard />,
+    },
+    {
+      id: 'sheet-music' as const,
+      label: 'Sheet Music',
+      testId: 'view-sheet-music',
+      icon: () => <Music />,
+    },
+    {
+      id: 'split' as const,
+      label: 'Split piano roll and sheet music',
+      testId: 'view-split',
+      icon: () => <Split />,
+    },
+    {
+      id: 'session-editor' as const,
+      label: 'Session Editor',
+      testId: 'view-session-editor',
+      icon: () => <SlidersHorizontal />,
+    },
+  ]
+
+  /**
+   * Say once, on a phone, that Compose is built for a bigger screen.
+   *
+   * It was a dashed banner in the page flow: permanent vertical space, on the
+   * surface with the least of it, repeating something you cannot act on twice.
+   * A dismissible toast says it and leaves. The persisted flag is what makes it
+   * "once" rather than "every time you open the tab".
+   */
+  const noteComposeIsDesktopFirst = () => {
+    if (composeHintShown()) return null
+    setComposeHintShown(true)
+    showNotification(
+      'Compose is built for a bigger screen. Rotate your phone, or open MercuryPitch on a desktop, for the full piano roll.',
+      'info',
+      { channel: 'compose-desktop-first', durationMs: 9000 },
+    )
+    return null
+  }
+
+  const composeControls = () => (
+    <ComposeControlBar
+      isPlaying={editorIsPlaying}
+      isPaused={editorIsPaused}
+      onPlay={() => void handleEditorPlay()}
+      onPause={handleEditorPause}
+      onResume={handleEditorResume}
+      onStop={handleEditorStop}
+      volume={savedVol}
+      onVolumeChange={(vol) => {
+        setSavedVol(vol)
+        audioEngine?.setVolume(vol / 100)
+      }}
+      metronomeEnabled={() => metronomeEnabled()}
+      onMetronomeToggle={() =>
+        setMetronomeEnabled(metronomeEnabled() === false)
+      }
+      isRecording={() => recording.isRecording()}
+      recordDisabled={() => melodyStore.getCurrentKind() === 'drums'}
+      onRecordToggle={() => {
+        // Stopping a take routes through the full editor
+        // stop so playback halts (open-ended mode is
+        // cleared) and the recording is finalized; starting
+        // just arms the mic.
+        if (recording.isRecording()) {
+          handleEditorStop()
+        } else {
+          void recording.handleRecordToggle()
+        }
+      }}
+      onShareMelody={handleCopyShareLink}
+      onMicToggle={() => {
+        void handleMicToggle()
+      }}
+      loopEnabled={loopEnabled}
+      loopA={loopA}
+      loopB={loopB}
+      onSetLoopA={handleSetLoopA}
+      onSetLoopB={handleSetLoopB}
+      onToggleLoop={handleToggleLoop}
+      onClearLoop={handleClearLoop}
+    />
+  )
+
   const handleToggleLoop = () => {
     setLoopEnabled((v) => !v)
   }
@@ -1993,12 +2084,11 @@ const AppShell: Component<AppProps> = (props) => {
   // Callback ref, not a plain `let`: the header renders inside a <Show>, so it
   // is destroyed and rebuilt whenever that condition flips, and an observer
   // left on the detached original would freeze the variable.
-  const [headerEl, setHeaderEl] = createSignal<HTMLElement | undefined>()
-  createEffect(() => {
-    const el = headerEl()
-    if (el === undefined) return
-    onCleanup(publishHeaderHeight(el))
-  })
+  const [composeHintShown, setComposeHintShown] =
+    createPersistedSignal<boolean>(
+      'pitchperfect_compose_mobile_hint_shown',
+      false,
+    )
 
   // ── Mic handler ────────────────────────────────────────────
   const handleMicToggle = async () => {
@@ -2815,7 +2905,7 @@ const AppShell: Component<AppProps> = (props) => {
             challengeStageLaunch() === null
           }
         >
-          <header ref={(el) => setHeaderEl(el)}>
+          <header>
             <div class="header-left">
               <button
                 class="sidebar-toggle-btn"
@@ -3241,189 +3331,168 @@ const AppShell: Component<AppProps> = (props) => {
                 <TabErrorBoundary tabName={tabLabel(TAB_COMPOSE)}>
                   {/* Compose is the precision piano-roll editor — a desktop-
                       first surface (decision D4). Keep it usable on a phone,
-                      but set expectations with a slim hint on narrow. */}
-                  <Show when={isNarrow()}>
-                    <p class="compose-mobile-hint">
-                      The Compose editor is built for a larger screen — rotate
-                      your phone, or open MercuryPitch on desktop, for the full
-                      piano-roll experience.
-                    </p>
-                  </Show>
-                  <div class={styles.composeToolbarOuter}>
-                    <div class={styles.composeToolbar}>
-                      {/* Column 1 wraps the identity + the view tabs so the
+                      and say so once, as a toast that can be dismissed. It was
+                      a banner in the flow, which spent permanent vertical space
+                      on the screen with the least of it to repeat something you
+                      cannot act on twice. */}
+                  <Show when={isNarrow()}>{noteComposeIsDesktopFirst()}</Show>
+                  <Show
+                    when={isNarrow()}
+                    fallback={
+                      <div class={styles.composeToolbarOuter}>
+                        <div class={styles.composeToolbar}>
+                          {/* Column 1 wraps the identity + the view tabs so the
                           toolbar keeps exactly three grid children and
                           data-tour="compose.editor" stays on the tablist. */}
-                      <div class={styles.editorLeft}>
-                        <div
-                          class={styles.composeIdentity}
-                          data-testid="compose-melody-name"
-                          title={currentMelodyName() ?? 'No melody loaded'}
-                        >
-                          <span class={styles.composeIdentityIcon}>
-                            <MusicNote />
-                          </span>
-                          <span class={styles.composeIdentityName}>
-                            {currentMelodyName() ?? 'Untitled'}
-                          </span>
-                        </div>
-                        <div
-                          class={styles.editorTabs}
-                          role="tablist"
-                          aria-label="Editor view"
-                          data-tour="compose.editor"
-                        >
-                          <button
-                            type="button"
-                            role="tab"
-                            class={styles.editorTab}
-                            classList={{
-                              [styles.editorTabActive]:
-                                editorView() === 'piano-roll',
-                            }}
-                            aria-selected={editorView() === 'piano-roll'}
-                            onClick={() => setEditorView('piano-roll')}
-                            title="Piano Roll"
+                          <div class={styles.editorLeft}>
+                            <div
+                              class={styles.composeIdentity}
+                              data-testid="compose-melody-name"
+                              title={currentMelodyName() ?? 'No melody loaded'}
+                            >
+                              <span class={styles.composeIdentityIcon}>
+                                <MusicNote />
+                              </span>
+                              <span class={styles.composeIdentityName}>
+                                {currentMelodyName() ?? 'Untitled'}
+                              </span>
+                            </div>
+                            <div
+                              class={styles.editorTabs}
+                              role="tablist"
+                              aria-label="Editor view"
+                              data-tour="compose.editor"
+                            >
+                              <button
+                                type="button"
+                                role="tab"
+                                class={styles.editorTab}
+                                classList={{
+                                  [styles.editorTabActive]:
+                                    editorView() === 'piano-roll',
+                                }}
+                                aria-selected={editorView() === 'piano-roll'}
+                                onClick={() => setEditorView('piano-roll')}
+                                title="Piano Roll"
+                              >
+                                <MusicBoard /> Piano Roll
+                              </button>
+                              <button
+                                type="button"
+                                role="tab"
+                                class={styles.editorTab}
+                                classList={{
+                                  [styles.editorTabActive]:
+                                    editorView() === 'sheet-music',
+                                }}
+                                aria-selected={editorView() === 'sheet-music'}
+                                data-testid="view-sheet-music"
+                                onClick={() => setEditorView('sheet-music')}
+                                title="Sheet Music"
+                              >
+                                <Music /> Sheet Music
+                              </button>
+                              <button
+                                type="button"
+                                role="tab"
+                                class={styles.editorTab}
+                                classList={{
+                                  [styles.editorTabActive]:
+                                    editorView() === 'split',
+                                }}
+                                aria-selected={editorView() === 'split'}
+                                data-testid="view-split"
+                                onClick={() => setEditorView('split')}
+                                title="Split piano roll and sheet music"
+                              >
+                                <Split /> Split
+                              </button>
+                              <button
+                                type="button"
+                                role="tab"
+                                class={styles.editorTab}
+                                classList={{
+                                  [styles.editorTabActive]:
+                                    editorView() === 'session-editor',
+                                }}
+                                aria-selected={
+                                  editorView() === 'session-editor'
+                                }
+                                data-testid="view-session-editor"
+                                onClick={() => setEditorView('session-editor')}
+                                title="Session Editor"
+                              >
+                                <SlidersHorizontal /> Session Editor
+                              </button>
+                            </div>
+                          </div>
+
+                          <ControlOverlay static inline idPrefix="compose">
+                            {composeControls()}
+                          </ControlOverlay>
+
+                          <div
+                            class={styles.kindToggle}
+                            role="tablist"
+                            aria-label="Compose mode"
+                            data-tour="compose.kind"
                           >
-                            <MusicBoard /> Piano Roll
-                          </button>
-                          <button
-                            type="button"
-                            role="tab"
-                            class={styles.editorTab}
-                            classList={{
-                              [styles.editorTabActive]:
-                                editorView() === 'sheet-music',
-                            }}
-                            aria-selected={editorView() === 'sheet-music'}
-                            data-testid="view-sheet-music"
-                            onClick={() => setEditorView('sheet-music')}
-                            title="Sheet Music"
-                          >
-                            <Music /> Sheet Music
-                          </button>
-                          <button
-                            type="button"
-                            role="tab"
-                            class={styles.editorTab}
-                            classList={{
-                              [styles.editorTabActive]:
-                                editorView() === 'split',
-                            }}
-                            aria-selected={editorView() === 'split'}
-                            data-testid="view-split"
-                            onClick={() => setEditorView('split')}
-                            title="Split piano roll and sheet music"
-                          >
-                            <Split /> Split
-                          </button>
-                          <button
-                            type="button"
-                            role="tab"
-                            class={styles.editorTab}
-                            classList={{
-                              [styles.editorTabActive]:
-                                editorView() === 'session-editor',
-                            }}
-                            aria-selected={editorView() === 'session-editor'}
-                            data-testid="view-session-editor"
-                            onClick={() => setEditorView('session-editor')}
-                            title="Session Editor"
-                          >
-                            <SlidersHorizontal /> Session Editor
-                          </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              class={styles.editorTab}
+                              classList={{
+                                [styles.editorTabActive]:
+                                  melodyStore.getCurrentKind() === 'melody',
+                              }}
+                              aria-selected={
+                                melodyStore.getCurrentKind() === 'melody'
+                              }
+                              data-testid="compose-kind-melody"
+                              onClick={() =>
+                                melodyStore.setMelodyKind('melody')
+                              }
+                              title="Melody preset — pitched note rows"
+                            >
+                              <MusicNote /> Melody
+                            </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              class={styles.editorTab}
+                              classList={{
+                                [styles.editorTabActive]:
+                                  melodyStore.getCurrentKind() === 'drums',
+                              }}
+                              aria-selected={
+                                melodyStore.getCurrentKind() === 'drums'
+                              }
+                              data-testid="compose-kind-drums"
+                              onClick={() => melodyStore.setMelodyKind('drums')}
+                              title="Drum preset — GM drum lanes with synthesized kit sounds"
+                            >
+                              <Drum /> Drums
+                            </button>
+                          </div>
                         </div>
                       </div>
-
-                      <ControlOverlay static inline idPrefix="compose">
-                        <ComposeControlBar
-                          isPlaying={editorIsPlaying}
-                          isPaused={editorIsPaused}
-                          onPlay={() => void handleEditorPlay()}
-                          onPause={handleEditorPause}
-                          onResume={handleEditorResume}
-                          onStop={handleEditorStop}
-                          volume={savedVol}
-                          onVolumeChange={(vol) => {
-                            setSavedVol(vol)
-                            audioEngine?.setVolume(vol / 100)
-                          }}
-                          metronomeEnabled={() => metronomeEnabled()}
-                          onMetronomeToggle={() =>
-                            setMetronomeEnabled(metronomeEnabled() === false)
-                          }
-                          isRecording={() => recording.isRecording()}
-                          recordDisabled={() =>
-                            melodyStore.getCurrentKind() === 'drums'
-                          }
-                          onRecordToggle={() => {
-                            // Stopping a take routes through the full editor
-                            // stop so playback halts (open-ended mode is
-                            // cleared) and the recording is finalized; starting
-                            // just arms the mic.
-                            if (recording.isRecording()) {
-                              handleEditorStop()
-                            } else {
-                              void recording.handleRecordToggle()
-                            }
-                          }}
-                          onShareMelody={handleCopyShareLink}
-                          onMicToggle={() => {
-                            void handleMicToggle()
-                          }}
-                          loopEnabled={loopEnabled}
-                          loopA={loopA}
-                          loopB={loopB}
-                          onSetLoopA={handleSetLoopA}
-                          onSetLoopB={handleSetLoopB}
-                          onToggleLoop={handleToggleLoop}
-                          onClearLoop={handleClearLoop}
-                        />
-                      </ControlOverlay>
-
-                      <div
-                        class={styles.kindToggle}
-                        role="tablist"
-                        aria-label="Compose mode"
-                        data-tour="compose.kind"
-                      >
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]:
-                              melodyStore.getCurrentKind() === 'melody',
-                          }}
-                          aria-selected={
-                            melodyStore.getCurrentKind() === 'melody'
-                          }
-                          data-testid="compose-kind-melody"
-                          onClick={() => melodyStore.setMelodyKind('melody')}
-                          title="Melody preset — pitched note rows"
-                        >
-                          <MusicNote /> Melody
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          class={styles.editorTab}
-                          classList={{
-                            [styles.editorTabActive]:
-                              melodyStore.getCurrentKind() === 'drums',
-                          }}
-                          aria-selected={
-                            melodyStore.getCurrentKind() === 'drums'
-                          }
-                          data-testid="compose-kind-drums"
-                          onClick={() => melodyStore.setMelodyKind('drums')}
-                          title="Drum preset — GM drum lanes with synthesized kit sounds"
-                        >
-                          <Drum /> Drums
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    }
+                  >
+                    <ComposeMobileToolbar
+                      melodyName={currentMelodyName}
+                      editorView={editorView}
+                      onSelectView={setEditorView}
+                      kind={() => melodyStore.getCurrentKind()}
+                      onSelectKind={(k) => melodyStore.setMelodyKind(k)}
+                      isPlaying={editorIsPlaying}
+                      isPaused={editorIsPaused}
+                      onPlay={() => void handleEditorPlay()}
+                      onPause={handleEditorPause}
+                      onResume={handleEditorResume}
+                      controls={composeControls()}
+                      views={COMPOSE_VIEWS}
+                    />
+                  </Show>
 
                   <Show when={editorView() === 'session-editor'}>
                     <div class={styles.sessionEditorContainer}>

@@ -92,23 +92,12 @@ describe('REQ-TMV-003 — Banner sits above the tab bar on mobile', () => {
 })
 
 /*
- * The toast used to be a two-row grid pinned to the very top-right corner —
- * over the account button, the sign-in button and the page's rail. These pin
- * the way out: one row, and below the header.
+ * The toast used to be a two-row grid with an uppercase heading, a gradient
+ * wash and a glowing left accent bar. These pin the plain version: one row, no
+ * stripe, no severity-derived heading.
  */
-describe('Toast compactness and header clearance', () => {
-  it('clears the app header instead of overlapping it', () => {
-    expect(NOTIFICATIONS_CSS).toMatch(/top:[\s\S]*?--app-header-h/)
-  })
-
-  it('supplies a 0px fallback for entries that have no app header', () => {
-    // The standalone karaoke and mirror entries mount the toast host without
-    // one; without the fallback every toast would render at top: 0 minus a
-    // broken calc, i.e. not at all.
-    expect(NOTIFICATIONS_CSS).toMatch(/--app-header-h,\s*0px/)
-  })
-
-  it('lays the toast out in a single row, not a stacked grid', () => {
+describe('Toast is a plain single-row rectangle', () => {
+  it('lays out in one flex row, not a stacked grid', () => {
     const notif = NOTIFICATIONS_CSS.slice(
       NOTIFICATIONS_CSS.indexOf('.notification {'),
     ).slice(0, 900)
@@ -116,12 +105,25 @@ describe('Toast compactness and header clearance', () => {
     expect(notif).not.toMatch(/grid-template-areas/)
   })
 
+  it('has no left accent bar', () => {
+    expect(NOTIFICATIONS_CSS).not.toMatch(/\.notification::before/)
+  })
+
   it('keeps the action button on the message row', () => {
     const action = NOTIFICATIONS_CSS.slice(
       NOTIFICATIONS_CSS.indexOf('.actionBtn {'),
     ).slice(0, 400)
-    // `grid-area: action` was the second row; a margin-top was the gap to it.
     expect(action).not.toMatch(/grid-area/)
     expect(action).not.toMatch(/margin-top/)
+  })
+
+  it('sizes a title prefix the same as the message it prefixes', () => {
+    const size = (selector: string): string => {
+      const block = NOTIFICATIONS_CSS.slice(
+        NOTIFICATIONS_CSS.indexOf(selector),
+      ).slice(0, 400)
+      return /font-size:\s*([^;]+);/.exec(block)?.[1].trim() ?? ''
+    }
+    expect(size('.notificationBody > strong')).toBe(size('.notificationText'))
   })
 })
