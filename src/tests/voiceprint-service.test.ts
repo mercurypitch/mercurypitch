@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
   anonymousIdentity: false,
   userId: 'device-local-id',
   deviceId: 'device-local-id',
+  dbGate: null as Promise<void> | null,
+  cloudReadFails: false,
   cloudRows: [] as Array<{
     id: string
     userId: string
@@ -36,23 +38,45 @@ vi.mock('@/db/services/user-service', () => ({
   getDeviceId: () => state.deviceId,
 }))
 vi.mock('@/db', () => ({
-  getDb: async () => ({
-    getRepository: () => ({
-      create: async (row: (typeof state.cloudRows)[number]) => {
-        state.cloudRows.push({ ...row, id: `srv-${state.cloudRows.length}` })
-        return row
-      },
-      findAll: async (opts?: { where?: { userId?: string } }) =>
-        state.cloudRows.filter(
-          (row) =>
-            opts?.where?.userId === undefined ||
-            row.userId === opts.where.userId,
-        ),
-    }),
-  }),
+  getDb: async () => {
+    if (state.dbGate !== null) await state.dbGate
+    return {
+      getRepository: () => ({
+        create: async (row: (typeof state.cloudRows)[number]) => {
+          state.cloudRows.push({ ...row, id: `srv-${state.cloudRows.length}` })
+          return row
+        },
+        findAll: async (opts?: {
+          where?: { userId?: string }
+          offset?: number
+          limit?: number
+        }) => {
+          if (state.cloudReadFails) throw new Error('offline')
+          return state.cloudRows
+            .filter(
+              (row) =>
+                opts?.where?.userId === undefined ||
+                row.userId === opts.where.userId,
+            )
+            .slice(
+              opts?.offset ?? 0,
+              (opts?.offset ?? 0) + (opts?.limit ?? state.cloudRows.length),
+            )
+        },
+        count: async (opts?: { where?: { userId?: string } }) => {
+          if (state.cloudReadFails) throw new Error('offline')
+          return state.cloudRows.filter(
+            (row) =>
+              opts?.where?.userId === undefined ||
+              row.userId === opts.where.userId,
+          ).length
+        },
+      }),
+    }
+  },
 }))
 
-import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, loadLocalVoiceprints, MADE_ANONYMOUSLY, recordMadeBy, saveVoiceprint, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
+import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, loadLocalVoiceprints, loadProgressVoiceprints, MADE_ANONYMOUSLY, recordMadeBy, saveVoiceprint, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
 
 const summary = {
   lowMidi: 48,
@@ -84,6 +108,8 @@ function signInAnonymously(): void {
 beforeEach(() => {
   localStorage.clear()
   state.cloudRows = []
+  state.dbGate = null
+  state.cloudReadFails = false
   signOut()
 })
 
@@ -108,6 +134,26 @@ describe('tagging at capture', () => {
     expect(recordMadeBy(record)).toBe('user-a')
     expect(state.cloudRows).toHaveLength(1)
     expect(state.cloudRows[0].userId).toBe('user-a')
+  })
+
+  it('never uploads a captured take into an account selected mid-save', async () => {
+    signIn('user-a')
+    let releaseDb = (): void => undefined
+    state.dbGate = new Promise<void>((resolve) => {
+      releaseDb = resolve
+    })
+
+    const saving = saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'mirror',
+    })
+    signIn('user-b')
+    releaseDb()
+    const record = await saving
+
+    expect(recordMadeBy(record)).toBe('user-a')
+    expect(state.cloudRows).toEqual([])
   })
 })
 
@@ -138,6 +184,93 @@ describe('listing', () => {
     const listed = await listVoiceprints()
     // user-b's take and the anonymous take both stay invisible to user-a.
     expect(listed).toHaveLength(0)
+  })
+
+  it('does not merge two accounts when identity changes during a read', async () => {
+    signIn('user-a')
+    localStorage.setItem(
+      'mercurypitch.voiceprints.v1',
+      JSON.stringify([
+        {
+          id: 'local-a',
+          summary,
+          twin: null,
+          source: 'mirror',
+          takenAt: '2026-08-01T10:00:00Z',
+          madeBy: 'user-a',
+        },
+      ]),
+    )
+    let releaseDb = (): void => undefined
+    state.dbGate = new Promise<void>((resolve) => {
+      releaseDb = resolve
+    })
+
+    const reading = listVoiceprints()
+    signIn('user-b')
+    releaseDb()
+
+    await expect(reading).resolves.toEqual([])
+  })
+
+  it('keeps anonymous device takes useful without treating them as one singer', async () => {
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'onboarding',
+      takenAt: '2026-08-01T10:00:00Z',
+    })
+    signIn('user-a')
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'mirror',
+      takenAt: '2026-08-01T11:00:00Z',
+    })
+    signOut()
+
+    const progress = await loadProgressVoiceprints()
+    expect(progress.records).toHaveLength(1)
+    expect(recordMadeBy(progress.records[0])).toBe(MADE_ANONYMOUSLY)
+    expect(progress.comparable).toBe(false)
+    expect(progress.available).toBe(true)
+  })
+
+  it('uses only the signed-in account history for longitudinal progress', async () => {
+    signIn('user-a')
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'mirror',
+      takenAt: '2026-08-01T10:00:00Z',
+    })
+    signIn('user-b')
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'mirror',
+      takenAt: '2026-08-01T11:00:00Z',
+    })
+    signIn('user-a')
+
+    const progress = await loadProgressVoiceprints()
+    expect(progress.records).toHaveLength(1)
+    expect(progress.records[0].takenAt).toBe('2026-08-01T10:00:00Z')
+    expect(progress.comparable).toBe(true)
+    expect(progress.complete).toBe(true)
+  })
+
+  it('does not call an unreachable cloud history empty', async () => {
+    signIn('user-a')
+    state.cloudReadFails = true
+
+    await expect(loadProgressVoiceprints()).resolves.toEqual({
+      records: [],
+      available: false,
+      complete: false,
+      totalAvailable: null,
+      comparable: true,
+    })
   })
 })
 

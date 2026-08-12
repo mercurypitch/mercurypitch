@@ -38,11 +38,13 @@ export async function recordActivity(
   options: { refId?: string; meta?: Record<string, unknown>; at?: string } = {},
 ): Promise<void> {
   if (!cloudActive()) return
+  const ownerId = getUserId()
   try {
     const db = await getDb()
+    if (getUserId() !== ownerId) return
     const repo = db.getRepository<UserActivity>('userActivity')
     await repo.create({
-      userId: getUserId(),
+      userId: ownerId,
       kind,
       refId: options.refId,
       metaJson:
@@ -117,9 +119,89 @@ export async function loadRecentActivity(limit = 20): Promise<UserActivity[]> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserActivity>('userActivity')
-    const rows = await repo.findAll({ where: { userId: getUserId() } })
-    return [...rows].sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+    return await repo.findAll({
+      where: { userId: getUserId() },
+      orderBy: 'at',
+      orderDir: 'desc',
+      limit,
+    })
   } catch {
     return []
+  }
+}
+
+export interface ProgressActivityRecords {
+  records: UserActivity[]
+  available: boolean
+  complete: boolean
+  totalAvailable: number | null
+}
+
+/** Audited, bounded activity history for account-level Progress totals. */
+export async function loadProgressActivityRecords(
+  options: { pageSize?: number; maxRecords?: number } = {},
+): Promise<ProgressActivityRecords> {
+  const ownerId = getUserId()
+  if (!cloudActive()) {
+    return { records: [], available: true, complete: true, totalAvailable: 0 }
+  }
+
+  const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
+  const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
+  try {
+    const db = await getDb()
+    if (getUserId() !== ownerId) throw new Error('identity changed')
+    const repo = db.getRepository<UserActivity>('userActivity')
+    const where = { userId: ownerId }
+    const initialTotal = await repo.count({ where, throwOnError: true })
+    const target = Math.min(initialTotal, maxRecords)
+    const records: UserActivity[] = []
+    const seen = new Set<string>()
+    let offset = 0
+
+    while (offset < target) {
+      const requested = Math.min(pageSize, target - offset)
+      const page = await repo.findAll({
+        where,
+        orderBy: 'at',
+        orderDir: 'desc',
+        limit: requested,
+        offset,
+        throwOnError: true,
+      })
+      if (getUserId() !== ownerId) throw new Error('identity changed')
+      if (page.length === 0) break
+      offset += page.length
+      for (const record of page) {
+        if (seen.has(record.id)) continue
+        seen.add(record.id)
+        records.push(record)
+      }
+      if (page.length < requested) break
+    }
+
+    records.sort((a, b) => {
+      const at = b.at.localeCompare(a.at)
+      return at !== 0 ? at : b.id.localeCompare(a.id)
+    })
+    const finalTotal = await repo.count({ where, throwOnError: true })
+    if (getUserId() !== ownerId) throw new Error('identity changed')
+    const totalAvailable = finalTotal >= records.length ? finalTotal : null
+    return {
+      records,
+      available: true,
+      complete:
+        initialTotal === finalTotal &&
+        initialTotal <= maxRecords &&
+        records.length === initialTotal,
+      totalAvailable,
+    }
+  } catch {
+    return {
+      records: [],
+      available: false,
+      complete: false,
+      totalAvailable: null,
+    }
   }
 }

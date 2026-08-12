@@ -60,6 +60,12 @@ export interface GrantContext {
   sharesPosted: number
 }
 
+export interface ProgressGrantContext {
+  context: GrantContext | null
+  /** False when an account token exists but its audited read failed. */
+  available: boolean
+}
+
 function cloudActive(): boolean {
   try {
     return API_BASE_URL != null && API_BASE_URL !== '' && hasValidToken()
@@ -215,4 +221,25 @@ export async function loadGrantContext(): Promise<GrantContext> {
     if (bulk) return bulk
   }
   return loadContextPiecemeal()
+}
+
+/**
+ * Progress must distinguish a genuinely empty account from an unreachable
+ * one. Grant evaluation keeps its resilient piecemeal fallback, but the
+ * dashboard uses this audited envelope so failed account reads never become
+ * invented zero streaks or an empty earned-mark shelf.
+ */
+export async function loadProgressGrantContext(): Promise<ProgressGrantContext> {
+  const ownerId = getUserId()
+  if (cloudActive()) {
+    const context = await fetchBulkContext()
+    if (getUserId() !== ownerId || context === null) {
+      return { context: null, available: false }
+    }
+    return { context, available: true }
+  }
+
+  const context = await loadContextPiecemeal()
+  if (getUserId() !== ownerId) return { context: null, available: false }
+  return { context, available: true }
 }

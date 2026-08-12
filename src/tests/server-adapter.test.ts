@@ -157,6 +157,98 @@ describe('ServerAdapter lazy identity provisioning', () => {
     expect(beforeWrite).not.toHaveBeenCalled()
   })
 
+  it('does not dispatch a write with a newly selected account identity', async () => {
+    let identity = 'singer-a'
+    let releaseProvisioning = (): void => undefined
+    const beforeWrite = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseProvisioning = resolve
+        }),
+    )
+    const fetchMock = vi.fn().mockResolvedValue(ok({ id: 'a', score: 1 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const guardedRepo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      beforeWrite,
+      headers: () => ({ Authorization: `Bearer token-${identity}` }),
+      writeIdentity: () => identity,
+    }).getRepository<Rec>('sessionRecords')
+
+    const writing = guardedRepo.create({ score: 1 })
+    identity = 'singer-b'
+    releaseProvisioning()
+
+    await expect(writing).rejects.toThrow(/write identity changed/)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('pins the validated credential before a later account switch', async () => {
+    let identity = 'singer-a'
+    const fetchMock = vi.fn().mockResolvedValue(ok({ id: 'a', score: 1 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const guardedRepo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      beforeWrite: async () => undefined,
+      headers: () => {
+        const authorization = `Bearer token-${identity}`
+        queueMicrotask(() => {
+          identity = 'singer-b'
+        })
+        return { Authorization: authorization }
+      },
+      writeIdentity: () => identity,
+    }).getRepository<Rec>('sessionRecords')
+
+    await guardedRepo.create({ score: 1 })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://api.test/api/sessionRecords',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer token-singer-a',
+        }),
+      }),
+    )
+    expect(identity).toBe('singer-b')
+  })
+
+  it('attributes a delayed write error to the frozen operation identity', async () => {
+    let identity = 'singer-a'
+    let releaseResponse = (_response: ReturnType<typeof fail>): void =>
+      undefined
+    const onErrorResponse = vi.fn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<ReturnType<typeof fail>>((resolve) => {
+            releaseResponse = resolve
+          }),
+      ),
+    )
+    const guardedRepo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      beforeWrite: async () => undefined,
+      headers: () => {
+        const authorization = `Bearer token-${identity}`
+        queueMicrotask(() => {
+          identity = 'singer-b'
+        })
+        return { Authorization: authorization }
+      },
+      writeIdentity: () => identity,
+      onErrorResponse,
+    }).getRepository<Rec>('sessionRecords')
+
+    const writing = guardedRepo.create({ score: 1 })
+    await vi.waitFor(() => expect(identity).toBe('singer-b'))
+    releaseResponse(fail(403, JSON.stringify({ code: 'account_suspended' })))
+
+    await expect(writing).rejects.toThrow(/403/)
+    expect(onErrorResponse).not.toHaveBeenCalled()
+  })
+
   it('resolves reads empty on 401 (no identity yet) without warning', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fail(401)))
@@ -170,6 +262,61 @@ describe('ServerAdapter lazy identity provisioning', () => {
 })
 
 describe('ServerAdapter response handling', () => {
+  it('ignores an old account error after the selected identity changes', async () => {
+    let identity = 'singer-a'
+    let releaseResponse = (_response: ReturnType<typeof fail>): void =>
+      undefined
+    const onErrorResponse = vi.fn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<ReturnType<typeof fail>>((resolve) => {
+            releaseResponse = resolve
+          }),
+      ),
+    )
+    const guardedRepo = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      writeIdentity: () => identity,
+      headers: () => ({ Authorization: `Bearer token-${identity}` }),
+      onErrorResponse,
+    }).getRepository<Rec>('sessionRecords')
+
+    const reading = guardedRepo.findAll({ throwOnError: true })
+    identity = 'singer-b'
+    releaseResponse(fail(403, JSON.stringify({ code: 'account_suspended' })))
+
+    await expect(reading).rejects.toThrow(/403/)
+    expect(onErrorResponse).not.toHaveBeenCalled()
+  })
+
+  it('keeps ordinary findAll reads offline-tolerant but lets audited reads reject', async () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    const fetchMock = vi.fn().mockResolvedValue(fail(403, 'forbidden'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(repo().findAll()).resolves.toEqual([])
+    await expect(repo().findAll({ throwOnError: true })).rejects.toThrow(/403/)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    warnSpy.mockRestore()
+  })
+
+  it('keeps ordinary count reads offline-tolerant but lets audited reads reject', async () => {
+    const warnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    const fetchMock = vi.fn().mockResolvedValue(fail(403, 'forbidden'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(repo().count()).resolves.toBe(0)
+    await expect(repo().count({ throwOnError: true })).rejects.toThrow(/403/)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    warnSpy.mockRestore()
+  })
+
   it('reports a structured failure before consuming it for the thrown error', async () => {
     const onErrorResponse = vi.fn()
     const body = JSON.stringify({ code: 'account_suspended' })

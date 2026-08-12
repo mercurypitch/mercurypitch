@@ -4,15 +4,21 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { updatePracticeStreak, getCurrentStreak } = vi.hoisted(() => ({
-  updatePracticeStreak: vi.fn(async () => 7),
-  getCurrentStreak: vi.fn(async () => 3),
-}))
+const { updatePracticeStreak, getCurrentStreak, currentUser } = vi.hoisted(
+  () => ({
+    updatePracticeStreak: vi.fn(async () => 7),
+    getCurrentStreak: vi.fn(async () => 3),
+    currentUser: { id: 'singer-a' },
+  }),
+)
 
 vi.mock('@/db/services/streak-service', () => ({
   updatePracticeStreak,
   getCurrentStreak,
   todayDateString: () => '2026-07-14',
+}))
+vi.mock('@/db/services/user-service', () => ({
+  getUserId: () => currentUser.id,
 }))
 
 import { addScoredMs, DAILY_GOAL_MS, getTodayScoredMinutes, isDailyGoalMet, } from '@/db/services/practice-minutes'
@@ -21,6 +27,7 @@ beforeEach(() => {
   localStorage.clear()
   updatePracticeStreak.mockClear()
   getCurrentStreak.mockClear()
+  currentUser.id = 'singer-a'
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -28,7 +35,7 @@ describe('addScoredMs', () => {
   it('does not bump the streak before the daily goal is met', async () => {
     const streak = await addScoredMs(60_000) // 1 min < 5
     expect(updatePracticeStreak).not.toHaveBeenCalled()
-    expect(getCurrentStreak).toHaveBeenCalled()
+    expect(getCurrentStreak).toHaveBeenCalledWith('singer-a')
     expect(streak).toBe(3)
     expect(isDailyGoalMet()).toBe(false)
   })
@@ -39,6 +46,7 @@ describe('addScoredMs', () => {
 
     const streak = await addScoredMs(2000) // crosses the goal
     expect(updatePracticeStreak).toHaveBeenCalledTimes(1)
+    expect(updatePracticeStreak).toHaveBeenCalledWith('singer-a')
     expect(streak).toBe(7)
     expect(isDailyGoalMet()).toBe(true)
 
@@ -51,6 +59,20 @@ describe('addScoredMs', () => {
     await addScoredMs(90_000)
     await addScoredMs(90_000)
     expect(getTodayScoredMinutes()).toBe(3)
+  })
+
+  it('keeps daily minutes and the counted flag separate across identities', async () => {
+    await addScoredMs(DAILY_GOAL_MS)
+    expect(isDailyGoalMet()).toBe(true)
+
+    currentUser.id = 'singer-b'
+    expect(getTodayScoredMinutes()).toBe(0)
+    expect(isDailyGoalMet()).toBe(false)
+    await addScoredMs(60_000)
+    expect(updatePracticeStreak).toHaveBeenCalledTimes(1)
+
+    currentUser.id = 'singer-a'
+    expect(getTodayScoredMinutes()).toBe(5)
   })
 
   it("lights a segment on The Ascent's active orb when the goal is met", async () => {
@@ -79,6 +101,19 @@ describe('addScoredMs', () => {
 
     updatePracticeStreak.mockResolvedValueOnce(7)
     await addScoredMs(1000) // already met, but not yet counted → retry
+    expect(updatePracticeStreak).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not mark the old account counted after an in-flight identity change', async () => {
+    updatePracticeStreak.mockImplementationOnce(async () => {
+      currentUser.id = 'singer-b'
+      return 7
+    })
+
+    await expect(addScoredMs(DAILY_GOAL_MS)).resolves.toBe(0)
+    currentUser.id = 'singer-a'
+    await addScoredMs(1000)
+
     expect(updatePracticeStreak).toHaveBeenCalledTimes(2)
   })
 })

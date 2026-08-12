@@ -5,7 +5,7 @@
 // fake-indexeddb gives us a real IndexedDB so these run end-to-end.
 
 import DexieDB from 'dexie'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import type { DbEntity } from '@/db/types'
@@ -122,6 +122,24 @@ describe('DexieAdapter', () => {
   it('findById returns null for a missing row', async () => {
     const repo = adapter.getRepository<Rec>('sessionRecords')
     expect(await repo.findById('nope')).toBeNull()
+  })
+
+  it('rethrows failed audited reads while ordinary reads stay resilient', async () => {
+    const repo = adapter.getRepository<Rec>('sessionRecords')
+    const table = (
+      repo as unknown as {
+        table: { toCollection: () => unknown }
+      }
+    ).table
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.spyOn(table, 'toCollection').mockImplementation(() => {
+      throw new Error('indexeddb unavailable')
+    })
+
+    await expect(repo.findAll()).resolves.toEqual([])
+    await expect(repo.findAll({ throwOnError: true })).rejects.toThrow(
+      'indexeddb unavailable',
+    )
   })
 
   it('transaction runs the callback against a real transaction and returns its result', async () => {

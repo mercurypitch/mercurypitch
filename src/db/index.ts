@@ -8,7 +8,7 @@ import { HybridAdapter } from './adapters/hybrid-adapter'
 import { ServerAdapter } from './adapters/server-adapter'
 import { seedAll } from './seed'
 import { handleAuthErrorResponse, requireAuth, restoreAuth, } from './services/auth-service'
-import { getAuthHeaders } from './services/user-service'
+import { getAuthHeaders, getUserId } from './services/user-service'
 import type { DatabaseAdapter } from './types'
 
 let dbPromise: Promise<DatabaseAdapter> | null = null
@@ -31,6 +31,7 @@ function resolveAdapter(): DatabaseAdapter {
         // anonymous identity here rather than at startup, so a browse-only
         // visit leaves no server-side rows.
         beforeWrite: requireAuth,
+        writeIdentity: getUserId,
         onErrorResponse: (status, body) => {
           handleAuthErrorResponse(status, body)
         },

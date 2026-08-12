@@ -10,10 +10,7 @@ type Row = Record<string, unknown>
  * leaderboard honest — a forged sessionRecords row can't carry impossible
  * numbers. Returns an error message, or null when the body is acceptable.
  */
-export function validateWrite(
-  entity: string,
-  body: Row,
-): string | null {
+export function validateWrite(entity: string, body: Row): string | null {
   if (entity === 'sessionRecords') {
     const inRange = (v: unknown, lo: number, hi: number): boolean =>
       v === undefined || (typeof v === 'number' && v >= lo && v <= hi)
@@ -39,6 +36,47 @@ export function validateWrite(
         !['practice', 'challenge', 'weekly', 'exercise'].includes(body.source))
     ) {
       return 'source must be one of practice, challenge, weekly, exercise'
+    }
+    if (
+      body.instrument !== undefined &&
+      (typeof body.instrument !== 'string' ||
+        !['voice', 'piano', 'guitar'].includes(body.instrument))
+    ) {
+      return 'instrument must be one of voice, piano, guitar'
+    }
+    if (
+      body.durationMs !== undefined &&
+      (typeof body.durationMs !== 'number' ||
+        !Number.isFinite(body.durationMs) ||
+        body.durationMs <= 0 ||
+        body.durationMs > 86_400_000)
+    ) {
+      return 'durationMs must be measured milliseconds from 1 to 86400000'
+    }
+    if (
+      body.sourceVersion !== undefined &&
+      (typeof body.sourceVersion !== 'number' ||
+        !Number.isInteger(body.sourceVersion) ||
+        body.sourceVersion < 0)
+    ) {
+      return 'sourceVersion must be a non-negative integer'
+    }
+    const validEvidenceString = (value: unknown, maxLength: number): boolean =>
+      value === undefined ||
+      (typeof value === 'string' &&
+        value.trim().length > 0 &&
+        value.length <= maxLength)
+    if (!validEvidenceString(body.sourceRef, 200)) {
+      return 'sourceRef must be a non-empty string of at most 200 characters'
+    }
+    if (!validEvidenceString(body.comparabilityKey, 300)) {
+      return 'comparabilityKey must be a non-empty string of at most 300 characters'
+    }
+    if (
+      body.comparabilityKey !== undefined &&
+      (body.sourceRef === undefined || body.sourceVersion === undefined)
+    ) {
+      return 'comparabilityKey requires sourceRef and sourceVersion'
     }
   }
   return null

@@ -5,8 +5,10 @@ const mocks = vi.hoisted(() => ({
   requireAuth: vi.fn(async () => true),
   restoreAuth: vi.fn(async () => true),
   getAuthHeaders: vi.fn(() => ({ Authorization: 'Bearer test' })),
+  getUserId: vi.fn(() => 'singer-test'),
   serverConfig: null as {
     beforeWrite?: () => Promise<boolean>
+    writeIdentity?: () => string
     onErrorResponse?: (status: number, body: string) => void
   } | null,
 }))
@@ -23,6 +25,7 @@ vi.mock('@/db/services/auth-service', () => ({
 
 vi.mock('@/db/services/user-service', () => ({
   getAuthHeaders: mocks.getAuthHeaders,
+  getUserId: mocks.getUserId,
 }))
 
 vi.mock('@/db/adapters/server-adapter', () => ({
@@ -57,6 +60,7 @@ describe('database suspension response wiring', () => {
 
     expect(mocks.restoreAuth).toHaveBeenCalledOnce()
     expect(mocks.serverConfig?.beforeWrite).toBe(mocks.requireAuth)
+    expect(mocks.serverConfig?.writeIdentity).toBe(mocks.getUserId)
 
     const body = JSON.stringify({
       error: 'This account is suspended.',

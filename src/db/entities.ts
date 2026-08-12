@@ -93,6 +93,16 @@ export interface SessionRecord extends DbEntity {
   weeklyChallengeId?: string
   /** Drives leaderboard eligibility. Older rows predate it — treat as 'practice'. */
   source?: SessionSource
+  /** Instrument that produced the attempt. Missing legacy values mean voice. */
+  instrument?: 'voice' | 'piano' | 'guitar'
+  /** Measured scored/performance duration. Never backfilled from streak credit. */
+  durationMs?: number
+  /** Stable exercise, challenge, song, or passage identity when known. */
+  sourceRef?: string
+  /** Version of the target and scoring semantics behind sourceRef. */
+  sourceVersion?: number
+  /** Persisted only when every task property needed for comparison is known. */
+  comparabilityKey?: string
   results: PracticeResultRecord[]
 }
 

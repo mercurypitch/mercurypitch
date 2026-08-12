@@ -11,10 +11,23 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+interface ActivityQueryOptions {
+  where?: { userId?: string }
+  orderBy?: string
+  orderDir?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+  throwOnError?: boolean
+}
+
 const state = vi.hoisted(() => ({
   authed: true,
   userId: 'singer-a',
   fail: false,
+  dbGate: null as Promise<void> | null,
+  afterFindAll: null as (() => void) | null,
+  findAllOptions: [] as ActivityQueryOptions[],
+  countOptions: [] as ActivityQueryOptions[],
   rows: [] as Array<{
     id: string
     userId: string
@@ -33,31 +46,62 @@ vi.mock('@/db/services/user-service', () => ({
   getUserId: () => state.userId,
 }))
 vi.mock('@/db', () => ({
-  getDb: async () => ({
-    getRepository: () => ({
-      create: async (row: (typeof state.rows)[number]) => {
-        if (state.fail) throw new Error('offline')
-        const created = { ...row, id: `row-${state.rows.length}` }
-        state.rows.push(created)
-        return created
-      },
-      findAll: async (opts?: { where?: { userId?: string } }) => {
-        if (state.fail) throw new Error('offline')
-        return state.rows.filter(
-          (r) =>
-            opts?.where?.userId === undefined || r.userId === opts.where.userId,
-        )
-      },
-    }),
-  }),
+  getDb: async () => {
+    if (state.dbGate !== null) await state.dbGate
+    return {
+      getRepository: () => ({
+        create: async (row: (typeof state.rows)[number]) => {
+          if (state.fail) throw new Error('offline')
+          const created = { ...row, id: `row-${state.rows.length}` }
+          state.rows.push(created)
+          return created
+        },
+        findAll: async (opts?: ActivityQueryOptions) => {
+          state.findAllOptions.push(opts ?? {})
+          if (state.fail) throw new Error('offline')
+          const rows = state.rows.filter(
+            (r) =>
+              opts?.where?.userId === undefined ||
+              r.userId === opts.where.userId,
+          )
+          if (opts?.orderBy === 'at') {
+            rows.sort((a, b) =>
+              opts.orderDir === 'desc'
+                ? b.at.localeCompare(a.at)
+                : a.at.localeCompare(b.at),
+            )
+          }
+          const page = rows.slice(
+            opts?.offset ?? 0,
+            (opts?.offset ?? 0) + (opts?.limit ?? rows.length),
+          )
+          state.afterFindAll?.()
+          return page
+        },
+        count: async (opts?: ActivityQueryOptions) => {
+          state.countOptions.push(opts ?? {})
+          if (state.fail) throw new Error('offline')
+          return state.rows.filter(
+            (r) =>
+              opts?.where?.userId === undefined ||
+              r.userId === opts.where.userId,
+          ).length
+        },
+      }),
+    }
+  },
 }))
 
-import { loadActivityCounts, loadRecentActivity, recordActivity, } from '@/db/services/user-activity-service'
+import { loadActivityCounts, loadProgressActivityRecords, loadRecentActivity, recordActivity, } from '@/db/services/user-activity-service'
 
 beforeEach(() => {
   state.authed = true
   state.userId = 'singer-a'
   state.fail = false
+  state.dbGate = null
+  state.afterFindAll = null
+  state.findAllOptions = []
+  state.countOptions = []
   state.rows = []
   vi.restoreAllMocks()
 })
@@ -94,6 +138,20 @@ describe('recording an act', () => {
       at: '2026-08-01T09:00:00.000Z',
     })
     expect(state.rows[0]!.at).toBe('2026-08-01T09:00:00.000Z')
+  })
+
+  it('drops an in-flight act instead of assigning it to the next account', async () => {
+    let releaseDb = (): void => undefined
+    state.dbGate = new Promise<void>((resolve) => {
+      releaseDb = resolve
+    })
+
+    const recording = recordActivity('playlist_completed')
+    state.userId = 'singer-b'
+    releaseDb()
+    await recording
+
+    expect(state.rows).toEqual([])
   })
 })
 
@@ -142,5 +200,80 @@ describe('reading it back for the profile', () => {
     state.userId = 'singer-b'
 
     expect(await loadActivityCounts()).toEqual({})
+  })
+})
+
+describe('reading audited activity for Progress', () => {
+  function seedActivityRows(count: number): void {
+    state.rows = Array.from({ length: count }, (_, index) => ({
+      id: `row-${index}`,
+      userId: 'singer-a',
+      kind: 'song_completed',
+      at: new Date(Date.UTC(2026, 7, 1, 0, 0, index)).toISOString(),
+    }))
+  }
+
+  it('pages to the safety cap and reports that more account history exists', async () => {
+    seedActivityRows(7)
+
+    const result = await loadProgressActivityRecords({
+      pageSize: 2,
+      maxRecords: 5,
+    })
+
+    expect(result.records.map((record) => record.id)).toEqual([
+      'row-6',
+      'row-5',
+      'row-4',
+      'row-3',
+      'row-2',
+    ])
+    expect(result.available).toBe(true)
+    expect(result.complete).toBe(false)
+    expect(result.totalAvailable).toBe(7)
+    expect(state.findAllOptions).toEqual([
+      expect.objectContaining({ offset: 0, limit: 2, throwOnError: true }),
+      expect.objectContaining({ offset: 2, limit: 2, throwOnError: true }),
+      expect.objectContaining({ offset: 4, limit: 1, throwOnError: true }),
+    ])
+    expect(state.countOptions).toHaveLength(2)
+    expect(state.countOptions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          where: { userId: 'singer-a' },
+          throwOnError: true,
+        }),
+      ]),
+    )
+  })
+
+  it('returns an unavailable envelope when the audited repository read fails', async () => {
+    seedActivityRows(1)
+    state.fail = true
+
+    await expect(loadProgressActivityRecords()).resolves.toEqual({
+      records: [],
+      available: false,
+      complete: false,
+      totalAvailable: null,
+    })
+  })
+
+  it('discards an in-flight page when the signed-in identity changes', async () => {
+    seedActivityRows(2)
+    state.afterFindAll = () => {
+      state.afterFindAll = null
+      state.userId = 'singer-b'
+    }
+
+    await expect(loadProgressActivityRecords({ pageSize: 1 })).resolves.toEqual(
+      {
+        records: [],
+        available: false,
+        complete: false,
+        totalAvailable: null,
+      },
+    )
+    expect(state.findAllOptions[0]?.where).toEqual({ userId: 'singer-a' })
   })
 })

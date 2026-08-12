@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { practisePastChallenge } from '@/features/challenges/PastWeeklyChallenges'
-import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyTier, } from '@/features/challenges/weekly-attempt'
+import { activeWeeklyAttempt, beginWeeklyAttempt, recordWeeklyAttempt, weeklyAttemptComparabilityKey, weeklyTier, } from '@/features/challenges/weekly-attempt'
 import { hoursUntil, melodyItemsToNotes, notesToMelodyItems, } from '@/features/challenges/weekly-service'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { showNotification } from '@/stores/notifications-store'
@@ -46,6 +46,30 @@ describe('weeklyTier', () => {
   it('ignores the founder when no seed score exists', () => {
     expect(weeklyTier(95, 70, null)).toBe('completed')
     expect(weeklyTier(95, 70, undefined)).toBe('completed')
+  })
+})
+
+describe('weekly attempt comparability', () => {
+  it('keys the exact scored note task and omits unknown targets', () => {
+    const target = {
+      challengeId: 'w1',
+      title: 'Vincero',
+      exercise: 'sight-singing' as const,
+      targetScore: 70,
+      targetItems: notesToMelodyItems('G3 C4 E4'),
+    }
+    expect(weeklyAttemptComparabilityKey(target)).toBe(
+      weeklyAttemptComparabilityKey({ ...target }),
+    )
+    expect(weeklyAttemptComparabilityKey(target)).not.toBe(
+      weeklyAttemptComparabilityKey({
+        ...target,
+        targetItems: notesToMelodyItems('G3 C4 F4'),
+      }),
+    )
+    expect(
+      weeklyAttemptComparabilityKey({ ...target, targetItems: undefined }),
+    ).toBeUndefined()
   })
 })
 

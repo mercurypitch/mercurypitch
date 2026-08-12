@@ -12,6 +12,7 @@
 import { createSignal } from 'solid-js'
 import { checkAndGrantBadges } from '@/db/services/badge-grant-engine'
 import { saveSessionRecord } from '@/db/services/session-service'
+import { getUserId } from '@/db/services/user-service'
 import { createPersistedSignal } from '@/lib/storage'
 import type { PlaybackSession, PracticeResult, SessionItem, SessionResult, } from '@/types'
 import { STORAGE_KEY_SESSION_HIST } from './melody-store'
@@ -144,15 +145,22 @@ export function endPracticeSession(): SessionResult | null {
   // Free practice over a self-chosen melody: kept for personal history, the
   // badge engine and streaks, but never publicly ranked — the difficulty is
   // whatever the singer picked, so the scores compare nothing.
-  void saveSessionRecord({
-    melodyName: session.name,
-    score: avgScore,
-    accuracy: avgScore,
-    notesHit: results.length,
-    notesTotal: session.items.length,
-    source: 'practice',
-  })
-    .then(() => checkAndGrantBadges())
+  const ownerId = getUserId()
+  void saveSessionRecord(
+    {
+      melodyName: session.name,
+      score: avgScore,
+      accuracy: avgScore,
+      notesHit: results.length,
+      notesTotal: session.items.length,
+      source: 'practice',
+    },
+    ownerId,
+  )
+    .then((savedSession) => {
+      if (savedSession === null || getUserId() !== ownerId) return
+      return checkAndGrantBadges(ownerId)
+    })
     .catch(() => {})
 
   setSessionActive(false)

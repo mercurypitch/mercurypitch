@@ -285,6 +285,7 @@ export function ChallengeStage(props: ChallengeStageProps) {
         type: EXERCISE_SIGHT_SINGING,
         score: summary.score,
         metrics: {
+          durationMs: Math.round((run?.durationSec ?? 0) * 1000),
           notesAttempted: summary.notesAttempted,
           notesScored: summary.notesScored,
           avgAccuracy: summary.avgAccuracy,
