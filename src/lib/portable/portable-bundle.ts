@@ -30,6 +30,24 @@ export const PORTABLE_BUNDLE_VERSION = 1
 /** The parts a song can travel as. */
 export type PortablePartId = 'stem:vocal' | 'stem:instrumental' | 'prep'
 
+/** The same three ids as a value, so a manifest can be checked against them. */
+export const PORTABLE_PART_IDS: readonly PortablePartId[] = [
+  'stem:vocal',
+  'stem:instrumental',
+  'prep',
+]
+
+/**
+ * The largest a single part may claim to be.
+ *
+ * An hour of 192 kbps AAC is about 86 MB, so this is far above any song
+ * anyone will send and far below "fills the phone". The exact number is
+ * not the point: an announced size decides how much a receiver
+ * accumulates BEFORE it can verify anything, so it has to have a ceiling
+ * at all. Without one a peer can announce half a terabyte.
+ */
+export const MAX_PART_BYTES = 512 * 1024 * 1024
+
 export interface PortablePartInfo {
   id: PortablePartId
   bytes: number
@@ -150,12 +168,31 @@ export function isReadableManifest(
   if (typeof song.fileHash !== 'string' || song.fileHash === '') return false
   if (typeof song.title !== 'string') return false
   if (!Array.isArray(m.parts) || m.parts.length === 0) return false
+  // At most one of each known part. The ids are a closed set, so this is
+  // also the part-count bound -- a manifest cannot announce a hundred
+  // thousand parts and make the receiver ask for each in turn.
+  if (m.parts.length > PORTABLE_PART_IDS.length) return false
+  const seen = new Set<string>()
   return m.parts.every((p: unknown) => {
     if (typeof p !== 'object' || p === null) return false
     const part = p as Record<string, unknown>
+    if (typeof part.id !== 'string') return false
+    if (!(PORTABLE_PART_IDS as readonly string[]).includes(part.id))
+      return false
+    if (seen.has(part.id)) return false
+    seen.add(part.id)
+    // A byte count is a promise the receiver accumulates against, so it
+    // has to be a real, bounded, positive number. `typeof === 'number'`
+    // alone let NaN and Infinity through, and against those the
+    // receiver's "more than you announced" guard can never trip and its
+    // "that is all of it" test can never pass: it buffered chunks for
+    // ever. No real part is empty either -- an absent one is omitted
+    // from the manifest, never announced as zero bytes.
     return (
-      typeof part.id === 'string' &&
       typeof part.bytes === 'number' &&
+      Number.isSafeInteger(part.bytes) &&
+      part.bytes > 0 &&
+      part.bytes <= MAX_PART_BYTES &&
       typeof part.sha256 === 'string' &&
       typeof part.mime === 'string'
     )
