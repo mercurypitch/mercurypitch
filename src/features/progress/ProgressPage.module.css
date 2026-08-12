@@ -915,6 +915,12 @@
   background: #c4f3fb;
 }
 
+.primaryAction > span {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
 .shareAction {
   border: 1px solid var(--progress-line-strong);
   color: var(--progress-ivory);
@@ -1041,7 +1047,7 @@
 .threadIdentity > span,
 .threadMetric,
 .voiceLandscape header span,
-.pathRecommendation span,
+.pathRecommendationLabel,
 .milestoneShelf > li > span,
 .leagueObject > span,
 .historyIdentity > span {
@@ -1428,6 +1434,7 @@
 }
 
 .milestonesChapter {
+  container-type: inline-size;
   padding: clamp(2rem, 5vw, 5rem);
   background:
     linear-gradient(180deg, rgb(216 187 121 / 5%), transparent 38%), #0b0d14;
@@ -1452,9 +1459,13 @@
 
 .shelfScroll {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 3.5rem;
+}
+
+.shelfScrollWithLeague {
   grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
   gap: clamp(2rem, 5vw, 5rem);
-  margin-top: 3.5rem;
 }
 
 .milestoneShelf {
@@ -1606,6 +1617,29 @@
   margin: 0.35rem 0 0;
   color: var(--progress-muted);
   font-size: 0.65rem;
+}
+
+@container (max-width: 760px) {
+  .shelfScrollWithLeague {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .leagueObject {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1.25rem;
+    text-align: left;
+  }
+
+  .leagueObject img {
+    grid-row: 1 / 6;
+    margin: 0;
+  }
+
+  .leagueObject .textAction {
+    justify-self: start;
+  }
 }
 
 .historyHeader {
@@ -2153,8 +2187,9 @@
     align-items: flex-end;
   }
 
-  .shelfScroll {
+  .shelfScrollWithLeague {
     grid-template-columns: 1fr;
+    gap: clamp(2rem, 5vw, 5rem);
   }
 
   .leagueObject {

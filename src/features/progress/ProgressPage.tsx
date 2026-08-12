@@ -1150,7 +1150,9 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                     {(action) => (
                       <div class={styles.pathRecommendation}>
                         <div>
-                          <span>Next useful step</span>
+                          <span class={styles.pathRecommendationLabel}>
+                            Next useful step
+                          </span>
                           <p>{snapshot().paths.recommendationReason}</p>
                         </div>
                         <ActionControl
@@ -1178,7 +1180,13 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                     <Trophy />
                   </div>
 
-                  <div class={styles.shelfScroll}>
+                  <div
+                    classList={{
+                      [styles.shelfScroll]: true,
+                      [styles.shelfScrollWithLeague]:
+                        snapshot().league !== undefined,
+                    }}
+                  >
                     <ul
                       class={styles.milestoneShelf}
                       tabindex="0"
