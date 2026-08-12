@@ -73,7 +73,7 @@ const ensureLocalDb = async (page: Page): Promise<void> => {
     .toBe(true)
 }
 
-const seedEarnedBadges = async (page: Page): Promise<void> => {
+const seedProgressEvidence = async (page: Page): Promise<void> => {
   await page.evaluate(
     async ({ badgeCount, userId }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -84,11 +84,12 @@ const seedEarnedBadges = async (page: Page): Promise<void> => {
 
       try {
         const transaction = database.transaction(
-          ['badgeDefinitions', 'userBadges'],
+          ['badgeDefinitions', 'userBadges', 'sessionRecords'],
           'readwrite',
         )
         const definitions = transaction.objectStore('badgeDefinitions')
         const earnedBadges = transaction.objectStore('userBadges')
+        const sessionRecords = transaction.objectStore('sessionRecords')
 
         for (let index = 1; index <= badgeCount; index += 1) {
           const badgeId = `e2e-progress-tablet-badge-${index}`
@@ -118,6 +119,29 @@ const seedEarnedBadges = async (page: Page): Promise<void> => {
           })
         }
 
+        const endedAt = new Date().toISOString()
+        sessionRecords.put({
+          id: 'e2e-progress-tablet-exercise',
+          userId,
+          melodyName: 'Tablet exercise evidence',
+          startedAt: new Date(Date.now() - 90_000).toISOString(),
+          endedAt,
+          score: 88,
+          accuracy: 88,
+          notesHit: 8,
+          notesTotal: 10,
+          streak: 4,
+          source: 'exercise',
+          instrument: 'voice',
+          durationMs: 90_000,
+          sourceRef: 'e2e-progress-tablet-exercise',
+          sourceVersion: 1,
+          comparabilityKey: 'exercise:e2e-progress-tablet-exercise:v1',
+          results: [],
+          createdAt: endedAt,
+          updatedAt: endedAt,
+        })
+
         await new Promise<void>((resolve, reject) => {
           transaction.oncomplete = () => resolve()
           transaction.onerror = () => reject(transaction.error)
@@ -132,9 +156,9 @@ const seedEarnedBadges = async (page: Page): Promise<void> => {
 }
 
 test.describe('Progress dashboard', () => {
-  test.use({ viewport: { width: 768, height: 1024 }, hasTouch: true })
+  test.use({ viewport: { width: 912, height: 1368 }, hasTouch: true })
 
-  test('Milestones shelf responds to a real tablet touch swipe @smoke', async ({
+  test('Tablet milestones use their row and swipe in both directions @smoke', async ({
     page,
   }) => {
     await page.addInitScript((userId) => {
@@ -148,7 +172,7 @@ test.describe('Progress dashboard', () => {
     })
     await dismissOverlays(page)
     await ensureLocalDb(page)
-    await seedEarnedBadges(page)
+    await seedProgressEvidence(page)
 
     await page.goto('/#/progress')
     await dismissOverlays(page)
@@ -164,6 +188,16 @@ test.describe('Progress dashboard', () => {
     await expect(shelf).toBeVisible()
     await expect(lastBadge).toHaveCount(1)
     await shelf.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        shelf.evaluate((element) => {
+          const container = element.parentElement
+          return container === null
+            ? Number.POSITIVE_INFINITY
+            : Math.abs(element.clientWidth - container.clientWidth)
+        }),
+      )
+      .toBeLessThanOrEqual(1)
     await expect
       .poll(() =>
         shelf.evaluate((element) => element.scrollWidth > element.clientWidth),
@@ -192,5 +226,16 @@ test.describe('Progress dashboard', () => {
     await expect
       .poll(() => shelf.evaluate((element) => Math.round(element.scrollLeft)))
       .toBeLessThan(forwardScrollLeft)
+
+    const exercisesAction = page
+      .getByRole('region', { name: 'Practice Paths' })
+      .getByRole('link', { name: 'Open Exercises' })
+    await expect(exercisesAction).toBeVisible()
+    const actionColors = await exercisesAction.evaluate((element) => ({
+      control: getComputedStyle(element).color,
+      label: getComputedStyle(element.querySelector('span')!).color,
+    }))
+    expect(actionColors.label).toBe(actionColors.control)
+    expect(actionColors.label).toBe('rgb(7, 17, 24)')
   })
 })
