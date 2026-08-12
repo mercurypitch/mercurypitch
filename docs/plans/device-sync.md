@@ -250,8 +250,10 @@ alarm drawn from it was not.
 **A phone and a desktop reporting the identical 10 GB is a policy ceiling, not
 a measurement.** Two machines with very different disks do not have the same
 real limit; a browser reporting one figure for both is handing out a cap.
-(Firefox caps per-group storage at 10 GiB. Chrome reports a fraction of free
-disk, which would differ.) So treat 10 GB as "at least 10 GB", not as a budget.
+A Chromium preview on a Linux desktop reported 10.45 GB during the same
+testing, so this is not one browser's quirk -- 10 GB-ish is what several
+report. So treat 10 GB as "at least 10 GB", not as a budget, and do not read
+the identical figures as evidence that two devices have the same headroom.
 
 **Stored costs more than exported.** Two imported songs occupy 344 MB, about
 172 MB each, while the owner's 10–20 song library exports to 1.3 GB — 65–130 MB
