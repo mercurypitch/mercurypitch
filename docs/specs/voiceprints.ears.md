@@ -22,12 +22,14 @@ scenarios in §6 are the intended Playwright suite (not yet written).
 ## 1. Capture
 
 ### REQ-VPR-001 — Every measured voice becomes a record
+
 **When** a Voice Mirror run completes, or the onboarding voiceprint beat
 completes, the app shall save a voiceprint record
 `{ id, summary, twin, source, takenAt }` with `source` `'mirror'` or
 `'onboarding'` respectively.
 
 ### REQ-VPR-002 — Derived numbers only
+
 **Ubiquitous:** A voiceprint record shall contain derived summary numbers and
 the twin's name only — no audio and no pitch frames. (Open decision D1 below
 proposes an optional small downsampled trace for card art.)
@@ -35,27 +37,32 @@ proposes an optional small downsampled trace for card art.)
 ## 2. Device storage
 
 ### REQ-VPR-003 — Local first, never lost
+
 **Ubiquitous:** Saving shall write the device copy first (localStorage,
 newest-first); a failed or unavailable cloud write shall not lose the take or
 surface an error at the moment of capture.
 
 ### REQ-VPR-004 — Device cap
+
 **Ubiquitous:** The device shall keep at most 12 records (`LOCAL_CAP`),
 evicting the oldest; the uncapped history lives on the account.
 
 ## 3. Account sync
 
 ### REQ-VPR-005 — Signed-in saves reach the account
+
 **While** signed in with a configured API, a save shall also create a cloud
 row keyed to the signed-in user.
 
 ### REQ-VPR-006 — Sign-in rescues the account's own takes
+
 **When** a user signs in, device records **tagged to that account** which the
 account does not have shall be uploaded exactly once (single-flight guard;
 identity = `takenAt`, so retried or overlapping syncs cannot duplicate a
 take). Unclaimed records are never auto-uploaded — see REQ-VPR-011.
 
 ### REQ-VPR-007 — Listing
+
 **Ubiquitous:** The voiceprint list shall show, newest first: signed out —
 every device record, whoever made it; signed in — the account history merged
 with the device records **made by this account**, de-duplicated by `takenAt`
@@ -63,22 +70,26 @@ with the device records **made by this account**, de-duplicated by `takenAt`
 or under another account stay off the signed-in list.
 
 ### REQ-VPR-008 — Cross-boundary identity
+
 **Ubiquitous:** `takenAt` is the identity of a take across the device/cloud
 boundary (row ids differ per side and shall not be used for de-duplication).
 
 ## 4. Erasure and identity changes on one device
 
 ### REQ-VPR-009 — Account erasure is complete server-side
+
 **When** an account is deleted, every cloud voiceprint row of that user shall
 be erased (voiceprints is in `USER_OWNED_TABLES`).
 
 ### REQ-VPR-010 — Device copies are device data
+
 **Ubiquitous:** Account deletion shall not delete the device's local records —
 they were made on this device and belong to whoever is holding it. (This is
 why a freshly deleted account followed by another sign-in still shows the
 device's latest print.)
 
 ### REQ-VPR-011 — Takes tag who made them (decision D2, 2026-08-01)
+
 **Ubiquitous:** Every record shall carry `madeBy`: the signed-in user's id at
 capture, or `'anonymous'` when nobody was signed in. Records from before
 tagging (no `madeBy`) count as anonymous. The tag is device-side only and is
@@ -92,6 +103,7 @@ nor the account id (never shown) — stranded on the device, invisible
 forever. Amended 2026-08-02 after exactly that happened on dev.
 
 ### REQ-VPR-014 — Unclaimed takes are offered, never taken
+
 **While** signed in **and** the device holds anonymous/legacy records, the
 voiceprint section shall show a notice ("keep these on this account?") with
 explicit accept and "Not now" actions. **When** accepted, those records are
@@ -113,6 +125,7 @@ pre-2026-08-02 tagging. Excluded when the account id equals the device id,
 because an in-place upgrade means those takes are already the account's.
 
 ### REQ-VPR-015 — "Not now" is quiet, per account
+
 **When** the notice is declined, it shall stay hidden **for that account**
 until an unclaimed record newer than the declined set appears; a different
 account signing in on the same device is asked independently.
@@ -120,12 +133,14 @@ account signing in on the same device is asked independently.
 ## 5. Sharing and the settings card
 
 ### REQ-VPR-012 — The flip is the export
+
 **Ubiquitous:** The settings voiceprint card shall show the twin portrait on
 its front and the stats card (portrait + range/accuracy/steadiness — the same
 canvas the share path exports) on its back; the Share control shall export
 whichever side is visible.
 
 ### REQ-VPR-013 — Share fallback
+
 **Ubiquitous:** Sharing shall use the Web Share API where available, fall
 back to a PNG download otherwise, and report "unavailable" only when the
 record has no twin portrait to build a card from.
@@ -133,12 +148,14 @@ record has no twin portrait to build a card from.
 ## 6. Personal voice constellation
 
 ### REQ-VPR-016 — One catalogue drives matching and presentation
+
 **Ubiquitous:** Voice Mirror matching and the personal constellation shall use
-the same ordered catalogue of 21 legends and six broad, overlapping voice
+the same ordered catalogue of 31 legends and six broad, overlapping voice
 bands. The bands are discovery guides; the app shall not present them as
 measured per-artist ranges or precise celebrity coordinates.
 
 ### REQ-VPR-017 — Saved twins are historical truth
+
 **When** the personal constellation is built, persisted `record.twin` values
 shall determine its revealed matches; the app shall not recompute an old twin
 from that record's range. The newest record is current, unique older twins are
@@ -146,6 +163,7 @@ past matches, null twins are ignored, and names removed from the current
 catalogue remain visible as legacy history.
 
 ### REQ-VPR-018 — Mystery means not yet matched, not access control
+
 **While** a catalogue legend does not occur in the visible voiceprint history,
 the in-app constellation shall show the legend's name and broad band with a
 mystery illustration, shall not render or resolve that legend's portrait URL,
@@ -154,12 +172,14 @@ language. Portrait assets remain public product artwork; mystery presentation
 is not a security boundary.
 
 ### REQ-VPR-019 — History failures never reveal portraits
+
 **While** voiceprint history is loading, unavailable, or empty, the
 constellation shall keep every portrait hidden and show an explicit loading,
 error, or first-voiceprint state respectively. A retry shall re-read the
 history without replacing it or generating a new match.
 
 ### REQ-VPR-020 — One route-backed surface, contextual return
+
 **When** a singer opens the constellation from returning onboarding, Settings,
 or their own Profile, the app shall open the same `#/voice-constellation`
 surface and preserve the underlying context. Browser Back and the surface's
@@ -167,6 +187,7 @@ close control shall return to that context; a directly loaded route shall
 close to an in-app tab rather than assuming an external history entry.
 
 ### REQ-VPR-021 — Full public reveal is separate
+
 **Ubiquitous:** The personal constellation shall link to the public Voice
 Legends gallery for the complete portrait reveal, while keeping saved-match
 state and measured range data inside the app.

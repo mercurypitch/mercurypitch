@@ -113,8 +113,7 @@ export const LEGENDS: Record<string, LegendArt> = {
     ],
   },
 
-  // imageSrc portraits: Style A "mercury accents" caricatures (Higgsfield
-  // Nano Banana 2, docs/plans/voice-mirror-handoff-2026-07-09.md §3) in
+  // imageSrc portraits: Style A "mercury accents" caricatures in
   // public/legends/. The vector constellation stays as the fallback for any
   // legend without an image.
   'Freddie Mercury': {
@@ -605,6 +604,66 @@ export const LEGENDS: Record<string, LegendArt> = {
       [3, 4],
       [4, 5],
     ],
+  },
+
+  'Édith Piaf': {
+    epithet: 'The Little Sparrow',
+    imageSrc: '/legends/edith-piaf.webp',
+    stars: [],
+  },
+
+  'Umm Kulthum': {
+    epithet: 'The Star of the East',
+    imageSrc: '/legends/umm-kulthum.webp',
+    stars: [],
+  },
+
+  'Nusrat Fateh Ali Khan': {
+    epithet: 'The King of Qawwali',
+    imageSrc: '/legends/nusrat-fateh-ali-khan.webp',
+    stars: [],
+  },
+
+  'Miriam Makeba': {
+    epithet: 'Mama Africa',
+    imageSrc: '/legends/miriam-makeba.webp',
+    stars: [],
+  },
+
+  'Billie Holiday': {
+    epithet: 'Lady Day',
+    imageSrc: '/legends/billie-holiday.webp',
+    stars: [],
+  },
+
+  'Paul Robeson': {
+    epithet: 'The voice that carried freedom',
+    imageSrc: '/legends/paul-robeson.webp',
+    stars: [],
+  },
+
+  'Dolly Parton': {
+    epithet: 'The Queen of Country',
+    imageSrc: '/legends/dolly-parton.webp',
+    stars: [],
+  },
+
+  'PJ Harvey': {
+    epithet: 'The shape-shifting rock voice',
+    imageSrc: '/legends/pj-harvey.webp',
+    stars: [],
+  },
+
+  'Patti Smith': {
+    epithet: 'The Punk Poet Laureate',
+    imageSrc: '/legends/patti-smith.webp',
+    stars: [],
+  },
+
+  'Lady Gaga': {
+    epithet: 'The shape-shifting pop voice',
+    imageSrc: '/legends/lady-gaga.webp',
+    stars: [],
   },
 }
 

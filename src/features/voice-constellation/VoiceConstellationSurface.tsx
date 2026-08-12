@@ -16,7 +16,7 @@ import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { legendArt, legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { WEBSITE_URL } from '@/lib/legal-links'
 import type { VoiceTypeBand } from '@/lib/mirror/legend-catalog'
-import { VOICE_TYPE_BANDS } from '@/lib/mirror/legend-catalog'
+import { VOICE_LEGENDS, VOICE_TYPE_BANDS } from '@/lib/mirror/legend-catalog'
 import type { VoiceConstellationLegend } from '@/lib/mirror/voice-constellation'
 import { buildVoiceConstellation } from '@/lib/mirror/voice-constellation'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -595,7 +595,7 @@ export const VoiceConstellationSurface: Component<
               <h2>Earlier constellation matches</h2>
               <p>
                 These names are part of your saved history but are not in the
-                current 21-legend map.
+                current {VOICE_LEGENDS.length}-legend map.
               </p>
               <ul>
                 <For each={constellation().legacyMatches}>

@@ -97,7 +97,7 @@ describe('buildVoiceConstellation', () => {
     expect(constellation.currentVoiceprint).toBeNull()
     expect(constellation.currentTwin).toBeNull()
     expect(constellation.legacyMatches).toEqual([])
-    expect(constellation.legends).toHaveLength(21)
+    expect(constellation.legends).toHaveLength(31)
     expect(
       constellation.legends.every(
         (legend) => legend.state === 'unmatched' && !('imageSrc' in legend),

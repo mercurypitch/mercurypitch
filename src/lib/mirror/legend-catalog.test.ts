@@ -23,7 +23,7 @@ describe('VOICE_TYPE_BANDS', () => {
 })
 
 describe('VOICE_LEGENDS', () => {
-  it('contains all 21 legends in their broad catalogue bands', () => {
+  it('contains all 31 legends in their broad catalogue bands', () => {
     expect(
       Object.fromEntries(
         VOICE_TYPE_BANDS.map((band) => [
@@ -34,7 +34,7 @@ describe('VOICE_LEGENDS', () => {
         ]),
       ),
     ).toEqual({
-      Bass: ['Johnny Cash', 'Barry White', 'Louis Armstrong'],
+      Bass: ['Johnny Cash', 'Barry White', 'Louis Armstrong', 'Paul Robeson'],
       Baritone: [
         'Elvis Presley',
         'Frank Sinatra',
@@ -47,12 +47,28 @@ describe('VOICE_LEGENDS', () => {
         'Michael Jackson',
         'Prince',
         'Luciano Pavarotti',
+        'Nusrat Fateh Ali Khan',
       ],
-      Alto: ['Amy Winehouse', 'Cher', 'Nina Simone'],
-      'Mezzo-soprano': ['Adele', 'Whitney Houston', 'Aretha Franklin'],
-      Soprano: ['Mariah Carey', 'Celine Dion', 'Ariana Grande'],
+      Alto: [
+        'Amy Winehouse',
+        'Cher',
+        'Nina Simone',
+        'Umm Kulthum',
+        'Miriam Makeba',
+        'Billie Holiday',
+        'Patti Smith',
+      ],
+      'Mezzo-soprano': [
+        'Adele',
+        'Whitney Houston',
+        'Aretha Franklin',
+        'Édith Piaf',
+        'Lady Gaga',
+        'PJ Harvey',
+      ],
+      Soprano: ['Mariah Carey', 'Celine Dion', 'Ariana Grande', 'Dolly Parton'],
     })
-    expect(VOICE_LEGENDS).toHaveLength(21)
+    expect(VOICE_LEGENDS).toHaveLength(31)
   })
 
   it('keeps every stable id, persisted name, and portrait unique', () => {
