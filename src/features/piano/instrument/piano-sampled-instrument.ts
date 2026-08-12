@@ -16,6 +16,8 @@ export type PianoSampledLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export interface PianoSampledInstrumentLoadSnapshot {
   readonly status: PianoSampledLoadStatus
+  /** At least one complete requested-key coverage pass can play synchronously. */
+  readonly playable: boolean
   /** Decoded entries currently retained in the bounded LRU cache. */
   readonly loadedSamples: number
   /** Successfully prepared resources in the current or most recent plan. */
@@ -391,6 +393,7 @@ export function createPianoSampledInstrument(
   let character: PianoSampledCharacter = 'balanced'
   let ambience: PianoSampledAmbience = 'studio'
   let loadStatus: PianoSampledLoadStatus = 'idle'
+  let playable = false
   let loadError: string | null = null
   let plannedSamples = 0
   let preparedSamples = 0
@@ -401,6 +404,7 @@ export function createPianoSampledInstrument(
   const snapshot = (): PianoSampledInstrumentLoadSnapshot =>
     Object.freeze({
       status: loadStatus,
+      playable,
       loadedSamples: cache.size,
       preparedSamples,
       plannedSamples,
@@ -460,6 +464,7 @@ export function createPianoSampledInstrument(
   const clearCache = (): void => {
     cache.clear()
     decodedBytes = 0
+    playable = false
     emit()
   }
 
@@ -729,6 +734,7 @@ export function createPianoSampledInstrument(
             : ('idle' as const)
           : loadStatus,
       error: loadStatus === 'loading' ? null : loadError,
+      playable,
       plannedSamples,
       preparedSamples,
     }
@@ -740,6 +746,7 @@ export function createPianoSampledInstrument(
     setLoadState('loading')
     for (const resource of coverageResources) retainSample(resource.id)
     let retainedDetailResources: readonly PianoSampleResource[] = []
+    let coveragePrepared = false
     try {
       throwIfAborted(combined.signal)
       ensureGraph()
@@ -766,12 +773,17 @@ export function createPianoSampledInstrument(
       ) {
         throw new Error('No playable sample remains for a requested key range')
       }
+      coveragePrepared = true
       retainedDetailResources = selectDetailResources(
         detailResources,
         coverageResources,
       )
       for (const resource of retainedDetailResources) retainSample(resource.id)
       plannedSamples = coverageResources.length + retainedDetailResources.length
+      // Coverage is the audible contract. Publish it before optional velocity,
+      // release, and pedal detail so the route can select the Grand while this
+      // same cancellable, pinned preparation continues in the background.
+      playable = true
       emit()
       const detailFailures = await loadResources(
         retainedDetailResources,
@@ -790,9 +802,17 @@ export function createPianoSampledInstrument(
     } catch (error) {
       if (!disposed && generation === preparationGeneration) {
         if (error instanceof DOMException && error.name === 'AbortError') {
-          plannedSamples = priorState.plannedSamples
-          preparedSamples = priorState.preparedSamples
-          setLoadState(priorState.status, priorState.error)
+          if (coveragePrepared) {
+            plannedSamples = coverageResources.length
+            preparedSamples = coverageResources.length
+            playable = true
+            setLoadState('ready')
+          } else {
+            plannedSamples = priorState.plannedSamples
+            preparedSamples = priorState.preparedSamples
+            playable = priorState.playable && cache.size > 0
+            setLoadState(priorState.status, priorState.error)
+          }
         } else {
           setLoadState(
             'error',
@@ -1101,6 +1121,7 @@ export function createPianoSampledInstrument(
     if (BASELINE_RESOURCES.every((resource) => cache.has(resource.id))) {
       plannedSamples = BASELINE_RESOURCES.length
       preparedSamples = BASELINE_RESOURCES.length
+      playable = true
       setLoadState('ready')
       return Promise.resolve()
     }
@@ -1245,14 +1266,8 @@ export function createPianoSampledInstrument(
     },
 
     pedal(event: PianoInstrumentPedalEvent) {
-      if (disposed || graph === null) return
+      if (disposed) return
       const value = clamp(event.value, 0, 1)
-      const at = Math.max(
-        graph.context.currentTime,
-        Number.isFinite(event.atContextTime)
-          ? (event.atContextTime as number)
-          : graph.context.currentTime,
-      )
       if (event.pedal === 'soft') {
         softPedalValue = value
         return
@@ -1261,7 +1276,16 @@ export function createPianoSampledInstrument(
       if (event.pedal === 'sustain') {
         if (down === sustainDown) return
         sustainDown = down
-        triggerPedalNoise(down, at)
+        const activeGraph = graph
+        if (activeGraph !== null) {
+          const at = Math.max(
+            activeGraph.context.currentTime,
+            Number.isFinite(event.atContextTime)
+              ? (event.atContextTime as number)
+              : activeGraph.context.currentTime,
+          )
+          triggerPedalNoise(down, at)
+        }
       }
     },
 
@@ -1306,6 +1330,7 @@ export function createPianoSampledInstrument(
       retainedSampleCounts.clear()
       decodedBytes = 0
       loadStatus = 'idle'
+      playable = false
       loadError = null
       plannedSamples = 0
       preparedSamples = 0

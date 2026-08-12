@@ -706,7 +706,9 @@ multi-hand targets remain later slices.
   deterministically, and share one dry/room/limiter graph per active context.
 - **REQ-PN-INSTRUMENT-009 — Discontinuity safety:** A stale or aborted load
   shall not become selected, revive disposed resources, overwrite a newer
-  preference, or leave a voice sounding.
+  preference, or leave a voice sounding. Seek, source replacement, a newer
+  preparation, and disposal shall cancel obsolete optional refinement before
+  another sample plan can claim its pinned memory.
 
 ### Licensed piano and Sound controls — `PN-SAMPLED-*`
 
@@ -718,13 +720,16 @@ multi-hand targets remain later slices.
   versions and a fixed HTTPS CDN origin; project, MIDI, and user strings shall
   never become sample URLs.
 - **REQ-PN-SAMPLED-003 — Progressive preparation:** Loading may prepare only
-  the zones needed for the staged pitch range and selected velocity layers.
-  Missing zones shall degrade to the fallback and may prepare for later notes
-  without blocking the current strike.
+  the zones needed for the staged pitch range and selected velocity layers. A
+  requested window becomes playable after one coverage attack zone exists for
+  every planned root; optional velocity, release, and pedal detail may then
+  refine on the same bounded, cancellable preparation. Missing zones shall
+  degrade to the fallback without blocking the current strike.
 - **REQ-PN-SAMPLED-004 — Truthful state:** Sound shall distinguish silent,
-  loading, sampled-ready, fallback-selected, and failed-with-fallback states.
-  It shall not claim that the concert grand is audible until its renderer can
-  accept notes.
+  loading coverage, sampled-ready/refining, fully prepared, fallback-selected,
+  and failed-with-fallback states. It shall not claim that the concert grand is
+  audible until its renderer can accept every planned coverage root, and it
+  shall not describe optional detail as required readiness.
 - **REQ-PN-SAMPLED-005 — Real controls:** Sound shall expose an instrument
   choice plus bounded Character and Space choices that update the sampled
   engine. The visual Room picker shall remain independent of sonic Space.
@@ -737,13 +742,16 @@ multi-hand targets remain later slices.
   shall remain absent or explicitly identified as a later feature.
 - **REQ-PN-SAMPLED-008 — Network recovery:** IF the CDN, fetch, or decoder is
   unavailable, THEN the current project, input, transport, and fallback synth
-  shall remain usable and Sound shall offer a bounded retry.
+  shall remain usable and Sound shall offer a bounded retry. IF optional detail
+  fails after coverage is playable, THEN the Grand shall remain selected and
+  usable, the failure shall stay contained, and Sound may show a non-blocking
+  warning.
 
 ### Slice 7 verification map
 
-| Requirement area          | Minimum evidence                                                                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PN-INSTRUMENT-001`–`005` | Port/router/fallback/scheduler tests for one context, synchronous fallback, exact voice ownership, preference switching, panic, and disposal          |
-| `PN-INSTRUMENT-006`–`009` | Input release-velocity and pedal-lifetime fixtures plus sampler cache, voice-cap, abort, stale-load, and shared-graph tests                           |
-| `PN-SAMPLED-001`–`003`    | Manifest source/license/version assertions, constant-URL tests, intent-lazy bundle audit, and no-sample-request first-paint browser smoke             |
-| `PN-SAMPLED-004`–`008`    | Sound component/controller tests for load, selection, Character, Space, attribution, failure, fallback, retry, and visual-room/sonic-space separation |
+| Requirement area          | Minimum evidence                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PN-INSTRUMENT-001`–`005` | Port/router/fallback/scheduler tests for one context, synchronous fallback, exact voice ownership, preference switching, panic, and disposal                              |
+| `PN-INSTRUMENT-006`–`009` | Input release-velocity and pedal-lifetime fixtures plus sampler cache, voice-cap, coverage/detail abort, stale-settlement, disposal, and shared-graph tests               |
+| `PN-SAMPLED-001`–`003`    | Manifest source/license/version assertions, constant-URL tests, intent-lazy bundle audit, and no-sample-request first-paint browser smoke                                 |
+| `PN-SAMPLED-004`–`008`    | Sound component/controller tests for two-phase readiness, background-refinement progress, selection, controls, attribution, contained detail failure, fallback, and retry |

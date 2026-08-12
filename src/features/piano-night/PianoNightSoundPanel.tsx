@@ -44,6 +44,13 @@ export function PianoNightSoundPanel(
       return 'Fallback active · concert grand unavailable'
     }
     if (props.controller.soundLoadStatus() === 'ready') {
+      if (props.controller.soundRefining()) {
+        const prepared = props.controller.soundLoadedSamples()
+        const planned = props.controller.soundTotalSamples()
+        return concertGrandSelected()
+          ? `Concert grand ready · refining ${prepared} of ${planned}`
+          : 'Concert grand ready · fallback selected'
+      }
       return concertGrandSelected()
         ? 'Concert grand ready'
         : 'Concert grand ready · fallback selected'
@@ -118,8 +125,9 @@ export function PianoNightSoundPanel(
         when={props.controller.soundLoadStatus() !== 'ready'}
         fallback={
           <p class={styles.soundReadyNote}>
-            The current performance window is ready. Later zones prepare as the
-            playhead advances.
+            The current performance window is playable. Extra dynamics and
+            mechanical detail refine in the background; later zones prepare as
+            the playhead advances.
           </p>
         }
       >

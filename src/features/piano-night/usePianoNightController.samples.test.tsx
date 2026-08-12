@@ -11,6 +11,7 @@ const sampled = vi.hoisted(() => {
   const listeners = new Set<() => void>()
   const snapshot = {
     status: 'idle' as 'idle' | 'loading' | 'ready' | 'error',
+    playable: false,
     loadedSamples: 0,
     preparedSamples: 0,
     plannedSamples: 0,
@@ -120,6 +121,7 @@ beforeEach(() => {
 
   sampled.listeners.clear()
   sampled.snapshot.status = 'idle'
+  sampled.snapshot.playable = false
   sampled.snapshot.loadedSamples = 0
   sampled.snapshot.preparedSamples = 0
   sampled.snapshot.plannedSamples = 0
@@ -213,14 +215,102 @@ describe('usePianoNightController sampled preparation', () => {
 
     const loading = controller.loadSampledInstrument()
     await waitFor(() => expect(sampled.prewarm).toHaveBeenCalledOnce())
+    expect(sampled.load).not.toHaveBeenCalled()
     controller.setInstrumentPreference('fallback')
+    sampled.snapshot.status = 'loading'
+    sampled.snapshot.playable = true
+    sampled.snapshot.preparedSamples = 7
+    sampled.snapshot.plannedSamples = 18
+    for (const listener of sampled.listeners) listener()
+
+    expect(controller.instrumentPreference()).toBe('fallback')
+    expect(controller.soundLoadStatus()).toBe('ready')
+    expect(controller.soundRefining()).toBe(true)
+    expect(controller.soundLoadedSamples()).toBe(7)
+    expect(controller.soundTotalSamples()).toBe(18)
+    expect(controller.statusMessage()).toBe('Mercury Felt Synth selected.')
+
+    sampled.snapshot.status = 'ready'
+    sampled.snapshot.preparedSamples = 18
+    for (const listener of sampled.listeners) listener()
     pending.resolve()
 
     await expect(loading).resolves.toBe(true)
     expect(controller.instrumentPreference()).toBe('fallback')
     expect(controller.soundLoadStatus()).toBe('ready')
+    expect(controller.soundRefining()).toBe(false)
+    expect(controller.statusMessage()).toBe('Mercury Felt Synth selected.')
     await expect(controller.play()).resolves.toBe(true)
     expect(controller.statusMessage()).toContain('Mercury Felt Synth')
+  })
+
+  it('selects playable coverage before optional refinement settles', async () => {
+    const pending = deferredPrewarm()
+    sampled.prewarm.mockImplementationOnce(() => pending.promise)
+    const controller = mountController()
+    let settled = false
+    const loading = controller.loadSampledInstrument().then((result) => {
+      settled = true
+      return result
+    })
+    await waitFor(() => expect(sampled.prewarm).toHaveBeenCalledOnce())
+
+    sampled.snapshot.status = 'loading'
+    sampled.snapshot.playable = true
+    sampled.snapshot.preparedSamples = 7
+    sampled.snapshot.plannedSamples = 18
+    for (const listener of sampled.listeners) listener()
+
+    expect(settled).toBe(false)
+    expect(controller.instrumentPreference()).toBe('auto')
+    expect(controller.soundLoadStatus()).toBe('ready')
+    expect(controller.soundRefining()).toBe(true)
+    expect(controller.statusMessage()).toContain('Concert Grand is ready')
+
+    sampled.snapshot.status = 'ready'
+    sampled.snapshot.preparedSamples = 18
+    for (const listener of sampled.listeners) listener()
+    pending.resolve()
+    await expect(loading).resolves.toBe(true)
+    expect(controller.soundRefining()).toBe(false)
+  })
+
+  it('cancels optional refinement after coverage when a seek supersedes it', async () => {
+    sampled.prewarm
+      .mockImplementationOnce(
+        (_midis: readonly number[], signal?: AbortSignal) =>
+          new Promise<void>((_resolve, reject) => {
+            const rejectAbort = () =>
+              reject(new DOMException('Cancelled', 'AbortError'))
+            signal?.addEventListener('abort', rejectAbort, { once: true })
+            if (signal?.aborted === true) rejectAbort()
+          }),
+      )
+      .mockResolvedValue(undefined)
+    const controller = mountController()
+    const initial = controller.loadSampledInstrument()
+    await waitFor(() => expect(sampled.prewarm).toHaveBeenCalledOnce())
+    const refiningSignal = sampled.prewarm.mock.calls[0]?.[1] as AbortSignal
+
+    sampled.snapshot.status = 'loading'
+    sampled.snapshot.playable = true
+    sampled.snapshot.preparedSamples = 7
+    sampled.snapshot.plannedSamples = 18
+    for (const listener of sampled.listeners) listener()
+    expect(controller.soundLoadStatus()).toBe('ready')
+
+    controller.seekToBeat(4)
+
+    expect(refiningSignal.aborted).toBe(true)
+    await expect(initial).resolves.toBe(false)
+    await waitFor(() => expect(sampled.prewarm).toHaveBeenCalledTimes(2))
+    expect(sampled.prewarm.mock.calls[1]?.[0]).not.toHaveLength(0)
+    expect(new Set(sampled.prewarm.mock.calls[1]?.[0])).not.toEqual(
+      new Set(sampled.prewarm.mock.calls[0]?.[0]),
+    )
+    expect(controller.instrumentPreference()).toBe('auto')
+    expect(controller.soundLoadStatus()).toBe('ready')
+    expect(controller.soundLoadError()).toBeNull()
   })
 
   it('aborts stale seek preparation before warming the new current bar', async () => {
@@ -506,11 +596,18 @@ describe('usePianoNightController sampled preparation', () => {
     expect(sampled.dispose).toHaveBeenCalledOnce()
   })
 
-  it('finishes a pending lookahead when that bar becomes current', async () => {
+  it('reprioritizes a pending lookahead when that bar becomes current', async () => {
     const pendingLookahead = deferredPrewarm()
     sampled.prewarm
       .mockResolvedValueOnce(undefined)
-      .mockImplementationOnce(() => pendingLookahead.promise)
+      .mockImplementationOnce(
+        (_midis: readonly number[], signal?: AbortSignal) => {
+          signal?.addEventListener('abort', () => pendingLookahead.resolve(), {
+            once: true,
+          })
+          return pendingLookahead.promise
+        },
+      )
       .mockResolvedValue(undefined)
     const controller = mountController()
 
@@ -529,12 +626,7 @@ describe('usePianoNightController sampled preparation', () => {
 
     context.currentTime = 4 * 0.769231 + 0.01
     latestFrame?.(context.currentTime * 1000)
-    expect(sampled.prewarm).toHaveBeenCalledTimes(2)
-    expect(pendingSignal.aborted).toBe(false)
-
-    pendingLookahead.resolve()
-    await waitFor(() => expect(controller.soundLoadStatus()).toBe('ready'))
-    latestFrame?.(context.currentTime * 1000)
+    expect(pendingSignal.aborted).toBe(true)
     await waitFor(() => expect(sampled.prewarm).toHaveBeenCalledTimes(3))
     expect(new Set(sampled.prewarm.mock.calls[2]?.[0])).toEqual(
       new Set([41, 53, 56, 60, 65, 67, 68, 72, 48, 55, 64, 70]),

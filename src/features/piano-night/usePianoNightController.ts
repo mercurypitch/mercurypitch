@@ -40,6 +40,7 @@ interface PianoNightSampledInstrument {
   setAmbience(ambience: PianoNightSoundAmbience): void
   getLoadSnapshot(): {
     readonly status: PianoNightSoundLoadStatus
+    readonly playable: boolean
     readonly loadedSamples: number
     readonly preparedSamples: number
     readonly plannedSamples: number
@@ -176,6 +177,7 @@ export function usePianoNightController() {
   const [soundLoadError, setSoundLoadError] = createSignal<string | null>(null)
   const [soundLoadedSamples, setSoundLoadedSamples] = createSignal(0)
   const [soundTotalSamples, setSoundTotalSamples] = createSignal(0)
+  const [soundRefining, setSoundRefining] = createSignal(false)
   const [soundCharacter, setSoundCharacterState] =
     createSignal<PianoNightSoundCharacter>('balanced')
   const [soundAmbience, setSoundAmbienceState] =
@@ -351,6 +353,16 @@ export function usePianoNightController() {
   const syncSampledState = (): void => {
     if (sampledInstrument === null) return
     const snapshot = sampledInstrument.getLoadSnapshot()
+    if (!sampledUsable && samplePreparationPending && snapshot.playable) {
+      // The requested-key coverage pass is the audible readiness boundary.
+      // Optional layers stay on the same serialized preparation so a seek or
+      // teardown can still cancel them without delaying Grand selection.
+      sampledUsable = true
+      applyRequestedInstrument()
+      if (instrumentPreference() !== 'fallback') {
+        setStatusMessage('Mercury Concert Grand is ready.')
+      }
+    }
     if (sampledUsable) {
       // A rolling decode never changes the selected output. Missing zones
       // continue through the router's per-note fallback while it is pending.
@@ -365,6 +377,11 @@ export function usePianoNightController() {
     )
     setSoundLoadedSamples(snapshot.preparedSamples)
     setSoundTotalSamples(snapshot.plannedSamples)
+    setSoundRefining(
+      sampledUsable &&
+        snapshot.status === 'loading' &&
+        snapshot.preparedSamples < snapshot.plannedSamples,
+    )
   }
 
   const sampleWindowStartingAt = (
@@ -496,10 +513,10 @@ export function usePianoNightController() {
           instrument.setSampled(activeSampledInstrument)
         }
 
-        await activeSampledInstrument.load(controller.signal)
-        if (!isCurrent()) return false
         if (window.midis.length > 0) {
           await activeSampledInstrument.prewarm(window.midis, controller.signal)
+        } else {
+          await activeSampledInstrument.load(controller.signal)
         }
         if (!isCurrent()) return false
 
@@ -507,7 +524,10 @@ export function usePianoNightController() {
         sampledUsable = true
         syncSampledState()
         applyRequestedInstrument()
-        if (mode === 'initial' || becameUsable) {
+        if (
+          (mode === 'initial' || becameUsable) &&
+          instrumentPreference() !== 'fallback'
+        ) {
           setStatusMessage('Mercury Concert Grand is ready.')
         }
         return true
@@ -554,7 +574,8 @@ export function usePianoNightController() {
     }
     if (
       samplePreparationAbort !== null &&
-      samplePreparationMode !== 'rolling'
+      samplePreparationMode !== 'rolling' &&
+      !sampledUsable
     ) {
       return
     }
@@ -563,12 +584,20 @@ export function usePianoNightController() {
     const currentWindow = sampleWindowStartingAt(currentWindowStart)
     if (lastRollingCurrentWindowKey === currentWindow.key) return
 
-    // If the previous lookahead became current before decoding finished, let
-    // it finish. The next animation frame starts this bar's own rolling batch.
+    // Only reuse a pending plan that began at this exact current window. A
+    // previous current+lookahead plan can exceed the sampler's root budget, so
+    // crossing the bar boundary must reprioritize the newly current notes.
     if (
       samplePreparationWindow !== null &&
       samplePreparationWindow.sourceId === currentWindow.sourceId &&
-      samplePreparationWindow.coveredThroughBeat > currentWindow.startBeat
+      samplePreparationWindow.startBeat === currentWindow.startBeat &&
+      samplePreparationWindow.coveredThroughBeat > currentWindow.startBeat &&
+      (samplePreparationMode === 'rolling' ||
+        samplePreparationWindow.coveredThroughBeat >=
+          Math.min(
+            stage().totalBeats,
+            currentWindow.startBeat + SAMPLE_WINDOW_BEATS * 2,
+          ))
     ) {
       return
     }
@@ -1016,6 +1045,7 @@ export function usePianoNightController() {
     soundLoadError,
     soundLoadedSamples,
     soundTotalSamples,
+    soundRefining,
     soundCharacter,
     soundAmbience,
     reducedMotion,

@@ -9,6 +9,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PianoNightApp } from './PianoNightApp'
+import { PianoNightSoundPanel } from './PianoNightSoundPanel'
+import type { PianoNightController } from './usePianoNightController'
 
 class FakeAudioParam {
   value = 1
@@ -833,6 +835,65 @@ describe('PianoNightApp', () => {
         String(request).includes('@audio-samples/piano-mp3'),
       ),
     ).toHaveLength(0)
+  })
+
+  it('shows playable refinement without returning to the load action', () => {
+    const controller = {
+      instrumentPreference: () => 'auto' as const,
+      soundLoadStatus: () => 'ready' as const,
+      soundRefining: () => true,
+      soundLoadedSamples: () => 7,
+      soundTotalSamples: () => 18,
+      soundLoadError: () => null,
+      audioActive: () => true,
+      soundCharacter: () => 'balanced' as const,
+      soundAmbience: () => 'studio' as const,
+      setInstrumentPreference: vi.fn(),
+      loadSampledInstrument: vi.fn(async () => true),
+      setSoundCharacter: vi.fn(),
+      setSoundAmbience: vi.fn(),
+    } as unknown as PianoNightController
+
+    render(() => <PianoNightSoundPanel controller={controller} />)
+
+    expect(screen.getByTestId('piano-night-sound-status')).toHaveTextContent(
+      'Concert grand ready · refining 7 of 18',
+    )
+    expect(screen.queryByTestId('piano-night-load-sampled')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /Mercury Concert Grand/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps an optional-detail warning non-blocking after refinement', () => {
+    const optionalWarning =
+      'Some optional piano details could not be loaded; playable samples remain available.'
+    const controller = {
+      instrumentPreference: () => 'auto' as const,
+      soundLoadStatus: () => 'ready' as const,
+      soundRefining: () => false,
+      soundLoadedSamples: () => 12,
+      soundTotalSamples: () => 18,
+      soundLoadError: () => optionalWarning,
+      audioActive: () => true,
+      soundCharacter: () => 'balanced' as const,
+      soundAmbience: () => 'studio' as const,
+      setInstrumentPreference: vi.fn(),
+      loadSampledInstrument: vi.fn(async () => true),
+      setSoundCharacter: vi.fn(),
+      setSoundAmbience: vi.fn(),
+    } as unknown as PianoNightController
+
+    render(() => <PianoNightSoundPanel controller={controller} />)
+
+    expect(screen.getByTestId('piano-night-sound-status')).toHaveTextContent(
+      'Concert grand ready',
+    )
+    expect(screen.queryByTestId('piano-night-load-sampled')).toBeNull()
+    expect(screen.getByRole('alert')).toHaveTextContent(optionalWarning)
+    expect(
+      screen.getByRole('button', { name: /Mercury Concert Grand/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('keeps the fallback usable and offers retry when concert-grand loading fails', async () => {
