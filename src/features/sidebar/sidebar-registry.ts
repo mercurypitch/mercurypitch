@@ -21,6 +21,7 @@
 // state into an app-lifetime surface.
 
 import type { Component } from 'solid-js'
+import { lazy } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { ActivityPanel } from './panels/ActivityPanel'
@@ -41,6 +42,10 @@ export type SidebarPanelId =
   | 'activity'
   | 'note-list'
   | 'display'
+  | 'karaoke-queue'
+  | 'karaoke-groups'
+  | 'karaoke-setlists'
+  | 'jam-room'
 
 export const SIDEBAR_PANELS: Record<SidebarPanelId, Component> = {
   character: CharacterPanel,
@@ -51,59 +56,64 @@ export const SIDEBAR_PANELS: Record<SidebarPanelId, Component> = {
   activity: ActivityPanel,
   'note-list': NoteListPanel,
   display: DisplayPanel,
+  // Tab-specific panels load with their tab's interaction, not in the
+  // shell chunk (plan rule 4): lazy() keeps the karaoke stack off every
+  // other tab's first paint.
+  'karaoke-queue': lazy(() => import('./panels/KaraokeQueuePanel')),
+  'karaoke-groups': lazy(() => import('./panels/KaraokeGroupsPanel')),
+  'karaoke-setlists': lazy(() => import('./panels/KaraokeSetlistsPanel')),
+  'jam-room': lazy(() => import('./panels/JamRoomPanel')),
 }
 
 /**
- * Step 1 of the migration: every tab maps to TODAY's exact section list,
- * so this refactor is provably invisible. The per-tab matrix from the
- * plan's §4 lands as edits to this table only.
+ * The plan's §4 matrix. Character only where a voice character drives the
+ * engine; Library only where the melody library feeds the surface;
+ * Playback Setup only on musical tabs. Karaoke and Jam gain their own
+ * rail panels in later steps; until then they show universal panels only.
+ * The three dev surfaces keep the historical full list — nobody is
+ * cleaning up a hidden lab.
  */
-const CURRENT_LAYOUT: readonly SidebarPanelId[] = [
+const DEV_SURFACE_LAYOUT: readonly SidebarPanelId[] = [
   'character',
   'library',
   'playback-setup',
   'mic',
   'routine',
   'activity',
-  'display',
-]
-
-/** Singing and Settings additionally show the note list, as today. */
-const CURRENT_LAYOUT_WITH_NOTES: readonly SidebarPanelId[] = [
-  'character',
-  'library',
-  'playback-setup',
-  'mic',
-  'routine',
-  'activity',
-  'note-list',
   'display',
 ]
 
 export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
-  [TAB_HOME]: CURRENT_LAYOUT,
-  [TAB_PATH]: CURRENT_LAYOUT,
-  [TAB_SINGING]: CURRENT_LAYOUT_WITH_NOTES,
-  [TAB_PIANO]: CURRENT_LAYOUT,
-  [TAB_GUITAR]: CURRENT_LAYOUT,
-  [TAB_EXERCISES]: CURRENT_LAYOUT,
-  [TAB_KARAOKE]: CURRENT_LAYOUT,
-  [TAB_JAM]: CURRENT_LAYOUT,
-  [TAB_COMMUNITY]: CURRENT_LAYOUT,
-  [TAB_LEADERBOARD]: CURRENT_LAYOUT,
-  [TAB_CHALLENGES]: CURRENT_LAYOUT,
-  [TAB_COMPOSE]: CURRENT_LAYOUT,
-  [TAB_ANALYSIS]: CURRENT_LAYOUT,
-  [TAB_SETTINGS]: CURRENT_LAYOUT_WITH_NOTES,
-  [TAB_PITCH_TEST]: CURRENT_LAYOUT,
-  [TAB_PITCH_ALGO]: CURRENT_LAYOUT,
-  [TAB_LAB]: CURRENT_LAYOUT,
+  [TAB_HOME]: ['character', 'mic', 'routine', 'activity'],
+  [TAB_PATH]: ['mic', 'routine', 'activity'],
+  [TAB_SINGING]: [
+    'character',
+    'library',
+    'playback-setup',
+    'mic',
+    'routine',
+    'activity',
+    'note-list',
+    'display',
+  ],
+  [TAB_PIANO]: ['library', 'playback-setup', 'mic', 'display'],
+  [TAB_GUITAR]: ['library', 'mic'],
+  [TAB_EXERCISES]: ['character', 'mic', 'routine', 'activity'],
+  [TAB_KARAOKE]: ['karaoke-queue', 'karaoke-groups', 'karaoke-setlists', 'mic'],
+  [TAB_JAM]: ['jam-room', 'mic'],
+  [TAB_COMMUNITY]: ['mic', 'activity'],
+  [TAB_LEADERBOARD]: ['mic'],
+  [TAB_CHALLENGES]: ['mic', 'activity'],
+  [TAB_COMPOSE]: ['library', 'playback-setup', 'mic', 'note-list'],
+  [TAB_ANALYSIS]: ['mic', 'display'],
+  [TAB_SETTINGS]: ['mic'],
+  [TAB_PITCH_TEST]: DEV_SURFACE_LAYOUT,
+  [TAB_PITCH_ALGO]: DEV_SURFACE_LAYOUT,
+  [TAB_LAB]: DEV_SURFACE_LAYOUT,
 }
 
 /** The tab's panels in screen order, with the universal mic guaranteed. */
-export function sidebarPanelIdsFor(
-  tab: ActiveTab,
-): readonly SidebarPanelId[] {
-  const ids = SIDEBAR_LAYOUT[tab] ?? CURRENT_LAYOUT
+export function sidebarPanelIdsFor(tab: ActiveTab): readonly SidebarPanelId[] {
+  const ids = SIDEBAR_LAYOUT[tab] ?? (['mic'] as const)
   return ids.includes('mic') ? ids : [...ids, 'mic']
 }

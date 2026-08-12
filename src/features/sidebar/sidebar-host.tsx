@@ -28,6 +28,10 @@ export const SidebarHostProvider: Component<{
   host: SidebarHost
   children: JSX.Element
 }> = (props) => (
+  // The host is deliberately a stable, non-reactive bundle: every member
+  // is itself an accessor or a stable App callback, so panels read live
+  // values through it without the object identity ever needing to change.
+  // eslint-disable-next-line solid/reactivity
   <SidebarHostContext.Provider value={props.host}>
     {props.children}
   </SidebarHostContext.Provider>

@@ -163,6 +163,15 @@ export interface UvrSession {
 export const [currentUvrSession, setCurrentUvrSession] =
   createSignal<UvrSession | null>(null)
 
+/**
+ * The session-group filter for the Karaoke library. Shared, not
+ * panel-local: the sidebar's Song-groups rail panel and UvrPanel's
+ * session list both read and write the same selection.
+ */
+export const [karaokeActiveGroupId, setKaraokeActiveGroupId] = createSignal<
+  string | null
+>(null)
+
 // ── In-memory signal cache (source of truth for synchronous reads) ──
 
 const [_sessionsCache, _setSessionsCache] = createSignal<UvrSession[]>([])

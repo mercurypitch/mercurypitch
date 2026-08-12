@@ -5368,3 +5368,17 @@ button.server-cost-hint:hover {
     flex: 1 1 100%;
   }
 }
+
+/* ============================================================
+// Inline group tabs — the phone's affordance only
+// ============================================================
+// On >=769px viewports the sidebar's Song-groups rail panel owns the
+// group filter (same uvr-store signal), so the inline copy above the
+// session list gives its row back. Below that width the sidebar is an
+// off-canvas drawer and the inline tabs are the primary control. */
+
+@media (min-width: 769px) {
+  .uvr-groups-inline {
+    display: none;
+  }
+}

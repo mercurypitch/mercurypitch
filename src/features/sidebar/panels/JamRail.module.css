@@ -1,0 +1,61 @@
+/* Jam rail — the room card. Peers list and pitch display bring their
+   own module styles; this file owns only the code row. */
+
+.roomCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.codeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codeBadge {
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.copyBtn {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.copyBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green, #3fb950);
+  flex-shrink: 0;
+}
+
+.muted {
+  color: var(--text-muted);
+}

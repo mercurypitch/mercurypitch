@@ -1,0 +1,108 @@
+/* Karaoke rail panels — Song groups, Setlists, and the live queue card. */
+
+/* The group pills are a horizontal scroller inside the mixer; in a
+   240px rail they wrap into rows instead, so every group stays visible
+   without a hidden scroll. The direct child is SessionGroupTabs' root. */
+.groupsWrap > div {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.setlistList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setlistRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+}
+
+.setlistName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.setlistCount {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.setlistPlay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.setlistPlay:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.setlistPlay:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+/* Live queue card — only rendered while a setlist run is in progress. */
+.queueCard {
+  margin: 0 10px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.queueTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueNow {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queuePosition {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.queueNext {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

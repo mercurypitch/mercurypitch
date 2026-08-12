@@ -13,7 +13,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { SidebarHostProvider } from '@/features/sidebar/sidebar-host'
 import { SIDEBAR_PANELS, sidebarPanelIdsFor, } from '@/features/sidebar/sidebar-registry'
-import { activeTab as appActiveTab, hasPageTour, startPageTour, } from '@/stores'
+import { activeTab as appActiveTab, hasPageTour, startPageTour } from '@/stores'
 import type { MelodyItem, NoteResult } from '@/types'
 import styles from './AppSidebar.module.css'
 
