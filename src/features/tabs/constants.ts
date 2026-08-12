@@ -165,7 +165,8 @@ export const TAB_ORDER: readonly ActiveTab[] = TAB_GROUPS.flatMap((g) => [
 //  - practice scope: the instrument the user practices ('all' shows every
 //    instrument's surface),
 //  - UI mode: 'advanced' is the full app; 'simple' is a practice-first UI
-//    (practice tabs of the current scope + Settings, nothing else).
+//    (the primary groups' tabs for the current scope + Settings, nothing
+//    else — see PRIMARY_GROUP_IDS).
 
 export type PracticeScope = 'all' | 'singing' | 'guitar' | 'piano'
 export type UiMode = 'advanced' | 'simple'

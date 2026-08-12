@@ -2313,7 +2313,7 @@ input[type='range'] {
   }
 
   /* Icon-only tabs — the fit pass's third step (see AppNavTabs' fitToWidth).
-     A text tab measures ~89px and an icon one ~30px, which is what keeps all
+     A text tab measures ~89px and an icon one ~41px, which is what keeps all
      eleven destinations on screen at 1280px instead of folding seven of them
      into menus. The name moves to the button's `title`; `aria-label` was
      always there, so the accessible name never depended on this text. */

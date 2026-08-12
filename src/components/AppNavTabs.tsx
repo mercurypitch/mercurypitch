@@ -405,10 +405,11 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
   // edge, reachable only by panning — and Settings is the way back out of
   // simple mode.
   //
-  // So the cap shrinks until the bar fits: three per group on a wide window,
-  // two on a laptop, one when it has to, with the surplus falling into the
-  // group menus that already exist. Every step is a group's own overflow
-  // button, so nothing becomes unreachable — it just moves one click away.
+  // So the bar degrades until it fits, and the cap is the last thing to go
+  // (see fitToWidth for the order). Measured across the viewports the app
+  // ships to: all eleven tabs inline from 1280px up, four plus four menus at
+  // 1024px and below. Every step folds into a group's own overflow button, so
+  // nothing becomes unreachable — it moves one click away.
   const [inlineCap, setInlineCap] = createSignal(MAX_INLINE_GROUP_TABS)
 
   /**
@@ -423,8 +424,8 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
    * Tabs as their icons alone, names in the tooltip.
    *
    * Dropped after the group names and BEFORE any tab count, because a tab you
-   * can see and click beats a tab behind a menu: a text tab costs ~89px and an
-   * icon one ~30px, so this is what keeps all eleven destinations on a 1280px
+   * can see and click beats a tab behind a menu: a text tab measures ~89px and
+   * an icon one ~41px, which is what keeps all eleven destinations on a 1280px
    * laptop instead of four tabs and four menus. The ≤768px bar has always done
    * this — same idea, measured rather than hard-coded to a breakpoint.
    */
@@ -432,16 +433,6 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
 
   const [scrollable, setScrollable] = createSignal(false)
 
-  /**
-   * Re-render at the ceiling, then degrade until the strip fits: group
-   * labels first, then a tab per group at a time. Chrome before content.
-   *
-   * Runs inside one animation frame: Solid applies each setter
-   * synchronously, so the browser never paints an intermediate width and
-   * the pass cannot flicker. Starting from the ceiling every time is what
-   * lets the bar grow BACK when the window widens — state that only ever
-   * decreased would stay narrow forever.
-   */
   /**
    * The width the groups actually want, which is NOT `scrollWidth`.
    *
@@ -463,6 +454,16 @@ export const AppNavTabs: Component<AppNavTabsProps> = (props) => {
     return total + gap * (groups.length - 1)
   }
 
+  /**
+   * Re-render at the ceiling, then degrade until the strip fits: group names,
+   * then the tab names, then a tab per group. Chrome before content.
+   *
+   * Runs inside one animation frame: Solid applies each setter synchronously,
+   * so the browser never paints an intermediate width and the pass cannot
+   * flicker. Starting from the ceiling every time is what lets the bar grow
+   * BACK when the window widens — state that only ever decreased would stay
+   * narrow forever.
+   */
   const fitToWidth = (): void => {
     if (navRef === undefined || navRef === null) return
     const overflows = (): boolean => contentWidth() > navRef.clientWidth + 1

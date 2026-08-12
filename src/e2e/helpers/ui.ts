@@ -69,23 +69,25 @@ export async function waitForNav(page: Page, timeout = 15000) {
   await page.waitForSelector('#tab-singing', { timeout, state: 'visible' })
 }
 
-/**
- * Click a nav tab wherever it currently lives.
- *
- * The bar shows three tabs per group (MAX_INLINE_GROUP_TABS) and folds the
- * rest behind that group's "..." button; the phone bar shows four and
- * folds the rest into its More sheet. Overflowed tabs keep their `#tab-*`
- * id, so the only thing a spec cannot assume any more is that the button
- * is already on screen.
- *
- * Takes the DOM id, not the tab id, because they are not always the same
- * (the Piano tab's button is historically `#tab-falling-notes`), and finds
- * the owning menu by opening triggers until the button turns up — so this
- * helper never has to be kept in step with the group taxonomy.
- */
 /** The tab bar's own overflow panel — see AppNavOverflowMenu's aria-label. */
 const NAV_OVERFLOW_MENU = '[role="menu"][aria-label^="More "]'
 
+/**
+ * Click a nav tab wherever it currently lives.
+ *
+ * The desktop bar shows AT MOST three tabs per group and folds the rest behind
+ * that group's "..." button — fewer than three once the window is narrow
+ * enough that it measures itself down (AppNavTabs' fitToWidth). The phone bar
+ * shows four and folds the rest into its More sheet. So which tabs are on
+ * screen depends on the viewport, and no spec can assume a given tab is:
+ * that is the whole reason this helper exists.
+ *
+ * Overflowed tabs keep their `#tab-*` id either way. Takes the DOM id, not the
+ * tab id, because they are not always the same (the Piano tab's button is
+ * historically `#tab-falling-notes`), and finds the owning menu by opening
+ * triggers until the button turns up — so it never has to be kept in step with
+ * the group taxonomy.
+ */
 export async function openNavTab(
   page: Page,
   buttonId: string,
