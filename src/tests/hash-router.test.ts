@@ -13,6 +13,7 @@ describe('parseHash', () => {
   it('parses simple tab routes', () => {
     expect(parseHash('#/home')).toEqual({ type: 'tab', tab: 'home' })
     expect(parseHash('#/path')).toEqual({ type: 'tab', tab: 'path' })
+    expect(parseHash('#/progress')).toEqual({ type: 'tab', tab: 'progress' })
     expect(parseHash('#/singing')).toEqual({ type: 'tab', tab: 'singing' })
     expect(parseHash('#/compose')).toEqual({ type: 'tab', tab: 'compose' })
     expect(parseHash('#/settings')).toEqual({ type: 'tab', tab: 'settings' })

@@ -1,0 +1,2510 @@
+.page {
+  /* The founder can tune substrate and live evidence independently after the
+     real page is in hand. Exposure changes only the photographic plate;
+     scrim/contrast protect real labels and geometry above it. */
+  --progress-atlas-exposure: 1.04;
+  --progress-live-scrim-opacity: 0.64;
+  --progress-live-contrast: 1.08;
+  --progress-ink: #f4f5fb;
+  --progress-ivory: #e7e7ed;
+  --progress-muted: #a7adbd;
+  --progress-quiet: #747b8d;
+  --progress-aqua: #72d5ee;
+  --progress-blue: #6faaff;
+  --progress-violet: #9a83f4;
+  --progress-metal: #d8bb79;
+  --progress-error: #f0a2a6;
+  --progress-line: rgb(225 232 255 / 14%);
+  --progress-line-strong: rgb(225 232 255 / 24%);
+  --progress-deep: #080a13;
+  --progress-surface: #0d101b;
+  --progress-surface-raised: #121624;
+  --progress-source-practice: #79d7ea;
+  --progress-source-exercise: #8ea9ff;
+  --progress-source-challenge: #ad88f4;
+  --progress-source-weekly: #d7b96f;
+
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  overflow: clip;
+  color: var(--progress-ink);
+  background:
+    radial-gradient(circle at 84% 6%, rgb(57 69 123 / 13%), transparent 31rem),
+    linear-gradient(180deg, #090b14 0%, #080a12 48%, #0b0d14 100%);
+  color-scheme: dark;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.page button,
+.page a {
+  font: inherit;
+}
+
+.page button:focus-visible,
+.page a:focus-visible,
+.page [tabindex]:focus-visible,
+.page summary:focus-visible {
+  outline: 2px solid var(--progress-aqua);
+  outline-offset: 3px;
+}
+
+.page button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.skipLink {
+  position: fixed;
+  z-index: 20;
+  top: 0.75rem;
+  left: 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  color: #070a12;
+  background: var(--progress-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}
+
+.pageHeader {
+  display: flex;
+  width: min(1480px, calc(100% - clamp(2rem, 5vw, 5.5rem)));
+  min-height: 82px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin: 0 auto;
+  padding: 1.25rem 0 1rem;
+}
+
+.pageHeader > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.pageHeader p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--progress-muted);
+  font-size: 0.77rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.periodPicker {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid var(--progress-line);
+  border-radius: 11px;
+  background: #0c0f19;
+}
+
+.periodPicker button {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  color: var(--progress-quiet);
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.periodStatic {
+  color: var(--progress-ink);
+  font-size: 0.78rem;
+  font-weight: 620;
+  letter-spacing: 0.02em;
+}
+
+.periodPicker button:hover {
+  color: var(--progress-ivory);
+  background: rgb(255 255 255 / 5%);
+}
+
+.periodPicker button:disabled {
+  cursor: default;
+}
+
+.periodPicker .periodActive {
+  color: #eafbff;
+  background: rgb(114 213 238 / 13%);
+}
+
+.coverageScope {
+  max-width: 28ch;
+  color: var(--progress-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.opening {
+  display: grid;
+  width: min(1480px, calc(100% - clamp(2rem, 5vw, 5.5rem)));
+  min-height: min(780px, calc(100dvh - 190px));
+  grid-template-columns: minmax(0, 3.35fr) minmax(290px, 1fr);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--progress-line-strong);
+  border-radius: 16px 16px 0 0;
+  background: var(--progress-deep);
+  box-shadow: 0 30px 80px rgb(0 0 0 / 38%);
+}
+
+.atlasPlate {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  min-height: 560px;
+  overflow: hidden;
+  background: #080a13;
+}
+
+.atlasTexture,
+.atlasScrim,
+.atlasLens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.atlasTexture {
+  z-index: -4;
+  background: #080a13 url('/progress/resonance-atlas.webp') center / cover
+    no-repeat;
+  filter: brightness(var(--progress-atlas-exposure)) saturate(0.92);
+  transform: scale(1.006);
+}
+
+.atlasScrim {
+  z-index: -3;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(5 8 17 / calc(var(--progress-live-scrim-opacity) * 0.58)) 0%,
+      rgb(5 8 17 / calc(var(--progress-live-scrim-opacity) * 0.18)) 38%,
+      rgb(5 8 17 / calc(var(--progress-live-scrim-opacity) * 0.48)) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(7 9 18 / calc(var(--progress-live-scrim-opacity) * 0.52)),
+      transparent 48%,
+      rgb(7 9 18 / calc(var(--progress-live-scrim-opacity) * 0.3))
+    );
+}
+
+.atlasLens {
+  z-index: 4;
+  left: -32%;
+  width: 24%;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(149 223 255 / 10%),
+    transparent
+  );
+  mix-blend-mode: screen;
+  animation: atlasDevelop 900ms 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.atlasHeading {
+  position: absolute;
+  z-index: 3;
+  top: clamp(1.3rem, 2.5vw, 2.25rem);
+  right: clamp(1.3rem, 2.5vw, 2.25rem);
+  left: clamp(1.3rem, 2.5vw, 2.25rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  filter: contrast(var(--progress-live-contrast));
+}
+
+.atlasHeading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.atlasName,
+.chapterHeader > div > span,
+.shelfHeader > div > span,
+.historyHeader > div > div > span,
+.rhythmCopy > span {
+  color: var(--progress-aqua);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.atlasHeading strong {
+  color: var(--progress-ink);
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+.atlasHeading > span {
+  max-width: 30ch;
+  color: var(--progress-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.atlasTrace {
+  position: absolute;
+  z-index: 1;
+  top: 26%;
+  right: 4%;
+  left: 3%;
+  width: 93%;
+  height: 30%;
+  overflow: visible;
+  opacity: 0.76;
+  filter: contrast(var(--progress-live-contrast));
+}
+
+.atlasTrace polyline {
+  fill: none;
+  stroke: url('#progress-atlas-trace');
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.weekField {
+  position: absolute;
+  z-index: 2;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  bottom: clamp(4.4rem, 9vh, 6.3rem);
+  left: clamp(1.25rem, 3vw, 2.75rem);
+  display: grid;
+  height: 46%;
+  min-height: 220px;
+  grid-template-columns: repeat(var(--week-count, 13), minmax(14px, 1fr));
+  align-items: end;
+  gap: clamp(0.2rem, 0.65vw, 0.65rem);
+  padding: 0 0.35rem 1.7rem;
+  border-bottom: 1px solid rgb(223 233 255 / 22%);
+}
+
+.weekField:focus-visible {
+  border-radius: 8px;
+}
+
+.weekStratum {
+  --week-color: var(--progress-aqua);
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: calc(22% + (var(--week-pressure) * 72%));
+  min-height: 44px;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9px 9px 2px 2px;
+  color: var(--progress-muted);
+  background: linear-gradient(180deg, transparent, rgb(8 11 19 / 48%));
+  cursor: pointer;
+}
+
+.weekSourcePractice {
+  --week-color: var(--progress-source-practice);
+}
+
+.weekSourceExercise {
+  --week-color: var(--progress-source-exercise);
+}
+
+.weekSourceChallenge {
+  --week-color: var(--progress-source-challenge);
+}
+
+.weekSourceWeekly {
+  --week-color: var(--progress-source-weekly);
+}
+
+.weekSourceNone {
+  --week-color: var(--progress-quiet);
+}
+
+.weekPressure {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--week-color) 26%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--week-color) 58%, transparent);
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--week-color) 14%, transparent) 66%,
+      color-mix(in srgb, var(--week-color) 29%, transparent) 100%
+    ),
+    rgb(8 11 19 / 30%);
+  box-shadow: inset 0 -1px
+    color-mix(in srgb, var(--week-color) 70%, transparent);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.weekPressure::after {
+  content: '';
+  position: absolute;
+  right: 18%;
+  bottom: 0.4rem;
+  left: 18%;
+  height: 1px;
+  background: color-mix(in srgb, var(--week-color) 72%, transparent);
+  box-shadow:
+    0 -0.48rem color-mix(in srgb, var(--week-color) 31%, transparent),
+    0 -0.96rem color-mix(in srgb, var(--week-color) 18%, transparent);
+}
+
+.weekStratum:hover .weekPressure,
+.weekSelected .weekPressure {
+  border-color: color-mix(in srgb, var(--week-color) 68%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--week-color) 31%, transparent)
+    ),
+    rgb(8 11 19 / 42%);
+  box-shadow:
+    inset 0 -1px var(--week-color),
+    0 8px 24px rgb(0 0 0 / 26%);
+}
+
+.weekPartial .weekPressure {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
+.weekEmpty {
+  height: 44px;
+}
+
+.weekEmpty .weekPressure {
+  border-color: rgb(225 232 255 / 10%);
+  background: rgb(8 11 19 / 28%);
+  box-shadow: none;
+}
+
+.weekEmpty .weekPressure::after {
+  display: none;
+}
+
+.milestonePin {
+  position: absolute;
+  z-index: 2;
+  top: -5px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #201c14;
+  border-radius: 50%;
+  background: var(--progress-metal);
+  box-shadow: 0 3px 9px rgb(0 0 0 / 42%);
+}
+
+.weekSourceMarks {
+  position: absolute;
+  z-index: 2;
+  top: 0.42rem;
+  display: flex;
+  max-width: calc(100% - 0.4rem);
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.weekSourceMarks i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--progress-quiet);
+}
+
+.weekSourceMarks i[data-source='practice'] {
+  background: var(--progress-source-practice);
+}
+
+.weekSourceMarks i[data-source='exercise'] {
+  background: var(--progress-source-exercise);
+}
+
+.weekSourceMarks i[data-source='challenge'] {
+  background: var(--progress-source-challenge);
+}
+
+.weekSourceMarks i[data-source='weekly'] {
+  background: var(--progress-source-weekly);
+}
+
+.weekLabel {
+  position: absolute;
+  bottom: -1.45rem;
+  max-width: 8ch;
+  overflow: hidden;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 160ms ease;
+}
+
+.weekLabelVisible,
+.weekStratum:hover .weekLabel,
+.weekStratum:focus-visible .weekLabel {
+  opacity: 1;
+}
+
+.atlasKey {
+  position: absolute;
+  z-index: 3;
+  right: clamp(1.4rem, 3vw, 2.8rem);
+  bottom: 1.25rem;
+  left: clamp(1.4rem, 3vw, 2.8rem);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  color: #c0c5d1;
+  font-size: 0.63rem;
+}
+
+.atlasKey span,
+.sourceLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.atlasKey i,
+.sourceLegend i,
+.historyList > li > i {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--progress-quiet);
+}
+
+.atlasKey .keyActivity {
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8a74e8, #6ccbed, #d8f8ff);
+}
+
+.keyPractice,
+.sourceLegend i[data-source='practice'],
+.historyList > li > i[data-source='practice'] {
+  background: var(--progress-source-practice) !important;
+}
+
+.keyExercise,
+.sourceLegend i[data-source='exercise'],
+.historyList > li > i[data-source='exercise'] {
+  background: var(--progress-source-exercise) !important;
+}
+
+.keyChallenge,
+.sourceLegend i[data-source='challenge'],
+.historyList > li > i[data-source='challenge'] {
+  background: var(--progress-source-challenge) !important;
+}
+
+.keyWeekly,
+.sourceLegend i[data-source='weekly'],
+.historyList > li > i[data-source='weekly'] {
+  background: var(--progress-source-weekly) !important;
+}
+
+.inspector {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(1.4rem, 2.2vw, 2.15rem);
+  border-left: 1px solid var(--progress-line-strong);
+  background:
+    linear-gradient(145deg, rgb(34 41 65 / 18%), transparent 42%), #0c0f19;
+}
+
+.inspectorLead {
+  padding-bottom: 1.4rem;
+}
+
+.momentKicker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
+}
+
+.momentKicker > span:first-child {
+  color: var(--progress-aqua);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.momentKicker > span:last-child {
+  color: var(--progress-muted);
+  font-size: 0.65rem;
+}
+
+.inspector h2 {
+  max-width: 13ch;
+  margin: 0;
+  color: var(--progress-ink);
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(2rem, 3.15vw, 3.4rem);
+  font-weight: 540;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.momentContext {
+  margin: 1.1rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+.drawerToggle {
+  display: none;
+}
+
+.inspectorDetail {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.evidenceList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 1.05rem 0;
+  border-top: 1px solid var(--progress-line);
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.evidenceList > div {
+  min-width: 0;
+  padding: 0 0.75rem;
+}
+
+.evidenceList > div:first-child {
+  padding-left: 0;
+}
+
+.evidenceList > div + div {
+  border-left: 1px solid var(--progress-line);
+}
+
+.evidenceList dt,
+.rhythmFacts dt,
+.voiceMetrics dt {
+  color: var(--progress-quiet);
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+
+.evidenceList dd,
+.rhythmFacts dd,
+.voiceMetrics dd {
+  margin: 0.25rem 0 0;
+  color: var(--progress-ink);
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.evidenceList > div > span,
+.rhythmFacts > div > span,
+.voiceMetrics > div > span {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--progress-muted);
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+
+.weekReading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding: 1.1rem 0 0.85rem;
+}
+
+.weekReading > span {
+  color: var(--progress-aqua);
+  font-size: 0.66rem;
+}
+
+.weekReading > strong {
+  color: var(--progress-ivory);
+  font-size: 0.78rem;
+  font-weight: 560;
+  line-height: 1.45;
+}
+
+.weekReading > small {
+  color: var(--progress-quiet);
+  font-size: 0.62rem;
+}
+
+.whyMoment {
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--progress-line);
+}
+
+.whyMoment summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--progress-muted);
+  font-size: 0.69rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.whyMoment summary::-webkit-details-marker {
+  display: none;
+}
+
+.whyMoment summary svg {
+  width: 15px;
+  height: 15px;
+}
+
+.whyMoment p,
+.coverageNote p,
+.inlineError p {
+  margin: 0;
+  color: var(--progress-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.whyMoment > span {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--progress-quiet);
+  font-size: 0.61rem;
+}
+
+.momentAlternates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.momentAlternates > span {
+  margin-bottom: 0.2rem;
+  color: var(--progress-quiet);
+  font-size: 0.61rem;
+}
+
+.momentAlternates button {
+  min-height: 44px;
+  padding: 0.55rem 0;
+  border: 0;
+  border-top: 1px solid var(--progress-line);
+  color: var(--progress-ivory);
+  background: transparent;
+  font-size: 0.68rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.momentAlternates button:hover {
+  color: var(--progress-aqua);
+}
+
+.momentAlternates button span {
+  display: block;
+  margin-bottom: 0.18rem;
+  color: var(--progress-quiet);
+  font-size: 0.58rem;
+}
+
+.coverageNote {
+  margin-top: auto;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--progress-line);
+}
+
+.coverageNote > span {
+  color: var(--progress-ivory);
+  font-size: 0.65rem;
+  font-weight: 650;
+}
+
+.coverageNote p {
+  margin-top: 0.3rem;
+}
+
+.coverageNote small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--progress-violet);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.coverageNote > button,
+.coverageNote > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  color: var(--progress-aqua);
+  background: transparent;
+  font-size: 0.65rem;
+  text-decoration: underline;
+  text-decoration-color: rgb(114 213 238 / 45%);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.inlineError {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: start;
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(240 162 166 / 28%);
+  border-radius: 10px;
+  background: rgb(99 38 47 / 18%);
+}
+
+.inlineError > svg {
+  width: 17px;
+  height: 17px;
+  color: var(--progress-error);
+}
+
+.inlineError strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #f6d6d8;
+  font-size: 0.65rem;
+}
+
+.inlineError button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  color: var(--progress-error);
+  background: transparent;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.momentActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-top: 1rem;
+}
+
+.primaryAction,
+.shareAction {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-radius: 11px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.primaryAction {
+  border: 1px solid #9be9f7;
+  color: #071118;
+  background: #a3e9f4;
+}
+
+.primaryAction:hover {
+  border-color: #d4f8ff;
+  background: #c4f3fb;
+}
+
+.shareAction {
+  border: 1px solid var(--progress-line-strong);
+  color: var(--progress-ivory);
+  background: transparent;
+}
+
+.shareAction:hover {
+  border-color: rgb(114 213 238 / 48%);
+  color: #dffaff;
+  background: rgb(114 213 238 / 7%);
+}
+
+.primaryAction svg,
+.shareAction svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rhythmBand {
+  display: grid;
+  width: min(1480px, calc(100% - clamp(2rem, 5vw, 5.5rem)));
+  grid-template-columns: minmax(220px, 0.9fr) minmax(420px, 1.65fr) auto;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 2.8vw, 2.5rem) clamp(1.4rem, 3vw, 2.8rem);
+  border: 1px solid var(--progress-line-strong);
+  border-top: 0;
+  background: #0c0f18;
+}
+
+.rhythmCopy h2,
+.chapterHeader h2,
+.shelfHeader h2,
+.historyHeader h2,
+.voiceLandscape h2 {
+  margin: 0.35rem 0 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.rhythmCopy p,
+.chapterHeader > p,
+.historyHeader > p,
+.voiceDescription {
+  max-width: 65ch;
+  margin: 0.65rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.rhythmFacts {
+  display: flex;
+  gap: clamp(1.4rem, 3vw, 3.2rem);
+  margin: 0;
+}
+
+.rhythmFacts > div {
+  min-width: 0;
+}
+
+.rhythmFacts dd {
+  font-size: 1.4rem;
+}
+
+.sourceLegend {
+  display: flex;
+  max-width: 170px;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  color: var(--progress-muted);
+  font-size: 0.61rem;
+}
+
+.chapters {
+  width: min(1480px, calc(100% - clamp(2rem, 5vw, 5.5rem)));
+  margin: 0 auto;
+  padding: clamp(5rem, 9vw, 9rem) 0 clamp(5rem, 9vw, 8rem);
+}
+
+.chapters > section + section {
+  margin-top: clamp(6rem, 11vw, 11rem);
+}
+
+.chapterHeader {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(300px, 1.2fr);
+  gap: clamp(2rem, 8vw, 8rem);
+  align-items: end;
+  margin-bottom: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.chapterHeader h2,
+.shelfHeader h2,
+.historyHeader h2,
+.voiceLandscape h2 {
+  font-size: clamp(2rem, 3.7vw, 4rem);
+}
+
+.chapterHeader > p,
+.historyHeader > p {
+  margin: 0;
+  font-size: 0.83rem;
+}
+
+.threadLedger {
+  border-top: 1px solid var(--progress-line-strong);
+}
+
+.thread {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.72fr) minmax(360px, 1.55fr) auto;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  min-height: 190px;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.threadIdentity > span,
+.threadMetric,
+.voiceLandscape header span,
+.pathRecommendation span,
+.milestoneShelf > li > span,
+.leagueObject > span,
+.historyIdentity > span {
+  color: var(--progress-violet);
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.threadIdentity h3 {
+  margin: 0.45rem 0 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 570;
+  letter-spacing: -0.025em;
+}
+
+.threadIdentity p {
+  margin: 0.6rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.threadPlot {
+  position: relative;
+  min-width: 0;
+  height: 138px;
+  padding-top: 1.25rem;
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.threadMetric {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--progress-muted);
+}
+
+.threadPlot svg {
+  display: block;
+  width: 100%;
+  height: 86px;
+  overflow: visible;
+}
+
+.threadPlot svg polyline {
+  fill: none;
+  stroke: var(--progress-aqua);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.threadPlot ol {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -0.1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.threadPlot li {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: var(--progress-quiet);
+  font-size: 0.57rem;
+}
+
+.threadPlot li strong {
+  color: var(--progress-ivory);
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.singleReading {
+  display: flex;
+  height: 86px;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--progress-ivory);
+  font-size: 0.72rem;
+}
+
+.singleReading i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #0a0d16;
+  border-radius: 50%;
+  background: var(--progress-aqua);
+  box-shadow: 0 0 0 1px rgb(114 213 238 / 45%);
+}
+
+.textAction {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  color: var(--progress-aqua);
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: rgb(114 213 238 / 42%);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.textAction:hover {
+  color: #d8f9ff;
+}
+
+.chapterEmpty,
+.historyEmpty {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--progress-line-strong);
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.chapterEmpty strong {
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 560;
+}
+
+.chapterEmpty p,
+.historyEmpty {
+  margin: 0.5rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.voiceChapter {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.58fr) minmax(0, 1.42fr);
+  min-height: 540px;
+  overflow: hidden;
+  border-top: 1px solid var(--progress-line-strong);
+  border-bottom: 1px solid var(--progress-line-strong);
+  background: #0a0d16;
+}
+
+.voiceObject {
+  position: relative;
+  display: flex;
+  min-height: 470px;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 31%, rgb(152 127 239 / 18%), transparent 38%),
+    linear-gradient(160deg, #111425, #090b13 72%);
+}
+
+.voiceObject::after {
+  content: '';
+  position: absolute;
+  right: 10%;
+  bottom: 10%;
+  left: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(216 187 121 / 50%),
+    transparent
+  );
+}
+
+.voiceObject img {
+  display: block;
+  width: min(100%, 360px);
+  height: auto;
+  max-height: 92%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: saturate(0.82) contrast(1.04);
+}
+
+.voiceObject > span {
+  position: absolute;
+  z-index: 2;
+  top: 1.2rem;
+  left: 1.2rem;
+  color: var(--progress-metal);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.voiceSilhouette {
+  position: relative;
+  display: grid;
+  width: min(68%, 230px);
+  aspect-ratio: 0.79;
+  margin-bottom: 2.5rem;
+  place-items: center;
+  border: 1px solid rgb(155 132 244 / 26%);
+  border-radius: 48% 48% 9px 9px;
+  color: rgb(215 224 242 / 58%);
+  background: linear-gradient(
+    180deg,
+    rgb(154 131 244 / 12%),
+    rgb(19 23 39 / 40%)
+  );
+}
+
+.voiceSilhouette svg {
+  width: 30%;
+  height: 30%;
+}
+
+.voiceLandscape {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 5vw, 5rem);
+  background:
+    radial-gradient(
+      circle at 92% 15%,
+      rgb(89 113 189 / 11%),
+      transparent 28rem
+    ),
+    #0c0f19;
+}
+
+.voiceLandscape header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.voiceLandscape header > strong {
+  flex: none;
+  color: var(--progress-metal);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.voiceDescription {
+  margin-top: 1.35rem;
+}
+
+.voiceTrace {
+  margin: 2rem 0 0;
+}
+
+.voiceTrace svg {
+  display: block;
+  width: 100%;
+  height: 132px;
+  overflow: visible;
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.voiceTrace polyline {
+  fill: none;
+  stroke: var(--progress-violet);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.voiceTrace figcaption {
+  margin-top: 0.5rem;
+  color: var(--progress-quiet);
+  font-size: 0.62rem;
+}
+
+.voiceMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 3rem;
+  margin: 2rem 0 0;
+}
+
+.voiceMetrics dd {
+  font-size: 1.35rem;
+}
+
+.voiceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.4rem;
+}
+
+.pathRoute {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 2.5rem 0 3rem;
+  list-style: none;
+}
+
+.pathRoute::before {
+  content: '';
+  position: absolute;
+  top: calc(2.5rem + 8px);
+  right: 1rem;
+  left: 1rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--progress-aqua),
+    var(--progress-violet),
+    var(--progress-line)
+  );
+}
+
+.pathRoute li {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(180px, 18%);
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pathRoute li > i {
+  width: 17px;
+  height: 17px;
+  border: 4px solid #090b13;
+  border-radius: 50%;
+  background: var(--progress-quiet);
+  box-shadow: 0 0 0 1px var(--progress-line-strong);
+}
+
+.pathRoute li[data-status='visited'] > i {
+  background: var(--progress-aqua);
+}
+
+.pathRoute li[data-status='current'] > i {
+  background: var(--progress-metal);
+  box-shadow: 0 0 0 1px rgb(216 187 121 / 50%);
+}
+
+.pathRoute li strong {
+  display: block;
+  color: var(--progress-ivory);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.pathRoute li span {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--progress-muted);
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.pathRecommendation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  border-top: 1px solid var(--progress-line-strong);
+  border-bottom: 1px solid var(--progress-line-strong);
+  background: linear-gradient(90deg, rgb(64 81 128 / 13%), transparent 68%);
+}
+
+.pathRecommendation p {
+  max-width: 66ch;
+  margin: 0.4rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.pathRecommendation .primaryAction {
+  flex: none;
+}
+
+.milestonesChapter {
+  padding: clamp(2rem, 5vw, 5rem);
+  background:
+    linear-gradient(180deg, rgb(216 187 121 / 5%), transparent 38%), #0b0d14;
+  box-shadow:
+    inset 0 1px var(--progress-line-strong),
+    inset 0 -1px var(--progress-line-strong);
+}
+
+.shelfHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.shelfHeader > svg {
+  width: 44px;
+  height: 44px;
+  color: var(--progress-metal);
+  opacity: 0.74;
+}
+
+.shelfScroll {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: clamp(2rem, 5vw, 5rem);
+  margin-top: 3.5rem;
+}
+
+.milestoneShelf {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  gap: clamp(1.6rem, 4vw, 4rem);
+  align-items: flex-end;
+  margin: 0;
+  padding: 0 0 2.2rem;
+  list-style: none;
+}
+
+.milestoneShelf::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 12px;
+  border-top: 1px solid rgb(216 187 121 / 42%);
+  background: linear-gradient(180deg, rgb(216 187 121 / 12%), rgb(0 0 0 / 20%));
+  box-shadow: 0 12px 24px rgb(0 0 0 / 30%);
+}
+
+.milestoneShelf > li {
+  width: min(180px, 28%);
+  min-width: 130px;
+}
+
+.milestoneObject {
+  display: flex;
+  height: 112px;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.milestoneObject img {
+  display: block;
+  width: auto;
+  max-width: 104px;
+  height: auto;
+  max-height: 104px;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 20px rgb(0 0 0 / 38%));
+}
+
+.milestoneObject > span {
+  display: block;
+  width: 82px;
+  height: 82px;
+  border: 1px solid rgb(216 187 121 / 30%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgb(255 235 181 / 16%), transparent 18%),
+    linear-gradient(145deg, #272319, #0e0f13 70%);
+  box-shadow:
+    inset 0 0 0 6px rgb(216 187 121 / 5%),
+    0 16px 24px rgb(0 0 0 / 30%);
+}
+
+.milestoneShelf > li > strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--progress-ivory);
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1rem;
+  font-weight: 580;
+  line-height: 1.15;
+}
+
+.milestoneShelf > li > p {
+  margin: 0.45rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.milestoneShelf > li > small {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--progress-quiet);
+  font-size: 0.58rem;
+}
+
+.leagueObject {
+  min-height: 300px;
+  padding: 1.5rem;
+  border: 1px solid rgb(216 187 121 / 26%);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 12%, rgb(216 187 121 / 14%), transparent 44%),
+    #111116;
+  text-align: center;
+}
+
+.leagueObject img {
+  display: block;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 1rem;
+  object-fit: contain;
+}
+
+.leagueObject h3 {
+  margin: 0.4rem 0 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 570;
+  letter-spacing: -0.02em;
+}
+
+.leagueObject > strong {
+  display: block;
+  margin-top: 0.65rem;
+  color: var(--progress-metal);
+  font-size: 0.78rem;
+}
+
+.leagueObject p {
+  margin: 0.35rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.65rem;
+}
+
+.historyHeader {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(300px, 1.15fr);
+  gap: clamp(2rem, 8vw, 8rem);
+  align-items: end;
+}
+
+.historyHeader > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.historyHeader > div > svg {
+  width: 24px;
+  height: 24px;
+  margin-top: 0.25rem;
+  color: var(--progress-aqua);
+}
+
+.historyFilters {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 2.5rem;
+  padding-bottom: 0.8rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.historyFilters::-webkit-scrollbar {
+  display: none;
+}
+
+.historyFilters button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
+  padding: 0 0.9rem;
+  border: 1px solid var(--progress-line);
+  border-radius: 999px;
+  color: var(--progress-muted);
+  background: transparent;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.historyFilters button:hover,
+.historyFilters button[aria-pressed='true'] {
+  border-color: rgb(114 213 238 / 40%);
+  color: #dffaff;
+  background: rgb(114 213 238 / 8%);
+}
+
+.historyList {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--progress-line-strong);
+  list-style: none;
+}
+
+.historyList > li {
+  display: grid;
+  grid-template-columns:
+    90px 8px minmax(190px, 1.15fr) minmax(180px, 0.85fr)
+    auto auto;
+  gap: 1.2rem;
+  align-items: center;
+  min-height: 92px;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--progress-line);
+}
+
+.historyList time {
+  color: var(--progress-muted);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.historyIdentity > strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--progress-ivory);
+  font-size: 0.76rem;
+  font-weight: 620;
+}
+
+.historyIdentity > small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--progress-quiet);
+  font-size: 0.58rem;
+}
+
+.historyFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+}
+
+.historyFacts span {
+  color: var(--progress-muted);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.storageLabel {
+  color: var(--progress-quiet);
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+
+.historyAction {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  color: var(--progress-aqua);
+  background: transparent;
+  font-size: 0.66rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.emptyOpening,
+.errorOpening {
+  display: block;
+  min-height: min(720px, calc(100dvh - 190px));
+  border-radius: 16px;
+}
+
+.emptyOpening .atlasPlate,
+.errorOpening .atlasPlate {
+  min-height: inherit;
+}
+
+.emptyPressure {
+  position: absolute;
+  right: 7%;
+  bottom: 10%;
+  left: 7%;
+  display: flex;
+  height: 34%;
+  align-items: flex-end;
+  gap: 1.5rem;
+  opacity: 0.28;
+}
+
+.emptyPressure span {
+  width: 15%;
+  height: 44px;
+  border: 1px solid var(--progress-line);
+  border-radius: 12px 12px 2px 2px;
+  background: rgb(8 11 19 / 45%);
+}
+
+.emptyPressure span:nth-child(2) {
+  width: 28%;
+  height: 74px;
+}
+
+.emptyPressure span:nth-child(3) {
+  width: 20%;
+  height: 52px;
+}
+
+.emptyCopy,
+.errorCopy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  width: min(610px, calc(100% - 3rem));
+  min-height: inherit;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  margin-left: clamp(1.5rem, 8vw, 8rem);
+  padding: 3rem 0;
+}
+
+.emptyCopy h2,
+.errorCopy h2 {
+  max-width: 15ch;
+  margin: 1rem 0 0;
+  font-family: Outfit, Inter, sans-serif;
+  font-size: clamp(2.45rem, 5vw, 5rem);
+  font-weight: 520;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.emptyCopy p,
+.errorCopy p {
+  max-width: 56ch;
+  margin: 1.3rem 0 0;
+  color: var(--progress-muted);
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+
+.emptyCopy .primaryAction,
+.errorCopy .primaryAction {
+  margin-top: 1.6rem;
+}
+
+.errorCopy > svg {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 1rem;
+  color: var(--progress-error);
+}
+
+.loadingPage {
+  min-height: 100%;
+  padding: 0 clamp(1rem, 2.5vw, 2.75rem) 3rem;
+}
+
+.loadingHeader {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.loadingWord,
+.loadingPill,
+.loadingInspector span {
+  display: block;
+  border-radius: 7px;
+  background: #171b29;
+}
+
+.loadingWord {
+  width: 110px;
+  height: 24px;
+}
+
+.loadingPill {
+  width: 210px;
+  height: 38px;
+}
+
+.loadingOpening {
+  display: grid;
+  min-height: min(760px, calc(100dvh - 190px));
+  grid-template-columns: minmax(0, 3.35fr) minmax(290px, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--progress-line);
+  border-radius: 16px;
+  background: #0a0c14;
+}
+
+.loadingAtlas {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.2rem;
+  padding: 12%;
+  background:
+    linear-gradient(160deg, rgb(48 58 102 / 10%), transparent), #080a12;
+}
+
+.loadingStratum {
+  width: 26%;
+  height: 24%;
+  border: 1px solid rgb(225 232 255 / 8%);
+  border-radius: 12px 12px 2px 2px;
+  background: #111522;
+}
+
+.loadingStratum:nth-child(2) {
+  height: 42%;
+}
+
+.loadingStratum:nth-child(3) {
+  height: 31%;
+}
+
+.loadingInspector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  border-left: 1px solid var(--progress-line);
+  background: #0c0f18;
+}
+
+.loadingInspector span:nth-child(1) {
+  width: 40%;
+  height: 12px;
+}
+
+.loadingInspector span:nth-child(2) {
+  width: 92%;
+  height: 70px;
+}
+
+.loadingInspector span:nth-child(3) {
+  width: 100%;
+  height: 96px;
+}
+
+.loadingInspector span:nth-child(4) {
+  width: 100%;
+  height: 46px;
+  margin-top: auto;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes atlasDevelop {
+  0% {
+    left: -32%;
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 0.66;
+  }
+
+  100% {
+    left: 112%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1160px) {
+  .opening,
+  .loadingOpening {
+    grid-template-columns: minmax(0, 2.25fr) minmax(280px, 1fr);
+  }
+
+  .rhythmBand {
+    grid-template-columns: minmax(190px, 0.75fr) minmax(360px, 1.5fr);
+  }
+
+  .sourceLegend {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+
+  .thread {
+    grid-template-columns: minmax(170px, 0.72fr) minmax(320px, 1.55fr);
+  }
+
+  .thread > .textAction {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: -1.5rem;
+  }
+
+  .historyList > li {
+    grid-template-columns:
+      80px 8px minmax(180px, 1.15fr) minmax(160px, 0.85fr)
+      auto;
+  }
+
+  .historyAction {
+    grid-column: 3 / -1;
+    justify-self: start;
+    margin-top: -0.6rem;
+  }
+}
+
+@media (max-width: 880px) {
+  .pageHeader,
+  .opening,
+  .rhythmBand,
+  .chapters {
+    width: calc(100% - 2rem);
+  }
+
+  .pageHeader {
+    align-items: flex-start;
+  }
+
+  .coverageScope {
+    display: none;
+  }
+
+  .opening {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    overflow: visible;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .atlasPlate {
+    min-height: min(650px, 67dvh);
+    border-radius: 14px 14px 0 0;
+  }
+
+  .inspector {
+    min-height: 0;
+    padding: 1.25rem;
+    border-top: 1px solid var(--progress-line-strong);
+    border-left: 0;
+  }
+
+  .inspectorLead {
+    padding-bottom: 0;
+  }
+
+  .momentKicker {
+    margin-bottom: 0.8rem;
+  }
+
+  .inspector h2 {
+    max-width: 18ch;
+    font-size: clamp(1.8rem, 7.8vw, 3.1rem);
+  }
+
+  .drawerToggle {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    padding: 0;
+    border: 0;
+    border-top: 1px solid var(--progress-line);
+    border-bottom: 1px solid var(--progress-line);
+    color: var(--progress-muted);
+    background: transparent;
+    font-size: 0.68rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .drawerToggle > span {
+    width: 34px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--progress-line-strong);
+  }
+
+  .inspectorDetail {
+    display: none;
+    flex: none;
+  }
+
+  .inspectorDetailOpen {
+    display: flex;
+  }
+
+  .momentActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    order: 4;
+  }
+
+  .coverageNote {
+    margin-top: 0.6rem;
+  }
+
+  .rhythmBand {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .rhythmFacts {
+    justify-content: space-between;
+  }
+
+  .chapterHeader,
+  .historyHeader {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .thread {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .thread > .textAction {
+    grid-column: auto;
+    margin-top: 0;
+  }
+
+  .voiceChapter {
+    grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr);
+  }
+
+  .voiceObject {
+    min-height: 430px;
+  }
+
+  .voiceLandscape header {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .pathRoute {
+    flex-direction: column;
+    gap: 0;
+    padding-left: 0.25rem;
+  }
+
+  .pathRoute::before {
+    top: 2.8rem;
+    bottom: 3.2rem;
+    left: calc(0.25rem + 8px);
+    width: 1px;
+    height: auto;
+    background: linear-gradient(
+      180deg,
+      var(--progress-aqua),
+      var(--progress-violet),
+      var(--progress-line)
+    );
+  }
+
+  .pathRoute li {
+    width: 100%;
+    min-height: 84px;
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .pathRoute li > div {
+    padding-top: 0.05rem;
+  }
+
+  .pathRecommendation {
+    align-items: flex-end;
+  }
+
+  .shelfScroll {
+    grid-template-columns: 1fr;
+  }
+
+  .leagueObject {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1.25rem;
+    text-align: left;
+  }
+
+  .leagueObject img {
+    grid-row: 1 / 6;
+    margin: 0;
+  }
+
+  .leagueObject .textAction {
+    justify-self: start;
+  }
+
+  .historyList > li {
+    grid-template-columns: 72px 8px minmax(0, 1fr) auto;
+  }
+
+  .historyFacts {
+    grid-column: 3 / -1;
+  }
+
+  .storageLabel {
+    grid-column: 3;
+  }
+
+  .historyAction {
+    grid-column: 4;
+    justify-self: end;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .pageHeader,
+  .opening,
+  .rhythmBand,
+  .chapters {
+    width: calc(100% - 1rem);
+  }
+
+  .pageHeader {
+    min-height: 68px;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  .pageHeader > div:first-child {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .pageHeader h1 {
+    font-size: 1.3rem;
+  }
+
+  .pageHeader p {
+    max-width: 20ch;
+    font-size: 0.64rem;
+  }
+
+  .periodPicker {
+    max-width: 58vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .periodPicker::-webkit-scrollbar {
+    display: none;
+  }
+
+  .periodPicker button {
+    flex: none;
+    padding: 0 0.6rem;
+  }
+
+  .atlasPlate {
+    min-height: min(530px, 62dvh);
+  }
+
+  .atlasTexture {
+    background-position: 42% center;
+  }
+
+  .atlasHeading {
+    top: 1rem;
+    right: 1rem;
+    left: 1rem;
+  }
+
+  .atlasHeading > span {
+    max-width: 18ch;
+    font-size: 0.62rem;
+  }
+
+  .atlasTrace {
+    top: 24%;
+    height: 26%;
+  }
+
+  .weekField {
+    right: 0.65rem;
+    bottom: 4rem;
+    left: 0.65rem;
+    height: 43%;
+    min-height: 190px;
+    gap: 0.2rem;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .weekStratum {
+    min-height: 44px;
+    border-radius: 6px 6px 1px 1px;
+  }
+
+  .weekPressure::after {
+    right: 28%;
+    left: 28%;
+  }
+
+  .milestonePin {
+    width: 7px;
+    height: 7px;
+  }
+
+  .atlasKey {
+    right: 0.8rem;
+    bottom: 0.75rem;
+    left: 0.8rem;
+    gap: 0.35rem 0.65rem;
+    font-size: 0.56rem;
+  }
+
+  .inspector {
+    padding: 1rem;
+  }
+
+  .momentContext {
+    margin-top: 0.75rem;
+  }
+
+  .momentActions {
+    gap: 0.4rem;
+  }
+
+  .primaryAction,
+  .shareAction {
+    padding: 0 0.65rem;
+    font-size: 0.66rem;
+  }
+
+  .rhythmBand {
+    padding: 1.4rem 1rem;
+  }
+
+  .rhythmFacts {
+    gap: 0.8rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .rhythmFacts > div {
+    min-width: 82px;
+  }
+
+  .chapters {
+    padding-top: 4.5rem;
+  }
+
+  .chapters > section + section {
+    margin-top: 5.5rem;
+  }
+
+  .chapterHeader {
+    margin-bottom: 2rem;
+  }
+
+  .chapterHeader h2,
+  .shelfHeader h2,
+  .historyHeader h2,
+  .voiceLandscape h2 {
+    font-size: 2rem;
+  }
+
+  .thread {
+    min-height: 0;
+    padding: 1.5rem 0;
+  }
+
+  .threadPlot ol {
+    gap: 0.45rem;
+  }
+
+  .voiceChapter {
+    grid-template-columns: 1fr;
+  }
+
+  .voiceObject {
+    min-height: 370px;
+  }
+
+  .voiceObject img {
+    max-height: 350px;
+  }
+
+  .voiceLandscape {
+    padding: 1.5rem 1.1rem 2rem;
+  }
+
+  .voiceTrace svg {
+    height: 105px;
+  }
+
+  .voiceMetrics {
+    gap: 1.25rem 2rem;
+  }
+
+  .pathRecommendation {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.2rem 0;
+    background: transparent;
+  }
+
+  .milestonesChapter {
+    width: calc(100% + 1rem);
+    margin-left: -0.5rem;
+    padding: 2rem 1rem;
+  }
+
+  .shelfScroll {
+    margin-top: 2rem;
+  }
+
+  .milestoneShelf {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .milestoneShelf::-webkit-scrollbar {
+    display: none;
+  }
+
+  .milestoneShelf > li {
+    width: 145px;
+    flex: none;
+    scroll-snap-align: start;
+  }
+
+  .leagueObject {
+    grid-template-columns: 82px 1fr;
+    padding: 1.1rem;
+  }
+
+  .leagueObject img {
+    width: 76px;
+    height: 76px;
+  }
+
+  .historyHeader > div > svg {
+    display: none;
+  }
+
+  .historyFilters {
+    margin-top: 1.5rem;
+  }
+
+  .historyList > li {
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    gap: 0.55rem 0.8rem;
+    align-items: start;
+    padding: 1.15rem 0;
+  }
+
+  .historyList time {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .historyList > li > i {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0.25rem;
+  }
+
+  .historyIdentity {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+
+  .historyFacts {
+    grid-column: 2 / -1;
+    grid-row: 3;
+  }
+
+  .storageLabel {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  .historyAction {
+    grid-column: 3;
+    grid-row: 4;
+  }
+
+  .emptyOpening,
+  .errorOpening {
+    min-height: calc(100dvh - 160px);
+  }
+
+  .emptyCopy,
+  .errorCopy {
+    width: calc(100% - 2rem);
+    margin-left: 1rem;
+  }
+
+  .emptyCopy h2,
+  .errorCopy h2 {
+    font-size: clamp(2.2rem, 11vw, 3.8rem);
+  }
+
+  .loadingPage {
+    padding: 0 0.5rem 2rem;
+  }
+
+  .loadingHeader {
+    min-height: 68px;
+  }
+
+  .loadingOpening {
+    min-height: calc(100dvh - 160px);
+    grid-template-columns: 1fr;
+  }
+
+  .loadingAtlas {
+    min-height: 55dvh;
+  }
+
+  .loadingInspector {
+    min-height: 270px;
+    border-top: 1px solid var(--progress-line);
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlasLens {
+    display: none;
+    animation: none;
+  }
+
+  .page *,
+  .page *::before,
+  .page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .atlasTexture,
+  .atlasScrim,
+  .atlasLens {
+    display: none;
+  }
+
+  .weekPressure,
+  .milestoneObject > span,
+  .voiceSilhouette {
+    border: 1px solid CanvasText;
+  }
+}

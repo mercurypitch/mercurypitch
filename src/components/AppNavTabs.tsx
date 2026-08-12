@@ -2,7 +2,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
-import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
+import { isTabVisible, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import { createPersistedSignal } from '@/lib/storage'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import type { ActiveTab } from '@/types'
@@ -70,6 +70,25 @@ export const TAB_META: Partial<Record<ActiveTab, TabMeta>> = {
         <path d="M21.2 12a9.2 9.2 0 0 1-3.4 7.2" />
         <path d="M14.6 20.8a9.2 9.2 0 0 1-9.8-2.4" />
         <path d="M2.8 12a9.2 9.2 0 0 1 3.4-7.2" />
+      </svg>
+    ),
+  },
+  [TAB_PROGRESS]: {
+    id: 'tab-progress',
+    ariaLabel: 'Practice progress',
+    icon: () => (
+      <svg
+        class={styles.tabIcon}
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      >
+        <path d="M4 17.5c2.3 0 2.7-11 5-11s2.7 11 5 11 2.7-7 6-7" />
+        <path d="M4 21h16" opacity=".45" />
       </svg>
     ),
   },

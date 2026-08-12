@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { TAB_CHALLENGES, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_ORDER, TAB_PIANO, } from '@/features/tabs/constants'
+import { TAB_META } from '@/components/AppNavTabs'
+import { TAB_CHALLENGES, TAB_EXERCISES, TAB_GROUPS, TAB_GUITAR, TAB_ORDER, TAB_PATH, TAB_PIANO, TAB_PROGRESS, visibleTabOrder, } from '@/features/tabs/constants'
 
 // These tests pin the single source of truth that drives BOTH the visible tab
 // bar (AppNavTabs) and the mobile swipe navigation (App.tsx). If a tab is
@@ -28,5 +29,27 @@ describe('tab order', () => {
     for (const tab of [TAB_PIANO, TAB_GUITAR, TAB_EXERCISES, TAB_CHALLENGES]) {
       expect(TAB_ORDER).toContain(tab)
     }
+  })
+
+  it('keeps Progress immediately after Path', () => {
+    const path = TAB_ORDER.indexOf(TAB_PATH)
+    const progress = TAB_ORDER.indexOf(TAB_PROGRESS)
+
+    expect(path).toBeGreaterThanOrEqual(0)
+    expect(progress).toBe(path + 1)
+  })
+
+  it.each(['all', 'singing', 'guitar', 'piano'] as const)(
+    'keeps Progress visible in simple mode for the %s scope',
+    (scope) => {
+      expect(visibleTabOrder(scope, 'simple')).toContain(TAB_PROGRESS)
+    },
+  )
+
+  it('pins the Progress navigation identity and accessible label', () => {
+    expect(TAB_META[TAB_PROGRESS]).toMatchObject({
+      id: 'tab-progress',
+      ariaLabel: 'Practice progress',
+    })
   })
 })

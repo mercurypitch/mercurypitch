@@ -87,6 +87,11 @@ const VoiceConstellationSurface = lazy(async () =>
     (m) => ({ default: m.VoiceConstellationSurface }),
   ),
 )
+const ProgressRoute = lazy(async () =>
+  import('@/features/progress/ProgressRoute').then((m) => ({
+    default: m.ProgressRoute,
+  })),
+)
 
 const VoiceConstellationLoadingShell: Component<{ onClose: () => void }> = (
   props,
@@ -226,7 +231,7 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -570,6 +575,7 @@ const AppShell: Component<AppProps> = (props) => {
           type: drill.exercise,
           targetNote: drill.notes[0],
           targetNotes: drill.notes.length > 0 ? drill.notes : undefined,
+          difficulty: drill.difficulty,
           pattern: drill.pattern,
         })
       }
@@ -2959,6 +2965,14 @@ const AppShell: Component<AppProps> = (props) => {
               <Show when={activeTab() === TAB_PATH}>
                 <TabErrorBoundary tabName={tabLabel(TAB_PATH)}>
                   <PathPage />
+                </TabErrorBoundary>
+              </Show>
+
+              <Show when={activeTab() === TAB_PROGRESS}>
+                <TabErrorBoundary tabName={tabLabel(TAB_PROGRESS)}>
+                  <Suspense fallback={<SkeletonTabContent />}>
+                    <ProgressRoute />
+                  </Suspense>
                 </TabErrorBoundary>
               </Show>
 
