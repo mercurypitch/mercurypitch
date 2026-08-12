@@ -11,6 +11,8 @@
 //
 // See docs/plans/jam-song-p2p-transfer.md.
 
+import { sha256Hex } from '@/lib/portable/hash'
+
 /**
  * Bytes per chunk.
  *
@@ -72,15 +74,9 @@ export interface TransferProgress {
   ratio: number
 }
 
-export function sha256Hex(bytes: ArrayBuffer): Promise<string> {
-  // globalThis.crypto, not the bare global: the repo bans the latter so a
-  // page-level `crypto` variable can never shadow the real one.
-  return globalThis.crypto.subtle.digest('SHA-256', bytes).then((digest) =>
-    Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join(''),
-  )
-}
+// Moved to lib/portable (the bundle format needs it and must not depend on
+// jam); re-exported so every existing import keeps working.
+export { sha256Hex }
 
 /** How many chunks a payload becomes. Zero bytes is zero chunks. */
 export function chunkCount(

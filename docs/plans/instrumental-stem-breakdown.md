@@ -7,13 +7,14 @@ vocal + instrumental.
 Status: **Phase 1 (server) implemented**; phases 2-5 still proposed.
 
 Decisions taken since the original proposal:
+
 - **Ship drums, bass and guitar; hold piano.** `demucs-6s` is the default
   model because it is the only source of a guitar stem — piano comes on the
-  same compute pass whether we want it or not, so it is *dropped* rather
+  same compute pass whether we want it or not, so it is _dropped_ rather
   than avoided, and the residual pass folds its audio into `other`.
   Switching it on later is deleting one line (`defaultDropStems`).
 - "Rough" and "dropped" are separate fields (`experimentalStems` vs
-  `defaultDropStems`) so piano can ship *labelled* rough without that
+  `defaultDropStems`) so piano can ship _labelled_ rough without that
   meaning hidden — which is exactly the later migration.
 - Both separation paths accept `source_stem: "instrumental"`, so the
   "rerun on the instrumental" flow the mixer needs is a server feature,
@@ -25,17 +26,17 @@ Decisions taken since the original proposal:
 
 Three separation paths, one shared contract (`vocal` + `instrumental`):
 
-| Path | Code | Engine | Model |
-| --- | --- | --- | --- |
-| In-browser | `src/workers/vocal-separator.worker.ts` | onnxruntime-web (WebGPU→WASM) | UVR-MDX-NET Inst HQ 3 (ONNX) |
-| Local server | `uvr-api/api.py` | python-audio-separator 0.44.2 | registry: `roformer` / `mdx` / `karaoke` / `ensemble` |
-| Prod GPU | `runpod/handler.py` | python-audio-separator 0.44.2 | same registry, S3/R2 + credit metering |
+| Path         | Code                                    | Engine                        | Model                                                 |
+| ------------ | --------------------------------------- | ----------------------------- | ----------------------------------------------------- |
+| In-browser   | `src/workers/vocal-separator.worker.ts` | onnxruntime-web (WebGPU→WASM) | UVR-MDX-NET Inst HQ 3 (ONNX)                          |
+| Local server | `uvr-api/api.py`                        | python-audio-separator 0.44.2 | registry: `roformer` / `mdx` / `karaoke` / `ensemble` |
+| Prod GPU     | `runpod/handler.py`                     | python-audio-separator 0.44.2 | same registry, S3/R2 + credit metering                |
 
 The "top of class" server model is `roformer` =
 `model_bs_roformer_ep_317_sdr_12.9755.ckpt` (BS-RoFormer, vocals SDR ~12.98).
 It is a **2-stem** model — vocals vs. everything else. It has no notion of
 drums or bass, and no parameter can make it produce them. Splitting the
-instrumental therefore needs a *different model*, not different parameters.
+instrumental therefore needs a _different model_, not different parameters.
 
 ### What is already stem-generic (much more than expected)
 
@@ -77,12 +78,12 @@ the union is a TypeScript-only change.
 `python-audio-separator` (already our engine, both server paths) ships Demucs v4
 out of the box — no new dependency, just a new registry entry:
 
-| File | Stems | Notes |
-| --- | --- | --- |
-| `htdemucs.yaml` | vocals, drums, bass, other | single model, fastest |
+| File               | Stems                      | Notes                                                      |
+| ------------------ | -------------------------- | ---------------------------------------------------------- |
+| `htdemucs.yaml`    | vocals, drums, bass, other | single model, fastest                                      |
 | `htdemucs_ft.yaml` | vocals, drums, bass, other | 4 fine-tuned models bagged → ~4× the compute, best quality |
-| `hdemucs_mmi.yaml` | vocals, drums, bass, other | alternative v3-lineage |
-| `htdemucs_6s.yaml` | + guitar, piano | guitar is usable; **piano is poor** |
+| `hdemucs_mmi.yaml` | vocals, drums, bass, other | alternative v3-lineage                                     |
+| `htdemucs_6s.yaml` | + guitar, piano            | guitar is usable; **piano is poor**                        |
 
 ### Recommendation
 
@@ -117,7 +118,7 @@ This was the core question. Both work; they are not equivalent.
 
 **Option B — run Demucs on our instrumental stem (the "obvious" second pass).**
 This is what most UVR users do manually and it is a legitimate fallback. But
-Demucs was trained on *full mixes*. A vocal-removed instrumental is
+Demucs was trained on _full mixes_. A vocal-removed instrumental is
 out-of-distribution input, and we also pay for a `vocals` output that should be
 near-silence — wasted compute and a stem we throw away.
 
@@ -163,8 +164,8 @@ in-session, after the fact.
 2. **In the StemMixer, the Instrumental track gains a "Split" affordance** —
    a chevron/"Break into parts" control on the instrumental row.
 3. **Choice sheet** on click:
-   - *What you get*: Drums, Bass, Other (+ Guitar, experimental)
-   - *Where*: **This device** (free, slower, no upload) vs **Server**
+   - _What you get_: Drums, Bass, Other (+ Guitar, experimental)
+   - _Where_: **This device** (free, slower, no upload) vs **Server**
      (1 credit, ~1 min, better) — mirroring the existing local/server split
    - Quality caveat for guitar/piano stated up front
 4. **Result renders as a collapsible group**: the Instrumental row becomes a
@@ -183,9 +184,14 @@ Deliberately additive — no Dexie migration (see §1).
 ```ts
 // src/db/entities.ts
 export type UvrStemType =
-  | 'vocal' | 'instrumental' | 'original'   // existing
-  | 'drums' | 'bass' | 'other'              // demucs 4-stem
-  | 'guitar' | 'piano'                      // demucs 6-stem (experimental)
+  | 'vocal'
+  | 'instrumental'
+  | 'original' // existing
+  | 'drums'
+  | 'bass'
+  | 'other' // demucs 4-stem
+  | 'guitar'
+  | 'piano' // demucs 6-stem (experimental)
 
 export interface UvrStemBlob extends DbEntity {
   stemType: UvrStemType
@@ -219,6 +225,7 @@ covering classification, registry invariants, reconciliation across
 WAV/FLAC and 16/24-bit/float, the clipping guard, and handler↔api parity.
 
 Original scope, for reference:
+
 - Add `demucs` → `htdemucs.yaml`, `demucs-ft` → `htdemucs_ft.yaml`,
   `demucs-6s` → `htdemucs_6s.yaml` to `MODEL_REGISTRY` in **both**
   `runpod/handler.py` and `uvr-api/api.py` (they are documented mirrors).
@@ -234,6 +241,7 @@ Original scope, for reference:
   come back classified correctly.
 
 **Phase 2 — data model + client contract**
+
 - Widen `UvrStemType`, add `derivedFrom` / `producedBy`.
 - Replace the `'vocal' | 'instrumental'` literal unions with the named type.
   Mostly mechanical; the compiler finds every site.
@@ -241,12 +249,14 @@ Original scope, for reference:
   `(sessionId, stemType)`.
 
 **Phase 3 — the breakdown job**
-- New pipeline entry: given a completed session, submit the *original* audio
+
+- New pipeline entry: given a completed session, submit the _original_ audio
   with `model=demucs-ft`, keep drums/bass/(guitar), compute `other'`.
 - Reuse the existing upload-queue / polling / metering / recovery machinery —
   this is another UVR job, not a new subsystem.
 
 **Phase 4 — mixer UI**
+
 - Collapsible stem group under Instrumental; child faders; group gain.
 - Update the page tour in the same PR (repo rule: tours cover ≥80% of a page's
   user-visible features).
@@ -260,11 +270,12 @@ Original scope, for reference:
 The existing browser worker cannot be extended to do this. It is MDX-specific
 end to end: fixed STFT (n_fft 6144, hop 1024, 3072 bins), a 4-channel
 real/imag tensor layout, and a complex-domain subtraction that assumes
-*one* predicted stem. Demucs is a hybrid waveform **and** spectrogram model
+_one_ predicted stem. Demucs is a hybrid waveform **and** spectrogram model
 with four outputs — different input pipeline, different output handling. It's
 a new worker, not a parameter change.
 
 Feasibility is real but unattractive:
+
 - `htdemucs` base (single model, 4 outputs) is the only sane browser
   candidate — `htdemucs_ft` is four bagged models, i.e. 4× download and 4×
   inference.

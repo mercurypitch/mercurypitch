@@ -15,14 +15,14 @@ enhanced-LRC (A2) format `<mm:ss.xx>word`, which also carries starts only.
 
 **Manual mapping** (`handleNextWord`,
 `useStemMixerLyricsController.ts:1291`): each tap stamps
-`elapsed()` as the start of the *current* word and advances. Partial runs are
+`elapsed()` as the start of the _current_ word and advances. Partial runs are
 merged/interpolated/monotonic-clamped by `lrc-gen-engine.ts`
 (`buildFinalPartialTimes`), with untouched trailing lines estimated by
 `estimateUnmappedTimes`.
 
 **Rendering** (`computeActiveWord`, `src/lib/lyrics-service.ts:510`): the
 active word's char-progress interpolates linearly from its start to the
-*next word's start* (last word: average gap). Fallback without word timings:
+_next word's start_ (last word: average gap). Fallback without word timings:
 even division of the line duration.
 
 **Existing-but-unused assets** highly relevant here:
@@ -85,6 +85,7 @@ reports word-boundary errors well under 200 ms on separated vocals.
 Three implementation options, not mutually exclusive:
 
 ### Option A — server-side alignment piggybacked on the UVR GPU job (best quality)
+
 The RunPod worker already holds the freshly separated vocal stem on a GPU.
 Add an alignment stage: run a wav2vec2 phoneme CTC forced aligner
 (WhisperX's aligner, or MFA) against the user's lyrics text, emit word
@@ -96,18 +97,21 @@ endpoint that reuses the stored stem (R2 keeps it 24h; we'd want an
 on-demand re-run for songs whose lyrics arrive later).
 
 ### Option B — in-browser Whisper word timestamps (works offline, rougher)
+
 transformers.js supports `return_timestamps: 'word'` (DTW over
 cross-attention) on our existing Whisper stack — a modest upgrade to
 `WhisperService`. Known caveats: WASM-only for word mode until recently,
 and words adjacent to pauses get stretched timestamps. Verdict: good enough
-to *pre-fill* a draft that the user then nudges; not release-grade alone.
+to _pre-fill_ a draft that the user then nudges; not release-grade alone.
 We then snap Whisper's word boundaries to our own **vocal onsets** (below)
 to sharpen them, and fuzzy-match transcript→lyrics text (we already do
 segment-level matching in `alignPitchToWords`).
 
 ### Option C — onset-assisted taps (no ML, ships first)
+
 Compute a **vocal onset grid** from the stem (spectral-flux/energy onsets —
 cheap DSP on the decoded AudioBuffer, no model download). Use it to:
+
 - **snap taps**: any tap within ±120 ms of an onset snaps to it — turns
   sloppy fast-run taps into exact boundaries;
 - **estimate ends**: a word's end = the energy dip before the next onset

@@ -130,9 +130,9 @@ These are the rules that break things when ignored.
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 1.5k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 800 | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
+| `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 450 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 400 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `key-detection` | [index.ts](../../src/lib/key-detection/index.ts) | 250 | Key Detection — barrel for musical-key estimation Krumhansl-Schmuckler profile correlation over a pitch-class histogram. |
-| `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 250 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `pitch-measurements` | [index.ts](../../src/lib/pitch-measurements/index.ts) | 150 | Pitch measurements — shared neutral F0 primitives |
 | `platform` | [index.ts](../../src/lib/platform/index.ts) | 150 | Platform services — web implementations. |
 | `gpu` | [webgpu-device.ts](../../src/lib/gpu/webgpu-device.ts) | 50 | WebGPU device acquisition (seam for the planned TypeGPU backend) Adapted from the chaos-master project's WebgpuAdapter: a single shared d... |

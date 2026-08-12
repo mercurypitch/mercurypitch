@@ -2,7 +2,7 @@
 
 **Status:** plan only. Branch `feat/jam-karaoke-songs`, off `main`.
 
-Today a jam room runs a *melody* — a drill, the weekly, an Ascent week, a
+Today a jam room runs a _melody_ — a drill, the weekly, an Ascent week, a
 saved tune. This is about running a **song**: lyrics down the left, every
 singer's pitch trail down the right, a backing track playing, and eventually
 verses assigned to people so a room can do lead and backing vocals.
@@ -18,11 +18,11 @@ not a plan.
 
 There are two ways to solve that, and this plan takes the second:
 
-| Source | How the room gets it | |
-|---|---|---|
-| Karaoke Night demo song | Fetched from R2 by each peer | Already public, wildcard GET CORS |
-| A user's own separated session | **Sent peer-to-peer, §1b** | Nothing uploaded, nothing on our servers |
-| Hosting user songs ourselves | Rejected | Uploading users' separated music to shared storage is a different product with a licensing question attached |
+| Source                         | How the room gets it         |                                                                                                              |
+| ------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Karaoke Night demo song        | Fetched from R2 by each peer | Already public, wildcard GET CORS                                                                            |
+| A user's own separated session | **Sent peer-to-peer, §1b**   | Nothing uploaded, nothing on our servers                                                                     |
+| Hosting user songs ourselves   | Rejected                     | Uploading users' separated music to shared storage is a different product with a licensing question attached |
 
 The demo song is still the right first target -- it needs no transfer, so it
 proves the layout, the seconds transport and the per-peer trails without
@@ -52,9 +52,9 @@ to 128 kbps. A jam room that only played on Chrome would be a poor trade for
 a slightly smaller file.
 
 | 4-minute song, both stems | Transfer to one peer |
-|---|---|
-| WAV: 100-400 MB | 40 s - 5 min |
-| **AAC 128k: ~7.6 MB** | **~5 s** |
+| ------------------------- | -------------------- |
+| WAV: 100-400 MB           | 40 s - 5 min         |
+| **AAC 128k: ~7.6 MB**     | **~5 s**             |
 
 Roughly 50x, and the difference between the feature feeling instant and
 feeling broken. It also makes small rooms viable: three uploads of 7.6 MB is
@@ -98,10 +98,10 @@ A mesh means the host sends the whole file to each peer separately, bounded
 by one upload pipe:
 
 | Peers | Host uploads | Opus (~6 MB) |
-|---|---|---|
-| 2 | 1x | ~4 s |
-| 4 | 3x | ~12 s |
-| 12 | 11x | ~45 s |
+| ----- | ------------ | ------------ |
+| 2     | 1x           | ~4 s         |
+| 4     | 3x           | ~12 s        |
+| 12    | 11x          | ~45 s        |
 
 Two is the target and works comfortably. Beyond four this wants a
 distribution tree -- peer 1 forwards to peer 2 while the host sends to peer 3
@@ -126,16 +126,16 @@ is that plan's Phase 2:
 / `list()`, with a `BlobStore` adapter behind it (web: Dexie, native:
 Filesystem), following the `src/lib/platform/` seam convention. A jam room
 sending a song is one more adapter over that interface -- the chunking and
-backpressure described above become the *implementation* of `put`, not a
+backpressure described above become the _implementation_ of `put`, not a
 bespoke feature.
 
 **So the ordering is a dependency, not a preference:**
 
-| Needs | From |
-|---|---|
-| A portable, small bundle | device-sync Phase 1 (user-selectable quality) |
+| Needs                         | From                                            |
+| ----------------------------- | ----------------------------------------------- |
+| A portable, small bundle      | device-sync Phase 1 (user-selectable quality)   |
 | A streaming producer/consumer | device-sync Phase 2 (the load-bearing refactor) |
-| The P2P adapter | This plan, = device-sync Phase 5 |
+| The P2P adapter               | This plan, = device-sync Phase 5                |
 
 Building jam's transfer before Phases 1-2 means writing the encode, the
 chunking and the reassembly twice and then reconciling them. Building it
@@ -151,15 +151,15 @@ have no such constraint; the P2P one does.
 
 Most of this is assembly, not invention:
 
-| Piece | Where | Reused for |
-|---|---|---|
-| `jamMyTarget` — "what are MY notes" | `stores/jam-store.ts` | The seam a song part plugs into, unchanged |
-| Per-peer beat-stamped pitch, agreed scoring | `lib/jam/jam-scoring.ts` | The right-hand trails, as-is |
-| Host transport, tempo resync, latency compensation | `stores/jam-store.ts` | Song playback sync |
-| Lyrics model with timings, blocks, note toggle | `features/stem-mixer/` | The left-hand column |
-| `LyricsBlock { id, label, lineIndices, repeatCount }` | `stem-mixer/types.ts` | **Singer assignment — see §5** |
-| Demo song loader + manifest | `features/karaoke-night/demo-song.ts` | Phase 1's song source |
-| Playlist singer names | `stores/karaoke-playlist-store.ts` | Prior art for "who sings what" |
+| Piece                                                 | Where                                 | Reused for                                 |
+| ----------------------------------------------------- | ------------------------------------- | ------------------------------------------ |
+| `jamMyTarget` — "what are MY notes"                   | `stores/jam-store.ts`                 | The seam a song part plugs into, unchanged |
+| Per-peer beat-stamped pitch, agreed scoring           | `lib/jam/jam-scoring.ts`              | The right-hand trails, as-is               |
+| Host transport, tempo resync, latency compensation    | `stores/jam-store.ts`                 | Song playback sync                         |
+| Lyrics model with timings, blocks, note toggle        | `features/stem-mixer/`                | The left-hand column                       |
+| `LyricsBlock { id, label, lineIndices, repeatCount }` | `stem-mixer/types.ts`                 | **Singer assignment — see §5**             |
+| Demo song loader + manifest                           | `features/karaoke-night/demo-song.ts` | Phase 1's song source                      |
+| Playlist singer names                                 | `stores/karaoke-playlist-store.ts`    | Prior art for "who sings what"             |
 
 ## 3. Phase 1 — the demo song in a room
 
@@ -171,8 +171,8 @@ lyrics + timings), not audio. Every peer fetches the same public URLs.
 The existing single-canvas layout stays for melody targets — this is a second
 layout, chosen by what the room loaded, not a replacement.
 
-**Transport.** The complication: jam syncs in *beats*, a song runs in
-*seconds*. Two options, and the second is better:
+**Transport.** The complication: jam syncs in _beats_, a song runs in
+_seconds_. Two options, and the second is better:
 
 1. Derive beats from the song's BPM. Breaks on tempo changes and rubato.
 2. **Add a seconds-based transport alongside the beat one.** The playback
@@ -201,13 +201,13 @@ running "who is nailing which line" without inventing a new scorer.
 **Shipped** as `lib/jam/jam-line-scoring.ts`, built on the same
 `scoreNoteInRange` the drills use. Two details the design did not anticipate:
 
-- *Two clocks.* Pitch samples are stamped `Date.now()`; notes and lyrics live
+- _Two clocks._ Pitch samples are stamped `Date.now()`; notes and lyrics live
   on the song's timeline. Everything converts through an anchor, and the
   anchor is captured **per line, when the line is entered** rather than once
   per run — which is what keeps scoring correct across a seek or a pause.
-- *A line with no notes is not a miss.* An instrumental bar inside a lyric
+- _A line with no notes is not a miss._ An instrumental bar inside a lyric
   sheet scores nothing and is excluded from the run average; a line that
-  *had* notes and went unsung scores zero. Conflating the two punished honest
+  _had_ notes and went unsung scores zero. Conflating the two punished honest
   runs for singing nothing where nothing was written.
 
 **Lyrics when a session has none.** A separated session usually has no LRC —
@@ -241,7 +241,7 @@ which is undiagnosable from inside a room.
 
 **Roles map to blocks, not to sorted-peer-index.** This is the departure from
 the existing modes: Harmony and Relay derive roles from the peer list because
-nothing about the melody says who sings what. A song *does* — the assignment
+nothing about the melody says who sings what. A song _does_ — the assignment
 is authored. So the room needs a claim step: peers pick (or are given) a
 singer slot, and `jamMyTarget` returns the lines for that slot.
 
@@ -280,8 +280,8 @@ about who wins.
 singer in the room, and the host can reassign afterwards. Falling silent is
 the one unacceptable outcome -- it is the same failure as Relay's empty
 parts, where a person was left with nothing to sing and no explanation. The
-rule generalises: *every assignment needs a defined fallback, and the
-fallback is never silence.*
+rule generalises: _every assignment needs a defined fallback, and the
+fallback is never silence._
 
 Concretely, in order of preference as each becomes impossible:
 

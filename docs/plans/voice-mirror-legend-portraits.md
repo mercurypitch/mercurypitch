@@ -8,7 +8,7 @@
 > prompt template + generation recipe, costs and failure modes). The roster
 > also grew: **Kurt Cobain** and **David Bowie** joined Baritone
 > (`kurt-cobain.webp`, `david-bowie.webp`). MidJourney (below) remains an
-> *alternate* generation route only.
+> _alternate_ generation route only.
 
 The results card hides the famous-singer match until the singer taps it (the
 reveal). The back / overlay shows the legend as art. Two art tiers:

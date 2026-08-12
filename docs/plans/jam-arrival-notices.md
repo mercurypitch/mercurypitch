@@ -9,12 +9,11 @@ appearing. The room should say so, in a voice that sounds like the app.
 one notification system, one visual language. It gives us `type`,
 `durationMs`, an optional action button, and a `channel`.
 
-**What it does not yet do is group.** The `channel` mechanism *replaces*:
+**What it does not yet do is group.** The `channel` mechanism _replaces_:
 
 ```ts
-const base = notif.channel != null
-  ? list.filter((n) => n.channel !== notif.channel)
-  : list
+const base =
+  notif.channel != null ? list.filter((n) => n.channel !== notif.channel) : list
 ```
 
 So with a shared channel, "Bo slid in" would wipe "Ada slid in" and Ada's
@@ -107,9 +106,9 @@ trivial once those hold.
 
 ## Open questions
 
-| # | Question | My lean |
-|---|---|---|
-| N1 | Does the arriving person see a notice about themselves? | No — they can see they arrived. Everyone else gets it. |
-| N2 | Do we announce arrivals to a room of two, or only from three upwards? | Announce always; with two people it is the clearest signal there is. |
-| N3 | Should the leave notice wait the full grace period even when the connection closed cleanly (they pressed Leave)? | No — a clean leave is deliberate and can be immediate. Only a dropped connection needs the grace. |
-| N4 | Should these be `info` toasts, or a quieter dedicated style? | `info`, at a shorter duration than the 6 s default — an arrival is not something to read twice. |
+| #   | Question                                                                                                         | My lean                                                                                           |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| N1  | Does the arriving person see a notice about themselves?                                                          | No — they can see they arrived. Everyone else gets it.                                            |
+| N2  | Do we announce arrivals to a room of two, or only from three upwards?                                            | Announce always; with two people it is the clearest signal there is.                              |
+| N3  | Should the leave notice wait the full grace period even when the connection closed cleanly (they pressed Leave)? | No — a clean leave is deliberate and can be immediate. Only a dropped connection needs the grace. |
+| N4  | Should these be `info` toasts, or a quieter dedicated style?                                                     | `info`, at a shorter duration than the 6 s default — an arrival is not something to read twice.   |

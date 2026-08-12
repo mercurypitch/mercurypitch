@@ -21,16 +21,16 @@ Adding a kind is three edits: the union in `types.ts`, the router in
 
 **Already working, and better than it looks**
 
-| Thing | Where |
-|---|---|
-| Shared piano roll, every peer's pitch trail in their own colour | `JamExerciseCanvas.tsx` |
-| Live scoreboard, +/-50 cents hit rate, sorted | `JamExerciseCanvas.tsx:drawScoreboard` |
-| Host transport: play/pause/stop/seek, 4-beat count-in, loop, BPM | `jam-store.ts` |
-| Multi-peer scrolling pitch monitor | `JamSharedPitchCanvas.tsx` |
-| Chat, camera tiles, peer latency, per-room backdrops | `JamChatWidget`, `JamCameraWidget`, `JamPage` |
-| Past-run heatmap | `JamActivityHeatmap.tsx` |
+| Thing                                                            | Where                                         |
+| ---------------------------------------------------------------- | --------------------------------------------- |
+| Shared piano roll, every peer's pitch trail in their own colour  | `JamExerciseCanvas.tsx`                       |
+| Live scoreboard, +/-50 cents hit rate, sorted                    | `JamExerciseCanvas.tsx:drawScoreboard`        |
+| Host transport: play/pause/stop/seek, 4-beat count-in, loop, BPM | `jam-store.ts`                                |
+| Multi-peer scrolling pitch monitor                               | `JamSharedPitchCanvas.tsx`                    |
+| Chat, camera tiles, peer latency, per-room backdrops             | `JamChatWidget`, `JamCameraWidget`, `JamPage` |
+| Past-run heatmap                                                 | `JamActivityHeatmap.tsx`                      |
 
-**The honest constraint.** Real-time *audio* ensemble over the internet is a
+**The honest constraint.** Real-time _audio_ ensemble over the internet is a
 physics problem, not an engineering one: past roughly 30 ms of round trip,
 playing together stops working. A 12-peer mesh of live mics is worse. So the
 room should not pretend to be a band rehearsal. It should be a **shared
@@ -46,7 +46,7 @@ design constraint, not a limitation to be fixed later.
 2. **Nothing counts.** `jamExerciseHistory` is sessionStorage and dies with
    the tab. It never reaches `recordExerciseResult`, so a jam feeds no streak,
    no Ascent progress, no weakness analysis, no badge, no leaderboard.
-   Practising with a friend is worth *less* than practising alone.
+   Practising with a friend is worth _less_ than practising alone.
 3. **The scoreboard is not the same for everyone.** Each client scores every
    peer from its own `jamPitchHistory`, mapping samples to beats by wall-clock
    age (`Date.now() - s.timestamp`). Different jitter, different scoreboard.
@@ -121,7 +121,7 @@ people could each believe they won and both be reading the code correctly.
 Three causes, all fixed:
 
 - **Room beats, not wall clock.** Scoring mapped samples onto the grid with
-  `Date.now() - sample.timestamp`, where the timestamp came off the *sender's*
+  `Date.now() - sample.timestamp`, where the timestamp came off the _sender's_
   clock — so the subtraction measured machine skew (seconds) rather than
   musical time. `JamPitchMessage.beat` now carries the sender's room beat and
   scoring works in beats throughout. `timestamp` is stamped on receipt
@@ -184,7 +184,7 @@ nothing.
 **Two shelves deliberately do not count:**
 
 - A saved melody of your own is not an exercise; there is no honest type.
-- The weekly *could* arm a real board attempt and does not. `recordWeeklyAttempt`
+- The weekly _could_ arm a real board attempt and does not. `recordWeeklyAttempt`
   only fires for an attempt armed from the Challenges hero, and that path ends
   in `setActiveTab` (`weekly-attempt.ts:149`) — arming from here would throw
   the singer out of a live room, mid-session, while everyone else waits.
@@ -209,7 +209,7 @@ wire, on the melody message it reshapes.
 
 Everything lands through one seam: **`jamMyTarget`** is the melody as I should
 sing it. The canvas draws it and the scorer scores it, so a mode only has to
-answer *what are my notes* and the piano roll, the MIDI range, the per-note
+answer _what are my notes_ and the piano roll, the MIDI range, the per-note
 scoring and the take chip all follow.
 
 **Harmony Stack** — each singer gets a chord tone: root, third, fifth,
@@ -221,7 +221,7 @@ hear another in time.
 
 **Relay** — the melody cuts into a phrase each, round the room. Turn-taking
 is latency-proof by construction and scales from two to twelve. A phrase that
-is not mine is *dropped* from my target rather than left silent, because an
+is not mine is _dropped_ from my target rather than left silent, because an
 unsung target note scores zero — keeping someone else's phrase would score me
 on their turn.
 
@@ -236,7 +236,7 @@ Covered by `src/tests/jam-modes.test.ts`.
 
 - **Call & Response** — one peer sings a phrase live, the pitch pipeline
   captures the contour, everyone else echoes it and is scored against the
-  *human* phrase via the `shazam/melody-matcher` DTW scorer. Needs live
+  _human_ phrase via the `shazam/melody-matcher` DTW scorer. Needs live
   phrase capture and a new message kind carrying the captured contour; it is
   the first mode where the target is not derived from the shared melody.
 - **Duel** — two peers, same target, best of three, winner to the
@@ -245,7 +245,7 @@ Covered by `src/tests/jam-modes.test.ts`.
 
 ## 7b. Phase 7 — connection stability (researched, mostly unbuilt)
 
-The room's *content* is now in reasonable shape; its *connection* is the
+The room's _content_ is now in reasonable shape; its _connection_ is the
 part that has cost the most pain, so this is what to fix next.
 
 ### What is already right
@@ -305,8 +305,8 @@ The largest lift; do it last.
 - `instrument: 'vocal' | 'guitar' | 'piano'` on `JamPeer`, broadcast at join.
 - Guitar peers detect through `useGuitarPracticeController`; piano peers can
   use MIDI, which `falling-notes-store` already models (`inputMode:
-  'mic' | 'midi'`). The shared canvas draws one lane per instrument.
-- **Cheaper first step, most of the value:** *jam over a backing track*. Both
+'mic' | 'midi'`). The shared canvas draws one lane per instrument.
+- **Cheaper first step, most of the value:** _jam over a backing track_. Both
   peers load the same demo song or stem-mixer session locally and the host
   syncs transport — `playback` messages already carry beats, so this is close
   to free and turns the room into a karaoke room for two.

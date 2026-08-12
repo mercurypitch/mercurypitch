@@ -20,7 +20,7 @@ const AUDIO_CONSTRAINTS = {
 
 That is right for pitch analysis — AEC, noise suppression and AGC all
 mangle the signal a detector needs — and wrong for a voice room, because
-the same stream is *also* what goes to the peers. One capture is doing two
+the same stream is _also_ what goes to the peers. One capture is doing two
 incompatible jobs.
 
 **And the remote audio is invisible to the canceller anyway.**
@@ -31,8 +31,8 @@ const source = ctx.createMediaStreamSource(stream)
 source.connect(ctx.destination)
 ```
 
-Chrome's echo canceller only cancels audio coming from the *peer
-connection*; audio rendered through Web Audio is not considered. Firefox
+Chrome's echo canceller only cancels audio coming from the _peer
+connection_; audio rendered through Web Audio is not considered. Firefox
 and Safari do consider all browser audio, which is why this may look
 browser-specific in testing. So even switching `echoCancellation: true`
 on today would not fix Chrome while the playback path stays as it is.
@@ -51,10 +51,10 @@ need a detector.
 The professional answer, and it removes the conflict rather than trading
 one job off against the other:
 
-| stream | constraints | goes to |
-|---|---|---|
-| **transmit** | `echoCancellation: true`, `noiseSuppression: true`, `autoGainControl: true` | peers |
-| **analysis** | everything off, as today | pitch detection only, never leaves the device |
+| stream       | constraints                                                                 | goes to                                       |
+| ------------ | --------------------------------------------------------------------------- | --------------------------------------------- |
+| **transmit** | `echoCancellation: true`, `noiseSuppression: true`, `autoGainControl: true` | peers                                         |
+| **analysis** | everything off, as today                                                    | pitch detection only, never leaves the device |
 
 Two `getUserMedia` calls on the same device. Costs a second capture; buys
 a mic that is processed for humans and one that is honest for maths.
@@ -74,7 +74,7 @@ working and not.
   dismissible, remembered.
 - A visible per-peer volume, and a room-wide "everyone quiet" control that
   is faster to reach than the browser's.
-- Consider defaulting a second device in the *same room* to muted — two
+- Consider defaulting a second device in the _same room_ to muted — two
   peers on the same LAN with correlated audio is a strong hint, though not
   proof.
 
@@ -88,12 +88,12 @@ enormously here — this is a **singing** app, and a held vowel is also a
 loud sustained tone. The standard criteria, from the sound-reinforcement
 literature:
 
-| metric | what it says | why it separates singing from howling |
-|---|---|---|
-| **PAPR** peak-to-average power | howling is very loud relative to the rest | a belted note is too — weak on its own |
-| **PNPR** peak-to-neighbouring power | howling is a near-zero-bandwidth sinusoid | a voice has vibrato and breath; the peak is wider |
-| **PHPR** peak-to-harmonic power | howling has **no harmonic structure** | **the decisive one** — a sung vowel is all harmonics |
-| **IPMP** inter-frame peak persistence | the same bin stays hot and grows | a phrase moves; feedback parks |
+| metric                                | what it says                              | why it separates singing from howling                |
+| ------------------------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| **PAPR** peak-to-average power        | howling is very loud relative to the rest | a belted note is too — weak on its own               |
+| **PNPR** peak-to-neighbouring power   | howling is a near-zero-bandwidth sinusoid | a voice has vibrato and breath; the peak is wider    |
+| **PHPR** peak-to-harmonic power       | howling has **no harmonic structure**     | **the decisive one** — a sung vowel is all harmonics |
+| **IPMP** inter-frame peak persistence | the same bin stays hot and grows          | a phrase moves; feedback parks                       |
 
 The rule of thumb from the literature is to require several criteria
 together over consecutive frames, not any one of them. `PHPR` plus
@@ -104,8 +104,8 @@ after all, one of the app's own exercises.
 
 1. Duck the remote output ~12 dB for a second and see if it dies.
 2. If it returns, notch the offending bin (feedback parks on one).
-3. If it survives both, mute the mic and say so plainly — *"We muted your
-   mic: it was picking up the room's speakers. Headphones will fix it."*
+3. If it survives both, mute the mic and say so plainly — _"We muted your
+   mic: it was picking up the room's speakers. Headphones will fix it."_
    with a one-tap unmute.
 
 Never silently. A mic that mutes itself with no explanation is worse than
@@ -145,10 +145,10 @@ Turning `echoCancellation: true` on is not a one-line change, because the
 same capture feeds pitch detection, and AEC/NS/AGC all mangle what a
 detector needs. Two ways to split it, and they fail differently:
 
-| approach | cost |
-|---|---|
-| a second `getUserMedia` | iOS Safari has historically stopped the *first* stream when a second capture starts — on the iPad this could take the mic out entirely |
-| `track.clone()` + `applyConstraints` on the clone | one capture, no prompt; but per-clone processing is not honoured everywhere, and where it is not, pitch detection quietly degrades |
+| approach                                          | cost                                                                                                                                   |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| a second `getUserMedia`                           | iOS Safari has historically stopped the _first_ stream when a second capture starts — on the iPad this could take the mic out entirely |
+| `track.clone()` + `applyConstraints` on the clone | one capture, no prompt; but per-clone processing is not honoured everywhere, and where it is not, pitch detection quietly degrades     |
 
 The clone won, because one of the test devices is an iPhone. Both of its
 failure modes end with sending the raw track — today's behaviour, so a
@@ -204,11 +204,11 @@ a two-device rig is exactly what is set up:
 
 ## Open questions
 
-| # | Question |
-|---|---|
-| F1 | Is degraded pitch detection acceptable if we ever have to fall back to a single processed stream — say a device that refuses two captures? |
-| F2 | Should a detected howl mute *the mic* or *the room's output*? Muting output keeps you audible to others; muting the mic keeps them audible to you. |
-| F3 | Do we prompt for headphones on every multi-peer room, or only after a howl has actually been detected once? |
+| #   | Question                                                                                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1  | Is degraded pitch detection acceptable if we ever have to fall back to a single processed stream — say a device that refuses two captures?         |
+| F2  | Should a detected howl mute _the mic_ or _the room's output_? Muting output keeps you audible to others; muting the mic keeps them audible to you. |
+| F3  | Do we prompt for headphones on every multi-peer room, or only after a howl has actually been detected once?                                        |
 
 Sources: [Chrome's AEC ignores Web Audio playback](https://groups.google.com/g/discuss-webrtc/c/NQ0f8MwwegQ) ·
 [Echo cancellation with Web Audio and Chromium](https://dev.to/focused_dot_io/echo-cancellation-with-web-audio-api-and-chromium-1f8m) ·

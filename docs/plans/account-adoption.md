@@ -29,11 +29,11 @@ user A that should be owned by user B**. Most of the job is
 
 Three sign-in flows exist and only one is broken:
 
-| Flow | What the worker does | Anything stranded? |
-|---|---|---|
-| Register with password (`deviceId` sent) | Upgrades the anonymous row **in place** (`auth.ts:886`) | No — same id throughout |
-| Google, first time (`deviceId` sent) | Upgrades the anonymous row **in place** (`auth.ts:993`) | No |
-| **Log in to an existing account** | `handleLogin` doesn't take `deviceId` at all (`auth.ts:936`); Google paths 1-2 match on `providerId`/email before ever looking at the device | **Yes — this is the whole problem** |
+| Flow                                     | What the worker does                                                                                                                         | Anything stranded?                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Register with password (`deviceId` sent) | Upgrades the anonymous row **in place** (`auth.ts:886`)                                                                                      | No — same id throughout             |
+| Google, first time (`deviceId` sent)     | Upgrades the anonymous row **in place** (`auth.ts:993`)                                                                                      | No                                  |
+| **Log in to an existing account**        | `handleLogin` doesn't take `deviceId` at all (`auth.ts:936`); Google paths 1-2 match on `providerId`/email before ever looking at the device | **Yes — this is the whole problem** |
 
 That is why the notice's trigger is exactly `deviceId !== accountId`.
 
@@ -167,17 +167,17 @@ adding the index is hardening (§9). `follows` already has
 Target has no row → move it. Both have one → keep the better half of each column,
 never subtract:
 
-| Column | Rule |
-|---|---|
-| `bestScore`, `progress` | `MAX` |
-| `attempts` | **sum** — both really happened |
-| `completed` / `unlocked` | `OR` |
-| `completedAt` / `unlockedAt` | earliest non-null |
-| `currentScore` | the more recently updated row's value |
+| Column                       | Rule                                  |
+| ---------------------------- | ------------------------------------- |
+| `bestScore`, `progress`      | `MAX`                                 |
+| `attempts`                   | **sum** — both really happened        |
+| `completed` / `unlocked`     | `OR`                                  |
+| `completedAt` / `unlockedAt` | earliest non-null                     |
+| `currentScore`               | the more recently updated row's value |
 
 ### Scalar reconcile — the streak
 
-`MAX(currentStreak)` alone is wrong: a streak is only *current* if
+`MAX(currentStreak)` alone is wrong: a streak is only _current_ if
 `lastPracticeDate` is today or yesterday.
 
 ```
@@ -192,7 +192,7 @@ lastFreezeUsedDate, lastRepairDate, streakResetDate
 joinDate          = the EARLIER of the two          -- they started when they started
 ```
 
-`REPAIR_COOLDOWN_DAYS` is 30 (`streak-service.ts`), so taking the *earlier*
+`REPAIR_COOLDOWN_DAYS` is 30 (`streak-service.ts`), so taking the _earlier_
 repair date would hand out a free streak repair on every adoption.
 
 `displayName`, `avatarUrl`, `bio` are never touched — the account keeps its own.
@@ -384,15 +384,15 @@ in JS, and contributes a single `UPDATE`. Set `adoptedBy` last, in the same batc
 
 ## 6. The client side
 
-| Key | Action |
-|---|---|
-| `mp_path_progress` | `mergePathProgress(local, cloud)` — the union exists and is tested. Then push, and set `mp_sync_owner` to the account. |
-| `mercurypitch_exercise_history` | Nothing. Never synced, still on screen, now backed by moved `sessionRecords`. |
-| `pitchperfect_session_history` | Nothing — `EXCLUDED_KEYS`, device telemetry. |
+| Key                                                 | Action                                                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mp_path_progress`                                  | `mergePathProgress(local, cloud)` — the union exists and is tested. Then push, and set `mp_sync_owner` to the account.                     |
+| `mercurypitch_exercise_history`                     | Nothing. Never synced, still on screen, now backed by moved `sessionRecords`.                                                              |
+| `pitchperfect_session_history`                      | Nothing — `EXCLUDED_KEYS`, device telemetry.                                                                                               |
 | `mp_practice_ms_<date>`, `mp_streak_counted_<date>` | Nothing. Per-day and device-local by design (`practice-minutes.ts`); today's progress toward the 5-minute goal is genuinely this device's. |
-| `mp_daily_routine*` | Nothing — today's routine, not history. |
-| `mercurypitch.voiceprints.v1` | Retag via the existing `adoptDeviceVoiceprints()`. |
-| `mercurypitch.localProgressNotice.v1` | Mark seen for this account. |
+| `mp_daily_routine*`                                 | Nothing — today's routine, not history.                                                                                                    |
+| `mercurypitch.voiceprints.v1`                       | Retag via the existing `adoptDeviceVoiceprints()`.                                                                                         |
+| `mercurypitch.localProgressNotice.v1`               | Mark seen for this account.                                                                                                                |
 
 Then bump `authVersion` / `sessionRecordVersion` so the activity calendar, streak
 card and badge grid re-read instead of showing pre-merge emptiness until reload.
@@ -451,7 +451,7 @@ Worth being precise, because it decides how much machinery this deserves.
 **What we can prove.** Two things, both cryptographic: whoever is at the
 keyboard holds a valid token for the anonymous identity (§5.2), and they have
 just authenticated as the account (password, or Google). Both are real proofs of
-*possession*.
+_possession_.
 
 **What we cannot prove, ever.** That the human who did the practice is the human
 who just signed in. There is no signal for it. The practice was done by "whoever
@@ -461,7 +461,7 @@ of prompting produces any — a stranger can click "yes, this is mine" as easily
 the owner can.
 
 **Which means the risk is not the one it first looks like.** Physical access to
-an unlocked browser profile *already* grants reading the practice, the melody
+an unlocked browser profile _already_ grants reading the practice, the melody
 library, the stems, and the microphone. Adoption does not create that access. It
 adds exactly one new power: **transfer** — moving the cloud half somewhere the
 original singer cannot reach.
@@ -519,7 +519,7 @@ This is the same call owner decision D2 already made for voiceprints
    non-destructive default.
 
 Context, not a decision: achievements, badges, streak and session history
-*already* follow a signed-in account across devices — they are D1 rows. What does
+_already_ follow a signed-in account across devices — they are D1 rows. What does
 not cross devices is the library and stems (`docs/plans/device-sync.md`), so a
 future "sync" subscription would be selling that, not this.
 
@@ -528,6 +528,7 @@ future "sync" subscription would be selling that, not this.
 ## 9. Phasing
 
 **Phase 0 — with v0.8. DONE.**
+
 - Fix §3: don't claim `mp_sync_owner` for an anonymous identity, and forget the
   stamps the old claim already left. `settings-service.ts`; four regression
   tests in `settings-sync-merge.test.ts`, written red — one of them reproduced
@@ -535,31 +536,36 @@ future "sync" subscription would be selling that, not this.
 - Notice copy per §2.1. `LocalProgressNotice.tsx`.
 
 **Phase 0b — sharing, shippable independently. DONE.**
+
 - 403 anonymous writes to `sharedMelodies` / `sharedSessions`, with a message
   naming the two paths that do work. `requiresAccount` +
   `blockedForAnonymous` (tables.ts), `canPostToCommunity` (share-service.ts),
   `tables.test.ts`. See §4, and the wider sharing design in
   `<user-dotfiles>/personal/mercurypitch/sharing-model.md`.
-- Not done there, deliberately: the share affordances still do not say *which*
+- Not done there, deliberately: the share affordances still do not say _which_
   kind of sharing they do before the press, and progress sharing is undecided
   (friends-only vs global). Both are in the sharing doc, neither blocks v0.8.
 
 **Phase 1 — the re-parent**
+
 - Migration 0012, `POST /api/auth/adopt` (+ manifest GET), token stashing, the
   Move and Union classes, `handleAnonymous` refusal, the grant-engine re-run.
 - Notice gains its manifest dialog; mailto becomes the fallback.
 
 **Phase 2 — the reconciles**
+
 - Streak/profile scalars, `challengeProgress` / `userAchievements`, league weeks,
   share removal.
 
 **Phase 3 — one prompt**
+
 - Fold voiceprint adoption into the same dialog; retire the second notice.
 
 **Hardening, any time**
+
 - `UNIQUE(userId, badgeId)` on `userBadges`, `UNIQUE(userId, achievementId)` on
   `userAchievements`. The union guards work without them; the index is what makes
-  a double unlock *impossible* rather than merely avoided.
+  a double unlock _impossible_ rather than merely avoided.
 - ~~`docs/agent/INDEX.md` §2 guardrail 6 and its §5 how-to row still document
   `scripts/migrate-*.sql` + `workers/db-worker/schema.sql`.~~ Fixed in this
   branch, along with the matching lines in `MISTAKES.md` and `QUESTIONNAIRE.md`

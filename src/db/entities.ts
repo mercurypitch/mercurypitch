@@ -487,6 +487,10 @@ export interface UvrSessionRecord extends DbEntity {
   progress: number
   indeterminate?: boolean
   fileHash?: string // SHA-256 hex digest of the original file
+  /** What this device's copy of the audio is: absent or 'lossless' for a
+   *  session separated here, a portable tier for one that arrived as a
+   *  bundle. The library and the cloud song list both read this. */
+  audioQuality?: SongAudioQuality
   originalFileName: string
   originalFileSize: number
   originalFileType: string

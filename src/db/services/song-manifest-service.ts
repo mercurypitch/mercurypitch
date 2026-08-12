@@ -109,9 +109,11 @@ export function manifestFromSession(
     fileHash: session.fileHash,
     title: session.originalFile?.name ?? 'Unknown',
     durationSec: durations[0],
-    // Separated here, so it is the real thing here. Only a synced copy is
-    // ever anything less, and that is set by whoever wrote the bundle.
-    quality: opts.quality ?? 'lossless',
+    // The session's own provenance wins: a copy that arrived as a portable
+    // bundle says so (uvr-store stamps audioQuality on import), and a song
+    // separated here is the real thing. opts.quality remains for callers
+    // that know better than the record.
+    quality: opts.quality ?? session.audioQuality ?? 'lossless',
     stemsJson:
       Object.keys(stems).length > 0 ? JSON.stringify(stems) : undefined,
     hasLyrics: opts.hasLyrics ?? false,

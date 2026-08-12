@@ -31,20 +31,20 @@ mechanics, the architecture, the campaign wiring, and the open items.
 
 ## 0. TL;DR
 
-| | |
-|---|---|
-| What | Standalone campaign page `/glass`, sibling of `/mirror` and `/karaoke-night` |
-| Fantasy | "Break glass with your voice" — the opera-singer trope, personalized |
-| Loop | Calibrate ceiling → 3 reps of *sing → hear your real voice back → retry* → glass shatters |
-| FX rack | Echo · Reverb · Hall sliders left of the card, cosmic presets `Dry · Starlight · Nebula · Supernova`; colors replay + optional headphone-gated live monitor; analysis/recording stay dry |
-| In-app twin | The same loop also ships as the `glass-shatter` exercise in `/#/exercises`, sharing libs and feeding history/streaks |
-| Renderer | **TypeGPU (WebGPU) — mandatory**, "Powered by TypeGPU" footer credit; Canvas2D "lite" fallback behind the same seam |
-| Physics | Cumulative glass fatigue (near-misses leave permanent cracks) + resonance → Voronoi-style fracture, 3D shard tumble |
-| Scores | Honest metrics + improvement delta; **no composite voice score** (house rule) |
-| Share | Canvas PNG "shatter card" now; replay video Phase 2 |
-| Backdrop | Procedural cosmos placeholder now; Higgsfield stills later (preflight → approval → generate) |
-| Campaign | New funnel events → `glass_complete` conversion action → new SKAG per the campaigns-repo playbook |
-| Privacy | Audio and analysis stay on-device, recordings in-memory only — same promise as the mirror |
+|             |                                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What        | Standalone campaign page `/glass`, sibling of `/mirror` and `/karaoke-night`                                                                                                             |
+| Fantasy     | "Break glass with your voice" — the opera-singer trope, personalized                                                                                                                     |
+| Loop        | Calibrate ceiling → 3 reps of _sing → hear your real voice back → retry_ → glass shatters                                                                                                |
+| FX rack     | Echo · Reverb · Hall sliders left of the card, cosmic presets `Dry · Starlight · Nebula · Supernova`; colors replay + optional headphone-gated live monitor; analysis/recording stay dry |
+| In-app twin | The same loop also ships as the `glass-shatter` exercise in `/#/exercises`, sharing libs and feeding history/streaks                                                                     |
+| Renderer    | **TypeGPU (WebGPU) — mandatory**, "Powered by TypeGPU" footer credit; Canvas2D "lite" fallback behind the same seam                                                                      |
+| Physics     | Cumulative glass fatigue (near-misses leave permanent cracks) + resonance → Voronoi-style fracture, 3D shard tumble                                                                      |
+| Scores      | Honest metrics + improvement delta; **no composite voice score** (house rule)                                                                                                            |
+| Share       | Canvas PNG "shatter card" now; replay video Phase 2                                                                                                                                      |
+| Backdrop    | Procedural cosmos placeholder now; Higgsfield stills later (preflight → approval → generate)                                                                                             |
+| Campaign    | New funnel events → `glass_complete` conversion action → new SKAG per the campaigns-repo playbook                                                                                        |
+| Privacy     | Audio and analysis stay on-device, recordings in-memory only — same promise as the mirror                                                                                                |
 
 ## 1. Decision log (interview, chronological)
 
@@ -193,15 +193,15 @@ back/forward/reset orphans die at their next checkpoint.
 
 Constants (prototype-tuned; start here, tune with real singers):
 
-| Constant | Value | Meaning |
-|---|---|---|
-| `TOL_CENTS` | 35 | in-band tolerance |
-| `RES_RISE` | 0.30 /s | resonance growth base; accelerates `(+0.5·res)` |
-| `RES_FALL` | 0.55 /s | decay when out of band |
-| `LOCK_FOR_SHATTER` | 0.8 s | continuous lock required before shatter may fire |
-| `FATIGUE_RATE` | 0.052 | stress→damage rate; stress = `level · proximity²`, proximity = `1 − |off|/300¢` |
-| `FATIGUE_ASSIST` | 0.38 | full fatigue lowers the shatter wall by 38% |
-| `CRACK_STEPS` | .18/.36/.55/.74/.90 | fatigue thresholds that spawn permanent cracks |
+| Constant           | Value               | Meaning                                                             |
+| ------------------ | ------------------- | ------------------------------------------------------------------- | --- | ------ |
+| `TOL_CENTS`        | 35                  | in-band tolerance                                                   |
+| `RES_RISE`         | 0.30 /s             | resonance growth base; accelerates `(+0.5·res)`                     |
+| `RES_FALL`         | 0.55 /s             | decay when out of band                                              |
+| `LOCK_FOR_SHATTER` | 0.8 s               | continuous lock required before shatter may fire                    |
+| `FATIGUE_RATE`     | 0.052               | stress→damage rate; stress = `level · proximity²`, proximity = `1 − | off | /300¢` |
+| `FATIGUE_ASSIST`   | 0.38                | full fatigue lowers the shatter wall by 38%                         |
+| `CRACK_STEPS`      | .18/.36/.55/.74/.90 | fatigue thresholds that spawn permanent cracks                      |
 
 - `resonance += dt · (RES_RISE + 0.5·res) · (1 − 0.4·|off|/TOL)` in band;
   `−= dt · RES_FALL` out of band. Clamp 0..1.
@@ -447,7 +447,7 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 2. **New SKAG — "Campaign G · Glass"** per `playbook/01`: build PAUSED →
    checklist → enable. Keyword theme (run Keyword Planner first, Phase-0
    rule): `"break glass with your voice"`, `"can you break glass by
-   singing"`, watchlist `"highest note test"`, `"how high can I sing"`.
+singing"`, watchlist `"highest note test"`, `"how high can I sing"`.
    This is a curiosity/challenge theme — expect cheap CPCs, unknown volume;
    it is ALSO a natural YouTube/Shorts creative later (the shatter replay).
 3. LP H1 must word-match the winning keyword (§12); geo tiers, negatives,
@@ -513,18 +513,18 @@ glass_card_generated · glass_card_shared · glass_cta_app_click
 
 ## 14. Risks & mitigations
 
-| Risk | Mitigation |
-|---|---|
-| WebGPU missing on a slice of ad traffic | Lite Canvas2D fallback behind the same seam (shared geometry/logic); measure real coverage via the `renderer` funnel metric before investing more in either path |
-| iOS silent-mic / suspended AudioContext | Reuse the mirror's `probeMic` + `rebuildAudio` + gesture rules verbatim (hard-won) |
-| MediaRecorder codec matrix | mimeType fallback chain + decode-check + `<audio>` fallback (§8); recording is a progressive enhancement — if unsupported, the rep loop runs with contour-only replay |
-| Feedback/echo during playback | Capture fully paused during playback; modest playback gain |
-| Live FX monitoring feedback (mic → speakers loop) | OFF by default; explicit "I'm wearing headphones" confirm gates it; runaway-level detector kills the monitor and explains why (§17.1) |
-| Perf on low-end (shatter) | ≤128 shards, DPR clamp, reduced-motion path, pause on hidden |
-| Vocal strain (repeated high notes) | Soft rest nudge after ~6 reps; coach copy never pushes louder, only steadier |
-| Keyword volume unknown | Phase-0 Keyword Planner pass before building the SKAG; the theme doubles as organic short-form content either way |
-| Bundle creep | Lazy renderer chunk, no ONNX, `pnpm size` gate in P0 and every phase |
-| Higgsfield spend | Preflight `get_cost` → approval → generate → stop (standing rule) |
+| Risk                                              | Mitigation                                                                                                                                                            |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WebGPU missing on a slice of ad traffic           | Lite Canvas2D fallback behind the same seam (shared geometry/logic); measure real coverage via the `renderer` funnel metric before investing more in either path      |
+| iOS silent-mic / suspended AudioContext           | Reuse the mirror's `probeMic` + `rebuildAudio` + gesture rules verbatim (hard-won)                                                                                    |
+| MediaRecorder codec matrix                        | mimeType fallback chain + decode-check + `<audio>` fallback (§8); recording is a progressive enhancement — if unsupported, the rep loop runs with contour-only replay |
+| Feedback/echo during playback                     | Capture fully paused during playback; modest playback gain                                                                                                            |
+| Live FX monitoring feedback (mic → speakers loop) | OFF by default; explicit "I'm wearing headphones" confirm gates it; runaway-level detector kills the monitor and explains why (§17.1)                                 |
+| Perf on low-end (shatter)                         | ≤128 shards, DPR clamp, reduced-motion path, pause on hidden                                                                                                          |
+| Vocal strain (repeated high notes)                | Soft rest nudge after ~6 reps; coach copy never pushes louder, only steadier                                                                                          |
+| Keyword volume unknown                            | Phase-0 Keyword Planner pass before building the SKAG; the theme doubles as organic short-form content either way                                                     |
+| Bundle creep                                      | Lazy renderer chunk, no ONNX, `pnpm size` gate in P0 and every phase                                                                                                  |
+| Higgsfield spend                                  | Preflight `get_cost` → approval → generate → stop (standing rule)                                                                                                     |
 
 ## 15. The look-dev prototype (this session's second deliverable)
 
@@ -563,8 +563,8 @@ git checkout claude/voice-mirror-visualization-d7h0q7   # this doc + prototype
 pnpm install && pnpm dev
 ```
 
-Then tell the assistant: *"Read `docs/plans/glass-handoff-2026-07-17.md`
-and start Phase P0."* Higgsfield generation (§9) needs the Higgsfield MCP
+Then tell the assistant: _"Read `docs/plans/glass-handoff-2026-07-17.md`
+and start Phase P0."_ Higgsfield generation (§9) needs the Higgsfield MCP
 connector attached and ALWAYS runs preflight-cost → approval first. The
 campaigns-repo steps (§11.2) touch
 `disjoint-colliders/packages/campaigns` — a separate repo; keep its
@@ -641,15 +641,15 @@ to it. Registration checklist (all five touchpoints REQUIRED — the shell
 indexes help unconditionally and the Records make omissions type errors):
 
 1. `src/features/exercises/types.ts` — `EXERCISE_GLASS_SHATTER =
-   'glass-shatter'` const + `ExerciseType` union entry.
+'glass-shatter'` const + `ExerciseType` union entry.
 2. `src/features/exercises/exercise-help.ts` — help entry
    (`ExerciseShell` reads `EXERCISE_HELP[type]` at mount).
 3. New pair `src/features/exercises/glass-shatter/GlassShatterExercise.tsx`
-   + `use-glass-shatter-controller.ts` on `useBaseExercise` (owns mic +
-   rAF pitch loop), reusing `src/lib/glass/*` (target, resonance, fatigue,
-   fracture, metrics), `take-recorder.ts`, the FX rack and `demo-audio.ts`.
-   Renderer through the same seam — TypeGPU chunk lazy-loaded on start,
-   Canvas2D lite fallback.
+   - `use-glass-shatter-controller.ts` on `useBaseExercise` (owns mic +
+     rAF pitch loop), reusing `src/lib/glass/*` (target, resonance, fatigue,
+     fracture, metrics), `take-recorder.ts`, the FX rack and `demo-audio.ts`.
+     Renderer through the same seam — TypeGPU chunk lazy-loaded on start,
+     Canvas2D lite fallback.
 4. `ExercisesPage.tsx` — route `<Show>` block; `ExerciseMenu.tsx` —
    `EXERCISE_DIFFICULTY` entry + `CARDS` card.
 5. `slug-map.ts` — `shatter-glass` slug → `/exercises/shatter-glass`
@@ -672,7 +672,7 @@ Prototype review: the burst reads slightly too fast. New baseline + scaling
 - `cleanliness = clamp01(1 − meanAbsCents_lock / TOL_CENTS)` over the
   winning lock window.
 - `epicness = clamp01(0.55 + 0.45·cleanliness − 0.18·(shatterRep − 1)
-  − 0.35·fatigue)` — a clean first-try lock ⇒ epicness ≈ 1; a rep-5
+− 0.35·fatigue)` — a clean first-try lock ⇒ epicness ≈ 1; a rep-5
   fatigue-grind ⇒ ≈ 0.2.
 - `slowMoFactor = lerp(0.22, 0.08, epicness)` (more epic = slower),
   `slowMoDuration = lerp(0.5 s, 1.1 s, epicness)`, then ease back to 1×;
@@ -793,12 +793,12 @@ see an animation."
   brightness, edge glints, dust, flash; TypeGPU snapshots the presented
   GPU frame + overlay with a blank-detect tint fallback and blanks the
   pane with a clear-only pass). Epicness (winning-lock cleanliness + rep
-  + fatigue) drives the timeline, the burst and the new `epicness`
-  metric on `glass_shatter`. Synthesized shatter SFX (`sfx.ts`);
-  cross-visit baseline delta on the results (`baseline.ts`, 5 tests).
-  `scripts/verify-glass.mjs SHATTER=1` locks the target after
-  calibration and asserts "Shattered — first try"; both e2e modes pass
-  headless on the typegpu backend, zero runtime errors.
+  - fatigue) drives the timeline, the burst and the new `epicness`
+    metric on `glass_shatter`. Synthesized shatter SFX (`sfx.ts`);
+    cross-visit baseline delta on the results (`baseline.ts`, 5 tests).
+    `scripts/verify-glass.mjs SHATTER=1` locks the target after
+    calibration and asserts "Shattered — first try"; both e2e modes pass
+    headless on the typegpu backend, zero runtime errors.
 - **P5 — DONE (branch `feat/glass-campaign`).** Share card + the polish
   pass (maff's prototype-parity review):
   - `src/features/glass/card-renderer.ts` — the shatter card (square +

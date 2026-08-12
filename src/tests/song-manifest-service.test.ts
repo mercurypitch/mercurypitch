@@ -88,6 +88,17 @@ describe('manifestFromSession', () => {
         ?.quality,
     ).toBe('portable-128')
   })
+
+  it('lets a synced copy tell the account what it is', () => {
+    // importPortableBundle stamps audioQuality on the session; the cloud
+    // list must repeat it, or a phone-side copy re-publishes as lossless
+    // and the provenance is laundered on the way through.
+    expect(
+      manifestFromSession(session({ audioQuality: 'portable-192' }), {
+        userId: 'u1',
+      })?.quality,
+    ).toBe('portable-192')
+  })
 })
 
 describe('manifestBytes', () => {
