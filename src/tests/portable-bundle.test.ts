@@ -29,7 +29,7 @@ import * as uvrService from '@/db/services/uvr-service'
 import { getStemBlobStrict, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import type * as PortableAudio from '@/lib/portable/portable-audio'
 import type { PortableBundleManifest } from '@/lib/portable/portable-bundle'
-import { isReadableManifest, PortablePartCorruptError, } from '@/lib/portable/portable-bundle'
+import { isReadableManifest, MAX_PART_BYTES, PortablePartCorruptError, } from '@/lib/portable/portable-bundle'
 import type { UvrSession } from '@/stores/uvr-store'
 import { deleteAllUvrSessions, getUvrSession, getUvrSessionByHash, saveAllUvrSessions, } from '@/stores/uvr-store'
 
@@ -267,5 +267,82 @@ describe('a device with no room left', () => {
 
     // And a torn import still leaves nothing behind.
     expect(getUvrSessionByHash(HASH)).toBeUndefined()
+  })
+})
+
+/**
+ * A manifest is the one thing a receiver believes before it can verify
+ * anything: `receiveBundleOverWire` accumulates chunks against the byte
+ * count it announces, and `getPart` asks for each part it lists. So every
+ * number in it is an instruction from the far device, and the far device
+ * is not necessarily ours -- a paired peer can be a modified client, and
+ * an older one can simply be wrong.
+ *
+ * The counts used to be checked as `typeof === 'number'` only. Against
+ * NaN the receiver's two exits both become unreachable: `received +
+ * length > NaN` is never true, so "more than you announced" cannot trip,
+ * and `received === NaN` is never true, so "that is all of it" cannot
+ * pass. Measured before the fix: 5000 chunks accepted, pull never
+ * resolved, every chunk retained -- a tab that grows until it dies, with
+ * no error anywhere. Infinity behaves the same way, and 500 GB was
+ * accepted as a size to start writing to a phone.
+ */
+describe('a manifest is data from another device, not a type', () => {
+  const withParts = (parts: unknown): unknown => ({
+    format: 'mercurypitch-song',
+    version: 1,
+    song: { fileHash: 'h', title: 't', quality: 'portable-192' },
+    parts,
+  })
+  const part = (over: Record<string, unknown> = {}): unknown => ({
+    id: 'prep',
+    bytes: 1,
+    sha256: 'x',
+    mime: 'application/json',
+    ...over,
+  })
+
+  it('accepts the honest shape', () => {
+    expect(isReadableManifest(withParts([part()]))).toBe(true)
+  })
+
+  it.each([
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+    ['negative', -1],
+    ['fractional', 1.5],
+    ['zero', 0],
+    ['past the ceiling', MAX_PART_BYTES + 1],
+  ])('refuses a part announcing %s bytes', (_label, bytes) => {
+    expect(isReadableManifest(withParts([part({ bytes })]))).toBe(false)
+  })
+
+  it('accepts a part right at the ceiling', () => {
+    // The bound is a ceiling, not an off-by-one trap.
+    expect(
+      isReadableManifest(withParts([part({ bytes: MAX_PART_BYTES })])),
+    ).toBe(true)
+  })
+
+  it('refuses a part id that is not one of the three', () => {
+    // Otherwise the id is any string, and the count below is unbounded.
+    expect(
+      isReadableManifest(withParts([part({ id: 'stem:everything' })])),
+    ).toBe(false)
+  })
+
+  it('refuses more parts than there are part ids', () => {
+    const many = Array.from({ length: 100_000 }, () => part())
+    expect(isReadableManifest(withParts(many))).toBe(false)
+  })
+
+  it('refuses the same part twice', () => {
+    // Two 'prep' entries is one part served twice, and a pull loop that
+    // asks for the same bytes again for no reason.
+    expect(isReadableManifest(withParts([part(), part()]))).toBe(false)
+  })
+
+  it('still refuses a manifest with no parts at all', () => {
+    expect(isReadableManifest(withParts([]))).toBe(false)
   })
 })
