@@ -199,8 +199,16 @@
 }
 
 @media (max-width: 768px) {
+  /* No header offset on a phone. The offset exists to clear the desktop
+     header's account, sign-in and tab controls; here the header is ~50px and
+     page content starts immediately beneath it, so pushing a full-width toast
+     down lands it on that content instead. Measured: the Piano tour prompt
+     covered y 57-109 over a playback scrubber at y 94-113, and
+     elementFromPoint at the scrub target returned the toast — which is the
+     same class of occlusion this whole change set out to remove. Staying at
+     the top is the lesser evil, and the toast is 40% shorter than it was. */
   .notificationContainer {
-    top: calc(env(safe-area-inset-top) + var(--app-header-h, 0px) + 0.45rem);
+    top: calc(env(safe-area-inset-top) + 0.55rem);
     right: 0.6rem;
     left: 0.6rem;
     width: auto;

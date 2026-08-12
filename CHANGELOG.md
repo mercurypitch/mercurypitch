@@ -94,7 +94,9 @@ engineering history see [`dev-changelog.md`](./dev-changelog.md).
   row now (42px instead of 72px, and narrower), with the heading leading the
   message and any button beside it, and the stack starts below the header
   instead of on top of it. Three of them together take 150px where they used
-  to take 237px.
+  to take 237px. On a phone they stay at the top edge: the header there is
+  barely 50px and page content starts right under it, so dropping a toast
+  below it just covers something else.
 
 - **Adding songs in Karaoke shows you where they went.** On a laptop-height
   screen the upload zone filled the tab, so a new song landed in a queue below
